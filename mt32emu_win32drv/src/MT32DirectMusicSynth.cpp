@@ -180,10 +180,10 @@ HRESULT MT32DirectMusicSynth::Open(THIS_ LPDMUS_PORTPARAMS pPortParams) {
 		if(getenv("SystemRoot") == NULL) {
 			if(getenv("windir") == NULL) {
 				// Eventually we'll query from the registry
-				strcpy(&dataPath[0],"c:\\windows");
+				strcpy(&dataPath[0], "c:\\windows");
 			}
 			else
-				strcpy(&dataPath[0],getenv("windir"));
+				strcpy(&dataPath[0], getenv("windir"));
 		}
 		else
 			strcpy(&dataPath[0], getenv("SystemRoot"));

@@ -65,8 +65,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_AUS
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,1,0,3
- PRODUCTVERSION 1,1,0,3
+ FILEVERSION 1,1,0,4
+ PRODUCTVERSION 1,1,0,4
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -83,12 +83,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Munt"
             VALUE "FileDescription", "MT-32 Synth Emulator Library"
-            VALUE "FileVersion", "1, 1, 0, 3"
+            VALUE "FileVersion", "1, 1, 0, 4"
             VALUE "InternalName", "mt32emu"
             VALUE "LegalCopyright", "Copyright (c) 2003-2004 Various contributors"
             VALUE "OriginalFilename", "mt32emu.DLL"
             VALUE "ProductName", "MT-32 Synth Emulator"
-            VALUE "ProductVersion", "1, 1, 0, 3"
+            VALUE "ProductVersion", "1, 1, 0, 4"
         END
     END
     BLOCK "VarFileInfo"
@@ -113,7 +113,7 @@ IDR_MT32EMU             REGISTRY                "mt32emu_win32drv.rgs"
 
 IDD_DIALOG1 DIALOGEX 0, 0, 233, 198
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "MT-32 Synth Emulator Version 0.10"
+CAPTION "MT-32 Synth Emulator Version 0.1.1"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,91,178,51,13
