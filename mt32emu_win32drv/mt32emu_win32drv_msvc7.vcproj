@@ -103,7 +103,7 @@ echo regsvr32 exec. time &gt; &quot;$(OutDir)\regsvr32.trg&quot;
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\mt32emu\src;F:\WINDDK\2600.1106\inc\ddk\wxp"
+				AdditionalIncludeDirectories="..\mt32emu\src"
 				PreprocessorDefinitions="NDEBUG;_USRDLL;I_ASM"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
@@ -135,8 +135,6 @@ echo regsvr32 exec. time &gt; &quot;$(OutDir)\regsvr32.trg&quot;
 				AdditionalLibraryDirectories="..\mt32emu\Release"
 				IgnoreAllDefaultLibraries="FALSE"
 				ModuleDefinitionFile=".\src\mt32emu_win32drv.def"
-				GenerateDebugInformation="TRUE"
-				AssemblyDebug="1"
 				ProgramDatabaseFile=".\Release/mt32emu_win32drv.pdb"
 				SubSystem="2"
 				ImportLibrary=".\Release/mt32emu_win32drv.lib"/>
