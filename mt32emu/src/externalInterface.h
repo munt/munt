@@ -1,21 +1,18 @@
 #ifndef MT32EMU_EXTINT_H
 #define MT32EMU_EXTINT_H
 
-#if USE_COMM == 1
-
 #include <SDL_net.h>
-#include "structures.h"
 
-class externalInterface {
+class ExternalInterface {
 public:
-	externalInterface() {
+	ExternalInterface() {
 		SDLNet_Init();
 		this->openedPort = false;
 		this->textToDisplay = false;
 		this->knownClient = false;
 	}
 
-	~externalInterface() {
+	~ExternalInterface() {
 		SDLNet_Quit();
 	}
 
@@ -23,6 +20,7 @@ public:
 
 	bool start();
 
+	void doControlPanelComm(MT32Emu::Synth *synth);
 	bool getStatusRequest(int *requestType);
 
 	bool sendResponse(int requestType, char *requestBuf, int requestLen);
@@ -40,7 +38,5 @@ private:
 	UDPsocket ipxServerSocket;  // Listening server socket
 	UDPpacket *regPacket;
 };
-
-#endif
 
 #endif

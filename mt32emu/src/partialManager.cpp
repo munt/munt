@@ -264,3 +264,9 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 	}
 	return needed == 0;
 }
+
+const Partial *PartialManager::getPartial(unsigned int partialNum) const {
+	if (partialNum > MT32EMU_MAX_PARTIALS - 1)
+		return NULL;
+	return partialTable[partialNum];
+}

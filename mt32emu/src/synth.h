@@ -26,6 +26,10 @@
 
 class revmodel;
 
+#if USE_COMM == 1
+class ExternalInterface;
+#endif
+
 namespace MT32Emu {
 
 class File;
@@ -225,7 +229,7 @@ private:
 	Part *parts[9];
 
 #if USE_COMM == 1
-	externalInterface * extComm;
+	ExternalInterface *extComm;
 #endif
 
 	Bit16s tmpBuffer[MAX_SAMPLE_OUTPUT * 2];
@@ -293,6 +297,11 @@ public:
 	// output stream.  The length is in whole samples, not bytes. (I.E. in 16-bit stereo,
 	// one sample is 4 bytes)
 	void render(Bit16s * stream, Bit32u len);
+
+	const Partial *getPartial(unsigned int partialNum) const;
+
+	// partNum should be 0..7 for Part 1..8, or 8 for Rhythm
+	const Part *getPart(unsigned int partNum) const;
 };
 
 }

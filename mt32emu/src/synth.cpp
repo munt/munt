@@ -85,7 +85,7 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 
 Synth::Synth() {
 #if USE_COMM == 1
-	extComm = new externalInterface();
+	extComm = new ExternalInterface();
 #endif
 	isOpen = false;
 	reverbModel = NULL;
@@ -392,7 +392,9 @@ bool Synth::open(SynthProperties &useProp) {
 
 #if USE_COMM == 1
 	// If starting the extComm fails, this means another instance of the synth is running
-	if(!extComm->start()) return false;
+	if(!extComm->start()) {
+		return false;
+	}
 #endif
 
 	myProp = useProp;
@@ -1088,62 +1090,11 @@ void Synth::render(Bit16s *stream, Bit32u len) {
 	}
 }
 
-#if USE_COMM == 1
-void Synth::doControlPanelComm() {
-	int reqType;
-	int i;
-	Bit8u buffer[4096];
-	if(extComm->getStatusRequest(&reqType)) {
-		switch(reqType) {
-			case 1:
-				Bit16u *bufptr;
-				bufptr = (Bit16u *)(&buffer[0]);
-				*bufptr++ = (Bit16u)reqType;
-				*bufptr++ = (Bit16u)MT32EMU_MAX_PARTIALS;
-				for(i=0;i<MT32EMU_MAX_PARTIALS;i++) {
-					if(!partialManager->partialTable[i]->play) {
-						*bufptr++ = 0;
-						*bufptr++ = 0;
-						*bufptr++ = 0;
-					} else {
-						if(partialManager->partialTable[i]->envs[EnvelopeType_amp].decaying) {
-							*bufptr++ = 3;
-						} else {
-							if(partialManager->partialTable[i]->envs[EnvelopeType_amp].envstat == 4) {
-								*bufptr++ = 2;
-							} else {
-								*bufptr++ = 1;
-							}
-						}
-						*bufptr++ = partialManager->partialTable[i]->getOwnerPart();
-						*bufptr++ = partialManager->partialTable[i]->getNoteVal();
-					}
-				}
-				// 8 channel names with description
-				*bufptr++ = 8;
-				for(i=0;i<8;i++) {
-					memcpy(bufptr, this->parts[i]->getCurrentInstr(), 10);
-					bufptr++;
-					bufptr++;
-					bufptr++;
-					bufptr++;
-					bufptr++;
-				}
-
-				extComm->sendResponse(reqType, (char *)&buffer[0], 278 );
-				break;
-		}
-
-	}
-}
-#endif
-
 void Synth::doRender(Bit16s *stream, Bit32u len) {
-
 	partialManager->ageAll();
 
 #if USE_COMM == 1
-	doControlPanelComm();
+	extComm->doControlPanelComm(this);
 #endif
 
 	if (myProp.useReverb) {
@@ -1201,6 +1152,16 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 		printDebug("Rhythm: %02d  TOTAL: %02d", partialUsage[8], MT32EMU_MAX_PARTIALS - partialManager->GetFreePartialCount());
 	}
 #endif
+}
+
+const Partial *Synth::getPartial(unsigned int partialNum) const {
+	return partialManager->getPartial(partialNum);
+}
+
+const Part *Synth::getPart(unsigned int partNum) const {
+	if (partNum > 8)
+		return NULL;
+	return parts[partNum];
 }
 
 }

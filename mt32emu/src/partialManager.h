@@ -30,11 +30,11 @@ class PartialManager {
 private:
 	Synth *synth; // Only used for sending debug output
 
+	Partial *partialTable[MT32EMU_MAX_PARTIALS];
 	Bit32s partialReserveTable[MT32EMU_MAX_PARTIALS];
 	Bit32s partialPart[9]; // The count of partials played per part
 
 public:
-	Partial *partialTable[MT32EMU_MAX_PARTIALS];
 
 	PartialManager(Synth *synth);
 	~PartialManager();
@@ -48,6 +48,7 @@ public:
 	bool shouldReverb(int i);
 	void clearAlreadyOutputed();
 	void getPerPartPartialUsage(int usage[9]);
+	const Partial *getPartial(unsigned int partialNum) const;
 };
 
 }

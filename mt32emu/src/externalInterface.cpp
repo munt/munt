@@ -26,7 +26,7 @@
 
 MT32Emu::Bit8u inBuffer[4096];
 
-bool externalInterface::start() {
+bool ExternalInterface::start() {
 	this->ipxServerIp.host = 0x0100007f;
 	this->ipxServerIp.port = 0xc307;
 
@@ -43,7 +43,55 @@ bool externalInterface::start() {
 	}
 }
 
-bool externalInterface::getStatusRequest(int *requestType) {
+void ExternalInterface::doControlPanelComm(MT32Emu::Synth *synth) {
+	int reqType;
+	int i;
+	MT32Emu::Bit8u buffer[4096];
+	if(getStatusRequest(&reqType)) {
+		switch(reqType) {
+			case 1:
+				MT32Emu::Bit16u *bufptr;
+				bufptr = (MT32Emu::Bit16u *)(&buffer[0]);
+				*bufptr++ = (MT32Emu::Bit16u)reqType;
+				*bufptr++ = (MT32Emu::Bit16u)MT32EMU_MAX_PARTIALS;
+				for(i=0;i<MT32EMU_MAX_PARTIALS;i++) {
+					if(!synth->getPartial(i)->play) {
+						*bufptr++ = 0;
+						*bufptr++ = 0;
+						*bufptr++ = 0;
+					} else {
+						if(synth->getPartial(i)->envs[MT32Emu::EnvelopeType_amp].decaying) {
+							*bufptr++ = 3;
+						} else {
+							if(synth->getPartial(i)->envs[MT32Emu::EnvelopeType_amp].envstat == 4) {
+								*bufptr++ = 2;
+							} else {
+								*bufptr++ = 1;
+							}
+						}
+						*bufptr++ = (MT32Emu::Bit16u)synth->getPartial(i)->getOwnerPart();
+						*bufptr++ = (MT32Emu::Bit16u)synth->getPartial(i)->getKey();
+					}
+				}
+				// 8 channel names with description
+				*bufptr++ = 8;
+				for(i=0;i<8;i++) {
+					memcpy(bufptr, synth->getPart(i)->getCurrentInstr(), 10);
+					bufptr++;
+					bufptr++;
+					bufptr++;
+					bufptr++;
+					bufptr++;
+				}
+
+				sendResponse(reqType, (char *)&buffer[0], 278 );
+				break;
+		}
+
+	}
+}
+
+bool ExternalInterface::getStatusRequest(int *requestType) {
 	int result;
 	UDPpacket inPacket;
 
@@ -61,7 +109,7 @@ bool externalInterface::getStatusRequest(int *requestType) {
 	}
 }
 
-bool externalInterface::sendResponse(int requestType, char *requestBuf, int requestLen) {
+bool ExternalInterface::sendResponse(int requestType, char *requestBuf, int requestLen) {
 
 	memcpy(regPacket->data, requestBuf, requestLen);
 	regPacket->len = requestLen;
@@ -84,7 +132,7 @@ bool externalInterface::sendResponse(int requestType, char *requestBuf, int requ
 	return true;
 }
 
-bool externalInterface::sendDisplayText(char *requestBuf, int requestLen) {
+bool ExternalInterface::sendDisplayText(char *requestBuf, int requestLen) {
 
 	if(!this->knownClient) {
         memcpy(&txtBuffer[0], requestBuf, requestLen);
@@ -95,7 +143,7 @@ bool externalInterface::sendDisplayText(char *requestBuf, int requestLen) {
 	return true;
 }
 
-bool externalInterface::stop() {
+bool ExternalInterface::stop() {
 	if(this->openedPort) {
 		if(ipxServerSocket != NULL) {
 		SDLNet_UDP_Close(ipxServerSocket);

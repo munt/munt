@@ -54,7 +54,7 @@ Partial::~Partial() {
 #endif
 }
 
-int Partial::getOwnerPart() {
+int Partial::getOwnerPart() const {
 	return ownerPart;
 }
 
@@ -126,11 +126,11 @@ void Partial::initKeyFollow(int key) {
 	realVal = keytable[(noteVal - MIDDLEC) + 108];
 }
 
-int Partial::getNoteVal() {
+int Partial::getKey() const {
 	if(poly == NULL) {
 		return -1;
 	} else {
-		return this->poly->freqnum;
+		return this->poly->key;
 	}
 }
 

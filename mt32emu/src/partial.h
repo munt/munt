@@ -60,7 +60,6 @@ private:
 
 	Bit16s myBuffer[MAX_SAMPLE_OUTPUT];
 
-
 	// Keyfollowed note value
 #if MT32EMU_ACCURATENOTES == 1
 	NoteLookup noteLookupStorage;
@@ -74,8 +73,6 @@ private:
 	// Keyfollowed filter values
 	int realVal;
 	int filtVal;
-
-	
 
 	// Only used for PCM partials
 	int pcmNum;
@@ -124,8 +121,8 @@ public:
 	Partial(Synth *synth);
 	~Partial();
 
-	int getOwnerPart();
-	int getNoteVal();
+	int getOwnerPart() const;
+	int getKey() const;
 	bool isActive();
 	void activate(int part);
 	void deactivate(void);

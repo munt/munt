@@ -60,7 +60,6 @@
 
 #include "freeverb/revmodel.h"
 
-#include "externalInterface.h"
 #include "structures.h"
 #include "i386.h"
 #include "file.h"
@@ -69,5 +68,8 @@
 #include "partialManager.h"
 #include "part.h"
 #include "synth.h"
+#if USE_COMM == 1
+#include "externalInterface.h"
+#endif
 
 #endif

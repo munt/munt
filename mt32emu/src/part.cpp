@@ -175,7 +175,7 @@ void Part::refresh() {
 	memcpy(currentInstr, timbreTemp->common.name, 10);
 }
 
-char * Part::getCurrentInstr() {
+const char *Part::getCurrentInstr() const {
 	return &currentInstr[0];
 }
 

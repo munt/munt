@@ -572,12 +572,10 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 		float cfmult = (float)cf;
 
 		for (int tf = 0;tf <= 100; tf++) {
-			float tfadd = (float)(tf - 0);
-			if (tfadd < 0)
-				tfadd = 0;
+			float tfadd = (float)tf;
 
 			//float freqsum = expf((cfmult + tfadd) / 30.0f) / 4.0f;
-			float  freqsum = 0.15 * expf(0.45 * ((float)(cf + tf) / 10.0));
+			float freqsum = 0.15f * expf(0.45f * ((float)(cfmult + tfadd) / 10.0f));
 
 			noteLookup->nfiltTable[cf][tf] = (int)((freq * freqsum) / (rate / 2) * FILTERGRAN);
 			if (noteLookup->nfiltTable[cf][tf] >= ((FILTERGRAN * 15) / 16))
