@@ -1,3 +1,11 @@
+Munt mt32emu_alsadrv
+********************
+
+mt32emu_alsadrv is a module of the Munt project. It uses the mt32emu library and
+provides an ALSA MIDI driver which emulates (approximately) the Roland MT-32,
+CM-32L and LAPC-I synthesiser modules.
+
+
 Building
 --------
 
@@ -67,3 +75,12 @@ The buttons on the right control several aspects of operation:
 
  Clear - Clears the currently playing midi events
  Reset - Causes the emulated device to revert to its power up state
+
+
+Trademark disclaimer
+--------------------
+
+Roland is a trademark of Roland Corp. All other brand and product names are
+trademarks or registered trademarks of their respective holder. Use of
+trademarks is for informational purposes only and does not imply endorsement by
+or affiliation with the holder.
