@@ -72,7 +72,7 @@ public:
 	void stopNote(unsigned int key);
 	void allNotesOff();
 	void allSoundOff();
-	int getVolume();
+	int getVolume() const;
 	void setVolume(int midiVolume);
 	void setExpression(int midiExpression);
 	virtual void setPan(unsigned int midiPan);

@@ -84,9 +84,6 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 }
 
 Synth::Synth() {
-#if USE_COMM == 1
-	extComm = new ExternalInterface();
-#endif
 	isOpen = false;
 	reverbModel = NULL;
 	partialManager = NULL;
@@ -95,12 +92,6 @@ Synth::Synth() {
 }
 
 Synth::~Synth() {
-#if USE_COMM == 1
-	if(extComm != NULL) {
-		extComm->stop();
-	}
-	delete(extComm);
-#endif
 	close(); // Make sure we're closed and everything is freed
 }
 
@@ -390,13 +381,6 @@ bool Synth::open(SynthProperties &useProp) {
 	if (isOpen)
 		return false;
 
-#if USE_COMM == 1
-	// If starting the extComm fails, this means another instance of the synth is running
-	if(!extComm->start()) {
-		return false;
-	}
-#endif
-
 	myProp = useProp;
 	if (useProp.baseDir != NULL) {
 		myProp.baseDir = new char[strlen(useProp.baseDir) + 1];
@@ -534,10 +518,6 @@ bool Synth::open(SynthProperties &useProp) {
 void Synth::close(void) {
 	if (!isOpen)
 		return;
-
-#if USE_COMM == 1
-	extComm->stop();
-#endif
 
 	tables.freeNotes();
 	if (partialManager != NULL) {
@@ -946,13 +926,6 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		buf[len] = 0;
 		printDebug("WRITE-LCD: %s", buf);
 		report(ReportType_lcdMessage, buf);
-#if USE_COMM == 1
-		*(Bit16u *)(&buf[0]) = 2;
-		memcpy(&buf[2], &data[0], len);
-		buf[2 + len] = 0;
-		extComm->sendResponse(2, (char *)&buf[0], len + 3);
-
-#endif
 	} else if (region->type == MR_Reset) {
 		printDebug("RESET");
 		report(ReportType_devReset, NULL);
@@ -1092,10 +1065,6 @@ void Synth::render(Bit16s *stream, Bit32u len) {
 
 void Synth::doRender(Bit16s *stream, Bit32u len) {
 	partialManager->ageAll();
-
-#if USE_COMM == 1
-	extComm->doControlPanelComm(this);
-#endif
 
 	if (myProp.useReverb) {
 		bool hasOutput = false;

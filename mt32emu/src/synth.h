@@ -26,10 +26,6 @@
 
 class revmodel;
 
-#if USE_COMM == 1
-class ExternalInterface;
-#endif
-
 namespace MT32Emu {
 
 class File;
@@ -228,10 +224,6 @@ private:
 	PartialManager *partialManager;
 	Part *parts[9];
 
-#if USE_COMM == 1
-	ExternalInterface *extComm;
-#endif
-
 	Bit16s tmpBuffer[MAX_SAMPLE_OUTPUT * 2];
 	float sndbufl[MAX_SAMPLE_OUTPUT];
 	float sndbufr[MAX_SAMPLE_OUTPUT];
@@ -261,10 +253,6 @@ private:
 	bool initTimbres(Bit16u mapAddress, Bit16u offset, int startTimbre);
 	bool initRhythmTimbre(int drumNum, const Bit8u *mem, int memLen);
 	bool refreshSystem();
-
-#if USE_COMM == 1
-	void doControlPanelComm();
-#endif
 
 protected:
 	int report(ReportType type, const void *reportData);

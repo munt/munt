@@ -19,12 +19,15 @@
  * IN THE SOFTWARE.
  */
 
-#include "mt32emu.h"
 #include <string.h>
 
-#if USE_COMM == 1
+#include "mt32emu.h"
 
-MT32Emu::Bit8u inBuffer[4096];
+#if MT32EMU_USE_EXTINT == 1
+
+#include "externalInterface.h"
+
+namespace MT32Emu {
 
 bool ExternalInterface::start() {
 	this->ipxServerIp.host = 0x0100007f;
@@ -43,34 +46,34 @@ bool ExternalInterface::start() {
 	}
 }
 
-void ExternalInterface::doControlPanelComm(MT32Emu::Synth *synth) {
+void ExternalInterface::doControlPanelComm(Synth *synth) {
 	int reqType;
 	int i;
-	MT32Emu::Bit8u buffer[4096];
+	Bit8u buffer[4096];
 	if(getStatusRequest(&reqType)) {
 		switch(reqType) {
 			case 1:
-				MT32Emu::Bit16u *bufptr;
-				bufptr = (MT32Emu::Bit16u *)(&buffer[0]);
-				*bufptr++ = (MT32Emu::Bit16u)reqType;
-				*bufptr++ = (MT32Emu::Bit16u)MT32EMU_MAX_PARTIALS;
+				Bit16u *bufptr;
+				bufptr = (Bit16u *)(&buffer[0]);
+				*bufptr++ = (Bit16u)reqType;
+				*bufptr++ = (Bit16u)MT32EMU_MAX_PARTIALS;
 				for(i=0;i<MT32EMU_MAX_PARTIALS;i++) {
 					if(!synth->getPartial(i)->play) {
 						*bufptr++ = 0;
 						*bufptr++ = 0;
 						*bufptr++ = 0;
 					} else {
-						if(synth->getPartial(i)->envs[MT32Emu::EnvelopeType_amp].decaying) {
+						if(synth->getPartial(i)->envs[EnvelopeType_amp].decaying) {
 							*bufptr++ = 3;
 						} else {
-							if(synth->getPartial(i)->envs[MT32Emu::EnvelopeType_amp].envstat == 4) {
+							if(synth->getPartial(i)->envs[EnvelopeType_amp].envstat == 4) {
 								*bufptr++ = 2;
 							} else {
 								*bufptr++ = 1;
 							}
 						}
-						*bufptr++ = (MT32Emu::Bit16u)synth->getPartial(i)->getOwnerPart();
-						*bufptr++ = (MT32Emu::Bit16u)synth->getPartial(i)->getKey();
+						*bufptr++ = (Bit16u)synth->getPartial(i)->getOwnerPart();
+						*bufptr++ = (Bit16u)synth->getPartial(i)->getKey();
 					}
 				}
 				// 8 channel names with description
@@ -102,7 +105,7 @@ bool ExternalInterface::getStatusRequest(int *requestType) {
 	if (result != 0) {
 		this->ipxClientIp = inPacket.address;
 		this->knownClient = true;
-		*requestType = (int)*(MT32Emu::Bit16u *)(&inBuffer[0]);
+		*requestType = (int)*(Bit16u *)(&inBuffer[0]);
 		return true;
 	} else {
         return false;
@@ -133,7 +136,6 @@ bool ExternalInterface::sendResponse(int requestType, char *requestBuf, int requ
 }
 
 bool ExternalInterface::sendDisplayText(char *requestBuf, int requestLen) {
-
 	if(!this->knownClient) {
         memcpy(&txtBuffer[0], requestBuf, requestLen);
 		this->textToDisplay = true;
@@ -153,6 +155,18 @@ bool ExternalInterface::stop() {
 	return true;
 }
 
+void ExternalInterface::handleReport(Synth *synth, ReportType type, const void *reportData) {
+	switch (type) {
+		case ReportType_lcdMessage:
+		{
+			char buf[514]; //FIXME: Messy...
+			*(Bit16u *)(&buf[0]) = 2;
+			strcpy(&buf[2], (const char *)reportData);
+			sendResponse(2, &buf[0], (int)strlen((const char *)reportData) + 3);
+		}
+	}
+}
+
+}
 
 #endif
-

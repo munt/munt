@@ -3,7 +3,12 @@
 
 #include <SDL_net.h>
 
+namespace MT32Emu {
+
 class ExternalInterface {
+private:
+	Bit8u inBuffer[4096];
+
 public:
 	ExternalInterface() {
 		SDLNet_Init();
@@ -20,12 +25,14 @@ public:
 
 	bool start();
 
-	void doControlPanelComm(MT32Emu::Synth *synth);
+	void doControlPanelComm(Synth *synth);
 	bool getStatusRequest(int *requestType);
 
 	bool sendResponse(int requestType, char *requestBuf, int requestLen);
 
 	bool sendDisplayText(char *requestBuf, int requestLen);
+
+	void handleReport(Synth *synth, ReportType type, const void *reportData);
 
 	bool stop();
 private:
@@ -39,4 +46,5 @@ private:
 	UDPpacket *regPacket;
 };
 
+}
 #endif

@@ -33,7 +33,7 @@
 //#define MT32EMU_WAVECACHEMODE 2 // Ignore existing cache, generate and save cache
 //#define MT32EMU_WAVECACHEMODE 3 // Ignore existing cache, generate but don't save cache
 
-#define USE_COMM 1
+#define MT32EMU_USE_EXTINT 1
 
 // Configuration
 // The maximum number of partials playing simultaneously
@@ -68,8 +68,5 @@
 #include "partialManager.h"
 #include "part.h"
 #include "synth.h"
-#if USE_COMM == 1
-#include "externalInterface.h"
-#endif
 
 #endif
