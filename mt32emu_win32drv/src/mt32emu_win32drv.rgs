@@ -1,0 +1,11 @@
+HKCR
+{
+	NoRemove AppID
+	{
+		'%APPID%' = s 'MT32Emu'
+		'MT32Emu.DLL'
+		{
+			val AppID = s '%APPID%'
+		}
+	}
+}
