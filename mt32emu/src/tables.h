@@ -33,6 +33,7 @@ const float FLOAT_LN = 2.3025850929940456840179914546844f;
 // Filter settings
 const int FILTERGRAN = 512;
 
+// Amplitude of waveform generator
 // FIXME: This value is the amplitude possible whilst avoiding
 // overdriven values immediately after filtering when playing
 // back SQ3MT.MID. Needs to be checked.
@@ -41,22 +42,20 @@ const int WGAMP = 12382;
 const int MIDDLEC = 60;
 const int MIDDLEA = 69; // By this I mean "A above middle C"
 
-//FIXME:KG: may only need to do 12 to 108
-//12..108 is the range allowed by note on commands, but the key can be modified by pitch keyfollow
-//and adjustment for timbre pitch, so the results can be outside that range. Do move it (by octave) into
-// the 12..108 range, or keep it in 0..127 range, or something else altogether?
+// FIXME:KG: may only need to do 12 to 108
+// 12..108 is the range allowed by note on commands, but the key can be modified by pitch keyfollow
+// and adjustment for timbre pitch, so the results can be outside that range.
+// Should we move it (by octave) into the 12..108 range, or keep it in 0..127 range,
+// or something else altogether?
 const int LOWEST_NOTE = 12;
 const int HIGHEST_NOTE = 127;
 const int NUM_NOTES = HIGHEST_NOTE - LOWEST_NOTE + 1; // Number of slots for note LUT
-
-// Amplitude of waveform generator
-//const int WGAMP = 7168; // 8192?
 
 class Synth;
 
 extern Bit16s smallnoise[MAX_SAMPLE_OUTPUT];
 
-// Some optimization stuff
+// Various LUTs
 extern Bit32s keytable[217];
 extern Bit16s sintable[65536];
 extern Bit32u lfotable[101];
