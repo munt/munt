@@ -352,10 +352,13 @@ bool Synth::initRhythmTimbres(Bit16u mapAddress, Bit16u count) {
 	int timbreNum = 192;
 	for (Bit16u i = 0; i < count * 2; i += 2) {
 		Bit16u address = (drumMap[i + 1] << 8) | drumMap[i];
+		/*
+		// This check is nonsensical when the control ROM is the full 64KB addressable by 16-bit absolute pointers (which it is)
 		if (address >= CONTROL_ROM_SIZE) {
 			printDebug("Control ROM error: Timbre map entry 0x%04x points to invalid timbre address 0x%04x", i, address);
 			return false;
 		}
+		*/
 		if (!initRhythmTimbre(timbreNum++, &controlROMData[address], CONTROL_ROM_SIZE - address)) {
 			printDebug("Control ROM error: Timbre map entry 0x%04x points to invalid timbre 0x%04x", i, address);
 			return false;
