@@ -67,6 +67,12 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 							*bufptr++ = 0;
 							*bufptr++ = 0;
 							*bufptr++ = 0;
+
+							
+							*bufptr++ = 0;
+							*bufptr++ = 0;
+							*bufptr++ = 0;
+							
 						} else {
 							if(synth->getPartial(i)->envs[EnvelopeType_amp].decaying) {
 								*bufptr++ = 3;
@@ -77,8 +83,21 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 									*bufptr++ = 1;
 								}
 							}
+
 							*bufptr++ = (Bit16u)synth->getPartial(i)->getOwnerPart();
 							*bufptr++ = (Bit16u)synth->getPartial(i)->getKey();
+							// Age uniquely identifies note instance
+							
+							*(Bit32u *)bufptr = synth->getPartial(i)->age;
+							bufptr++;
+							bufptr++;
+							if(synth->getPartial(i)->getDpoly() != NULL) {
+								*bufptr++ = (Bit16u)synth->getPartial(i)->getDpoly()->vel;
+							} else {
+								*bufptr++ = 0;
+							}
+							
+
 						}
 					}
 					// 8 channel names with description
@@ -96,7 +115,8 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 					}
 					*(int *)bufptr = sndBufLength;
 
-					sendResponse(reqType, (char *)&buffer[0], 300 );
+					sendResponse(reqType, (char *)&buffer[0], 492 );
+					//sendResponse(reqType, (char *)&buffer[0], 300 );
 				}
 				break;
 			case 2:
