@@ -49,50 +49,55 @@ bool ExternalInterface::start() {
 void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 	int reqType;
 	int i;
+	bool sentBasicPacket = false;
 	Bit16u length = 0;
 	Bit8u buffer[4096];
 	while(getStatusRequest(&reqType, (char *)buffer)) {
 		switch(reqType) {
 			case 1:
-				Bit16u *bufptr;
-				bufptr = (Bit16u *)(&buffer[0]);
-				*bufptr++ = (Bit16u)reqType;
-				*bufptr++ = (Bit16u)MT32EMU_MAX_PARTIALS;
-				for(i=0;i<MT32EMU_MAX_PARTIALS;i++) {
-					if(!synth->getPartial(i)->play) {
-						*bufptr++ = 0;
-						*bufptr++ = 0;
-						*bufptr++ = 0;
-					} else {
-						if(synth->getPartial(i)->envs[EnvelopeType_amp].decaying) {
-							*bufptr++ = 3;
+				if(!sentBasicPacket) {
+					// Only send one basic packet per loop.
+					sentBasicPacket = true;
+					Bit16u *bufptr;
+					bufptr = (Bit16u *)(&buffer[0]);
+					*bufptr++ = (Bit16u)reqType;
+					*bufptr++ = (Bit16u)MT32EMU_MAX_PARTIALS;
+					for(i=0;i<MT32EMU_MAX_PARTIALS;i++) {
+						if(!synth->getPartial(i)->play) {
+							*bufptr++ = 0;
+							*bufptr++ = 0;
+							*bufptr++ = 0;
 						} else {
-							if(synth->getPartial(i)->envs[EnvelopeType_amp].envstat == 4) {
-								*bufptr++ = 2;
+							if(synth->getPartial(i)->envs[EnvelopeType_amp].decaying) {
+								*bufptr++ = 3;
 							} else {
-								*bufptr++ = 1;
+								if(synth->getPartial(i)->envs[EnvelopeType_amp].envstat == 4) {
+									*bufptr++ = 2;
+								} else {
+									*bufptr++ = 1;
+								}
 							}
+							*bufptr++ = (Bit16u)synth->getPartial(i)->getOwnerPart();
+							*bufptr++ = (Bit16u)synth->getPartial(i)->getKey();
 						}
-						*bufptr++ = (Bit16u)synth->getPartial(i)->getOwnerPart();
-						*bufptr++ = (Bit16u)synth->getPartial(i)->getKey();
 					}
-				}
-				// 8 channel names with description
-				*bufptr++ = 8;
-				for(i=0;i<8;i++) {
-					memcpy(bufptr, synth->getPart(i)->getCurrentInstr(), 10);
-					bufptr++;
-					bufptr++;
-					bufptr++;
-					bufptr++;
-					bufptr++;
-				}
-				for(i=0;i<9;i++) {
-					*bufptr++ = (Bit16u)synth->getPart(i)->getVolume();
-				}
-				*(int *)bufptr = sndBufLength;
+					// 8 channel names with description
+					*bufptr++ = 8;
+					for(i=0;i<8;i++) {
+						memcpy(bufptr, synth->getPart(i)->getCurrentInstr(), 10);
+						bufptr++;
+						bufptr++;
+						bufptr++;
+						bufptr++;
+						bufptr++;
+					}
+					for(i=0;i<9;i++) {
+						*bufptr++ = (Bit16u)synth->getPart(i)->getVolume();
+					}
+					*(int *)bufptr = sndBufLength;
 
-				sendResponse(reqType, (char *)&buffer[0], 300 );
+					sendResponse(reqType, (char *)&buffer[0], 300 );
+				}
 				break;
 			case 2:
 				// Literal sysex from control panel

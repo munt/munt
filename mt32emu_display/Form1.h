@@ -39,6 +39,7 @@ namespace mt32emu_display
 			InitializeComponent();
 			
 			channelStatus->Tag = ci;
+			this->ticksSinceContact = 5000 / this->timer1->get_Interval();
 
 		}
 
@@ -57,6 +58,7 @@ namespace mt32emu_display
 	private: System::Windows::Forms::GroupBox *  groupBox1;
 	private: System::Windows::Forms::PictureBox *  pictureBox[];
 	private: System::Windows::Forms::Timer *  timer1;
+	private: System::Int32 ticksSinceContact;
 
 
 
@@ -281,6 +283,7 @@ namespace mt32emu_display
 	private: System::Void Form1_Load_1(System::Object *  sender, System::EventArgs *  e)
 			 {
 
+
 				 this->currentTab = 0;
 				 this->Form1_UpdateTab(this->currentTab);
 				
@@ -343,6 +346,7 @@ namespace mt32emu_display
 
 				unsigned short buffer[2048];
 
+				this->ticksSinceContact++;
 
  			    this->ci->sendHeartBeat();
 
@@ -355,6 +359,9 @@ namespace mt32emu_display
 					// Heartbeat response
 					if((buffer[0] == 1) && (numrecv == 300)) {
 						found = true;
+						this->ticksSinceContact = 0;
+						this->facePlate->turnOnModule();
+
 						int count = (int)buffer[1];
 						for(i=0;i<count;i++) {
 							int t;
@@ -408,6 +415,13 @@ namespace mt32emu_display
 
 				} else {
 					this->facePlate->workMidiLight(System::Drawing::Color::FromArgb(41,42,51));
+				}
+
+				if(this->ticksSinceContact > (1000 / this->timer1->get_Interval())) {
+					this->facePlate->turnOffModule();
+					//Prevent overflow
+					--this->ticksSinceContact;
+
 				}
 
 
