@@ -1,4 +1,4 @@
-/* Copyright (c) 2003-2004 Various contributors
+/* Copyright (c) 2003-2005 Various contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -65,107 +65,48 @@ void LOG_MSG(char *fmt, ...) {
 	va_end(ap);
 }
 
+static const KSIDENTIFIER ksSynthProperties[] = {
+ {GUID_DMUS_PROP_GM_Hardware, 0,                               KSPROPERTY_TYPE_GET                       | KSPROPERTY_TYPE_BASICSUPPORT},
+ {GUID_DMUS_PROP_Effects,     0,                               KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_BASICSUPPORT},
+ {KSPROPSETID_Synth,          KSPROPERTY_SYNTH_CAPS,           KSPROPERTY_TYPE_GET                       | KSPROPERTY_TYPE_BASICSUPPORT},
+ {KSPROPSETID_Synth,          KSPROPERTY_SYNTH_PORTPARAMETERS, KSPROPERTY_TYPE_GET                       | KSPROPERTY_TYPE_BASICSUPPORT},
+ {KSPROPSETID_Synth,          KSPROPERTY_SYNTH_VOLUME,         KSPROPERTY_TYPE_GET                       | KSPROPERTY_TYPE_BASICSUPPORT},
+ {KSPROPSETID_Synth,          KSPROPERTY_SYNTH_VOLUMEBOOST,    KSPROPERTY_TYPE_GET                       | KSPROPERTY_TYPE_BASICSUPPORT},
+ {KSPROPSETID_Synth,          KSPROPERTY_SYNTH_CHANNELGROUPS,  KSPROPERTY_TYPE_GET                       | KSPROPERTY_TYPE_BASICSUPPORT},
+ {KSPROPSETID_Synth,          KSPROPERTY_SYNTH_VOICEPRIORITY,  KSPROPERTY_TYPE_GET                       | KSPROPERTY_TYPE_BASICSUPPORT},
+ {KSPROPSETID_Synth,          KSPROPERTY_SYNTH_RUNNINGSTATS,   KSPROPERTY_TYPE_GET                       | KSPROPERTY_TYPE_BASICSUPPORT},
+ {KSPROPSETID_Synth,          KSPROPERTY_SYNTH_LATENCYCLOCK,   KSPROPERTY_TYPE_GET                       | KSPROPERTY_TYPE_BASICSUPPORT}
+};
+
 MT32DirectMusicSynth::MT32DirectMusicSynth() {
 	//LOG_MSG("MT32DirectMusicSynth::MT32DirectMusicSynth()");
-	dwUsageCount = 0;
 	enabled = false;
 	open = false;
 
-	int i;
-	// Couldn't figure out a better way to do this.  VC6.0 doesn't see that the
-	// first element in KSPROPERTY is a GUID for some reason and was giving me
-	// errors trying to convert it to a ULONG.  This works though;
-	for(i=0;i<10;i++) {
-		switch(i) {
-		case 0:
-			ksSynthProperties[i].Set = GUID_DMUS_PROP_GM_Hardware;
-			ksSynthProperties[i].Id = 0;
-			ksSynthProperties[i].Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT;
-			//ksSynthProperties[i].Alignment = 0;
- 			break;
-		case 1:
-			ksSynthProperties[i].Set = GUID_DMUS_PROP_Effects;
-			ksSynthProperties[i].Id = 0;
-			ksSynthProperties[i].Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_BASICSUPPORT;
-			//ksSynthProperties[i].Alignment = 0;
- 			break;
-		case 2:
-			ksSynthProperties[i].Set = KSPROPSETID_Synth;
-			ksSynthProperties[i].Id = KSPROPERTY_SYNTH_CAPS;
-			ksSynthProperties[i].Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT;
-			//ksSynthProperties[i].Alignment = 0;
- 			break;
-		case 3:
-			ksSynthProperties[i].Set = KSPROPSETID_Synth;
-			ksSynthProperties[i].Id = KSPROPERTY_SYNTH_PORTPARAMETERS;
-			ksSynthProperties[i].Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT;
-			//ksSynthProperties[i].Alignment = 0;
- 			break;
-		case 4:
-			ksSynthProperties[i].Set = KSPROPSETID_Synth;
-			ksSynthProperties[i].Id = KSPROPERTY_SYNTH_VOLUME;
-			ksSynthProperties[i].Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT;
-			//ksSynthProperties[i].Alignment = 0;
- 			break;
-		case 5:
-			ksSynthProperties[i].Set = KSPROPSETID_Synth;
-			ksSynthProperties[i].Id = KSPROPERTY_SYNTH_VOLUMEBOOST;
-			ksSynthProperties[i].Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT;
-			//ksSynthProperties[i].Alignment = 0;
- 			break;
-		case 6:
-			ksSynthProperties[i].Set = KSPROPSETID_Synth;
-			ksSynthProperties[i].Id = KSPROPERTY_SYNTH_CHANNELGROUPS;
-			ksSynthProperties[i].Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT;
-			//ksSynthProperties[i].Alignment = 0;
- 			break;
-		case 7:
-			ksSynthProperties[i].Set = KSPROPSETID_Synth;
-			ksSynthProperties[i].Id = KSPROPERTY_SYNTH_VOICEPRIORITY;
-			ksSynthProperties[i].Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT;
-			//ksSynthProperties[i].Alignment = 0;
- 			break;
-		case 8:
-			ksSynthProperties[i].Set = KSPROPSETID_Synth;
-			ksSynthProperties[i].Id = KSPROPERTY_SYNTH_RUNNINGSTATS;
-			ksSynthProperties[i].Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT;
-			//ksSynthProperties[i].Alignment = 0;
- 			break;
-		case 9:
-			ksSynthProperties[i].Set = KSPROPSETID_Synth;
-			ksSynthProperties[i].Id = KSPROPERTY_SYNTH_LATENCYCLOCK;
-			ksSynthProperties[i].Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT;
-			//ksSynthProperties[i].Alignment = 0;
- 			break;
-
-		default:
-			break;
-		}
-	}
-
-	myMT32 = new MT32Emu::Synth();
+	mt32emuSynth = NULL;
 #if MT32EMU_USE_EXTINT == 1
-	extComm = new MT32Emu::ExternalInterface();
+	mt32emuExtInt = NULL;
 #endif
 	eventsMutex = CreateMutex( NULL, FALSE, NULL );
 	events = NULL;
 
-	pSink = NULL;
+	sink = NULL;
 }
 
 MT32DirectMusicSynth::~MT32DirectMusicSynth() {
 	//LOG_MSG("MT32DirectMusicSynth::~MT32DirectMusicSynth()");
 #if MT32EMU_USE_EXTINT == 1
-	if(extComm != NULL) {
-		extComm->stop();
-		delete extComm;
+	if(mt32emuExtInt != NULL) {
+		mt32emuExtInt->stop();
+		delete mt32emuExtInt;
 	}
 #endif
-	myMT32->close();
-	delete myMT32;
-	myMT32 = NULL;
-	if (pSink != NULL)
-		pSink->Release();
+	if (mt32emuSynth != NULL) {
+		mt32emuSynth->close();
+		delete mt32emuSynth;
+	}
+	if (sink != NULL)
+		sink->Release();
 	while (events) {
 		MidiEvent *next = events->getNext();
 		delete events;
@@ -175,12 +116,12 @@ MT32DirectMusicSynth::~MT32DirectMusicSynth() {
 }
 
 MT32Emu::Synth *MT32DirectMusicSynth::getMT32EmuSynth() const {
-	return myMT32;
+	return mt32emuSynth;
 }
 
 #if MT32EMU_USE_EXTINT == 1
 MT32Emu::ExternalInterface *MT32DirectMusicSynth::getMT32EmuExternalInterface() const {
-	return extComm;
+	return mt32emuExtInt;
 }
 #endif
 
@@ -199,59 +140,65 @@ STDMETHODIMP MT32DirectMusicSynth::InterfaceSupportsErrorInfo(REFIID riid) {
 
 HRESULT MT32DirectMusicSynth::Open(THIS_ LPDMUS_PORTPARAMS pPortParams) {
 	char dataPath[2048];
-	if(!open) {
-		pSynthParams = pPortParams;
-		if(getenv("SystemRoot") == NULL) {
-			if(getenv("windir") == NULL) {
-				// Eventually we'll query from the registry
-				strcpy(&dataPath[0], "c:\\windows");
-			}
-			else
-				strcpy(&dataPath[0], getenv("windir"));
+	if(open) {
+		return DMUS_E_ALREADYOPEN;
+	}
+	portParams = pPortParams;
+	if(getenv("SystemRoot") == NULL) {
+		if(getenv("windir") == NULL) {
+			// Eventually we'll query from the registry
+			strcpy(&dataPath[0], "c:\\windows");
 		}
 		else
-			strcpy(&dataPath[0], getenv("SystemRoot"));
-		strcat(&dataPath[0],"\\system32\\");
-
-		MT32Emu::SynthProperties synthp;
-		memset(&synthp, 0, sizeof(synthp));
-		synthp.sampleRate = SAMPLERATE;
-		synthp.useReverb = true;
-		synthp.useDefaultReverb = false;
-		synthp.reverbType = 0;
-		synthp.reverbTime = 5;
-		synthp.reverbLevel = 3;
-		synthp.userData = this;
-		synthp.printDebug = MT32_PrintDebug;
-		synthp.report = MT32_Report;
-		synthp.baseDir = &dataPath[0];
-		if(!myMT32->open(synthp))
-			return DMUS_E_DRIVER_FAILED;
-#if MT32EMU_USE_EXTINT == 1
-		if (extComm != NULL) {
-			extComm->start();
-		}
-#endif
-		open = true;
-		return S_OK;
+			strcpy(&dataPath[0], getenv("windir"));
 	}
 	else
-		return DMUS_E_ALREADYOPEN;
+		strcpy(&dataPath[0], getenv("SystemRoot"));
+	strcat(&dataPath[0],"\\system32\\");
+
+	MT32Emu::SynthProperties synthp;
+	memset(&synthp, 0, sizeof(synthp));
+	synthp.sampleRate = SAMPLERATE;
+	synthp.useReverb = true;
+	synthp.useDefaultReverb = false;
+	synthp.reverbType = 0;
+	synthp.reverbTime = 5;
+	synthp.reverbLevel = 3;
+	synthp.userData = this;
+	synthp.printDebug = MT32_PrintDebug;
+	synthp.report = MT32_Report;
+	synthp.baseDir = &dataPath[0];
+#if MT32EMU_USE_EXTINT == 1
+	if (mt32emuExtInt == NULL) {
+		mt32emuExtInt = new MT32Emu::ExternalInterface();
+	}
+#endif
+	if (mt32emuSynth == NULL) {
+		mt32emuSynth = new MT32Emu::Synth();
+	}
+	if(!mt32emuSynth->open(synthp))
+		return DMUS_E_DRIVER_FAILED;
+#if MT32EMU_USE_EXTINT == 1
+	if (mt32emuExtInt != NULL) {
+		mt32emuExtInt->start();
+	}
+#endif
+	open = true;
+	return S_OK;
 }
 
 HRESULT MT32DirectMusicSynth::Close(THIS) {
-	if(open) {
-		open = false;
-#if MT32EMU_USE_EXTINT == 1
-		if (extComm != NULL) {
-			extComm->stop();
-		}
-#endif
-		myMT32->close();
-		return S_OK;
-	} else {
+	if (!open) {
 		return DMUS_E_ALREADYCLOSED;
 	}
+	open = false;
+#if MT32EMU_USE_EXTINT == 1
+	if (mt32emuExtInt != NULL) {
+		mt32emuExtInt->stop();
+	}
+#endif
+	mt32emuSynth->close();
+	return S_OK;
 }
 
 HRESULT MT32DirectMusicSynth::GetAppend(THIS_ DWORD *pdwAppend) {
@@ -270,16 +217,15 @@ HRESULT MT32DirectMusicSynth::Unload(THIS_ HANDLE hDownload,HRESULT(CALLBACK *lp
 HRESULT MT32DirectMusicSynth::GetFormat(THIS_ LPWAVEFORMATEX pWaveFormatEx, LPDWORD pdwWaveFormatExSize) {
 	if(pWaveFormatEx==NULL) {
 		return sizeof(LPWAVEFORMATEX);
-	} else {
-		pWaveFormatEx->cbSize = 0;
-		pWaveFormatEx->nAvgBytesPerSec = SAMPLERATE * 2 * 2;
-		pWaveFormatEx->nBlockAlign = (2*16)/8;
-		pWaveFormatEx->wFormatTag = WAVE_FORMAT_PCM;
-		pWaveFormatEx->nChannels = 2;
-		pWaveFormatEx->nSamplesPerSec = SAMPLERATE;
-		pWaveFormatEx->wBitsPerSample = 16;
-		return S_OK;
 	}
+	pWaveFormatEx->cbSize = 0;
+	pWaveFormatEx->nAvgBytesPerSec = SAMPLERATE * 2 * 2;
+	pWaveFormatEx->nBlockAlign = (2*16)/8;
+	pWaveFormatEx->wFormatTag = WAVE_FORMAT_PCM;
+	pWaveFormatEx->nChannels = 2;
+	pWaveFormatEx->nSamplesPerSec = SAMPLERATE;
+	pWaveFormatEx->wBitsPerSample = 16;
+	return S_OK;
 }
 
 HRESULT MT32DirectMusicSynth::SetChannelPriority(THIS_ DWORD dwChannelGroup, DWORD dwChannel, DWORD dwPriority) {
@@ -295,8 +241,10 @@ HRESULT MT32DirectMusicSynth::SetNumChannelGroups(THIS_ DWORD dwGroups) {
 }
 
 HRESULT MT32DirectMusicSynth::GetLatencyClock(THIS_ IReferenceClock **pClock) {
-	pSink->GetLatencyClock(pClock);
-	return S_OK;
+	if (sink == NULL) {
+		return DMUS_E_NOSYNTHSINK;
+	}
+	return sink->GetLatencyClock(pClock);
 }
 
 class BufferReader {
@@ -379,6 +327,12 @@ void MT32DirectMusicSynth::EnqueueMidiEvent(MidiEvent *event) {
 }
 
 HRESULT MT32DirectMusicSynth::PlayBuffer(THIS_ REFERENCE_TIME rt, LPBYTE pbBuffer, DWORD cbBuffer) {
+	if (!open) {
+		return DMUS_E_SYNTHNOTCONFIGURED;
+	}
+	if (sink == NULL) {
+		return DMUS_E_NOSYNTHSINK;
+	}
 #ifdef BENCHMARK
 	LARGE_INTEGER freq;
 	if (!QueryPerformanceFrequency(&freq)) {
@@ -398,7 +352,9 @@ HRESULT MT32DirectMusicSynth::PlayBuffer(THIS_ REFERENCE_TIME rt, LPBYTE pbBuffe
 	LPBYTE bufData;
 
 	while(myReader->GetNextEvent(&bufRt, &chanGroup, &bufLen, &bufData) != S_FALSE) {
-		pSink->RefTimeToSample(bufRt, &stTime);
+		HRESULT res = sink->RefTimeToSample(bufRt, &stTime);
+		if (res != S_OK)
+			return res;
 		if(bufLen <= sizeof(DWORD)) {
 			tmpEvent = new MidiEvent();
 			tmpEvent->assignMsg(*(DWORD *)bufData, stTime);
@@ -424,21 +380,24 @@ HRESULT MT32DirectMusicSynth::PlayBuffer(THIS_ REFERENCE_TIME rt, LPBYTE pbBuffe
 }
 
 HRESULT MT32DirectMusicSynth::SetMasterClock(THIS_ IReferenceClock *pClock) {
-	this->pClock = pClock;
+	this->masterClock = pClock;
+	if (sink != NULL) {
+		return sink->SetMasterClock(masterClock);
+	}
 	return S_OK;
 }
 
 HRESULT MT32DirectMusicSynth::GetPortCaps(THIS_ LPDMUS_PORTCAPS pCaps) {
 	pCaps->dwClass = DMUS_PC_OUTPUTCLASS;
 	pCaps->dwEffectFlags = DMUS_EFFECT_REVERB;
-	pCaps->dwFlags = DMUS_PC_DIRECTSOUND | DMUS_PC_GMINHARDWARE; //| DMUS_PC_SOFTWARESYNTH;
+	pCaps->dwFlags = DMUS_PC_GMINHARDWARE | DMUS_PC_SOFTWARESYNTH | DMUS_PC_DIRECTSOUND /*|  DMUS_PC_SHAREABLE*/;
 	pCaps->dwMaxAudioChannels = 2;
 	pCaps->dwMaxChannelGroups = 1;
 	pCaps->dwMaxVoices = 32;
 	pCaps->dwMemorySize = 0;
 	pCaps->dwSize = sizeof(DMUS_PORTCAPS);
-	//pCaps->dwType = DMUS_PORT_USER_MODE_SYNTH;
-	pCaps->dwType = DMUS_PORT_WINMM_DRIVER;
+	pCaps->dwType = DMUS_PORT_USER_MODE_SYNTH;
+	//pCaps->dwType = DMUS_PORT_WINMM_DRIVER;
 	pCaps->guidPort = CLSID_MT32DirectMusicSynth;
 	lstrcpyW(&pCaps->wszDescription[0], L"MT-32 Synth Emulator");
 	return S_OK;
@@ -449,20 +408,25 @@ HRESULT MT32DirectMusicSynth::GetRunningStats(THIS_ LPDMUS_SYNTHSTATS pStats) {
 }
 
 HRESULT MT32DirectMusicSynth::Activate(THIS_ BOOL fEnable) {
-	pSink->Activate(fEnable);
-	if((!fEnable) && (!enabled)) {
-		return S_FALSE;
-	} else if (fEnable && enabled) {
-		return DMUS_E_SYNTHACTIVE;
-	} else {
-		enabled = fEnable;
-		return S_OK;
+	if (sink == NULL) {
+		return DMUS_E_NOSYNTHSINK;
 	}
+	if (!fEnable && !enabled) {
+		return S_FALSE;
+	}
+	if (fEnable && enabled) {
+		return DMUS_E_SYNTHACTIVE;
+	}
+	HRESULT res = sink->Activate(fEnable);
+	if (res == S_OK) {
+		enabled = fEnable;
+	}
+	return res;
 }
 
 HRESULT MT32DirectMusicSynth::Render(THIS_ short *pBuffer, DWORD dwLength, LONGLONG llPosition) {
-	if(!enabled) {
-		return DMUS_E_SYNTHINACTIVE;
+	if (!open) {
+		return DMUS_E_SYNTHNOTCONFIGURED;
 	}
 #ifdef BENCHMARK
 	LARGE_INTEGER freq;
@@ -486,10 +450,10 @@ HRESULT MT32DirectMusicSynth::Render(THIS_ short *pBuffer, DWORD dwLength, LONGL
 		while ((event = DequeueMidiEvent(llPosition)) != NULL) {
 			switch(event->getType()) {
 			case ShortMsg:
-				myMT32->playMsg(event->midiMsg);
+				mt32emuSynth->playMsg(event->midiMsg);
 				break;
 			case SysexData:
-				myMT32->playSysex(event->sysexInfo, event->sysexLen);
+				mt32emuSynth->playSysex(event->sysexInfo, event->sysexLen);
 				break;
 			default:
 				// Shouldn't ever get here
@@ -513,11 +477,11 @@ HRESULT MT32DirectMusicSynth::Render(THIS_ short *pBuffer, DWORD dwLength, LONGL
 #endif
 
 #if MT32EMU_USE_EXTINT == 1
-		if (extComm != NULL) {
-			extComm->doControlPanelComm(getMT32EmuSynth(), dwLength);
+		if (mt32emuExtInt != NULL) {
+			mt32emuExtInt->doControlPanelComm(getMT32EmuSynth(), dwLength);
 		}
 #endif
-		myMT32->render(pBuffer, thisLength);
+		mt32emuSynth->render(pBuffer, thisLength);
 		pBuffer += thisLength * 2; // One for each channel
 		llPosition += thisLength;
 		dwLength -= thisLength;
@@ -536,16 +500,23 @@ HRESULT MT32DirectMusicSynth::Render(THIS_ short *pBuffer, DWORD dwLength, LONGL
 }
 
 HRESULT MT32DirectMusicSynth::SetSynthSink(THIS_ IDirectMusicSynthSink *pSynthSink){
-	if (pSink != NULL)
-		pSink->Release();
-	pSink = pSynthSink;
-	pSink->AddRef();
-	pSink->Init((IDirectMusicSynth *)this);
-	pSink->SetMasterClock(pClock);
+	if (sink != NULL)
+		sink->Release();
+	sink = pSynthSink;
+	if (sink != NULL) {
+		sink->AddRef();
+		sink->Init((IDirectMusicSynth *)this);
+		if (masterClock != NULL) {
+			sink->SetMasterClock(masterClock);
+		}
+	}
+	enabled = false;
 	return S_OK;
 }
 
 HRESULT MT32DirectMusicSynth::KsProperty(THIS_ IN PKSPROPERTY Property, IN ULONG PropertyLength, IN OUT LPVOID PropertyData, IN ULONG DataLength, OUT ULONG* BytesReturned) {
+#if 1 //FIXME: Below code is pretty bogus
+	LOG_MSG("KsProperty called!!!!!!!!!!!!");
 	const WORD c_wMaxProps = SIZEOF_ARRAY(ksSynthProperties);
 	WORD wPropIdx;
 
@@ -565,12 +536,14 @@ HRESULT MT32DirectMusicSynth::KsProperty(THIS_ IN PKSPROPERTY Property, IN ULONG
 		return DMUS_E_UNKNOWN_PROPERTY;
 	}
 	return S_OK;
+#endif
+	//return DMUS_E_UNKNOWN_PROPERTY;
 }
 
 HRESULT MT32DirectMusicSynth::KsEvent(THIS_ IN PKSEVENT Event OPTIONAL, IN ULONG EventLength, IN OUT LPVOID EventData, IN ULONG DataLength, OUT ULONG* BytesReturned) {
 	return E_NOTIMPL;
 }
-							
+
 HRESULT MT32DirectMusicSynth::KsMethod(THIS_ IN PKSMETHOD Method, IN ULONG MethodLength, IN OUT LPVOID MethodData, IN ULONG DataLength, OUT ULONG* BytesReturned) {
 	return E_NOTIMPL;
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2003-2004 Various contributors
+/* Copyright (c) 2003-2005 Various contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -53,18 +53,15 @@ class MT32DirectMusicSynth :
 	public IKsControl
 {
 private:
+	LPDMUS_PORTPARAMS portParams;
+	IDirectMusicSynthSink *sink;
+	IReferenceClock  *masterClock;
 	BOOL enabled;
-	LPDMUS_PORTPARAMS pSynthParams;
-	int dwUsageCount;
-	IDirectMusicSynthSink *pSink;
-	IReferenceClock  *pClock;
 	bool open;
 
-	KSIDENTIFIER ksSynthProperties[10];
-
-	MT32Emu::Synth *myMT32;
+	MT32Emu::Synth *mt32emuSynth;
 #if MT32EMU_USE_EXTINT == 1
-	MT32Emu::ExternalInterface *extComm;
+	MT32Emu::ExternalInterface *mt32emuExtInt;
 #endif
 
 	HANDLE eventsMutex;
@@ -78,7 +75,9 @@ public:
 	~MT32DirectMusicSynth();
 
 	MT32Emu::Synth *getMT32EmuSynth() const;
+#if MT32EMU_USE_EXTINT == 1
 	MT32Emu::ExternalInterface *getMT32EmuExternalInterface() const;
+#endif
 
 	BEGIN_COM_MAP(MT32DirectMusicSynth)
 		COM_INTERFACE_ENTRY(IDispatch)
