@@ -84,6 +84,7 @@ public:
 	virtual void refreshTimbre(unsigned int absTimbreNum);
 	virtual void setTimbre(TimbreParam *timbre);
 	virtual unsigned int getAbsTimbreNum() const;
+	char * getCurrentInstr();
 };
 
 class RhythmPart: public Part {

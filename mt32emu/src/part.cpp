@@ -175,6 +175,10 @@ void Part::refresh() {
 	memcpy(currentInstr, timbreTemp->common.name, 10);
 }
 
+char * Part::getCurrentInstr() {
+	return &currentInstr[0];
+}
+
 void RhythmPart::refreshTimbre(unsigned int absTimbreNum) {
 	for (int m = 0; m < 85; m++) {
 		if (rhythmTemp[m].timbre == absTimbreNum - 128)

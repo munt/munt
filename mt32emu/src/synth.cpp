@@ -944,6 +944,13 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		buf[len] = 0;
 		printDebug("WRITE-LCD: %s", buf);
 		report(ReportType_lcdMessage, buf);
+#if USE_COMM == 1
+		*(Bit16u *)(&buf[0]) = 2;
+		memcpy(&buf[2], &data[0], len);
+		buf[2 + len] = 0;
+		extComm->sendResponse(2, (char *)&buf[0], len + 3);
+
+#endif
 	} else if (region->type == MR_Reset) {
 		printDebug("RESET");
 		report(ReportType_devReset, NULL);
@@ -1096,6 +1103,8 @@ void Synth::doControlPanelComm() {
 				for(i=0;i<MT32EMU_MAX_PARTIALS;i++) {
 					if(!partialManager->partialTable[i]->play) {
 						*bufptr++ = 0;
+						*bufptr++ = 0;
+						*bufptr++ = 0;
 					} else {
 						if(partialManager->partialTable[i]->envs[EnvelopeType_amp].decaying) {
 							*bufptr++ = 3;
@@ -1106,9 +1115,22 @@ void Synth::doControlPanelComm() {
 								*bufptr++ = 1;
 							}
 						}
+						*bufptr++ = partialManager->partialTable[i]->getOwnerPart();
+						*bufptr++ = partialManager->partialTable[i]->getNoteVal();
 					}
 				}
-				extComm->sendResponse(reqType, (char *)&buffer[0], ((Bit8u *)bufptr) - (&buffer[0]));
+				// 8 channel names with description
+				*bufptr++ = 8;
+				for(i=0;i<8;i++) {
+					memcpy(bufptr, this->parts[i]->getCurrentInstr(), 10);
+					bufptr++;
+					bufptr++;
+					bufptr++;
+					bufptr++;
+					bufptr++;
+				}
+
+				extComm->sendResponse(reqType, (char *)&buffer[0], 278 );
 				break;
 		}
 

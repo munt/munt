@@ -20,6 +20,7 @@
  */
 
 #include "mt32emu.h"
+#include <string.h>
 
 #if USE_COMM == 1
 
@@ -32,6 +33,8 @@ bool externalInterface::start() {
 	if(!SDLNet_ResolveHost(&ipxServerIp, NULL, 0xc307)) {
 		ipxServerSocket = SDLNet_UDP_Open(1987);
 		if(ipxServerSocket == NULL) return false;
+		regPacket = SDLNet_AllocPacket(4096);
+		if(regPacket == NULL) return false;
 
 		this->openedPort = true;
 		return true;
@@ -50,6 +53,7 @@ bool externalInterface::getStatusRequest(int *requestType) {
 	result = SDLNet_UDP_Recv(ipxServerSocket, &inPacket);
 	if (result != 0) {
 		this->ipxClientIp = inPacket.address;
+		this->knownClient = true;
 		*requestType = (int)*(MT32Emu::Bit16u *)(&inBuffer[0]);
 		return true;
 	} else {
@@ -58,14 +62,36 @@ bool externalInterface::getStatusRequest(int *requestType) {
 }
 
 bool externalInterface::sendResponse(int requestType, char *requestBuf, int requestLen) {
-	UDPpacket regPacket;
 
-	regPacket.data = (Uint8 *)requestBuf;
-	regPacket.len = requestLen;
-	regPacket.maxlen = requestLen;
-	regPacket.address = this->ipxClientIp;
-	SDLNet_UDP_Send(ipxServerSocket,-1,&regPacket);
+	memcpy(regPacket->data, requestBuf, requestLen);
+	regPacket->len = requestLen;
+	//regPacket->address.host = 0xffffffff;
+	//regPacket->address.port = 0x641e;
+	regPacket->address = this->ipxClientIp;
+	SDLNet_UDP_Send(ipxServerSocket,-1,regPacket);
 
+	if((this->knownClient) && (this->textToDisplay)) {
+
+		memcpy(regPacket->data, txtBuffer, requestLen);
+		regPacket->len = 22;
+		regPacket->address = this->ipxClientIp;
+		//regPacket->address.host = 0xffffffff;
+		//regPacket->address.port = 0x641e;
+		SDLNet_UDP_Send(ipxServerSocket,-1,regPacket);
+		this->textToDisplay = false;
+	}
+
+	return true;
+}
+
+bool externalInterface::sendDisplayText(char *requestBuf, int requestLen) {
+
+	if(!this->knownClient) {
+        memcpy(&txtBuffer[0], requestBuf, requestLen);
+		this->textToDisplay = true;
+	} else {
+		this->sendResponse(2, requestBuf, requestLen);
+	}
 	return true;
 }
 

@@ -126,6 +126,14 @@ void Partial::initKeyFollow(int key) {
 	realVal = keytable[(noteVal - MIDDLEC) + 108];
 }
 
+int Partial::getNoteVal() {
+	if(poly == NULL) {
+		return -1;
+	} else {
+		return this->poly->freqnum;
+	}
+}
+
 void Partial::startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *pairPartial) {
 	if (usePoly == NULL || useCache == NULL) {
 		synth->printDebug("*** Error: Starting partial for owner %d, usePoly=%s, useCache=%s", ownerPart, usePoly == NULL ? "*** NULL ***" : "OK", useCache == NULL ? "*** NULL ***" : "OK");

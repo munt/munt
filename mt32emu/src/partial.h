@@ -125,6 +125,7 @@ public:
 	~Partial();
 
 	int getOwnerPart();
+	int getNoteVal();
 	bool isActive();
 	void activate(int part);
 	void deactivate(void);
