@@ -69,6 +69,7 @@ private:
 	int fineShift;
 #endif
 	const NoteLookup *noteLookup; // LUTs for this noteVal
+	const KeyLookup *keyLookup; // LUTs for the clamped (12..108) key
 
 	// Keyfollowed filter values
 	int realVal;

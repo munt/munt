@@ -225,7 +225,6 @@ struct PatchCache {
 
 	int ampdepth;
 	int amplevel;
-	int tvfdepth;
 
 	bool useBender;
 	float benderRange; // 0.0, 1.0, .., 24.0 (semitones)

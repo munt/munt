@@ -151,6 +151,7 @@ void Partial::startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *
 #else
 	Tables::initNote(synth, &noteLookupStorage, noteVal, (float)synth->myProp.sampleRate, synth->masterTune, synth->pcmWaves, NULL);
 #endif
+	keyLookup = &synth->tables.keyLookups[poly->freqnum];
 
 	if (patchCache->PCMPartial) {
 		pcmNum = patchCache->pcm;
@@ -663,7 +664,7 @@ Bit32s Partial::getFiltEnvelope() {
 				if (tStat->envstat == 3) {
 					tStat->envsize = lasttimetable[(int)patchCache->filtEnv.envtime[tStat->envstat]];
 				} else {
-					tStat->envsize = (envtimetable[(int)patchCache->filtEnv.envtime[tStat->envstat]] * noteLookup->timekeyTable[(int)patchCache->filtEnv.envtkf]) >> 8;
+					tStat->envsize = (envtimetable[(int)patchCache->filtEnv.envtime[tStat->envstat]] * keyLookup->envTimeMult[(int)patchCache->filtEnv.envtkf]) >> 8;
 				}
 
 				tStat->envsize++;
@@ -708,7 +709,7 @@ Bit32s Partial::getFiltEnvelope() {
 		//synth->printDebug("Cutoff after %d", cutoff);
 	}
 
-	depth = (depth * noteLookup->fildepTable[patchCache->tvfdepth]) >> 8;
+	depth = (depth * keyLookup->envDepthMult[patchCache->filtEnv.envdkf]) >> 8;
 	reshigh = (reshigh * depth) >> 7;
 
 	Bit32s tmp;
@@ -755,7 +756,7 @@ Bit32u Partial::getAmpEnvelope() {
 
 	if (tStat->decaying) {
 		tc = tStat->envbase;
-		tc = (tc + ((tStat->envdist * tStat->envpos) / tStat->envsize));
+		tc += (tStat->envdist * tStat->envpos) / tStat->envsize;
 		if (tc < 0)
 			tc = 0;
 		if ((tStat->envpos >= tStat->envsize) || (tc == 0)) {
@@ -764,8 +765,8 @@ Bit32u Partial::getAmpEnvelope() {
 			return 0;
 		}
 	} else {
-		if ((tStat->envstat==-1) || (tStat->envpos >= tStat->envsize)) {
-			if (tStat->envstat==-1)
+		if ((tStat->envstat == -1) || (tStat->envpos >= tStat->envsize)) {
+			if (tStat->envstat == -1)
 				tStat->envbase = 0;
 			else
 				tStat->envbase = patchCache->ampEnv.envlevel[tStat->envstat];
@@ -777,14 +778,22 @@ Bit32u Partial::getAmpEnvelope() {
 				//Spot for velocity time follow
 				//Only used for first attack
 				tStat->envsize = (envtimetable[(int)patchCache->ampEnv.envtime[tStat->envstat]] * veltkeytable[(int)patchCache->ampEnv.envvkf][poly->vel]) >> 8;
+				// Time keyfollow is used by all sections of the envelope
+				tStat->envsize = (tStat->envsize * keyLookup->envTimeMult[(int)patchCache->ampEnv.envtkf]) >> 8;
 				//synth->printDebug("Envstat %d, size %d", tStat->envstat, tStat->envsize);
 				break;
+			case 1:
+			case 2:
 			case 3:
-				// Final attack envelope uses same time table as the decay
-				//tStat->envsize = decaytimetable[patchCache->ampEnv.envtime[tStat->envstat]];
-				tStat->envsize = lasttimetable[(int)patchCache->ampEnv.envtime[tStat->envstat]];
+			{
+				// These values are clamped to 63
+				int envTime = patchCache->ampEnv.envtime[tStat->envstat];
+				if (envTime > 63)
+					envTime = 63;
+				tStat->envsize = (envtimetable[envTime] * keyLookup->envTimeMult[(int)patchCache->ampEnv.envtkf]) >> 8;
 				//synth->printDebug("Envstat %d, size %d", tStat->envstat, tStat->envsize);
 				break;
+			}
 			case 4:
 				//synth->printDebug("Envstat %d, size %d", tStat->envstat, tStat->envsize);
 				tc = patchCache->ampsustain;
@@ -792,14 +801,9 @@ Bit32u Partial::getAmpEnvelope() {
 					startDecay(EnvelopeType_amp, tc);
 				else
 					tStat->sustaining = true;
-
 				goto PastCalc;
 			default:
-				//Spot for timekey follow
-				//Only used in subsquent envelope parameters, including the decay
-				tStat->envsize = (envtimetable[(int)patchCache->ampEnv.envtime[tStat->envstat]] * noteLookup->timekeyTable[(int)patchCache->ampEnv.envtkf]) >> 8;
-
-				//synth->printDebug("Envstat %d, size %d", tStat->envstat, tStat->envsize);
+				synth->printDebug("Invalid TVA envelope number %d hit!", tStat->envstat);
 				break;
 			}
 
@@ -875,7 +879,7 @@ Bit32s Partial::getPitchEnvelope() {
 				tStat->envstat++;
 
 				tStat->envbase = patchCache->pitchEnv.level[tStat->envstat];
-				tStat->envsize = (envtimetable[(int)patchCache->pitchEnv.time[tStat->envstat]] * noteLookup->timekeyTable[(int)patchCache->pitchEnv.timekeyfollow]) >> 8;
+				tStat->envsize = (envtimetable[(int)patchCache->pitchEnv.time[tStat->envstat]] * keyLookup->envTimeMult[(int)patchCache->pitchEnv.timekeyfollow]) >> 8;
 
 				tStat->envpos = 0;
 				tStat->envsize++;
@@ -906,15 +910,15 @@ void Partial::startDecay(EnvelopeType envnum, Bit32s startval) {
 
 	switch (envnum) {
 	case EnvelopeType_amp:
-		tStat->envsize = (decaytimetable[(int)patchCache->ampEnv.envtime[4]] * noteLookup->timekeyTable[(int)patchCache->ampEnv.envtkf]) >> 8;
+		tStat->envsize = (envtimetable[(int)patchCache->ampEnv.envtime[4]] * keyLookup->envTimeMult[(int)patchCache->ampEnv.envtkf]) >> 8;
 		tStat->envdist = -startval;
 		break;
 	case EnvelopeType_filt:
-		tStat->envsize = (decaytimetable[(int)patchCache->filtEnv.envtime[4]] * noteLookup->timekeyTable[(int)patchCache->filtEnv.envtkf]) >> 8;
+		tStat->envsize = (decaytimetable[(int)patchCache->filtEnv.envtime[4]] * keyLookup->envTimeMult[(int)patchCache->filtEnv.envtkf]) >> 8;
 		tStat->envdist = -startval;
 		break;
 	case EnvelopeType_pitch:
-		tStat->envsize = (decaytimetable[(int)patchCache->pitchEnv.time[3]] * noteLookup->timekeyTable[(int)patchCache->pitchEnv.timekeyfollow]) >> 8 ;
+		tStat->envsize = (decaytimetable[(int)patchCache->pitchEnv.time[3]] * keyLookup->envTimeMult[(int)patchCache->pitchEnv.timekeyfollow]) >> 8 ;
 		tStat->envdist = patchCache->pitchEnv.level[4] - startval;
 		break;
 	default:

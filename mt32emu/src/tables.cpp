@@ -183,17 +183,20 @@ static void initEnvelopes(float samplerate) {
 		float elf = (float)lf;
 
 		// General envelope
-		float logtime = elf * 0.088362939f;
-		envtimetable[lf] = (int)((exp(logtime)/312.12) * (float)samplerate);
+		// This formula fits observation of the CM-32L by +/- 0.03s or so for the second time value in the filter
+		// (note that that one is clamped to 63). I think it also fits T1, which is unclamped.
+		float seconds = powf(256.0f, elf / 64.0f) / 256.0f;
+		int samples = (int)(seconds * samplerate);
+		envtimetable[lf] = samples;
 
 		// Decay envelope -- shorter for some reason
 		// This is also the timing for the envelope right before the
 		// amp and filter envelope sustains
+		float logtime = elf * 0.088362939f;
+		lasttimetable[lf] = decaytimetable[lf] = (int)((exp(logtime)/(312.12*2)) * samplerate);
+		//lasttimetable[lf] = (int)((exp(logtime)/(312.12*6)) * samplerate);
 
-		lasttimetable[lf] = decaytimetable[lf] = (int)((exp(logtime)/(312.12*2)) * (float)samplerate);
-		//lasttimetable[lf] = (int)((exp(logtime)/(312.12*6)) * (float)samplerate);
-
-		float mv = (float)lf / 100.0f;
+		float mv = elf / 100.0f;
 		float pt = mv - 0.5f;
 		if (pt < 0)
 			pt = 0;
@@ -452,11 +455,11 @@ static void initSaw(NoteLookup *noteLookup, Bit32s div2) {
 	}
 }
 
-static void initDep(NoteLookup *noteLookup, float f) {
+static void initDep(KeyLookup *keyLookup, float f) {
 	for (int dep = 0; dep < 5; dep++) {
 		if (dep == 0) {
-			noteLookup->fildepTable[dep] = 256;
-			noteLookup->timekeyTable[dep] = 256;
+			keyLookup->envDepthMult[dep] = 256;
+			keyLookup->envTimeMult[dep] = 256;
 		} else {
 			float depfac = 3000.0f;
 			float ff, tempdep;
@@ -464,10 +467,10 @@ static void initDep(NoteLookup *noteLookup, float f) {
 
 			ff = (f - (float)MIDDLEC) / depfac;
 			tempdep = powf(2, ff) * 256.0f;
-			noteLookup->fildepTable[dep] = (int)tempdep;
+			keyLookup->envDepthMult[dep] = (int)tempdep;
 
 			ff = (float)(exp(tkcatconst[dep] * ((float)MIDDLEC - f)) * tkcatmult[dep]);
-			noteLookup->timekeyTable[dep] = (int)(ff * 256.0f);
+			keyLookup->envTimeMult[dep] = (int)(ff * 256.0f);
 		}
 	}
 	//synth->printDebug("F %f d1 %x d2 %x d3 %x d4 %x d5 %x", f, noteLookup->fildepTable[0], noteLookup->fildepTable[1], noteLookup->fildepTable[2], noteLookup->fildepTable[3], noteLookup->fildepTable[4]);
@@ -582,7 +585,6 @@ File *Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float r
 		noteLookup->div2 = 1;
 
 	initSaw(noteLookup, noteLookup->div2);
-	initDep(noteLookup, note);
 
 	//synth->printDebug("Note %f; freq=%f, div=%f", note, freq, rate / freq);
 	file = initWave(synth, noteLookup, (const float)WGAMP, div2, file);
@@ -731,6 +733,9 @@ bool Tables::initMT32Tables(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRa
 	if (initialisedSampleRate != sampleRate) {
 		initFiltCoeff(sampleRate);
 		initEnvelopes(sampleRate);
+		for (int key = 12; key <= 108; key++) {
+			initDep(&synth->tables.keyLookups[key], (float)key);
+		}
 	}
 	if (initialisedSampleRate != sampleRate || initialisedMasterTune != masterTune) {
 		synth->tables.freeNotes();

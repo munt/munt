@@ -356,7 +356,6 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 
 		// Calculate and cache filter stuff
 		cache[t].filtEnv = timbre->partial[t].tvf;
-		cache[t].tvfdepth = cache[t].filtEnv.envdkf;
 		cache[t].filtkeyfollow  = fixKeyfollow(cache[t].filtEnv.keyfollow);
 		cache[t].filtEnv.envdepth = (char)((float)cache[t].filtEnv.envdepth * 1.27);
 		cache[t].tvfbias = fixBiaslevel(cache[t].filtEnv.biaspoint, &cache[t].tvfdir);

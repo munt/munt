@@ -86,12 +86,15 @@ struct NoteLookup {
 	Bit32u div2;
 	Bit32u *wavTable;
 	Bit32s sawTable[101];
-	Bit32s fildepTable[5];
-	Bit32s timekeyTable[5];
 	int filtTable[2][201];
 	int nfiltTable[101][101];
 	Bit16s *waveforms[3];
 	Bit32u waveformSize[3];
+};
+
+struct KeyLookup {
+	Bit32s envTimeMult[5]; // For envelope time adjustment for key pressed
+	Bit32s envDepthMult[5];
 };
 
 class Tables {
@@ -101,6 +104,7 @@ class Tables {
 	bool initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float rate, float tuning);
 public:
 	NoteLookup noteLookups[NUM_NOTES];
+	KeyLookup keyLookups[97];
 	static bool initMT32Tables(Synth *synth, PCMWaveEntry pcmWaves[128], float sampleRate, float masterTune);
 	File *initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float tuning, PCMWaveEntry pcmWaves[128], File *file);
 	void freeNotes();
