@@ -14,7 +14,7 @@ Installation:
     directory as your MT32_PCM.ROM and MT32_CONTROL.ROM (not provided).
     Remember the location of this directory.
  2) Open Control Panel.
- 3) Double-click on "Add New Hardware".
+ 3) Double-click on "Add Hardware".
  4) Click "Next" until you come to a message asking you whether you have
     already installed the hardware.
  5) Select the "Yes" option and click "Next".
@@ -35,3 +35,9 @@ Installation:
 14) The driver should now have been installed; click "Finish".
 15) A dialog box will recommend that you reboot. Go ahead if you enjoy that
     sort of thing, but it shouldn't be necessary for a fresh installation.
+
+To begin playing back MIDI through the emulator, perform the following:
+
+16) Open "Sounds and Audio Devices" from the Control Panel.
+17) In the "Audio" tab, select "MT-32 Synth Emulator" in the drop-down list for
+    the MIDI playback device.
