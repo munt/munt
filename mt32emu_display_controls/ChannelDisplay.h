@@ -4,6 +4,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <float.h>
+#include <math.h>
 
 #pragma intrinsic(memcpy)
 
@@ -14,16 +16,17 @@ using namespace System::Windows::Forms;
 using namespace System::Data;
 using namespace System::Drawing;
 
-struct chanInfo {
-	bool isPlaying;
-	int assignedPart;
-	int freq;
-};
 
 struct volInfo {
 	bool locked;
 	int targetValue;
 	int pastValue;
+};
+
+struct noteInfo {
+	int freq;
+	int vel;
+	int age;
 };
 
 chanInfo *chanList;
@@ -79,7 +82,7 @@ namespace mt32emu_display_controls
 
 		}
 
-		System::Void sendUpdateData(char * updateData, int count, chanInfo *chList) {
+		System::Void sendUpdateData(char * updateData, int count, chanInfo *chList, int wPC) {
 		
 			unsigned short * buffer;
 
@@ -87,45 +90,45 @@ namespace mt32emu_display_controls
 
 			chanList = chList;
 
-			int instrlist = (int)buffer[2 + (count * 3)];
+			int instrlist = (int)buffer[2 + (count * wPC)];
 			// Assume 8 for now
 			char tmpStr[11];
 
-			memcpy(tmpStr, &buffer[(count * 3) + 3 + (5 * 0)], 10);
+			memcpy(tmpStr, &buffer[(count * wPC) + 3 + (5 * 0)], 10);
 			tmpStr[10] = 0;
 			chan1->set_Text(new System::String(tmpStr));
 
-			memcpy(tmpStr, &buffer[(count * 3) + 3 + (5 * 1)], 10);
+			memcpy(tmpStr, &buffer[(count * wPC) + 3 + (5 * 1)], 10);
 			tmpStr[10] = 0;
 			chan2->set_Text(new System::String(tmpStr));
 
-			memcpy(tmpStr, &buffer[(count * 3) + 3 + (5 * 2)], 10);
+			memcpy(tmpStr, &buffer[(count * wPC) + 3 + (5 * 2)], 10);
 			tmpStr[10] = 0;
 			chan3->set_Text(new System::String(tmpStr));
 
-			memcpy(tmpStr, &buffer[(count * 3) + 3 + (5 * 3)], 10);
+			memcpy(tmpStr, &buffer[(count * wPC) + 3 + (5 * 3)], 10);
 			tmpStr[10] = 0;
 			chan4->set_Text(new System::String(tmpStr));
 
-			memcpy(tmpStr, &buffer[(count * 3) + 3 + (5 * 4)], 10);
+			memcpy(tmpStr, &buffer[(count * wPC) + 3 + (5 * 4)], 10);
 			tmpStr[10] = 0;
 			chan5->set_Text(new System::String(tmpStr));
 
-			memcpy(tmpStr, &buffer[(count * 3) + 3 + (5 * 5)], 10);
+			memcpy(tmpStr, &buffer[(count * wPC) + 3 + (5 * 5)], 10);
 			tmpStr[10] = 0;
 			chan6->set_Text(new System::String(tmpStr));
 
-			memcpy(tmpStr, &buffer[(count * 3) + 3 + (5 * 6)], 10);
+			memcpy(tmpStr, &buffer[(count * wPC) + 3 + (5 * 6)], 10);
 			tmpStr[10] = 0;
 			chan7->set_Text(new System::String(tmpStr));
 
-			memcpy(tmpStr, &buffer[(count * 3) + 3 + (5 * 7)], 10);
+			memcpy(tmpStr, &buffer[(count * wPC) + 3 + (5 * 7)], 10);
 			tmpStr[10] = 0;
 			chan8->set_Text(new System::String(tmpStr));
 
 			int i;
 
-			int bufloc = (count * 3) + 3 + (5 * 8);
+			int bufloc = (count * wPC) + 3 + (5 * 8);
 			for(i=0;i<9;i++) {
 
 				//if(!volList[i].locked)
@@ -313,6 +316,55 @@ namespace mt32emu_display_controls
 				 
 			 }
 
+		private: void hsv_to_rgb(float *rgb, float *hsv) {
+				float h,s,v,f,p,q,t;
+				int i;
+
+				h = hsv[0];
+				s = hsv[1];
+				v = hsv[2];
+
+				if(s <= FLT_EPSILON) {
+						for(i=0; i<3; i++)
+								rgb[i] = v;
+				} else {
+						while(h<0.0) h+=360.0;
+						while(h>=360.0) h-=360.0;
+
+						h/=60.0;
+						i = floorf(h);
+						f = h-(float)i;
+						p = v*(1.0-s);
+						q = v*(1.0-(s*f));
+						t = v*(1.0-(s*(1.0-f)));
+		                
+						switch(i) {
+						case 0: rgb[0] = v; rgb[1] = t; rgb[2] = p; break;
+						case 1: rgb[0] = q; rgb[1] = v; rgb[2] = p; break;
+						case 2: rgb[0] = p; rgb[1] = v; rgb[2] = t; break;
+						case 3: rgb[0] = p; rgb[1] = q; rgb[2] = v; break;
+						case 4: rgb[0] = t; rgb[1] = p; rgb[2] = v; break;
+						case 5: rgb[0] = v; rgb[1] = p; rgb[2] = q; break;
+						}
+				}
+		}
+
+
+	private: SolidBrush * getVelocityBrush(int vel) {
+				 //int red = (128 - vel) + 128;
+				 //int blue = vel + 128;
+				 float inHSV[3];
+				 float outRGB[3];
+
+				 inHSV[0] = (float)vel;
+				 inHSV[1] = 1.0f;
+				 inHSV[2] = 1.0f;
+
+				 hsv_to_rgb(outRGB, inHSV);
+
+				 return new System::Drawing::SolidBrush(System::Drawing::Color::FromArgb(outRGB[0] * 255, outRGB[1] * 255, outRGB[2] * 255));
+			 }
+
 	private: System::Void noteBox_Paint(System::Object * sender, System::Windows::Forms::PaintEventArgs* e) {
 				Graphics * g = e->Graphics;
 				
@@ -325,29 +377,60 @@ namespace mt32emu_display_controls
 
 				i = pb->TabIndex;
 				int notesPlaying = 0;
-				int noteList[32];
+				noteInfo noteList[32];
+				int noteCount[128];
 				int j, r;
+				
+				for(j=0;j<128;j++) noteCount[j] = 0;
+
 				for(j=0;j<32;j++) {
 					if(chanList[j].isPlaying) {
 						if(chanList[j].assignedPart == i) {
 							bool found = false;
 							for(r=0;r<notesPlaying;r++) {
-								if(noteList[r] == chanList[j].freq) {
-									found = true;
-									break;
+								if(noteList[r].freq == chanList[j].freq) {
+									if(noteList[r].age == chanList[j].age) {
+                                        found = true;
+										break;
+									} else {
+										noteCount[chanList[j].freq]++;
+									}
 								}
 							}
 							if(!found) {
-								noteList[notesPlaying] = chanList[j].freq;
+								noteCount[chanList[j].freq]++;
+								noteList[notesPlaying].freq = chanList[j].freq;
+								noteList[notesPlaying].age = chanList[j].age;
+								noteList[notesPlaying].vel = chanList[j].vel;
 								notesPlaying++;
 							}
 						}
 					}
 				}
+				
 				for(j=0;j<notesPlaying;j++) {
 					int xat;
-					xat = (noteList[j] - 12) * 4;
-					g->FillRectangle(System::Drawing::Brushes::Lime, xat, 0, 4, 24);
+					xat = (noteList[j].freq - 12) * 4;
+					int maxsize = 24;
+					int boxsize = maxsize;
+					int splitcount = 1;
+					if(noteCount[noteList[j].freq] != 0) {
+						boxsize = maxsize / noteCount[noteList[j].freq];
+						splitcount = noteCount[noteList[j].freq];
+					}
+					g->InterpolationMode = System::Drawing::Drawing2D::InterpolationMode::NearestNeighbor;
+					g->PixelOffsetMode = System::Drawing::Drawing2D::PixelOffsetMode::None;
+					g->SmoothingMode = System::Drawing::Drawing2D::SmoothingMode::None;
+
+					//if(splitcount == 1) {
+                    //    g->FillRectangle(System::Drawing::Brushes::Lime, xat, 0, 4, 24);
+					//} else {
+						int m;
+						for(m=0;m<splitcount;m++) {
+							g->FillRectangle(getVelocityBrush(noteList[j].vel), xat, (m * boxsize), 4, boxsize - 1);
+						}
+					//}
+
 				}
 
 				

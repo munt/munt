@@ -4,11 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct chanInfo {
-	bool isPlaying;
-	int assignedPart;
-	int freq;
-};
+#include "..\mt32emu_display_controls\DriverCommClass.h"
 
 chanInfo chanList[32];
 
@@ -389,8 +385,10 @@ namespace mt32emu_display
 						int i;
 						bool found = false;
 						bool anyActive = false;
+						int wPC = 6;
 						// Heartbeat response
-						if((buffer[0] == 1) && (numrecv == 300)) {
+						if((buffer[0] == 1) && (numrecv == 492)) {
+						//if((buffer[0] == 1) && (numrecv == 300)) {
 							found = true;
 							this->ticksSinceContact = 0;
 							this->facePlate->turnOnModule();
@@ -401,7 +399,7 @@ namespace mt32emu_display
 							}
 							for(i=0;i<count;i++) {
 								int t;
-								t = buffer[2 + (i * 3)];
+								t = buffer[2 + (i * wPC)];
 								chanList[i].isPlaying = true;
 								switch(t) {
 									case 0:
@@ -421,7 +419,7 @@ namespace mt32emu_display
 										anyActive = true;
 										break;
 								}
-								chanList[i].assignedPart = buffer[2 + (i * 3) + 1];
+								chanList[i].assignedPart = buffer[2 + (i * wPC) + 1];
 
 								if((chanList[i].assignedPart < 5) || (chanList[i].assignedPart == 8)) {
 									int pUse = chanList[i].assignedPart;
@@ -431,10 +429,12 @@ namespace mt32emu_display
 										this->partActive[pUse] = true;
 									}
 								}
-								chanList[i].freq = buffer[2 + (i * 3) + 2];
+								chanList[i].freq = buffer[2 + (i * wPC) + 2];
+								chanList[i].age = *(unsigned int *)&buffer[2 + (i * wPC) + 3];
+								chanList[i].vel = buffer[2 + (i * wPC) + 5];
 							}
 
-							channelStatus->sendUpdateData((char *)&buffer[0], count, chanList);
+							channelStatus->sendUpdateData((char *)&buffer[0], count, chanList, wPC);
 
 							if(anyActive) {
 								this->facePlate->turnOnMidiLight();
@@ -448,7 +448,7 @@ namespace mt32emu_display
 
 							// TODO: Doesn't seem to work.  Wanted to get the buffer size so I could change
 							// the timer to tick in sync with it.
-							int sndBufSize = *(int *)&buffer[296];
+							int sndBufSize = *(int *)&buffer[488];
 
 
 						}

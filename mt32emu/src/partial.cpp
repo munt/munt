@@ -62,6 +62,11 @@ bool Partial::isActive() {
 	return ownerPart > -1;
 }
 
+const dpoly *Partial::getDpoly() const {
+	return this->poly;
+}
+ 
+
 void Partial::activate(int part) {
 	// This just marks the partial as being assigned to a part
 	ownerPart = part;

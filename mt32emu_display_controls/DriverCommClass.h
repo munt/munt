@@ -11,6 +11,15 @@ struct _UDPsocket {
 #include "SDL_net.h"
 
 
+struct chanInfo {
+	bool isPlaying;
+	int assignedPart;
+	int freq;
+	int age;
+	int vel;
+};
+
+
 class DriverCommClass
 {
 public:
