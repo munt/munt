@@ -19,7 +19,7 @@
  * IN THE SOFTWARE.
  */
 
-// Implementation of DLL Exports (MT32EmuWinMM.cpp contains DriverProc and modMessage)
+// Implementation of DLL Exports (mt32emu_winmm.cpp contains DriverProc and modMessage)
 
 #include "stdafx.h"
 

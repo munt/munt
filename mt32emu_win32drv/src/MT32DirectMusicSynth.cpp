@@ -21,7 +21,7 @@
 
 #include "stdafx.h"
 
-#define BENCHMARK
+//#define BENCHMARK
 
 #ifdef BENCHMARK
 #include <time.h>
@@ -36,7 +36,7 @@
 #include "MT32DirectMusicSynth.h"
 
 // Common values: 8.0 kHz, 11.025 kHz, 22.05 kHz, and 44.1 kHz
-// The tuning is slightly off for 22050 (probably anything other than 44100)
+// The tuning is slightly off for 22050 (probably anything other than 32KHz)
 //#define SAMPLERATE 22050
 #define SAMPLERATE 44100
 
@@ -44,15 +44,11 @@ void MT32_Report(int type, ...) {
 }
 
 void MT32_PrintDebug(void *userData, const char *fmt, va_list args) {
-//#ifdef DEBUG
-	//FIXME: Perhaps use DebugOutput()
-	FILE *fp = fopen("C:\\mt32_dbg.log", "at");
-	if (fp != NULL) {
-		vfprintf(fp, fmt, args);
-		fprintf(fp, "\n");
-		fclose(fp);
-	}
-//#endif
+#ifdef DEBUG
+	char buf[1024];
+	vsprintf(buf, fmt, args);
+	OutputDebugString(buf);
+#endif
 }
 
 void LOG_MSG(char *fmt, ...) {
