@@ -102,7 +102,6 @@ void Partial::initKeyFollow(int key) {
 #else
 	float newPitchInt;
 	float newPitchFract = modff(newPitch, &newPitchInt);
-	synth->printDebug("Really: newPitch=%f, newPitchInt=%f, newPitchFract=%f", newPitch, newPitchInt, newPitchFract);
 	if (newPitchFract > 0.5f) {
 		newPitchInt += 1.0f;
 		newPitchFract -= 1.0f;
