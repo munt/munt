@@ -40,7 +40,12 @@
 //#define SAMPLERATE 22050
 #define SAMPLERATE 44100
 
-void MT32_Report(int type, ...) {
+int MT32_Report(void *userData, MT32Emu::ReportType type, const void *reportData) {
+#if MT32EMU_USE_EXTINT == 1
+	MT32DirectMusicSynth *dms = (MT32DirectMusicSynth *)userData;
+	dms->getMT32EmuExternalInterface()->handleReport(dms->getMT32EmuSynth(), type, reportData);
+#endif
+	return 0;
 }
 
 void MT32_PrintDebug(void *userData, const char *fmt, va_list args) {
@@ -138,7 +143,9 @@ MT32DirectMusicSynth::MT32DirectMusicSynth() {
 	}
 
 	myMT32 = new MT32Emu::Synth();
-
+#if MT32EMU_USE_EXTINT == 1
+	extComm = new MT32Emu::ExternalInterface();
+#endif
 	eventsMutex = CreateMutex( NULL, FALSE, NULL );
 	events = NULL;
 
@@ -147,6 +154,12 @@ MT32DirectMusicSynth::MT32DirectMusicSynth() {
 
 MT32DirectMusicSynth::~MT32DirectMusicSynth() {
 	//LOG_MSG("MT32DirectMusicSynth::~MT32DirectMusicSynth()");
+#if MT32EMU_USE_EXTINT == 1
+	if(extComm != NULL) {
+		extComm->stop();
+		delete extComm;
+	}
+#endif
 	myMT32->close();
 	delete myMT32;
 	myMT32 = NULL;
@@ -159,6 +172,16 @@ MT32DirectMusicSynth::~MT32DirectMusicSynth() {
 	}
 	CloseHandle(eventsMutex);
 }
+
+MT32Emu::Synth *MT32DirectMusicSynth::getMT32EmuSynth() const {
+	return myMT32;
+}
+
+#if MT32EMU_USE_EXTINT == 1
+MT32Emu::ExternalInterface *MT32DirectMusicSynth::getMT32EmuExternalInterface() const {
+	return extComm;
+}
+#endif
 
 STDMETHODIMP MT32DirectMusicSynth::InterfaceSupportsErrorInfo(REFIID riid) {
 	//LOG_MSG("MT32DirectMusicSynth::InterfaceSupportsErrorInfo()");
@@ -197,10 +220,17 @@ HRESULT MT32DirectMusicSynth::Open(THIS_ LPDMUS_PORTPARAMS pPortParams) {
 		synthp.reverbType = 0;
 		synthp.reverbTime = 5;
 		synthp.reverbLevel = 3;
+		synthp.userData = this;
 		synthp.printDebug = MT32_PrintDebug;
+		synthp.report = MT32_Report;
 		synthp.baseDir = &dataPath[0];
 		if(!myMT32->open(synthp))
 			return DMUS_E_DRIVER_FAILED;
+#if MT32EMU_USE_EXTINT == 1
+		if (extComm != NULL) {
+			extComm->start();
+		}
+#endif
 		open = true;
 		return S_OK;
 	}
@@ -211,6 +241,11 @@ HRESULT MT32DirectMusicSynth::Open(THIS_ LPDMUS_PORTPARAMS pPortParams) {
 HRESULT MT32DirectMusicSynth::Close(THIS) {
 	if(open) {
 		open = false;
+#if MT32EMU_USE_EXTINT == 1
+		if (extComm != NULL) {
+			extComm->stop();
+		}
+#endif
 		myMT32->close();
 		return S_OK;
 	} else {
@@ -476,6 +511,11 @@ HRESULT MT32DirectMusicSynth::Render(THIS_ short *pBuffer, DWORD dwLength, LONGL
 		QueryPerformanceCounter(&start);
 #endif
 
+#if MT32EMU_USE_EXTINT == 1
+		if (extComm != NULL) {
+			extComm->doControlPanelComm(getMT32EmuSynth());
+		}
+#endif
 		myMT32->render(pBuffer, thisLength);
 		pBuffer += thisLength * 2; // One for each channel
 		llPosition += thisLength;

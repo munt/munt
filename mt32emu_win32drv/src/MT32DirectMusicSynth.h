@@ -32,6 +32,9 @@
 #include <dmusics.h>
 
 #include "mt32emu.h"
+#if MT32EMU_USE_EXTINT == 1
+#include "externalInterface.h"
+#endif
 
 #include "MidiEvent.h"
 
@@ -60,6 +63,9 @@ private:
 	KSIDENTIFIER ksSynthProperties[10];
 
 	MT32Emu::Synth *myMT32;
+#if MT32EMU_USE_EXTINT == 1
+	MT32Emu::ExternalInterface *extComm;
+#endif
 
 	HANDLE eventsMutex;
 	MidiEvent *events;
@@ -70,6 +76,9 @@ private:
 public:
 	MT32DirectMusicSynth();
 	~MT32DirectMusicSynth();
+
+	MT32Emu::Synth *getMT32EmuSynth() const;
+	MT32Emu::ExternalInterface *getMT32EmuExternalInterface() const;
 
 	BEGIN_COM_MAP(MT32DirectMusicSynth)
 		COM_INTERFACE_ENTRY(IDispatch)
