@@ -1,4 +1,4 @@
-/* Copyright (c) 2003-2004 Various contributors
+/* Copyright (c) 2003-2005 Various contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -53,7 +53,7 @@ struct Driver {
 		DWORD flags;
 		DWORD_PTR callback;
 	} clients[MAX_CLIENTS];
-} drivers[8];
+} drivers[MAX_DRIVERS];
 
 int driverCount;
 
@@ -127,7 +127,7 @@ STDAPI_(LONG) DriverProc(DWORD dwDriverID, HDRVR hdrvr, WORD wMessage, DWORD dwP
 		return DRV_OK;
 	case DRV_CONFIGURE:
 		LOG_MSG("DriverProc DRV_CONFIGURE");
-		DialogBox(_AtlBaseModule.GetModuleInstance(), (LPCTSTR)IDD_DIALOG1, (HWND)dwParam1,&DialogHandler);
+		DialogBox(_AtlBaseModule.GetModuleInstance(), (LPCTSTR)IDD_DIALOG1, (HWND)dwParam1, &DialogHandler);
 		return DRVCNF_OK;
 	case DRV_CLOSE:
 		LOG_MSG("DriverProc DRV_CLOSE driverCount before=%ld", driverCount);
@@ -164,10 +164,6 @@ HRESULT modGetCaps(PVOID capsPtr, DWORD capsSize) {
 
 	CHAR synthName[] = "MT-32 Synth Emulator\0";
 	WCHAR synthNameW[] = L"MT-32 Synth Emulator\0";
-
-#ifdef UNICODE
-	LOG_MSG("In Unicode");
-#endif
 
 	LOG_MSG("modMessage GetDevCaps: size %d, caps1 %d caps2 %d", capsSize, sizeof(MIDIOUTCAPS), sizeof(MIDIOUTCAPS2));
 	
@@ -237,7 +233,7 @@ HRESULT modGetCaps(PVOID capsPtr, DWORD capsSize) {
 }
 
 void WriteLog(const char * charMsg, unsigned int uMsg) {
-	LOG_MSG("modMessage '%s' Msg: 0x%x", charMsg, uMsg);
+	//LOG_MSG("modMessage '%s' Msg: 0x%x", charMsg, uMsg);
 }
 
 bool SetupDirectMusicInterface() {
@@ -313,62 +309,84 @@ void DoCallback(int driverNum, int clientNum, DWORD msg, DWORD param1, DWORD par
 	DriverCallback(client->callback, client->flags, drivers[driverNum].hdrvr, msg, client->instance, param1, param2);
 }
 
+LONG OpenDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1, DWORD dwParam2) {
+	int clientNum;
+	if ((driver->clientCount == 0) || (myDMPort == NULL)) {
+		if (!SetupDirectMusicInterface()) {
+			WriteLog("Setup of DirectMusic interface for MMSystem failed", uMsg);
+			return MMSYSERR_ERROR;
+		}
+		WriteLog("Setup of DirectMusic interface for MMSystem succeeded", uMsg);
+		clientNum = 0;
+	} else if (driver->clientCount == MAX_CLIENTS) {
+		WriteLog("Attempt to open more than the MAX_CLIENTS we arbitrarily support denied", uMsg);
+		return MMSYSERR_ALLOCATED;
+	} else {
+		for (int i = 0; i < MAX_CLIENTS; i++) {
+			if (!driver->clients[i].allocated) {
+				break;
+			}
+		}
+		if (i == MAX_CLIENTS) {
+			WriteLog("Something went disastrously wrong, we have more clients in the table than is correct for our open/close counts", uMsg);
+			return MMSYSERR_ALLOCATED;
+		}
+		clientNum = i;
+	}
+	MIDIOPENDESC *desc = (MIDIOPENDESC *)dwParam1;
+	driver->clients[clientNum].allocated = true;
+	driver->clients[clientNum].flags = HIWORD(dwParam2);
+	driver->clients[clientNum].callback = desc->dwCallback;
+	driver->clients[clientNum].instance = desc->dwInstance;
+	*(LONG *)dwUser = clientNum;
+	driver->clientCount++;
+	DoCallback(uDeviceID, clientNum, MOM_OPEN, NULL, NULL);
+	return MMSYSERR_NOERROR;
+}
+
+LONG CloseDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1, DWORD dwParam2) {
+	if (!driver->clients[dwUser].allocated) {
+		WriteLog("MODM_CLOSE for a client we don't have marked as allocated", uMsg);
+		return MMSYSERR_INVALPARAM;
+	}
+	driver->clients[dwUser].allocated = false;
+	driver->clientCount--;
+	if(driver->clientCount <= 0) {
+		WriteLog("Close with deinitialization", uMsg);
+		ShutdownDirectMusicInterface();
+	} else {
+		WriteLog("Close without deinitialization", uMsg);
+	}
+	DoCallback(uDeviceID, dwUser, MOM_CLOSE, NULL, NULL);
+	return MMSYSERR_NOERROR;
+}
+
+STDAPI_(LONG) midMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1, DWORD dwParam2) {
+	Driver *driver = &drivers[uDeviceID];
+	switch (uMsg) {
+	case MIDM_OPEN:
+		return OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
+
+	case MIDM_CLOSE:
+		return CloseDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
+
+	default:
+		WriteLog("Unhandled message", uMsg);
+		return MMSYSERR_NOERROR;
+		break;
+	}
+}
+
 STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1, DWORD dwParam2) {
 	REFERENCE_TIME rt;
 	MIDIHDR *midiHdr;
 	Driver *driver = &drivers[uDeviceID];
 	switch (uMsg) {
 	case MODM_OPEN:
-	{
-		int clientNum;
-		if ((driver->clientCount == 0) || (myDMPort == NULL)) {
-			if (!SetupDirectMusicInterface()) {
-				WriteLog("Setup of DirectMusic interface for MMSystem failed", uMsg);
-				return MMSYSERR_ERROR;
-			}
-			WriteLog("Setup of DirectMusic interface for MMSystem succeeded", uMsg);
-			clientNum = 0;
-		} else if (driver->clientCount == MAX_CLIENTS) {
-			WriteLog("Attempt to open more than the MAX_CLIENTS we arbitrarily support denied", uMsg);
-			return MMSYSERR_ALLOCATED;
-		} else {
-			for (int i = 0; i < MAX_CLIENTS; i++) {
-				if (!driver->clients[i].allocated) {
-					break;
-				}
-			}
-			if (i == MAX_CLIENTS) {
-				WriteLog("Something went disastrously wrong, we have more clients in the table than is correct for our open/close counts", uMsg);
-				return MMSYSERR_ALLOCATED;
-			}
-			clientNum = i;
-		}
-		MIDIOPENDESC *desc = (MIDIOPENDESC *)dwParam1;
-		driver->clients[clientNum].allocated = true;
-		driver->clients[clientNum].flags = HIWORD(dwParam2);
-		driver->clients[clientNum].callback = desc->dwCallback;
-		driver->clients[clientNum].instance = desc->dwInstance;
-		*(LONG *)dwUser = clientNum;
-		driver->clientCount++;
-		DoCallback(uDeviceID, clientNum, MOM_OPEN, NULL, NULL);
-		return MMSYSERR_NOERROR;
-	}
+		return OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
 
 	case MODM_CLOSE:
-		if (!driver->clients[dwUser].allocated) {
-			WriteLog("MODM_CLOSE for a client we don't have marked as allocated", uMsg);
-			return MMSYSERR_INVALPARAM;
-		}
-		driver->clients[dwUser].allocated = false;
-		driver->clientCount--;
-		if(driver->clientCount <= 0) {
-			WriteLog("Close with deinitialization",uMsg);
-			ShutdownDirectMusicInterface();
-		} else {
-			WriteLog("Close without deinitialization",uMsg);
-		}
-		DoCallback(uDeviceID, dwUser, MOM_CLOSE, NULL, NULL);
-		return MMSYSERR_NOERROR;
+		return CloseDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
 
 	case MODM_PREPARE:
 		return MMSYSERR_NOTSUPPORTED;
