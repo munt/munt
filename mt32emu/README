@@ -1,0 +1,31 @@
+Munt mt32emu
+************
+
+mt32emu is a module of the Munt project. It produces a C++ static link library
+named libmt32emu which provides classes to emulate (approximately) the Roland
+MT-32, CM-32L and LAPC-I synthesiser modules.
+
+This library is intended for developers wishing to integrate an MT-32 emulator
+into a driver or application. "Official" drivers for Windows and Linux (with
+ALSA) are available in the Munt project and use this library: mt32emu_win32drv
+and mt32emu_alsadrv, respectively.
+
+mt32emu can be built using Microsoft Visual Studio .NET 2003 using the provided
+project file (mt32emu_msvc7.vcproj).
+
+For information on building mt32emu using the GNU toolchain, see the INSTALL
+file. If this file is not present (e.g. if you have freshly checked this module
+out from CVS), run:
+
+sh autogen.sh
+
+For license information, including a warranty disclaimer, see the COPYING file.
+
+
+Trademark disclaimer
+--------------------
+
+Roland is a trademark of Roland Corp. All other brand and product names are
+trademarks or registered trademarks of their respective holder. Use of
+trademarks is for informational purposes only and does not imply endorsement by
+or affiliation with the holder.
