@@ -39,6 +39,7 @@
 // The tuning is slightly off for 22050 (probably anything other than 32KHz)
 //#define SAMPLERATE 22050
 #define SAMPLERATE 44100
+//#define SAMPLERATE 32000
 
 int MT32_Report(void *userData, MT32Emu::ReportType type, const void *reportData) {
 #if MT32EMU_USE_EXTINT == 1
