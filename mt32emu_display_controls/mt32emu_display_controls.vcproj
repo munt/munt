@@ -34,7 +34,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/noentry"
-				AdditionalDependencies="nochkclr.obj mscoree.lib"
+				AdditionalDependencies="nochkclr.obj mscoree.lib msvcrtd.lib SDL_net.lib"
 				OutputFile="$(OutDir)\$(ProjectName).dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
@@ -81,7 +81,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/noentry"
-				AdditionalDependencies="nochkclr.obj mscoree.lib SDL_net.lib msvcrt.lib"
+				AdditionalDependencies="nochkclr.obj mscoree.lib msvcrt.lib SDL_net.lib"
 				OutputFile="$(OutDir)\$(ProjectName).dll"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"/>
