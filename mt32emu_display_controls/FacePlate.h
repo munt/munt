@@ -48,8 +48,9 @@ public __gc class FacePlate : public System::Windows::Forms::UserControl, public
 			buttonsSelected = new System::Boolean[32];
 			InitializeComponent();
 			displayMode = 0;
+			notifyCountDown = 0;
 			systemParam = new MT32Emu::MemParams::SystemArea();
-			setLCDText(S"1 2 3 4 5 R |vol:100");
+			setLCDText(S"1 2 3 4 5 R |vol:100", false);
 		}
 
 	System::Void knobUpdated(int newValue) {
@@ -74,7 +75,7 @@ public __gc class FacePlate : public System::Windows::Forms::UserControl, public
 			if((addr == 0x100000) && (displayMode == 0)) {
 				char strBuf[512];
 				sprintf(strBuf, "1 2 3 4 5 R |vol:%3d", buf[0x16]);
-				setLCDText(new String(strBuf));
+				setLCDText(new String(strBuf), false);
 			}
 
 		}
@@ -84,7 +85,12 @@ public __gc class FacePlate : public System::Windows::Forms::UserControl, public
 				case 0:
 					ki->requestInfo(0x100000, 0x17);
 					break;
+				case 1:
+					--notifyCountDown;
+					if(notifyCountDown == 0) displayMode = 0;
+					break;
 				default:
+					displayMode = 0;
 					break;
 			}
 
@@ -100,9 +106,17 @@ public __gc class FacePlate : public System::Windows::Forms::UserControl, public
 			this->lcdDisplay1->Visible = false;
 	}
 
+	System::Void setLCDText(System::String * lcdText, bool special) {
+				if(special) {
+					displayMode = 1;
+					notifyCountDown = 200;
+				}
+				this->lcdDisplay1->setDisplayText(lcdText);
+			}
 
 	System::Void setLCDText(System::String * lcdText) {
-				this->lcdDisplay1->setDisplayText(lcdText);
+				this->setLCDText(lcdText, true);
+
 			}
 	System::Void workMidiLight(System::Drawing::Color useColor) {
 				this->midiLight->set_BackColor(useColor);
@@ -177,6 +191,7 @@ public __gc class FacePlate : public System::Windows::Forms::UserControl, public
 	private: System::Windows::Forms::PictureBox *  midiLight;
 	private: System::Boolean buttonsSelected[];
 	private: System::Int32 displayMode;
+	private: System::Int32 notifyCountDown;
 	private: mt32emu_display_controls::LCDDisplay *  lcdDisplay1;
 	private: mt32emu_display_controls::DisplayKnob *  displayKnob1;
 	private: MT32Emu::MemParams::SystemArea * systemParam;
