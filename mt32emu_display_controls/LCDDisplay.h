@@ -26,9 +26,15 @@ namespace mt32emu_display_controls
 
 			currentText = S"";
 			backPen = new System::Drawing::SolidBrush(Color::FromArgb(98, 127, 0));
-			frontPen = new System::Drawing::SolidBrush(Color::FromArgb(212, 234, 0));
+			//frontPen = new System::Drawing::SolidBrush(Color::FromArgb(212, 234, 0));
+			frontPen = new System::Drawing::SolidBrush(Color::FromArgb(232, 254, 0));
 			offBuffer = new Bitmap(680, 57);
 			doubleBuffer = new Bitmap(171, 15);
+			tripleBuffer = new Bitmap(187, 28);
+			g = Graphics::FromImage(this->offBuffer);
+			dbg = Graphics::FromImage(this->doubleBuffer);
+			tbg = Graphics::FromImage(this->tripleBuffer);
+			drawMaskedChars = true;
 
 		}
 
@@ -37,6 +43,14 @@ namespace mt32emu_display_controls
 				currentText = useText;
 				this->Invalidate();
 			}
+		}
+
+		System::Void startMaskingChars() {
+			drawMaskedChars = true;
+		}
+
+		System::Void stopMaskingChars() {
+			drawMaskedChars = false;
 		}
 
 		System::Void setMaskedChar(int i, bool value) {
@@ -63,10 +77,15 @@ namespace mt32emu_display_controls
 		System::ComponentModel::Container* components;
 		System::String * currentText;
 		System::Boolean maskedChar[];
+		System::Boolean drawMaskedChars;
 		System::Drawing::SolidBrush * backPen;
 		System::Drawing::SolidBrush * frontPen;
 		Bitmap * offBuffer;
 		Bitmap * doubleBuffer;
+		Bitmap * tripleBuffer;
+		Graphics * g;
+		Graphics * dbg;
+		Graphics * tbg;
 
 		/// <summary>
 		/// Required method for Designer support - do not modify
@@ -84,17 +103,18 @@ namespace mt32emu_display_controls
 
 		}
 
-	public: System::Void OnPaint(System::Windows::Forms::PaintEventArgs* e) {
-				Graphics * dispGraph = e->Graphics;
 
-				//dispGraph->DrawImage(this->BackgroundImage, 0,0, 187, 28);
+
+	public: System::Void OnPaintBackground(System::Windows::Forms::PaintEventArgs* e) {
+			}
+	public: System::Void OnPaint(System::Windows::Forms::PaintEventArgs* e) {
+				
+				Graphics * dispGraph = e->Graphics;
 
 				Encoding * ascii = Encoding::ASCII;
 
 				Byte asciiString[] = ascii->GetBytes(this->currentText);
 
-				Graphics * g = Graphics::FromImage(this->offBuffer);
-				Graphics * dbg = Graphics::FromImage(this->doubleBuffer);
 				//Bitmap * offBuffer = new Bitmap(151, 15);
 
 				int xat, xstart, yat, i;
@@ -119,7 +139,7 @@ namespace mt32emu_display_controls
 					for(t=0;t<9;t++) {
 						xat = xstart;
 						unsigned char fval;
-						if((this->maskedChar[i]) && (t != 7)) {
+						if((this->maskedChar[i]) && (t != 7) && (drawMaskedChars)) {
 							fval = 0x1f;
 						} else {
 							fval = Font_6x8[c][t];
@@ -142,10 +162,15 @@ namespace mt32emu_display_controls
 				dbg->InterpolationMode = System::Drawing::Drawing2D::InterpolationMode::HighQualityBicubic;
 				dbg->Clear(Color::Transparent);
 				dbg->DrawImage(offBuffer,0,0,171,15);
-				dbg->Flush();
 
+				tbg->InterpolationMode = System::Drawing::Drawing2D::InterpolationMode::NearestNeighbor;
+				tbg->DrawImage(this->BackgroundImage, 0,0, 187,28);
+				tbg->DrawImage(doubleBuffer, 7, 7, 171, 15);
+
+				
 				dispGraph->InterpolationMode = System::Drawing::Drawing2D::InterpolationMode::NearestNeighbor;
-				dispGraph->DrawImage(doubleBuffer, 7, 7, 171, 15);
+				//dispGraph->DrawImage(doubleBuffer, 7, 7, 171, 15);
+				dispGraph->DrawImage(tripleBuffer, 0, 0, 187, 28);
 				
 			 }
 

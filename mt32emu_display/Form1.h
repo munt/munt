@@ -423,11 +423,11 @@ namespace mt32emu_display
 								}
 								chanList[i].assignedPart = buffer[2 + (i * 3) + 1];
 
-								if((chanList[i].assignedPart < 6) || (chanList[i].assignedPart == 9)) {
+								if((chanList[i].assignedPart < 5) || (chanList[i].assignedPart == 8)) {
 									int pUse = chanList[i].assignedPart;
 									if (pUse == 8) pUse = 5;
-									//if((t == 1) || (t == 2)) {
-									if(t == 1) {
+									if((t == 1) || (t == 2)) {
+									//if(t == 1) {
 										this->partActive[pUse] = true;
 									}
 								}
@@ -437,13 +437,13 @@ namespace mt32emu_display
 							channelStatus->sendUpdateData((char *)&buffer[0], count, chanList);
 
 							if(anyActive) {
-								this->facePlate->workMidiLight(System::Drawing::Color::Lime);
+								this->facePlate->turnOnMidiLight();
 							} else {
-								this->facePlate->workMidiLight(System::Drawing::Color::FromArgb(41,42,51));
+								this->facePlate->turnOffMidiLight();
 							}
 
 							for(i=0;i<6;i++) {
-								//this->facePlate->setMaskedChar(i * 2, this->partActive[i]);
+								this->facePlate->setMaskedChar(i * 2, this->partActive[i]);
 							}
 
 							// TODO: Doesn't seem to work.  Wanted to get the buffer size so I could change
@@ -484,7 +484,6 @@ namespace mt32emu_display
 						}
 
 					} else {
-						this->facePlate->workMidiLight(System::Drawing::Color::FromArgb(41,42,51));
 						break;
 					}
 				}
