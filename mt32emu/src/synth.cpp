@@ -351,6 +351,10 @@ bool Synth::open(SynthProperties &useProp) {
 
 	// This is to help detect bugs
 	memset(&mt32ram, '?', sizeof(mt32ram));
+	for (int i = 128; i < 192; i++) {
+		// If something sets a patch to point to an uninitialised memory timbre, don't play anything
+		mt32ram.timbres[i].timbre.common.pmute = 0;
+	}
 
 	printDebug("Loading Control ROM");
 	if (!loadControlROM("MT32_CONTROL.ROM")) {
