@@ -109,9 +109,6 @@
 			RelativePath="{ReferencesPath}\Microsoft.VisualC.dll"/>
 		<AssemblyReference
 			RelativePath="mscorlib.dll"/>
-		<ProjectReference
-			ReferencedProjectIdentifier="{896C32F8-77E0-4C8B-B78A-DDB172E66062}"
-			Name="mt32emu_display_controls"/>
 		<AssemblyReference
 			RelativePath="System.dll"/>
 		<AssemblyReference
@@ -153,32 +150,6 @@
 			<File
 				RelativePath=".\stdafx.h">
 			</File>
-			<Filter
-				Name="Source Files"
-				Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
-				UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
-				<File
-					RelativePath=".\AssemblyInfo.cpp">
-				</File>
-				<File
-					RelativePath=".\Form1.cpp">
-				</File>
-				<File
-					RelativePath=".\stdafx.cpp">
-					<FileConfiguration
-						Name="Debug|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="1"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							UsePrecompiledHeader="1"/>
-					</FileConfiguration>
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -192,6 +163,32 @@
 			</File>
 			<File
 				RelativePath=".\note.ico">
+			</File>
+		</Filter>
+		<Filter
+			Name="Source Files"
+			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
+			<File
+				RelativePath=".\AssemblyInfo.cpp">
+			</File>
+			<File
+				RelativePath=".\Form1.cpp">
+			</File>
+			<File
+				RelativePath=".\stdafx.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<File
