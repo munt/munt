@@ -716,7 +716,7 @@ bool Partial::shouldReverb() {
 }
 
 Bit32u Partial::getAmpEnvelope() {
-	Bit32u tc;
+	Bit32s tc;
 
 	EnvelopeStatus *tStat = &envs[EnvelopeType_amp];
 
@@ -814,7 +814,11 @@ PastCalc:
 			}
 		}
 	}
-	return tc;
+	if (tc < 0) {
+		synth->printDebug("*** ERROR: tc < 0 (%d) at getAmpEnvelope()", tc);
+		tc = 0;
+	}
+	return (Bit32u)tc;
 }
 
 Bit32s Partial::getPitchEnvelope() {
