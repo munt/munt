@@ -57,7 +57,10 @@ protected:
 	Synth *synth;
 	char name[8]; // "Part 1".."Part 8", "Rhythm"
 	char currentInstr[11];
-	Bit32u volume;
+	int expression;
+	Bit32u volumeMult;
+
+	void updateVolume();
 	void backupCacheToPartials(PatchCache cache[4]);
 	void cacheTimbre(PatchCache cache[4], const TimbreParam *timbre);
 	void playPoly(const PatchCache cache[4], unsigned int key, int freqNum, int vel);
@@ -67,17 +70,19 @@ public:
 	Part(Synth *synth, unsigned int usePartNum);
 	virtual void playNote(unsigned int key, int vel);
 	void stopNote(unsigned int key);
-	void allStop();
-	void setVolume(int vol);
+	void allNotesOff();
+	void allSoundOff();
+	void setVolume(int midiVolume);
+	void setExpression(int midiExpression);
 	virtual void setPan(unsigned int midiPan);
 	virtual void setBend(unsigned int midiBend);
 	virtual void setModulation(unsigned int midiModulation);
-	virtual void setProgram(unsigned int patchNum);
+	virtual void setProgram(unsigned int midiProgram);
 	void setHoldPedal(bool pedalval);
 	void stopPedalHold();
 	virtual void refresh();
 	virtual void refreshTimbre(unsigned int absTimbreNum);
-	void setTimbre(TimbreParam *timbre);
+	virtual void setTimbre(TimbreParam *timbre);
 	virtual unsigned int getAbsTimbreNum() const;
 };
 
@@ -86,12 +91,13 @@ class RhythmPart: public Part {
 	const MemParams::RhythmTemp *rhythmTemp;
 
 	// This caches the timbres/settings in use by the rhythm part
-	PatchCache drumCache[64][4];
-	StereoVolume drumPan[64];
+	PatchCache drumCache[85][4];
+	StereoVolume drumPan[85];
 public:
 	RhythmPart(Synth *synth, unsigned int usePartNum);
-	void refreshTimbre(unsigned int timbreNum);
 	void refresh();
+	void refreshTimbre(unsigned int timbreNum);
+	void setTimbre(TimbreParam *timbre);
 	void playNote(unsigned int key, int vel);
 	unsigned int getAbsTimbreNum() const;
 	void setPan(unsigned int midiPan);

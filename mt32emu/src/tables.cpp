@@ -57,14 +57,14 @@ Bit32s pulseoffset[101];
 Bit32s ampbiastable[13][128];
 Bit32s fbiastable[15][128];
 float filtcoeff[FILTERGRAN][31][8];
-Bit32s finetable[201];
 Bit32u lfoptable[101][101];
-Bit32s ampveltable[128][64];
+Bit32u ampveltable[128][101];
 Bit32s pwveltable[15][128];
 Bit32s envtimetable[101];
 Bit32s decaytimetable[101];
 Bit32s lasttimetable[101];
-Bit32s voltable[128];
+Bit32s velTable[128];
+Bit32s volTable[101];
 float ResonFactor[31];
 float ResonInv[31];
 
@@ -198,16 +198,20 @@ static void initEnvelopes(float samplerate) {
 		if (pt < 0)
 			pt = 0;
 
-		pulsetable[lf] = (int)(pt * 215.04f) + 128;
+		// Original (CC version)
+		//pulsetable[lf] = (int)(pt * 210.04f) + 128;
+
+		// Approximation from sample comparison
+		pulsetable[lf] = (int)(pt * 179.0f) + 128;
 
 		// I am certain of this:  Verified by hand LFO log
-		lfotable[lf] = (Bit32u)(((float)samplerate) / (powf(1.088883372f,(float)lf) * 0.021236044f));
+		lfotable[lf] = (Bit32u)(((float)samplerate) / (powf(1.088883372f, (float)lf) * 0.021236044f));
 
 		//LOG(LOG_ERROR|LOG_MISC,"lf %d = lfo %d pulsetable %d", lf, lfotable[lf], pulsetable[lf]);
 	}
 }
 
-void TableInitialiser::initMT32ConstantTables(Synth *synth) {
+void Tables::initMT32ConstantTables(Synth *synth) {
 	if (initialisedSampleRate > 0.0f) {
 		return;
 	}
@@ -221,8 +225,13 @@ void TableInitialiser::initMT32ConstantTables(Synth *synth) {
 	int res;
 	float fres;
 	for (res = 0; res < 31; res++) {
-		fres = (float)res / 30.0f;
-		ResonFactor[res] = (powf(2.0f, logf(powf(fres, 16.0f))) * 2.5f) + 1.0f;
+		//FIXME: logf(0) doesn't make sense, not sure whether this is the correct solution.
+		if (res == 0) {
+			ResonFactor[res] = 2.0f;
+		} else {
+			fres = (float)res / 30.0f;
+			ResonFactor[res] = (powf(2.0f, logf(powf(fres, 16.0f))) * 2.5f) + 1.0f;
+		}
 		ResonInv[res] = 1 / ResonFactor[res];
 	}
 
@@ -279,27 +288,29 @@ void TableInitialiser::initMT32ConstantTables(Synth *synth) {
 		}
 	}
 
-	for (lf = 0; lf <= 200; lf++) {
-		//FIXME:KG: I'm fairly sure this is wrong... lf=100 should yield no fine-tuning (4096)?
-		finetable[lf] = (int)((powf(2.0f, (((float)lf / 200.0f) - 1.0f) / 12.0f)) * 4096.0f);
 
-		// FIXME:KG: This now gives a range of -1 .. 1 semitone. Should be correct, but check
-		//finetable[lf] = (int)((powf(2.0f, (((float)lf / 100.0f) - 1.0f) / 12.0f)) * 4096.0f);
-	}
-
-	float lff;
 	for (lf = 0; lf < 128; lf++) {
-		for (velt = 0; velt < 64; velt++) {
-			lff = 1 - (powf(((128.0f - (float)lf) / 64.0f), 0.25f) * ((float)velt / 96));
-			ampveltable[lf][velt] = (int)(lff * 256.0);
-			//synth->printDebug("Ampveltable: %d, %d = %d", lf, velt, ampveltable[lf][velt]);
+		float veloFract = lf / 127.0f;
+		for (int velsens = 0; velsens <= 100; velsens++) {
+			float sensFract = (velsens - 50) / 50.0f;
+			if (velsens < 50) {
+				ampveltable[lf][velsens] = FIXEDPOINT_MAKE(1.0f / powf(2.0f, veloFract * -sensFract * 127.0f / 20.0f), 8);
+			} else {
+				ampveltable[lf][velsens] = FIXEDPOINT_MAKE(1.0f / powf(2.0f, (1.0f - veloFract) * sensFract * 127.0f / 20.0f), 8);
+			}
 		}
 	}
 
 	for (lf = 0; lf < 128; lf++) {
-		// Converts MIDI velocity to volume.
-		voltable[lf] = FIXEDPOINT_MAKE(powf((float)lf / 127.0f, FLOAT_LN), 7);
+		// Converts MIDI velocity to volume multiplier
+		velTable[lf] = FIXEDPOINT_MAKE(powf((float)lf / 127.0f, FLOAT_LN), 7);
 	}
+
+	for (lf = 0; lf <= 100; lf++) {
+		// Converts the 0-100 range used by the MT-32 to volume multiplier
+		volTable[lf] = FIXEDPOINT_MAKE(powf((float)lf / 100.0f, FLOAT_LN), 7);
+	}
+
 	for (unsigned int i = 0; i < MAX_SAMPLE_OUTPUT; i++) {
 		int myRand;
 		myRand = rand();
@@ -470,7 +481,7 @@ static void initDep(NoteLookup *noteLookup, float f) {
 	//synth->printDebug("F %f d1 %x d2 %x d3 %x d4 %x d5 %x", f, noteLookup->fildepTable[0], noteLookup->fildepTable[1], noteLookup->fildepTable[2], noteLookup->fildepTable[3], noteLookup->fildepTable[4]);
 }
 
-Bit16s TableInitialiser::clampWF(Synth *synth, char *n, float ampVal, double input) {
+Bit16s Tables::clampWF(Synth *synth, char *n, float ampVal, double input) {
 	Bit32s x = (Bit32s)(input * ampVal);
 	if (x < -ampVal - 1) {
 		synth->printDebug("%s==%d<-WGAMP-1!", n, x);
@@ -482,7 +493,7 @@ Bit16s TableInitialiser::clampWF(Synth *synth, char *n, float ampVal, double inp
 	return (Bit16s)x;
 }
 
-File *TableInitialiser::initWave(Synth *synth, NoteLookup *noteLookup, float ampVal, float div, File *file) {
+File *Tables::initWave(Synth *synth, NoteLookup *noteLookup, float ampVal, float div, File *file) {
 	int iDiv = (int)div;
 	noteLookup->waveformSize[0] = iDiv << 2;
 	noteLookup->waveformSize[1] = iDiv << 2;
@@ -509,18 +520,21 @@ File *TableInitialiser::initWave(Synth *synth, NoteLookup *noteLookup, float amp
 		double sd = DOUBLE_PI / (div * 2.0);
 
 		for (int fa = 0; fa < (iDiv << 2); fa++) {
+			// sa ranges from 0 to 2PI
 			double sa = fa * sd;
 
-#if 0
-			//FIXME:KG: Credit Timo Strunk (bastardo on #scummvm) for help with this!
-			double saw = 0.5 * DOUBLE_PI - sa / 2;
-#else
+			// Calculate a sample for the bandlimited sawtooth wave
 			double saw = 0.0;
-			for (int sinus = 1; sinus < div; sinus++) {
-				double fsinus = (double)sinus;
-				saw += sin(fsinus * sa) / fsinus;
+			int sincs = iDiv;
+			// Canadacow assures me that we should do at least 256 sincs regardless of frequency
+			if (sincs < 256)
+				sincs = 256;
+			double sinus = 1.0;
+			for (int sincNum = 1; sincNum <= sincs; sincNum++) {
+				saw += sin(sinus * sa) / sinus;
+				sinus++;
 			}
-#endif
+
 			// This works pretty well
 			// Multiplied by 0.84 so that the spikes caused by bandlimiting don't overdrive the amplitude
 			noteLookup->waveforms[0][fa] = clampWF(synth, "saw", ampVal, -saw / (0.5 * DOUBLE_PI) * 0.84);
@@ -571,7 +585,7 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 	}
 }
 
-File *TableInitialiser::initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float masterTune, PCMWaveEntry pcmWaves[128], File *file) {
+File *Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float masterTune, PCMWaveEntry *pcmWaves, File *file) {
 	float freq = (float)(masterTune * pow(2.0, ((double)note - MIDDLEA) / 12.0));
 	float div = rate / freq;
 	noteLookup->div = (int)div;
@@ -586,10 +600,11 @@ File *TableInitialiser::initNote(Synth *synth, NoteLookup *noteLookup, float not
 	file = initWave(synth, noteLookup, (const float)WGAMP, div, file);
 
 	// Create the pitch tables
-
+	if (noteLookup->wavTable == NULL)
+		noteLookup->wavTable = new Bit32u[synth->controlROMMap->pcmCount];
 	double rateMult = 32000.0 / rate;
 	double tuner = freq * 65536.0f;
-	for (int pc = 0; pc < 128; pc++) {
+	for (int pc = 0; pc < synth->controlROMMap->pcmCount; pc++) {
 		noteLookup->wavTable[pc] = (int)(tuner / pcmWaves[pc].tune * rateMult);
 	}
 
@@ -598,7 +613,7 @@ File *TableInitialiser::initNote(Synth *synth, NoteLookup *noteLookup, float not
 	return file;
 }
 
-bool TableInitialiser::initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float rate, float masterTune) {
+bool Tables::initNotes(Synth *synth, PCMWaveEntry *pcmWaves, float rate, float masterTune) {
 	const char *NoteNames[12] = {
 		"C ", "C#", "D ", "D#", "E ", "F ", "F#", "G ", "G#", "A ", "A#", "B "
 	};
@@ -659,7 +674,7 @@ bool TableInitialiser::initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float
 	bool abort = false;
 	synth->report(ReportType_progressInit, &progress);
 	for (int f = LOWEST_NOTE; f <= HIGHEST_NOTE; f++) {
-		synth->printDebug("Initialising note %s%d", NoteNames[f % 12], (f / 12) - 1);
+		synth->printDebug("Initialising note %s%d", NoteNames[f % 12], (f / 12) - 2);
 		NoteLookup *noteLookup = &noteLookups[f - LOWEST_NOTE];
 		file = initNote(synth, noteLookup, (float)f, rate, masterTune, pcmWaves, file);
 		progress = (f - LOWEST_NOTE + 1) / (float)NUM_NOTES;
@@ -700,7 +715,7 @@ bool TableInitialiser::initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float
 	return !abort;
 }
 
-void TableInitialiser::freeNotes() {
+void Tables::freeNotes() {
 	for (int t = 0; t < 3; t++) {
 		for (int m = 0; m < NUM_NOTES; m++) {
 			if (noteLookups[m].waveforms[t] != NULL) {
@@ -708,12 +723,16 @@ void TableInitialiser::freeNotes() {
 				noteLookups[m].waveforms[t] = NULL;
 				noteLookups[m].waveformSize[t] = 0;
 			}
+			if (noteLookups[m].wavTable != NULL) {
+				delete[] noteLookups[m].wavTable;
+				noteLookups[m].wavTable = NULL;
+			}
 		}
 	}
 	initialisedMasterTune = 0.0f;
 }
 
-bool TableInitialiser::initMT32Tables(Synth *synth, PCMWaveEntry pcmWaves[128], float sampleRate, float masterTune) {
+bool Tables::initMT32Tables(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune) {
 	if (sampleRate <= 0.0f) {
 		synth->printDebug("Bad sampleRate (%d <= 0.0f)", sampleRate);
 		return false;
@@ -726,8 +745,8 @@ bool TableInitialiser::initMT32Tables(Synth *synth, PCMWaveEntry pcmWaves[128], 
 		initEnvelopes(sampleRate);
 	}
 	if (initialisedSampleRate != sampleRate || initialisedMasterTune != masterTune) {
-		freeNotes();
-		if (!initNotes(synth, pcmWaves, sampleRate, masterTune)) {
+		synth->tables.freeNotes();
+		if (!synth->tables.initNotes(synth, pcmWaves, sampleRate, masterTune)) {
 			return false;
 		}
 		initialisedSampleRate = sampleRate;

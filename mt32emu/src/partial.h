@@ -78,6 +78,10 @@ private:
 
 	EnvelopeStatus envs[3];
 
+	// Only used for PCM partials
+	int pcmNum;
+	PCMWaveEntry *pcmWave;
+
 	int pulsewidth;
 
 	Bit32u lfoPos;

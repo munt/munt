@@ -58,27 +58,33 @@ extern Bit16s smallnoise[MAX_SAMPLE_OUTPUT];
 // Various LUTs
 extern Bit32s keytable[217];
 extern Bit16s sintable[65536];
+extern float ResonInv[31];
+
 extern Bit32u lfotable[101];
 extern Bit32s penvtable[16][101];
+
 extern Bit32s filveltable[128][101];
 extern Bit32s veltkeytable[5][128];
+
 extern Bit32s pulsetable[101];
 extern Bit32s ampbiastable[13][128];
 extern Bit32s fbiastable[15][128];
 extern float filtcoeff[FILTERGRAN][31][8];
-extern Bit32s finetable[201];
+
 extern Bit32u lfoptable[101][101];
-extern Bit32s ampveltable[128][64];
+extern Bit32u ampveltable[128][101];
+
 extern Bit32s pwveltable[15][128];
+
 extern Bit32s envtimetable[101];
 extern Bit32s decaytimetable[101];
 extern Bit32s lasttimetable[101];
-extern Bit32s voltable[128];
-extern float ResonInv[31];
+extern Bit32s velTable[128];
+extern Bit32s volTable[101];
 
 struct NoteLookup {
 	Bit32u div;
-	Bit32u wavTable[128];
+	Bit32u *wavTable;
 	Bit32s sawTable[101];
 	Bit32s fildepTable[5];
 	Bit32s timekeyTable[5];
@@ -88,17 +94,16 @@ struct NoteLookup {
 	Bit32u waveformSize[3];
 };
 
-extern NoteLookup noteLookups[NUM_NOTES];
-
-class TableInitialiser {
+class Tables {
 	static void initMT32ConstantTables(Synth *synth);
 	static Bit16s clampWF(Synth *synth, char *n, float ampVal, double input);
 	static File *initWave(Synth *synth, NoteLookup *noteLookup, float ampsize, float div, File *file);
-	static bool initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float rate, float tuning);
+	bool initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float rate, float tuning);
 public:
+	NoteLookup noteLookups[NUM_NOTES];
 	static bool initMT32Tables(Synth *synth, PCMWaveEntry pcmWaves[128], float sampleRate, float masterTune);
-	static File *initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float tuning, PCMWaveEntry pcmWaves[128], File *file);
-	static void freeNotes();
+	File *initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float tuning, PCMWaveEntry pcmWaves[128], File *file);
+	void freeNotes();
 };
 
 }

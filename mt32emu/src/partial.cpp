@@ -50,6 +50,7 @@ Partial::~Partial() {
 	for (int i = 0; i < 3; i++) {
 		delete[] noteLookupStorage.waveforms[i];
 	}
+	delete[] noteLookupStorage.wavTable;
 #endif
 }
 
@@ -138,10 +139,23 @@ void Partial::startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *
 	play = true;
 	initKeyFollow(poly->freqnum); // Initialises noteVal, filtVal and realVal
 #if MT32EMU_ACCURATENOTES == 0
-	noteLookup = &noteLookups[noteVal - LOWEST_NOTE];
+	noteLookup = &synth->tables.noteLookups[noteVal - LOWEST_NOTE];
 #else
-	TableInitialiser::initNote(synth, &noteLookupStorage, noteVal, (float)synth->myProp.sampleRate, synth->masterTune, synth->PCMList, NULL);
+	Tables::initNote(synth, &noteLookupStorage, noteVal, (float)synth->myProp.sampleRate, synth->masterTune, synth->pcmWaves, NULL);
 #endif
+
+	if (patchCache->PCMPartial) {
+		pcmNum = patchCache->pcm;
+		if (synth->controlROMMap->pcmCount > 128) {
+			// CM-32L, etc. support two "banks" of PCMs, selectable by waveform type parameter.
+			if (patchCache->waveform > 1) {
+				pcmNum += 128;
+			}
+		}
+		pcmWave = &synth->pcmWaves[pcmNum];
+	} else {
+		pcmWave = NULL;
+	}
 
 	lfoPos = 0;
 	pulsewidth = patchCache->pulsewidth + pwveltable[patchCache->pwsens][poly->vel];
@@ -189,6 +203,7 @@ Bit16s *Partial::generateSamples(long length) {
 	// Generate samples
 
 	Bit16s *partialBuf = &myBuffer[0];
+	Bit32u volume = *poly->volumeptr;
 	while (length--) {
 		Bit32s envval;
 		Bit32s sample = 0;
@@ -203,13 +218,8 @@ Bit16s *Partial::generateSamples(long length) {
 					ampval = 127;
 				}
 
-				ampval = voltable[ampval];
-				int tmpvel;
-				if (patchCache->ampenvdir == 1)
-					tmpvel = 127 - poly->vel;
-				else
-					tmpvel = poly->vel;
-				ampval = (ampval * ampveltable[tmpvel][(int)patchCache->ampEnv.velosens]) >> 8;
+				ampval = velTable[ampval];
+				ampval = FIXEDPOINT_UMULT(ampval, ampveltable[poly->vel][(int)patchCache->ampEnv.velosens], 8);
 				//if (envs[EnvelopeType_amp].sustaining)
 				ampEnvVal = ampval;
 			}
@@ -236,19 +246,13 @@ Bit16s *Partial::generateSamples(long length) {
 		}
 
 		int delta;
-		// These two are only for PCM partials, obviously
-		PCMWaveEntry *pcmWave = NULL; // Initialise to please compiler
-		Bit32u pcmAddr = 0; // Initialise to please compiler
 
 		// Wrap positions or end if necessary
 		if (patchCache->PCMPartial) {
 			// PCM partial
-			int len;
-			pcmWave = &synth->PCMList[patchCache->pcm];
 
-			delta = noteLookup->wavTable[patchCache->pcm];
-			pcmAddr = pcmWave->addr;
-			len = pcmWave->len;
+			delta = noteLookup->wavTable[pcmNum];
+			int len = pcmWave->len;
 			if (partialOff.pcmplace >= len) {
 				if (pcmWave->loop) {
 					//partialOff.pcmplace = partialOff.pcmoffset = 0;
@@ -261,13 +265,13 @@ Bit16s *Partial::generateSamples(long length) {
 			}
 		} else {
 			// Synthesis partial
-			delta = 0x10707;
+			delta = 0x10000;//0x10707;
 			partialOff.pcmplace %= (Bit16u)(noteLookup->div << 1);
 		}
 
 		// Build delta for position of next sample
 		// Fix delta code
-		Bit64u tdelta = (Bit64u)delta;
+		Bit32u tdelta = delta;
 #if MT32EMU_ACCURATENOTES == 0
 		tdelta = (tdelta * fineShift) >> 12;
 #endif
@@ -275,7 +279,6 @@ Bit16s *Partial::generateSamples(long length) {
 		tdelta = (tdelta * lfoat) >> 12;
 		tdelta = (tdelta * bendShift) >> 12;
 		delta = (int)tdelta;
-		Bit32u volume = *poly->volumeptr;
 
 		// Get waveform - either PCM or synthesized sawtooth or square
 		if (ampEnvVal > 0) {
@@ -283,20 +286,21 @@ Bit16s *Partial::generateSamples(long length) {
 				// Render PCM sample
 				int ra, rb, dist;
 				Bit32u taddr;
+				Bit32u pcmAddr = pcmWave->addr;
 				if (delta < 0x10000) {
 					// Linear sound interpolation
 					taddr = pcmAddr + partialOff.pcmplace;
-					ra = synth->romfile[taddr];
+					ra = synth->pcmROMData[taddr];
 					taddr++;
 					if (taddr == pcmAddr + pcmWave->len) {
 						// Past end of PCM
 						if (pcmWave->loop) {
-							rb = synth->romfile[pcmAddr];
+							rb = synth->pcmROMData[pcmAddr];
 						} else {
 							rb = 0;
 						}
 					} else {
-						rb = synth->romfile[taddr];
+						rb = synth->pcmROMData[taddr];
 					}
 					dist = rb - ra;
 					sample = (ra + ((dist * (Bit32s)(partialOff.pcmoffset >> 8)) >> 8));
@@ -306,7 +310,7 @@ Bit16s *Partial::generateSamples(long length) {
 					// a point.  This is too slow.  The following approximates this as fast as possible
 					int idelta = delta >> 16;
 					taddr = pcmAddr + partialOff.pcmplace;
-					ra = synth->romfile[taddr++];
+					ra = synth->pcmROMData[taddr++];
 					for (int ix = 0; ix < idelta - 1; ix++) {
 						if (taddr == pcmAddr + pcmWave->len) {
 							// Past end of PCM
@@ -317,7 +321,7 @@ Bit16s *Partial::generateSamples(long length) {
 								break;
 							}
 						}
-						ra += synth->romfile[taddr++];
+						ra += synth->pcmROMData[taddr++];
 					}
 					sample = ra / idelta;
 				}
@@ -331,20 +335,19 @@ Bit16s *Partial::generateSamples(long length) {
 
 				//synth->printDebug("Filtval: %d", filtval);
 
-				if (patchCache->waveform == 0) {
+				if ((patchCache->waveform & 1) == 0) {
 					// Square waveform.  Made by combining two pregenerated bandlimited
 					// sawtooth waveforms
-					// Pulse width is not yet correct
 					if (div == 0) {
 						synth->printDebug("ERROR: div=0 generating square wave, this should never happen!");
 						div = 1;
 					}
-					Bit32u ofsA = toff % div;
-					Bit32u ofsB = toff + FIXEDPOINT_UMULT(div, pulsetable[pulsewidth], 8);
-					ofsB = ofsB % div;
-					Bit16s pa = noteLookup->waveforms[0][(ofsA << 2) + minorplace];
-					Bit16s pb = noteLookup->waveforms[0][(ofsB << 2) + minorplace];
-					filterInput = (pa - pb) / 2;
+					Bit32u ofsA = ((toff << 2) + minorplace) % noteLookup->waveformSize[0];
+					int width = FIXEDPOINT_UMULT(div, pulsetable[pulsewidth], 6);
+					Bit32u ofsB = (ofsA + width) % noteLookup->waveformSize[0];
+					Bit16s pa = noteLookup->waveforms[0][ofsA];
+					Bit16s pb = noteLookup->waveforms[0][ofsB];
+					filterInput = pa - pb;
 					// Non-bandlimited squarewave
 					/*
 					ofs = ((div << 1) * pulsetable[patchCache->pulsewidth]) >> 8;
@@ -382,7 +385,7 @@ Bit16s *Partial::generateSamples(long length) {
 				//Very exact filter
 				if (filtval > ((FILTERGRAN * 15) / 16))
 					filtval = ((FILTERGRAN * 15) / 16);
-				sample = (Bit32s)floor((synth->iirFilter)((float)filterInput, &history[0], filtcoeff[filtval][(int)patchCache->filtEnv.resonance], patchCache->filtEnv.resonance));
+				sample = (Bit32s)floorf((synth->iirFilter)((float)filterInput, &history[0], filtcoeff[filtval][(int)patchCache->filtEnv.resonance], patchCache->filtEnv.resonance));
 				if (sample < -32768) {
 					synth->printDebug("Overdriven amplitude for %d: %d:=%d < -32768", patchCache->waveform, filterInput, sample);
 					sample = -32768;
@@ -631,12 +634,9 @@ bool Partial::produceOutput(Bit16s *partialBuf, long length) {
 Bit32s Partial::getFiltEnvelope() {
 	int reshigh;
 
-	int cutoff,depth,keyfollow, realfollow;
+	int cutoff, depth;
 
 	EnvelopeStatus *tStat  = &envs[EnvelopeType_filt];
-
-	keyfollow = filtVal;
-	realfollow = realVal;
 
 	if (tStat->decaying) {
 		reshigh = tStat->envbase;
@@ -686,7 +686,7 @@ Bit32s Partial::getFiltEnvelope() {
 	int bias = patchCache->tvfbias;
 	int dist;
 
-	if (bias!=0) {
+	if (bias != 0) {
 		//FIXME:KG: Is this really based on pitch (as now), or key pressed?
 		//synth->printDebug("Cutoff before %d", cutoff);
 		if (patchCache->tvfdir == 0) {
@@ -710,19 +710,19 @@ Bit32s Partial::getFiltEnvelope() {
 
 	Bit32s tmp;
 
-	cutoff *= keyfollow;
-	cutoff /= realfollow;
+	cutoff *= filtVal;
+	cutoff /= realVal; //FIXME:KG: With filter keyfollow 0, this makes no sense. What's correct?
 
-	reshigh *= keyfollow;
-	reshigh /= realfollow;
+	reshigh *= filtVal;
+	reshigh /= realVal; //FIXME:KG: As above for cutoff
 
-	if (cutoff>100)
+	if (cutoff > 100)
 		cutoff = 100;
-	else if (cutoff<0)
+	else if (cutoff < 0)
 		cutoff = 0;
-	if (reshigh>100)
+	if (reshigh > 100)
 		reshigh = 100;
-	else if (reshigh<0)
+	else if (reshigh < 0)
 		reshigh = 0;
 	tmp = noteLookup->nfiltTable[cutoff][reshigh];
 	//tmp *= keyfollow;
