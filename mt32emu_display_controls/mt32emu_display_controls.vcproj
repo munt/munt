@@ -130,6 +130,9 @@
 				RelativePath=".\AssemblyInfo.cpp">
 			</File>
 			<File
+				RelativePath=".\BalloonTip.cpp">
+			</File>
+			<File
 				RelativePath=".\ChannelDisplay.cpp">
 			</File>
 			<File
@@ -179,6 +182,25 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			<File
+				RelativePath=".\BalloonTip.h"
+				FileType="1">
+				<File
+					RelativePath=".\BalloonTip.resX">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.BalloonTip.resources"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.BalloonTip.resources"/>
+					</FileConfiguration>
+				</File>
+			</File>
 			<File
 				RelativePath=".\ChannelDisplay.h"
 				FileType="4">

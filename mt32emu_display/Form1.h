@@ -40,6 +40,7 @@ namespace mt32emu_display
 			this->settingsStatus->Tag = ci;
 			this->ticksSinceContact = 5000 / this->timer1->get_Interval();
 			this->settingsStatus->disableActiveSettings();
+			this->balloonTip1 = new mt32emu_display_controls::BalloonTip();
 			
 
 		}
@@ -95,6 +96,8 @@ namespace mt32emu_display
 	private: mt32emu_display_controls::ControlInterface * ci;
 	private: mt32emu_display_controls::PartialDisplay *  partialStatus;
 	private: mt32emu_display_controls::SettingsDisplay *  settingsStatus;
+	private: mt32emu_display_controls::BalloonTip *  balloonTip1;
+	private: System::Windows::Forms::NotifyIcon *  notifyIcon1;
 	private: System::ComponentModel::IContainer *  components;
 	private:
 		/// <summary>
@@ -126,6 +129,7 @@ namespace mt32emu_display
 			this->ci = new mt32emu_display_controls::ControlInterface(this->components);
 			this->partialStatus = new mt32emu_display_controls::PartialDisplay();
 			this->settingsStatus = new mt32emu_display_controls::SettingsDisplay();
+			this->notifyIcon1 = new System::Windows::Forms::NotifyIcon(this->components);
 			this->groupBox3->SuspendLayout();
 			this->SuspendLayout();
 			// 
@@ -242,6 +246,12 @@ namespace mt32emu_display
 			this->settingsStatus->Size = System::Drawing::Size(608, 240);
 			this->settingsStatus->TabIndex = 28;
 			this->settingsStatus->Visible = false;
+			// 
+			// notifyIcon1
+			// 
+			this->notifyIcon1->Icon = (__try_cast<System::Drawing::Icon *  >(resources->GetObject(S"notifyIcon1.Icon")));
+			this->notifyIcon1->Text = S"Munt Control Panel";
+			this->notifyIcon1->Visible = true;
 			// 
 			// Form1
 			// 
@@ -456,6 +466,9 @@ namespace mt32emu_display
 						if(buffer[0] == 2) {
 							found = true;
 							this->facePlate->setLCDText(new System::String((char *)&buffer[1]));
+							char tmpBuf[256];
+							sprintf(tmpBuf, "Munt Control Panel");
+							this->balloonTip1->ShowBallon(1, tmpBuf, (char *)&buffer[1], 15000);
 						}
 
 						if(buffer[0] == 5) {

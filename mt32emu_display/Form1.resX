@@ -280,25 +280,25 @@
     <value>Private</value>
   </data>
   <data name="channelTip.Location" type="System.Drawing.Point, System.Drawing, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>93, 25</value>
+    <value>100, 17</value>
   </data>
   <data name="channelTip.Modifiers" type="System.CodeDom.MemberAttributes, System, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>Private</value>
   </data>
   <data name="oscoTip.Location" type="System.Drawing.Point, System.Drawing, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>185, 25</value>
+    <value>205, 17</value>
   </data>
   <data name="oscoTip.Modifiers" type="System.CodeDom.MemberAttributes, System, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>Private</value>
   </data>
   <data name="settingsTip.Location" type="System.Drawing.Point, System.Drawing, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>274, 25</value>
+    <value>294, 17</value>
   </data>
   <data name="settingsTip.Modifiers" type="System.CodeDom.MemberAttributes, System, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>Private</value>
   </data>
   <data name="partialTip.Location" type="System.Drawing.Point, System.Drawing, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>379, 25</value>
+    <value>399, 17</value>
   </data>
   <data name="partialTip.Modifiers" type="System.CodeDom.MemberAttributes, System, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>Private</value>
@@ -1056,22 +1056,50 @@
     <value>Private</value>
   </data>
   <data name="ci.Location" type="System.Drawing.Point, System.Drawing, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
+    <value>497, 17</value>
   </data>
   <data name="ci.Modifiers" type="System.CodeDom.MemberAttributes, System, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>Private</value>
   </data>
-  <data name="partialStatus.Locked" type="System.Boolean, mscorlib, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-    <value>False</value>
-  </data>
   <data name="partialStatus.Modifiers" type="System.CodeDom.MemberAttributes, System, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>Private</value>
+  </data>
+  <data name="partialStatus.Locked" type="System.Boolean, mscorlib, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
   </data>
   <data name="settingsStatus.Locked" type="System.Boolean, mscorlib, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>False</value>
   </data>
   <data name="settingsStatus.Modifiers" type="System.CodeDom.MemberAttributes, System, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>Private</value>
+  </data>
+  <data name="notifyIcon1.Location" type="System.Drawing.Point, System.Drawing, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>556, 17</value>
+  </data>
+  <data name="notifyIcon1.Modifiers" type="System.CodeDom.MemberAttributes, System, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>Private</value>
+  </data>
+  <data name="notifyIcon1.Icon" type="System.Drawing.Icon, System.Drawing, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        AAABAAIAEBAQAAAAAAAoAQAAJgAAACAgEAAAAAAA6AIAAE4BAAAoAAAAEAAAACAAAAABAAQAAAAAAMAA
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAgAAAAICAAIAAAACAAIAAgIAAAICAgADAwMAAAAD/AAD/
+        AAAA//8A/wAAAP8A/wD//wAA////AAAAAAAAAAAAAH//j/j/jwAAf/+P+P+PAAB4iIiIiIgAAH93h3h3
+        jwAAf3eHeHePAAB4iIiIiIgAAH93h3h3jwAAf3eHeHePAAB4iIiIiIgAAH93h3h3jwAAf3eHeHePAAB4
+        iIiIgAAAAH//j/j39wAAf/+P+PdwAAB3d3d3dwAAwAEAAMABAADAAQAAwAEAAMABAADAAQAAwAEAAMAB
+        AADAAQAAwAEAAMABAADAAQAAwAEAAMADAADABwAAwA8AACgAAAAgAAAAQAAAAAEABAAAAAAAAAIAAAAA
+        AAAAAAAAEAAAABAAAAAAAAAAAACAAACAAAAAgIAAgAAAAIAAgACAgAAAgICAAMDAwAAAAP8AAP8AAAD/
+        /wD/AAAA/wD/AP//AAD///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAB4AAAAAA
+        AAAAAAAAB3AAAAAHd3d3d3d3d3d3AAAAAAAAAAAAAAAAAAAAAAAIgAAAAAAHiIiIiIiIiIgAAAgAAAAA
+        CAAAAAAAAAAAAAAABwAAAAgAAAAAAAAAAAAAAAAAiAcIAAAAAAAAAAAAAAAAAAAHCAAIcAAHAAAAAAAA
+        AAAABwgAgAAAAAgAAAAAAAAAAAcIAHAAAAAAgAAAAAAAAAAHCABwAAAAAHAAAAAAAAAABwgABwAAAABw
+        AAAAAAAAAAcIAACHAAAAcAAAAAAAAAAHCAAAAACAgHAAAACIiIiIhwiIiIiIiHB4gAAHAAAAAAAAAAAA
+        AAAAAAcACHd3d3dwAAd3d3d3AAd4AAAAAAAABwAAcAAAAIBwAAAAAAAAAAcAAABwAACAcAAAAAAAAAAH
+        AAAAAHgAgHAAAAAAAAAABwAAAAAAeIBwAAAAAAAAAAgAAAAAAAAAcAAAAAAAAAAACHAAAAAAAHAAAAAA
+        AAAAAAAIcAAAAABwAAAAAAAAAAAAAABwAAAAcAAAAAAAAAAAAAAAAIAAAHAAAAAAAAAAAAAAAAAAhwBw
+        AAAAAAAAAAAAAAAAAAAHcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///////////Af
+        //+AAAADgAAAA4AAAAPgA///+AP///8j////44D//+MAP//jAB//4wAf/+OAH//jwB//4/0fwAAAB4AA
+        AAOAAAAD/+B/H//gHx//4AMf/+AAH//gAB//+AAf//4AH///wB////Af///8H////5///////////w==
+</value>
   </data>
   <data name="$this.Locked" type="System.Boolean, mscorlib, Version=1.0.5000.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>False</value>
