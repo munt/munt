@@ -40,9 +40,6 @@ static const Bit32u depexp[5] = {3000, 950, 485, 255, 138};
 static const double tkcatconst[5] = {0.0, 0.005853144, 0.011148054, 0.019086143, 0.043333215};
 static const double tkcatmult[5] = {1.0, 1.058245688, 1.048488989, 1.016049301, 1.097538067};
 
-static float initialisedSampleRate = 0.0f;
-static float initialisedMasterTune = 0.0f;
-
 Bit16s smallnoise[MAX_SAMPLE_OUTPUT];
 
 // Some optimization stuff
@@ -215,9 +212,6 @@ static void initEnvelopes(float samplerate) {
 }
 
 void Tables::initMT32ConstantTables(Synth *synth) {
-	if (initialisedSampleRate > 0.0f) {
-		return;
-	}
 	int lf;
 	synth->printDebug("Initialising Pitch Tables");
 	for (lf = -108; lf <= 108; lf++) {
@@ -722,7 +716,12 @@ void Tables::freeNotes() {
 	initialisedMasterTune = 0.0f;
 }
 
-bool Tables::initMT32Tables(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune) {
+Tables::Tables() {
+	initialisedSampleRate = 0.0f;
+	initialisedMasterTune = 0.0f;
+}
+
+bool Tables::init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune) {
 	if (sampleRate <= 0.0f) {
 		synth->printDebug("Bad sampleRate (%d <= 0.0f)", sampleRate);
 		return false;

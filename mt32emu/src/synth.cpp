@@ -1038,7 +1038,7 @@ bool Synth::refreshSystem() {
 	printDebug(" Part assign:     1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
 	printDebug(" Master volume: %d", mt32ram.system.masterVol);
 	masterVolume = (Bit16u)(mt32ram.system.masterVol * 32767 / 100);
-	if (!Tables::initMT32Tables(this, pcmWaves, (float)myProp.sampleRate, masterTune)) {
+	if (!tables.init(this, pcmWaves, (float)myProp.sampleRate, masterTune)) {
 		report(ReportType_errorSampleRate, NULL);
 		return false;
 	}
