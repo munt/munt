@@ -1,4 +1,4 @@
-/* Copyright (c) 2003-2004 Various contributors
+/* Copyright (c) 2003-2005 Various contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -53,36 +53,6 @@ const int NUM_NOTES = HIGHEST_NOTE - LOWEST_NOTE + 1; // Number of slots for not
 
 class Synth;
 
-extern Bit16s smallnoise[MAX_SAMPLE_OUTPUT];
-
-// Various LUTs
-extern Bit32s keytable[217];
-extern Bit16s sintable[65536];
-extern float ResonInv[31];
-
-extern Bit32u lfotable[101];
-extern Bit32s penvtable[16][101];
-
-extern Bit32s filveltable[128][101];
-extern Bit32s veltkeytable[5][128];
-
-extern Bit32s pulsetable[101];
-extern Bit32s ampbiastable[13][128];
-extern Bit32s fbiastable[15][128];
-extern float filtcoeff[FILTERGRAN][31][8];
-
-extern Bit32u lfoptable[101][101];
-extern Bit32u ampveltable[128][101];
-
-extern Bit32s pwveltable[15][128];
-
-extern Bit32s envtimetable[101];
-extern Bit32s envdiftimetable[101];
-extern Bit32s decaytimetable[101];
-extern Bit32s lasttimetable[101];
-extern Bit32s velTable[128];
-extern Bit32s volTable[101];
-
 struct NoteLookup {
 	Bit32u div2;
 	Bit32u *wavTable;
@@ -101,13 +71,40 @@ struct KeyLookup {
 class Tables {
 	float initialisedSampleRate;
 	float initialisedMasterTune;
-	static void initMT32ConstantTables(Synth *synth);
+	void initMT32ConstantTables(Synth *synth);
 	static Bit16s clampWF(Synth *synth, const char *n, float ampVal, double input);
 	static File *initWave(Synth *synth, NoteLookup *noteLookup, float ampsize, float div2, File *file);
 	bool initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float rate, float tuning);
+	void initEnvelopes(float sampleRate);
+	void initFiltCoeff(float samplerate);
 public:
+	// Constant LUTs
+	Bit32s tvfKeyfollowMult[217];
+	Bit32s tvfVelfollowMult[128][101];
+	Bit32s tvfBiasMult[15][128];
+	Bit32u tvaVelfollowMult[128][101];
+	Bit32s tvaBiasMult[13][128];
+	Bit16s noiseBuf[MAX_SAMPLE_OUTPUT];
+	Bit16s sintable[65536];
+	Bit32s pitchEnvVal[16][101];
+	Bit32s envTimeVelfollowMult[5][128];
+	Bit32s pwVelfollowAdd[15][128];
+	float resonanceFactor[31];
+	Bit32u lfoShift[101][101];
+	Bit32s pwFactor[101];
+	Bit32s volumeMult[101];
+
+	// LUTs varying with sample rate
+	Bit32u envTime[101];
+	Bit32u envDeltaMaxTime[101];
+	Bit32u envDecayTime[101];
+	Bit32u lfoPeriod[101];
+	float filtCoeff[FILTERGRAN][31][8];
+
+	// Various LUTs for each note and key
 	NoteLookup noteLookups[NUM_NOTES];
 	KeyLookup keyLookups[97];
+
 	Tables();
 	bool init(Synth *synth, PCMWaveEntry pcmWaves[128], float sampleRate, float masterTune);
 	File *initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float tuning, PCMWaveEntry pcmWaves[128], File *file);

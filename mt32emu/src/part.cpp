@@ -1,4 +1,4 @@
-/* Copyright (c) 2003-2004 Various contributors
+/* Copyright (c) 2003-2005 Various contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -342,8 +342,6 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 
 		// Calculate and cache TVA envelope stuff
 		cache[t].ampEnv = timbre->partial[t].tva;
-		for (int i = 0; i < 4; i++)
-			cache[t].ampEnv.envlevel[i] = (char)((float)cache[t].ampEnv.envlevel[i] * 1.27f);
 		cache[t].ampEnv.level = (char)((float)cache[t].ampEnv.level * 1.27f);
 
 		cache[t].ampbias[0] = fixBiaslevel(cache[t].ampEnv.biaspoint1, &cache[t].ampdir[0]);
@@ -351,8 +349,6 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 		cache[t].ampbias[1] = fixBiaslevel(cache[t].ampEnv.biaspoint2, &cache[t].ampdir[1]);
 		cache[t].ampblevel[1] = 12 - cache[t].ampEnv.biaslevel2;
 		cache[t].ampdepth = cache[t].ampEnv.envvkf * cache[t].ampEnv.envvkf;
-		cache[t].ampsustain = cache[t].ampEnv.envlevel[3];
-		cache[t].amplevel = cache[t].ampEnv.level;
 
 		// Calculate and cache filter stuff
 		cache[t].filtEnv = timbre->partial[t].tvf;
@@ -364,7 +360,7 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 
 		// Calculate and cache LFO stuff
 		cache[t].lfodepth = timbre->partial[t].lfo.depth;
-		cache[t].lfoperiod = lfotable[(int)timbre->partial[t].lfo.rate];
+		cache[t].lfoperiod = synth->tables.lfoPeriod[(int)timbre->partial[t].lfo.rate];
 		cache[t].lforate = timbre->partial[t].lfo.rate;
 		cache[t].modsense = timbre->partial[t].lfo.modsense;
 	}
@@ -389,7 +385,7 @@ const char *Part::getName() const {
 }
 
 void Part::updateVolume() {
-	volumeMult = volTable[patchTemp->outlevel * expression / 127];
+	volumeMult = synth->tables.volumeMult[patchTemp->outlevel * expression / 127];
 }
 
 int Part::getVolume() const {

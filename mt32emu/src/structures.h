@@ -1,4 +1,4 @@
-/* Copyright (c) 2003-2004 Various contributors
+/* Copyright (c) 2003-2005 Various contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -233,7 +233,6 @@ struct PatchCache {
 	TimbreParam::partialParam::tvaParam ampEnv;
 	TimbreParam::partialParam::tvfParam filtEnv;
 
-	Bit32s ampsustain;
 	Bit32s pitchsustain;
 	Bit32s filtsustain;
 

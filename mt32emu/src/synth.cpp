@@ -1,4 +1,4 @@
-/* Copyright (c) 2003-2004 Various contributors
+/* Copyright (c) 2003-2005 Various contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -38,7 +38,7 @@ const ControlROMMap ControlROMMaps[3] = {
 	// (Note that all but CM-32L ROM actually have 86 entries for rhythmTemp)
 };
 
-float iir_filter_normal(float input, float *hist1_ptr, float *coef_ptr, int revLevel) {
+float iir_filter_normal(float input, float *hist1_ptr, float *coef_ptr) {
 	float *hist2_ptr;
 	float output,new_hist;
 
@@ -68,8 +68,6 @@ float iir_filter_normal(float input, float *hist1_ptr, float *coef_ptr, int revL
 	*hist2_ptr++ = *hist1_ptr;
 	*hist1_ptr++ = new_hist;
 
-	output *= ResonInv[revLevel];
-
 	return(output);
 }
 
@@ -87,7 +85,6 @@ Synth::Synth() {
 	isOpen = false;
 	reverbModel = NULL;
 	partialManager = NULL;
-	memset(&tables.noteLookups, 0, sizeof(tables.noteLookups));
 	memset(parts, 0, sizeof(parts));
 }
 

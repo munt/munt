@@ -1,4 +1,4 @@
-/* Copyright (c) 2003-2004 Various contributors
+/* Copyright (c) 2003-2005 Various contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -30,8 +30,8 @@
 namespace MT32Emu {
 
 //Amplitude time velocity follow exponential coefficients
-const double tvcatconst[5] = {0.0, 0.002791309, 0.005942882, 0.012652792, 0.026938637};
-const double tvcatmult[5] = {1.0, 1.072662811, 1.169129367, 1.288579123, 1.229630539};
+static const double tvcatconst[5] = {0.0, 0.002791309, 0.005942882, 0.012652792, 0.026938637};
+static const double tvcatmult[5] = {1.0, 1.072662811, 1.169129367, 1.288579123, 1.229630539};
 
 // These are division constants for the TVF depth key follow
 static const Bit32u depexp[5] = {3000, 950, 485, 255, 138};
@@ -39,34 +39,6 @@ static const Bit32u depexp[5] = {3000, 950, 485, 255, 138};
 //Envelope time keyfollow exponential coefficients
 static const double tkcatconst[5] = {0.0, 0.005853144, 0.011148054, 0.019086143, 0.043333215};
 static const double tkcatmult[5] = {1.0, 1.058245688, 1.048488989, 1.016049301, 1.097538067};
-
-Bit16s smallnoise[MAX_SAMPLE_OUTPUT];
-
-// Some optimization stuff
-Bit32s keytable[217];
-Bit16s sintable[65536];
-Bit32u lfotable[101];
-Bit32s penvtable[16][101];
-Bit32s filveltable[128][101];
-Bit32s veltkeytable[5][128];
-Bit32s pulsetable[101];
-Bit32s pulseoffset[101];
-Bit32s ampbiastable[13][128];
-Bit32s fbiastable[15][128];
-float filtcoeff[FILTERGRAN][31][8];
-Bit32u lfoptable[101][101];
-Bit32u ampveltable[128][101];
-Bit32s pwveltable[15][128];
-Bit32s envtimetable[101];
-Bit32s envdiftimetable[101];
-Bit32s decaytimetable[101];
-Bit32s lasttimetable[101];
-Bit32s velTable[128];
-Bit32s volTable[101];
-float ResonFactor[31];
-float ResonInv[31];
-
-NoteLookup noteLookups[NUM_NOTES];
 
 // Begin filter stuff
 
@@ -167,66 +139,46 @@ static void initFilter(float fs, float fc, float *icoeff, float Q) {
 	icoeff[0] = (float)k;
 }
 
-static void initFiltCoeff(float samplerate) {
+void Tables::initFiltCoeff(float samplerate) {
 	for (int j = 0; j < FILTERGRAN; j++) {
 		for (int res = 0; res < 31; res++) {
-			float tres = ResonFactor[res];
-			initFilter((float)samplerate, (((float)(j+1.0)/FILTERGRAN)) * ((float)samplerate/2), filtcoeff[j][res], tres);
+			float tres = resonanceFactor[res];
+			initFilter((float)samplerate, (((float)(j+1.0)/FILTERGRAN)) * ((float)samplerate/2), filtCoeff[j][res], tres);
 		}
 	}
 }
 
-static void initEnvelopes(float samplerate) {
+void Tables::initEnvelopes(float samplerate) {
 	for (int lf = 0; lf <= 100; lf++) {
 		float elf = (float)lf;
 
 		// General envelope
-		// This formula fits observation of the CM-32L by +/- 0.03s or so for the second time value in the filter
-		// (note that that one is clamped to 63). I think it also fits T1, which is unclamped.
-		// Much more intuitive version of formula.  I'm am almost certain this is what the
-		// MT-32 itself uses.  The division by 32768 is because that is the sampling rate used by
-		// the MT-32.
-		float seconds = powf(2, (elf / 8.0f) + 7) / 32768.0f;
-
+		// This formula fits observation of the CM-32L by +/- 0.03s or so for the second time value in the filter,
+		// when all other times were 0 and all levels were 100. Note that variations occur depending on the level
+		// delta of the section, which we're not fully emulating.
+		float seconds = powf(2.0f, (elf / 8.0f) + 7.0f) / 32768.0f;
 		int samples = (int)(seconds * samplerate);
-		envtimetable[lf] = samples;
+		envTime[lf] = samples;
 
-		// Cap on envelope times depending on the delta
+		// Cap on envelope times depending on the level delta
 		if(elf == 0) {
-			envdiftimetable[lf] = 63;
+			envDeltaMaxTime[lf] = 63;
 		} else {
 			float cap = 11 * log(elf) + 64;
-			if(cap > 100.0f) cap = 100.0f;
-			envdiftimetable[lf] = (int)cap;
+			if(cap > 100.0f) {
+				cap = 100.0f;
+			}
+			envDeltaMaxTime[lf] = (int)cap;
 		}
 		
 
-		// Decay envelope -- shorter for some reason
-		// This is also the timing for the envelope right before the
-		// amp and filter envelope sustains
-		//float logtime = elf * 0.088362939f;
-		//lasttimetable[lf] = decaytimetable[lf] = (int)((exp(logtime)/(312.12*2)) * samplerate);
-		
-
-
+		// This (approximately) represents the time durations when the target level is 0.
+		// Not sure why this is a special case, but it's seen to be from the real thing.
 		seconds = powf(2, (elf / 8.0f) + 6) / 32768.0f;
-		lasttimetable[lf] = decaytimetable[lf]  = (int)(seconds * samplerate);
-
-		float mv = elf / 100.0f;
-		float pt = mv - 0.5f;
-		if (pt < 0)
-			pt = 0;
-
-		// Original (CC version)
-		//pulsetable[lf] = (int)(pt * 210.04f) + 128;
-
-		// Approximation from sample comparison
-		pulsetable[lf] = (int)(pt * 179.0f) + 128;
+		envDecayTime[lf]  = (int)(seconds * samplerate);
 
 		// I am certain of this:  Verified by hand LFO log
-		lfotable[lf] = (Bit32u)(((float)samplerate) / (powf(1.088883372f, (float)lf) * 0.021236044f));
-
-		//LOG(LOG_ERROR|LOG_MISC,"lf %d = lfo %d pulsetable %d", lf, lfotable[lf], pulsetable[lf]);
+		lfoPeriod[lf] = (Bit32u)(((float)samplerate) / (powf(1.088883372f, (float)lf) * 0.021236044f));
 	}
 }
 
@@ -234,20 +186,19 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	int lf;
 	synth->printDebug("Initialising Pitch Tables");
 	for (lf = -108; lf <= 108; lf++) {
-		keytable[lf + 108] = (int)(256 * powf(2.0f, (float)(lf / 24.0f)));
+		tvfKeyfollowMult[lf + 108] = (int)(256 * powf(2.0f, (float)(lf / 24.0f)));
 		//synth->printDebug("KT %d = %d", f, keytable[f+108]);
 	}
 
 	for (int res = 0; res < 31; res++) {
-		ResonFactor[res] = powf((float)res / 30.0f, 5.0f) + 1.0f;
-		ResonInv[res] = 1 / ResonFactor[res];
+		resonanceFactor[res] = powf((float)res / 30.0f, 5.0f) + 1.0f;
 	}
 
 	int period = 65536;
 
 	for (int ang = 0; ang < period; ang++) {
 		int halfang = (period / 2);
-		int angval  = ang % halfang;
+		int angval = ang % halfang;
 		float tval = (((float)angval / (float)halfang) - 0.5f) * 2;
 		if (ang >= halfang)
 			tval = -tval;
@@ -261,12 +212,12 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 			if (dep > 0) {
 				float ff = (float)(exp(3.5f * tvcatconst[dep] * (59.0f - (float)velt)) * tvcatmult[dep]);
 				tempdep = 256.0f * ff;
-				veltkeytable[dep][velt] = (int)tempdep;
+				envTimeVelfollowMult[dep][velt] = (int)tempdep;
 				//if ((velt % 16) == 0) {
 				//	synth->printDebug("Key %d, depth %d, factor %d", velt, dep, (int)tempdep);
 				//}
 			} else
-				veltkeytable[dep][velt] = 256;
+				envTimeVelfollowMult[dep][velt] = 256;
 		}
 
 		for (dep = -7; dep < 8; dep++) {
@@ -274,7 +225,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 			fldep = powf(fldep,2.5f);
 			if (dep < 0)
 				fldep = fldep * -1.0f;
-			pwveltable[dep+7][velt] = Bit32s((fldep * (float)velt * 100) / 128.0);
+			pwVelfollowAdd[dep+7][velt] = Bit32s((fldep * (float)velt * 100) / 128.0);
 		}
 	}
 
@@ -286,37 +237,44 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 			float fbase;
 
 			if (velt > 64)
-				filveltable[velt][dep] = (int)(flogdep * 256.0);
+				synth->tables.tvfVelfollowMult[velt][dep] = (int)(flogdep * 256.0);
 			else {
 				//lff = 1 - (pow(((128.0 - (float)lf) / 64.0),.25) * ((float)velt / 96));
 				fbase = 1 - (powf(((float)dep / 100.0f),.25f) * ((float)(64-velt) / 96.0f));
-				filveltable[velt][dep] = (int)(fbase * 256.0);
+				synth->tables.tvfVelfollowMult[velt][dep] = (int)(fbase * 256.0);
 			}
 			//synth->printDebug("Filvel dep %d velt %d = %x", dep, velt, filveltable[velt][dep]);
 		}
 	}
-
 
 	for (lf = 0; lf < 128; lf++) {
 		float veloFract = lf / 127.0f;
 		for (int velsens = 0; velsens <= 100; velsens++) {
 			float sensFract = (velsens - 50) / 50.0f;
 			if (velsens < 50) {
-				ampveltable[lf][velsens] = FIXEDPOINT_MAKE(1.0f / powf(2.0f, veloFract * -sensFract * 127.0f / 20.0f), 8);
+				tvaVelfollowMult[lf][velsens] = FIXEDPOINT_MAKE(1.0f / powf(2.0f, veloFract * -sensFract * 127.0f / 20.0f), 8);
 			} else {
-				ampveltable[lf][velsens] = FIXEDPOINT_MAKE(1.0f / powf(2.0f, (1.0f - veloFract) * sensFract * 127.0f / 20.0f), 8);
+				tvaVelfollowMult[lf][velsens] = FIXEDPOINT_MAKE(1.0f / powf(2.0f, (1.0f - veloFract) * sensFract * 127.0f / 20.0f), 8);
 			}
 		}
 	}
 
-	for (lf = 0; lf < 128; lf++) {
-		// Converts MIDI velocity to volume multiplier
-		velTable[lf] = FIXEDPOINT_MAKE(powf((float)lf / 127.0f, FLOAT_LN), 7);
+	for (lf = 0; lf <= 100; lf++) {
+		// Converts the 0-100 range used by the MT-32 to volume multiplier
+		volumeMult[lf] = FIXEDPOINT_MAKE(powf((float)lf / 100.0f, FLOAT_LN), 7);
 	}
 
 	for (lf = 0; lf <= 100; lf++) {
-		// Converts the 0-100 range used by the MT-32 to volume multiplier
-		volTable[lf] = FIXEDPOINT_MAKE(powf((float)lf / 100.0f, FLOAT_LN), 7);
+		float mv = lf / 100.0f;
+		float pt = mv - 0.5f;
+		if (pt < 0)
+			pt = 0;
+
+		// Original (CC version)
+		//pwFactor[lf] = (int)(pt * 210.04f) + 128;
+
+		// Approximation from sample comparison
+		pwFactor[lf] = (int)(pt * 179.0f) + 128;
 	}
 
 	for (unsigned int i = 0; i < MAX_SAMPLE_OUTPUT; i++) {
@@ -326,7 +284,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		// This one is slower but works with all values of RAND_MAX
 		myRand = (int)((myRand - RAND_MAX / 2) / (float)RAND_MAX * (7168 / 2));
 		//FIXME:KG: Original ultimately set the lowest two bits to 0, for no obvious reason
-		smallnoise[i] = (Bit16s)myRand;
+		noiseBuf[i] = (Bit16s)myRand;
 	}
 
 	float tdist;
@@ -378,10 +336,10 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 					finalval = 4096.0f * powf(2, lfp);
 				pval = (int)finalval;
 
-				penvtable[lf][depat] = pval;
+				pitchEnvVal[lf][depat] = pval;
 				//synth->printDebug("lf %d depat %d pval %d tlf %f lfp %f", lf,depat,pval, tlf, lfp);
 			} else {
-				penvtable[lf][depat] = 4096;
+				pitchEnvVal[lf][depat] = 4096;
 				//synth->printDebug("lf %d depat %d pval 4096", lf, depat);
 			}
 		}
@@ -397,7 +355,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 
 			pval = (int)finalval;
 
-			lfoptable[lf][depat] = pval;
+			lfoShift[lf][depat] = pval;
 
 			//synth->printDebug("lf %d depat %d pval %x", lf,depat,pval);
 		}
@@ -409,27 +367,27 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 			if (lf == 0) {
 				amplog = 0;
 				dval = 1;
-				ampbiastable[lf][distval] = 256;
+				tvaBiasMult[lf][distval] = 256;
 			} else {
 				/*
 				amplog = powf(1.431817011f, (float)lf) / FLOAT_PI;
 				dval = ((128.0f - (float)distval) / 128.0f);
 				amplog = expf(amplog);
 				dval = powf(amplog, dval) / amplog;
-				ampbiastable[lf][distval] = (int)(dval * 256.0);
+				tvaBiasMult[lf][distval] = (int)(dval * 256.0);
 				*/
 				// Lets assume for a second it's linear
 
 				// Distance of full volume reduction
 				amplog = (float)(12.0f / (float)lf) * 24.0f;
 				if(distval > amplog) {
-					ampbiastable[lf][distval] = 0;
+					tvaBiasMult[lf][distval] = 0;
 				} else {
 					dval = (amplog - (float)distval) / amplog;
-					ampbiastable[lf][distval] = (int)(dval * 256.0f);
+					tvaBiasMult[lf][distval] = (int)(dval * 256.0f);
 				}
 			}
-			//synth->printDebug("Ampbias lf %d distval %d = %f (%x) %f", lf, distval, dval, ampbiastable[lf][distval],amplog);
+			//synth->printDebug("Ampbias lf %d distval %d = %f (%x) %f", lf, distval, dval, tvaBiasMult[lf][distval],amplog);
 		}
 	}
 
@@ -440,7 +398,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 			if (lf == 7) {
 				amplog = 0;
 				dval = 1;
-				fbiastable[lf][distval] = 256;
+				tvfBiasMult[lf][distval] = 256;
 			} else {
 				//amplog = pow(1.431817011, filval) / FLOAT_PI;
 				amplog = powf(1.531817011f, filval) / FLOAT_PI;
@@ -448,16 +406,16 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 				amplog = expf(amplog);
 				dval = powf(amplog,dval)/amplog;
 				if (lf < 8) {
-					fbiastable[lf][distval] = (int)(dval * 256.0f);
+					tvfBiasMult[lf][distval] = (int)(dval * 256.0f);
 				} else {
 					dval = powf(dval, 0.3333333f);
 					if (dval < 0.01f)
 						dval = 0.01f;
 					dval = 1 / dval;
-					fbiastable[lf][distval] = (int)(dval * 256.0f);
+					tvfBiasMult[lf][distval] = (int)(dval * 256.0f);
 				}
 			}
-			//synth->printDebug("Fbias lf %d distval %d = %f (%x) %f", lf, distval, dval, fbiastable[lf][distval],amplog);
+			//synth->printDebug("Fbias lf %d distval %d = %f (%x) %f", lf, distval, dval, tvfBiasMult[lf][distval],amplog);
 		}
 	}
 }
@@ -594,7 +552,7 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 			//float freqsum = expf((cfmult + tfadd) / 30.0f) / 4.0f;
 			//float freqsum = 0.15f * expf(0.45f * ((cfmult + tfadd) / 10.0f));
 
-			float freqsum = powf(2, ((cfmult + tfadd) - 40.0f) / 16.0f);
+			float freqsum = powf(2.0f, ((cfmult + tfadd) - 40.0f) / 16.0f);
 
 			noteLookup->nfiltTable[cf][tf] = (int)((freq * freqsum) / (rate / 2) * FILTERGRAN);
 			if (noteLookup->nfiltTable[cf][tf] >= ((FILTERGRAN * 15) / 16))
@@ -752,6 +710,7 @@ void Tables::freeNotes() {
 Tables::Tables() {
 	initialisedSampleRate = 0.0f;
 	initialisedMasterTune = 0.0f;
+	memset(&noteLookups, 0, sizeof(noteLookups));
 }
 
 bool Tables::init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune) {
@@ -766,12 +725,12 @@ bool Tables::init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float 
 		initFiltCoeff(sampleRate);
 		initEnvelopes(sampleRate);
 		for (int key = 12; key <= 108; key++) {
-			initDep(&synth->tables.keyLookups[key - 12], (float)key);
+			initDep(&keyLookups[key - 12], (float)key);
 		}
 	}
 	if (initialisedSampleRate != sampleRate || initialisedMasterTune != masterTune) {
-		synth->tables.freeNotes();
-		if (!synth->tables.initNotes(synth, pcmWaves, sampleRate, masterTune)) {
+		freeNotes();
+		if (!initNotes(synth, pcmWaves, sampleRate, masterTune)) {
 			return false;
 		}
 		initialisedSampleRate = sampleRate;

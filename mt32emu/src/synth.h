@@ -1,4 +1,4 @@
-/* Copyright (c) 2003-2004 Various contributors
+/* Copyright (c) 2003-2005 Various contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -100,7 +100,7 @@ typedef void (*recalcStatusCallback)(int percDone);
 // callback routine, no status is reported.
 bool RecalcWaveforms(char * baseDir, int sampRate, recalcStatusCallback callBack);
 
-typedef float (*iir_filter_type)(float input,float *hist1_ptr, float *coef_ptr, int revLevel);
+typedef float (*iir_filter_type)(float input,float *hist1_ptr, float *coef_ptr);
 
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
 
