@@ -395,11 +395,7 @@ void Part::updateVolume() {
 
 int Part::getVolume() const {
 	// FIXME: Use the mappings for this in the control ROM
-	if(patchTemp != NULL) {
-		return patchTemp->outlevel * 127 / 100;
-	} else {
-		return 0;
-	}
+	return patchTemp->outlevel * 127 / 100;
 }
 
 void Part::setVolume(int midiVolume) {
