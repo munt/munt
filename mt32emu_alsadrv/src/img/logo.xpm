@@ -1,0 +1,38 @@
+/* XPM */
+static char *xpm_logo[] = {
+/* columns rows colors chars-per-pixel */
+"79 10 22 1",
+"  c #1f1a1a",
+". c #211c1b",
+"X c #25201f",
+"o c #292422",
+"O c #342e2c",
+"+ c #37312e",
+"@ c #3a3432",
+"# c #49423f",
+"$ c #4c4542",
+"% c #514a45",
+"& c #5f5852",
+"* c #635b55",
+"= c #756c66",
+"- c #797068",
+"; c #897f77",
+": c #8b8179",
+"> c #9e938a",
+", c #a0958b",
+"< c #b4a89d",
+"1 c #c8bbae",
+"2 c #ddcfc1",
+"3 c None",
+/* pixels */
+"                ...         ..       .....    ...   ..   #O..         .        ",
+".2> ..&2&>>,2>>=... <><> .>><;.  ..><:,,,.... ...  .....X:&... ....  ..o.  ....",
+".22...>2&...2......X...<&.O..<*X...,&........XX.......XXX,&.XX..X.2o...o.X.....",
+".2>*..1>&.X.2.....XX...<+....,*X...,&....X#-;:*:,&.=#X.,X,&.#:,&o,2:.&1:#oo:&=.",
+"X2*,X=:,*XXX2XXXXXXXX,1%.XXX#1XXXXX,:**&#o*2O;2#+2X,*XX2X,*X@X@2XX2X@2+@<#o2; X",
+"X2X2X<$,*XXX2XXo,,,XX@-1XX.+<@XXXXX,:***#X*,.*,X.2X,*XX2X,*XX**2XX2X*:XX*,o2X.X",
+"o2X,:<o,*oXo2XoXXoXoXXX,*o@<@XoXooo,*XXXoo*,X*,XX2X,*oX2X,*#<**2oo2o*:oX*:o2XXo",
+"o2o*2-o,*ooo2ooooooXooX<%X<;XoooXoo,*ooooo*,o*,oo2o,*o*2X,**,o@2oo2o@2oo,;o2ooo",
+"o2oo*oo,*ooo2ooOoooo<,<:oo2<,,%Xooo,<,,,,%*,o*,oo2O*1<*2o,*#1,;,:o:,o*<<:o@2ooo",
+"ooOoOooOoOOoooooooOooOOoOoOooOoOOooOOooOoooOOooOOooooOoooOooooooOo+OoOoOOoOooOo"
+};
