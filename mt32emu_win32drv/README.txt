@@ -8,7 +8,7 @@ License:
 See COPYING.txt. In short, this project has a MIT-style license, with no
 warranty of any kind.
 
-Installation:
+First-time Installation:
 
  1) Ensure that you have oemsetup.inf and mt32emu.dll unpacked to the same
     directory as your MT32_PCM.ROM and MT32_CONTROL.ROM (not provided).
@@ -41,3 +41,20 @@ To begin playing back MIDI through the emulator, perform the following:
 16) Open "Sounds and Audio Devices" from the Control Panel.
 17) In the "Audio" tab, select "MT-32 Synth Emulator" in the drop-down list for
     the MIDI playback device.
+
+
+Upgrading:
+ 1) Click on "Start", then "Run...".
+ 2) Type "devmgmt.msc" and press enter.
+ 3) Click on the "+" Next to "Sound, Video and Game Controllers".
+ 4) Right-click on "MT-32 Synth Emulator" and select "Update Driver".
+ 5) If asked whether you'd like to check Windows Update, select "No, not this time" and click "Next".
+ 6) Select "Select software from a list" and click "Next".
+ 7) Select "Don't search, let me choose from a list" and click "Next".
+ 8) Click "Browse...".
+ 9) Choose the address of the unzipped stuff and click "OK".
+10) Click "Next".
+11) Click "Continue installation" if asked about Windows Logo stuff.
+12) If a dialog pops up asking for the ROM files, navigate *again* to the directory to show it where the ROMs are and click OK.
+13) If asked about change in languages, confirm that you want the file replaced.
+14) You almost certainly *will* need to reboot the computer for the change to take effect.
