@@ -49,8 +49,9 @@ bool ExternalInterface::start() {
 void ExternalInterface::doControlPanelComm(Synth *synth) {
 	int reqType;
 	int i;
+	Bit16u length = 0;
 	Bit8u buffer[4096];
-	if(getStatusRequest(&reqType)) {
+	if(getStatusRequest(&reqType, (char *)buffer)) {
 		switch(reqType) {
 			case 1:
 				Bit16u *bufptr;
@@ -86,15 +87,38 @@ void ExternalInterface::doControlPanelComm(Synth *synth) {
 					bufptr++;
 					bufptr++;
 				}
+				for(i=0;i<9;i++) {
+					*bufptr++ = (MT32Emu::Bit16u)synth->getPart(i)->getVolume();
+				}
 
-				sendResponse(reqType, (char *)&buffer[0], 278 );
+				sendResponse(reqType, (char *)&buffer[0], 296 );
+				break;
+			case 2:
+				// Literal sysex from control panel
+				// Format:
+				// 2 bytes = length of raw sysex
+				// [length] bytes = raw sysex without Open/Close Exclusive bytes or machine identifiers
+				length = *(MT32Emu::Bit16u *)&buffer[0];
+				synth->playSysexWithoutHeader(0x10, MT32Emu::SYSEX_CMD_DT1, buffer + 2, length);
+				break;
+			case 3:
+				// Reserved for raw sysex reads
+				break;
+			case 4:
+				// Message data from control panel.  Specified with part and not channel mappings
+				// Format:
+				// 1 byte = part (0 - 8)
+				// 1 byte = code
+				// 1 byte = note
+				// 1 byte = velocity
+				synth->playMsgOnPart(buffer[0], buffer[1], buffer[2], buffer[3]);
 				break;
 		}
 
 	}
 }
 
-bool ExternalInterface::getStatusRequest(int *requestType) {
+bool ExternalInterface::getStatusRequest(int *requestType, char * buffer) {
 	int result;
 	UDPpacket inPacket;
 
@@ -106,6 +130,11 @@ bool ExternalInterface::getStatusRequest(int *requestType) {
 		this->ipxClientIp = inPacket.address;
 		this->knownClient = true;
 		*requestType = (int)*(Bit16u *)(&inBuffer[0]);
+		if(buffer != NULL) {
+			if(inPacket.len > 1) {
+				memcpy(buffer, &inBuffer[1], inPacket.len - 1);
+			}
+		}
 		return true;
 	} else {
         return false;
