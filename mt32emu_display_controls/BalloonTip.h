@@ -104,6 +104,7 @@ namespace mt32emu_display_controls
 				data.hWnd = (unsigned int *)m_notifyWindow;
 				data.uID = iconId;
 				data.uFlags = Info;
+				data.dwInfoFlags = 0;
 				data.uTimeoutOrVersion = timeout;
 				strcpy((char *)&data.szInfo[0], text);
 				strcpy((char *)&data.szInfoTitle[0], title);

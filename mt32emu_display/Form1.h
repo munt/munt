@@ -16,6 +16,7 @@ namespace mt32emu_display
 	using namespace System::Windows::Forms;
 	using namespace System::Data;
 	using namespace System::Drawing;
+	using namespace System::Runtime::InteropServices;
 
 	/// <summary> 
 	/// Summary for Form1
@@ -41,6 +42,46 @@ namespace mt32emu_display
 			this->ticksSinceContact = 5000 / this->timer1->get_Interval();
 			this->settingsStatus->disableActiveSettings();
 			this->balloonTip1 = new mt32emu_display_controls::BalloonTip();
+
+			// Build context menu
+			this->exitMenuItem = new MenuItem();
+			this->hbar = new MenuItem();
+			this->lcdMenuItem = new MenuItem();
+			this->contextMenu1->MenuItems->Add(this->exitMenuItem);
+			this->contextMenu1->MenuItems->Add(this->hbar);
+			this->contextMenu1->MenuItems->Add(this->lcdMenuItem);
+
+			this->exitMenuItem->Index = 0;
+			this->exitMenuItem->Text = S"E&xit";
+			this->exitMenuItem->Click += new System::EventHandler(this, &Form1::exit_Click);
+
+			this->hbar->Index = 0;
+			this->hbar->Text = S"-";
+
+			this->lcdMenuItem->Index = 0;
+			this->lcdMenuItem->Text = S"&Show LCD Text";
+			this->lcdMenuItem->Checked = true;
+			this->lcdMenuItem->Click += new System::EventHandler(this, &Form1::lcdMenu_Click);
+			
+			this->notifyIcon1->ContextMenu = this->contextMenu1;
+
+			this->alwaysTopMenu->Click += new System::EventHandler(this, &Form1::onTop_Click);
+			this->expModeMenu->Click += new System::EventHandler(this, &Form1::expandMenu_Click);
+
+
+	        // Create an instance of HookProc.
+			MouseHookProcedure = new HookProc(this, &Form1::MouseHookProc);
+
+			hHook = SetWindowsHookEx(WH_MOUSE,
+						MouseHookProcedure,
+						(IntPtr)0,
+						AppDomain::GetCurrentThreadId());
+			if(hHook == 0 )
+			{
+				MessageBox::Show("SetWindowsHookEx Failed");
+				return;
+			}
+
 			
 
 		}
@@ -57,6 +98,68 @@ namespace mt32emu_display
 		System::Void DoEvents() {
 		}
 
+		static int MouseHookProc(int nCode, System::IntPtr wParam, System::IntPtr lParam)
+		{
+			//Marshall the data from callback.
+			MouseHookStruct * MyMouseHookStruct = (MouseHookStruct* ) Marshal::PtrToStructure(lParam, __typeof(MouseHookStruct));
+
+			if (nCode < 0)
+			{
+				return CallNextHookEx(hHook, nCode, wParam, lParam);
+			}
+			else
+			{
+				//Create a string variable with shows current mouse. coordinates
+				
+				//MyMouseHookStruct->dwExtraInfo
+				Form1 * tempForm = (Form1 *)Form::ActiveForm;
+				if(tempForm != NULL) {
+					if(wParam.ToInt32() & 0x4) {
+						tempForm->showContextMenu(MyMouseHookStruct->pt.x,MyMouseHookStruct->pt.y);
+					}
+
+				}
+
+				return CallNextHookEx(hHook, nCode, wParam, lParam);
+			}
+		}
+
+	public: System::Void showContextMenu(int x, int y) {
+				this->contextMenu2->Show(this, Point(x - this->Location.X - 16, y - this->Location.Y - 32));
+			}
+		
+
+	private: System::Windows::Forms::MenuItem *  expModeMenu;
+	private: System::Windows::Forms::MenuItem *  alwaysTopMenu;
+	public: static const int WH_MOUSE = 7;
+
+	public: __delegate int HookProc(int nCode, System::IntPtr wParam, System::IntPtr lParam);
+
+	[StructLayout(LayoutKind::Sequential)]
+	__value struct POINT
+	{
+		public: int x;
+		public: int y;
+	};
+
+	[StructLayout(LayoutKind::Sequential)]
+	__value struct MouseHookStruct
+	{
+		public: POINT pt;
+		public: int hwnd;
+		public: int wHitTestCode;
+		public: int dwExtraInfo;
+		public: int mouseData;
+	};
+
+	[DllImport(S"user32.dll")]
+	static int SetWindowsHookEx(int idHook, HookProc * lpfn, System::IntPtr hInstance, int threadId);
+
+	[DllImport(S"user32.dll")]
+	static bool UnhookWindowsHookEx(int idHook);
+
+	[DllImport(S"user32.dll")]
+	static int CallNextHookEx(int idHook, int nCode, System::IntPtr wParam, System::IntPtr lParam);
 
 	protected:
 		void Dispose(Boolean disposing)
@@ -74,6 +177,7 @@ namespace mt32emu_display
 	private: System::Windows::Forms::PictureBox *  pictureBox[];
 	private: System::Windows::Forms::Timer *  timer1;
 	private: System::Int32 ticksSinceContact;
+	private: static int hHook = 0;
 
 
 
@@ -87,6 +191,10 @@ namespace mt32emu_display
 	private: System::Windows::Forms::ToolTip *  channelTip;
 	private: System::Windows::Forms::ToolTip *  oscoTip;
 	private: System::Windows::Forms::ToolTip *  settingsTip;
+	private: System::Windows::Forms::MenuItem * exitMenuItem;
+	private: System::Windows::Forms::MenuItem * lcdMenuItem;
+	private: System::Windows::Forms::MenuItem * hbar;
+
 	private: System::Boolean partActive[];
 
 	private: System::Windows::Forms::ToolTip *  partialTip;
@@ -98,6 +206,13 @@ namespace mt32emu_display
 	private: mt32emu_display_controls::SettingsDisplay *  settingsStatus;
 	private: mt32emu_display_controls::BalloonTip *  balloonTip1;
 	private: System::Windows::Forms::NotifyIcon *  notifyIcon1;
+	private: System::Windows::Forms::ContextMenu *  contextMenu1;
+	private: System::Windows::Forms::ContextMenu *  contextMenu2;
+
+
+	private: HookProc * MouseHookProcedure;
+
+	
 	private: System::ComponentModel::IContainer *  components;
 	private:
 		/// <summary>
@@ -130,6 +245,10 @@ namespace mt32emu_display
 			this->partialStatus = new mt32emu_display_controls::PartialDisplay();
 			this->settingsStatus = new mt32emu_display_controls::SettingsDisplay();
 			this->notifyIcon1 = new System::Windows::Forms::NotifyIcon(this->components);
+			this->contextMenu1 = new System::Windows::Forms::ContextMenu();
+			this->contextMenu2 = new System::Windows::Forms::ContextMenu();
+			this->expModeMenu = new System::Windows::Forms::MenuItem();
+			this->alwaysTopMenu = new System::Windows::Forms::MenuItem();
 			this->groupBox3->SuspendLayout();
 			this->SuspendLayout();
 			// 
@@ -253,6 +372,24 @@ namespace mt32emu_display
 			this->notifyIcon1->Text = S"Munt Control Panel";
 			this->notifyIcon1->DoubleClick += new System::EventHandler(this, notifyIcon1_DoubleClick);
 			// 
+			// contextMenu2
+			// 
+			System::Windows::Forms::MenuItem* __mcTemp__1[] = new System::Windows::Forms::MenuItem*[2];
+			__mcTemp__1[0] = this->expModeMenu;
+			__mcTemp__1[1] = this->alwaysTopMenu;
+			this->contextMenu2->MenuItems->AddRange(__mcTemp__1);
+			// 
+			// expModeMenu
+			// 
+			this->expModeMenu->Checked = true;
+			this->expModeMenu->Index = 0;
+			this->expModeMenu->Text = S"Expanded Mode";
+			// 
+			// alwaysTopMenu
+			// 
+			this->alwaysTopMenu->Index = 1;
+			this->alwaysTopMenu->Text = S"Always On Top";
+			// 
 			// Form1
 			// 
 			this->AutoScaleBaseSize = System::Drawing::Size(5, 13);
@@ -270,6 +407,7 @@ namespace mt32emu_display
 			this->MaximumSize = System::Drawing::Size(808, 448);
 			this->MinimumSize = System::Drawing::Size(808, 448);
 			this->Name = S"Form1";
+			this->StartPosition = System::Windows::Forms::FormStartPosition::CenterScreen;
 			this->Text = S"Munt Control Panel";
 			this->Load += new System::EventHandler(this, Form1_Load_1);
 			this->groupBox3->ResumeLayout(false);
@@ -325,6 +463,19 @@ namespace mt32emu_display
 				 }
 			 }
 
+	public: System::Void form_MouseDown(Object * sender, MouseEventArgs * e) {
+				//this->contextMenu2->Show(this, Point(e->X, e->Y));
+				
+			}
+
+	public: System::Void OnMouseDown(MouseEventArgs * e) {
+				//this->form_MouseDown(this, e);
+				
+
+			}
+
+
+
 
 	private: System::Void Form1_Load_1(System::Object *  sender, System::EventArgs *  e)
 			 {
@@ -373,6 +524,37 @@ namespace mt32emu_display
 					this->timer1->set_Enabled(true);		
 				}
 				
+			 }
+
+	private: System::Void exit_Click(Object * sender, System::EventArgs * e) {
+				 this->Close();
+			 }
+
+	private: System::Void lcdMenu_Click(Object * sender, System::EventArgs * e) {
+				 this->lcdMenuItem->Checked = !this->lcdMenuItem->Checked;
+			 }
+
+	private: System::Void expandMenu_Click(Object * sender, System::EventArgs * e) {
+				 this->expModeMenu->Checked = !this->expModeMenu->Checked;
+				 if(this->expModeMenu->Checked) {
+					this->ClientSize = System::Drawing::Size(800, 414);
+					this->MaximumSize = System::Drawing::Size(808, 448);
+					this->MinimumSize = System::Drawing::Size(808, 448);
+				 } else {
+
+					this->ClientSize = System::Drawing::Size(800, 140);
+					this->MaximumSize = System::Drawing::Size(808, 170);
+					this->MinimumSize = System::Drawing::Size(808, 170);
+ 				 }
+			 }
+
+	private: System::Void onTop_Click(Object * sender, System::EventArgs * e) {
+				 this->alwaysTopMenu->Checked = !this->alwaysTopMenu->Checked;
+				 if(this->alwaysTopMenu->Checked) {
+					 this->TopMost = true;
+				 } else {
+					 this->TopMost = false;
+				 }
 			 }
 
 	private: System::Void partial_Enter(System::Object * sender, System::EventArgs * e) {
@@ -475,10 +657,10 @@ namespace mt32emu_display
 							found = true;
 							this->facePlate->setLCDText(new System::String((char *)&buffer[1]));
 
-							if(this->notifyIcon1->Visible) {
+							if((this->notifyIcon1->Visible) && (this->lcdMenuItem->Checked)) {
 								char tmpBuf[256];
 								sprintf(tmpBuf, "Munt Control Panel");
-								this->balloonTip1->ShowBallon(1, tmpBuf, (char *)&buffer[1], 15000);
+								this->balloonTip1->ShowBallon(1, tmpBuf, (char *)&buffer[1], 250);
 							}
 						}
 
@@ -538,14 +720,14 @@ namespace mt32emu_display
 
 
 
-private: System::Void notifyIcon1_DoubleClick(System::Object *  sender, System::EventArgs *  e)
-		 {
-			this->Show();
-			this->set_WindowState(FormWindowState::Normal);
-			notifyIcon1->Visible = false;
-		 }
+		private: System::Void notifyIcon1_DoubleClick(System::Object *  sender, System::EventArgs *  e)
+				{
+					this->Show();
+					this->set_WindowState(FormWindowState::Normal);
+					notifyIcon1->Visible = false;
+				}
 
-};
+		};
 }
 
 
