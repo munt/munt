@@ -69,6 +69,7 @@ private:
 	int fineShift;
 #endif
 	const NoteLookup *noteLookup; // LUTs for this noteVal
+	const KeyLookup *keyLookup; // LUTs for the clamped (12..108) key
 
 	// Keyfollowed filter values
 	int realVal;
@@ -124,7 +125,6 @@ public:
 	int getOwnerPart() const;
 	int getKey() const;
 	const dpoly *getDpoly() const;
-	
 	bool isActive();
 	void activate(int part);
 	void deactivate(void);
