@@ -1,15 +1,13 @@
-Requirements
-------------
-- A GCC version newer than 2.95.*. Successfully tested with GCC 3.3
-- A copy of the MT32_PCM.ROM file (not provided).
-- A copy of the MT32_CONTROL.ROM file (not provided).
-- A fastish computer.
-- ALSA MIDI support (not OSS)
+Building
+--------
 
-
-Installation
-------------
-You must already have libmt32emu installed.
+Requirements:
+- A gcc/g++ version newer than 2.95.*. Successfully tested with GCC 3.3.
+- libmt32emu built and installed.
+- libasound development files.
+- libx11 development files.
+- libxpm development files.
+- libxt development files.
 
 Build mt32d and xmt32:
 >> make
@@ -32,6 +30,13 @@ and permissions.
 
 Usage
 -----
+
+Requirements:
+- A copy of the MT32_PCM.ROM file (not provided).
+- A copy of the MT32_CONTROL.ROM file (not provided).
+- A fastish computer.
+- ALSA MIDI support (not OSS)
+
 Running mt32d/xmt32 will provide two ports 128:0 and 128:1 provided
 that it is the only soft-synth running. When trying to play MT-32 
 midi streams use ALSA port 128:0.
