@@ -44,9 +44,10 @@ void MT32_Report(int type, ...) {
 }
 
 void MT32_PrintDebug(void *userData, const char *fmt, va_list args) {
-#ifdef DEBUG
+#ifdef _DEBUG
 	char buf[1024];
 	vsprintf(buf, fmt, args);
+	strcat(buf, "\n");
 	OutputDebugString(buf);
 #endif
 }

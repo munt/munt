@@ -40,6 +40,9 @@
 #define MAX_DRIVERS 8
 #define MAX_CLIENTS 8 // Per driver
 
+HRESULT RegisterSynth(REFGUID guid, const char szDescription[]);
+HRESULT UnregisterSynth(REFGUID guid);
+
 struct Driver {
 	bool open;
 	int clientCount;
@@ -112,7 +115,12 @@ STDAPI_(LONG) DriverProc(DWORD dwDriverID, HDRVR hdrvr, WORD wMessage, DWORD dwP
 		driverCount++;
 		return DRV_OK;
 	case DRV_INSTALL:
-		LOG_MSG("DriverProc DRV_INSTALL");
+	case DRV_PNPINSTALL:
+		if (wMessage == DRV_PNPINSTALL)
+			LOG_MSG("DriverProc DRV_PNPINSTALL");
+		else
+			LOG_MSG("DriverProc DRV_INSTALL");
+		RegisterSynth(CLSID_MT32DirectMusicSynth, "MT-32 Synth Emulator");
 		return DRV_OK;
 	case DRV_QUERYCONFIGURE:
 		LOG_MSG("DriverProc DRV_QUERYCONFIGURE");
@@ -140,7 +148,7 @@ STDAPI_(LONG) DriverProc(DWORD dwDriverID, HDRVR hdrvr, WORD wMessage, DWORD dwP
 		return DRV_OK;
 	case DRV_REMOVE:
 		LOG_MSG("DriverProc DRV_REMOVE");
-		// To do; Implement removal of DLL registry
+		UnregisterSynth(CLSID_MT32DirectMusicSynth);
 		return DRV_OK;
 	}
 	LOG_MSG("DriverProc DRV_0x%d - unknown", wMessage);

@@ -54,31 +54,29 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpRes
 // Used to determine whether the DLL can be unloaded by OLE
 STDAPI DllCanUnloadNow(void) {
 	HRESULT rc = _AtlModule.DllCanUnloadNow();
-	LOG_MSG("DllCanUnloadNow(): Returning 0x%08d", rc);
+	LOG_MSG("DllCanUnloadNow(): Returning 0x%08x", rc);
 	return rc;
 }
 
 // Returns a class factory to create an object of the requested type
 STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv) {
 	HRESULT hr = _AtlModule.DllGetClassObject(rclsid, riid, ppv);
-	LOG_MSG("DllGetClassObject(): Returning 0x%08d", hr);
+	LOG_MSG("DllGetClassObject(): Returning 0x%08x", hr);
 	return hr;
 }
 
 // DllRegisterServer - Adds entries to the system registry
 STDAPI DllRegisterServer(void) {
-	RegisterSynth(CLSID_MT32DirectMusicSynth, "MT-32 Synth Emulator");
+	HRESULT hr = RegisterSynth(CLSID_MT32DirectMusicSynth, "MT-32 Synth Emulator");
 	// registers object, typelib and all interfaces in typelib
-	HRESULT hr = _AtlModule.DllRegisterServer(false);
-	LOG_MSG("DllRegisterServer(): Returning 0x%08d", hr);
+	LOG_MSG("DllRegisterServer(): Returning 0x%08x", hr);
 	return hr;
 }
 
 // DllUnregisterServer - Removes entries from the system registry
 STDAPI DllUnregisterServer(void) {
-	UnregisterSynth(CLSID_MT32DirectMusicSynth);
-	HRESULT hr = _AtlModule.DllUnregisterServer(false);
-	LOG_MSG("DllUnregisterServer(): Returning 0x%08d");
+	HRESULT hr = UnregisterSynth(CLSID_MT32DirectMusicSynth);
+	LOG_MSG("DllUnregisterServer(): Returning 0x%08x");
 	return hr;
 }
 
@@ -90,7 +88,7 @@ HRESULT ClassIDCat(char *str, const CLSID &rclsid) {
 		WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, lplpsz, CLSID_STRING_SIZE, str, CLSID_STRING_SIZE+1, NULL, NULL);
 		CoTaskMemFree(lplpsz);
 	} else {
-		LOG_MSG("RegisterSynth() failed: StringFromCLSID() returned 0x%08d", hr);
+		LOG_MSG("RegisterSynth() failed: StringFromCLSID() returned 0x%08x", hr);
 	}
 	return hr;
 }
@@ -113,12 +111,13 @@ HRESULT RegisterSynth(REFGUID guid, const char szDescription[]) {
 	}
 
 	hr = RegSetValueEx(hk, cszDescriptionKey, 0L, REG_SZ, (const unsigned char *)szDescription, (DWORD)strlen(szDescription) + 1);
+	RegCloseKey(hk);
 	if (!SUCCEEDED(hr)) {
 		LOG_MSG("RegisterSynth() failed creating registry value");
+		return hr;
 	}
 
-	RegCloseKey(hk);
-
+	hr = _AtlModule.DllRegisterServer(false);
 	return hr;
 }
 
@@ -136,6 +135,8 @@ HRESULT UnregisterSynth(REFGUID guid) {
 	hr = RegDeleteKey(HKEY_LOCAL_MACHINE, szRegKey);
 	if (!SUCCEEDED(hr)) {
 		LOG_MSG("UnregisterSynth() failed deleting registry key");
+		return hr;
 	}
+	hr = _AtlModule.DllUnregisterServer(false);
 	return hr;
 }
