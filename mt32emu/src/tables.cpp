@@ -476,7 +476,7 @@ static void initDep(KeyLookup *keyLookup, float f) {
 	//synth->printDebug("F %f d1 %x d2 %x d3 %x d4 %x d5 %x", f, noteLookup->fildepTable[0], noteLookup->fildepTable[1], noteLookup->fildepTable[2], noteLookup->fildepTable[3], noteLookup->fildepTable[4]);
 }
 
-Bit16s Tables::clampWF(Synth *synth, char *n, float ampVal, double input) {
+Bit16s Tables::clampWF(Synth *synth, const char *n, float ampVal, double input) {
 	Bit32s x = (Bit32s)(input * ampVal);
 	if (x < -ampVal - 1) {
 		synth->printDebug("%s==%d<-WGAMP-1!", n, x);

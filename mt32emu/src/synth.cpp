@@ -220,7 +220,7 @@ bool Synth::loadControlROM(const char *filename) {
 
 	// Control ROM successfully loaded, now check whether it's a known type
 	controlROMMap = NULL;
-	for (int i = 0; i < sizeof (ControlROMMaps) / sizeof (ControlROMMaps[0]); i++) {
+	for (unsigned int i = 0; i < sizeof (ControlROMMaps) / sizeof (ControlROMMaps[0]); i++) {
 		if (memcmp(&controlROMData[ControlROMMaps[i].idPos], ControlROMMaps[i].idBytes, ControlROMMaps[i].idLen) == 0) {
 			controlROMMap = &ControlROMMaps[i];
 			return true;
@@ -325,13 +325,13 @@ bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 	return false;
 }
 
-bool Synth::initRhythmTimbre(int timbreNum, const Bit8u *mem, int memLen) {
+bool Synth::initRhythmTimbre(int timbreNum, const Bit8u *mem, unsigned int memLen) {
 	if (memLen < sizeof(TimbreParam::commonParam)) {
 		return false;
 	}
 	TimbreParam *timbre = &mt32ram.timbres[timbreNum].timbre;
 	memcpy(&timbre->common, mem, 14);
-	int memPos = 14;
+	unsigned int memPos = 14;
 	char drumname[11];
 	strncpy(drumname, timbre->common.name, 10);
 	drumname[10] = 0;

@@ -117,7 +117,7 @@ const Bit8u SYSEX_CMD_EOD = 0x45; // End of data
 const Bit8u SYSEX_CMD_ERR = 0x4E; // Communications error
 const Bit8u SYSEX_CMD_RJC = 0x4F; // Rejection
 
-const int CONTROL_ROM_SIZE = 64 * 1024;
+const unsigned int CONTROL_ROM_SIZE = 64 * 1024;
 
 struct ControlROMPCMStruct
 {
@@ -249,7 +249,7 @@ private:
 	bool initPCMList(Bit16u mapAddress, Bit16u count);
 	bool initRhythmTimbres(Bit16u mapAddress, Bit16u count);
 	bool initTimbres(Bit16u mapAddress, Bit16u offset, int startTimbre);
-	bool initRhythmTimbre(int drumNum, const Bit8u *mem, int memLen);
+	bool initRhythmTimbre(int drumNum, const Bit8u *mem, unsigned int memLen);
 	bool refreshSystem();
 
 protected:

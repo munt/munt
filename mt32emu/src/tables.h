@@ -99,7 +99,7 @@ struct KeyLookup {
 
 class Tables {
 	static void initMT32ConstantTables(Synth *synth);
-	static Bit16s clampWF(Synth *synth, char *n, float ampVal, double input);
+	static Bit16s clampWF(Synth *synth, const char *n, float ampVal, double input);
 	static File *initWave(Synth *synth, NoteLookup *noteLookup, float ampsize, float div2, File *file);
 	bool initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float rate, float tuning);
 public:
