@@ -1,0 +1,60 @@
+// mt32emu.idl : IDL source for mt32emu.dll
+//
+
+// This file will be processed by the MIDL tool to
+// produce the type library (mt32emu.tlb) and marshalling code.
+
+import "oaidl.idl";
+import "ocidl.idl";
+	
+	[
+		object,
+		uuid(D4ED8AA6-0C6B-407E-BF45-DFDCFEC0A121),
+		dual,
+		helpstring("IMT32DirectMusicSynth Interface"),
+		pointer_default(unique)
+	]
+	interface IMT32DirectMusicSynth : IDispatch
+	{
+	};
+	
+	[
+		object,
+		uuid(99FA8E7B-2368-4972-8D05-3F60CBE03ADF),
+		dual,
+		helpstring("ISynthClassFactory Interface"),
+		pointer_default(unique)
+	]
+	interface ISynthClassFactory : IDispatch
+	{
+	};
+
+[
+	uuid(83D88A39-31F7-45A1-B464-B37F62452C21),
+	version(1.0),
+	helpstring("mt32emu 1.0 Type Library")
+]
+library MT32EmuLib
+{
+	importlib("stdole32.tlb");
+	importlib("stdole2.tlb");
+
+	
+	[
+		uuid(7C9E7084-9B27-4D50-8A8C-0BFC94EC51D5),
+		helpstring("MT32DirectMusicSynth Class")
+	]
+	coclass MT32DirectMusicSynth
+	{
+		[default] interface IMT32DirectMusicSynth;
+	};
+	
+	[
+		uuid(8C8E54D9-DBCE-4CCA-AC85-D799F3BE4876),
+		helpstring("SynthClassFactory Class")
+	]
+	coclass SynthClassFactory
+	{
+		[default] interface ISynthClassFactory;
+	};
+};
