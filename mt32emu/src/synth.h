@@ -289,7 +289,7 @@ public:
 
 	const Partial *getPartial(unsigned int partialNum) const;
 
-	void readMemory(Bit32u addr, Bit32u len, Bit8u * data);
+	void readMemory(Bit32u addr, Bit32u len, Bit8u *data);
 
 	// partNum should be 0..7 for Part 1..8, or 8 for Rhythm
 	const Part *getPart(unsigned int partNum) const;

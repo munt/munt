@@ -127,10 +127,10 @@ void Partial::initKeyFollow(int key) {
 }
 
 int Partial::getKey() const {
-	if(poly == NULL) {
+	if (poly == NULL) {
 		return -1;
 	} else {
-		return this->poly->key;
+		return poly->key;
 	}
 }
 
@@ -577,7 +577,7 @@ bool Partial::produceOutput(Bit16s *partialBuf, long length) {
 	if (myBuf == NULL && pairBuf == NULL)
 		return false;
 
-	Bit16s * p1buf, * p2buf;
+	Bit16s *p1buf, *p2buf;
 
 	if (structurePosition == 0 || pairBuf == NULL) {
 		p1buf = myBuf;
@@ -590,31 +590,31 @@ bool Partial::produceOutput(Bit16s *partialBuf, long length) {
 	//synth->printDebug("mixType: %d", mixType);
 
 	Bit16s *mixedBuf;
-	switch(mixType) {
-		case 0:
-			// Standard sound mix
-			mixedBuf = mixBuffers(p1buf, p2buf, length);
-			break;
+	switch (mixType) {
+	case 0:
+		// Standard sound mix
+		mixedBuf = mixBuffers(p1buf, p2buf, length);
+		break;
 
-		case 1:
-			// Ring modulation with sound mix
-			mixedBuf = mixBuffersRingMix(p1buf, p2buf, length);
-			break;
+	case 1:
+		// Ring modulation with sound mix
+		mixedBuf = mixBuffersRingMix(p1buf, p2buf, length);
+		break;
 
-		case 2:
-			// Ring modulation alone
-			mixedBuf = mixBuffersRing(p1buf, p2buf, length);
-			break;
+	case 2:
+		// Ring modulation alone
+		mixedBuf = mixBuffersRing(p1buf, p2buf, length);
+		break;
 
-		case 3:
-			// Stereo mixing.  One partial to one speaker channel, one to another.
-			// FIXME:KG: Surely we should be multiplying by the left/right volumes here?
-			mixBuffersStereo(p1buf, p2buf, partialBuf, length);
-			return true;
+	case 3:
+		// Stereo mixing.  One partial to one speaker channel, one to another.
+		// FIXME:KG: Surely we should be multiplying by the left/right volumes here?
+		mixBuffersStereo(p1buf, p2buf, partialBuf, length);
+		return true;
 
-		default:
-			mixedBuf = mixBuffers(p1buf, p2buf, length);
-			break;
+	default:
+		mixedBuf = mixBuffers(p1buf, p2buf, length);
+		break;
 	}
 
 	if (mixedBuf == NULL)
@@ -724,7 +724,7 @@ Bit32s Partial::getFiltEnvelope() {
 	reshigh *= filtVal;
 	reshigh /= realVal; //FIXME:KG: As above for cutoff
 
-	if(patchCache->waveform == 1) {
+	if (patchCache->waveform == 1) {
 		reshigh = (reshigh * 65) / 100;
 	}
 
@@ -777,7 +777,7 @@ Bit32u Partial::getAmpEnvelope() {
 			tStat->envstat++;
 			tStat->envpos = 0;
 
-			switch(tStat->envstat) {
+			switch (tStat->envstat) {
 			case 0:
 				//Spot for velocity time follow
 				//Only used for first attack
@@ -909,7 +909,7 @@ void Partial::startDecay(EnvelopeType envnum, Bit32s startval) {
 	tStat->envpos = 0;
 	tStat->envbase = startval;
 
-	switch(envnum) {
+	switch (envnum) {
 	case EnvelopeType_amp:
 		tStat->envsize = (decaytimetable[(int)patchCache->ampEnv.envtime[4]] * noteLookup->timekeyTable[(int)patchCache->ampEnv.envtkf]) >> 8;
 		tStat->envdist = -startval;

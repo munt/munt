@@ -120,7 +120,7 @@ void Synth::initReverb(Bit8u newRevMode, Bit8u newRevTime, Bit8u newRevLevel) {
 		delete reverbModel;
 	reverbModel = new revmodel();
 
-	switch(newRevMode) {
+	switch (newRevMode) {
 	case 0:
 		reverbModel->setroomsize(.1f);
 		reverbModel->setdamp(.75f);
@@ -703,15 +703,15 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 	}
 	len -= 1; // Exclude checksum
 	switch (command) {
-		case SYSEX_CMD_DT1:
-			writeSysex(device, sysex, len);
-			break;
-		case SYSEX_CMD_RQ1:
-			readSysex(device, sysex, len);
-			break;
-		default:
-			printDebug("playSysexWithoutFraming: Unsupported command %02x", command);
-			return;
+	case SYSEX_CMD_DT1:
+		writeSysex(device, sysex, len);
+		break;
+	case SYSEX_CMD_RQ1:
+		readSysex(device, sysex, len);
+		break;
+	default:
+		printDebug("playSysexWithoutFraming: Unsupported command %02x", command);
+		return;
 	}
 }
 
@@ -809,7 +809,7 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 	}
 }
 
-void Synth::readMemory(Bit32u addr, Bit32u len, Bit8u * data) {
+void Synth::readMemory(Bit32u addr, Bit32u len, Bit8u *data) {
 	int regionNum;
 	const MemoryRegion *region = NULL; 
 	for (regionNum = 0; regionNum < NUM_REGIONS; regionNum++) {
@@ -819,44 +819,43 @@ void Synth::readMemory(Bit32u addr, Bit32u len, Bit8u * data) {
 			break;
 		}
 	}
-
 }
 
 void Synth::readMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, Bit8u *data) {
 	unsigned int first = region->firstTouched(addr);
-	unsigned int last = region->lastTouched(addr, len);
+	//unsigned int last = region->lastTouched(addr, len);
 	unsigned int off = region->firstTouchedOffset(addr);
 
 	unsigned int m;
 
-	switch(region->type) {
-		case MR_PatchTemp:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.patchSettings[first])[off + m];
-			break;
-		case MR_RhythmTemp:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.rhythmSettings[first])[off + m];
-			break;
-		case MR_TimbreTemp:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.timbreSettings[first])[off + m];
-			break;
-		case MR_Patches:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.patches[first])[off + m];
-			break;
-		case MR_Timbres:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.timbres[first])[off + m];
-			break;
-		case MR_System:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.system)[m + off];
-			break;
-		default:
-			// TODO: Don't care about the others ATM
-			break;
+	switch (region->type) {
+	case MR_PatchTemp:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.patchSettings[first])[off + m];
+		break;
+	case MR_RhythmTemp:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.rhythmSettings[first])[off + m];
+		break;
+	case MR_TimbreTemp:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.timbreSettings[first])[off + m];
+		break;
+	case MR_Patches:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.patches[first])[off + m];
+		break;
+	case MR_Timbres:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.timbres[first])[off + m];
+		break;
+	case MR_System:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.system)[m + off];
+		break;
+	default:
+		// TODO: Don't care about the others ATM
+		break;
 	}
 
 }
@@ -865,7 +864,8 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 	unsigned int first = region->firstTouched(addr);
 	unsigned int last = region->lastTouched(addr, len);
 	unsigned int off = region->firstTouchedOffset(addr);
-	if (region->type == MR_PatchTemp) {
+	switch (region->type) {
+	case MR_PatchTemp:
 		for (unsigned int m = 0; m < len; m++) {
 			((Bit8u *)&mt32ram.patchSettings[first])[off + m] = data[m];
 		}
@@ -890,7 +890,8 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 				parts[i]->refresh();
 			}
 		}
-	} else if (region->type == MR_RhythmTemp) {
+		break;
+	case MR_RhythmTemp:
 		for (unsigned int m = 0; m < len; m++)
 			((Bit8u *)&mt32ram.rhythmSettings[first])[off + m] = data[m];
 		for (unsigned int i = first; i <= last; i++) {
@@ -907,7 +908,8 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		if (parts[8] != NULL) {
 			parts[8]->refresh();
 		}
-	} else if (region->type == MR_TimbreTemp) {
+		break;
+	case MR_TimbreTemp:
 		for (unsigned int m = 0; m < len; m++)
 			((Bit8u *)&mt32ram.timbreSettings[first])[off + m] = data[m];
 		for (unsigned int i = first; i <= last; i++) {
@@ -919,7 +921,8 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 				parts[i]->refresh();
 			}
 		}
-	} else if (region->type == MR_Patches) {
+		break;
+	case MR_Patches:
 		for (unsigned int m = 0; m < len; m++)
 			((Bit8u *)&mt32ram.patches[first])[off + m] = data[m];
 		for (unsigned int i = first; i <= last; i++) {
@@ -945,7 +948,8 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			}
 			*/
 		}
-	} else if (region->type == MR_Timbres) {
+		break;
+	case MR_Timbres:
 		// Timbres
 		first += 128;
 		last += 128;
@@ -964,7 +968,8 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 				}
 			}
 		}
-	} else if (region->type == MR_System) {
+		break;
+	case MR_System:
 		for (unsigned int m = 0; m < len; m++)
 			((Bit8u *)&mt32ram.system)[m + off] = data[m];
 
@@ -972,13 +977,15 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 
 		printDebug("WRITE-SYSTEM:");
 		refreshSystem();
-	} else if (region->type == MR_Display) {
+		break;
+	case MR_Display:
 		char buf[MAX_SYSEX_SIZE];
 		memcpy(&buf, &data[0], len);
 		buf[len] = 0;
 		printDebug("WRITE-LCD: %s", buf);
 		report(ReportType_lcdMessage, buf);
-	} else if (region->type == MR_Reset) {
+		break;
+	case MR_Reset:
 		printDebug("RESET");
 		report(ReportType_devReset, NULL);
 		partialManager->deactivateAll();
@@ -987,6 +994,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			parts[i]->refresh();
 		}
 		isEnabled = false;
+		break;
 	}
 }
 
