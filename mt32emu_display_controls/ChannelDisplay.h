@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#pragma intrinsic(memcpy)
+
 #include "ControlInterface.h"
 
 using namespace System;
