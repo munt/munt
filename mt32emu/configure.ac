@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(MT32Emu, 0.1.1, re_mt32emu@kingguppy.com)
+AC_INIT(MT32Emu, 0.1.2, re_mt32emu@kingguppy.com)
 AC_CONFIG_SRCDIR([src/synth.cpp])
 AM_INIT_AUTOMAKE
 
