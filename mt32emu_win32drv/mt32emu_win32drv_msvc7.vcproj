@@ -50,7 +50,7 @@ echo regsvr32 exec. time &gt; &quot;$(OutDir)\regsvr32.trg&quot;
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="dxguid.lib winmm.lib"
+				AdditionalDependencies="dxguid.lib winmm.lib SDL_net.lib"
 				ShowProgress="2"
 				OutputFile=".\Debug/mt32emu.dll"
 				LinkIncremental="2"
@@ -127,7 +127,7 @@ echo regsvr32 exec. time &gt; &quot;$(OutDir)\regsvr32.trg&quot;
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="dxguid.lib winmm.lib"
+				AdditionalDependencies="dxguid.lib winmm.lib SDL_net.lib"
 				ShowProgress="2"
 				OutputFile=".\Release/mt32emu.dll"
 				LinkIncremental="1"
