@@ -436,8 +436,8 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 
 // Per-note table initialisation follows
 
-static void initSaw(NoteLookup *noteLookup, Bit32s div) {
-	int tmpdiv = div << 17;
+static void initSaw(NoteLookup *noteLookup, Bit32s div2) {
+	int tmpdiv = div2 << 16;
 	for (int rsaw = 0; rsaw <= 100; rsaw++) {
 		float fsaw;
 		if (rsaw < 50)
@@ -485,11 +485,11 @@ Bit16s Tables::clampWF(Synth *synth, char *n, float ampVal, double input) {
 	return (Bit16s)x;
 }
 
-File *Tables::initWave(Synth *synth, NoteLookup *noteLookup, float ampVal, float div, File *file) {
-	int iDiv = (int)div;
-	noteLookup->waveformSize[0] = iDiv << 2;
-	noteLookup->waveformSize[1] = iDiv << 2;
-	noteLookup->waveformSize[2] = iDiv << 3;
+File *Tables::initWave(Synth *synth, NoteLookup *noteLookup, float ampVal, float div2, File *file) {
+	int iDiv2 = (int)div2;
+	noteLookup->waveformSize[0] = iDiv2 << 1;
+	noteLookup->waveformSize[1] = iDiv2 << 1;
+	noteLookup->waveformSize[2] = iDiv2 << 2;
 	for (int i = 0; i < 3; i++) {
 		if (noteLookup->waveforms[i] == NULL) {
 			noteLookup->waveforms[i] = new Bit16s[noteLookup->waveformSize[i]];
@@ -509,15 +509,15 @@ File *Tables::initWave(Synth *synth, NoteLookup *noteLookup, float ampVal, float
 		}
 	}
 	if (file == NULL) {
-		double sd = DOUBLE_PI / (div * 2.0);
+		double sd = DOUBLE_PI / div2;
 
-		for (int fa = 0; fa < (iDiv << 2); fa++) {
+		for (int fa = 0; fa < (iDiv2 << 1); fa++) {
 			// sa ranges from 0 to 2PI
 			double sa = fa * sd;
 
 			// Calculate a sample for the bandlimited sawtooth wave
 			double saw = 0.0;
-			int sincs = iDiv;
+			int sincs = iDiv2 >> 1;
 			double sinus = 1.0;
 			for (int sincNum = 1; sincNum <= sincs; sincNum++) {
 				saw += sin(sinus * sa) / sinus;
@@ -575,17 +575,17 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 
 File *Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float masterTune, PCMWaveEntry *pcmWaves, File *file) {
 	float freq = (float)(masterTune * pow(2.0, ((double)note - MIDDLEA) / 12.0));
-	float div = rate / freq;
-	noteLookup->div = (int)div;
+	float div2 = rate * 2 / freq;
+	noteLookup->div2 = (int)div2;
 
-	if (noteLookup->div == 0)
-		noteLookup->div = 1;
+	if (noteLookup->div2 == 0)
+		noteLookup->div2 = 1;
 
-	initSaw(noteLookup, noteLookup->div);
+	initSaw(noteLookup, noteLookup->div2);
 	initDep(noteLookup, note);
 
 	//synth->printDebug("Note %f; freq=%f, div=%f", note, freq, rate / freq);
-	file = initWave(synth, noteLookup, (const float)WGAMP, div, file);
+	file = initWave(synth, noteLookup, (const float)WGAMP, div2, file);
 
 	// Create the pitch tables
 	if (noteLookup->wavTable == NULL)
@@ -607,7 +607,7 @@ bool Tables::initNotes(Synth *synth, PCMWaveEntry *pcmWaves, float rate, float m
 	};
 	char filename[64];
 	int intRate = (int)rate;
-	char version[4] = {0, 0, 0, 4};
+	char version[4] = {0, 0, 0, 5};
 	sprintf(filename, "waveformcache-%d-%.2f.raw", intRate, masterTune);
 
 	File *file = NULL;

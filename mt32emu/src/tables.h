@@ -83,7 +83,7 @@ extern Bit32s velTable[128];
 extern Bit32s volTable[101];
 
 struct NoteLookup {
-	Bit32u div;
+	Bit32u div2;
 	Bit32u *wavTable;
 	Bit32s sawTable[101];
 	Bit32s fildepTable[5];
@@ -97,7 +97,7 @@ struct NoteLookup {
 class Tables {
 	static void initMT32ConstantTables(Synth *synth);
 	static Bit16s clampWF(Synth *synth, char *n, float ampVal, double input);
-	static File *initWave(Synth *synth, NoteLookup *noteLookup, float ampsize, float div, File *file);
+	static File *initWave(Synth *synth, NoteLookup *noteLookup, float ampsize, float div2, File *file);
 	bool initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float rate, float tuning);
 public:
 	NoteLookup noteLookups[NUM_NOTES];

@@ -120,7 +120,7 @@ void Partial::initKeyFollow(int key) {
 	int keyfollow = ((key - MIDDLEC) * patchCache->filtkeyfollow) / 4096;
 	if (keyfollow > 108)
 		keyfollow = 108;
-	if (keyfollow < -108)
+	else if (keyfollow < -108)
 		keyfollow = -108;
 	filtVal = keytable[keyfollow + 108];
 	realVal = keytable[(noteVal - MIDDLEC) + 108];
@@ -273,8 +273,8 @@ Bit16s *Partial::generateSamples(long length) {
 			}
 		} else {
 			// Synthesis partial
-			delta = 0x10000;//0x10707;
-			partialOff.pcmplace %= (Bit16u)(noteLookup->div << 1);
+			delta = 0x10000;
+			partialOff.pcmplace %= (Bit16u)noteLookup->div2;
 		}
 
 		// Build delta for position of next sample
@@ -335,7 +335,6 @@ Bit16s *Partial::generateSamples(long length) {
 				}
 			} else {
 				// Render synthesised sample
-				Bit32u div = noteLookup->div;
 				int toff = partialOff.pcmplace;
 				int minorplace = partialOff.pcmoffset >> 14;
 				Bit32s filterInput;
@@ -346,19 +345,15 @@ Bit16s *Partial::generateSamples(long length) {
 				if ((patchCache->waveform & 1) == 0) {
 					// Square waveform.  Made by combining two pregenerated bandlimited
 					// sawtooth waveforms
-					if (div == 0) {
-						synth->printDebug("ERROR: div=0 generating square wave, this should never happen!");
-						div = 1;
-					}
 					Bit32u ofsA = ((toff << 2) + minorplace) % noteLookup->waveformSize[0];
-					int width = FIXEDPOINT_UMULT(div, pulsetable[pulsewidth], 6);
+					int width = FIXEDPOINT_UMULT(noteLookup->div2, pulsetable[pulsewidth], 7);
 					Bit32u ofsB = (ofsA + width) % noteLookup->waveformSize[0];
 					Bit16s pa = noteLookup->waveforms[0][ofsA];
 					Bit16s pb = noteLookup->waveforms[0][ofsB];
 					filterInput = pa - pb;
 					// Non-bandlimited squarewave
 					/*
-					ofs = ((div << 1) * pulsetable[patchCache->pulsewidth]) >> 8;
+					ofs = (noteLookup->div2 * pulsetable[patchCache->pulsewidth]) >> 8;
 					if (toff < ofs)
 						sample = 1 * WGAMP;
 					else
@@ -379,10 +374,10 @@ Bit16s *Partial::generateSamples(long length) {
 					/*
 					//int pw = (patchCache->pulsewidth * pulsemod[filtval]) >> 8;
 
-					Bit32u ofs = toff % div;
+					Bit32u ofs = toff % (noteLookup->div2 >> 1);
 
-					Bit32u ofs3 = toff + FIXEDPOINT_UMULT(div, pulsetable[patchCache->pulsewidth], 8);
-					ofs3 = ofs3 % div;
+					Bit32u ofs3 = toff + FIXEDPOINT_UMULT(noteLookup->div2, pulsetable[patchCache->pulsewidth], 9);
+					ofs3 = ofs3 % (noteLookup->div2 >> 1);
 
 					pa = noteLookup->waveforms[0][ofs];
 					pb = noteLookup->waveforms[0][ofs3];
