@@ -235,9 +235,7 @@ private:
 	bool loadPreset(File *file);
 	void initReverb(Bit8u newRevMode, Bit8u newRevTime, Bit8u newRevLevel);
 	void doRender(Bit16s * stream, Bit32u len);
-	void playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity);
 
-	void playSysexWithoutHeader(unsigned char device, unsigned char command, const Bit8u *sysex, Bit32u len);
 	void playAddressedSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 	void writeSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
@@ -275,11 +273,13 @@ public:
 
 	// Sends a 4-byte MIDI message to the MT-32 for immediate playback
 	void playMsg(Bit32u msg);
+	void playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity);
 
 	// Sends a string of Sysex commands to the MT-32 for immediate interpretation
 	// The length is in bytes
 	void playSysex(const Bit8u *sysex, Bit32u len);
 	void playSysexWithoutFraming(const Bit8u *sysex, Bit32u len);
+	void playSysexWithoutHeader(unsigned char device, unsigned char command, const Bit8u *sysex, Bit32u len);
 
 	// This callback routine is used to have the MT-32 generate samples to the specified
 	// output stream.  The length is in whole samples, not bytes. (I.E. in 16-bit stereo,
