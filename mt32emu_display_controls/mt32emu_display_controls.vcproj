@@ -136,6 +136,9 @@
 				RelativePath=".\ControlInterface.cpp">
 			</File>
 			<File
+				RelativePath=".\DisplayKnob.cpp">
+			</File>
+			<File
 				RelativePath=".\DriverCommClass.cpp">
 			</File>
 			<File
@@ -149,6 +152,12 @@
 			</File>
 			<File
 				RelativePath=".\mt32emu_display_controlsControl.cpp">
+			</File>
+			<File
+				RelativePath=".\PartialDisplay.cpp">
+			</File>
+			<File
+				RelativePath=".\SettingsDisplay.cpp">
 			</File>
 			<File
 				RelativePath=".\stdafx.cpp">
@@ -209,6 +218,25 @@
 				</File>
 			</File>
 			<File
+				RelativePath=".\DisplayKnob.h"
+				FileType="4">
+				<File
+					RelativePath=".\DisplayKnob.resX">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.DisplayKnob.resources"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.DisplayKnob.resources"/>
+					</FileConfiguration>
+				</File>
+			</File>
+			<File
 				RelativePath=".\DriverCommClass.h">
 			</File>
 			<File
@@ -253,6 +281,9 @@
 				RelativePath=".\font_6x8.h">
 			</File>
 			<File
+				RelativePath=".\KnobInterface.h">
+			</File>
+			<File
 				RelativePath=".\LCDDisplay.h"
 				FileType="4">
 				<File
@@ -291,7 +322,45 @@
 				</File>
 			</File>
 			<File
+				RelativePath=".\PartialDisplay.h"
+				FileType="4">
+				<File
+					RelativePath=".\PartialDisplay.resX">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.PartialDisplay.resources"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.PartialDisplay.resources"/>
+					</FileConfiguration>
+				</File>
+			</File>
+			<File
 				RelativePath=".\resource.h">
+			</File>
+			<File
+				RelativePath=".\SettingsDisplay.h"
+				FileType="4">
+				<File
+					RelativePath=".\SettingsDisplay.resX">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.SettingsDisplay.resources"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.SettingsDisplay.resources"/>
+					</FileConfiguration>
+				</File>
 			</File>
 			<File
 				RelativePath=".\stdafx.h">

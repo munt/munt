@@ -22,17 +22,28 @@ namespace mt32emu_display_controls
 		LCDDisplay(void)
 		{
 			InitializeComponent();
+			maskedChar = new System::Boolean[20];
+
 			currentText = S"";
 			backPen = new System::Drawing::SolidBrush(Color::FromArgb(98, 127, 0));
 			frontPen = new System::Drawing::SolidBrush(Color::FromArgb(212, 234, 0));
-			offBuffer = new Bitmap(680, 51);
+			offBuffer = new Bitmap(680, 57);
 			doubleBuffer = new Bitmap(171, 15);
 
 		}
 
 		System::Void setDisplayText(System::String * useText) {
-			currentText = useText;
-			this->Invalidate();
+			if(!useText->Equals(currentText)) {
+				currentText = useText;
+				this->Invalidate();
+			}
+		}
+
+		System::Void setMaskedChar(int i, bool value) {
+			if(maskedChar[i] != value) {
+                maskedChar[i] = value;
+				this->Invalidate();
+			}
 		}
         
 	protected: 
@@ -51,6 +62,7 @@ namespace mt32emu_display_controls
 		/// </summary>
 		System::ComponentModel::Container* components;
 		System::String * currentText;
+		System::Boolean maskedChar[];
 		System::Drawing::SolidBrush * backPen;
 		System::Drawing::SolidBrush * frontPen;
 		Bitmap * offBuffer;
@@ -104,9 +116,14 @@ namespace mt32emu_display_controls
 					c -= 0x20;
 
 					yat = 1;
-					for(t=0;t<8;t++) {
+					for(t=0;t<9;t++) {
 						xat = xstart;
-						unsigned char fval = Font_6x8[c][t];
+						unsigned char fval;
+						if((this->maskedChar[i]) && (t != 7)) {
+							fval = 0x1f;
+						} else {
+							fval = Font_6x8[c][t];
+						}
 						for(m=4;m>=0;--m) {
 							if((fval >> m) & 1) {
 								g->FillRectangle(this->frontPen, xat, yat, 5, 5);

@@ -43,6 +43,8 @@ namespace mt32emu_display_controls
 		System::Int32 checkForData(char * buffer) { return this->driverComm->checkForData(buffer); }
 
 		System::Void requestSynthMemory(int addr, int len) { this->driverComm->requestSynthMemory(addr, len); }
+
+		System::Void writeSynthMemory(int addr, int len, char * outBuf) { this->driverComm->writeSynthMemory(addr, len, outBuf); }
 		
 	protected: 
 		void Dispose(Boolean disposing)

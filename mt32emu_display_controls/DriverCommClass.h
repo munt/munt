@@ -25,6 +25,7 @@ public:
 	void shutDown();
 	int checkForData(char * buffer);
 	void requestSynthMemory(int addr, int len);
+	void writeSynthMemory(int addr, int len, char *outBuf);
 
 
 private:

@@ -5,8 +5,8 @@ bool DriverCommClass::InitConnection() {
 	if(SDLNet_Init() == 0) {
 
 
-		//this->driverAddr.host = 0x0100007f;
-		this->driverAddr.host = 0xffffffff;
+		this->driverAddr.host = 0x0100007f;
+		//this->driverAddr.host = 0xffffffff;
 		this->driverAddr.port = 0xc307;
 
 		this->clientSock = SDLNet_UDP_Open(0);
@@ -94,4 +94,24 @@ void DriverCommClass::requestSynthMemory(int addr, int len) {
 	regPacket.channel = this->clientChannel;
 	SDLNet_UDP_Send(this->clientSock, regPacket.channel, &regPacket);
 
+}
+
+void DriverCommClass::writeSynthMemory(int addr, int len, char *outBuf) {
+	char buffer[2048];
+	UDPpacket regPacket;
+
+	// Synth memory write
+	*(Uint16 *)&buffer[0] = 2;
+	*(Uint16 *)&buffer[2] = (Uint16)len + 3;
+	buffer[4] = (addr >> 16) & 0x7f;
+	buffer[5] = (addr >> 8) & 0x7f;
+	buffer[6] = addr & 0x7f;
+
+	memcpy(&buffer[7], outBuf, len);
+
+	regPacket.data = (Uint8 *)&buffer[0];
+	regPacket.len = len + 7;
+	regPacket.maxlen = len + 7;
+	regPacket.channel = this->clientChannel;
+	SDLNet_UDP_Send(this->clientSock, regPacket.channel, &regPacket);
 }

@@ -30,18 +30,36 @@ namespace mt32emu_display
 	///          the designers will not be able to interact properly with localized
 	///          resources associated with this form.
 	/// </summary>
-	public __gc class Form1 : public System::Windows::Forms::Form
+	public __gc class Form1 : public System::Windows::Forms::Form, public mt32emu_display_controls::KnobInterface
 	{	
 	public:
 		Form1(void)
 		{
 			
 			InitializeComponent();
-			
+			partActive = new System::Boolean[7];
 			channelStatus->Tag = ci;
+			this->facePlate->Tag = ci;
+			this->partialStatus->Tag = ci;
+			this->settingsStatus->Tag = ci;
 			this->ticksSinceContact = 5000 / this->timer1->get_Interval();
+			this->settingsStatus->disableActiveSettings();
+			
 
 		}
+		System::Void knobUpdated(int newValue) {
+
+		}
+
+		System::Void requestInfo(int addr, int len) {
+			this->ci->requestSynthMemory(addr, len);
+		}
+		System::Void sendInfo(int addr, int len, char * buf) {
+		}
+
+		System::Void DoEvents() {
+		}
+
 
 	protected:
 		void Dispose(Boolean disposing)
@@ -72,27 +90,16 @@ namespace mt32emu_display
 	private: System::Windows::Forms::ToolTip *  channelTip;
 	private: System::Windows::Forms::ToolTip *  oscoTip;
 	private: System::Windows::Forms::ToolTip *  settingsTip;
+	private: System::Boolean partActive[];
 
 	private: System::Windows::Forms::ToolTip *  partialTip;
 	private: System::Int32 currentTab;
 	private: mt32emu_display_controls::FacePlate *  facePlate;
 	private: mt32emu_display_controls::ChannelDisplay *  channelStatus;
 	private: mt32emu_display_controls::ControlInterface * ci;
-
-
-
-
-
-
-
-
+	private: mt32emu_display_controls::PartialDisplay *  partialStatus;
+	private: mt32emu_display_controls::SettingsDisplay *  settingsStatus;
 	private: System::ComponentModel::IContainer *  components;
-
-
-
-
-
-
 	private:
 		/// <summary>
 		/// Required designer variable.
@@ -121,6 +128,8 @@ namespace mt32emu_display
 			this->facePlate = new mt32emu_display_controls::FacePlate();
 			this->channelStatus = new mt32emu_display_controls::ChannelDisplay();
 			this->ci = new mt32emu_display_controls::ControlInterface(this->components);
+			this->partialStatus = new mt32emu_display_controls::PartialDisplay();
+			this->settingsStatus = new mt32emu_display_controls::SettingsDisplay();
 			this->groupBox3->SuspendLayout();
 			this->SuspendLayout();
 			// 
@@ -132,7 +141,7 @@ namespace mt32emu_display
 			this->groupBox1->Size = System::Drawing::Size(152, 96);
 			this->groupBox1->TabIndex = 0;
 			this->groupBox1->TabStop = false;
-			this->groupBox1->Text = S"Partial Status";
+			this->groupBox1->Text = S"Partial Info";
 			// 
 			// timer1
 			// 
@@ -209,6 +218,7 @@ namespace mt32emu_display
 			// 
 			// facePlate
 			// 
+			this->facePlate->BackgroundImage = (__try_cast<System::Drawing::Image *  >(resources->GetObject(S"facePlate.BackgroundImage")));
 			this->facePlate->Location = System::Drawing::Point(0, 0);
 			this->facePlate->Name = S"facePlate";
 			this->facePlate->Size = System::Drawing::Size(800, 136);
@@ -221,6 +231,22 @@ namespace mt32emu_display
 			this->channelStatus->Size = System::Drawing::Size(608, 240);
 			this->channelStatus->TabIndex = 26;
 			// 
+			// partialStatus
+			// 
+			this->partialStatus->Location = System::Drawing::Point(168, 144);
+			this->partialStatus->Name = S"partialStatus";
+			this->partialStatus->Size = System::Drawing::Size(608, 240);
+			this->partialStatus->TabIndex = 27;
+			this->partialStatus->Visible = false;
+			// 
+			// settingsStatus
+			// 
+			this->settingsStatus->Location = System::Drawing::Point(168, 144);
+			this->settingsStatus->Name = S"settingsStatus";
+			this->settingsStatus->Size = System::Drawing::Size(608, 240);
+			this->settingsStatus->TabIndex = 28;
+			this->settingsStatus->Visible = false;
+			// 
 			// Form1
 			// 
 			this->AutoScaleBaseSize = System::Drawing::Size(5, 13);
@@ -231,12 +257,14 @@ namespace mt32emu_display
 			this->Controls->Add(this->label1);
 			this->Controls->Add(this->groupBox3);
 			this->Controls->Add(this->groupBox1);
+			this->Controls->Add(this->partialStatus);
+			this->Controls->Add(this->settingsStatus);
 			this->Icon = (__try_cast<System::Drawing::Icon *  >(resources->GetObject(S"$this.Icon")));
 			this->MaximizeBox = false;
 			this->MaximumSize = System::Drawing::Size(808, 448);
 			this->MinimumSize = System::Drawing::Size(808, 448);
 			this->Name = S"Form1";
-			this->Text = S"MUNT Control Panel";
+			this->Text = S"Munt Control Panel";
 			this->Load += new System::EventHandler(this, Form1_Load_1);
 			this->groupBox3->ResumeLayout(false);
 			this->ResumeLayout(false);
@@ -256,9 +284,11 @@ namespace mt32emu_display
 						 break;
 					 case 1:
 						 oscoIcon->set_BackColor(System::Drawing::Color::FromArgb(56,56,60));
+						 partialStatus->Hide();
 						 break;
 					 case 2:
 						 settingsIcon->set_BackColor(System::Drawing::Color::FromArgb(56,56,60));
+						 settingsStatus->Hide();
 						 break;
 				 }
 
@@ -271,9 +301,11 @@ namespace mt32emu_display
 						 break;
 					 case 1:
 						 oscoIcon->set_BackColor(System::Drawing::Color::FromArgb(96,96,100));
+						 partialStatus->Show();
 						 break;
 					 case 2:
 						 settingsIcon->set_BackColor(System::Drawing::Color::FromArgb(96,96,100));
+						 settingsStatus->Show();
 						 break;
 				 }
 
@@ -350,79 +382,129 @@ namespace mt32emu_display
 
  			    this->ci->sendHeartBeat();
 
-				int numrecv = this->ci->checkForData((char *)buffer);
+				for (;;) {
+					int numrecv = this->ci->checkForData((char *)buffer);
 
-				if(numrecv >0) {
-					int i;
-					bool found = false;
-					bool anyActive = false;
-					// Heartbeat response
-					if((buffer[0] == 1) && (numrecv == 300)) {
-						found = true;
-						this->ticksSinceContact = 0;
-						this->facePlate->turnOnModule();
+					if(numrecv >0) {
+						int i;
+						bool found = false;
+						bool anyActive = false;
+						// Heartbeat response
+						if((buffer[0] == 1) && (numrecv == 300)) {
+							found = true;
+							this->ticksSinceContact = 0;
+							this->facePlate->turnOnModule();
 
-						int count = (int)buffer[1];
-						for(i=0;i<count;i++) {
-							int t;
-							t = buffer[2 + (i * 3)];
-							chanList[i].isPlaying = true;
-							switch(t) {
-								case 0:
-									this->pictureBox[i]->set_BackColor(System::Drawing::Color::FromArgb(0,0,0));
-									chanList[i].isPlaying = false;
-									break;
-								case 1:
-									this->pictureBox[i]->set_BackColor(System::Drawing::Color::FromArgb(255,0,0));
-									anyActive = true;
-									break;
-								case 2:
-									this->pictureBox[i]->set_BackColor(System::Drawing::Color::FromArgb(0,255,0));
-									anyActive = true;
-									break;
-								case 3:
-									this->pictureBox[i]->set_BackColor(System::Drawing::Color::FromArgb(255,255,0));
-									anyActive = true;
-									break;
+							int count = (int)buffer[1];
+							for(i=0;i<6;i++) {
+								this->partActive[i] = false;
 							}
-							chanList[i].assignedPart = buffer[2 + (i * 3) + 1];
-							chanList[i].freq = buffer[2 + (i * 3) + 2];
+							for(i=0;i<count;i++) {
+								int t;
+								t = buffer[2 + (i * 3)];
+								chanList[i].isPlaying = true;
+								switch(t) {
+									case 0:
+										this->pictureBox[i]->set_BackColor(System::Drawing::Color::FromArgb(0,0,0));
+										chanList[i].isPlaying = false;
+										break;
+									case 1:
+										this->pictureBox[i]->set_BackColor(System::Drawing::Color::FromArgb(255,0,0));
+										anyActive = true;
+										break;
+									case 2:
+										this->pictureBox[i]->set_BackColor(System::Drawing::Color::FromArgb(0,255,0));
+										anyActive = true;
+										break;
+									case 3:
+										this->pictureBox[i]->set_BackColor(System::Drawing::Color::FromArgb(255,255,0));
+										anyActive = true;
+										break;
+								}
+								chanList[i].assignedPart = buffer[2 + (i * 3) + 1];
+
+								if((chanList[i].assignedPart < 6) || (chanList[i].assignedPart == 9)) {
+									int pUse = chanList[i].assignedPart;
+									if (pUse == 8) pUse = 5;
+									//if((t == 1) || (t == 2)) {
+									if(t == 1) {
+										this->partActive[pUse] = true;
+									}
+								}
+								chanList[i].freq = buffer[2 + (i * 3) + 2];
+							}
+
+							channelStatus->sendUpdateData((char *)&buffer[0], count, chanList);
+
+							if(anyActive) {
+								this->facePlate->workMidiLight(System::Drawing::Color::Lime);
+							} else {
+								this->facePlate->workMidiLight(System::Drawing::Color::FromArgb(41,42,51));
+							}
+
+							for(i=0;i<6;i++) {
+								//this->facePlate->setMaskedChar(i * 2, this->partActive[i]);
+							}
+
+							// TODO: Doesn't seem to work.  Wanted to get the buffer size so I could change
+							// the timer to tick in sync with it.
+							int sndBufSize = *(int *)&buffer[296];
+
+
+						}
+						// LCD Text Display change
+						if(buffer[0] == 2) {
+							found = true;
+							this->facePlate->setLCDText(new System::String((char *)&buffer[1]));
 						}
 
-						channelStatus->sendUpdateData((char *)&buffer[0], count, chanList);
+						if(buffer[0] == 5) {
+							found = true;
+							int addr = *(int* )&buffer[1];
+							int len = buffer[3]; 
 
-						if(anyActive) {
-							this->facePlate->workMidiLight(System::Drawing::Color::Lime);
-						} else {
-							this->facePlate->workMidiLight(System::Drawing::Color::FromArgb(41,42,51));
+							if(addr == 0x100000) {
+								this->settingsStatus->UpdateActiveSettings((char *)&buffer[4], len);
+
+								mt32emu_display_controls::KnobInterface *ki;
+								ki = dynamic_cast<mt32emu_display_controls::KnobInterface *>(this->facePlate);
+								ki->sendInfo(addr, len, (char *)&buffer[4]);
+
+							}
+
+
+
 						}
 
 
-						// TODO: Doesn't seem to work.  Wanted to get the buffer size so I could change
-						// the timer to tick in sync with it.
-						int sndBufSize = *(int *)&buffer[296];
+						if(!found) {
+							char buf[512];
+							sprintf(buf, "Unk. Packet: %d", buffer[0]);
+							this->facePlate->setLCDText(new System::String(buf));
+						}
 
-
+					} else {
+						this->facePlate->workMidiLight(System::Drawing::Color::FromArgb(41,42,51));
+						break;
 					}
-					// LCD Text Display change
-					if(buffer[0] == 2) {
-						found = true;
-						this->facePlate->setLCDText(new System::String((char *)&buffer[1]));
-					}
-					if(!found) {
-						System::Windows::Forms::MessageBox::Show(new System::String((char *)&buffer[1]), new System::String((char *)&buffer[1]));
-					}
-
-				} else {
-					this->facePlate->workMidiLight(System::Drawing::Color::FromArgb(41,42,51));
 				}
 
 				if(this->ticksSinceContact > (1000 / this->timer1->get_Interval())) {
 					this->facePlate->turnOffModule();
+					this->settingsStatus->disableActiveSettings();
 					//Prevent overflow
 					--this->ticksSinceContact;
 
+				} else {
+					
+					mt32emu_display_controls::KnobInterface *ki;
+					ki = dynamic_cast<mt32emu_display_controls::KnobInterface *>(this->facePlate);
+					ki->DoEvents();
+					
+					ki = dynamic_cast<mt32emu_display_controls::KnobInterface *>(this->settingsStatus);
+					ki->DoEvents();
 				}
+
 
 
 			 }

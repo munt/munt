@@ -719,10 +719,6 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 	}
 }
 
-// MEMADDR() converts from sysex-padded, SYSEXMEMADDR converts to it
-// Roland provides documentation using the sysex-padded addresses, so we tend to use that int code and output
-#define MEMADDR(x) ((((x) & 0x7f0000) >> 2) | (((x) & 0x7f00) >> 1) | ((x) & 0x7f))
-#define SYSEXMEMADDR(x) ((((x) & 0x1FC000) << 2) | (((x) & 0x3F80) << 1) | ((x) & 0x7f))
 
 #define NUMTOUCHED(x,y) (((x) + sizeof(y) - 1) / sizeof(y))
 
@@ -815,7 +811,7 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 
 void Synth::readMemory(Bit32u addr, Bit32u len, Bit8u *data) {
 	int regionNum;
-	const MemoryRegion *region = NULL; 
+	const MemoryRegion *region = NULL;
 	for (regionNum = 0; regionNum < NUM_REGIONS; regionNum++) {
 		region = &memoryRegions[regionNum];
 		if (region->contains(addr)) {
@@ -832,34 +828,38 @@ void Synth::readMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len
 
 	unsigned int m;
 
-	switch (region->type) {
-	case MR_PatchTemp:
-		for (m = 0; m < len; m++) 
-			data[m] = ((Bit8u *)&mt32ram.patchSettings[first])[off + m];
-		break;
-	case MR_RhythmTemp:
-		for (m = 0; m < len; m++) 
-			data[m] = ((Bit8u *)&mt32ram.rhythmSettings[first])[off + m];
-		break;
-	case MR_TimbreTemp:
-		for (m = 0; m < len; m++) 
-			data[m] = ((Bit8u *)&mt32ram.timbreSettings[first])[off + m];
-		break;
-	case MR_Patches:
-		for (m = 0; m < len; m++) 
-			data[m] = ((Bit8u *)&mt32ram.patches[first])[off + m];
-		break;
-	case MR_Timbres:
-		for (m = 0; m < len; m++) 
-			data[m] = ((Bit8u *)&mt32ram.timbres[first])[off + m];
-		break;
-	case MR_System:
-		for (m = 0; m < len; m++) 
-			data[m] = ((Bit8u *)&mt32ram.system)[m + off];
-		break;
-	default:
-		// TODO: Don't care about the others ATM
-		break;
+	switch(region->type) {
+		case MR_PatchTemp:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.patchSettings[first])[off + m];
+			break;
+		case MR_RhythmTemp:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.rhythmSettings[first])[off + m];
+			break;
+		case MR_TimbreTemp:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.timbreSettings[first])[off + m];
+			break;
+		case MR_Patches:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.patches[first])[off + m];
+			break;
+		case MR_Timbres:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.timbres[first])[off + m];
+			break;
+		case MR_System:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.system)[m + off];
+			break;
+		default:
+			for (m = 0; m < len; m+=2) { 
+				data[m] = 0xff;
+				data[m+1] = region->type;
+			}
+			// TODO: Don't care about the others ATM
+			break;
 	}
 
 }

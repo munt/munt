@@ -105,7 +105,7 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 				// 2 bytes = length of raw sysex
 				// [length] bytes = raw sysex without Open/Close Exclusive bytes or machine identifiers
 				length = *(Bit16u *)&buffer[0];
-				synth->playSysexWithoutHeader(0x10, SYSEX_CMD_DT1, buffer + 2, length);
+				synth->writeSysex(0x10, buffer + 2, length);
 				break;
 			case 3:
 				// Reserved for raw sysex reads
@@ -128,9 +128,12 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 				Bit16u len = *(Bit16u *)&buffer[4];
 
 				*(Bit16u *)&buffer[0] = 5;
-				synth->readMemory(addr, len, &buffer[2]);
+				*(Bit32u *)&buffer[2] = addr;
+				*(Bit16u *)&buffer[6] = len;
 
-				sendResponse(5, (char *)&buffer[0], len + 2 );
+				synth->readMemory(MEMADDR(addr), len, &buffer[8]);
+
+				sendResponse(5, (char *)&buffer[0], len + 8 );
 
 				break;
 		}

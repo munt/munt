@@ -237,7 +237,6 @@ private:
 	void doRender(Bit16s * stream, Bit32u len);
 
 	void playAddressedSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
-	void writeSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 	void writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, const Bit8u *data);
 	void readMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, Bit8u *data);
@@ -281,6 +280,7 @@ public:
 	void playSysex(const Bit8u *sysex, Bit32u len);
 	void playSysexWithoutFraming(const Bit8u *sysex, Bit32u len);
 	void playSysexWithoutHeader(unsigned char device, unsigned char command, const Bit8u *sysex, Bit32u len);
+	void writeSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 
 	// This callback routine is used to have the MT-32 generate samples to the specified
 	// output stream.  The length is in whole samples, not bytes. (I.E. in 16-bit stereo,
