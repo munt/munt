@@ -910,7 +910,7 @@ void Partial::startDecay(EnvelopeType envnum, Bit32s startval) {
 
 	switch (envnum) {
 	case EnvelopeType_amp:
-		tStat->envsize = (envtimetable[(int)patchCache->ampEnv.envtime[4]] * keyLookup->envTimeMult[(int)patchCache->ampEnv.envtkf]) >> 8;
+		tStat->envsize = (decaytimetable[(int)patchCache->ampEnv.envtime[4]] * keyLookup->envTimeMult[(int)patchCache->ampEnv.envtkf]) >> 8;
 		tStat->envdist = -startval;
 		break;
 	case EnvelopeType_filt:
