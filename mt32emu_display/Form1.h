@@ -46,8 +46,36 @@ namespace mt32emu_display
 	public:
 		Form1(void)
 		{
+			
 			InitializeComponent();
+			
+			channelStatus->Tag = ci;
+
 		}
+
+
+		/*
+		void SetVolume(int channel, int val) {
+			
+				char buffer[2048];
+				UDPpacket regPacket;
+				int numrecv = 0;
+
+				// Send volume message
+				buffer[0] = 4;
+				buffer[1] = (char)channel;
+				buffer[2] = 0xB;
+				buffer[3] = 0x7;
+				buffer[4] = (char)val;
+
+				regPacket.data = (Uint8 *)&buffer[0];
+				regPacket.len = 5;
+				regPacket.maxlen = 5;
+				regPacket.channel = clientChannel;
+				SDLNet_UDP_Send(clientSock, regPacket.channel, &regPacket);
+
+		}
+		*/
   
 	protected:
 		void Dispose(Boolean disposing)
@@ -71,14 +99,6 @@ namespace mt32emu_display
 
 
 
-
-
-
-
-
-
-
-
 	private: System::Windows::Forms::GroupBox *  groupBox3;
 	private: System::Windows::Forms::PictureBox *  oscoIcon;
 	private: System::Windows::Forms::PictureBox *  channelIcon;
@@ -92,6 +112,7 @@ namespace mt32emu_display
 	private: System::Int32 currentTab;
 	private: mt32emu_display_controls::FacePlate *  facePlate;
 	private: mt32emu_display_controls::ChannelDisplay *  channelStatus;
+	private: mt32emu_display_controls::ControlInterface * ci;
 
 
 
@@ -134,6 +155,7 @@ namespace mt32emu_display
 			this->partialTip = new System::Windows::Forms::ToolTip(this->components);
 			this->facePlate = new mt32emu_display_controls::FacePlate();
 			this->channelStatus = new mt32emu_display_controls::ChannelDisplay();
+			this->ci = new mt32emu_display_controls::ControlInterface();
 			this->groupBox3->SuspendLayout();
 			this->SuspendLayout();
 			// 
@@ -406,8 +428,8 @@ namespace mt32emu_display
 					bool anyActive = false;
 					memcpy(buffer, inPacket->data, inPacket->len);
 					// Heartbeat response
-					if((buffer[0] == 1) && (inPacket->len == 287)) {
-						memcpy(buffer, inPacket->data, 287);
+					if((buffer[0] == 1) && (inPacket->len == 296)) {
+						memcpy(buffer, inPacket->data, 296);
 						found = true;
 						int count = (int)buffer[1];
 						for(i=0;i<count;i++) {

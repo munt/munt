@@ -133,6 +133,9 @@
 				RelativePath=".\ChannelDisplay.cpp">
 			</File>
 			<File
+				RelativePath=".\ControlInterface.cpp">
+			</File>
+			<File
 				RelativePath=".\FacePlate.cpp">
 			</File>
 			<File
@@ -174,6 +177,25 @@
 						<Tool
 							Name="VCManagedResourceCompilerTool"
 							ResourceFileName="$(IntDir)/mt32emu_display_controls.ChannelDisplay.resources"/>
+					</FileConfiguration>
+				</File>
+			</File>
+			<File
+				RelativePath=".\ControlInterface.h"
+				FileType="1">
+				<File
+					RelativePath=".\ControlInterface.resX">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.ControlInterface.resources"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.ControlInterface.resources"/>
 					</FileConfiguration>
 				</File>
 			</File>
