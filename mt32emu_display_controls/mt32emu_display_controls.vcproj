@@ -177,6 +177,9 @@
 						UsePrecompiledHeader="1"/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath=".\SysexImporter.cpp">
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -386,6 +389,25 @@
 			</File>
 			<File
 				RelativePath=".\stdafx.h">
+			</File>
+			<File
+				RelativePath=".\SysexImporter.h"
+				FileType="4">
+				<File
+					RelativePath=".\SysexImporter.resX">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.SysexImporter.resources"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.SysexImporter.resources"/>
+					</FileConfiguration>
+				</File>
 			</File>
 		</Filter>
 		<Filter

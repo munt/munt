@@ -39,6 +39,7 @@ namespace mt32emu_display
 			this->facePlate->Tag = ci;
 			this->partialStatus->Tag = ci;
 			this->settingsStatus->Tag = ci;
+			this->sysexImporter1->Tag = ci;
 			this->ticksSinceContact = 5000 / this->timer1->get_Interval();
 			this->settingsStatus->disableActiveSettings();
 			this->balloonTip1 = new mt32emu_display_controls::BalloonTip();
@@ -131,6 +132,7 @@ namespace mt32emu_display
 
 	private: System::Windows::Forms::MenuItem *  expModeMenu;
 	private: System::Windows::Forms::MenuItem *  alwaysTopMenu;
+private: mt32emu_display_controls::SysexImporter *  sysexImporter1;
 	public: static const int WH_MOUSE = 7;
 
 	public: __delegate int HookProc(int nCode, System::IntPtr wParam, System::IntPtr lParam);
@@ -249,6 +251,7 @@ namespace mt32emu_display
 			this->contextMenu2 = new System::Windows::Forms::ContextMenu();
 			this->expModeMenu = new System::Windows::Forms::MenuItem();
 			this->alwaysTopMenu = new System::Windows::Forms::MenuItem();
+			this->sysexImporter1 = new mt32emu_display_controls::SysexImporter();
 			this->groupBox3->SuspendLayout();
 			this->SuspendLayout();
 			// 
@@ -277,7 +280,7 @@ namespace mt32emu_display
 			this->groupBox3->ForeColor = System::Drawing::SystemColors::ControlLightLight;
 			this->groupBox3->Location = System::Drawing::Point(8, 144);
 			this->groupBox3->Name = S"groupBox3";
-			this->groupBox3->Size = System::Drawing::Size(152, 128);
+			this->groupBox3->Size = System::Drawing::Size(152, 72);
 			this->groupBox3->TabIndex = 23;
 			this->groupBox3->TabStop = false;
 			this->groupBox3->Text = S"Panel Display";
@@ -390,11 +393,21 @@ namespace mt32emu_display
 			this->alwaysTopMenu->Index = 1;
 			this->alwaysTopMenu->Text = S"Always On Top";
 			// 
+			// sysexImporter1
+			// 
+			this->sysexImporter1->BackColor = System::Drawing::Color::FromArgb((System::Byte)56, (System::Byte)56, (System::Byte)60);
+			this->sysexImporter1->Location = System::Drawing::Point(8, 224);
+			this->sysexImporter1->Name = S"sysexImporter1";
+			this->sysexImporter1->Size = System::Drawing::Size(152, 56);
+			this->sysexImporter1->TabIndex = 29;
+			this->sysexImporter1->Visible = false;
+			// 
 			// Form1
 			// 
 			this->AutoScaleBaseSize = System::Drawing::Size(5, 13);
 			this->BackColor = System::Drawing::Color::FromArgb((System::Byte)56, (System::Byte)56, (System::Byte)60);
 			this->ClientSize = System::Drawing::Size(800, 414);
+			this->Controls->Add(this->sysexImporter1);
 			this->Controls->Add(this->channelStatus);
 			this->Controls->Add(this->facePlate);
 			this->Controls->Add(this->label1);
@@ -592,6 +605,7 @@ namespace mt32emu_display
 							found = true;
 							this->ticksSinceContact = 0;
 							this->facePlate->turnOnModule();
+							this->sysexImporter1->Visible = true;
 
 							int count = (int)buffer[1];
 							for(i=0;i<6;i++) {
@@ -696,6 +710,7 @@ namespace mt32emu_display
 
 				if(this->ticksSinceContact > (1000 / this->timer1->get_Interval())) {
 					this->facePlate->turnOffModule();
+					this->sysexImporter1->Visible = false;
 					this->settingsStatus->disableActiveSettings();
 					//Prevent overflow
 					--this->ticksSinceContact;

@@ -35,6 +35,7 @@ public:
 	int checkForData(char * buffer);
 	void requestSynthMemory(int addr, int len);
 	void writeSynthMemory(int addr, int len, char *outBuf);
+	void sendSemiRawSysex(unsigned char * sysexBuf, int sysexLen);
 
 
 private:

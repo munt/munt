@@ -45,6 +45,8 @@ namespace mt32emu_display_controls
 		System::Void requestSynthMemory(int addr, int len) { this->driverComm->requestSynthMemory(addr, len); }
 
 		System::Void writeSynthMemory(int addr, int len, char * outBuf) { this->driverComm->writeSynthMemory(addr, len, outBuf); }
+
+		System::Void sendSemiRawSysex(unsigned char * buf, int len) { this->driverComm->sendSemiRawSysex(buf, len); } 
 		
 	protected: 
 		void Dispose(Boolean disposing)
