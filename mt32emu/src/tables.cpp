@@ -411,11 +411,23 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 				dval = 1;
 				ampbiastable[lf][distval] = 256;
 			} else {
+				/*
 				amplog = powf(1.431817011f, (float)lf) / FLOAT_PI;
 				dval = ((128.0f - (float)distval) / 128.0f);
 				amplog = expf(amplog);
 				dval = powf(amplog, dval) / amplog;
 				ampbiastable[lf][distval] = (int)(dval * 256.0);
+				*/
+				// Lets assume for a second it's linear
+
+				// Distance of full volume reduction
+				amplog = (float)(12.0f / (float)lf) * 24.0f;
+				if(distval > amplog) {
+					ampbiastable[lf][distval] = 0;
+				} else {
+					dval = (amplog - (float)distval) / amplog;
+					ampbiastable[lf][distval] = (int)(dval * 256.0f);
+				}
 			}
 			//synth->printDebug("Ampbias lf %d distval %d = %f (%x) %f", lf, distval, dval, ampbiastable[lf][distval],amplog);
 		}
@@ -580,7 +592,9 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 			float tfadd = (float)tf;
 
 			//float freqsum = expf((cfmult + tfadd) / 30.0f) / 4.0f;
-			float freqsum = 0.15f * expf(0.45f * ((cfmult + tfadd) / 10.0f));
+			//float freqsum = 0.15f * expf(0.45f * ((cfmult + tfadd) / 10.0f));
+
+			float freqsum = powf(2, ((cfmult + tfadd) - 40.0f) / 16.0f);
 
 			noteLookup->nfiltTable[cf][tf] = (int)((freq * freqsum) / (rate / 2) * FILTERGRAN);
 			if (noteLookup->nfiltTable[cf][tf] >= ((FILTERGRAN * 15) / 16))
