@@ -219,11 +219,11 @@ int MT32Emu_Report(void *userData, MT32Emu::ReportType type, const void *reportD
 	switch (type)
 	{
 	case MT32Emu::ReportType_errorControlROM:
-		fprintf(stderr, "Unable to open %sMT32_Control.ROM: %s\n", rom_path, *((int *)reportData));
+		fprintf(stderr, "Unable to open %sMT32_Control.ROM: %d\n", rom_path, *((int *)reportData));
 		break;
 
 	case MT32Emu::ReportType_errorPCMROM:
-		fprintf(stderr, "Unable to open %sMT32_PCM.ROM: %s\n", rom_path, *((int *)reportData));
+		fprintf(stderr, "Unable to open %sMT32_PCM.ROM: %d\n", rom_path, *((int *)reportData));
 		break;
 	
 	case MT32Emu::ReportType_lcdMessage:
