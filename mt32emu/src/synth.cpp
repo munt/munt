@@ -235,7 +235,8 @@ bool Synth::loadPCMROM(const char *filename) {
 		return false;
 	}
 	bool rc = true;
-	for (int i = 0; i < pcmROMSize; i++) {
+	int i;
+	for (i = 0; i < pcmROMSize; i++) {
 		Bit8u s;
 		if (!file->readBit8u(&s)) {
 			if (!file->isEOF()) {
