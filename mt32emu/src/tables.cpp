@@ -242,7 +242,7 @@ void TableInitialiser::initMT32ConstantTables(Synth *synth) {
 	for (velt = 0; velt < 128; velt++) {
 		for (dep = 0; dep < 5; dep++) {
 			if (dep > 0) {
-				float ff = (float)(exp(3.5f*tvcatconst[dep] * (59.0f-(float)velt)) * tvcatmult[dep]);
+				float ff = (float)(exp(3.5f * tvcatconst[dep] * (59.0f - (float)velt)) * tvcatmult[dep]);
 				tempdep = 256.0f * ff;
 				veltkeytable[dep][velt] = (int)tempdep;
 				//if ((velt % 16) == 0) {
@@ -303,10 +303,9 @@ void TableInitialiser::initMT32ConstantTables(Synth *synth) {
 	for (unsigned int i = 0; i < MAX_SAMPLE_OUTPUT; i++) {
 		int myRand;
 		myRand = rand();
-		int origRand = myRand;
-		//myRand = ((myRand - 16383) * WGAMP) >> 16;
+		//myRand = ((myRand - 16383) * 7168) >> 16;
 		// This one is slower but works with all values of RAND_MAX
-		myRand = (int)((origRand - RAND_MAX / 2) / (float)RAND_MAX * (WGAMP / 2));
+		myRand = (int)((myRand - RAND_MAX / 2) / (float)RAND_MAX * (7168 / 2));
 		//FIXME:KG: Original ultimately set the lowest two bits to 0, for no obvious reason
 		smallnoise[i] = (Bit16s)myRand;
 	}
@@ -435,13 +434,13 @@ void TableInitialiser::initMT32ConstantTables(Synth *synth) {
 // Per-note table initialisation follows
 
 static void initSaw(NoteLookup *noteLookup, Bit32s div) {
+	int tmpdiv = div << 17;
 	for (int rsaw = 0; rsaw <= 100; rsaw++) {
 		float fsaw;
 		if (rsaw < 50)
 			fsaw = 50.0f;
 		else
 			fsaw = (float)rsaw;
-		int tmpdiv = div << 17;
 
 		//(66 - (((A8 - 50) / 50) ^ 0.63) * 50) / 132
 		float sawfact = (66.0f - (powf((fsaw - 50.0f) / 50.0f, 0.63f) * 50.0f)) / 132.0f;
@@ -471,7 +470,19 @@ static void initDep(NoteLookup *noteLookup, float f) {
 	//synth->printDebug("F %f d1 %x d2 %x d3 %x d4 %x d5 %x", f, noteLookup->fildepTable[0], noteLookup->fildepTable[1], noteLookup->fildepTable[2], noteLookup->fildepTable[3], noteLookup->fildepTable[4]);
 }
 
-File *TableInitialiser::initWave(Synth *synth, NoteLookup *noteLookup, float ampsize, float div, File *file) {
+Bit16s TableInitialiser::clampWF(Synth *synth, char *n, float ampVal, double input) {
+	Bit32s x = (Bit32s)(input * ampVal);
+	if (x < -ampVal - 1) {
+		synth->printDebug("%s==%d<-WGAMP-1!", n, x);
+		x = (Bit32s)(-ampVal - 1);
+	} else if (x > ampVal) {
+		synth->printDebug("%s==%d>WGAMP!", n, x);
+		x = (Bit32s)ampVal;
+	}
+	return (Bit16s)x;
+}
+
+File *TableInitialiser::initWave(Synth *synth, NoteLookup *noteLookup, float ampVal, float div, File *file) {
 	int iDiv = (int)div;
 	noteLookup->waveformSize[0] = iDiv << 2;
 	noteLookup->waveformSize[1] = iDiv << 2;
@@ -510,12 +521,12 @@ File *TableInitialiser::initWave(Synth *synth, NoteLookup *noteLookup, float amp
 				saw += sin(fsinus * sa) / fsinus;
 			}
 #endif
-
 			// This works pretty well
-			noteLookup->waveforms[0][fa] = (Bit16s)(saw * -ampsize / 2);
-			noteLookup->waveforms[1][fa] = (Bit16s)(cos(sa / 2.0) * -ampsize);
-			noteLookup->waveforms[2][fa * 2] = (Bit16s)(cos(sa - DOUBLE_PI) * -ampsize);
-			noteLookup->waveforms[2][fa * 2 + 1] = (Bit16s)(cos((sa + (sd / 2)) - DOUBLE_PI) * -ampsize);
+			// Multiplied by 0.84 so that the spikes caused by bandlimiting don't overdrive the amplitude
+			noteLookup->waveforms[0][fa] = clampWF(synth, "saw", ampVal, -saw / (0.5 * DOUBLE_PI) * 0.84);
+			noteLookup->waveforms[1][fa] = clampWF(synth, "cos", ampVal, -cos(sa / 2.0));
+			noteLookup->waveforms[2][fa * 2] = clampWF(synth, "cosoff_0", ampVal, -cos(sa - DOUBLE_PI));
+			noteLookup->waveforms[2][fa * 2 + 1] = clampWF(synth, "cosoff_1", ampVal, -cos((sa + (sd / 2)) - DOUBLE_PI));
 		}
 	}
 	return file;
@@ -561,7 +572,6 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 }
 
 File *TableInitialiser::initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float masterTune, PCMWaveEntry pcmWaves[128], File *file) {
-	float ampsize = WGAMP;
 	float freq = (float)(masterTune * pow(2.0, ((double)note - MIDDLEA) / 12.0));
 	float div = rate / freq;
 	noteLookup->div = (int)div;
@@ -573,7 +583,7 @@ File *TableInitialiser::initNote(Synth *synth, NoteLookup *noteLookup, float not
 	initDep(noteLookup, note);
 
 	//synth->printDebug("Note %f; freq=%f, div=%f", note, freq, rate / freq);
-	file = initWave(synth, noteLookup, ampsize, div, file);
+	file = initWave(synth, noteLookup, (const float)WGAMP, div, file);
 
 	// Create the pitch tables
 
@@ -594,7 +604,7 @@ bool TableInitialiser::initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float
 	};
 	char filename[64];
 	int intRate = (int)rate;
-	char version[4] = {0, 0, 0, 3};
+	char version[4] = {0, 0, 0, 4};
 	sprintf(filename, "waveformcache-%d-%.2f.raw", intRate, masterTune);
 
 	File *file = NULL;

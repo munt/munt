@@ -324,15 +324,14 @@ Bit16s *Partial::generateSamples(long length) {
 			} else {
 				// Render synthesised sample
 				Bit32u div = noteLookup->div;
-				int wf = patchCache->waveform;
 				int toff = partialOff.pcmplace;
 				int minorplace = partialOff.pcmoffset >> 14;
-
+				Bit32s filterInput;
 				Bit32s filtval = getFiltEnvelope();
 
 				//synth->printDebug("Filtval: %d", filtval);
 
-				if (wf==0) {
+				if (patchCache->waveform == 0) {
 					// Square waveform.  Made by combining two pregenerated bandlimited
 					// sawtooth waveforms
 					// Pulse width is not yet correct
@@ -345,7 +344,7 @@ Bit16s *Partial::generateSamples(long length) {
 					ofsB = ofsB % div;
 					Bit16s pa = noteLookup->waveforms[0][(ofsA << 2) + minorplace];
 					Bit16s pb = noteLookup->waveforms[0][(ofsB << 2) + minorplace];
-					sample = (pa - pb) * 4;
+					filterInput = (pa - pb) / 2;
 					// Non-bandlimited squarewave
 					/*
 					ofs = ((div << 1) * pulsetable[patchCache->pulsewidth]) >> 8;
@@ -360,10 +359,9 @@ Bit16s *Partial::generateSamples(long length) {
 					// square wave and multiplies it by a full cosine
 					int waveoff = (toff << 2) + minorplace;
 					if (toff < noteLookup->sawTable[pulsewidth])
-						sample = noteLookup->waveforms[1][waveoff % noteLookup->waveformSize[1]];
+						filterInput = noteLookup->waveforms[1][waveoff % noteLookup->waveformSize[1]];
 					else
-						sample = noteLookup->waveforms[2][waveoff % noteLookup->waveformSize[2]];
-					sample = sample * 4;
+						filterInput = noteLookup->waveforms[2][waveoff % noteLookup->waveformSize[2]];
 					// This is the correct way
 					// Seems slow to me (though bandlimited) -- doesn't seem to
 					// sound any better though
@@ -377,15 +375,22 @@ Bit16s *Partial::generateSamples(long length) {
 
 					pa = noteLookup->waveforms[0][ofs];
 					pb = noteLookup->waveforms[0][ofs3];
-					sample = ((pa - pb) * noteLookup->waveforms[2][toff]) / WGAMP;
-					sample = sample *4;
+					sample = ((pa - pb) * noteLookup->waveforms[2][toff]) / 2;
 					*/
 				}
 
 				//Very exact filter
 				if (filtval > ((FILTERGRAN * 15) / 16))
 					filtval = ((FILTERGRAN * 15) / 16);
-				sample = (Bit32s)floor((synth->iirFilter)((float)sample, &history[0], filtcoeff[filtval][(int)patchCache->filtEnv.resonance], patchCache->filtEnv.resonance));
+				sample = (Bit32s)floor((synth->iirFilter)((float)filterInput, &history[0], filtcoeff[filtval][(int)patchCache->filtEnv.resonance], patchCache->filtEnv.resonance));
+				if (sample < -32768) {
+					synth->printDebug("Overdriven amplitude for %d: %d:=%d < -32768", patchCache->waveform, filterInput, sample);
+					sample = -32768;
+				}
+				else if (sample > 32767) {
+					synth->printDebug("Overdriven amplitude for %d: %d:=%d > 32767", patchCache->waveform, filterInput, sample);
+					sample = 32767;
+				}
 			}
 		}
 

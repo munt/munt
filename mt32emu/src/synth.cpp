@@ -30,7 +30,7 @@ namespace MT32Emu {
 
 const int MAX_SYSEX_SIZE = 512;
 
-float iir_filter_normal(float input,float *hist1_ptr, float *coef_ptr, int revLevel) {
+float iir_filter_normal(float input, float *hist1_ptr, float *coef_ptr, int revLevel) {
 	float *hist2_ptr;
 	float output,new_hist;
 

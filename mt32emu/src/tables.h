@@ -33,6 +33,11 @@ const float FLOAT_LN = 2.3025850929940456840179914546844f;
 // Filter settings
 const int FILTERGRAN = 512;
 
+// FIXME: This value is the amplitude possible whilst avoiding
+// overdriven values immediately after filtering when playing
+// back SQ3MT.MID. Needs to be checked.
+const int WGAMP = 12382;
+
 const int MIDDLEC = 60;
 const int MIDDLEA = 69; // By this I mean "A above middle C"
 
@@ -45,7 +50,7 @@ const int HIGHEST_NOTE = 127;
 const int NUM_NOTES = HIGHEST_NOTE - LOWEST_NOTE + 1; // Number of slots for note LUT
 
 // Amplitude of waveform generator
-const int WGAMP = 7168; // 8192?
+//const int WGAMP = 7168; // 8192?
 
 class Synth;
 
@@ -88,6 +93,7 @@ extern NoteLookup noteLookups[NUM_NOTES];
 
 class TableInitialiser {
 	static void initMT32ConstantTables(Synth *synth);
+	static Bit16s clampWF(Synth *synth, char *n, float ampVal, double input);
 	static File *initWave(Synth *synth, NoteLookup *noteLookup, float ampsize, float div, File *file);
 	static bool initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float rate, float tuning);
 public:
