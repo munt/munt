@@ -387,8 +387,8 @@ namespace mt32emu_display
 				g->Clear(System::Drawing::Color::FromArgb(69, 69, 73));
 				for(j=0;j<notesPlaying;j++) {
 					int xat;
-					xat = (noteList[j] - 12) * 4;
-					g->FillRectangle(System::Drawing::Brushes::Lime, xat, 0, 4, 24);
+					xat = (noteList[j]) * 3;
+					g->FillRectangle(System::Drawing::Brushes::Lime, xat, 0, 3, 24);
 				}
 
 				
