@@ -309,8 +309,8 @@ bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 		bool rLoop = (tps[i].len & 0x80) != 0;
 		//Bit8u rFlag = tps[i].len & 0x0F;
 		Bit16u rTuneOffset = (tps[i].pitchMSB << 8) | tps[i].pitchLSB;
-		//FIXME:KG: Pick a number, any number. The one below sounded best to me in listening tests, but needs to be confirmed.
-		double STANDARDFREQ = 432.1;
+		// The number below is confirmed to a reasonable degree of accuracy on CM-32L
+		double STANDARDFREQ = 442.0;
 		float rTune = (float)(STANDARDFREQ * pow(2.0, (0x5000 - rTuneOffset) / 4096.0 - 9.0 / 12.0));
 		//printDebug("%f,%d,%d", pTune, tps[i].pitchCoarse, tps[i].pitchFine);
 		if (rAddr + rLen > pcmROMSize) {
