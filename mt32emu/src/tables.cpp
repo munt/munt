@@ -222,16 +222,8 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		//synth->printDebug("KT %d = %d", f, keytable[f+108]);
 	}
 
-	int res;
-	float fres;
-	for (res = 0; res < 31; res++) {
-		//FIXME: logf(0) doesn't make sense, not sure whether this is the correct solution.
-		if (res == 0) {
-			ResonFactor[res] = 2.0f;
-		} else {
-			fres = (float)res / 30.0f;
-			ResonFactor[res] = (powf(2.0f, logf(powf(fres, 16.0f))) * 2.5f) + 1.0f;
-		}
+	for (int res = 0; res < 31; res++) {
+		ResonFactor[res] = powf((float)res / 30.0f, 5.0f) + 1.0f;
 		ResonInv[res] = 1 / ResonFactor[res];
 	}
 
@@ -526,9 +518,6 @@ File *Tables::initWave(Synth *synth, NoteLookup *noteLookup, float ampVal, float
 			// Calculate a sample for the bandlimited sawtooth wave
 			double saw = 0.0;
 			int sincs = iDiv;
-			// Canadacow assures me that we should do at least 256 sincs regardless of frequency
-			if (sincs < 256)
-				sincs = 256;
 			double sinus = 1.0;
 			for (int sincNum = 1; sincNum <= sincs; sincNum++) {
 				saw += sin(sinus * sa) / sinus;
@@ -575,7 +564,7 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 			float tfadd = (float)tf;
 
 			//float freqsum = expf((cfmult + tfadd) / 30.0f) / 4.0f;
-			float freqsum = 0.15f * expf(0.45f * ((float)(cfmult + tfadd) / 10.0f));
+			float freqsum = 0.15f * expf(0.45f * ((cfmult + tfadd) / 10.0f));
 
 			noteLookup->nfiltTable[cf][tf] = (int)((freq * freqsum) / (rate / 2) * FILTERGRAN);
 			if (noteLookup->nfiltTable[cf][tf] >= ((FILTERGRAN * 15) / 16))
