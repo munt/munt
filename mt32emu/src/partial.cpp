@@ -238,7 +238,7 @@ Bit16s *Partial::generateSamples(long length) {
 		int delta;
 		// These two are only for PCM partials, obviously
 		PCMWaveEntry *pcmWave = NULL; // Initialise to please compiler
-		int pcmAddr = 0; // Initialise to please compiler
+		Bit32u pcmAddr = 0; // Initialise to please compiler
 
 		// Wrap positions or end if necessary
 		if (patchCache->PCMPartial) {
@@ -282,7 +282,7 @@ Bit16s *Partial::generateSamples(long length) {
 			if (patchCache->PCMPartial) {
 				// Render PCM sample
 				int ra, rb, dist;
-				int taddr;
+				Bit32u taddr;
 				if (delta < 0x10000) {
 					// Linear sound interpolation
 					taddr = pcmAddr + partialOff.pcmplace;
