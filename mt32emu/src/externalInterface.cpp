@@ -46,12 +46,12 @@ bool ExternalInterface::start() {
 	}
 }
 
-void ExternalInterface::doControlPanelComm(Synth *synth) {
+void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 	int reqType;
 	int i;
 	Bit16u length = 0;
 	Bit8u buffer[4096];
-	if(getStatusRequest(&reqType, (char *)buffer)) {
+	while(getStatusRequest(&reqType, (char *)buffer)) {
 		switch(reqType) {
 			case 1:
 				Bit16u *bufptr;
@@ -88,18 +88,19 @@ void ExternalInterface::doControlPanelComm(Synth *synth) {
 					bufptr++;
 				}
 				for(i=0;i<9;i++) {
-					*bufptr++ = (MT32Emu::Bit16u)synth->getPart(i)->getVolume();
+					*bufptr++ = (Bit16u)synth->getPart(i)->getVolume();
 				}
+				*(int *)bufptr = sndBufLength;
 
-				sendResponse(reqType, (char *)&buffer[0], 296 );
+				sendResponse(reqType, (char *)&buffer[0], 300 );
 				break;
 			case 2:
 				// Literal sysex from control panel
 				// Format:
 				// 2 bytes = length of raw sysex
 				// [length] bytes = raw sysex without Open/Close Exclusive bytes or machine identifiers
-				length = *(MT32Emu::Bit16u *)&buffer[0];
-				synth->playSysexWithoutHeader(0x10, MT32Emu::SYSEX_CMD_DT1, buffer + 2, length);
+				length = *(Bit16u *)&buffer[0];
+				synth->playSysexWithoutHeader(0x10, SYSEX_CMD_DT1, buffer + 2, length);
 				break;
 			case 3:
 				// Reserved for raw sysex reads
@@ -112,6 +113,20 @@ void ExternalInterface::doControlPanelComm(Synth *synth) {
 				// 1 byte = note
 				// 1 byte = velocity
 				synth->playMsgOnPart(buffer[0], buffer[1], buffer[2], buffer[3]);
+				break;
+			case 5:
+				// Raw memory address reads
+				// Format:
+				// 4 bytes = memory address
+				// 2 bytes = length (Probably not a good idea to request more than 4094 bytes!
+				Bit32u addr = *(Bit32u *)&buffer[0];
+				Bit16u len = *(Bit16u *)&buffer[4];
+
+				*(Bit16u *)&buffer[0] = 5;
+				synth->readMemory(addr, len, &buffer[2]);
+
+				sendResponse(5, (char *)&buffer[0], len + 2 );
+
 				break;
 		}
 
@@ -132,7 +147,7 @@ bool ExternalInterface::getStatusRequest(int *requestType, char * buffer) {
 		*requestType = (int)*(Bit16u *)(&inBuffer[0]);
 		if(buffer != NULL) {
 			if(inPacket.len > 1) {
-				memcpy(buffer, &inBuffer[1], inPacket.len - 1);
+				memcpy(buffer, &inBuffer[2], inPacket.len - 2);
 			}
 		}
 		return true;

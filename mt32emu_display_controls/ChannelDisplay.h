@@ -1,11 +1,11 @@
 #pragma once
 
+#include "ControlInterface.h"
+
 #include <stdlib.h>
 #include <string.h>
 
 #pragma intrinsic(memcpy)
-
-#include "ControlInterface.h"
 
 using namespace System;
 using namespace System::ComponentModel;
@@ -20,8 +20,14 @@ struct chanInfo {
 	int freq;
 };
 
-chanInfo *chanList;
+struct volInfo {
+	bool locked;
+	int targetValue;
+	int pastValue;
+};
 
+chanInfo *chanList;
+volInfo volList[9];
 
 namespace mt32emu_display_controls
 {
@@ -35,7 +41,6 @@ namespace mt32emu_display_controls
 		{
 			
 			chanList = NULL;
-			lockedVol = false;
 			InitializeComponent();
 			this->noteBox = new System::Windows::Forms::PictureBox*[9];
 			this->chanVol = new System::Windows::Forms::HScrollBar*[9];
@@ -63,6 +68,11 @@ namespace mt32emu_display_controls
 				this->chanVol[i]->Size = System::Drawing::Size(104, 8);
 				this->chanVol[i]->TabIndex = i;
 				this->chanVol[i]->Scroll += new ScrollEventHandler(this, &ChannelDisplay::volBar_Scroll);
+
+				volList[i].locked = false;
+				volList[i].targetValue = 0;
+				volList[i].pastValue = 0;
+
 
 			}
 
@@ -117,7 +127,16 @@ namespace mt32emu_display_controls
 
 			int bufloc = (count * 3) + 3 + (5 * 8);
 			for(i=0;i<9;i++) {
-				this->chanVol[i]->Value = buffer[bufloc + i];
+
+				//if(!volList[i].locked)
+				if(volList[i].pastValue != buffer[bufloc + i]) {
+                    this->chanVol[i]->Value = buffer[bufloc + i];
+					volList[i].pastValue = buffer[bufloc + i];
+				}
+
+				//if(volList[i].targetValue == buffer[bufloc + i]) volList[i].locked = false;
+
+
 				this->noteBox[i]->Refresh();
 			}
 			
@@ -145,7 +164,6 @@ namespace mt32emu_display_controls
 	private: System::Windows::Forms::Label *  chan1;
 	private: System::Windows::Forms::PictureBox *  noteBox[];
 	private: System::Windows::Forms::HScrollBar *  chanVol[];
-	private: System::Boolean lockedVol;
 
 
 
@@ -287,7 +305,9 @@ namespace mt32emu_display_controls
 					ControlInterface * parent;
 					parent = dynamic_cast<ControlInterface*>(this->Tag);
 					//if(parent != NULL) {
-						parent->SetVolume(sb->TabIndex, e->NewValue);
+						parent->setVolume(sb->TabIndex, e->NewValue);
+						//volList[sb->TabIndex].locked = true;
+						//volList[sb->TabIndex].targetValue = e->NewValue;
 					//}
 				 }
 				 

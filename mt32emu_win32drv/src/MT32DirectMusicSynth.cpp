@@ -514,7 +514,7 @@ HRESULT MT32DirectMusicSynth::Render(THIS_ short *pBuffer, DWORD dwLength, LONGL
 
 #if MT32EMU_USE_EXTINT == 1
 		if (extComm != NULL) {
-			extComm->doControlPanelComm(getMT32EmuSynth());
+			extComm->doControlPanelComm(getMT32EmuSynth(), dwLength);
 		}
 #endif
 		myMT32->render(pBuffer, thisLength);

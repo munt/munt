@@ -25,7 +25,7 @@ public:
 
 	bool start();
 
-	void doControlPanelComm(Synth *synth);
+	void doControlPanelComm(Synth *synth, int sndBufLength);
 	bool getStatusRequest(int *requestType, char * buffer);
 
 	bool sendResponse(int requestType, char *requestBuf, int requestLen);

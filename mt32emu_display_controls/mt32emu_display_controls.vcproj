@@ -81,7 +81,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/noentry"
-				AdditionalDependencies="nochkclr.obj mscoree.lib"
+				AdditionalDependencies="nochkclr.obj mscoree.lib SDL_net.lib msvcrt.lib"
 				OutputFile="$(OutDir)\$(ProjectName).dll"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"/>
@@ -134,6 +134,9 @@
 			</File>
 			<File
 				RelativePath=".\ControlInterface.cpp">
+			</File>
+			<File
+				RelativePath=".\DriverCommClass.cpp">
 			</File>
 			<File
 				RelativePath=".\FacePlate.cpp">
@@ -198,6 +201,9 @@
 							ResourceFileName="$(IntDir)/mt32emu_display_controls.ControlInterface.resources"/>
 					</FileConfiguration>
 				</File>
+			</File>
+			<File
+				RelativePath=".\DriverCommClass.h">
 			</File>
 			<File
 				RelativePath=".\FacePlate.h"

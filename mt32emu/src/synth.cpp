@@ -809,6 +809,58 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 	}
 }
 
+void Synth::readMemory(Bit32u addr, Bit32u len, Bit8u * data) {
+	int regionNum;
+	const MemoryRegion *region = NULL; 
+	for (regionNum = 0; regionNum < NUM_REGIONS; regionNum++) {
+		region = &memoryRegions[regionNum];
+		if (region->contains(addr)) {
+			readMemoryRegion(region, addr, len, data);
+			break;
+		}
+	}
+
+}
+
+void Synth::readMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, Bit8u *data) {
+	unsigned int first = region->firstTouched(addr);
+	unsigned int last = region->lastTouched(addr, len);
+	unsigned int off = region->firstTouchedOffset(addr);
+
+	unsigned int m;
+
+	switch(region->type) {
+		case MR_PatchTemp:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.patchSettings[first])[off + m];
+			break;
+		case MR_RhythmTemp:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.rhythmSettings[first])[off + m];
+			break;
+		case MR_TimbreTemp:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.timbreSettings[first])[off + m];
+			break;
+		case MR_Patches:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.patches[first])[off + m];
+			break;
+		case MR_Timbres:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.timbres[first])[off + m];
+			break;
+		case MR_System:
+			for (m = 0; m < len; m++) 
+				data[m] = ((Bit8u *)&mt32ram.system)[m + off];
+			break;
+		default:
+			// TODO: Don't care about the others ATM
+			break;
+	}
+
+}
+
 void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, const Bit8u *data) {
 	unsigned int first = region->firstTouched(addr);
 	unsigned int last = region->lastTouched(addr, len);

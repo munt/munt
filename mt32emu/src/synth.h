@@ -240,6 +240,7 @@ private:
 	void writeSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 	void writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, const Bit8u *data);
+	void readMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, Bit8u *data);
 
 	bool loadControlROM(const char *filename);
 	bool loadPCMROM(const char *filename);
@@ -287,6 +288,8 @@ public:
 	void render(Bit16s * stream, Bit32u len);
 
 	const Partial *getPartial(unsigned int partialNum) const;
+
+	void readMemory(Bit32u addr, Bit32u len, Bit8u * data);
 
 	// partNum should be 0..7 for Part 1..8, or 8 for Rhythm
 	const Part *getPart(unsigned int partNum) const;

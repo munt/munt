@@ -1,19 +1,8 @@
 #pragma once
 
+#include <stdio.h>
 #include <stdlib.h>
-
-
-struct _UDPsocket {
-	char buffer[4096];
-};
-
-#include "SDL_net.h"
-
-IPaddress driverAddr;
-IPaddress clientAddr;
-UDPsocket clientSock;
-int clientChannel;
-UDPpacket *inPacket;
+#include <string.h>
 
 struct chanInfo {
 	bool isPlaying;
@@ -53,37 +42,11 @@ namespace mt32emu_display
 
 		}
 
-
-		/*
-		void SetVolume(int channel, int val) {
-			
-				char buffer[2048];
-				UDPpacket regPacket;
-				int numrecv = 0;
-
-				// Send volume message
-				buffer[0] = 4;
-				buffer[1] = (char)channel;
-				buffer[2] = 0xB;
-				buffer[3] = 0x7;
-				buffer[4] = (char)val;
-
-				regPacket.data = (Uint8 *)&buffer[0];
-				regPacket.len = 5;
-				regPacket.maxlen = 5;
-				regPacket.channel = clientChannel;
-				SDLNet_UDP_Send(clientSock, regPacket.channel, &regPacket);
-
-		}
-		*/
-  
 	protected:
 		void Dispose(Boolean disposing)
 		{
 
-			SDLNet_UDP_Unbind(clientSock, clientChannel);
-			SDLNet_UDP_Close(clientSock);
-			SDLNet_Quit();
+			ci->shutDown();
 
 			if (disposing && components)
 			{
@@ -155,7 +118,7 @@ namespace mt32emu_display
 			this->partialTip = new System::Windows::Forms::ToolTip(this->components);
 			this->facePlate = new mt32emu_display_controls::FacePlate();
 			this->channelStatus = new mt32emu_display_controls::ChannelDisplay();
-			this->ci = new mt32emu_display_controls::ControlInterface();
+			this->ci = new mt32emu_display_controls::ControlInterface(this->components);
 			this->groupBox3->SuspendLayout();
 			this->SuspendLayout();
 			// 
@@ -171,7 +134,7 @@ namespace mt32emu_display
 			// 
 			// timer1
 			// 
-			this->timer1->Interval = 10;
+			this->timer1->Interval = 20;
 			this->timer1->Tick += new System::EventHandler(this, timer1_Tick);
 			// 
 			// groupBox3
@@ -354,38 +317,12 @@ namespace mt32emu_display
 						xcount = 0;
 
 					}
+				
 				}
 
-
-
-
-				if(SDLNet_Init() == 0) {
-
-
-					driverAddr.host = 0x0100007f;
-					driverAddr.port = 0xc307;
-
-					//if(SDLNet_ResolveHost(&driverAddr, "127.0.0.1", 1987) == 0) {
-
-						clientSock = SDLNet_UDP_Open(0);
-						if(clientSock != NULL) {
-							clientChannel = SDLNet_UDP_Bind(clientSock,-1,&driverAddr);
-							if(clientChannel != -1) {
-								inPacket = SDLNet_AllocPacket(4096);
-								if(inPacket != NULL) {
-									this->timer1->set_Enabled(true);		
-								}
-							}
-						}
-						
-						
-					//}
-					
-					
-					
+				if(this->ci->InitConnection()) {
+					this->timer1->set_Enabled(true);		
 				}
-
-
 				
 			 }
 
@@ -403,33 +340,20 @@ namespace mt32emu_display
 
 	private: System::Void timer1_Tick(System::Object *  sender, System::EventArgs *  e)
 			 {
-				Uint16 buffer[2048];
-				UDPpacket regPacket;
-				int numrecv = 0;
-				
-				
 
-				// Send heartbeat
-				buffer[0] = 1;
-
-				regPacket.data = (Uint8 *)&buffer[0];
-				regPacket.len = 2;
-				regPacket.maxlen = 2;
-				regPacket.channel = clientChannel;
-				SDLNet_UDP_Send(clientSock, regPacket.channel, &regPacket);
+				unsigned short buffer[2048];
 
 
-				inPacket->channel = clientChannel;
+ 			    this->ci->sendHeartBeat();
 
-				numrecv = SDLNet_UDP_Recv(clientSock, inPacket);
+				int numrecv = this->ci->checkForData((char *)buffer);
+
 				if(numrecv >0) {
 					int i;
 					bool found = false;
 					bool anyActive = false;
-					memcpy(buffer, inPacket->data, inPacket->len);
 					// Heartbeat response
-					if((buffer[0] == 1) && (inPacket->len == 296)) {
-						memcpy(buffer, inPacket->data, 296);
+					if((buffer[0] == 1) && (numrecv == 300)) {
 						found = true;
 						int count = (int)buffer[1];
 						for(i=0;i<count;i++) {
@@ -466,6 +390,10 @@ namespace mt32emu_display
 							this->facePlate->workMidiLight(System::Drawing::Color::FromArgb(41,42,51));
 						}
 
+
+						// TODO: Doesn't seem to work.  Wanted to get the buffer size so I could change
+						// the timer to tick in sync with it.
+						int sndBufSize = *(int *)&buffer[296];
 
 
 					}
