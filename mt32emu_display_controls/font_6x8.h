@@ -1,7 +1,7 @@
 #ifndef _FONT_6X8_H_
 #define _FONT_6X8_H_
 
-/* $Id: font_6x8.h,v 1.1 2005-02-26 09:13:47 canadacow Exp $
+/* $Id: font_6x8.h,v 1.2 2005-02-26 09:14:28 canadacow Exp $
  *
  * 6x8 font
  *
@@ -26,7 +26,10 @@
  *
  *
  * $Log: font_6x8.h,v $
- * Revision 1.1  2005-02-26 09:13:47  canadacow
+ * Revision 1.2  2005-02-26 09:14:28  canadacow
+ * Authentic LCD display and other misc changes
+ *
+ * Revision 1.1  2005/02/26 09:13:47  canadacow
  * Authentic LCD display and other misc changes
  *
  * Revision 1.2  2005/01/18 06:30:23  reinelt

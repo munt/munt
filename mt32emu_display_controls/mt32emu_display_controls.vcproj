@@ -139,7 +139,13 @@
 				RelativePath=".\DriverCommClass.cpp">
 			</File>
 			<File
+				RelativePath=".\envelopeRender.cpp">
+			</File>
+			<File
 				RelativePath=".\FacePlate.cpp">
+			</File>
+			<File
+				RelativePath=".\LCDDisplay.cpp">
 			</File>
 			<File
 				RelativePath=".\mt32emu_display_controlsControl.cpp">
@@ -206,6 +212,25 @@
 				RelativePath=".\DriverCommClass.h">
 			</File>
 			<File
+				RelativePath=".\envelopeRender.h"
+				FileType="4">
+				<File
+					RelativePath=".\envelopeRender.resX">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.envelopeRender.resources"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.envelopeRender.resources"/>
+					</FileConfiguration>
+				</File>
+			</File>
+			<File
 				RelativePath=".\FacePlate.h"
 				FileType="4">
 				<File
@@ -221,6 +246,28 @@
 						<Tool
 							Name="VCManagedResourceCompilerTool"
 							ResourceFileName="$(IntDir)/mt32emu_display_controls.FacePlate.resources"/>
+					</FileConfiguration>
+				</File>
+			</File>
+			<File
+				RelativePath=".\font_6x8.h">
+			</File>
+			<File
+				RelativePath=".\LCDDisplay.h"
+				FileType="4">
+				<File
+					RelativePath=".\LCDDisplay.resX">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.LCDDisplay.resources"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCManagedResourceCompilerTool"
+							ResourceFileName="$(IntDir)/mt32emu_display_controls.LCDDisplay.resources"/>
 					</FileConfiguration>
 				</File>
 			</File>
