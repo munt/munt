@@ -393,6 +393,14 @@ void Part::updateVolume() {
 	volumeMult = volTable[patchTemp->outlevel * expression / 127];
 }
 
+int Part::getVolume() {
+	if(patchTemp != NULL) {
+		return ((patchTemp->outlevel * 127) / 100);
+	} else {
+		return 0;
+	}
+}
+
 void Part::setVolume(int midiVolume) {
 	// FIXME: Use the mappings for this in the control ROM
 	patchTemp->outlevel = (Bit8u)(midiVolume * 100 / 127);
