@@ -123,7 +123,7 @@ void Partial::initKeyFollow(int key) {
 	if (keyfollow < -108)
 		keyfollow = -108;
 	filtVal = keytable[keyfollow + 108];
-	realVal = keytable[(key - MIDDLEC) + 108];
+	realVal = keytable[(noteVal - MIDDLEC) + 108];
 }
 
 void Partial::startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *pairPartial) {
@@ -715,6 +715,10 @@ Bit32s Partial::getFiltEnvelope() {
 
 	reshigh *= filtVal;
 	reshigh /= realVal; //FIXME:KG: As above for cutoff
+
+	if(patchCache->waveform == 1) {
+		reshigh = (reshigh * 65) / 100;
+	}
 
 	if (cutoff > 100)
 		cutoff = 100;

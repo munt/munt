@@ -31,6 +31,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
+				AdditionalDependencies="SDL_net.lib"
 				OutputFile="$(OutDir)/mt32emu.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -69,6 +70,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
+				AdditionalDependencies="SDL_net.lib"
 				OutputFile="$(OutDir)/mt32emu.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -97,6 +99,9 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
+			<File
+				RelativePath=".\src\externalInterface.cpp">
+			</File>
 			<File
 				RelativePath=".\src\file.cpp">
 			</File>
@@ -136,6 +141,9 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			<File
+				RelativePath=".\src\externalInterface.h">
+			</File>
 			<File
 				RelativePath=".\src\file.h">
 			</File>

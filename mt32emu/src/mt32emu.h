@@ -33,6 +33,8 @@
 //#define MT32EMU_WAVECACHEMODE 2 // Ignore existing cache, generate and save cache
 //#define MT32EMU_WAVECACHEMODE 3 // Ignore existing cache, generate but don't save cache
 
+#define USE_COMM 1
+
 // Configuration
 // The maximum number of partials playing simultaneously
 #define MT32EMU_MAX_PARTIALS 32
@@ -58,6 +60,7 @@
 
 #include "freeverb/revmodel.h"
 
+#include "externalInterface.h"
 #include "structures.h"
 #include "i386.h"
 #include "file.h"

@@ -60,7 +60,6 @@ private:
 
 	Bit16s myBuffer[MAX_SAMPLE_OUTPUT];
 
-	bool play;
 
 	// Keyfollowed note value
 #if MT32EMU_ACCURATENOTES == 1
@@ -76,7 +75,7 @@ private:
 	int realVal;
 	int filtVal;
 
-	EnvelopeStatus envs[3];
+	
 
 	// Only used for PCM partials
 	int pcmNum;
@@ -113,6 +112,9 @@ private:
 
 public:
 	const PatchCache *patchCache;
+	EnvelopeStatus envs[3];
+	bool play;
+
 	PatchCache cachebackup;
 
 	Partial *pair;

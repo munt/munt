@@ -84,6 +84,9 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 }
 
 Synth::Synth() {
+#if USE_COMM == 1
+	extComm = new externalInterface();
+#endif
 	isOpen = false;
 	reverbModel = NULL;
 	partialManager = NULL;
@@ -92,6 +95,12 @@ Synth::Synth() {
 }
 
 Synth::~Synth() {
+#if USE_COMM == 1
+	if(extComm != NULL) {
+		extComm->stop();
+	}
+	delete(extComm);
+#endif
 	close(); // Make sure we're closed and everything is freed
 }
 
@@ -381,6 +390,11 @@ bool Synth::open(SynthProperties &useProp) {
 	if (isOpen)
 		return false;
 
+#if USE_COMM == 1
+	// If starting the extComm fails, this means another instance of the synth is running
+	if(!extComm->start()) return false;
+#endif
+
 	myProp = useProp;
 	if (useProp.baseDir != NULL) {
 		myProp.baseDir = new char[strlen(useProp.baseDir) + 1];
@@ -518,6 +532,10 @@ bool Synth::open(SynthProperties &useProp) {
 void Synth::close(void) {
 	if (!isOpen)
 		return;
+
+#if USE_COMM == 1
+	extComm->stop();
+#endif
 
 	tables.freeNotes();
 	if (partialManager != NULL) {
@@ -1063,8 +1081,48 @@ void Synth::render(Bit16s *stream, Bit32u len) {
 	}
 }
 
+#if USE_COMM == 1
+void Synth::doControlPanelComm() {
+	int reqType;
+	int i;
+	Bit8u buffer[4096];
+	if(extComm->getStatusRequest(&reqType)) {
+		switch(reqType) {
+			case 1:
+				Bit16u *bufptr;
+				bufptr = (Bit16u *)(&buffer[0]);
+				*bufptr++ = (Bit16u)reqType;
+				*bufptr++ = (Bit16u)MT32EMU_MAX_PARTIALS;
+				for(i=0;i<MT32EMU_MAX_PARTIALS;i++) {
+					if(!partialManager->partialTable[i]->play) {
+						*bufptr++ = 0;
+					} else {
+						if(partialManager->partialTable[i]->envs[EnvelopeType_amp].decaying) {
+							*bufptr++ = 3;
+						} else {
+							if(partialManager->partialTable[i]->envs[EnvelopeType_amp].envstat == 4) {
+								*bufptr++ = 2;
+							} else {
+								*bufptr++ = 1;
+							}
+						}
+					}
+				}
+				extComm->sendResponse(reqType, (char *)&buffer[0], ((Bit8u *)bufptr) - (&buffer[0]));
+				break;
+		}
+
+	}
+}
+#endif
+
 void Synth::doRender(Bit16s *stream, Bit32u len) {
+
 	partialManager->ageAll();
+
+#if USE_COMM == 1
+	doControlPanelComm();
+#endif
 
 	if (myProp.useReverb) {
 		bool hasOutput = false;
