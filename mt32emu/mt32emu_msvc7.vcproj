@@ -31,7 +31,6 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="SDL_net.lib"
 				OutputFile="$(OutDir)/mt32emu.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -71,7 +70,6 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="SDL_net.lib"
 				OutputFile="$(OutDir)/mt32emu.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
