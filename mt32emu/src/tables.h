@@ -77,6 +77,7 @@ extern Bit32u ampveltable[128][101];
 extern Bit32s pwveltable[15][128];
 
 extern Bit32s envtimetable[101];
+extern Bit32s envdiftimetable[101];
 extern Bit32s decaytimetable[101];
 extern Bit32s lasttimetable[101];
 extern Bit32s velTable[128];

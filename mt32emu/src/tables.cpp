@@ -58,6 +58,7 @@ Bit32u lfoptable[101][101];
 Bit32u ampveltable[128][101];
 Bit32s pwveltable[15][128];
 Bit32s envtimetable[101];
+Bit32s envdiftimetable[101];
 Bit32s decaytimetable[101];
 Bit32s lasttimetable[101];
 Bit32s velTable[128];
@@ -182,16 +183,34 @@ static void initEnvelopes(float samplerate) {
 		// General envelope
 		// This formula fits observation of the CM-32L by +/- 0.03s or so for the second time value in the filter
 		// (note that that one is clamped to 63). I think it also fits T1, which is unclamped.
-		float seconds = powf(256.0f, elf / 64.0f) / 256.0f;
+		// Much more intuitive version of formula.  I'm am almost certain this is what the
+		// MT-32 itself uses.  The division by 32768 is because that is the sampling rate used by
+		// the MT-32.
+		float seconds = powf(2, (elf / 8.0f) + 7) / 32768.0f;
+
 		int samples = (int)(seconds * samplerate);
 		envtimetable[lf] = samples;
+
+		// Cap on envelope times depending on the delta
+		if(elf == 0) {
+			envdiftimetable[lf] = 63;
+		} else {
+			float cap = 11 * log(elf) + 64;
+			if(cap > 100.0f) cap = 100.0f;
+			envdiftimetable[lf] = (int)cap;
+		}
+		
 
 		// Decay envelope -- shorter for some reason
 		// This is also the timing for the envelope right before the
 		// amp and filter envelope sustains
-		float logtime = elf * 0.088362939f;
-		lasttimetable[lf] = decaytimetable[lf] = (int)((exp(logtime)/(312.12*2)) * samplerate);
-		//lasttimetable[lf] = (int)((exp(logtime)/(312.12*6)) * samplerate);
+		//float logtime = elf * 0.088362939f;
+		//lasttimetable[lf] = decaytimetable[lf] = (int)((exp(logtime)/(312.12*2)) * samplerate);
+		
+
+
+		seconds = powf(2, (elf / 8.0f) + 6) / 32768.0f;
+		lasttimetable[lf] = decaytimetable[lf]  = (int)(seconds * samplerate);
 
 		float mv = elf / 100.0f;
 		float pt = mv - 0.5f;

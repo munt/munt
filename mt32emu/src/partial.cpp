@@ -669,7 +669,15 @@ Bit32s Partial::getFiltEnvelope() {
 				if (tStat->envstat == 3) {
 					tStat->envsize = lasttimetable[(int)patchCache->filtEnv.envtime[tStat->envstat]];
 				} else {
-					tStat->envsize = (envtimetable[(int)patchCache->filtEnv.envtime[tStat->envstat]] * keyLookup->envTimeMult[(int)patchCache->filtEnv.envtkf]) >> 8;
+					int envTime = (int)patchCache->filtEnv.envtime[tStat->envstat];
+					if(tStat->envstat > 1) {
+						int envDiff = abs(patchCache->filtEnv.envlevel[tStat->envstat] - patchCache->filtEnv.envlevel[tStat->envstat - 1]);
+						if(envTime > envdiftimetable[envDiff]) {
+							envTime = envdiftimetable[envDiff];
+						}
+					}
+
+					tStat->envsize = (envtimetable[envTime] * keyLookup->envTimeMult[(int)patchCache->filtEnv.envtkf]) >> 8;
 				}
 
 				tStat->envsize++;
@@ -794,7 +802,15 @@ Bit32u Partial::getAmpEnvelope() {
 				// These values are clamped to 63
 				int envTime = patchCache->ampEnv.envtime[tStat->envstat];
 				if (envTime > 63)
-					envTime = 63;
+					  envTime = 63;
+
+				int envDiff = abs(patchCache->ampEnv.envlevel[tStat->envstat] - patchCache->ampEnv.envlevel[tStat->envstat - 1]);
+				// FIXME: Only needed because in the cache we multiply the envlevel by 127
+				envDiff = (envDiff * 100) / 127;
+				if(envTime > envdiftimetable[envDiff]) {
+					envTime = envdiftimetable[envDiff];
+				}
+
 				tStat->envsize = (envtimetable[envTime] * keyLookup->envTimeMult[(int)patchCache->ampEnv.envtkf]) >> 8;
 				//synth->printDebug("Envstat %d, size %d", tStat->envstat, tStat->envsize);
 				break;
@@ -884,7 +900,15 @@ Bit32s Partial::getPitchEnvelope() {
 				tStat->envstat++;
 
 				tStat->envbase = patchCache->pitchEnv.level[tStat->envstat];
-				tStat->envsize = (envtimetable[(int)patchCache->pitchEnv.time[tStat->envstat]] * keyLookup->envTimeMult[(int)patchCache->pitchEnv.timekeyfollow]) >> 8;
+
+				int envTime = (int)patchCache->pitchEnv.time[tStat->envstat];
+				int envDiff = abs(patchCache->pitchEnv.level[tStat->envstat] - patchCache->pitchEnv.level[tStat->envstat + 1]);
+				// FIXME: Only needed because in the cache we multiply the envlevel by 127
+				if(envTime > envdiftimetable[envDiff]) {
+					envTime = envdiftimetable[envDiff];
+				}
+
+				tStat->envsize = (envtimetable[envTime] * keyLookup->envTimeMult[(int)patchCache->pitchEnv.timekeyfollow]) >> 8;
 
 				tStat->envpos = 0;
 				tStat->envsize++;
