@@ -251,7 +251,7 @@ namespace mt32emu_display
 			// 
 			this->notifyIcon1->Icon = (__try_cast<System::Drawing::Icon *  >(resources->GetObject(S"notifyIcon1.Icon")));
 			this->notifyIcon1->Text = S"Munt Control Panel";
-			this->notifyIcon1->Visible = true;
+			this->notifyIcon1->DoubleClick += new System::EventHandler(this, notifyIcon1_DoubleClick);
 			// 
 			// Form1
 			// 
@@ -317,6 +317,14 @@ namespace mt32emu_display
 
 
 			 }
+
+	public: System::Void OnResize(EventArgs * e) {
+				 if(this->WindowState == FormWindowState::Minimized) {
+					 this->Hide();
+					 this->notifyIcon1->Visible = true;
+				 }
+			 }
+
 
 	private: System::Void Form1_Load_1(System::Object *  sender, System::EventArgs *  e)
 			 {
@@ -466,9 +474,12 @@ namespace mt32emu_display
 						if(buffer[0] == 2) {
 							found = true;
 							this->facePlate->setLCDText(new System::String((char *)&buffer[1]));
-							char tmpBuf[256];
-							sprintf(tmpBuf, "Munt Control Panel");
-							this->balloonTip1->ShowBallon(1, tmpBuf, (char *)&buffer[1], 15000);
+
+							if(this->notifyIcon1->Visible) {
+								char tmpBuf[256];
+								sprintf(tmpBuf, "Munt Control Panel");
+								this->balloonTip1->ShowBallon(1, tmpBuf, (char *)&buffer[1], 15000);
+							}
 						}
 
 						if(buffer[0] == 5) {
@@ -526,6 +537,13 @@ namespace mt32emu_display
 
 
 
+
+private: System::Void notifyIcon1_DoubleClick(System::Object *  sender, System::EventArgs *  e)
+		 {
+			this->Show();
+			this->set_WindowState(FormWindowState::Normal);
+			notifyIcon1->Visible = false;
+		 }
 
 };
 }
