@@ -131,7 +131,7 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 				*(Bit32u *)&buffer[2] = addr;
 				*(Bit16u *)&buffer[6] = len;
 
-				synth->readMemory(MEMADDR(addr), len, &buffer[8]);
+				synth->readMemory(MT32EMU_MEMADDR(addr), len, &buffer[8]);
 
 				sendResponse(5, (char *)&buffer[0], len + 8 );
 

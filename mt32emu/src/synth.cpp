@@ -719,37 +719,34 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 	}
 }
 
-
-#define NUMTOUCHED(x,y) (((x) + sizeof(y) - 1) / sizeof(y))
-
 void Synth::readSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 }
 
 const MemoryRegion memoryRegions[8] = {
-	{MR_PatchTemp,  MEMADDR(0x030000), sizeof(MemParams::PatchTemp), 9},
-	{MR_RhythmTemp, MEMADDR(0x030110), sizeof(MemParams::RhythmTemp), 85},
-	{MR_TimbreTemp, MEMADDR(0x040000), sizeof(TimbreParam), 8},
-	{MR_Patches,    MEMADDR(0x050000), sizeof(PatchParam), 128},
-	{MR_Timbres,    MEMADDR(0x080000), sizeof(MemParams::PaddedTimbre), 64 + 64 + 64 + 64},
-	{MR_System,     MEMADDR(0x100000), sizeof(MemParams::SystemArea), 1},
-	{MR_Display,    MEMADDR(0x200000), MAX_SYSEX_SIZE - 1, 1},
-	{MR_Reset,      MEMADDR(0x7F0000), 0x3FFF, 1}
+	{MR_PatchTemp,  MT32EMU_MEMADDR(0x030000), sizeof(MemParams::PatchTemp), 9},
+	{MR_RhythmTemp, MT32EMU_MEMADDR(0x030110), sizeof(MemParams::RhythmTemp), 85},
+	{MR_TimbreTemp, MT32EMU_MEMADDR(0x040000), sizeof(TimbreParam), 8},
+	{MR_Patches,    MT32EMU_MEMADDR(0x050000), sizeof(PatchParam), 128},
+	{MR_Timbres,    MT32EMU_MEMADDR(0x080000), sizeof(MemParams::PaddedTimbre), 64 + 64 + 64 + 64},
+	{MR_System,     MT32EMU_MEMADDR(0x100000), sizeof(MemParams::SystemArea), 1},
+	{MR_Display,    MT32EMU_MEMADDR(0x200000), MAX_SYSEX_SIZE - 1, 1},
+	{MR_Reset,      MT32EMU_MEMADDR(0x7F0000), 0x3FFF, 1}
 };
 
 const int NUM_REGIONS = sizeof(memoryRegions) / sizeof(MemoryRegion);
 
 void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 	Bit32u addr = (sysex[0] << 16) | (sysex[1] << 8) | (sysex[2]);
-	addr = MEMADDR(addr);
+	addr = MT32EMU_MEMADDR(addr);
 	sysex += 3;
 	len -= 3;
-	//printDebug("Sysex addr: 0x%06x", SYSEXMEMADDR(addr));
+	//printDebug("Sysex addr: 0x%06x", MT32EMU_SYSEXMEMADDR(addr));
 	// NOTE: Please keep both lower and upper bounds in each check, for ease of reading
 
 	// Process channel-specific sysex by converting it to device-global
 	if (device < 0x10) {
-		printDebug("WRITE-CHANNEL: Channel %d temp area 0x%06x", device, SYSEXMEMADDR(addr));
-		if (/*addr >= MEMADDR(0x000000) && */addr < MEMADDR(0x010000)) {
+		printDebug("WRITE-CHANNEL: Channel %d temp area 0x%06x", device, MT32EMU_SYSEXMEMADDR(addr));
+		if (/*addr >= MT32EMU_MEMADDR(0x000000) && */addr < MT32EMU_MEMADDR(0x010000)) {
 			int offset;
 			if (chantable[device] == -1) {
 				printDebug(" (Channel not mapped to a partial... 0 offset)");
@@ -761,10 +758,10 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 				offset = chantable[device] * sizeof(MemParams::PatchTemp);
 				printDebug(" (Setting extra offset to %d)", offset);
 			}
-			addr += MEMADDR(0x030000) + offset;
-		} else if (/*addr >= 0x010000 && */ addr < MEMADDR(0x020000)) {
-			addr += MEMADDR(0x030110) - MEMADDR(0x010000);
-		} else if (/*addr >= 0x020000 && */ addr < MEMADDR(0x030000)) {
+			addr += MT32EMU_MEMADDR(0x030000) + offset;
+		} else if (/*addr >= 0x010000 && */ addr < MT32EMU_MEMADDR(0x020000)) {
+			addr += MT32EMU_MEMADDR(0x030110) - MT32EMU_MEMADDR(0x010000);
+		} else if (/*addr >= 0x020000 && */ addr < MT32EMU_MEMADDR(0x030000)) {
 			int offset;
 			if (chantable[device] == -1) {
 				printDebug(" (Channel not mapped to a partial... 0 offset)");
@@ -776,9 +773,9 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 				offset = chantable[device] * sizeof(TimbreParam);
 				printDebug(" (Setting extra offset to %d)", offset);
 			}
-			addr += MEMADDR(0x040000) - MEMADDR(0x020000) + offset;
+			addr += MT32EMU_MEMADDR(0x040000) - MT32EMU_MEMADDR(0x020000) + offset;
 		} else {
-			printDebug("PlaySysexWithoutHeader: Invalid channel %d address 0x%06x", device, SYSEXMEMADDR(addr));
+			printDebug("PlaySysexWithoutHeader: Invalid channel %d address 0x%06x", device, MT32EMU_SYSEXMEMADDR(addr));
 			return;
 		}
 	}
@@ -796,7 +793,7 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 			}
 		}
 		if (regionNum == NUM_REGIONS) {
-			printDebug("Sysex write to unrecognised address %06x, len %d", SYSEXMEMADDR(addr), len);
+			printDebug("Sysex write to unrecognised address %06x, len %d", MT32EMU_SYSEXMEMADDR(addr), len);
 			break;
 		}
 		Bit32u next = region->next(addr, len);
@@ -825,41 +822,44 @@ void Synth::readMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len
 	unsigned int first = region->firstTouched(addr);
 	//unsigned int last = region->lastTouched(addr, len);
 	unsigned int off = region->firstTouchedOffset(addr);
+	len = region->getClampedLen(addr, len);
 
 	unsigned int m;
 
 	switch(region->type) {
-		case MR_PatchTemp:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.patchSettings[first])[off + m];
-			break;
-		case MR_RhythmTemp:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.rhythmSettings[first])[off + m];
-			break;
-		case MR_TimbreTemp:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.timbreSettings[first])[off + m];
-			break;
-		case MR_Patches:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.patches[first])[off + m];
-			break;
-		case MR_Timbres:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.timbres[first])[off + m];
-			break;
-		case MR_System:
-			for (m = 0; m < len; m++) 
-				data[m] = ((Bit8u *)&mt32ram.system)[m + off];
-			break;
-		default:
-			for (m = 0; m < len; m+=2) { 
-				data[m] = 0xff;
-				data[m+1] = region->type;
+	case MR_PatchTemp:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.patchSettings[first])[off + m];
+		break;
+	case MR_RhythmTemp:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.rhythmSettings[first])[off + m];
+		break;
+	case MR_TimbreTemp:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.timbreSettings[first])[off + m];
+		break;
+	case MR_Patches:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.patches[first])[off + m];
+		break;
+	case MR_Timbres:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.timbres[first])[off + m];
+		break;
+	case MR_System:
+		for (m = 0; m < len; m++) 
+			data[m] = ((Bit8u *)&mt32ram.system)[m + off];
+		break;
+	default:
+		for (m = 0; m < len; m += 2) { 
+			data[m] = 0xff;
+			if (m + 1 < len) {
+				data[m+1] = (Bit8u)region->type;
 			}
-			// TODO: Don't care about the others ATM
-			break;
+		}
+		// TODO: Don't care about the others ATM
+		break;
 	}
 
 }
@@ -1131,33 +1131,27 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 	partialManager->ageAll();
 
 	if (myProp.useReverb) {
-		bool hasOutput = false;
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 			if (partialManager->shouldReverb(i)) {
 				if (partialManager->produceOutput(i, &tmpBuffer[0], len)) {
 					ProduceOutput1(&tmpBuffer[0], stream, len, masterVolume);
-					hasOutput = true;
 				}
 			}
 		}
-		// No point in doing reverb on a mute buffer...
-		//FIXME:KG: This check was responsible for the strange forever-reverbing stuff
-		/*if (hasOutput)*/ {
-			Bit32u m = 0;
-			for (unsigned int i = 0; i < len; i++) {
-				sndbufl[i] = (float)stream[m] / 32767.0f;
-				m++;
-				sndbufr[i] = (float)stream[m] / 32767.0f;
-				m++;
-			}
-			reverbModel->processreplace(sndbufl, sndbufr, outbufl, outbufr, len, 1);
-			m=0;
-			for (unsigned int i = 0; i < len; i++) {
-				stream[m] = (Bit16s)(outbufl[i] * 32767.0f);
-				m++;
-				stream[m] = (Bit16s)(outbufr[i] * 32767.0f);
-				m++;
-			}
+		Bit32u m = 0;
+		for (unsigned int i = 0; i < len; i++) {
+			sndbufl[i] = (float)stream[m] / 32767.0f;
+			m++;
+			sndbufr[i] = (float)stream[m] / 32767.0f;
+			m++;
+		}
+		reverbModel->processreplace(sndbufl, sndbufr, outbufl, outbufr, len, 1);
+		m=0;
+		for (unsigned int i = 0; i < len; i++) {
+			stream[m] = (Bit16s)(outbufl[i] * 32767.0f);
+			m++;
+			stream[m] = (Bit16s)(outbufr[i] * 32767.0f);
+			m++;
 		}
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 			if (!partialManager->shouldReverb(i)) {
