@@ -103,11 +103,18 @@ class Tables {
 	static File *initWave(Synth *synth, NoteLookup *noteLookup, float ampsize, float div2, File *file);
 	bool initNotes(Synth *synth, PCMWaveEntry pcmWaves[128], float rate, float tuning);
 public:
+	Tables();
 	NoteLookup noteLookups[NUM_NOTES];
 	KeyLookup keyLookups[97];
 	static bool initMT32Tables(Synth *synth, PCMWaveEntry pcmWaves[128], float sampleRate, float masterTune);
 	File *initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float tuning, PCMWaveEntry pcmWaves[128], File *file);
 	void freeNotes();
+	bool init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune);
+
+private:
+	float initialisedMasterTune;
+	float initialisedSampleRate;
+	
 };
 
 }
