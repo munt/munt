@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#using "mt32emu_display_controls.dll"
 
 #include "..\mt32emu_display_controls\DriverCommClass.h"
 
