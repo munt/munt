@@ -7,8 +7,6 @@
 #include <float.h>
 #include <math.h>
 
-#pragma intrinsic(memcpy)
-
 using namespace System;
 using namespace System::ComponentModel;
 using namespace System::Collections;
