@@ -578,7 +578,7 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 
 File *Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float masterTune, PCMWaveEntry *pcmWaves, File *file) {
 	float freq = (float)(masterTune * pow(2.0, ((double)note - MIDDLEA) / 12.0));
-	float div2 = rate * 2 / freq;
+	float div2 = rate * 2.0f / freq;
 	noteLookup->div2 = (int)div2;
 
 	if (noteLookup->div2 == 0)
@@ -734,7 +734,7 @@ bool Tables::initMT32Tables(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRa
 		initFiltCoeff(sampleRate);
 		initEnvelopes(sampleRate);
 		for (int key = 12; key <= 108; key++) {
-			initDep(&synth->tables.keyLookups[key], (float)key);
+			initDep(&synth->tables.keyLookups[key - 12], (float)key);
 		}
 	}
 	if (initialisedSampleRate != sampleRate || initialisedMasterTune != masterTune) {

@@ -151,7 +151,7 @@ void Partial::startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *
 #else
 	Tables::initNote(synth, &noteLookupStorage, noteVal, (float)synth->myProp.sampleRate, synth->masterTune, synth->pcmWaves, NULL);
 #endif
-	keyLookup = &synth->tables.keyLookups[poly->freqnum];
+	keyLookup = &synth->tables.keyLookups[poly->freqnum - 12];
 
 	if (patchCache->PCMPartial) {
 		pcmNum = patchCache->pcm;

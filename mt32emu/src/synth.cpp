@@ -311,7 +311,7 @@ bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 		Bit16u rTuneOffset = (tps[i].pitchMSB << 8) | tps[i].pitchLSB;
 		// The number below is confirmed to a reasonable degree of accuracy on CM-32L
 		double STANDARDFREQ = 442.0;
-		float rTune = (float)(STANDARDFREQ * pow(2.0, (0x5000 - rTuneOffset) / 4096.0 - 9.0 / 12.0));
+		float rTune = (float)(STANDARDFREQ * pow(2.0, (0x5000 - rTuneOffset) / 4056.0 - 9.0 / 12.0));
 		//printDebug("%f,%d,%d", pTune, tps[i].pitchCoarse, tps[i].pitchFine);
 		if (rAddr + rLen > pcmROMSize) {
 			printDebug("Control ROM error: Wave map entry %d points to invalid PCM address 0x%04X, length 0x%04X", i, rAddr, rLen);
