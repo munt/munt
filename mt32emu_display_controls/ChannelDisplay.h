@@ -330,11 +330,11 @@ namespace mt32emu_display_controls
 						while(h>=360.0) h-=360.0;
 
 						h/=60.0;
-						i = floorf(h);
+						i = (int)floorf(h);
 						f = h-(float)i;
-						p = v*(1.0-s);
-						q = v*(1.0-(s*f));
-						t = v*(1.0-(s*(1.0-f)));
+						p = v*(1.0f-s);
+						q = v*(1.0f-(s*f));
+						t = v*(1.0f-(s*(1.0f-f)));
 		                
 						switch(i) {
 						case 0: rgb[0] = v; rgb[1] = t; rgb[2] = p; break;
@@ -360,7 +360,7 @@ namespace mt32emu_display_controls
 
 				 hsv_to_rgb(outRGB, inHSV);
 
-				 return new System::Drawing::SolidBrush(System::Drawing::Color::FromArgb(outRGB[0] * 255, outRGB[1] * 255, outRGB[2] * 255));
+				 return new System::Drawing::SolidBrush(System::Drawing::Color::FromArgb((int)(outRGB[0] * 255), (int)(outRGB[1] * 255), (int)(outRGB[2] * 255)));
 			 }
 
 	private: System::Void noteBox_Paint(System::Object * sender, System::Windows::Forms::PaintEventArgs* e) {

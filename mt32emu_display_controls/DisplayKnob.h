@@ -132,7 +132,7 @@ namespace mt32emu_display_controls
 				
 				//bufGraph->Clear(Color::Transparent);
 				Matrix * X = new Matrix();
-				X->RotateAt(angle, PointF(25,25));
+				X->RotateAt((float)angle, PointF(25,25));
 				bufGraph->Transform = X;
 				
 				bufGraph->DrawImage(this->imageList1->Images->Item[0], 0, 0, 50, 50);
@@ -175,7 +175,7 @@ namespace mt32emu_display_controls
 
 private: System::Void notifyChange() {
 			 mt32emu_display_controls::KnobInterface *ki = dynamic_cast<mt32emu_display_controls::KnobInterface *>(this->Parent);
-			 ki->knobUpdated(angle/3);
+			 ki->knobUpdated((int)(angle/3));
 		 }
 
 
