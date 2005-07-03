@@ -1,7 +1,7 @@
 MT32Emu DirectMusic/WinMM Driver
 ********************************
 
-Copyright (c) 2003-2004 Various contributors
+Copyright (c) 2003-2005 Various contributors
 
 License:
 
