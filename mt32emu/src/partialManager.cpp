@@ -19,7 +19,7 @@
  * IN THE SOFTWARE.
  */
 
-#include <memory.h>
+#include <string.h>
 
 #include "mt32emu.h"
 
