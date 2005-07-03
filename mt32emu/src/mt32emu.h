@@ -33,7 +33,7 @@
 //#define MT32EMU_WAVECACHEMODE 2 // Ignore existing cache, generate and save cache
 //#define MT32EMU_WAVECACHEMODE 3 // Ignore existing cache, generate but don't save cache
 
-#define MT32EMU_USE_EXTINT 1
+#define MT32EMU_USE_EXTINT 0
 
 // Configuration
 // The maximum number of partials playing simultaneously
