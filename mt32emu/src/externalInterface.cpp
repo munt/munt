@@ -184,7 +184,7 @@ bool ExternalInterface::getStatusRequest(int *requestType, char * buffer) {
 	}
 }
 
-bool ExternalInterface::sendResponse(int requestType, char *requestBuf, int requestLen) {
+bool ExternalInterface::sendResponse(int /*requestType*/, char *requestBuf, int requestLen) {
 
 	memcpy(regPacket->data, requestBuf, requestLen);
 	regPacket->len = requestLen;
@@ -227,7 +227,7 @@ bool ExternalInterface::stop() {
 	return true;
 }
 
-void ExternalInterface::handleReport(Synth *synth, ReportType type, const void *reportData) {
+void ExternalInterface::handleReport(Synth * /*synth*/, ReportType type, const void *reportData) {
 	switch (type) {
 		case ReportType_lcdMessage:
 		{
