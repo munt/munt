@@ -57,6 +57,8 @@ private:
 	int mixType;
 	int structurePosition; // 0 or 1 of a structure pair
 	bool useNoisePair;
+	int partialChan;
+	int pastDelta;
 
 	Bit16s myBuffer[MAX_SAMPLE_OUTPUT];
 
@@ -74,6 +76,7 @@ private:
 	// Keyfollowed filter values
 	int realVal;
 	int filtVal;
+	int oldFiltVal;
 
 	// Only used for PCM partials
 	int pcmNum;
@@ -88,6 +91,7 @@ private:
 	Bit32u pitchEnvVal;
 
 	float history[32];
+	float history2[32];
 
 	bool pitchSustain;
 
@@ -103,7 +107,7 @@ private:
 	void mixBuffersStereo(Bit16s *buf1, Bit16s *buf2, Bit16s *outBuf, int len);
 
 	Bit32s getFiltEnvelope();
-	Bit32u getAmpEnvelope();
+	Bit32u getAmpEnvelope(Bit32u* biasResult);
 	Bit32s getPitchEnvelope();
 
 	void initKeyFollow(int freqNum);
@@ -126,7 +130,7 @@ public:
 	int getKey() const;
 	const dpoly *getDpoly() const;
 	bool isActive();
-	void activate(int part);
+	void activate(int part, int pChan);
 	void deactivate(void);
 	void startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *pairPartial);
 	void startDecay(EnvelopeType envnum, Bit32s startval);

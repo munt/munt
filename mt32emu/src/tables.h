@@ -22,6 +22,9 @@
 #ifndef MT32EMU_TABLES_H
 #define MT32EMU_TABLES_H
 
+#include "blit\BlitSaw.h"
+#include "blit\BlitSquare.h"
+
 namespace MT32Emu {
 
 // Mathematical constants
@@ -31,7 +34,9 @@ const float FLOAT_PI = 3.1415926535897932384626433832795f;
 const float FLOAT_LN = 2.3025850929940456840179914546844f;
 
 // Filter settings
-const int FILTERGRAN = 512;
+//const int FILTERGRAN = 512;
+const int FILTERGRAN = 32768;
+
 
 // Amplitude of waveform generator
 // FIXME: This value is the amplitude possible whilst avoiding
@@ -58,9 +63,14 @@ struct NoteLookup {
 	Bit32u *wavTable;
 	Bit32s sawTable[101];
 	int filtTable[2][201];
-	int nfiltTable[101][101];
+	//int nfiltTable[101][101];
+	int nfiltTable[201][201];
 	Bit16s *waveforms[3];
 	Bit32u waveformSize[3];
+	BlitSaw *posSaw[32];
+	BlitSaw *negSaw[32];
+	BlitSaw *saw[32];
+
 };
 
 struct KeyLookup {
@@ -92,7 +102,9 @@ public:
 	float resonanceFactor[31];
 	Bit32u lfoShift[101][101];
 	Bit32s pwFactor[101];
+	float pwFactorf[101];
 	Bit32s volumeMult[101];
+	Bit32s volumeExp[101];
 
 	// LUTs varying with sample rate
 	Bit32u envTime[101];

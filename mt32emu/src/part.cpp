@@ -344,6 +344,16 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 		cache[t].ampEnv = timbre->partial[t].tva;
 		cache[t].ampEnv.level = (char)((float)cache[t].ampEnv.level * 1.27f);
 
+		int jr = 4;
+		int jt;
+		for(jt=3;jt>=0;--jt) {
+			if(cache[t].ampEnv.envlevel[jt] > 0) {
+				break;
+			}
+			jr = jt;
+		}
+		cache[t].ampDecayStep = jr;
+
 		cache[t].ampbias[0] = fixBiaslevel(cache[t].ampEnv.biaspoint1, &cache[t].ampdir[0]);
 		cache[t].ampblevel[0] = 12 - cache[t].ampEnv.biaslevel1;
 		cache[t].ampbias[1] = fixBiaslevel(cache[t].ampEnv.biaspoint2, &cache[t].ampdir[1]);
@@ -385,7 +395,9 @@ const char *Part::getName() const {
 }
 
 void Part::updateVolume() {
-	volumeMult = synth->tables.volumeMult[patchTemp->outlevel * expression / 127];
+	//volumeMult = synth->tables.volumeMult[patchTemp->outlevel * expression / 127];
+	volumeMult = (patchTemp->outlevel * expression) / 127;
+	//synth->printDebug("%s (%s): OutLevel %d, expression %d", name, currentInstr, patchTemp->outlevel, expression);
 }
 
 int Part::getVolume() const {

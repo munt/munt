@@ -22,7 +22,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="TRUE"
@@ -59,8 +59,9 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="C:\munt\mt32emu\src;C:\munt\mt32emu\src\blit"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				AssemblerOutput="4"
 				WarningLevel="4"
@@ -135,6 +136,25 @@
 					RelativePath=".\src\freeverb\revmodel.cpp">
 				</File>
 			</Filter>
+			<Filter
+				Name="blit"
+				Filter="">
+				<File
+					RelativePath=".\src\blit\Blit.cpp">
+				</File>
+				<File
+					RelativePath=".\src\blit\BlitSaw.cpp">
+				</File>
+				<File
+					RelativePath=".\src\blit\BlitSquare.cpp">
+				</File>
+				<File
+					RelativePath=".\src\blit\Generator.cpp">
+				</File>
+				<File
+					RelativePath=".\src\blit\Stk.cpp">
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -187,6 +207,25 @@
 				</File>
 				<File
 					RelativePath=".\src\freeverb\tuning.h">
+				</File>
+			</Filter>
+			<Filter
+				Name="blit"
+				Filter="">
+				<File
+					RelativePath=".\src\blit\Blit.h">
+				</File>
+				<File
+					RelativePath=".\src\blit\BlitSaw.h">
+				</File>
+				<File
+					RelativePath=".\src\blit\BlitSquare.h">
+				</File>
+				<File
+					RelativePath=".\src\blit\Generator.h">
+				</File>
+				<File
+					RelativePath=".\src\blit\Stk.h">
 				</File>
 			</Filter>
 		</Filter>

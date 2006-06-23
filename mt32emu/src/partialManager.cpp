@@ -82,17 +82,19 @@ unsigned int PartialManager::setReserve(Bit8u *rset) {
 Partial *PartialManager::allocPartial(int partNum) {
 	Partial *outPartial = NULL;
 
+	int partialChan = 0;
 	// Use the first inactive partial reserved for the specified part (if there are any)
 	// Otherwise, use the last inactive partial, if any
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		if (!partialTable[i]->isActive()) {
 			outPartial = partialTable[i];
+			partialChan = i;
 			if (partialReserveTable[i] == partNum)
 				break;
 		}
 	}
 	if (outPartial != NULL) {
-		outPartial->activate(partNum);
+		outPartial->activate(partNum, partialChan);
 		outPartial->age = 0;
 	}
 	return outPartial;
