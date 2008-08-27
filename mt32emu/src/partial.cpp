@@ -957,25 +957,26 @@ Bit32u Partial::getAmpEnvelope(Bit32u* biasResult) {
 		}
 		tc = tStat->envbase;
 
-		int sq = 0;
+		{
+			int sq = 0;
 		
-		sq = (tStat->envpos * 100) / tStat->envsize;
-		if(tStat->envdist < 0) { 
-			sq = 100 - sq;
+			sq = (tStat->envpos * 100) / tStat->envsize;
+			if(tStat->envdist < 0) { 
+				sq = 100 - sq;
+			}
+
+			sq = synth->tables.volumeExp[sq];
+
+			//tc = (tc + ((tStat->envdist * tStat->envpos) / tStat->envsize));
+			//int tmptc = ((tStat->envdist * tStat->envpos) / tStat->envsize);
+			int tmptc = ((tStat->envdist * sq) >> 10);
+			if(tStat->envdist < 0) {
+				//synth->printDebug("envdist: %d\n", tStat->envdist);
+				tmptc = tStat->envdist - tmptc;
+			}
+
+			tc = tc + tmptc;
 		}
-
-		sq = synth->tables.volumeExp[sq];
-
-		//tc = (tc + ((tStat->envdist * tStat->envpos) / tStat->envsize));
-		//int tmptc = ((tStat->envdist * tStat->envpos) / tStat->envsize);
-		int tmptc = ((tStat->envdist * sq) >> 10);
-		if(tStat->envdist < 0) {
-			//synth->printDebug("envdist: %d\n", tStat->envdist);
-			tmptc = tStat->envdist - tmptc;
-		}
-
-		tc = tc + tmptc;
-
 
 		tStat->count = tStat->counter;
 PastCalc:

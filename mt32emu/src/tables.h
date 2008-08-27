@@ -22,8 +22,8 @@
 #ifndef MT32EMU_TABLES_H
 #define MT32EMU_TABLES_H
 
-#include "blit\BlitSaw.h"
-#include "blit\BlitSquare.h"
+#include "blit/BlitSaw.h"
+#include "blit/BlitSquare.h"
 
 namespace MT32Emu {
 
