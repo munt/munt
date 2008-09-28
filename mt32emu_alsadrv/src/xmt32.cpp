@@ -389,42 +389,43 @@ void *xdisplay_main(void *indata)
 		if (!evs[0].revents)
 			continue;
 		
-		XNextEvent(dpy, &event);		
-		switch(event.type)
-		{
-		    case ButtonPress:
-			
-			x = event.xbutton.x;
-			y = event.xbutton.y;
-						
-			/* is it the button pad */
-			if ((x > BUTTONPAD_X) && (x < BUTTONPAD_W + BUTTONPAD_X) &&
-			    (y > BUTTONPAD_Y) && (y < BUTTONPAD_H + BUTTONPAD_Y))
+		while (XCheckMaskEvent(dpy, ~0, &event)) {
+			switch(event.type)
 			{
-				x -= BUTTONPAD_X;
-				y -= BUTTONPAD_Y;
-				
-				/* which button */
-				x = x / BUTTON_W;
-				y = y / BUTTON_H;
-				
-				if (cset->buttons[x * 3 + y].cb != NULL)
-					cset->buttons[x * 3 + y].cb(event.xbutton.button);
+			    case ButtonPress:
+
+				x = event.xbutton.x;
+				y = event.xbutton.y;
+						
+				/* is it the button pad */
+				if ((x > BUTTONPAD_X) && (x < BUTTONPAD_W + BUTTONPAD_X) &&
+				    (y > BUTTONPAD_Y) && (y < BUTTONPAD_H + BUTTONPAD_Y))
+				{
+					x -= BUTTONPAD_X;
+					y -= BUTTONPAD_Y;
+
+					/* which button */
+					x = x / BUTTON_W;
+					y = y / BUTTON_H;
+
+					if (cset->buttons[x * 3 + y].cb != NULL)
+						cset->buttons[x * 3 + y].cb(event.xbutton.button);
+					break;
+				}
+
 				break;
+
+			    case Expose:
+				redraw_display();
+				break;		
+
+			    case ClientMessage:
+				if (atomProtocols == cmev->message_type)
+					if(cmev->data.l[0] == atomDel)
+						quit();
+
+				break;			
 			}
-			
-			break;
-					       			
-		    case Expose:
-			redraw_display();
-			break;		
-			
-		    case ClientMessage:
-			if (atomProtocols == cmev->message_type)
-				if(cmev->data.l[0] == atomDel)
-					quit();
-			
-			break;			
 		}
 	}	
 	

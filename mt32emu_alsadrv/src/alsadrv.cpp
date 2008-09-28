@@ -1033,16 +1033,19 @@ int process_loop(int rv)
 		    case EVENT_SET_RVMODE:			
 			rvsysex[7]  = 1;
 			rvsysex[8] = newev.msg;	
+			rvsysex[9] = 128-((rvsysex[5]+rvsysex[6]+rvsysex[7]+rvsysex[8])&127);
 			mt32->playSysex((MT32Emu::Bit8u *)rvsysex, 11);			
 			break;
 		    case EVENT_SET_RVTIME:			
 			rvsysex[7]  = 2;
 			rvsysex[8] = newev.msg;	
+			rvsysex[9] = 128-((rvsysex[5]+rvsysex[6]+rvsysex[7]+rvsysex[8])&127);
 			mt32->playSysex((MT32Emu::Bit8u *)rvsysex, 11);
 			break;
 		    case EVENT_SET_RVLEVEL:			
 			rvsysex[7]  = 3;
 			rvsysex[8] = newev.msg;	
+			rvsysex[9] = 128-((rvsysex[5]+rvsysex[6]+rvsysex[7]+rvsysex[8])&127);
 			mt32->playSysex((MT32Emu::Bit8u *)rvsysex, 11);
 			break;
 		

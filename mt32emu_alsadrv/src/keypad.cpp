@@ -254,7 +254,7 @@ void create_buttonsets()
 	
 	/* main menu */
 	blank_button_set(&mainmenu);
-	LXPM(mainmenu.buttons[0], "Setup",  cb_setup);
+	//LXPM(mainmenu.buttons[0], "Setup",  cb_setup);
 	
 	if (xreverb_switch)
 		LXPM(mainmenu.buttons[1], "Reverb", cb_reverb);
