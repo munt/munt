@@ -12,6 +12,7 @@
 */
 /***************************************************/
 
+#include <stdlib.h>
 #include "Stk.h"
 
 StkFloat Stk :: srate_ = (StkFloat) SRATE;
