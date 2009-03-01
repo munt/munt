@@ -70,7 +70,6 @@ void Partial::activate(int part, int pChan) {
 	// This just marks the partial as being assigned to a part
 	ownerPart = part;
 	this->partialChan = pChan;
-	
 }
 
 void Partial::deactivate() {
@@ -234,22 +233,15 @@ Bit16s *Partial::generateSamples(long length) {
 					deactivate();
 					break;
 				}
-
-
 				if (ampval > 100) {
 					ampval = 100;
 				}
 
-				
-				
-				
-				//ampval = (ampval * volume) >> 7;
-				//ampEnvVal = ampval;
 				ampval = synth->tables.volumeMult[ampval];
 				ampval = (ampval * volume) / 100;
 				ampval = FIXEDPOINT_UMULT(ampval, synth->tables.tvaVelfollowMult[poly->vel][(int)patchCache->ampEnv.velosens], 8);
-				ampval = FIXEDPOINT_UMULT(ampval, biasvals[0],8);
-				ampval = FIXEDPOINT_UMULT(ampval, biasvals[1],8);
+				ampval = FIXEDPOINT_UMULT(ampval, biasvals[0], 8);
+				ampval = FIXEDPOINT_UMULT(ampval, biasvals[1], 8);
 				//synth->printDebug("Preamp %d, postamp %d, bias1 %d, bias2 %d", ampEnvVal, ampval, biasvals[0], biasvals[1]);
 
 				//if (envs[EnvelopeType_amp].sustaining)
@@ -310,7 +302,6 @@ Bit16s *Partial::generateSamples(long length) {
 		tdelta = FIXEDPOINT_UMULT(tdelta, pitchEnvVal, 12);
 		tdelta = FIXEDPOINT_UMULT(tdelta, lfoShift, 12);
 		tdelta = FIXEDPOINT_UMULT(tdelta, bendShift, 12);
-		
 
 		if(tdelta != pastDelta) {
 			float startFreq = noteLookup->posSaw[partialChan]->getStartFreq();
@@ -321,7 +312,6 @@ Bit16s *Partial::generateSamples(long length) {
 			pastDelta = tdelta;
 		}
 		//noteLookup->saw[partialChan]->setFrequency(startFreq);
-
 
 		delta = (int)tdelta;
 
@@ -380,38 +370,13 @@ Bit16s *Partial::generateSamples(long length) {
 				//synth->printDebug("Filtval: %d", filtval);
 
 				if ((patchCache->waveform & 1) == 0) {
-					/*
-					// Square waveform.  Made by combining two pregenerated bandlimited
-					// sawtooth waveforms
-					Bit32u ofsA = ((toff << 2) + minorplace) % noteLookup->waveformSize[0];
-					int width = FIXEDPOINT_UMULT(noteLookup->div2, synth->tables.pwFactor[pulsewidth], 7);
-					Bit32u ofsB = (ofsA + width) % noteLookup->waveformSize[0];
-					Bit16s pa = noteLookup->waveforms[0][ofsA];
-					Bit16s pb = noteLookup->waveforms[0][ofsB];
-					filterInput = pb - pa;
-					*/
-					//noteLookup->square->setPhase(((toff << 2) + minorplace) )
-					
-					//synth->printDebug("ofsA: %d, size %d, ph: %f", ofsA, noteLookup->waveformSize[0],  ph); 
-
-
-					//int width = FIXEDPOINT_UMULT(noteLookup->div2, synth->tables.pwFactor[pulsewidth], 7);
-					//synth->printDebug("width: %d, pw %d, phase: %f", width, pulsewidth, noteLookup->square[partialChan]->getPhase()); 
+					// Square waveform, made by combining two bandlimited sawtooth waveforms.
 
 					//Works with PWM
 					filterInput = (noteLookup->posSaw[partialChan]->tick() - noteLookup->negSaw[partialChan]->tick()) * WGAMP ;
 
 					//This works so far without PWM
 					//filterInput = noteLookup->square[partialChan]->tick() * WGAMP;
-
-
-
-					//Experimental PWM addition
-
-					// Its all how the square wave is generated
-
-					//filterInput += 
-
 
 					// Non-bandlimited squarewave
 					/*
@@ -425,15 +390,11 @@ Bit16s *Partial::generateSamples(long length) {
 					// Sawtooth.  Made by combining the full cosine and half cosine according
 					// to how it looks on the MT-32.  What it really does it takes the
 					// square wave and multiplies it by a full cosine
-
-
-					
 					int waveoff = (toff << 2) + minorplace;
 					if (toff < noteLookup->sawTable[pulsewidth])
 						filterInput = noteLookup->waveforms[1][waveoff % noteLookup->waveformSize[1]];
 					else
 						filterInput = noteLookup->waveforms[2][waveoff % noteLookup->waveformSize[2]];
-						
 
 					//filterInput = (Bit32s)(noteLookup->posSaw[partialChan]->tick() * WGAMP);
 
@@ -443,34 +404,25 @@ Bit16s *Partial::generateSamples(long length) {
 					// This is the correct way
 					// Seems slow to me (though bandlimited) -- doesn't seem to
 					// sound any better though
-					
-					//int pw = (patchCache->pulsewidth * pulsemod[filtval]) >> 8;
 					/*
+					//int pw = (patchCache->pulsewidth * pulsemod[filtval]) >> 8;
 
 					Bit32u ofs = toff % (noteLookup->div2 >> 1);
 
-					
 					Bit32u ofs3 = toff + FIXEDPOINT_UMULT(noteLookup->div2, synth->tables.pwFactor[patchCache->pulsewidth], 9);
 					ofs3 = ofs3 % (noteLookup->div2 >> 1);
 
 					Bit16s pa = noteLookup->waveforms[0][ofs];
 					Bit16s pb = noteLookup->waveforms[0][ofs3];
-					
 					sample = ((pa - pb) * noteLookup->waveforms[2][toff]) / 2;
 					*/
-
-
-					
 				}
 
 				filtval = (filtval * bendShift) >> 12;
 				//Very exact filter
 				if (filtval > ((FILTERGRAN * 15) / 16))
 					filtval = ((FILTERGRAN * 15) / 16);
-
 				sample = (Bit32s)(floorf((synth->iirFilter)((float)filterInput, &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])) / synth->tables.resonanceFactor[patchCache->filtEnv.resonance]);
-
-
 				if (sample < -32768) {
 					synth->printDebug("Overdriven amplitude for %d: %d:=%d < -32768", patchCache->waveform, filterInput, sample);
 					sample = -32768;
@@ -767,10 +719,8 @@ Bit32s Partial::getFiltEnvelope() {
 				tStat->envdist = patchCache->filtEnv.envlevel[tStat->envstat] - tStat->envbase;
 			}
 
-			
 			reshigh = tStat->envbase;
 			reshigh = (reshigh + ((tStat->envdist * tStat->envpos) / tStat->envsize));
-			
 
 			/*
 			reshigh = tStat->envbase;
@@ -794,15 +744,12 @@ Bit32s Partial::getFiltEnvelope() {
 
 			reshigh = reshigh + tmptc;
 			*/
-			
-
 		}
 		tStat->prevlevel = reshigh;
 	}
 
 	cutoff = patchCache->filtEnv.cutoff * 2;
-	
-	
+
 	//if (patchCache->waveform==1) reshigh = (reshigh * 3) >> 2;
 
 	depth = patchCache->filtEnv.envdepth * 2;
@@ -814,7 +761,7 @@ Bit32s Partial::getFiltEnvelope() {
 	int dist;
 
 	if (bias != 0) {
-		//FIXME:KG: Is this really based on pitch (as now), or key pressed?
+		//FIXME:KG: Now based on key pressed rather than pitch - seems more likely to be correct
 		//synth->printDebug("Cutoff before %d", cutoff);
 		if (patchCache->tvfdir == 0) {
 			if (poly->key < bias) {
@@ -827,7 +774,6 @@ Bit32s Partial::getFiltEnvelope() {
 				dist = noteVal - poly->key;
 				cutoff = FIXEDPOINT_UMULT(cutoff, synth->tables.tvfBiasMult[patchCache->tvfblevel][dist], 8);
 			}
-
 		}
 		//synth->printDebug("Cutoff after %d", cutoff);
 	}
@@ -843,14 +789,12 @@ Bit32s Partial::getFiltEnvelope() {
 	reshigh *= filtVal;
 	reshigh /= realVal; //FIXME:KG: As above for cutoff
 
-	
 	cutoff = (cutoff * 112) / 100;
 	
 	if (patchCache->waveform == 1) {
 		reshigh = (reshigh * 65) / 100;
 		//reshigh = (reshigh * 33) / 100;
 	}
-	
 
 	if (cutoff > 200)
 		cutoff = 200;
@@ -860,9 +804,8 @@ Bit32s Partial::getFiltEnvelope() {
 		reshigh = 200;
 	else if (reshigh < 0)
 		reshigh = 0;
-	
 	tmp = noteLookup->nfiltTable[cutoff][reshigh];
-	//synth->printDebug("Reshigh %d, tmp %d", reshigh, tmp);
+	//synth->printDebug("reshigh %d, tmp %d", reshigh, tmp);
 	//tmp *= keyfollow;
 	//tmp /= realfollow;
 
@@ -876,7 +819,7 @@ bool Partial::shouldReverb() {
 	return patchCache->reverb;
 }
 
-Bit32u Partial::getAmpEnvelope(Bit32u* biasResult) {
+Bit32u Partial::getAmpEnvelope(Bit32u *biasResult) {
 	Bit32s tc;
 
 	EnvelopeStatus *tStat = &envs[EnvelopeType_amp];
@@ -915,7 +858,7 @@ Bit32u Partial::getAmpEnvelope(Bit32u* biasResult) {
 			tStat->envdist = targetLevel - tStat->envbase;
 			Bit32u envTime = patchCache->ampEnv.envtime[tStat->envstat];
 			//if (targetLevel == 0) {
-			if(tStat->envstat >= patchCache->ampDecayStep) {
+			if (tStat->envstat >= patchCache->ampDecayStep) {
 				tStat->envsize = synth->tables.envDecayTime[envTime];
 			} else {
 				int envLevelDelta = abs(tStat->envdist);
@@ -961,7 +904,7 @@ Bit32u Partial::getAmpEnvelope(Bit32u* biasResult) {
 			int sq = 0;
 		
 			sq = (tStat->envpos * 100) / tStat->envsize;
-			if(tStat->envdist < 0) { 
+			if (tStat->envdist < 0) { 
 				sq = 100 - sq;
 			}
 
@@ -988,9 +931,7 @@ PastCalc:
 
 	//Bias level crap stuff now
 
-	
 	for (int i = 0; i < 2; i++) {
-		
 		biasResult[i] = 256;
 
 		if (patchCache->ampblevel[i]!=0) {
@@ -1016,7 +957,6 @@ PastCalc:
 			}
 		}
 	}
-	
 	if (tc < 0) {
 		synth->printDebug("*** ERROR: tc < 0 (%d) at getAmpEnvelope()", tc);
 		tc = 0;
