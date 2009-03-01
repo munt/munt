@@ -34,6 +34,7 @@ class BlitSaw: public Generator
   ~BlitSaw();
 
   //! Resets the oscillator state and phase to 0.
+  //NOTE:KG: Not entirely true - phase is set back to whatever phase the BlitSaw was constructed with
   void reset();
 
   void reset(StkFloat startPhase);
