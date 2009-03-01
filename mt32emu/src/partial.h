@@ -76,7 +76,6 @@ private:
 	// Keyfollowed filter values
 	int realVal;
 	int filtVal;
-	int oldFiltVal;
 
 	// Only used for PCM partials
 	int pcmNum;
@@ -91,7 +90,6 @@ private:
 	Bit32u pitchEnvVal;
 
 	float history[32];
-	float history2[32];
 
 	bool pitchSustain;
 
@@ -107,7 +105,7 @@ private:
 	void mixBuffersStereo(Bit16s *buf1, Bit16s *buf2, Bit16s *outBuf, int len);
 
 	Bit32s getFiltEnvelope();
-	Bit32u getAmpEnvelope(Bit32u* biasResult);
+	Bit32u getAmpEnvelope(Bit32u *biasResult);
 	Bit32s getPitchEnvelope();
 
 	void initKeyFollow(int freqNum);

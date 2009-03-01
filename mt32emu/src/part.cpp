@@ -345,9 +345,8 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 		cache[t].ampEnv.level = (char)((float)cache[t].ampEnv.level * 1.27f);
 
 		int jr = 4;
-		int jt;
-		for(jt=3;jt>=0;--jt) {
-			if(cache[t].ampEnv.envlevel[jt] > 0) {
+		for (int jt = 3; jt >= 0; --jt) {
+			if (cache[t].ampEnv.envlevel[jt] > 0) {
 				break;
 			}
 			jr = jt;
