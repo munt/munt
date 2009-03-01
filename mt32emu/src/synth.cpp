@@ -574,7 +574,6 @@ void Synth::playMsg(Bit32u msg) {
 void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity) {
 	Bit32u bend;
 
-	//if(part != 3) return;
 	//printDebug("Synth::playMsg(0x%02x)",msg);
 	switch (code) {
 	case 0x8:
@@ -1007,7 +1006,6 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 }
 
 bool Synth::refreshSystem() {
-
 	memset(chantable, -1, sizeof(chantable));
 
 	for (unsigned int i = 0; i < 9; i++) {
@@ -1042,16 +1040,11 @@ bool Synth::refreshSystem() {
 	rset = mt32ram.system.chanAssign;
 	printDebug(" Part assign:     1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
 	printDebug(" Master volume: %d", mt32ram.system.masterVol);
-
 	if (!tables.init(this, pcmWaves, (float)myProp.sampleRate, masterTune)) {
 		report(ReportType_errorSampleRate, NULL);
 		return false;
 	}
-
-	masterVolume = tables.volumeMult[mt32ram.system.masterVol];
-	masterVolume = (Bit16u)(masterVolume * 32767 / 127);
-
-
+	masterVolume = (Bit16u)(tables.volumeMult[mt32ram.system.masterVol] * 256);
 	return true;
 }
 
@@ -1120,8 +1113,8 @@ void ProduceOutput1(Bit16s *useBuf, Bit16s *stream, Bit32u len, Bit16s volume) {
 #endif
 	int end = len * 2;
 	while (end--) {
-		//*stream = *stream + (Bit16s)(((Bit32s)*useBuf++ * (Bit32s)volume)>>15);
-		*stream = *stream + (Bit16s)(((Bit32s)*useBuf++ * (Bit32s)volume)>>14);
+		//*stream = *stream + (Bit16s)(((Bit32s)*useBuf++ * (Bit32s)volume) >> 15);
+		*stream = *stream + (Bit16s)(((Bit32s)*useBuf++ * (Bit32s)volume) >> 14);
 		stream++;
 	}
 }
