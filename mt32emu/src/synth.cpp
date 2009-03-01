@@ -717,7 +717,7 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 		readSysex(device, sysex, len);
 		break;
 	default:
-		printDebug("playSysexWithoutFraming: Unsupported command %02x", command);
+		printDebug("playSysexWithoutHeader: Unsupported command %02x", command);
 		return;
 	}
 }
@@ -778,7 +778,7 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 			}
 			addr += MT32EMU_MEMADDR(0x040000) - MT32EMU_MEMADDR(0x020000) + offset;
 		} else {
-			printDebug("PlaySysexWithoutHeader: Invalid channel %d address 0x%06x", device, MT32EMU_SYSEXMEMADDR(addr));
+			printDebug("writeSysex: Invalid channel %d address 0x%06x", device, MT32EMU_SYSEXMEMADDR(addr));
 			return;
 		}
 	}
