@@ -726,9 +726,9 @@ Bit32s Partial::getFiltEnvelope() {
 			reshigh = tStat->envbase;
 
 			int sq = 0;
-			
+
 			sq = (tStat->envpos * 100) / tStat->envsize;
-			if(tStat->envdist < 0) { 
+			if(tStat->envdist < 0) {
 				sq = 100 - sq;
 			}
 
@@ -771,7 +771,7 @@ Bit32s Partial::getFiltEnvelope() {
 		} else {
 			// > Bias
 			if (poly->key > bias) {
-				dist = noteVal - poly->key;
+				dist = poly->key - bias;
 				cutoff = FIXEDPOINT_UMULT(cutoff, synth->tables.tvfBiasMult[patchCache->tvfblevel][dist], 8);
 			}
 		}
@@ -790,7 +790,7 @@ Bit32s Partial::getFiltEnvelope() {
 	reshigh /= realVal; //FIXME:KG: As above for cutoff
 
 	cutoff = (cutoff * 112) / 100;
-	
+
 	if (patchCache->waveform == 1) {
 		reshigh = (reshigh * 65) / 100;
 		//reshigh = (reshigh * 33) / 100;
@@ -902,9 +902,9 @@ Bit32u Partial::getAmpEnvelope(Bit32u *biasResult) {
 
 		{
 			int sq = 0;
-		
+
 			sq = (tStat->envpos * 100) / tStat->envsize;
-			if (tStat->envdist < 0) { 
+			if (tStat->envdist < 0) {
 				sq = 100 - sq;
 			}
 
