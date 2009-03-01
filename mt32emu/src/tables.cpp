@@ -718,7 +718,7 @@ Tables::Tables() {
 
 bool Tables::init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune) {
 	if (sampleRate <= 0.0f) {
-		synth->printDebug("Bad sampleRate (%d <= 0.0f)", sampleRate);
+		synth->printDebug("Bad sampleRate (%f <= 0.0f)", sampleRate);
 		return false;
 	}
 	if (initialisedSampleRate == 0.0f) {
