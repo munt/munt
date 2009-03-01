@@ -24,7 +24,7 @@
 
 // Debugging
 // Show the instruments played
-#define MT32EMU_MONITOR_INSTRUMENTS 1
+#define MT32EMU_MONITOR_INSTRUMENTS 0
 // Shows number of partials MT-32 is playing, and on which parts
 #define MT32EMU_MONITOR_PARTIALS 0
 // Determines how the waveform cache file is handled (must be regenerated after sampling rate change)
