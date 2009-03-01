@@ -1,4 +1,4 @@
-/* Copyright (c) 2003-2005 Various contributors
+/* Copyright (c) 2003-2009 Various contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -114,7 +114,6 @@ static void initFilter(float fs, float fc, float *icoeff, float Q) {
 	float *coef;
 	double a0, a1, a2, b0, b1, b2;
 
-	//double k = 1.50;    // Set overall filter gain factor
 	double k = 1.0;    // Set overall filter gain factor
 	coef = icoeff + 1; // Skip k, or gain
 
@@ -171,7 +170,6 @@ void Tables::initEnvelopes(float samplerate) {
 			}
 			envDeltaMaxTime[lf] = (int)cap;
 		}
-		
 
 		// This (approximately) represents the time durations when the target level is 0.
 		// Not sure why this is a special case, but it's seen to be from the real thing.
@@ -265,10 +263,9 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		volumeMult[lf] = FIXEDPOINT_MAKE(powf((float)lf / 100.0f, FLOAT_LN), 7);
 
 		// Converts the TVA envelope 0-100 range to the exponential series
-		float fVal =((powf(4.0f, ((float)lf/100.0f))-1.0f)/(4.0f-1.0f));
+		float fVal = (powf(4.0f, ((float)lf / 100.0f)) - 1.0f) / 3.0f;
 		fVal = powf(fVal, FLOAT_LN);
-		volumeExp[lf] = FIXEDPOINT_MAKE(fVal , 10);
-		//volumeMult[lf] = ((float)lf / 100.0f) * 127;
+		volumeExp[lf] = FIXEDPOINT_MAKE(fVal, 10);
 	}
 
 	for (lf = 0; lf <= 100; lf++) {
@@ -277,14 +274,10 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		if (pt < 0)
 			pt = 0;
 
-		// Original (CC version)
-		//pwFactor[lf] = (int)(pt * 210.04f) + 128;
-
 		// Approximation from sample comparison
 		pwFactor[lf] = (int)(pt * 179.0f) + 128;
 		pwFactorf[lf] = ((pt * 179.0f) + 128.0f) / 64.0f;
 		pwFactorf[lf] = 1.0f / pwFactorf[lf];
-		synth->printDebug("pwff: %f", pwFactorf[lf]);
 	}
 
 	for (unsigned int i = 0; i < MAX_SAMPLE_OUTPUT; i++) {
@@ -379,35 +372,16 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 				dval = 1;
 				tvaBiasMult[lf][distval] = 256;
 			} else {
-				/*
-				amplog = powf(1.431817011f, (float)lf) / FLOAT_PI;
-				dval = ((128.0f - (float)distval) / 128.0f);
-				amplog = expf(amplog);
-				dval = powf(amplog, dval) / amplog;
-				tvaBiasMult[lf][distval] = (int)(dval * 256.0);
-				*/
-				// Lets assume for a second it's linear
-
 				// Distance of full volume reduction
-				// Last working code
-				/*
-				amplog = (float)(12.0f / (float)lf) * 24.0f;
-				if (distval > amplog) {
-					tvaBiasMult[lf][distval] = 0;
-				} else {
-					dval = (amplog - (float)distval) / amplog;
-					tvaBiasMult[lf][distval] = (int)(dval * 256.0f);
-				}
-				*/  
 
 				// =1 - (((ABS(lf) /12) ^ 2) * (1/(LN(10)/2)) * (distance [0-1]))
 
-				amplog = powf((float)lf / 12.0f, 2.0f) * (1.0f / (FLOAT_LN/8)) ;
+				amplog = powf((float)lf / 12.0f, 2.0f) * (1.0f / (FLOAT_LN / 8));
 				dval = (float)distval / 128.0f;
-				tvaBiasMult[lf][distval] = (int) ( (1.0f - (amplog * dval)) * 256.0f);
-				if(tvaBiasMult[lf][distval] < 0) tvaBiasMult[lf][distval] = 0;
-
-
+				tvaBiasMult[lf][distval] = (int)((1.0f - (amplog * dval)) * 256.0f);
+				if (tvaBiasMult[lf][distval] < 0) {
+					tvaBiasMult[lf][distval] = 0;
+				}
 			}
 			//synth->printDebug("Ampbias lf %d distval %d = %f (%x) %f", lf, distval, dval, tvaBiasMult[lf][distval],amplog);
 		}
@@ -532,15 +506,14 @@ File *Tables::initWave(Synth *synth, NoteLookup *noteLookup, float ampVal, float
 				sinus++;
 			}
 
+			// This works pretty well
+			// Multiplied by 0.84 so that the spikes caused by bandlimiting don't overdrive the amplitude
 			noteLookup->waveforms[0][fa] = clampWF(synth, "saw", ampVal, -saw / (0.5 * DOUBLE_PI) * 0.84);
 			noteLookup->waveforms[1][fa] = clampWF(synth, "cos", ampVal, -cos(sa / 2.0));
 			noteLookup->waveforms[2][fa * 2] = clampWF(synth, "cosoff_0", ampVal, -cos(sa - DOUBLE_PI));
 			noteLookup->waveforms[2][fa * 2 + 1] = clampWF(synth, "cosoff_1", ampVal, -cos((sa + (sd / 2)) - DOUBLE_PI));
 		}
-
 	}
-
-
 	return file;
 }
 
@@ -569,7 +542,7 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 	for (int cf = 0; cf <= 200; cf++) {
 		float cfmult = (float)cf / 2.0f;
 
-		for (int tf = 0;tf <= 200; tf++) {
+		for (int tf = 0; tf <= 200; tf++) {
 			float tfadd = (float)tf / 2.0f;
 
 			//float freqsum = expf((cfmult + tfadd) / 30.0f) / 4.0f;
@@ -587,13 +560,11 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 File *Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float masterTune, PCMWaveEntry *pcmWaves, File *file) {
 	float freq = (float)(masterTune * pow(2.0, ((double)note - MIDDLEA) / 12.0));
 
-	int chanNum;
-	for(chanNum = 0;chanNum<MT32EMU_MAX_PARTIALS;chanNum++) {
-		noteLookup->posSaw[chanNum] = new BlitSaw(freq,.5);
-		noteLookup->negSaw[chanNum] = new BlitSaw(freq,0);
-		noteLookup->saw[chanNum] = new BlitSaw(freq,.80);
+	for (int chanNum = 0; chanNum < MT32EMU_MAX_PARTIALS; chanNum++) {
+		noteLookup->posSaw[chanNum] = new BlitSaw(freq, 0.5);
+		noteLookup->negSaw[chanNum] = new BlitSaw(freq, 0.0);
+		noteLookup->saw[chanNum] = new BlitSaw(freq, 0.80);
 	}
-
 
 	float div2 = rate * 2.0f / freq;
 	noteLookup->div2 = (int)div2;
@@ -685,7 +656,6 @@ bool Tables::initNotes(Synth *synth, PCMWaveEntry *pcmWaves, float rate, float m
 		NoteLookup *noteLookup = &noteLookups[f - LOWEST_NOTE];
 		file = initNote(synth, noteLookup, (float)f, rate, masterTune, pcmWaves, file);
 		progress = (f - LOWEST_NOTE + 1) / (float)NUM_NOTES;
-		
 		abort = synth->report(ReportType_progressInit, &progress) != 0;
 		if (abort)
 			break;

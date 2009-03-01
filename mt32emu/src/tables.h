@@ -1,4 +1,4 @@
-/* Copyright (c) 2003-2005 Various contributors
+/* Copyright (c) 2003-2009 Various contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -67,9 +67,9 @@ struct NoteLookup {
 	int nfiltTable[201][201];
 	Bit16s *waveforms[3];
 	Bit32u waveformSize[3];
-	BlitSaw *posSaw[32];
-	BlitSaw *negSaw[32];
-	BlitSaw *saw[32];
+	BlitSaw *posSaw[MT32EMU_MAX_PARTIALS];
+	BlitSaw *negSaw[MT32EMU_MAX_PARTIALS];
+	BlitSaw *saw[MT32EMU_MAX_PARTIALS];
 
 };
 
