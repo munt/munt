@@ -408,7 +408,7 @@ void Part::setVolume(int midiVolume) {
 	// FIXME: Use the mappings for this in the control ROM
 	patchTemp->outlevel = (Bit8u)(midiVolume * 100 / 127);
 	updateVolume();
-	synth->printDebug("%s (%s): Set volume to %d", name, currentInstr, midiVolume);
+	//synth->printDebug("%s (%s): Set volume to %d", name, currentInstr, midiVolume);
 }
 
 void Part::setExpression(int midiExpression) {

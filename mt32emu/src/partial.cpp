@@ -104,7 +104,7 @@ void Partial::initKeyFollow(int key) {
 #endif
 #if MT32EMU_ACCURATENOTES == 1
 	noteVal = newPitch;
-	synth->printDebug("key=%d, pitch=%f, pitchKeyfollow=%f, pitchShift=%f, newPitch=%f", key, patchCache->pitch, patchCache->pitchKeyfollow, patchCache->pitchShift, newPitch);
+	//synth->printDebug("key=%d, pitch=%f, pitchKeyfollow=%f, pitchShift=%f, newPitch=%f", key, patchCache->pitch, patchCache->pitchKeyfollow, patchCache->pitchShift, newPitch);
 #else
 	float newPitchInt;
 	float newPitchFract = modff(newPitch, &newPitchInt);
@@ -114,7 +114,7 @@ void Partial::initKeyFollow(int key) {
 	}
 	noteVal = (int)newPitchInt;
 	fineShift = (int)(powf(2.0f, newPitchFract / 12.0f) * 4096.0f);
-	synth->printDebug("key=%d, pitch=%f, pitchKeyfollow=%f, pitchShift=%f, newPitch=%f, noteVal=%d, fineShift=%d", key, patchCache->pitch, patchCache->pitchKeyfollow, patchCache->pitchShift, newPitch, noteVal, fineShift);
+	//synth->printDebug("key=%d, pitch=%f, pitchKeyfollow=%f, pitchShift=%f, newPitch=%f, noteVal=%d, fineShift=%d", key, patchCache->pitch, patchCache->pitchKeyfollow, patchCache->pitchShift, newPitch, noteVal, fineShift);
 #endif
 	// FIXME:KG: Raise/lower by octaves until in the supported range.
 	while (noteVal > HIGHEST_NOTE) // FIXME:KG: see tables.cpp: >108?
