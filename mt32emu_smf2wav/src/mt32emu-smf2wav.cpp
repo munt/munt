@@ -27,14 +27,19 @@
 
 static bool quiet = false;
 
-static const int SAMPLE_RATE = 32000;
+static const int DEFAULT_SAMPLE_RATE = 32000;
 
-static long secondsToSamples(double seconds) {
-	return seconds * SAMPLE_RATE;
+static const int HEADEROFFS_RIFFLEN = 4;
+static const int HEADEROFFS_SAMPLERATE = 24;
+static const int HEADEROFFS_DATALEN = 40;
+
+static long secondsToSamples(double seconds, int sampleRate) {
+	return seconds * sampleRate;
 }
 
-static bool writeWAVEHeader(FILE *dstFile) {
-	static char WAVE_HEADER[] = {
+static bool writeWAVEHeader(FILE *dstFile, int sampleRate) {
+	// All values are little-endian
+	unsigned char waveHeader[] = {
 		'R','I','F','F',
 		0,0,0,0, // Length to be filled in later
 		'W','A','V','E',
@@ -44,7 +49,7 @@ static bool writeWAVEHeader(FILE *dstFile) {
 		0x10, 0x00, 0x00, 0x00, // 0x00000010 - 16 byte chunk
 		0x01, 0x00, // 0x0001 - PCM/Uncompressed
 		0x02, 0x00, // 0x0002 - 2 channels
-		0x00, 0x7D, 0x00, 0x00, // 0x00007D00 - 32kHz
+		0x00, 0x7D, 0x00, 0x00, // 0x00007D00 - 32kHz, overwritten by real sample rate below
 		0x00, 0x80 ,0x0C, 0x00, // 0x000C8000 - 819200 bytes/sec
 		0x04, 0x00, // 0x0004 - 4 byte alignment
 		0x10, 0x00, // 0x0010 - 16 bits/sample
@@ -53,15 +58,18 @@ static bool writeWAVEHeader(FILE *dstFile) {
 		'd','a','t','a',
 		0x00, 0x00, 0x00, 0x00 // Chunk length, to be filled in later
 	};
-	// All values are little-endian
-	return fwrite(WAVE_HEADER, 1, sizeof(WAVE_HEADER), dstFile) == sizeof(WAVE_HEADER);
+	waveHeader[HEADEROFFS_SAMPLERATE] = sampleRate & 0xFF;
+	waveHeader[HEADEROFFS_SAMPLERATE + 1] = (sampleRate >> 8) & 0xFF;
+	waveHeader[HEADEROFFS_SAMPLERATE + 2] = (sampleRate >> 16) & 0xFF;
+	waveHeader[HEADEROFFS_SAMPLERATE + 3] = (sampleRate >> 24) & 0xFF;
+	return fwrite(waveHeader, 1, sizeof(waveHeader), dstFile) == sizeof(waveHeader);
 }
 
 static bool fillWAVESizes(FILE *dstFile, int numSamples) {
 	// FIXME: Check return codes, etc.
 	int dataSize = numSamples * 4;
 	int riffSize = dataSize + 28;
-	if (fseek(dstFile, 4, SEEK_SET))
+	if (fseek(dstFile, HEADEROFFS_RIFFLEN, SEEK_SET))
 		return false;
 	if (fputc(riffSize & 0xFF, dstFile) == EOF)
 		return false;
@@ -71,7 +79,7 @@ static bool fillWAVESizes(FILE *dstFile, int numSamples) {
 		return false;
 	if (fputc((riffSize >> 24) & 0xFF, dstFile) == EOF)
 		return false;
-	if (fseek(dstFile, 40, SEEK_SET))
+	if (fseek(dstFile, HEADEROFFS_DATALEN, SEEK_SET))
 		return false;
 	if (fputc(dataSize & 0xFF, dstFile) == EOF)
 		return false;
@@ -144,16 +152,12 @@ static bool playSysexFile(MT32Emu::Synth *synth, char *syxFileName) {
 	return ok;
 }
 
-static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName) {
+static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu::SynthProperties &synthProperties) {
 	MT32Emu::Synth *synth = new MT32Emu::Synth();
 	MT32Emu::Bit16s samples[2];
-	MT32Emu::SynthProperties synthProperties = {0};
 	unsigned char *buffer;
 	long playedSamples = 0;
 	FILE *dstFile;
-	synthProperties.sampleRate = 32000;
-	synthProperties.useReverb = true;
-	synthProperties.useDefaultReverb = true;
 	if (synth->open(synthProperties)) {
 		if (syxFileName != NULL) {
 			playSysexFile(synth, syxFileName);
@@ -161,7 +165,7 @@ static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName) {
 
 		dstFile = fopen(dstFileName, "w");
 		if (dstFile != NULL) {
-			if (writeWAVEHeader(dstFile)) {
+			if (writeWAVEHeader(dstFile, synthProperties.sampleRate)) {
 				for (;;) {
 					smf_event_t *event = smf_get_next_event(smf);
 					long eventSamples;
@@ -172,7 +176,7 @@ static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName) {
 
 					assert(event->track->track_number >= 0);
 
-					eventSamples = secondsToSamples(event->time_seconds);
+					eventSamples = secondsToSamples(event->time_seconds, synthProperties.sampleRate);
 					if (eventSamples < playedSamples) {
 						fprintf(stderr, "Event went back in time!\n");
 					} else {
@@ -234,11 +238,12 @@ static void printUsage(char *cmd) {
 	printVersion();
 	fprintf(stdout, "\nusage: %s [arguments] <SMF MIDI file>\n\n", cmd);
 	fprintf(stdout, "Arguments:\n");
-	fprintf(stdout, " -f            Force overwrite of output file if already present\n");
-	fprintf(stdout, " -h            Show this help and exit\n");
-	fprintf(stdout, " -o <filename> Output file (default: source file name with \".wav\" appended)\n");
-	fprintf(stdout, " -q            Be quiet\n");
-	fprintf(stdout, " -s <filename> Sysex file to play before the SMF file\n");
+	fprintf(stdout, " -f              Force overwrite of output file if already present\n");
+	fprintf(stdout, " -h              Show this help and exit\n");
+	fprintf(stdout, " -o <filename>   Output file (default: source file name with \".wav\" appended)\n");
+	fprintf(stdout, " -q              Be quiet\n");
+	fprintf(stdout, " -r <samplerate> Set the sample rate (in Hz) (default: %d)\n", DEFAULT_SAMPLE_RATE);
+	fprintf(stdout, " -s <filename>   Sysex file to play before the SMF file\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -248,11 +253,15 @@ int main(int argc, char *argv[]) {
 	char *syxFileName = NULL, *dstFileNameArg = NULL;
 	smf_t *smf = NULL;
 	char *cmd = argv[0];
+	int sampleRate = 32000;
 
 	while ((ch = getopt(argc, argv, "fhqo:s:")) != -1) {
 		switch (ch) {
 		case 'f':
 			force = true;
+			break;
+		case 'r':
+			sampleRate = atoi(optarg);
 			break;
 		case 's':
 			syxFileName = optarg;
@@ -313,7 +322,11 @@ int main(int argc, char *argv[]) {
 		if (!quiet)
 			fprintf(stdout, "%s.", smf_decode(smf));
 		assert(smf->number_of_tracks >= 1);
-		processSMF(syxFileName, smf, dstFileName);
+		MT32Emu::SynthProperties synthProperties = {0};
+		synthProperties.sampleRate = sampleRate;
+		synthProperties.useReverb = true;
+		synthProperties.useDefaultReverb = true;
+		processSMF(syxFileName, smf, dstFileName, synthProperties);
 		smf_delete(smf);
 	} else {
 		fprintf(stderr, "Error parsing SMF file '%s'.\n", srcFileName);
