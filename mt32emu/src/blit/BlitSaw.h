@@ -33,11 +33,12 @@ class BlitSaw: public Generator
   //! Class destructor.
   ~BlitSaw();
 
+  void reinit(StkFloat frequency = 220.0, StkFloat phase = 0.0f);
   //! Resets the oscillator state and phase to 0.
   //NOTE:KG: Not entirely true - phase is set back to whatever phase the BlitSaw was constructed with
   void reset();
 
-  void reset(StkFloat startPhase);
+  void reset(StkFloat frequency, StkFloat phase);
 
   //! Set the sawtooth oscillator rate in terms of a frequency in Hz.
   void setFrequency( StkFloat frequency );

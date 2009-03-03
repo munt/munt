@@ -22,20 +22,22 @@
 #include "BlitSaw.h"
 #include <cmath>
 #include <limits>
- 
+
 BlitSaw:: BlitSaw( StkFloat frequency, StkFloat phase )
 {
-  nHarmonics_ = 0;
-  this->reset();
-  startphase_ = phase;
-  startfreq_ = frequency;
-  phase_ = phase * PI;
-  this->setFrequency( frequency );
+	reset(frequency, phase);
 }
 
 
 BlitSaw :: ~BlitSaw()
 {
+}
+
+void BlitSaw :: reset(StkFloat frequency, StkFloat phase) {
+	nHarmonics_ = 0; // FIXME: Possibly should outcomment this for testing
+	startphase_ = phase;
+	startfreq_ = frequency;
+	reset();
 }
 
 void BlitSaw :: reset()
@@ -44,11 +46,6 @@ void BlitSaw :: reset()
   state_ = 0.0;
   lastOutput_ = 0;
   this->setFrequency(startfreq_);
-}
-
-void BlitSaw::reset(StkFloat startPhase) {
-	startphase_ = startPhase;
-	this->reset();
 }
 
 void BlitSaw :: setFrequency( StkFloat frequency )
@@ -108,13 +105,13 @@ StkFloat BlitSaw :: computeSample( void )
   // most consistently.  A "leaky integrator" is then applied to the
   // difference of the BLIT output and C2_. (GPS - 1 October 2005)
 
-  // A fully  optimized version of this code would replace the two sin 
-  // calls with a pair of fast sin oscillators, for which stable fast 
+  // A fully  optimized version of this code would replace the two sin
+  // calls with a pair of fast sin oscillators, for which stable fast
   // two-multiply algorithms are well known. In the spirit of STK,
-  // which favors clarity over performance, the optimization has 
+  // which favors clarity over performance, the optimization has
   // not been made here.
 
-  // Avoid a divide by zero, or use of a denormalized divisor 
+  // Avoid a divide by zero, or use of a denormalized divisor
   // at the sinc peak, which has a limiting value of m_ / p_.
   StkFloat denominator = sin( phase_ );
   if ( fabs(denominator) <= std::numeric_limits<StkFloat>::epsilon() )
@@ -129,7 +126,7 @@ StkFloat BlitSaw :: computeSample( void )
 
   phase_ += rate_;
   if ( phase_ >= PI ) phase_ -= PI;
-    
+
 	return lastOutput_;
 }
 
