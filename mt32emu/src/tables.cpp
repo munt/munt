@@ -559,13 +559,7 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 
 File *Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float masterTune, PCMWaveEntry *pcmWaves, File *file) {
 	float freq = (float)(masterTune * pow(2.0, ((double)note - MIDDLEA) / 12.0));
-
-	for (int chanNum = 0; chanNum < MT32EMU_MAX_PARTIALS; chanNum++) {
-		noteLookup->posSaw[chanNum] = new BlitSaw(freq, 0.5);
-		noteLookup->negSaw[chanNum] = new BlitSaw(freq, 0.0);
-		noteLookup->saw[chanNum] = new BlitSaw(freq, 0.80);
-	}
-
+	noteLookup->freq = freq;
 	float div2 = rate * 2.0f / freq;
 	noteLookup->div2 = (int)div2;
 

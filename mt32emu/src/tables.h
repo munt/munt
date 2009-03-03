@@ -59,6 +59,7 @@ const int NUM_NOTES = HIGHEST_NOTE - LOWEST_NOTE + 1; // Number of slots for not
 class Synth;
 
 struct NoteLookup {
+	float freq;
 	Bit32u div2;
 	Bit32u *wavTable;
 	Bit32s sawTable[101];
@@ -67,10 +68,6 @@ struct NoteLookup {
 	int nfiltTable[201][201];
 	Bit16s *waveforms[3];
 	Bit32u waveformSize[3];
-	BlitSaw *posSaw[MT32EMU_MAX_PARTIALS];
-	BlitSaw *negSaw[MT32EMU_MAX_PARTIALS];
-	BlitSaw *saw[MT32EMU_MAX_PARTIALS];
-
 };
 
 struct KeyLookup {

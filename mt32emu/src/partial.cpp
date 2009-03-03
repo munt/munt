@@ -37,6 +37,11 @@ Partial::Partial(Synth *useSynth) {
 	ownerPart = -1;
 	poly = NULL;
 	pair = NULL;
+	// BlitSaws are initialised with dummy values here - they'll be reset the first time they're used anyway.
+	// We're not allocating lazily since deferring memory allocations until sound is actually playing doesn't seem like a good idea.
+	posSaw = new BlitSaw(1, 0.5);
+	negSaw = new BlitSaw(1, 0.0);
+	saw = new BlitSaw(1, 0.8);
 #if MT32EMU_ACCURATENOTES == 1
 	for (int i = 0; i < 3; i++) {
 		noteLookupStorage.waveforms[i] = new Bit16s[65536];
@@ -52,6 +57,9 @@ Partial::~Partial() {
 	}
 	delete[] noteLookupStorage.wavTable;
 #endif
+	delete posSaw;
+	delete negSaw;
+	delete saw;
 }
 
 int Partial::getOwnerPart() const {
@@ -153,9 +161,6 @@ void Partial::startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *
 	initKeyFollow(poly->freqnum); // Initialises noteVal, filtVal and realVal
 #if MT32EMU_ACCURATENOTES == 0
 	noteLookup = &synth->tables.noteLookups[noteVal - LOWEST_NOTE];
-	noteLookup->posSaw[partialChan]->reset();
-	noteLookup->negSaw[partialChan]->reset();
-	noteLookup->saw[partialChan]->reset();
 #else
 	Tables::initNote(synth, &noteLookupStorage, noteVal, (float)synth->myProp.sampleRate, synth->masterTune, synth->pcmWaves, NULL);
 #endif
@@ -181,7 +186,9 @@ void Partial::startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *
 	} else if (pulsewidth < 0) {
 		pulsewidth = 0;
 	}
-	noteLookup->posSaw[partialChan]->reset(synth->tables.pwFactorf[pulsewidth]);
+	posSaw->reset(noteLookup->freq, synth->tables.pwFactorf[pulsewidth]);
+	negSaw->reset(noteLookup->freq, 0.0);
+	saw->reset(noteLookup->freq, 0.8);
 
 	for (int e = 0; e < 3; e++) {
 		envs[e].envpos = 0;
@@ -304,11 +311,11 @@ Bit16s *Partial::generateSamples(long length) {
 		tdelta = FIXEDPOINT_UMULT(tdelta, bendShift, 12);
 
 		if(tdelta != pastDelta) {
-			float startFreq = noteLookup->posSaw[partialChan]->getStartFreq();
+			float startFreq = posSaw->getStartFreq();
 			startFreq = startFreq * ((float)tdelta / (float)delta);
 
-			noteLookup->posSaw[partialChan]->setFrequency(startFreq);
-			noteLookup->negSaw[partialChan]->setFrequency(startFreq);
+			posSaw->setFrequency(startFreq);
+			negSaw->setFrequency(startFreq);
 			pastDelta = tdelta;
 		}
 		//noteLookup->saw[partialChan]->setFrequency(startFreq);
@@ -373,7 +380,7 @@ Bit16s *Partial::generateSamples(long length) {
 					// Square waveform, made by combining two bandlimited sawtooth waveforms.
 
 					//Works with PWM
-					filterInput = (noteLookup->posSaw[partialChan]->tick() - noteLookup->negSaw[partialChan]->tick()) * WGAMP ;
+					filterInput = (posSaw->tick() - negSaw->tick()) * WGAMP ;
 
 					//This works so far without PWM
 					//filterInput = noteLookup->square[partialChan]->tick() * WGAMP;

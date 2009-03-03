@@ -70,6 +70,10 @@ private:
 	int noteVal;
 	int fineShift;
 #endif
+	BlitSaw *posSaw;
+	BlitSaw *negSaw;
+	BlitSaw *saw;
+
 	const NoteLookup *noteLookup; // LUTs for this noteVal
 	const KeyLookup *keyLookup; // LUTs for the clamped (12..108) key
 
