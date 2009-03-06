@@ -23,13 +23,11 @@
 
 namespace MT32Emu {
 
-const int MAX_SYSEX_SIZE = 512;
-
 const ControlROMMap ControlROMMaps[3] = {
-	// ID    IDc IDbytes                     PCMmap  PCMc  tmbrA   tmbrAO, tmbrB   tmbrBO, tmbrR   trC  rhythm  rhyC  rsrv    panpot  prog
-	{0x4010, 22, "\000 ver1.07 10 Oct, 87 ", 0x3000,  128, 0x8000, 0x0000, 0xC000, 0x4000, 0x3200,  30, 0x73fe,  85,  0x57B1, 0x57BA, 0x57CC}, // MT-32 revision 1
-	{0x4010, 22, "\000verX.XX  30 Sep, 88 ", 0x3000,  128, 0x8000, 0x0000, 0xC000, 0x4000, 0x3200,  30, 0x741C,  85,  0x57E5, 0x57EE, 0x5800}, // MT-32 Blue Ridge mod
-	{0x2205, 22, "\000CM32/LAPC1.02 891205", 0x8100,  256, 0x8000, 0x8000, 0x8080, 0x8000, 0x8500,  64, 0x8580,  85,  0x4F93, 0x4F9C, 0x4FAE}  // CM-32L
+	// ID    IDc IDbytes                     PCMmap  PCMc  tmbrA   tmbrAO, tmbrB   tmbrBO, tmbrR   trC  rhythm  rhyC  rsrv    panpot  prog    rhyMax  patMax  sysMax  timMax
+	{0x4010, 22, "\000 ver1.07 10 Oct, 87 ", 0x3000,  128, 0x8000, 0x0000, 0xC000, 0x4000, 0x3200,  30, 0x73fe,  85,  0x57B1, 0x57BA, 0x57CC, 0x523C, 0x5248, 0x5258, 0x51F4}, // MT-32 revision 1
+	{0x4010, 22, "\000verX.XX  30 Sep, 88 ", 0x3000,  128, 0x8000, 0x0000, 0xC000, 0x4000, 0x3200,  30, 0x741C,  85,  0x57E5, 0x57EE, 0x5800, 0x5270, 0x527C, 0x528C, 0x5228}, // MT-32 Blue Ridge mod
+	{0x2205, 22, "\000CM32/LAPC1.02 891205", 0x8100,  256, 0x8000, 0x8000, 0x8080, 0x8000, 0x8500,  64, 0x8580,  85,  0x4F93, 0x4F9C, 0x4FAE, 0x48CB, 0x48CF, 0x48E8, 0x48FF}  // CM-32L
 	// (Note that all but CM-32L ROM actually have 86 entries for rhythmTemp)
 };
 
@@ -328,18 +326,18 @@ bool Synth::initRhythmTimbre(int timbreNum, const Bit8u *mem, unsigned int memLe
 		return false;
 	}
 	TimbreParam *timbre = &mt32ram.timbres[timbreNum].timbre;
-	memcpy(&timbre->common, mem, 14);
-	unsigned int memPos = 14;
+	timbresMemoryRegion->write(timbreNum, 0, mem, sizeof(TimbreParam::commonParam));
+	unsigned int memPos = sizeof(TimbreParam::commonParam);
 	char drumname[11];
 	strncpy(drumname, timbre->common.name, 10);
 	drumname[10] = 0;
 	for (int t = 0; t < 4; t++) {
 		if (((timbre->common.pmute >> t) & 0x1) == 0x1) {
-			if (memPos + 58 >= memLen) {
+			if (memPos + sizeof(TimbreParam::partialParam) >= memLen) {
 				return false;
 			}
-			memcpy(&timbre->partial[t], mem + memPos, 58);
-			memPos += 58;
+			timbresMemoryRegion->write(timbreNum, memPos, mem + memPos, sizeof(TimbreParam::partialParam));
+			memPos += sizeof(TimbreParam::partialParam);
 		}
 	}
 	return true;
@@ -373,8 +371,7 @@ bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, int startTimbre) {
 			return false;
 		}
 		address = address + offset;
-		TimbreParam *timbre = &mt32ram.timbres[startTimbre++].timbre;
-		memcpy(timbre, &controlROMData[address], sizeof(TimbreParam));
+		timbresMemoryRegion->write(startTimbre++, 0, &controlROMData[address], sizeof(TimbreParam));
 	}
 	return true;
 }
@@ -400,6 +397,8 @@ bool Synth::open(SynthProperties &useProp) {
 			return false;
 		}
 	}
+
+	initMemoryRegions();
 
 	// 512KB PCM ROM for MT-32, etc.
 	// 1MB PCM ROM for CM-32L, LAPC-I, CM-64, CM-500
@@ -443,7 +442,7 @@ bool Synth::open(SynthProperties &useProp) {
 	initPCMList(controlROMMap->pcmTable, controlROMMap->pcmCount);
 
 	printDebug("Initialising Rhythm Temp");
-	memcpy(mt32ram.rhythmSettings, &controlROMData[controlROMMap->rhythmSettings], controlROMMap->rhythmSettingsCount * 4);
+	rhythmTempMemoryRegion->write(0, 0, &controlROMData[controlROMMap->rhythmSettings], controlROMMap->rhythmSettingsCount * 4);
 
 	printDebug("Initialising Patches");
 	for (Bit8u i = 0; i < 128; i++) {
@@ -545,6 +544,9 @@ void Synth::close(void) {
 
 	delete[] pcmWaves;
 	delete[] pcmROMData;
+
+	deleteMemoryRegions();
+
 	isOpen = false;
 }
 
@@ -720,19 +722,6 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 void Synth::readSysex(unsigned char /*device*/, const Bit8u * /*sysex*/, Bit32u /*len*/) {
 }
 
-const MemoryRegion memoryRegions[8] = {
-	{MR_PatchTemp,  MT32EMU_MEMADDR(0x030000), sizeof(MemParams::PatchTemp), 9},
-	{MR_RhythmTemp, MT32EMU_MEMADDR(0x030110), sizeof(MemParams::RhythmTemp), 85},
-	{MR_TimbreTemp, MT32EMU_MEMADDR(0x040000), sizeof(TimbreParam), 8},
-	{MR_Patches,    MT32EMU_MEMADDR(0x050000), sizeof(PatchParam), 128},
-	{MR_Timbres,    MT32EMU_MEMADDR(0x080000), sizeof(MemParams::PaddedTimbre), 64 + 64 + 64 + 64},
-	{MR_System,     MT32EMU_MEMADDR(0x100000), sizeof(MemParams::SystemArea), 1},
-	{MR_Display,    MT32EMU_MEMADDR(0x200000), MAX_SYSEX_SIZE - 1, 1},
-	{MR_Reset,      MT32EMU_MEMADDR(0x7F0000), 0x3FFF, 1}
-};
-
-const int NUM_REGIONS = sizeof(memoryRegions) / sizeof(MemoryRegion);
-
 void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 	Bit32u addr = (sysex[0] << 16) | (sysex[1] << 8) | (sysex[2]);
 	addr = MT32EMU_MEMADDR(addr);
@@ -782,18 +771,14 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 	for (;;) {
 		// Find the appropriate memory region
 		int regionNum;
-		const MemoryRegion *region = NULL; // Initialised to please compiler
-		for (regionNum = 0; regionNum < NUM_REGIONS; regionNum++) {
-			region = &memoryRegions[regionNum];
-			if (region->contains(addr)) {
-				writeMemoryRegion(region, addr, region->getClampedLen(addr, len), sysex);
-				break;
-			}
-		}
-		if (regionNum == NUM_REGIONS) {
+		const MemoryRegion *region = findMemoryRegion(addr);
+
+		if (region == NULL) {
 			printDebug("Sysex write to unrecognised address %06x, len %d", MT32EMU_SYSEXMEMADDR(addr), len);
 			break;
 		}
+		writeMemoryRegion(region, addr, region->getClampedLen(addr, len), sysex);
+
 		Bit32u next = region->next(addr, len);
 		if (next == 0) {
 			break;
@@ -806,14 +791,73 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 
 void Synth::readMemory(Bit32u addr, Bit32u len, Bit8u *data) {
 	int regionNum;
-	const MemoryRegion *region = NULL;
-	for (regionNum = 0; regionNum < NUM_REGIONS; regionNum++) {
-		region = &memoryRegions[regionNum];
-		if (region->contains(addr)) {
-			readMemoryRegion(region, addr, len, data);
-			break;
+	const MemoryRegion *region = findMemoryRegion(addr);
+	if (region != NULL) {
+		readMemoryRegion(region, addr, len, data);
+	}
+}
+
+void Synth::initMemoryRegions() {
+	// Timbre max tables are slightly more complicated than the others, which are used directly from the ROM.
+	// The ROM (sensibly) just has maximums for TimbreParam.commonParam followed by just one TimbreParam.partialParam,
+	// so we produce a table with all partialParams filled out, as well as padding for PaddedTimbre, for quick lookup.
+	paddedTimbreMaxTable = new Bit8u[sizeof(MemParams::PaddedTimbre)];
+	memcpy(&paddedTimbreMaxTable[0], &controlROMData[controlROMMap->timbreMaxTable], sizeof(TimbreParam::commonParam) + sizeof(TimbreParam::partialParam)); // commonParam and one partialParam
+	int pos = sizeof(TimbreParam::commonParam) + sizeof(TimbreParam::partialParam);
+	for (int i = 0; i < 3; i++) {
+		memcpy(&paddedTimbreMaxTable[pos], &controlROMData[controlROMMap->timbreMaxTable + sizeof(TimbreParam::commonParam)], sizeof(TimbreParam::partialParam));
+		pos += sizeof(TimbreParam::partialParam);
+	}
+	memset(&paddedTimbreMaxTable[pos], 0, 10); // Padding
+	patchTempMemoryRegion = new PatchTempMemoryRegion(this, (Bit8u *)&mt32ram.patchSettings[0], &controlROMData[controlROMMap->patchMaxTable]);
+	rhythmTempMemoryRegion = new RhythmTempMemoryRegion(this, (Bit8u *)&mt32ram.rhythmSettings[0], &controlROMData[controlROMMap->rhythmMaxTable]);
+	timbreTempMemoryRegion = new TimbreTempMemoryRegion(this, (Bit8u *)&mt32ram.timbreSettings[0], paddedTimbreMaxTable);
+	patchesMemoryRegion = new PatchesMemoryRegion(this, (Bit8u *)&mt32ram.patches[0], &controlROMData[controlROMMap->patchMaxTable]);
+	timbresMemoryRegion = new TimbresMemoryRegion(this, (Bit8u *)&mt32ram.timbres[0], paddedTimbreMaxTable);
+	systemMemoryRegion = new SystemMemoryRegion(this, (Bit8u *)&mt32ram.system, &controlROMData[controlROMMap->systemMaxTable]);
+	displayMemoryRegion = new DisplayMemoryRegion(this);
+	resetMemoryRegion = new ResetMemoryRegion(this);
+}
+
+void Synth::deleteMemoryRegions() {
+	delete patchTempMemoryRegion;
+	patchTempMemoryRegion = NULL;
+	delete rhythmTempMemoryRegion;
+	rhythmTempMemoryRegion = NULL;
+	delete timbreTempMemoryRegion;
+	timbreTempMemoryRegion = NULL;
+	delete patchesMemoryRegion;
+	patchesMemoryRegion = NULL;
+	delete timbresMemoryRegion;
+	timbresMemoryRegion = NULL;
+	delete systemMemoryRegion;
+	systemMemoryRegion = NULL;
+	delete displayMemoryRegion;
+	displayMemoryRegion = NULL;
+	delete resetMemoryRegion;
+	resetMemoryRegion = NULL;
+
+	delete paddedTimbreMaxTable;
+	paddedTimbreMaxTable = NULL;
+}
+
+MemoryRegion *Synth::findMemoryRegion(Bit32u addr) {
+	MemoryRegion *regions[] = {
+			patchTempMemoryRegion,
+			rhythmTempMemoryRegion,
+			timbreTempMemoryRegion,
+			patchesMemoryRegion,
+			timbresMemoryRegion,
+			systemMemoryRegion,
+			displayMemoryRegion,
+			resetMemoryRegion,
+			NULL};
+	for(int pos = 0; regions[pos] != NULL; pos++) {
+		if(regions[pos]->contains(addr)) {
+			return regions[pos];
 		}
 	}
+	return NULL;
 }
 
 void Synth::readMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, Bit8u *data) {
@@ -824,42 +868,17 @@ void Synth::readMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len
 
 	unsigned int m;
 
-	switch(region->type) {
-	case MR_PatchTemp:
-		for (m = 0; m < len; m++)
-			data[m] = ((Bit8u *)&mt32ram.patchSettings[first])[off + m];
-		break;
-	case MR_RhythmTemp:
-		for (m = 0; m < len; m++)
-			data[m] = ((Bit8u *)&mt32ram.rhythmSettings[first])[off + m];
-		break;
-	case MR_TimbreTemp:
-		for (m = 0; m < len; m++)
-			data[m] = ((Bit8u *)&mt32ram.timbreSettings[first])[off + m];
-		break;
-	case MR_Patches:
-		for (m = 0; m < len; m++)
-			data[m] = ((Bit8u *)&mt32ram.patches[first])[off + m];
-		break;
-	case MR_Timbres:
-		for (m = 0; m < len; m++)
-			data[m] = ((Bit8u *)&mt32ram.timbres[first])[off + m];
-		break;
-	case MR_System:
-		for (m = 0; m < len; m++)
-			data[m] = ((Bit8u *)&mt32ram.system)[m + off];
-		break;
-	default:
+	if (region->isReadable()) {
+		region->read(first, off, data, len);
+	} else {
+		// FIXME: We might want to do these properly in future
 		for (m = 0; m < len; m += 2) {
 			data[m] = 0xff;
 			if (m + 1 < len) {
 				data[m+1] = (Bit8u)region->type;
 			}
 		}
-		// TODO: Don't care about the others ATM
-		break;
 	}
-
 }
 
 void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, const Bit8u *data) {
@@ -868,9 +887,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 	unsigned int off = region->firstTouchedOffset(addr);
 	switch (region->type) {
 	case MR_PatchTemp:
-		for (unsigned int m = 0; m < len; m++) {
-			((Bit8u *)&mt32ram.patchSettings[first])[off + m] = data[m];
-		}
+		region->write(first, off, data, len);
 		//printDebug("Patch temp: Patch %d, offset %x, len %d", off/16, off % 16, len);
 
 		for (unsigned int i = first; i <= last; i++) {
@@ -894,8 +911,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		}
 		break;
 	case MR_RhythmTemp:
-		for (unsigned int m = 0; m < len; m++)
-			((Bit8u *)&mt32ram.rhythmSettings[first])[off + m] = data[m];
+		region->write(first, off, data, len);
 		for (unsigned int i = first; i <= last; i++) {
 			int timbreNum = mt32ram.rhythmSettings[i].timbre;
 			char timbreName[11];
@@ -912,8 +928,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		}
 		break;
 	case MR_TimbreTemp:
-		for (unsigned int m = 0; m < len; m++)
-			((Bit8u *)&mt32ram.timbreSettings[first])[off + m] = data[m];
+		region->write(first, off, data, len);
 		for (unsigned int i = first; i <= last; i++) {
 			char instrumentName[11];
 			memcpy(instrumentName, mt32ram.timbreSettings[i].common.name, 10);
@@ -925,8 +940,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		}
 		break;
 	case MR_Patches:
-		for (unsigned int m = 0; m < len; m++)
-			((Bit8u *)&mt32ram.patches[first])[off + m] = data[m];
+		region->write(first, off, data, len);
 		for (unsigned int i = first; i <= last; i++) {
 			PatchParam *patch = &mt32ram.patches[i];
 			int patchAbsTimbreNum = patch->timbreGroup * 64 + patch->timbreNum;
@@ -955,8 +969,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		// Timbres
 		first += 128;
 		last += 128;
-		for (unsigned int m = 0; m < len; m++)
-			((Bit8u *)&mt32ram.timbres[first])[off + m] = data[m];
+		region->write(first, off, data, len);
 		for (unsigned int i = first; i <= last; i++) {
 			char instrumentName[11];
 			memcpy(instrumentName, mt32ram.timbres[i].timbre.common.name, 10);
@@ -972,8 +985,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		}
 		break;
 	case MR_System:
-		for (unsigned int m = 0; m < len; m++)
-			((Bit8u *)&mt32ram.system)[m + off] = data[m];
+		region->write(0, off, data, len);
 
 		report(ReportType_devReconfig, NULL);
 
@@ -1190,4 +1202,55 @@ const Part *Synth::getPart(unsigned int partNum) const {
 	return parts[partNum];
 }
 
+void MemoryRegion::read(unsigned int entry, unsigned int off, Bit8u *dst, unsigned int len) const {
+	off += entry * entrySize;
+	// This method should never be called with out-of-bounds parameters,
+	// or on an unsupported region - seeing any of this debug output indicates a bug in the emulator
+	if (off > entrySize * entries - 1) {
+		synth->printDebug("read[%d]: parameters start out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
+		return;
+	}
+	if (off + len > entrySize * entries) {
+		synth->printDebug("read[%d]: parameters end out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
+		len = entrySize * entries - off;
+	}
+	Bit8u *src = getRealMemory();
+	if (src == NULL) {
+		synth->printDebug("read[%d]: unreadable region: entry=%d, off=%d, len=%d", type, entry, off, len);
+	}
+	memcpy(dst, src + off, len);
+}
+
+void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src, unsigned int len) const {
+		unsigned int memOff = entry * entrySize + off;
+		// This method should never be called with out-of-bounds parameters,
+		// or on an unsupported region - seeing any of this debug output indicates a bug in the emulator
+		if (off > entrySize * entries - 1) {
+			synth->printDebug("write[%d]: parameters start out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
+			return;
+		}
+		if (off + len > entrySize * entries) {
+			synth->printDebug("write[%d]: parameters end out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
+			len = entrySize * entries - off;
+		}
+		Bit8u *dest = getRealMemory();
+		if (dest == NULL) {
+			synth->printDebug("write[%d]: unwritable region: entry=%d, off=%d, len=%d", type, entry, off, len);
+		}
+
+		for (int i = 0; i < len; i++) {
+			Bit8u desiredValue = src[i];
+			Bit8u maxValue = getMaxValue(memOff);
+			if(maxValue != 0) {
+				if(desiredValue > maxValue) {
+					synth->printDebug("write[%d]: Wanted 0x%02x at %d, but max 0x%02x", type, desiredValue, memOff, maxValue);
+					desiredValue = maxValue;
+				}
+				dest[memOff] = desiredValue;
+			} else {
+				synth->printDebug("write[%d]: Wanted 0x%02x at %d, but write-protected", type, desiredValue, memOff);
+			}
+			memOff++;
+		}
+	}
 }

@@ -112,6 +112,8 @@ const Bit8u SYSEX_CMD_EOD = 0x45; // End of data
 const Bit8u SYSEX_CMD_ERR = 0x4E; // Communications error
 const Bit8u SYSEX_CMD_RJC = 0x4F; // Rejection
 
+const int MAX_SYSEX_SIZE = 512;
+
 const unsigned int CONTROL_ROM_SIZE = 64 * 1024;
 
 struct ControlROMPCMStruct
@@ -139,6 +141,10 @@ struct ControlROMMap {
 	Bit16u reserveSettings;
 	Bit16u panSettings;
 	Bit16u programSettings;
+	Bit16u rhythmMaxTable; // 4 bytes
+	Bit16u patchMaxTable; // 16 bytes
+	Bit16u systemMaxTable; // 23 bytes
+	Bit16u timbreMaxTable; // 72 bytes
 };
 
 enum MemoryRegionType {
@@ -146,10 +152,23 @@ enum MemoryRegionType {
 };
 
 class MemoryRegion {
+private:
+	Synth *synth;
+	Bit8u *realMemory;
+	Bit8u *maxTable;
 public:
 	MemoryRegionType type;
 	Bit32u startAddr, entrySize, entries;
 
+	MemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable, MemoryRegionType type, Bit32u startAddr, Bit32u entrySize, Bit32u entries) {
+		this->synth = synth;
+		this->realMemory = realMemory;
+		this->maxTable = maxTable;
+		this->type = type;
+		this->startAddr = startAddr;
+		this->entrySize = entrySize;
+		this->entries = entries;
+	}
 	int lastTouched(Bit32u addr, Bit32u len) const {
 		return (offset(addr) + len - 1) / entrySize;
 	}
@@ -179,15 +198,72 @@ public:
 		}
 		return 0;
 	}
+	Bit8u getMaxValue(int off) const {
+		if (maxTable == NULL)
+			return 0xFF;
+		return maxTable[off % entrySize];
+	}
+	Bit8u *getRealMemory() const {
+		return realMemory;
+	}
+	bool isReadable() const {
+		return getRealMemory() != NULL;
+	}
+	void read(unsigned int entry, unsigned int off, Bit8u *dst, unsigned int len) const;
+	void write(unsigned int entry, unsigned int off, const Bit8u *src, unsigned int len) const;
 };
 
+class PatchTempMemoryRegion : public MemoryRegion {
+public:
+	PatchTempMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_PatchTemp, MT32EMU_MEMADDR(0x030000), sizeof(MemParams::PatchTemp), 9) {}
+};
+class RhythmTempMemoryRegion : public MemoryRegion {
+public:
+	RhythmTempMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_RhythmTemp, MT32EMU_MEMADDR(0x030110), sizeof(MemParams::RhythmTemp), 85) {}
+};
+class TimbreTempMemoryRegion : public MemoryRegion {
+public:
+	TimbreTempMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_TimbreTemp, MT32EMU_MEMADDR(0x040000), sizeof(TimbreParam), 8) {}
+};
+class PatchesMemoryRegion : public MemoryRegion {
+public:
+	PatchesMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_Patches, MT32EMU_MEMADDR(0x050000), sizeof(PatchParam), 128) {}
+};
+class TimbresMemoryRegion : public MemoryRegion {
+public:
+	TimbresMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_Timbres, MT32EMU_MEMADDR(0x080000), sizeof(MemParams::PaddedTimbre), 64 + 64 + 64 + 64) {}
+};
+class SystemMemoryRegion : public MemoryRegion {
+public:
+	SystemMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_System, MT32EMU_MEMADDR(0x100000), sizeof(MemParams::SystemArea), 1) {}
+};
+class DisplayMemoryRegion : public MemoryRegion {
+public:
+	DisplayMemoryRegion(Synth *synth) : MemoryRegion(synth, NULL, NULL, MR_Display, MT32EMU_MEMADDR(0x200000), MAX_SYSEX_SIZE - 1, 1) {}
+};
+class ResetMemoryRegion : public MemoryRegion {
+public:
+	ResetMemoryRegion(Synth *synth) : MemoryRegion(synth, NULL, NULL, MR_Reset, MT32EMU_MEMADDR(0x7F0000), 0x3FFF, 1) {}
+};
 
 class Synth {
 friend class Part;
 friend class RhythmPart;
 friend class Partial;
 friend class Tables;
+friend class MemoryRegion;
 private:
+	PatchTempMemoryRegion *patchTempMemoryRegion;
+	RhythmTempMemoryRegion *rhythmTempMemoryRegion;
+	TimbreTempMemoryRegion *timbreTempMemoryRegion;
+	PatchesMemoryRegion *patchesMemoryRegion;
+	TimbresMemoryRegion *timbresMemoryRegion;
+	SystemMemoryRegion *systemMemoryRegion;
+	DisplayMemoryRegion *displayMemoryRegion;
+	ResetMemoryRegion *resetMemoryRegion;
+
+	Bit8u *paddedTimbreMaxTable;
+
 	bool isEnabled;
 
 	iir_filter_type iirFilter;
@@ -233,6 +309,9 @@ private:
 
 	void playAddressedSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
+	void initMemoryRegions();
+	void deleteMemoryRegions();
+	MemoryRegion *findMemoryRegion(Bit32u addr);
 	void writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, const Bit8u *data);
 	void readMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, Bit8u *data);
 
