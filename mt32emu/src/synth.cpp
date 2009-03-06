@@ -64,6 +64,15 @@ float iir_filter_normal(float input, float *hist1_ptr, float *coef_ptr) {
 	return(output);
 }
 
+static inline Bit16s clipBit16s(Bit32s a)
+{
+	// Clamp values above 32767 to 32767, and values below -32768 to -32768
+	if ((a + 32768) & ~65535) {
+		return (a >> 31) ^ 32767;
+	}
+	return a;
+}
+
 Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 	for (unsigned int i = 0; i < len; i++) {
 		checksum = checksum + data[i];
@@ -1120,8 +1129,7 @@ void ProduceOutput1(Bit16s *useBuf, Bit16s *stream, Bit32u len, Bit16s volume) {
 #endif
 	int end = len * 2;
 	while (end--) {
-		//*stream = *stream + (Bit16s)(((Bit32s)*useBuf++ * (Bit32s)volume) >> 15);
-		*stream = *stream + (Bit16s)(((Bit32s)*useBuf++ * (Bit32s)volume) >> 14);
+		*stream = clipBit16s((Bit32s)*stream + (((Bit32s)*useBuf++ * (Bit32s)volume) >> 14));
 		stream++;
 	}
 }
@@ -1159,10 +1167,10 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 		reverbModel->processreplace(sndbufl, sndbufr, outbufl, outbufr, len, 1);
 		m=0;
 		for (unsigned int i = 0; i < len; i++) {
-			stream[m] = (Bit16s)(outbufl[i] * 32767.0f);
-			m++;
-			stream[m] = (Bit16s)(outbufr[i] * 32767.0f);
-			m++;
+	        stream[m] = clipBit16s(outbufl[i] * 32767.0f);
+	        m++;
+	        stream[m] = clipBit16s(outbufr[i] * 32767.0f);
+	        m++;
 		}
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 			if (!partialManager->shouldReverb(i)) {
