@@ -724,94 +724,82 @@ Bit32s Partial::getFiltEnvelope() {
 			reshigh = tStat->envbase;
 			reshigh = (reshigh + ((tStat->envdist * tStat->envpos) / tStat->envsize));
 
-			/*
-			reshigh = tStat->envbase;
-
-			int sq = 0;
-
-			sq = (tStat->envpos * 100) / tStat->envsize;
-			if(tStat->envdist < 0) {
-				sq = 100 - sq;
-			}
-
-			sq = synth->tables.volumeExp[sq];
-
-			//tc = (tc + ((tStat->envdist * tStat->envpos) / tStat->envsize));
-			//int tmptc = ((tStat->envdist * tStat->envpos) / tStat->envsize);
-			int tmptc = ((tStat->envdist * sq) >> 10);
-			if(tStat->envdist < 0) {
-				//synth->printDebug("envdist: %d\n", tStat->envdist);
-				tmptc = tStat->envdist - tmptc;
-			}
-
-			reshigh = reshigh + tmptc;
-			*/
 		}
 		tStat->prevlevel = reshigh;
 	}
 
-	cutoff = patchCache->filtEnv.cutoff * 2;
-
-	//if (patchCache->waveform==1) reshigh = (reshigh * 3) >> 2;
-
-	depth = patchCache->filtEnv.envdepth * 2;
-
-	//int sensedep = (depth * 127-patchCache->filtEnv.envsense) >> 7;
-	depth = FIXEDPOINT_UMULT(depth, synth->tables.tvfVelfollowMult[poly->vel][(int)patchCache->filtEnv.envsense], 8);
-
-	int bias = patchCache->tvfbias;
-	int dist;
-
-	if (bias != 0) {
-		//FIXME:KG: Now based on key pressed rather than pitch - seems more likely to be correct
-		//synth->printDebug("Cutoff before %d", cutoff);
-		if (patchCache->tvfdir == 0) {
-			if (poly->key < bias) {
-				dist = bias - poly->key;
-				cutoff = FIXEDPOINT_UMULT(cutoff, synth->tables.tvfBiasMult[patchCache->tvfblevel][dist], 8);
-			}
-		} else {
-			// > Bias
-			if (poly->key > bias) {
-				dist = poly->key - bias;
-				cutoff = FIXEDPOINT_UMULT(cutoff, synth->tables.tvfBiasMult[patchCache->tvfblevel][dist], 8);
-			}
+	cutoff = filtMultKeyfollow[patchCache->srcPartial.tvf.keyfollow] - filtMultKeyfollow[patchCache->srcPartial.wg.keyfollow];
+	cutoff *= ((Bit32s)poly->key - 60);
+	int dynamicBiasPoint = (Bit32s)patchCache->srcPartial.tvf.biaspoint;
+	if ((dynamicBiasPoint & 0x40) == 0) {
+		dynamicBiasPoint = dynamicBiasPoint + 33 - (Bit32s)poly->key;
+		if (dynamicBiasPoint > 0) {
+			dynamicBiasPoint = -dynamicBiasPoint;
+			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biaslevel];
+			cutoff += dynamicBiasPoint;
 		}
-		//synth->printDebug("Cutoff after %d", cutoff);
+	} else {
+		dynamicBiasPoint = dynamicBiasPoint - 31 - (Bit32s)poly->key;
+		if (dynamicBiasPoint <= 0) {			
+			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biaslevel];
+			cutoff += dynamicBiasPoint;
+		}
 	}
 
-	depth = (depth * keyLookup->envDepthMult[patchCache->filtEnv.envdkf]) >> 8;
-	reshigh = (reshigh * depth) >> 7;
+	cutoff += (((Bit32s)patchCache->srcPartial.tvf.cutoff << 4) - 800);
+	if (cutoff >= 0) {
 
-	Bit32s tmp;
+		// FIXME: CC: Coarse pitch calculation placeholder until end-to-end use of MT-32-like pitch calculation
+		// is application-wide.
+		int oc  = poly->key + 12;
+		int pitch = pitchROMTable[oc % 12];
+		pitch += ((oc / 12) << 12) - 24576;
 
-	cutoff *= filtVal;
-	cutoff /= realVal; //FIXME:KG: With filter keyfollow 0, this makes no sense. What's correct?
+		pitch = (pitch * romMultKeyfollow[patchCache->srcPartial.wg.keyfollow]) >> 13;
+		if (patchCache->srcPartial.wg.waveform & 1) {
+			pitch += 33037;
+		} else {
+			pitch += 37133;
+		}
+	
+		if (pitch < 0) {
+			pitch = 0;
+		}
+		if (pitch > 59392 ) {
+			pitch = 59392;
+		}
 
-	reshigh *= filtVal;
-	reshigh /= realVal; //FIXME:KG: As above for cutoff
-
-	cutoff = (cutoff * 112) / 100;
-
-	if (patchCache->waveform == 1) {
-		reshigh = (reshigh * 65) / 100;
-		//reshigh = (reshigh * 33) / 100;
+		int pitchAdjust = (pitch >> 4) + cutoff - 3584;
+		if (pitchAdjust > 0 ) {
+			cutoff -= pitchAdjust;
+		}
+	} else {
+		if (cutoff < -2048) {
+			cutoff = -2048;
+		}
+	}
+	cutoff = (cutoff + 2056) >> 4;
+	if (cutoff > 255) {
+		cutoff = 255;
 	}
 
-	if (cutoff > 200)
-		cutoff = 200;
-	else if (cutoff < 0)
-		cutoff = 0;
-	if (reshigh > 200)
-		reshigh = 200;
-	else if (reshigh < 0)
-		reshigh = 0;
-	tmp = noteLookup->nfiltTable[cutoff][reshigh];
-	//synth->printDebug("reshigh %d, tmp %d", reshigh, tmp);
-	//tmp *= keyfollow;
-	//tmp /= realfollow;
+	int veloFilEnv = (Bit32s)poly->vel * (Bit32s)patchCache->srcPartial.tvf.envsense;
+	int filEnv = (veloFilEnv << 2) >> 8;
+	veloFilEnv  = 109 - patchCache->srcPartial.tvf.envsense + filEnv;
+	filEnv = ((Bit32s)poly->key - 60) >> (4 - (Bit32s)patchCache->srcPartial.tvf.envdkf);
+	veloFilEnv += filEnv;
+	if (veloFilEnv < 0) {
+		veloFilEnv = 0;
+	}
+	veloFilEnv *= patchCache->srcPartial.tvf.envdepth;
+	filEnv = (veloFilEnv << 2) >> 8;
+	if (filEnv > 255 ) {
+		filEnv = 255;
+	}
 
-	//synth->printDebug("Cutoff %d, tmp %d, freq %d", cutoff, tmp, tmp * 256);
+	filEnv = (filEnv * reshigh) >> 8;
+
+	int tmp = noteLookup->rfiltTable[cutoff + filEnv];
 	return tmp;
 }
 

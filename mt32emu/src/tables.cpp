@@ -535,20 +535,31 @@ static void initFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 
 static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 	for (int cf = 0; cf <= 200; cf++) {
-		float cfmult = (float)cf / 2.0f;
+		float cfmult = (((float)cf  / 2.0f) / 50.0f) * 128.0f;
 
 		for (int tf = 0; tf <= 200; tf++) {
-			float tfadd = (float)tf / 2.0f;
+			float tfadd = ( ((float)tf / 2.0f) / 66.6f) * 128.0f;
 
 			//float freqsum = expf((cfmult + tfadd) / 30.0f) / 4.0f;
 			//float freqsum = 0.15f * expf(0.45f * ((cfmult + tfadd) / 10.0f));
 
-			float freqsum = powf(2.0f, ((cfmult + tfadd) - 40.0f) / 16.0f);
+			//float freqsum = powf(2.0f, ((cfmult + tfadd) - 40.0f) / 16.0f);
+
+		
+
+			float freqsum = powf(256.0f, (((cfmult + tfadd) / 128.0f) - 1.0f));
 
 			noteLookup->nfiltTable[cf][tf] = (int)((freq * freqsum) / (rate / 2) * FILTERGRAN);
 			if (noteLookup->nfiltTable[cf][tf] >= ((FILTERGRAN * 15) / 16))
 				noteLookup->nfiltTable[cf][tf] = ((FILTERGRAN * 15) / 16);
 		}
+	}
+
+	for(int cf=0;cf < 512; cf++) {
+		float freqsum = powf(256.0f, (((float)cf / 128.0f) - 1.0f));
+		noteLookup->rfiltTable[cf] = (int)((freq * freqsum) / (rate / 2) * FILTERGRAN);
+		if (noteLookup->rfiltTable[cf] >= ((FILTERGRAN * 15) / 16))
+			noteLookup->rfiltTable[cf] = ((FILTERGRAN * 15) / 16);
 	}
 }
 

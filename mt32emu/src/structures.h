@@ -243,6 +243,8 @@ struct PatchCache {
 	float pitchShift;
 	bool reverb;
 	const StereoVolume *pansetptr;
+
+	TimbreParam::partialParam srcPartial;
 };
 
 class Partial; // Forward reference for class defined in partial.h

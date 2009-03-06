@@ -51,6 +51,23 @@ const int LOWEST_NOTE = 12;
 const int HIGHEST_NOTE = 127;
 const int NUM_NOTES = HIGHEST_NOTE - LOWEST_NOTE + 1; // Number of slots for note LUT
 
+static const int romMultKeyfollow[17] = {
+	-8192, -4096, -2048, 0, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8192, 10240, 12288, 16384, 8198, 8226
+};
+
+static const int filtMultKeyfollow[17] = {
+	-21, -10, -5, 0, 2, 5, 8, 10, 13, 16, 18, 21, 26, 32, 42, 21, 21
+};
+
+static const int BiasLevel_MulTable[15] = {
+	85, 42, 21, 16, 10, 5, 2, 0, -2, -5, -10, -16, -21, -74, -85
+};
+
+static const int pitchROMTable[12] = {
+	0, 341, 683, 1024, 1365, 1707, 2048, 2389, 2731, 3072, 3413, 3755
+};
+
+
 class Synth;
 
 struct NoteLookup {
@@ -61,6 +78,7 @@ struct NoteLookup {
 	int filtTable[2][201];
 	//int nfiltTable[101][101];
 	int nfiltTable[201][201];
+	int rfiltTable[512];
 	Bit16s *waveforms[3];
 	Bit32u waveformSize[3];
 };
