@@ -325,6 +325,7 @@ private:
 	bool initTimbres(Bit16u mapAddress, Bit16u offset, int startTimbre);
 	bool initRhythmTimbre(int drumNum, const Bit8u *mem, unsigned int memLen);
 	bool refreshSystem();
+	void reset();
 
 protected:
 	int report(ReportType type, const void *reportData);

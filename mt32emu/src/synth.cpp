@@ -705,6 +705,11 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 		printDebug("playSysexWithoutHeader: Message is not intended for this device ID (provided: %02x, expected: 0x10 or channel)", (int)device);
 		return;
 	}
+	// This is checked early in the real devices (before any sysex length checks or further processing)
+    if ((command = SYSEX_CMD_DT1) && (sysex[0]==0x7F)) {
+    	reset();
+        return;
+    }
 	if (len < 4) {
 		printDebug("playSysexWithoutHeader: Message is too short (%d bytes)!", len);
 		return;
@@ -1009,14 +1014,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		report(ReportType_lcdMessage, buf);
 		break;
 	case MR_Reset:
-		printDebug("RESET");
-		report(ReportType_devReset, NULL);
-		partialManager->deactivateAll();
-		mt32ram = mt32default;
-		for (int i = 0; i < 9; i++) {
-			parts[i]->refresh();
-		}
-		isEnabled = false;
+		reset();
 		break;
 	}
 }
@@ -1062,6 +1060,17 @@ bool Synth::refreshSystem() {
 	}
 	masterVolume = (Bit16u)(tables.volumeMult[mt32ram.system.masterVol] * 256);
 	return true;
+}
+
+void Synth::reset() {
+	printDebug("RESET");
+	report(ReportType_devReset, NULL);
+	partialManager->deactivateAll();
+	mt32ram = mt32default;
+	for (int i = 0; i < 9; i++) {
+		parts[i]->refresh();
+	}
+	isEnabled = false;
 }
 
 bool Synth::dumpTimbre(File *file, const TimbreParam *timbre, Bit32u address) {
