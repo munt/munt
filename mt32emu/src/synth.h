@@ -128,19 +128,19 @@ struct ControlROMMap {
 	Bit16u idPos;
 	Bit16u idLen;
 	const char *idBytes;
-	Bit16u pcmTable;
+	Bit16u pcmTable; // 4 * pcmCount bytes
 	Bit16u pcmCount;
-	Bit16u timbreAMap;
+	Bit16u timbreAMap; // 128 bytes
 	Bit16u timbreAOffset;
-	Bit16u timbreBMap;
+	Bit16u timbreBMap; // 128 bytes
 	Bit16u timbreBOffset;
-	Bit16u timbreRMap;
+	Bit16u timbreRMap; // 2 * timbreRCount bytes
 	Bit16u timbreRCount;
-	Bit16u rhythmSettings;
+	Bit16u rhythmSettings; // 4 * rhythmSettingsCount bytes
 	Bit16u rhythmSettingsCount;
-	Bit16u reserveSettings;
-	Bit16u panSettings;
-	Bit16u programSettings;
+	Bit16u reserveSettings; // 9 bytes
+	Bit16u panSettings; // 8 bytes
+	Bit16u programSettings; // 8 bytes
 	Bit16u rhythmMaxTable; // 4 bytes
 	Bit16u patchMaxTable; // 16 bytes
 	Bit16u systemMaxTable; // 23 bytes
