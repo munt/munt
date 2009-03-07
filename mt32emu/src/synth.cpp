@@ -625,16 +625,24 @@ void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char 
 
 		case 0x79: // Reset all controllers
 			//printDebug("Reset all controllers");
-			//FIXME: Check for accuracy against real thing
-			parts[part]->setVolume(100);
-			parts[part]->setExpression(127);
-			parts[part]->setPan(64);
-			parts[part]->setBend(0x2000);
+			// CONFIRMED:Mok: A real LAPC-I responds to this controller as follows:
 			parts[part]->setHoldPedal(false);
+			parts[part]->setModulation(0);
+			parts[part]->setExpression(127);
+			parts[part]->setBend(0x2000);
 			break;
 
 		case 0x7B: // All notes off
 			//printDebug("All notes off");
+			parts[part]->allNotesOff();
+			break;
+
+		case 0x7C:
+		case 0x7D:
+		case 0x7E:
+		case 0x7F:
+			// CONFIRMED:Mok: A real LAPC-I responds to these controllers as follows:
+			parts[part]->setHoldPedal(false);
 			parts[part]->allNotesOff();
 			break;
 
