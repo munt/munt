@@ -60,6 +60,13 @@ class BlitSaw: public Generator
   */
   void setHarmonics( unsigned int nHarmonics = 0 );
 
+  //CC: Used to get the phase so we can have our sine wave modulator
+  //for sawtooth generation work in tandem with the square wave 
+  //generator
+  float getPhase() {
+	  return (float)phase_;
+  }
+
  protected:
 
   void updateHarmonics( void );

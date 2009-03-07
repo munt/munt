@@ -181,9 +181,19 @@ void Partial::startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *
 	} else if (pulsewidth < 0) {
 		pulsewidth = 0;
 	}
-	posSaw->reset(noteLookup->freq, synth->tables.pwFactorf[pulsewidth]);
-	negSaw->reset(noteLookup->freq, 0.0);
-	saw->reset(noteLookup->freq, 0.8);
+
+	if ((patchCache->waveform & 1) == 0) {
+		posSaw->reset(noteLookup->freq, synth->tables.pwFactorf[pulsewidth]);
+		negSaw->reset(noteLookup->freq, 0.0);
+		saw->reset(noteLookup->freq, 0.8);
+	} else {
+		// CC: Sawtooth waves play at half the frequency as the cosine multiplication
+		// effectively doubles the rate of the square wave.
+		posSaw->reset(noteLookup->freq / 2.0f, synth->tables.pwFactorf[pulsewidth]);
+		negSaw->reset(noteLookup->freq / 2.0f, 0.0);
+		saw->reset(noteLookup->freq / 2.0f, 0.8);
+	}
+
 
 	for (int e = 0; e < 3; e++) {
 		envs[e].envpos = 0;
@@ -369,59 +379,11 @@ Bit16s *Partial::generateSamples(long length) {
 				Bit32s filterInput;
 				Bit32s filtval = getFiltEnvelope();
 
-				//synth->printDebug("Filtval: %d", filtval);
+				float phase = posSaw->getPhase();
 
-				if ((patchCache->waveform & 1) == 0) {
-					// Square waveform, made by combining two bandlimited sawtooth waveforms.
+				//CC: There used to be a lot of code here.  :-)
+				filterInput = (posSaw->tick() - negSaw->tick()) * WGAMP ;
 
-					//Works with PWM
-					filterInput = (posSaw->tick() - negSaw->tick()) * WGAMP ;
-
-					//This works so far without PWM
-					//filterInput = noteLookup->square[partialChan]->tick() * WGAMP;
-
-					// Non-bandlimited squarewave
-					/*
-					ofs = FIXEDPOINT_UMULT(noteLookup->div2, synth->tables.pwFactor[patchCache->pulsewidth], 8);
-					if (toff < ofs)
-						sample = 1 * WGAMP;
-					else
-						sample = -1 * WGAMP;
-					*/
-				} else {
-					// Sawtooth.  Made by combining the full cosine and half cosine according
-					// to how it looks on the MT-32.  What it really does it takes the
-					// square wave and multiplies it by a full cosine
-					int waveoff = (toff << 2) + minorplace;
-					if (toff < noteLookup->sawTable[pulsewidth])
-						filterInput = noteLookup->waveforms[1][waveoff % noteLookup->waveformSize[1]];
-					else
-						filterInput = noteLookup->waveforms[2][waveoff % noteLookup->waveformSize[2]];
-
-					//filterInput = (Bit32s)(noteLookup->posSaw[partialChan]->tick() * WGAMP);
-
-					//filterInput = (noteLookup->saw[partialChan]->tick() - noteLookup->negSaw[partialChan]->tick()) * noteLookup->waveforms[2][toff];
-					//filterInput = (filterInput * noteLookup->waveforms[2][toff]) / 2;
-
-					// This is the correct way
-					// Seems slow to me (though bandlimited) -- doesn't seem to
-					// sound any better though
-					/*
-					//int pw = (patchCache->pulsewidth * pulsemod[filtval]) >> 8;
-
-					Bit32u ofs = toff % (noteLookup->div2 >> 1);
-
-					Bit32u ofs3 = toff + FIXEDPOINT_UMULT(noteLookup->div2, synth->tables.pwFactor[patchCache->pulsewidth], 9);
-					ofs3 = ofs3 % (noteLookup->div2 >> 1);
-
-					Bit16s pa = noteLookup->waveforms[0][ofs];
-					Bit16s pb = noteLookup->waveforms[0][ofs3];
-					sample = ((pa - pb) * noteLookup->waveforms[2][toff]) / 2;
-					*/
-				}
-
-				filtval = (filtval * bendShift) >> 12;
-				//Very exact filter
 				if (filtval > ((FILTERGRAN * 15) / 16))
 					filtval = ((FILTERGRAN * 15) / 16);
 				sample = (Bit32s)(floorf((synth->iirFilter)((float)filterInput, &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])) / synth->tables.resonanceFactor[patchCache->filtEnv.resonance]);
@@ -433,6 +395,20 @@ Bit16s *Partial::generateSamples(long length) {
 					synth->printDebug("Overdriven amplitude for %d: %d:=%d > 32767", patchCache->waveform, filterInput, sample);
 					sample = 32767;
 				}
+
+				if ((patchCache->waveform & 1) != 0) {
+					//CC: Sawtooth samples are finally generated here by multipling an in-sync cosine
+					//with the generated and now filtered square wave.
+
+					//CC: Computers are fast these days.  Not caring to use a LUT or fixed point anymore.
+					//If I port this to the iPhone I may reconsider.
+					sample = (int)(cos(phase * 2.0f) * (float)sample);
+				}
+
+
+
+
+
 			}
 		}
 

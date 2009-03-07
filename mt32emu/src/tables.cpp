@@ -574,8 +574,11 @@ File *Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float r
 
 	initSaw(noteLookup, noteLookup->div2);
 
+	file = NULL;
+
 	//synth->printDebug("Note %f; freq=%f, div=%f", note, freq, rate / freq);
-	file = initWave(synth, noteLookup, (const float)WGAMP, div2, file);
+	//CC: Precomputed wave init not needed anymore
+	//file = initWave(synth, noteLookup, (const float)WGAMP, div2, file);
 
 	// Create the pitch tables
 	if (noteLookup->wavTable == NULL)
@@ -652,7 +655,7 @@ bool Tables::initNotes(Synth *synth, PCMWaveEntry *pcmWaves, float rate, float m
 	bool abort = false;
 	synth->report(ReportType_progressInit, &progress);
 	for (int f = LOWEST_NOTE; f <= HIGHEST_NOTE; f++) {
-		synth->printDebug("Initialising note %s%d", NoteNames[f % 12], (f / 12) - 2);
+		//synth->printDebug("Initialising note %s%d", NoteNames[f % 12], (f / 12) - 2);
 		NoteLookup *noteLookup = &noteLookups[f - LOWEST_NOTE];
 		file = initNote(synth, noteLookup, (float)f, rate, masterTune, pcmWaves, file);
 		progress = (f - LOWEST_NOTE + 1) / (float)NUM_NOTES;
@@ -660,33 +663,6 @@ bool Tables::initNotes(Synth *synth, PCMWaveEntry *pcmWaves, float rate, float m
 		if (abort)
 			break;
 	}
-
-#if MT32EMU_WAVECACHEMODE == 0 || MT32EMU_WAVECACHEMODE == 2
-	if (file == NULL) {
-		file = synth->openFile(filename, File::OpenMode_write);
-		if (file != NULL) {
-			if (file->write(header, 20) == 20 && file->writeBit16u(1)) {
-				for (int f = 0; f < NUM_NOTES; f++) {
-					for (int i = 0; i < 3 && file != NULL; i++) {
-						int len = noteLookups[f].waveformSize[i];
-						for (int j = 0; j < len; j++) {
-							if (!file->writeBit16u(noteLookups[f].waveforms[i][j])) {
-								synth->printDebug("Error writing waveform cache file");
-								file->close();
-								file = NULL;
-								break;
-							}
-						}
-					}
-				}
-			} else {
-				synth->printDebug("Error writing 16-byte header to %s - won't continue saving", filename);
-			}
-		} else {
-			synth->printDebug("Unable to open %s for writing - won't be created", filename);
-		}
-	}
-#endif
 
 	if (file != NULL)
 		synth->closeFile(file);
