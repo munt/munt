@@ -146,9 +146,9 @@ struct MemParams {
 		Bit8u reverbSwitch;  // REVERB SWITCH 0-1 (OFF,ON)
 	} MT32EMU_ALIGN_PACKED rhythmSettings[85];
 
-	TimbreParam MT32EMU_ALIGN_PACKED timbreSettings[8];
+	TimbreParam timbreSettings[8];
 
-	PatchParam MT32EMU_ALIGN_PACKED patches[128];
+	PatchParam patches[128];
 
 	// NOTE: There are only 30 timbres in the "rhythm" bank for MT-32; the additional 34 are for LAPC-I and above
 	struct PaddedTimbre {
