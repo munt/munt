@@ -194,7 +194,6 @@ void Partial::startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *
 		saw->reset(noteLookup->freq / 2.0f, 0.8);
 	}
 
-
 	for (int e = 0; e < 3; e++) {
 		envs[e].envpos = 0;
 		envs[e].envstat = -1;
@@ -315,7 +314,7 @@ Bit16s *Partial::generateSamples(long length) {
 		tdelta = FIXEDPOINT_UMULT(tdelta, lfoShift, 12);
 		tdelta = FIXEDPOINT_UMULT(tdelta, bendShift, 12);
 
-		if(tdelta != pastDelta) {
+		if (tdelta != pastDelta) {
 			float startFreq = posSaw->getStartFreq();
 			startFreq = startFreq * ((float)tdelta / (float)delta);
 
@@ -404,11 +403,6 @@ Bit16s *Partial::generateSamples(long length) {
 					//If I port this to the iPhone I may reconsider.
 					sample = (int)(cos(phase * 2.0f) * (float)sample);
 				}
-
-
-
-
-
 			}
 		}
 
@@ -445,9 +439,9 @@ void Partial::setBend(float factor) {
 	float mult = powf(2.0f, bendSemitones / 12.0f);
 
 	/*
-	noteLookup->posSaw[partialChan]->setFrequency( 	noteLookup->posSaw[partialChan]->getStartFreq() * mult);
-	noteLookup->negSaw[partialChan]->setFrequency( 	noteLookup->posSaw[partialChan]->getStartFreq() * mult);
-	noteLookup->saw[partialChan]->setFrequency( 	noteLookup->posSaw[partialChan]->getStartFreq() * mult);
+	noteLookup->posSaw[partialChan]->setFrequency(noteLookup->posSaw[partialChan]->getStartFreq() * mult);
+	noteLookup->negSaw[partialChan]->setFrequency(noteLookup->posSaw[partialChan]->getStartFreq() * mult);
+	noteLookup->saw[partialChan]->setFrequency(noteLookup->posSaw[partialChan]->getStartFreq() * mult);
 	*/
 
 	synth->printDebug("setBend(): factor=%f, benderRange=%f, semitones=%f, mult=%f\n", factor, patchCache->benderRange, bendSemitones, mult);
@@ -699,7 +693,6 @@ Bit32s Partial::getFiltEnvelope() {
 
 			reshigh = tStat->envbase;
 			reshigh = (reshigh + ((tStat->envdist * tStat->envpos) / tStat->envsize));
-
 		}
 		tStat->prevlevel = reshigh;
 	}
@@ -716,7 +709,7 @@ Bit32s Partial::getFiltEnvelope() {
 		}
 	} else {
 		dynamicBiasPoint = dynamicBiasPoint - 31 - (Bit32s)poly->key;
-		if (dynamicBiasPoint <= 0) {			
+		if (dynamicBiasPoint <= 0) {
 			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biaslevel];
 			cutoff += dynamicBiasPoint;
 		}
@@ -737,16 +730,16 @@ Bit32s Partial::getFiltEnvelope() {
 		} else {
 			pitch += 37133;
 		}
-	
+
 		if (pitch < 0) {
 			pitch = 0;
 		}
-		if (pitch > 59392 ) {
+		if (pitch > 59392) {
 			pitch = 59392;
 		}
 
 		int pitchAdjust = (pitch >> 4) + cutoff - 3584;
-		if (pitchAdjust > 0 ) {
+		if (pitchAdjust > 0) {
 			cutoff -= pitchAdjust;
 		}
 	} else {
@@ -769,7 +762,7 @@ Bit32s Partial::getFiltEnvelope() {
 	}
 	veloFilEnv *= patchCache->srcPartial.tvf.envdepth;
 	filEnv = (veloFilEnv << 2) >> 8;
-	if (filEnv > 255 ) {
+	if (filEnv > 255) {
 		filEnv = 255;
 	}
 
@@ -879,7 +872,7 @@ Bit32u Partial::getAmpEnvelope(Bit32u *biasResult) {
 			//tc = (tc + ((tStat->envdist * tStat->envpos) / tStat->envsize));
 			//int tmptc = ((tStat->envdist * tStat->envpos) / tStat->envsize);
 			int tmptc = ((tStat->envdist * sq) >> 10);
-			if(tStat->envdist < 0) {
+			if (tStat->envdist < 0) {
 				//synth->printDebug("envdist: %d\n", tStat->envdist);
 				tmptc = tStat->envdist - tmptc;
 			}

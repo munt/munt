@@ -277,7 +277,7 @@ bool Synth::loadPCMROM(const char *filename) {
 		}
 
 		/*
-		//Bit16s e = (  ((s & 0x7f) << 4) | ((c & 0x40) << 6) | ((s & 0x80) << 6) | ((c & 0x3f))) << 2;
+		//Bit16s e = (((s & 0x7f) << 4) | ((c & 0x40) << 6) | ((s & 0x80) << 6) | ((c & 0x3f))) << 2;
 		if (e<0)
 			e = -32767 - e;
 		int ut = abs(e);
@@ -878,8 +878,8 @@ MemoryRegion *Synth::findMemoryRegion(Bit32u addr) {
 			displayMemoryRegion,
 			resetMemoryRegion,
 			NULL};
-	for(int pos = 0; regions[pos] != NULL; pos++) {
-		if(regions[pos]->contains(addr)) {
+	for (int pos = 0; regions[pos] != NULL; pos++) {
+		if (regions[pos]->contains(addr)) {
 			return regions[pos];
 		}
 	}
@@ -1270,8 +1270,8 @@ void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src,
 		for (int i = 0; i < len; i++) {
 			Bit8u desiredValue = src[i];
 			Bit8u maxValue = getMaxValue(memOff);
-			if(maxValue != 0) {
-				if(desiredValue > maxValue) {
+			if (maxValue != 0) {
+				if (desiredValue > maxValue) {
 					synth->printDebug("write[%d]: Wanted 0x%02x at %d, but max 0x%02x", type, desiredValue, memOff, maxValue);
 					desiredValue = maxValue;
 				}

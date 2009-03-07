@@ -28,11 +28,13 @@ bool ExternalInterface::start() {
 	this->ipxServerIp.host = 0x0100007f;
 	this->ipxServerIp.port = 0xc307;
 
-	if(!SDLNet_ResolveHost(&ipxServerIp, NULL, 0xc307)) {
+	if (!SDLNet_ResolveHost(&ipxServerIp, NULL, 0xc307)) {
 		ipxServerSocket = SDLNet_UDP_Open(1987);
-		if(ipxServerSocket == NULL) return false;
+		if (ipxServerSocket == NULL)
+			return false;
 		regPacket = SDLNet_AllocPacket(4096);
-		if(regPacket == NULL) return false;
+		if (regPacket == NULL)
+			return false;
 
 		this->openedPort = true;
 		return true;
@@ -47,18 +49,18 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 	bool sentBasicPacket = false;
 	Bit16u length = 0;
 	Bit8u buffer[4096];
-	while(getStatusRequest(&reqType, (char *)buffer)) {
-		switch(reqType) {
+	while (getStatusRequest(&reqType, (char *)buffer)) {
+		switch (reqType) {
 			case 1:
-				if(!sentBasicPacket) {
+				if (!sentBasicPacket) {
 					// Only send one basic packet per loop.
 					sentBasicPacket = true;
 					Bit16u *bufptr;
 					bufptr = (Bit16u *)(&buffer[0]);
 					*bufptr++ = (Bit16u)reqType;
 					*bufptr++ = (Bit16u)MT32EMU_MAX_PARTIALS;
-					for(i=0;i<MT32EMU_MAX_PARTIALS;i++) {
-						if(!synth->getPartial(i)->play) {
+					for (i=0;i<MT32EMU_MAX_PARTIALS;i++) {
+						if (!synth->getPartial(i)->play) {
 							*bufptr++ = 0;
 							*bufptr++ = 0;
 							*bufptr++ = 0;
@@ -67,10 +69,10 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 							*bufptr++ = 0;
 							*bufptr++ = 0;
 						} else {
-							if(synth->getPartial(i)->envs[EnvelopeType_amp].decaying) {
+							if (synth->getPartial(i)->envs[EnvelopeType_amp].decaying) {
 								*bufptr++ = 3;
 							} else {
-								if(synth->getPartial(i)->envs[EnvelopeType_amp].envstat == 4) {
+								if (synth->getPartial(i)->envs[EnvelopeType_amp].envstat == 4) {
 									*bufptr++ = 2;
 								} else {
 									*bufptr++ = 1;
@@ -84,7 +86,7 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 							*(Bit32u *)bufptr = synth->getPartial(i)->age;
 							bufptr++;
 							bufptr++;
-							if(synth->getPartial(i)->getDpoly() != NULL) {
+							if (synth->getPartial(i)->getDpoly() != NULL) {
 								*bufptr++ = (Bit16u)synth->getPartial(i)->getDpoly()->vel;
 							} else {
 								*bufptr++ = 0;
@@ -93,7 +95,7 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 					}
 					// 8 channel names with description
 					*bufptr++ = 8;
-					for(i=0;i<8;i++) {
+					for (i=0;i<8;i++) {
 						memcpy(bufptr, synth->getPart(i)->getCurrentInstr(), 10);
 						bufptr++;
 						bufptr++;
@@ -101,13 +103,13 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 						bufptr++;
 						bufptr++;
 					}
-					for(i=0;i<9;i++) {
+					for (i=0;i<9;i++) {
 						*bufptr++ = (Bit16u)synth->getPart(i)->getVolume();
 					}
 					*(int *)bufptr = sndBufLength;
 
-					sendResponse(reqType, (char *)&buffer[0], 492 );
-					//sendResponse(reqType, (char *)&buffer[0], 300 );
+					sendResponse(reqType, (char *)&buffer[0], 492);
+					//sendResponse(reqType, (char *)&buffer[0], 300);
 				}
 				break;
 			case 2:
@@ -144,7 +146,7 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 
 				synth->readMemory(MT32EMU_MEMADDR(addr), len, &buffer[8]);
 
-				sendResponse(5, (char *)&buffer[0], len + 8 );
+				sendResponse(5, (char *)&buffer[0], len + 8);
 
 				break;
 		}
@@ -164,8 +166,8 @@ bool ExternalInterface::getStatusRequest(int *requestType, char * buffer) {
 		this->ipxClientIp = inPacket.address;
 		this->knownClient = true;
 		*requestType = (int)*(Bit16u *)(&inBuffer[0]);
-		if(buffer != NULL) {
-			if(inPacket.len > 1) {
+		if (buffer != NULL) {
+			if (inPacket.len > 1) {
 				memcpy(buffer, &inBuffer[2], inPacket.len - 2);
 			}
 		}
@@ -184,7 +186,7 @@ bool ExternalInterface::sendResponse(int /*requestType*/, char *requestBuf, int 
 	regPacket->address = this->ipxClientIp;
 	SDLNet_UDP_Send(ipxServerSocket,-1,regPacket);
 
-	if((this->knownClient) && (this->textToDisplay)) {
+	if ((this->knownClient) && (this->textToDisplay)) {
 
 		memcpy(regPacket->data, txtBuffer, requestLen);
 		regPacket->len = 22;
@@ -199,7 +201,7 @@ bool ExternalInterface::sendResponse(int /*requestType*/, char *requestBuf, int 
 }
 
 bool ExternalInterface::sendDisplayText(char *requestBuf, int requestLen) {
-	if(!this->knownClient) {
+	if (!this->knownClient) {
         memcpy(&txtBuffer[0], requestBuf, requestLen);
 		this->textToDisplay = true;
 	} else {
@@ -209,8 +211,8 @@ bool ExternalInterface::sendDisplayText(char *requestBuf, int requestLen) {
 }
 
 bool ExternalInterface::stop() {
-	if(this->openedPort) {
-		if(ipxServerSocket != NULL) {
+	if (this->openedPort) {
+		if (ipxServerSocket != NULL) {
 		SDLNet_UDP_Close(ipxServerSocket);
 		}
 		this->openedPort = false;

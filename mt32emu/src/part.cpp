@@ -29,7 +29,6 @@ static const Bit8u PartialMixStruct[13] = {
 	0, 1, 0, 1, 1, 0,
 	1, 3, 3, 2, 2, 2, 2 };
 
-
 static const float floatKeyfollow[17] = {
 	-1.0f, -1.0f/2.0f, -1.0f/4.0f, 0.0f,
 	1.0f/8.0f, 1.0f/4.0f, 3.0f/8.0f, 1.0f/2.0f, 5.0f/8.0f, 3.0f/4.0f, 7.0f/8.0f, 1.0f,
@@ -359,7 +358,7 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 		// Calculate and cache filter stuff
 		cache[t].filtEnv = timbre->partial[t].tvf;
 		cache[t].filtkeyfollow  = fixKeyfollow(cache[t].filtEnv.keyfollow);
-		cache[t].filtEnv.envdepth = (char)((float)cache[t].filtEnv.envdepth );
+		cache[t].filtEnv.envdepth = (char)((float)cache[t].filtEnv.envdepth);
 		cache[t].tvfbias = fixBiaslevel(cache[t].filtEnv.biaspoint, &cache[t].tvfdir);
 		cache[t].tvfblevel = cache[t].filtEnv.biaslevel;
 		cache[t].filtsustain  = cache[t].filtEnv.envlevel[3];
