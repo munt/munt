@@ -223,24 +223,6 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		}
 	}
 
-	for (dep = 0; dep <= 100; dep++) {
-		for (velt = 0; velt < 128; velt++) {
-			float fdep = (float)dep * 0.000347013f; // Another MT-32 constant
-			float fv = ((float)velt - 64.0f)/7.26f;
-			float flogdep = powf(10, fdep * fv);
-			float fbase;
-
-			if (velt > 64)
-				synth->tables.tvfVelfollowMult[velt][dep] = (int)(flogdep * 256.0);
-			else {
-				//lff = 1 - (pow(((128.0 - (float)lf) / 64.0),.25) * ((float)velt / 96));
-				fbase = 1 - (powf(((float)dep / 100.0f),.25f) * ((float)(64-velt) / 96.0f));
-				synth->tables.tvfVelfollowMult[velt][dep] = (int)(fbase * 256.0);
-			}
-			//synth->printDebug("Filvel dep %d velt %d = %x", dep, velt, filveltable[velt][dep]);
-		}
-	}
-
 	for (lf = 0; lf < 128; lf++) {
 		float veloFract = lf / 127.0f;
 		for (int velsens = 0; velsens <= 100; velsens++) {
@@ -270,7 +252,6 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 			pt = 0;
 
 		// Approximation from sample comparison
-		pwFactor[lf] = (int)(pt * 179.0f) + 128;
 		pwFactorf[lf] = ((pt * 179.0f) + 128.0f) / 64.0f;
 		pwFactorf[lf] = 1.0f / pwFactorf[lf];
 	}
@@ -381,52 +362,6 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 			//synth->printDebug("Ampbias lf %d distval %d = %f (%x) %f", lf, distval, dval, tvaBiasMult[lf][distval],amplog);
 		}
 	}
-
-	for (lf = 0; lf <= 14; lf++) {
-		for (int distval = 0; distval < 128; distval++) {
-			float filval = fabsf((float)((lf - 7) * 12) / 7.0f);
-			float amplog, dval;
-			if (lf == 7) {
-				amplog = 0;
-				dval = 1;
-				tvfBiasMult[lf][distval] = 256;
-			} else {
-				//amplog = pow(1.431817011, filval) / FLOAT_PI;
-				amplog = powf(1.531817011f, filval) / FLOAT_PI;
-				dval = (128.0f - (float)distval) / 128.0f;
-				amplog = expf(amplog);
-				dval = powf(amplog,dval)/amplog;
-				if (lf < 8) {
-					tvfBiasMult[lf][distval] = (int)(dval * 256.0f);
-				} else {
-					dval = powf(dval, 0.3333333f);
-					if (dval < 0.01f)
-						dval = 0.01f;
-					dval = 1 / dval;
-					tvfBiasMult[lf][distval] = (int)(dval * 256.0f);
-				}
-			}
-			//synth->printDebug("Fbias lf %d distval %d = %f (%x) %f", lf, distval, dval, tvfBiasMult[lf][distval],amplog);
-		}
-	}
-}
-
-// Per-note table initialisation follows
-
-static void initSaw(NoteLookup *noteLookup, Bit32s div2) {
-	int tmpdiv = div2 << 16;
-	for (int rsaw = 0; rsaw <= 100; rsaw++) {
-		float fsaw;
-		if (rsaw < 50)
-			fsaw = 50.0f;
-		else
-			fsaw = (float)rsaw;
-
-		//(66 - (((A8 - 50) / 50) ^ 0.63) * 50) / 132
-		float sawfact = (66.0f - (powf((fsaw - 50.0f) / 50.0f, 0.63f) * 50.0f)) / 132.0f;
-		noteLookup->sawTable[rsaw] = (int)(sawfact * (float)tmpdiv) >> 16;
-		//synth->printDebug("F %d divtable %d saw %d sawtable %d", f, div, rsaw, sawtable[f][rsaw]);
-	}
 }
 
 static void initDep(KeyLookup *keyLookup, float f) {
@@ -462,100 +397,8 @@ Bit16s Tables::clampWF(Synth *synth, const char *n, float ampVal, double input) 
 	return (Bit16s)x;
 }
 
-File *Tables::initWave(Synth *synth, NoteLookup *noteLookup, float ampVal, float div2, File *file) {
-	int iDiv2 = (int)div2;
-	noteLookup->waveformSize[0] = iDiv2 << 1;
-	noteLookup->waveformSize[1] = iDiv2 << 1;
-	noteLookup->waveformSize[2] = iDiv2 << 2;
-	for (int i = 0; i < 3; i++) {
-		if (noteLookup->waveforms[i] == NULL) {
-			noteLookup->waveforms[i] = new Bit16s[noteLookup->waveformSize[i]];
-		}
-	}
-	if (file != NULL) {
-		for (int i = 0; i < 3 && file != NULL; i++) {
-			size_t len = noteLookup->waveformSize[i];
-			for (unsigned int j = 0; j < len; j++) {
-				if (!file->readBit16u((Bit16u *)&noteLookup->waveforms[i][j])) {
-					synth->printDebug("Error reading wave file cache!");
-					file->close();
-					file = NULL;
-					break;
-				}
-			}
-		}
-	}
-	if (file == NULL) {
-		double sd = DOUBLE_PI / div2;
-
-		for (int fa = 0; fa < (iDiv2 << 1); fa++) {
-			// sa ranges from 0 to 2PI
-			double sa = fa * sd;
-
-			// Calculate a sample for the bandlimited sawtooth wave
-			double saw = 0.0;
-			int sincs = iDiv2 >> 3;
-			double sinus = 1.0;
-			for (int sincNum = 1; sincNum <= sincs; sincNum++) {
-				saw += sin(sinus * sa) / sinus;
-				sinus++;
-			}
-
-			// This works pretty well
-			// Multiplied by 0.84 so that the spikes caused by bandlimiting don't overdrive the amplitude
-			noteLookup->waveforms[0][fa] = clampWF(synth, "saw", ampVal, -saw / (0.5 * DOUBLE_PI) * 0.84);
-			noteLookup->waveforms[1][fa] = clampWF(synth, "cos", ampVal, -cos(sa / 2.0));
-			noteLookup->waveforms[2][fa * 2] = clampWF(synth, "cosoff_0", ampVal, -cos(sa - DOUBLE_PI));
-			noteLookup->waveforms[2][fa * 2 + 1] = clampWF(synth, "cosoff_1", ampVal, -cos((sa + (sd / 2)) - DOUBLE_PI));
-		}
-	}
-	return file;
-}
-
-static void initFiltTable(NoteLookup *noteLookup, float freq, float rate) {
-	for (int tr = 0; tr <= 200; tr++) {
-		float ftr = (float)tr;
-
-		// Verified exact on MT-32
-		if (tr > 100)
-			ftr = 100.0f + (powf((ftr - 100.0f) / 100.0f, 3.0f) * 100.0f);
-
-		// I think this is the one
-		float brsq = powf(10.0f, (tr / 50.0f) - 1.0f);
-		noteLookup->filtTable[0][tr] = (int)((freq * brsq) / (rate / 2) * FILTERGRAN);
-		if (noteLookup->filtTable[0][tr]>=((FILTERGRAN*15)/16))
-			noteLookup->filtTable[0][tr] = ((FILTERGRAN*15)/16);
-
-		float brsa = powf(10.0f, ((tr / 55.0f) - 1.0f)) / 2.0f;
-		noteLookup->filtTable[1][tr] = (int)((freq * brsa) / (rate / 2) * FILTERGRAN);
-		if (noteLookup->filtTable[1][tr]>=((FILTERGRAN*15)/16))
-			noteLookup->filtTable[1][tr] = ((FILTERGRAN*15)/16);
-	}
-}
-
-static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
-	for (int cf = 0; cf <= 200; cf++) {
-		float cfmult = (((float)cf  / 2.0f) / 50.0f) * 128.0f;
-
-		for (int tf = 0; tf <= 200; tf++) {
-			float tfadd = ( ((float)tf / 2.0f) / 66.6f) * 128.0f;
-
-			//float freqsum = expf((cfmult + tfadd) / 30.0f) / 4.0f;
-			//float freqsum = 0.15f * expf(0.45f * ((cfmult + tfadd) / 10.0f));
-
-			//float freqsum = powf(2.0f, ((cfmult + tfadd) - 40.0f) / 16.0f);
-
-		
-
-			float freqsum = powf(256.0f, (((cfmult + tfadd) / 128.0f) - 1.0f));
-
-			noteLookup->nfiltTable[cf][tf] = (int)((freq * freqsum) / (rate / 2) * FILTERGRAN);
-			if (noteLookup->nfiltTable[cf][tf] >= ((FILTERGRAN * 15) / 16))
-				noteLookup->nfiltTable[cf][tf] = ((FILTERGRAN * 15) / 16);
-		}
-	}
-
-	for(int cf=0;cf < 512; cf++) {
+static void initRFiltTable(NoteLookup *noteLookup, float freq, float rate) {
+	for (int cf = 0; cf < 512; cf++) {
 		float freqsum = powf(256.0f, (((float)cf / 128.0f) - 1.0f));
 		noteLookup->rfiltTable[cf] = (int)((freq * freqsum) / (rate / 2) * FILTERGRAN);
 		if (noteLookup->rfiltTable[cf] >= ((FILTERGRAN * 15) / 16))
@@ -563,7 +406,7 @@ static void initNFiltTable(NoteLookup *noteLookup, float freq, float rate) {
 	}
 }
 
-File *Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float masterTune, PCMWaveEntry *pcmWaves, File *file) {
+void Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float masterTune, PCMWaveEntry *pcmWaves) {
 	float freq = (float)(masterTune * pow(2.0, ((double)note - MIDDLEA) / 12.0));
 	noteLookup->freq = freq;
 	float div2 = rate * 2.0f / freq;
@@ -572,13 +415,7 @@ File *Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float r
 	if (noteLookup->div2 == 0)
 		noteLookup->div2 = 1;
 
-	initSaw(noteLookup, noteLookup->div2);
-
-	file = NULL;
-
 	//synth->printDebug("Note %f; freq=%f, div=%f", note, freq, rate / freq);
-	//CC: Precomputed wave init not needed anymore
-	//file = initWave(synth, noteLookup, (const float)WGAMP, div2, file);
 
 	// Create the pitch tables
 	if (noteLookup->wavTable == NULL)
@@ -589,67 +426,14 @@ File *Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float r
 		noteLookup->wavTable[pc] = (int)(tuner / pcmWaves[pc].tune * rateMult);
 	}
 
-	initFiltTable(noteLookup, freq, rate);
-	initNFiltTable(noteLookup, freq, rate);
-	return file;
+	initRFiltTable(noteLookup, freq, rate);
 }
 
 bool Tables::initNotes(Synth *synth, PCMWaveEntry *pcmWaves, float rate, float masterTune) {
 	const char *NoteNames[12] = {
 		"C ", "C#", "D ", "D#", "E ", "F ", "F#", "G ", "G#", "A ", "A#", "B "
 	};
-	char filename[64];
 	int intRate = (int)rate;
-	char version[4] = {0, 0, 0, 5};
-	sprintf(filename, "waveformcache-%d-%.2f.raw", intRate, masterTune);
-
-	File *file = NULL;
-	char header[20];
-	strncpy(header, "MT32WAVE", 8);
-	int pos = 8;
-	// Version...
-	for (int i = 0; i < 4; i++)
-		header[pos++] = version[i];
-	header[pos++] = (char)((intRate >> 24) & 0xFF);
-	header[pos++] = (char)((intRate >> 16) & 0xFF);
-	header[pos++] = (char)((intRate >> 8) & 0xFF);
-	header[pos++] = (char)(intRate & 0xFF);
-	int intTuning = (int)masterTune;
-	header[pos++] = (char)((intTuning >> 8) & 0xFF);
-	header[pos++] = (char)(intTuning & 0xFF);
-	header[pos++] = 0;
-	header[pos] = (char)((masterTune - intTuning) * 10);
-#if MT32EMU_WAVECACHEMODE < 2
-	bool reading = false;
-	file = synth->openFile(filename, File::OpenMode_read);
-	if (file != NULL) {
-		char fileHeader[20];
-		if (file->read(fileHeader, 20) == 20) {
-			if (memcmp(fileHeader, header, 20) == 0) {
-				Bit16u endianCheck;
-				if (file->readBit16u(&endianCheck)) {
-					if (endianCheck == 1) {
-						reading = true;
-					} else {
-						synth->printDebug("Endian check in %s does not match expected", filename);
-					}
-				} else {
-					synth->printDebug("Unable to read endian check in %s", filename);
-				}
-			} else {
-				synth->printDebug("Header of %s does not match expected", filename);
-			}
-		} else {
-			synth->printDebug("Error reading 16 bytes of %s", filename);
-		}
-		if (!reading) {
-			file->close();
-			file = NULL;
-		}
-	} else {
-		synth->printDebug("Unable to open %s for reading", filename);
-	}
-#endif
 
 	float progress = 0.0f;
 	bool abort = false;
@@ -657,26 +441,19 @@ bool Tables::initNotes(Synth *synth, PCMWaveEntry *pcmWaves, float rate, float m
 	for (int f = LOWEST_NOTE; f <= HIGHEST_NOTE; f++) {
 		//synth->printDebug("Initialising note %s%d", NoteNames[f % 12], (f / 12) - 2);
 		NoteLookup *noteLookup = &noteLookups[f - LOWEST_NOTE];
-		file = initNote(synth, noteLookup, (float)f, rate, masterTune, pcmWaves, file);
+		initNote(synth, noteLookup, (float)f, rate, masterTune, pcmWaves);
 		progress = (f - LOWEST_NOTE + 1) / (float)NUM_NOTES;
 		abort = synth->report(ReportType_progressInit, &progress) != 0;
 		if (abort)
 			break;
 	}
 
-	if (file != NULL)
-		synth->closeFile(file);
 	return !abort;
 }
 
 void Tables::freeNotes() {
 	for (int t = 0; t < 3; t++) {
 		for (int m = 0; m < NUM_NOTES; m++) {
-			if (noteLookups[m].waveforms[t] != NULL) {
-				delete[] noteLookups[m].waveforms[t];
-				noteLookups[m].waveforms[t] = NULL;
-				noteLookups[m].waveformSize[t] = 0;
-			}
 			if (noteLookups[m].wavTable != NULL) {
 				delete[] noteLookups[m].wavTable;
 				noteLookups[m].wavTable = NULL;

@@ -74,13 +74,7 @@ struct NoteLookup {
 	float freq;
 	Bit32u div2;
 	Bit32u *wavTable;
-	Bit32s sawTable[101];
-	int filtTable[2][201];
-	//int nfiltTable[101][101];
-	int nfiltTable[201][201];
 	int rfiltTable[512];
-	Bit16s *waveforms[3];
-	Bit32u waveformSize[3];
 };
 
 struct KeyLookup {
@@ -100,8 +94,6 @@ class Tables {
 public:
 	// Constant LUTs
 	Bit32s tvfKeyfollowMult[217];
-	Bit32s tvfVelfollowMult[128][101];
-	Bit32s tvfBiasMult[15][128];
 	Bit32u tvaVelfollowMult[128][101];
 	Bit32s tvaBiasMult[13][128];
 	Bit16s noiseBuf[MAX_SAMPLE_OUTPUT];
@@ -111,7 +103,6 @@ public:
 	Bit32s pwVelfollowAdd[15][128];
 	float resonanceFactor[31];
 	Bit32u lfoShift[101][101];
-	Bit32s pwFactor[101];
 	float pwFactorf[101];
 	Bit32s volumeMult[101];
 	Bit32s volumeExp[101];
@@ -129,7 +120,7 @@ public:
 
 	Tables();
 	bool init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune);
-	File *initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float tuning, PCMWaveEntry *pcmWaves, File *file);
+	void initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float tuning, PCMWaveEntry *pcmWaves);
 	void freeNotes();
 };
 
