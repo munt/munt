@@ -373,8 +373,6 @@ Bit16s *Partial::generateSamples(long length) {
 				}
 			} else {
 				// Render synthesised sample
-				int toff = partialOff.pcmplace;
-				int minorplace = partialOff.pcmoffset >> 14;
 				Bit32s filterInput;
 				Bit32s filtval = getFiltEnvelope();
 
@@ -650,7 +648,7 @@ bool Partial::produceOutput(Bit16s *partialBuf, long length) {
 Bit32s Partial::getFiltEnvelope() {
 	int reshigh;
 
-	int cutoff, depth;
+	int cutoff;
 
 	EnvelopeStatus *tStat  = &envs[EnvelopeType_filt];
 
