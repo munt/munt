@@ -796,7 +796,6 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 	// Process device-global sysex (possibly converted from channel-specific sysex above)
 	for (;;) {
 		// Find the appropriate memory region
-		int regionNum;
 		const MemoryRegion *region = findMemoryRegion(addr);
 
 		if (region == NULL) {
@@ -816,7 +815,6 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 }
 
 void Synth::readMemory(Bit32u addr, Bit32u len, Bit8u *data) {
-	int regionNum;
 	const MemoryRegion *region = findMemoryRegion(addr);
 	if (region != NULL) {
 		readMemoryRegion(region, addr, len, data);

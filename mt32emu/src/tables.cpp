@@ -430,10 +430,11 @@ void Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float ra
 }
 
 bool Tables::initNotes(Synth *synth, PCMWaveEntry *pcmWaves, float rate, float masterTune) {
+	/*
 	const char *NoteNames[12] = {
 		"C ", "C#", "D ", "D#", "E ", "F ", "F#", "G ", "G#", "A ", "A#", "B "
 	};
-	int intRate = (int)rate;
+	*/
 
 	float progress = 0.0f;
 	bool abort = false;
