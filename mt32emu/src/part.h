@@ -39,9 +39,9 @@ private:
 
 	float bend; // -1.0 .. +1.0
 
-	dpoly polyTable[MT32EMU_MAX_POLY];
+	Poly polyTable[MT32EMU_MAX_POLY];
 
-	void abortPoly(dpoly *poly);
+	void abortPoly(Poly *poly);
 
 	static int fixKeyfollow(int srckey);
 	static int fixBiaslevel(int srcpnt, int *dir);

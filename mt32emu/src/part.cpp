@@ -36,19 +36,6 @@ static const float floatKeyfollow[17] = {
 	1.0009765625f, 1.0048828125f
 };
 
-//FIXME:KG: Put this dpoly stuff somewhere better
-bool dpoly::isActive() const {
-	return partials[0] != NULL || partials[1] != NULL || partials[2] != NULL || partials[3] != NULL;
-}
-
-Bit32u dpoly::getAge() const {
-	for (int i = 0; i < 4; i++) {
-		if (partials[i] != NULL) {
-			return partials[i]->age;
-		}
-	}
-	return 0;
-}
 
 RhythmPart::RhythmPart(Synth *useSynth, unsigned int usePartNum): Part(useSynth, usePartNum) {
 	strcpy(name, "Rhythm");
@@ -211,7 +198,7 @@ int Part::fixKeyfollow(int srckey) {
 	}
 }
 
-void Part::abortPoly(dpoly *poly) {
+void Part::abortPoly(Poly *poly) {
 	if (!poly->isPlaying) {
 		return;
 	}
@@ -512,7 +499,7 @@ void Part::playPoly(const PatchCache cache[4], unsigned int key, int freqNum, in
 		return;
 	}
 
-	dpoly *tpoly = &polyTable[m];
+	Poly *tpoly = &polyTable[m];
 
 	tpoly->isPlaying = true;
 	tpoly->key = key;
@@ -545,7 +532,7 @@ void Part::playPoly(const PatchCache cache[4], unsigned int key, int freqNum, in
 	}
 }
 
-static void startDecayPoly(dpoly *tpoly) {
+static void startDecayPoly(Poly *tpoly) {
 	if (tpoly->isDecay) {
 		return;
 	}
@@ -566,7 +553,7 @@ void Part::allNotesOff() {
 	// All *sound* off (0x78) should stop notes immediately regardless of the hold pedal.
 	// The latter controller is not implemented on the MT-32 (according to the docs).
 	for (int q = 0; q < MT32EMU_MAX_POLY; q++) {
-		dpoly *tpoly = &polyTable[q];
+		Poly *tpoly = &polyTable[q];
 		if (tpoly->isPlaying) {
 			if (holdpedal)
 				tpoly->pedalhold = true;
@@ -578,7 +565,7 @@ void Part::allNotesOff() {
 
 void Part::allSoundOff() {
 	for (int q = 0; q < MT32EMU_MAX_POLY; q++) {
-		dpoly *tpoly = &polyTable[q];
+		Poly *tpoly = &polyTable[q];
 		if (tpoly->isPlaying) {
 			startDecayPoly(tpoly);
 		}
@@ -587,7 +574,7 @@ void Part::allSoundOff() {
 
 void Part::stopPedalHold() {
 	for (int q = 0; q < MT32EMU_MAX_POLY; q++) {
-		dpoly *tpoly;
+		Poly *tpoly;
 		tpoly = &polyTable[q];
 		if (tpoly->isActive() && tpoly->pedalhold)
 			stopNote(tpoly->key);
@@ -604,7 +591,7 @@ void Part::stopNote(unsigned int key) {
 
 	if (key != 255) {
 		for (int q = 0; q < MT32EMU_MAX_POLY; q++) {
-			dpoly *tpoly = &polyTable[q];
+			Poly *tpoly = &polyTable[q];
 			if (tpoly->isPlaying && tpoly->key == key) {
 				if (holdpedal)
 					tpoly->pedalhold = true;
@@ -621,7 +608,7 @@ void Part::stopNote(unsigned int key) {
 	Bit32u oldage = 0;
 
 	for (int q = 0; q < MT32EMU_MAX_POLY; q++) {
-		dpoly *tpoly = &polyTable[q];
+		Poly *tpoly = &polyTable[q];
 
 		if (tpoly->isPlaying && !tpoly->isDecay) {
 			if (tpoly->getAge() >= oldage) {

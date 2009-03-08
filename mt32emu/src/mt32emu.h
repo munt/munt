@@ -54,6 +54,7 @@
 #include "i386.h"
 #include "file.h"
 #include "tables.h"
+#include "poly.h"
 #include "partial.h"
 #include "partialManager.h"
 #include "part.h"

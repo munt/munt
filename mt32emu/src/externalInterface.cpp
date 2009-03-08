@@ -86,8 +86,8 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 							*(Bit32u *)bufptr = synth->getPartial(i)->age;
 							bufptr++;
 							bufptr++;
-							if (synth->getPartial(i)->getDpoly() != NULL) {
-								*bufptr++ = (Bit16u)synth->getPartial(i)->getDpoly()->vel;
+							if (synth->getPartial(i)->getPoly() != NULL) {
+								*bufptr++ = (Bit16u)synth->getPartial(i)->getPoly()->vel;
 							} else {
 								*bufptr++ = 0;
 							}

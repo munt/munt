@@ -94,7 +94,7 @@ private:
 
 	int loopPos;
 
-	dpoly *poly;
+	Poly *poly;
 
 	int bendShift;
 
@@ -125,11 +125,11 @@ public:
 
 	int getOwnerPart() const;
 	int getKey() const;
-	const dpoly *getDpoly() const;
+	const Poly *getPoly() const;
 	bool isActive();
 	void activate(int part, int pChan);
 	void deactivate(void);
-	void startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *pairPartial);
+	void startPartial(Poly *usePoly, const PatchCache *useCache, Partial *pairPartial);
 	void startDecay(EnvelopeType envnum, Bit32s startval);
 	void startDecayAll();
 	void setBend(float factor);

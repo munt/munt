@@ -65,7 +65,7 @@ bool Partial::isActive() {
 	return ownerPart > -1;
 }
 
-const dpoly *Partial::getDpoly() const {
+const Poly *Partial::getPoly() const {
 	return this->poly;
 }
 
@@ -142,7 +142,7 @@ int Partial::getKey() const {
 	}
 }
 
-void Partial::startPartial(dpoly *usePoly, const PatchCache *useCache, Partial *pairPartial) {
+void Partial::startPartial(Poly *usePoly, const PatchCache *useCache, Partial *pairPartial) {
 	if (usePoly == NULL || useCache == NULL) {
 		synth->printDebug("*** Error: Starting partial for owner %d, usePoly=%s, useCache=%s", ownerPart, usePoly == NULL ? "*** NULL ***" : "OK", useCache == NULL ? "*** NULL ***" : "OK");
 		return;

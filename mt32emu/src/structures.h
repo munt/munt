@@ -249,26 +249,6 @@ struct PatchCache {
 
 class Partial; // Forward reference for class defined in partial.h
 
-struct dpoly {
-	bool isPlaying;
-
-	unsigned int key;
-	int freqnum;
-	int vel;
-
-	bool isDecay;
-
-	const Bit32u *volumeptr;
-
-	Partial *partials[4];
-
-	bool pedalhold; // This marks keys that have been released on the keyboard, but are being held by the pedal
-	bool sustain;
-
-	bool isActive() const;
-	Bit32u getAge() const;
-};
-
 }
 
 #endif
