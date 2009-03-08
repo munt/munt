@@ -54,65 +54,65 @@ typedef   signed char      Bit8s;
 #endif
 
 struct TimbreParam {
-	struct commonParam {
+	struct CommonParam {
 		char name[10];
-		Bit8u pstruct12;  // 1&2  0-12 (1-13)
-		Bit8u pstruct34;  // #3&4  0-12 (1-13)
-		Bit8u pmute;  // 0-15 (0000-1111)
-		Bit8u nosustain; // 0-1(Normal, No sustain)
+		Bit8u partialStructure12;  // 1 & 2  0-12 (1-13)
+		Bit8u partialStructure34;  // 3 & 4  0-12 (1-13)
+		Bit8u partialMute;  // 0-15 (0000-1111)
+		Bit8u noSustain; // ENV MODE 0-1 (Normal, No sustain)
 	} MT32EMU_ALIGN_PACKED common;
 
-	struct partialParam {
-		struct wgParam {
-			Bit8u coarse;  // 0-96 (C1,C#1-C9)
-			Bit8u fine;  // 0-100 (-50 to +50 (cents - confirmed by Mok))
-			Bit8u keyfollow;  // 0-16 (-1,-1/2,0,1,1/8,1/4,3/8,1/2,5/8,3/4,7/8,1,5/4,3/2,2.s1,s2)
-			Bit8u bender;  // 0,1 (ON/OFF)
+	struct PartialParam {
+		struct WGParam {
+			Bit8u pitchCoarse;  // 0-96 (C1,C#1-C9)
+			Bit8u pitchFine;  // 0-100 (-50 to +50 (cents - confirmed by Mok))
+			Bit8u pitchKeyfollow;  // 0-16 (-1, -1/2, 0, 1, 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8, 1, 5/4, 3/2, s1, s2)
+			Bit8u pitchBenderEnabled;  // 0-1 (OFF, ON)
 			Bit8u waveform; // MT-32: 0-1 (SQU/SAW); LAPC-I: WG WAVEFORM/PCM BANK 0 - 3 (SQU/1, SAW/1, SQU/2, SAW/2)
-			Bit8u pcmwave; // 0-127 (1-128)
-			Bit8u pulsewid; // 0-100
-			Bit8u pwvelo; // 0-14 (-7 - +7)
+			Bit8u pcmWave; // 0-127 (1-128)
+			Bit8u pulseWidth; // 0-100
+			Bit8u pulseWidthVeloSensitivity; // 0-14 (-7 - +7)
 		} MT32EMU_ALIGN_PACKED wg;
 
-		struct envParam {
+		struct PitchEnvParam {
 			Bit8u depth; // 0-10
-			Bit8u sensitivity; // 1-100
-			Bit8u timekeyfollow; // 0-4
+			Bit8u veloSensitivity; // 1-100
+			Bit8u timeKeyfollow; // 0-4
 			Bit8u time[4]; // 1-100
-			Bit8u level[5]; // 1-100 (-50 - +50)
-		} MT32EMU_ALIGN_PACKED env;
+			Bit8u level[5]; // 1-100 (-50 - +50) // [3]: SUSTAIN LEVEL, [4]: END LEVEL
+		} MT32EMU_ALIGN_PACKED pitchEnv;
 
-		struct lfoParam {
+		struct PitchLFOParam {
 			Bit8u rate; // 0-100
 			Bit8u depth; // 0-100
-			Bit8u modsense; // 0-100
-		} MT32EMU_ALIGN_PACKED lfo;
+			Bit8u modSensitivity; // 0-100
+		} MT32EMU_ALIGN_PACKED pitchLFO;
 
-		struct tvfParam {
+		struct TVFParam {
 			Bit8u cutoff; // 0-100
 			Bit8u resonance; // 0-30
 			Bit8u keyfollow; // 0-16 (-1,-1/2,1/4,0,1,1/8,1/4,3/8,1/2,5/8,3/2,7/8,1,5/4,3/2,2,s1,s2)
-			Bit8u biaspoint; // 0-127 (<1A-<7C >1A-7C)
-			Bit8u biaslevel; // 0-14 (-7 - +7)
-			Bit8u envdepth; // 0-100
-			Bit8u envsense; // 0-100
-			Bit8u envdkf; // DEPTH KEY FOLL0W 0-4
-			Bit8u envtkf; // TIME KEY FOLLOW 0-4
-			Bit8u envtime[5]; // 1-100
-			Bit8u envlevel[4]; // 1-100
+			Bit8u biasPoint; // 0-127 (<1A-<7C >1A-7C)
+			Bit8u biasLevel; // 0-14 (-7 - +7)
+			Bit8u envDepth; // 0-100
+			Bit8u envVeloSensitivity; // 0-100
+			Bit8u envDepthKeyfollow; // DEPTH KEY FOLL0W 0-4
+			Bit8u envTimeKeyfollow; // TIME KEY FOLLOW 0-4
+			Bit8u envTime[5]; // 1-100
+			Bit8u envLevel[4]; // 1-100 // [3]: SUSTAIN LEVEL
 		} MT32EMU_ALIGN_PACKED tvf;
 
-		struct tvaParam {
+		struct TVAParam {
 			Bit8u level; // 0-100
-			Bit8u velosens; // 0-100
-			Bit8u biaspoint1; // 0-127 (<1A-<7C >1A-7C)
-			Bit8u biaslevel1; // 0-12 (-12 - 0)
-			Bit8u biaspoint2; // 0-127 (<1A-<7C >1A-7C)
-			Bit8u biaslevel2; // 0-12 (-12 - 0)
-			Bit8u envtkf; // TIME KEY FOLLOW 0-4
-			Bit8u envvkf; // VELOS KEY FOLL0W 0-4
-			Bit8u envtime[5]; // 1-100
-			Bit8u envlevel[4]; // 1-100
+			Bit8u veloSensitivity; // 0-100
+			Bit8u biasPoint1; // 0-127 (<1A-<7C >1A-7C)
+			Bit8u biasLevel1; // 0-12 (-12 - 0)
+			Bit8u biasPoint2; // 0-127 (<1A-<7C >1A-7C)
+			Bit8u biasLevel2; // 0-12 (-12 - 0)
+			Bit8u envTimeKeyfollow; // TIME KEY FOLLOW 0-4
+			Bit8u envTimeVeloSensitivity; // VELOS KEY FOLL0W 0-4
+			Bit8u envTime[5]; // 1-100
+			Bit8u envLevel[4]; // 1-100 // [3]: SUSTAIN LEVEL
 		} MT32EMU_ALIGN_PACKED tva;
 	} MT32EMU_ALIGN_PACKED partial[4];
 } MT32EMU_ALIGN_PACKED;
@@ -134,19 +134,19 @@ struct MemParams {
 	// where all parameters but fine tune, assign mode and output level are ignored
 	struct PatchTemp {
 		PatchParam patch;
-		Bit8u outlevel; // OUTPUT LEVEL 0-100
+		Bit8u outputLevel; // OUTPUT LEVEL 0-100
 		Bit8u panpot; // PANPOT 0-14 (R-L)
 		Bit8u dummyv[6];
-	} MT32EMU_ALIGN_PACKED patchSettings[9];
+	} MT32EMU_ALIGN_PACKED patchTemp[9];
 
 	struct RhythmTemp {
-		Bit8u timbre; // TIMBRE  0-94 (M1-M64,R1-30,OFF)
-		Bit8u outlevel; // OUTPUT LEVEL 0-100
+		Bit8u timbre; // TIMBRE  0-94 (M1-M64,R1-30,OFF); LAPC-I: 0-127 (M01-M64,R01-R63)
+		Bit8u outputLevel; // OUTPUT LEVEL 0-100
 		Bit8u panpot; // PANPOT 0-14 (R-L)
 		Bit8u reverbSwitch;  // REVERB SWITCH 0-1 (OFF,ON)
-	} MT32EMU_ALIGN_PACKED rhythmSettings[85];
+	} MT32EMU_ALIGN_PACKED rhythmTemp[85];
 
-	TimbreParam timbreSettings[8];
+	TimbreParam timbreTemp[8];
 
 	PatchParam patches[128];
 
@@ -156,7 +156,7 @@ struct MemParams {
 		Bit8u padding[10];
 	} MT32EMU_ALIGN_PACKED timbres[64 + 64 + 64 + 64]; // Group A, Group B, Memory, Rhythm
 
-	struct SystemArea {
+	struct System {
 		Bit8u masterTune; // MASTER TUNE 0-127 432.1-457.6Hz
 		Bit8u reverbMode; // REVERB MODE 0-3 (room, hall, plate, tap delay)
 		Bit8u reverbTime; // REVERB TIME 0-7 (1-8)
@@ -225,9 +225,9 @@ struct PatchCache {
 	bool useBender;
 	float benderRange; // 0.0, 1.0, .., 24.0 (semitones)
 
-	TimbreParam::partialParam::envParam pitchEnv;
-	TimbreParam::partialParam::tvaParam ampEnv;
-	TimbreParam::partialParam::tvfParam filtEnv;
+	TimbreParam::PartialParam::PitchEnvParam pitchEnv;
+	TimbreParam::PartialParam::TVAParam ampEnv;
+	TimbreParam::PartialParam::TVFParam filtEnv;
 
 	Bit32s pitchsustain;
 	Bit32s filtsustain;
@@ -244,7 +244,7 @@ struct PatchCache {
 	bool reverb;
 	const StereoVolume *pansetptr;
 
-	TimbreParam::partialParam srcPartial;
+	TimbreParam::PartialParam srcPartial;
 };
 
 class Partial; // Forward reference for class defined in partial.h

@@ -39,7 +39,7 @@ static const float floatKeyfollow[17] = {
 
 RhythmPart::RhythmPart(Synth *useSynth, unsigned int usePartNum): Part(useSynth, usePartNum) {
 	strcpy(name, "Rhythm");
-	rhythmTemp = &synth->mt32ram.rhythmSettings[0];
+	rhythmTemp = &synth->mt32ram.rhythmTemp[0];
 	refresh();
 }
 
@@ -48,13 +48,13 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	this->partNum = usePartNum;
 	patchCache[0].dirty = true;
 	holdpedal = false;
-	patchTemp = &synth->mt32ram.patchSettings[partNum];
+	patchTemp = &synth->mt32ram.patchTemp[partNum];
 	if (usePartNum == 8) {
 		// Nasty hack for rhythm
 		timbreTemp = NULL;
 	} else {
 		sprintf(name, "Part %d", partNum + 1);
-		timbreTemp = &synth->mt32ram.timbreSettings[partNum];
+		timbreTemp = &synth->mt32ram.timbreTemp[partNum];
 	}
 	currentInstr[0] = 0;
 	currentInstr[10] = 0;
@@ -265,7 +265,7 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 	backupCacheToPartials(cache);
 	int partialCount = 0;
 	for (int t = 0; t < 4; t++) {
-		if (((timbre->common.pmute >> t) & 0x1) == 1) {
+		if (((timbre->common.partialMute >> t) & 0x1) == 1) {
 			cache[t].playPartial = true;
 			partialCount++;
 		} else {
@@ -276,31 +276,31 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 		// Calculate and cache common parameters
 		cache[t].srcPartial = timbre->partial[t];
 
-		cache[t].pcm = timbre->partial[t].wg.pcmwave;
-		cache[t].useBender = (timbre->partial[t].wg.bender == 1);
+		cache[t].pcm = timbre->partial[t].wg.pcmWave;
+		cache[t].useBender = (timbre->partial[t].wg.pitchBenderEnabled == 1);
 
 		switch (t) {
 		case 0:
-			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.pstruct12] & 0x2) ? true : false;
-			cache[t].structureMix = PartialMixStruct[(int)timbre->common.pstruct12];
+			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.partialStructure12] & 0x2) ? true : false;
+			cache[t].structureMix = PartialMixStruct[(int)timbre->common.partialStructure12];
 			cache[t].structurePosition = 0;
 			cache[t].structurePair = 1;
 			break;
 		case 1:
-			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.pstruct12] & 0x1) ? true : false;
-			cache[t].structureMix = PartialMixStruct[(int)timbre->common.pstruct12];
+			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.partialStructure12] & 0x1) ? true : false;
+			cache[t].structureMix = PartialMixStruct[(int)timbre->common.partialStructure12];
 			cache[t].structurePosition = 1;
 			cache[t].structurePair = 0;
 			break;
 		case 2:
-			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.pstruct34] & 0x2) ? true : false;
-			cache[t].structureMix = PartialMixStruct[(int)timbre->common.pstruct34];
+			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.partialStructure34] & 0x2) ? true : false;
+			cache[t].structureMix = PartialMixStruct[(int)timbre->common.partialStructure34];
 			cache[t].structurePosition = 0;
 			cache[t].structurePair = 3;
 			break;
 		case 3:
-			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.pstruct34] & 0x1) ? true : false;
-			cache[t].structureMix = PartialMixStruct[(int)timbre->common.pstruct34];
+			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.partialStructure34] & 0x1) ? true : false;
+			cache[t].structureMix = PartialMixStruct[(int)timbre->common.partialStructure34];
 			cache[t].structurePosition = 1;
 			cache[t].structurePair = 2;
 			break;
@@ -309,18 +309,18 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 		}
 
 		cache[t].waveform = timbre->partial[t].wg.waveform;
-		cache[t].pulsewidth = timbre->partial[t].wg.pulsewid;
-		cache[t].pwsens = timbre->partial[t].wg.pwvelo;
-		if (timbre->partial[t].wg.keyfollow > 16) {
+		cache[t].pulsewidth = timbre->partial[t].wg.pulseWidth;
+		cache[t].pwsens = timbre->partial[t].wg.pulseWidthVeloSensitivity;
+		if (timbre->partial[t].wg.pitchKeyfollow > 16) {
 			synth->printDebug("Bad keyfollow value in timbre!");
 			cache[t].pitchKeyfollow = 1.0f;
 		} else {
-			cache[t].pitchKeyfollow = floatKeyfollow[timbre->partial[t].wg.keyfollow];
+			cache[t].pitchKeyfollow = floatKeyfollow[timbre->partial[t].wg.pitchKeyfollow];
 		}
 
-		cache[t].pitch = timbre->partial[t].wg.coarse + (timbre->partial[t].wg.fine - 50) / 100.0f + 24.0f;
-		cache[t].pitchEnv = timbre->partial[t].env;
-		cache[t].pitchEnv.sensitivity = (char)((float)cache[t].pitchEnv.sensitivity * 1.27f);
+		cache[t].pitch = timbre->partial[t].wg.pitchCoarse + (timbre->partial[t].wg.pitchFine - 50) / 100.0f + 24.0f;
+		cache[t].pitchEnv = timbre->partial[t].pitchEnv;
+		cache[t].pitchEnv.veloSensitivity = (char)((float)cache[t].pitchEnv.veloSensitivity * 1.27f);
 		cache[t].pitchsustain = cache[t].pitchEnv.level[3];
 
 		// Calculate and cache TVA envelope stuff
@@ -329,45 +329,45 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 
 		int jr = 4;
 		for (int jt = 3; jt >= 0; --jt) {
-			if (cache[t].ampEnv.envlevel[jt] > 0) {
+			if (cache[t].ampEnv.envLevel[jt] > 0) {
 				break;
 			}
 			jr = jt;
 		}
 		cache[t].ampDecayStep = jr;
 
-		cache[t].ampbias[0] = fixBiaslevel(cache[t].ampEnv.biaspoint1, &cache[t].ampdir[0]);
-		cache[t].ampblevel[0] = 12 - cache[t].ampEnv.biaslevel1;
-		cache[t].ampbias[1] = fixBiaslevel(cache[t].ampEnv.biaspoint2, &cache[t].ampdir[1]);
-		cache[t].ampblevel[1] = 12 - cache[t].ampEnv.biaslevel2;
-		cache[t].ampdepth = cache[t].ampEnv.envvkf * cache[t].ampEnv.envvkf;
+		cache[t].ampbias[0] = fixBiaslevel(cache[t].ampEnv.biasPoint1, &cache[t].ampdir[0]);
+		cache[t].ampblevel[0] = 12 - cache[t].ampEnv.biasLevel1;
+		cache[t].ampbias[1] = fixBiaslevel(cache[t].ampEnv.biasPoint2, &cache[t].ampdir[1]);
+		cache[t].ampblevel[1] = 12 - cache[t].ampEnv.biasLevel2;
+		cache[t].ampdepth = cache[t].ampEnv.envTimeVeloSensitivity * cache[t].ampEnv.envTimeVeloSensitivity;
 
 		// Calculate and cache filter stuff
 		cache[t].filtEnv = timbre->partial[t].tvf;
 		cache[t].filtkeyfollow  = fixKeyfollow(cache[t].filtEnv.keyfollow);
-		cache[t].filtEnv.envdepth = (char)((float)cache[t].filtEnv.envdepth);
-		cache[t].tvfbias = fixBiaslevel(cache[t].filtEnv.biaspoint, &cache[t].tvfdir);
-		cache[t].tvfblevel = cache[t].filtEnv.biaslevel;
-		cache[t].filtsustain  = cache[t].filtEnv.envlevel[3];
+		cache[t].filtEnv.envDepth = (char)((float)cache[t].filtEnv.envDepth);
+		cache[t].tvfbias = fixBiaslevel(cache[t].filtEnv.biasPoint, &cache[t].tvfdir);
+		cache[t].tvfblevel = cache[t].filtEnv.biasLevel;
+		cache[t].filtsustain  = cache[t].filtEnv.envLevel[3];
 
 		// Calculate and cache LFO stuff
-		cache[t].lfodepth = timbre->partial[t].lfo.depth;
-		cache[t].lfoperiod = synth->tables.lfoPeriod[(int)timbre->partial[t].lfo.rate];
-		cache[t].lforate = timbre->partial[t].lfo.rate;
-		cache[t].modsense = timbre->partial[t].lfo.modsense;
+		cache[t].lfodepth = timbre->partial[t].pitchLFO.depth;
+		cache[t].lfoperiod = synth->tables.lfoPeriod[(int)timbre->partial[t].pitchLFO.rate];
+		cache[t].lforate = timbre->partial[t].pitchLFO.rate;
+		cache[t].modsense = timbre->partial[t].pitchLFO.modSensitivity;
 	}
 	for (int t = 0; t < 4; t++) {
 		// Common parameters, stored redundantly
 		cache[t].dirty = false;
 		cache[t].partialCount = partialCount;
-		cache[t].sustain = (timbre->common.nosustain == 0);
+		cache[t].sustain = (timbre->common.noSustain == 0);
 	}
 	//synth->printDebug("Res 1: %d 2: %d 3: %d 4: %d", cache[0].waveform, cache[1].waveform, cache[2].waveform, cache[3].waveform);
 
 #if MT32EMU_MONITOR_INSTRUMENTS == 1
 	synth->printDebug("%s (%s): Recached timbre", name, currentInstr);
 	for (int i = 0; i < 4; i++) {
-		synth->printDebug(" %d: play=%s, pcm=%s (%d), wave=%d", i, cache[i].playPartial ? "YES" : "NO", cache[i].PCMPartial ? "YES" : "NO", timbre->partial[i].wg.pcmwave, timbre->partial[i].wg.waveform);
+		synth->printDebug(" %d: play=%s, pcm=%s (%d), wave=%d", i, cache[i].playPartial ? "YES" : "NO", cache[i].PCMPartial ? "YES" : "NO", timbre->partial[i].wg.pcmWave, timbre->partial[i].wg.waveform);
 	}
 #endif
 }
@@ -378,18 +378,18 @@ const char *Part::getName() const {
 
 void Part::updateVolume() {
 	//volumeMult = synth->tables.volumeMult[patchTemp->outlevel * expression / 127];
-	volumeMult = (patchTemp->outlevel * expression) / 127;
+	volumeMult = (patchTemp->outputLevel * expression) / 127;
 	//synth->printDebug("%s (%s): OutLevel %d, expression %d", name, currentInstr, patchTemp->outlevel, expression);
 }
 
 int Part::getVolume() const {
 	// FIXME: Use the mappings for this in the control ROM
-	return patchTemp->outlevel * 127 / 100;
+	return patchTemp->outputLevel * 127 / 100;
 }
 
 void Part::setVolume(int midiVolume) {
 	// FIXME: Use the mappings for this in the control ROM
-	patchTemp->outlevel = (Bit8u)(midiVolume * 100 / 127);
+	patchTemp->outputLevel = (Bit8u)(midiVolume * 100 / 127);
 	updateVolume();
 	//synth->printDebug("%s (%s): Set volume to %d", name, currentInstr, midiVolume);
 }

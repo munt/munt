@@ -235,7 +235,7 @@ public:
 };
 class SystemMemoryRegion : public MemoryRegion {
 public:
-	SystemMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_System, MT32EMU_MEMADDR(0x100000), sizeof(MemParams::SystemArea), 1) {}
+	SystemMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_System, MT32EMU_MEMADDR(0x100000), sizeof(MemParams::System), 1) {}
 };
 class DisplayMemoryRegion : public MemoryRegion {
 public:

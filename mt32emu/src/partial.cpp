@@ -250,7 +250,7 @@ Bit16s *Partial::generateSamples(long length) {
 
 				ampval = synth->tables.volumeMult[ampval];
 				ampval = (ampval * volume) / 100;
-				ampval = FIXEDPOINT_UMULT(ampval, synth->tables.tvaVelfollowMult[poly->vel][(int)patchCache->ampEnv.velosens], 8);
+				ampval = FIXEDPOINT_UMULT(ampval, synth->tables.tvaVelfollowMult[poly->vel][(int)patchCache->ampEnv.veloSensitivity], 8);
 				ampval = FIXEDPOINT_UMULT(ampval, biasvals[0], 8);
 				ampval = FIXEDPOINT_UMULT(ampval, biasvals[1], 8);
 				//synth->printDebug("Preamp %d, postamp %d, bias1 %d, bias2 %d", ampEnvVal, ampval, biasvals[0], biasvals[1]);
@@ -668,25 +668,25 @@ Bit32s Partial::getFiltEnvelope() {
 				if (tStat->envstat==-1)
 					tStat->envbase = 0;
 				else
-					tStat->envbase = patchCache->filtEnv.envlevel[tStat->envstat];
+					tStat->envbase = patchCache->filtEnv.envLevel[tStat->envstat];
 				tStat->envstat++;
 				tStat->envpos = 0;
 				if (tStat->envstat == 3) {
-					tStat->envsize = synth->tables.envTime[(int)patchCache->filtEnv.envtime[tStat->envstat]];
+					tStat->envsize = synth->tables.envTime[(int)patchCache->filtEnv.envTime[tStat->envstat]];
 				} else {
-					Bit32u envTime = (int)patchCache->filtEnv.envtime[tStat->envstat];
+					Bit32u envTime = (int)patchCache->filtEnv.envTime[tStat->envstat];
 					if (tStat->envstat > 1) {
-						int envDiff = abs(patchCache->filtEnv.envlevel[tStat->envstat] - patchCache->filtEnv.envlevel[tStat->envstat - 1]);
+						int envDiff = abs(patchCache->filtEnv.envLevel[tStat->envstat] - patchCache->filtEnv.envLevel[tStat->envstat - 1]);
 						if (envTime > synth->tables.envDeltaMaxTime[envDiff]) {
 							envTime = synth->tables.envDeltaMaxTime[envDiff];
 						}
 					}
 
-					tStat->envsize = (synth->tables.envTime[envTime] * keyLookup->envTimeMult[(int)patchCache->filtEnv.envtkf]) >> 8;
+					tStat->envsize = (synth->tables.envTime[envTime] * keyLookup->envTimeMult[(int)patchCache->filtEnv.envTimeKeyfollow]) >> 8;
 				}
 
 				tStat->envsize++;
-				tStat->envdist = patchCache->filtEnv.envlevel[tStat->envstat] - tStat->envbase;
+				tStat->envdist = patchCache->filtEnv.envLevel[tStat->envstat] - tStat->envbase;
 			}
 
 			reshigh = tStat->envbase;
@@ -695,20 +695,20 @@ Bit32s Partial::getFiltEnvelope() {
 		tStat->prevlevel = reshigh;
 	}
 
-	cutoff = filtMultKeyfollow[patchCache->srcPartial.tvf.keyfollow] - filtMultKeyfollow[patchCache->srcPartial.wg.keyfollow];
+	cutoff = filtMultKeyfollow[patchCache->srcPartial.tvf.keyfollow] - filtMultKeyfollow[patchCache->srcPartial.wg.pitchKeyfollow];
 	cutoff *= ((Bit32s)poly->key - 60);
-	int dynamicBiasPoint = (Bit32s)patchCache->srcPartial.tvf.biaspoint;
+	int dynamicBiasPoint = (Bit32s)patchCache->srcPartial.tvf.biasPoint;
 	if ((dynamicBiasPoint & 0x40) == 0) {
 		dynamicBiasPoint = dynamicBiasPoint + 33 - (Bit32s)poly->key;
 		if (dynamicBiasPoint > 0) {
 			dynamicBiasPoint = -dynamicBiasPoint;
-			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biaslevel];
+			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biasLevel];
 			cutoff += dynamicBiasPoint;
 		}
 	} else {
 		dynamicBiasPoint = dynamicBiasPoint - 31 - (Bit32s)poly->key;
 		if (dynamicBiasPoint <= 0) {
-			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biaslevel];
+			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biasLevel];
 			cutoff += dynamicBiasPoint;
 		}
 	}
@@ -722,7 +722,7 @@ Bit32s Partial::getFiltEnvelope() {
 		int pitch = pitchROMTable[oc % 12];
 		pitch += ((oc / 12) << 12) - 24576;
 
-		pitch = (pitch * romMultKeyfollow[patchCache->srcPartial.wg.keyfollow]) >> 13;
+		pitch = (pitch * romMultKeyfollow[patchCache->srcPartial.wg.pitchKeyfollow]) >> 13;
 		if (patchCache->srcPartial.wg.waveform & 1) {
 			pitch += 33037;
 		} else {
@@ -750,15 +750,15 @@ Bit32s Partial::getFiltEnvelope() {
 		cutoff = 255;
 	}
 
-	int veloFilEnv = (Bit32s)poly->vel * (Bit32s)patchCache->srcPartial.tvf.envsense;
+	int veloFilEnv = (Bit32s)poly->vel * (Bit32s)patchCache->srcPartial.tvf.envVeloSensitivity;
 	int filEnv = (veloFilEnv << 2) >> 8;
-	veloFilEnv  = 109 - patchCache->srcPartial.tvf.envsense + filEnv;
-	filEnv = ((Bit32s)poly->key - 60) >> (4 - (Bit32s)patchCache->srcPartial.tvf.envdkf);
+	veloFilEnv  = 109 - patchCache->srcPartial.tvf.envVeloSensitivity + filEnv;
+	filEnv = ((Bit32s)poly->key - 60) >> (4 - (Bit32s)patchCache->srcPartial.tvf.envDepthKeyfollow);
 	veloFilEnv += filEnv;
 	if (veloFilEnv < 0) {
 		veloFilEnv = 0;
 	}
-	veloFilEnv *= patchCache->srcPartial.tvf.envdepth;
+	veloFilEnv *= patchCache->srcPartial.tvf.envDepth;
 	filEnv = (veloFilEnv << 2) >> 8;
 	if (filEnv > 255) {
 		filEnv = 255;
@@ -799,21 +799,21 @@ Bit32u Partial::getAmpEnvelope(Bit32u *biasResult) {
 			if (tStat->envstat == -1)
 				tStat->envbase = 0;
 			else
-				tStat->envbase = patchCache->ampEnv.envlevel[tStat->envstat];
+				tStat->envbase = patchCache->ampEnv.envLevel[tStat->envstat];
 			tStat->envstat++;
 			tStat->envpos = 0;
 			if (tStat->envstat == 4) {
 				//synth->printDebug("Envstat %d, size %d", tStat->envstat, tStat->envsize);
-				tc = patchCache->ampEnv.envlevel[3];
+				tc = patchCache->ampEnv.envLevel[3];
 				if (!poly->sustain)
 					startDecay(EnvelopeType_amp, tc);
 				else
 					tStat->sustaining = true;
 				goto PastCalc;
 			}
-			Bit8u targetLevel = patchCache->ampEnv.envlevel[tStat->envstat];
+			Bit8u targetLevel = patchCache->ampEnv.envLevel[tStat->envstat];
 			tStat->envdist = targetLevel - tStat->envbase;
-			Bit32u envTime = patchCache->ampEnv.envtime[tStat->envstat];
+			Bit32u envTime = patchCache->ampEnv.envTime[tStat->envstat];
 			//if (targetLevel == 0) {
 			if (tStat->envstat >= patchCache->ampDecayStep) {
 				tStat->envsize = synth->tables.envDecayTime[envTime];
@@ -826,13 +826,13 @@ Bit32u Partial::getAmpEnvelope(Bit32u *biasResult) {
 			}
 
 			// Time keyfollow is used by all sections of the envelope (confirmed on CM-32L)
-			tStat->envsize = FIXEDPOINT_UMULT(tStat->envsize, keyLookup->envTimeMult[(int)patchCache->ampEnv.envtkf], 8);
+			tStat->envsize = FIXEDPOINT_UMULT(tStat->envsize, keyLookup->envTimeMult[(int)patchCache->ampEnv.envTimeKeyfollow], 8);
 
 			switch (tStat->envstat) {
 			case 0:
 				//Spot for velocity time follow
 				//Only used for first attack
-				tStat->envsize = FIXEDPOINT_UMULT(tStat->envsize, synth->tables.envTimeVelfollowMult[(int)patchCache->ampEnv.envvkf][poly->vel], 8);
+				tStat->envsize = FIXEDPOINT_UMULT(tStat->envsize, synth->tables.envTimeVelfollowMult[(int)patchCache->ampEnv.envTimeVeloSensitivity][poly->vel], 8);
 				//synth->printDebug("Envstat %d, size %d", tStat->envstat, tStat->envsize);
 				break;
 			case 1:
@@ -952,7 +952,7 @@ Bit32s Partial::getPitchEnvelope() {
 					envTime = synth->tables.envDeltaMaxTime[envDiff];
 				}
 
-				tStat->envsize = (synth->tables.envTime[envTime] * keyLookup->envTimeMult[(int)patchCache->pitchEnv.timekeyfollow]) >> 8;
+				tStat->envsize = (synth->tables.envTime[envTime] * keyLookup->envTimeMult[(int)patchCache->pitchEnv.timeKeyfollow]) >> 8;
 
 				tStat->envpos = 0;
 				tStat->envsize++;
@@ -983,15 +983,15 @@ void Partial::startDecay(EnvelopeType envnum, Bit32s startval) {
 
 	switch (envnum) {
 	case EnvelopeType_amp:
-		tStat->envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->ampEnv.envtime[4]], keyLookup->envTimeMult[(int)patchCache->ampEnv.envtkf], 8);
+		tStat->envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->ampEnv.envTime[4]], keyLookup->envTimeMult[(int)patchCache->ampEnv.envTimeKeyfollow], 8);
 		tStat->envdist = -startval;
 		break;
 	case EnvelopeType_filt:
-		tStat->envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->filtEnv.envtime[4]], keyLookup->envTimeMult[(int)patchCache->filtEnv.envtkf], 8);
+		tStat->envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->filtEnv.envTime[4]], keyLookup->envTimeMult[(int)patchCache->filtEnv.envTimeKeyfollow], 8);
 		tStat->envdist = -startval;
 		break;
 	case EnvelopeType_pitch:
-		tStat->envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->pitchEnv.time[3]], keyLookup->envTimeMult[(int)patchCache->pitchEnv.timekeyfollow], 8);
+		tStat->envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->pitchEnv.time[3]], keyLookup->envTimeMult[(int)patchCache->pitchEnv.timeKeyfollow], 8);
 		tStat->envdist = patchCache->pitchEnv.level[4] - startval;
 		break;
 	default:
