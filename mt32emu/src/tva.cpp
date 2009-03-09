@@ -149,6 +149,7 @@ void TVA::nextPhase() {
 		partial->getSynth()->printDebug("TVA::nextPhase(): Shouldn't have got here with targetPhase %d", targetPhase);
 		return;
 	}
+	int currentPhase = targetPhase;
 	targetPhase++;
 
 	if (targetPhase == 7) {
@@ -158,7 +159,6 @@ void TVA::nextPhase() {
 
 	int newTargetAmp;
 	int newTimeToTarget;
-	int currentPhase = targetPhase;
 	bool allLevelsZeroFromNowOn = false;
 	if (partialParam->tva.envLevel[3] == 0) {
 		if (targetPhase == 4)
