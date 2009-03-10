@@ -37,7 +37,7 @@ private:
 
 	int biasAmpSubtraction;
 	int veloAmpSubtraction;
-	int keyTimeSubtraction;
+	int keyTimeAmpSubtraction;
 
 public:
 	// FIXME: These should probably be private

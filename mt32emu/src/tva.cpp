@@ -32,7 +32,7 @@ static int multBias(const Tables *tables, Bit8u biasLevel, int bias) {
 }
 
 static int calcBiasAmpSubtraction(const Tables *tables, Bit8u biasPoint, Bit8u biasLevel, int key) {
-	if (biasPoint & 0x40 == 0) {
+	if ((biasPoint & 0x40) == 0) {
 		int bias = 33 - key;
 		if (bias > 0) {
 			return multBias(tables, biasLevel, bias);
@@ -64,7 +64,7 @@ static int calcVeloAmpSubtraction(const Tables *tables, Bit8u veloSensitivity, i
 	// FIXME:KG: Better variable names
 	int velocityMult = veloSensitivity - 50;
 	int absVelocityMult = velocityMult < 0 ? -velocityMult : velocityMult;
-	velocityMult  = (velocityMult * (key - 64)) << 2;
+	velocityMult = (velocityMult * (key - 64)) << 2;
 	return absVelocityMult - (velocityMult >> 8);
 }
 
@@ -101,7 +101,7 @@ static int calcBasicAmp(const Tables *tables, const Partial *partial, const MemP
 	return amp;
 }
 
-int calcKeyTimeSubtraction(Bit8u envTimeKeyfollow, int key) {
+int calcKeyTimeAmpSubtraction(Bit8u envTimeKeyfollow, int key) {
 	if (envTimeKeyfollow == 0)
 		return 0;
 	return (key - 60) >> (5 - envTimeKeyfollow);
@@ -121,7 +121,7 @@ void TVA::reset(const Part *part, const PatchCache *patchCache) {
 	int key = partial->getPoly()->key;
 	int velocity = partial->getPoly()->vel;
 
-	keyTimeSubtraction = calcKeyTimeSubtraction(partialParam->tva.envTimeKeyfollow, key);
+	keyTimeAmpSubtraction = calcKeyTimeAmpSubtraction(partialParam->tva.envTimeKeyfollow, key);
 
 	biasAmpSubtraction = calcBiasAmpSubtractions(tables, partialParam, key);
 	veloAmpSubtraction = calcVeloAmpSubtraction(tables, partialParam->tva.veloSensitivity, velocity);
@@ -157,8 +157,6 @@ void TVA::nextPhase() {
 		return;
 	}
 
-	int newTargetAmp;
-	int newTimeToTarget;
 	bool allLevelsZeroFromNowOn = false;
 	if (partialParam->tva.envLevel[3] == 0) {
 		if (targetPhase == 4)
@@ -177,7 +175,9 @@ void TVA::nextPhase() {
 		}
 	}
 
-	int newTargetamp;
+	int newTargetAmp;
+	int newTimeToTarget;
+
 	if (!allLevelsZeroFromNowOn) {
 		newTargetAmp = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
 		newTargetAmp -= partialParam->tvf.resonance >> 1;
@@ -217,7 +217,7 @@ void TVA::nextPhase() {
 					envTimeSetting = 1;
 			}
 		} else {
-			envTimeSetting -= keyTimeSubtraction;
+			envTimeSetting -= keyTimeAmpSubtraction;
 		}
 		if (envTimeSetting > 0)
 		{
