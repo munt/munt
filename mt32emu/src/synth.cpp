@@ -339,7 +339,7 @@ bool Synth::initRhythmTimbre(int timbreNum, const Bit8u *mem, unsigned int memLe
 		return false;
 	}
 	TimbreParam *timbre = &mt32ram.timbres[timbreNum].timbre;
-	timbresMemoryRegion->write(timbreNum, 0, mem, sizeof(TimbreParam::CommonParam));
+	timbresMemoryRegion->write(timbreNum, 0, mem, sizeof(TimbreParam::CommonParam), true);
 	unsigned int memPos = sizeof(TimbreParam::CommonParam);
 	char drumname[11];
 	strncpy(drumname, timbre->common.name, 10);
@@ -384,7 +384,7 @@ bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, int startTimbre) {
 			return false;
 		}
 		address = address + offset;
-		timbresMemoryRegion->write(startTimbre++, 0, &controlROMData[address], sizeof(TimbreParam));
+		timbresMemoryRegion->write(startTimbre++, 0, &controlROMData[address], sizeof(TimbreParam), true);
 	}
 	return true;
 }
@@ -455,7 +455,7 @@ bool Synth::open(SynthProperties &useProp) {
 	initPCMList(controlROMMap->pcmTable, controlROMMap->pcmCount);
 
 	printDebug("Initialising Rhythm Temp");
-	rhythmTempMemoryRegion->write(0, 0, &controlROMData[controlROMMap->rhythmSettings], controlROMMap->rhythmSettingsCount * 4);
+	rhythmTempMemoryRegion->write(0, 0, &controlROMData[controlROMMap->rhythmSettings], controlROMMap->rhythmSettingsCount * 4, true);
 
 	printDebug("Initialising Patches");
 	for (Bit8u i = 0; i < 128; i++) {
@@ -1248,7 +1248,7 @@ void MemoryRegion::read(unsigned int entry, unsigned int off, Bit8u *dst, unsign
 	memcpy(dst, src + off, len);
 }
 
-void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src, unsigned int len) const {
+void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src, unsigned int len, bool init) const {
 		unsigned int memOff = entry * entrySize + off;
 		// This method should never be called with out-of-bounds parameters,
 		// or on an unsupported region - seeing any of this debug output indicates a bug in the emulator
@@ -1265,10 +1265,11 @@ void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src,
 			synth->printDebug("write[%d]: unwritable region: entry=%d, off=%d, len=%d", type, entry, off, len);
 		}
 
-		for (int i = 0; i < len; i++) {
+		for (unsigned int i = 0; i < len; i++) {
 			Bit8u desiredValue = src[i];
 			Bit8u maxValue = getMaxValue(memOff);
-			if (maxValue != 0) {
+			// maxValue == 0 means write-protected unless called from initialisation code, in which case it really means the maximum value is 0.
+			if (maxValue != 0 || init) {
 				if (desiredValue > maxValue) {
 					synth->printDebug("write[%d]: Wanted 0x%02x at %d, but max 0x%02x", type, desiredValue, memOff, maxValue);
 					desiredValue = maxValue;

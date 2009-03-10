@@ -210,7 +210,7 @@ public:
 		return getRealMemory() != NULL;
 	}
 	void read(unsigned int entry, unsigned int off, Bit8u *dst, unsigned int len) const;
-	void write(unsigned int entry, unsigned int off, const Bit8u *src, unsigned int len) const;
+	void write(unsigned int entry, unsigned int off, const Bit8u *src, unsigned int len, bool init = false) const;
 };
 
 class PatchTempMemoryRegion : public MemoryRegion {
