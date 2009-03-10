@@ -108,7 +108,6 @@ static bool playSysexFile(MT32Emu::Synth *synth, char *syxFileName) {
 	bool ok = false;
 	long len;
 	long start = -1;
-	long end = -1;
 	MT32Emu::Bit8u *syxbuf;
 	FILE *syxFile = fopen(syxFileName, "r");
 	if (syxFile != NULL) {
@@ -117,7 +116,7 @@ static bool playSysexFile(MT32Emu::Synth *synth, char *syxFileName) {
 		if (len != -1) {
 			syxbuf = (MT32Emu::Bit8u*)malloc(len);
 			if (syxbuf != NULL) {
-				if (fread(syxbuf, 1, len, syxFile) == len) {
+				if (fread(syxbuf, 1, len, syxFile) == (unsigned)len) {
 					ok = true;
 					for (long i = 0; i < len; i++) {
 						if (syxbuf[i] == 0xF0) {
@@ -155,7 +154,6 @@ static bool playSysexFile(MT32Emu::Synth *synth, char *syxFileName) {
 static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu::SynthProperties &synthProperties) {
 	MT32Emu::Synth *synth = new MT32Emu::Synth();
 	MT32Emu::Bit16s samples[2];
-	unsigned char *buffer;
 	long playedSamples = 0;
 	FILE *dstFile;
 	if (synth->open(synthProperties)) {
