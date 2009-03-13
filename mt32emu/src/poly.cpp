@@ -31,4 +31,19 @@ Bit32u Poly::getAge() const {
 	return 0;
 }
 
+void Poly::startDecay() {
+	if (isDecay) {
+		return;
+	}
+	isDecay = true;
+
+	for (int t = 0; t < 4; t++) {
+		Partial *partial = partials[t];
+		if (partial == NULL)
+			continue;
+		partial->startDecayAll();
+	}
+	isPlaying = false;
+}
+
 }

@@ -58,7 +58,8 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	}
 	currentInstr[0] = 0;
 	currentInstr[10] = 0;
-	expression = 127;
+	midiExpression = 127;
+	expression = 100;
 	volumeMult = 0;
 	volumesetting.leftvol = 32767;
 	volumesetting.rightvol = 32767;
@@ -76,19 +77,20 @@ void Part::setHoldPedal(bool pedalval) {
 	}
 }
 
-void RhythmPart::setBend(unsigned int midiBend) {
-	synth->printDebug("%s: Setting bend (%d) not supported on rhythm", name, midiBend);
-	return;
+Bit32s Part::getPitchBend() const {
+	return pitchBend;
 }
 
 void Part::setBend(unsigned int midiBend) {
-	// FIXME:KG: Slightly unbalanced increments, but I wanted min -1.0, centre 0.0 and max 1.0
+	// CONFIRMED:
+	pitchBend = ((midiBend - 8192) * pitchBenderRange) >> 14;
+
+	// DEPRECATED: Everything below will soon be obsolete and removed
 	if (midiBend <= 0x2000) {
 		bend = ((signed int)midiBend - 0x2000) / (float)0x2000;
 	} else {
 		bend = ((signed int)midiBend - 0x2000) / (float)0x1FFF;
 	}
-	// Loop through all partials to update their bend
 	for (int i = 0; i < MT32EMU_MAX_POLY; i++) {
 		for (int j = 0; j < 4; j++) {
 			if (polyTable[i].partials[j] != NULL) {
@@ -98,18 +100,18 @@ void Part::setBend(unsigned int midiBend) {
 	}
 }
 
-void RhythmPart::setModulation(unsigned int midiModulation) {
-	synth->printDebug("%s: Setting modulation (%d) not supported on rhythm", name, midiModulation);
+Bit8u Part::getModulation() const {
+	return modulation;
 }
 
 void Part::setModulation(unsigned int midiModulation) {
-	// Just a bloody guess, as always, before I get things figured out
+	modulation = (Bit8u)midiModulation;
+
+	// DEPRECATED: Everything below will soon be obsolete and removed
 	for (int t = 0; t < 4; t++) {
 		if (patchCache[t].playPartial) {
 			int newrate = (patchCache[t].modsense * midiModulation) >> 7;
-			//patchCache[t].lfoperiod = lfotable[newrate];
 			patchCache[t].lfodepth = newrate;
-			//FIXME:KG: timbreTemp->partial[t].lfo.depth =
 		}
 	}
 }
@@ -236,8 +238,13 @@ void RhythmPart::setProgram(unsigned int patchNum) {
 	synth->printDebug("%s: Attempt to set program (%d) on rhythm is invalid", name, patchNum);
 }
 
+void Part::updatePitchBenderRange() {
+	pitchBenderRange = patchTemp->patch.benderRange * 683;
+}
+
 void Part::setProgram(unsigned int patchNum) {
 	setPatch(&synth->mt32ram.patches[patchNum]);
+	updatePitchBenderRange();
 	setTimbre(&synth->mt32ram.timbres[getAbsTimbreNum()].timbre);
 
 	refresh();
@@ -377,9 +384,8 @@ const char *Part::getName() const {
 }
 
 void Part::updateVolume() {
-	//volumeMult = synth->tables.volumeMult[patchTemp->outlevel * expression / 127];
-	volumeMult = (patchTemp->outputLevel * expression) / 127;
-	//synth->printDebug("%s (%s): OutLevel %d, expression %d", name, currentInstr, patchTemp->outlevel, expression);
+	// DEPRECATED: This method will soon be obsolete and removed
+	volumeMult = (patchTemp->outputLevel * midiExpression) / 127;
 }
 
 int Part::getVolume() const {
@@ -388,14 +394,22 @@ int Part::getVolume() const {
 }
 
 void Part::setVolume(int midiVolume) {
-	// FIXME: Use the mappings for this in the control ROM
+	// CONFIRMED: This calculation matches the table used in the control ROM
 	patchTemp->outputLevel = (Bit8u)(midiVolume * 100 / 127);
 	updateVolume();
 	//synth->printDebug("%s (%s): Set volume to %d", name, currentInstr, midiVolume);
 }
 
+Bit8u Part::getExpression() const {
+	return expression;
+}
+
 void Part::setExpression(int midiExpression) {
-	expression = midiExpression;
+	// CONFIRMED: This calculation matches the table used in the control ROM
+	expression = (Bit8u)(midiExpression * 100 / 127);
+
+	// DEPRECATED: This will become obsolete and go away soon
+	this->midiExpression = midiExpression;
 	updateVolume();
 }
 
@@ -532,21 +546,6 @@ void Part::playPoly(const PatchCache cache[4], unsigned int key, int freqNum, in
 	}
 }
 
-static void startDecayPoly(Poly *tpoly) {
-	if (tpoly->isDecay) {
-		return;
-	}
-	tpoly->isDecay = true;
-
-	for (int t = 0; t < 4; t++) {
-		Partial *partial = tpoly->partials[t];
-		if (partial == NULL)
-			continue;
-		partial->startDecayAll();
-	}
-	tpoly->isPlaying = false;
-}
-
 void Part::allNotesOff() {
 	// Note: Unchecked on real MT-32, but the MIDI specification states that all notes off (0x7B)
 	// should treat the hold pedal as usual.
@@ -558,7 +557,7 @@ void Part::allNotesOff() {
 			if (holdpedal)
 				tpoly->pedalhold = true;
 			else if (tpoly->sustain)
-				startDecayPoly(tpoly);
+				tpoly->startDecay();
 		}
 	}
 }
@@ -567,7 +566,7 @@ void Part::allSoundOff() {
 	for (int q = 0; q < MT32EMU_MAX_POLY; q++) {
 		Poly *tpoly = &polyTable[q];
 		if (tpoly->isPlaying) {
-			startDecayPoly(tpoly);
+			tpoly->startDecay();
 		}
 	}
 }
@@ -596,7 +595,7 @@ void Part::stopNote(unsigned int key) {
 				if (holdpedal)
 					tpoly->pedalhold = true;
 				else if (tpoly->sustain)
-					startDecayPoly(tpoly);
+					tpoly->startDecay();
 			}
 		}
 		return;
@@ -619,8 +618,20 @@ void Part::stopNote(unsigned int key) {
 	}
 
 	if (oldest != -1) {
-		startDecayPoly(&polyTable[oldest]);
+		polyTable[oldest].startDecay();
 	}
+}
+
+const MemParams::PatchTemp *Part::getPatchTemp() const {
+	return patchTemp;
+}
+
+const MemParams::RhythmTemp *Part::getRhythmTemp() const {
+	return NULL;
+}
+
+const MemParams::RhythmTemp *RhythmPart::getRhythmTemp() const {
+	return rhythmTemp;
 }
 
 }

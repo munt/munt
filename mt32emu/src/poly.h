@@ -36,6 +36,7 @@ struct Poly {
 	bool sustain;
 
 	bool isActive() const;
+	void startDecay();
 	Bit32u getAge() const;
 };
 

@@ -52,7 +52,13 @@ protected:
 	Synth *synth;
 	char name[8]; // "Part 1".."Part 8", "Rhythm"
 	char currentInstr[11];
-	int expression;
+	Bit8u modulation;
+	Bit8u expression;
+	Bit32s pitchBend;
+	Bit16u pitchBenderRange; // (patchTemp->patch.benderRange * 683) at the time of the last MIDI program change or MIDI data entry.
+
+	// DEPRECATED: These two fields will soon be obsolete and removed
+	int midiExpression;
 	Bit32u volumeMult;
 
 	void updateVolume();
@@ -69,18 +75,24 @@ public:
 	void allSoundOff();
 	int getVolume() const;
 	void setVolume(int midiVolume);
+	Bit8u getModulation() const;
+	void setModulation(unsigned int midiModulation);
+	Bit8u getExpression() const;
 	void setExpression(int midiExpression);
 	virtual void setPan(unsigned int midiPan);
-	virtual void setBend(unsigned int midiBend);
-	virtual void setModulation(unsigned int midiModulation);
+	Bit32s getPitchBend() const;
+	void setBend(unsigned int midiBend);
 	virtual void setProgram(unsigned int midiProgram);
 	void setHoldPedal(bool pedalval);
 	void stopPedalHold();
+	void updatePitchBenderRange();
 	virtual void refresh();
 	virtual void refreshTimbre(unsigned int absTimbreNum);
 	virtual void setTimbre(TimbreParam *timbre);
 	virtual unsigned int getAbsTimbreNum() const;
 	const char *getCurrentInstr() const;
+	const MemParams::PatchTemp *getPatchTemp() const;
+	virtual const MemParams::RhythmTemp *getRhythmTemp() const;
 };
 
 class RhythmPart: public Part {
@@ -98,9 +110,8 @@ public:
 	void playNote(unsigned int key, int vel);
 	unsigned int getAbsTimbreNum() const;
 	void setPan(unsigned int midiPan);
-	void setBend(unsigned int midiBend);
-	void setModulation(unsigned int midiModulation);
 	void setProgram(unsigned int patchNum);
+	const MemParams::RhythmTemp *getRhythmTemp() const;
 };
 
 }
