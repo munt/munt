@@ -122,11 +122,11 @@ static int calcBasicAmp(const Tables *tables, const Partial *partial, const MemP
 	amp -= veloAmpSubtraction;
 	if (amp < 0)
 		return 0;
+	if (amp > 155)
+		amp = 155;
 	amp -= partialParam->tvf.resonance >> 1;
 	if (amp < 0)
 		return 0;
-	if (amp > 155)
-		return 155;
 	return amp;
 }
 
@@ -163,8 +163,9 @@ void TVA::reset(const Part *part, const PatchCache *patchCache) {
 		targetPhase = 0;
 	}
 	ampIncrement = (0x80 | 127); // Go downward as quickly as possible. FIXME: Check this is right
-	currentAmp = 0;
 	targetAmp = (Bit8u)newTargetAmp;
+
+	currentAmp = 0;
 }
 
 void TVA::startDecay() {
