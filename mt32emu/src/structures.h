@@ -66,7 +66,7 @@ struct TimbreParam {
 		struct WGParam {
 			Bit8u pitchCoarse;  // 0-96 (C1,C#1-C9)
 			Bit8u pitchFine;  // 0-100 (-50 to +50 (cents - confirmed by Mok))
-			Bit8u pitchKeyfollow;  // 0-16 (-1, -1/2, 0, 1, 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8, 1, 5/4, 3/2, s1, s2)
+			Bit8u pitchKeyfollow;  // 0-16 (-1, -1/2, -1/4, 0, 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8, 1, 5/4, 3/2, 2, s1, s2)
 			Bit8u pitchBenderEnabled;  // 0-1 (OFF, ON)
 			Bit8u waveform; // MT-32: 0-1 (SQU/SAW); LAPC-I: WG WAVEFORM/PCM BANK 0 - 3 (SQU/1, SAW/1, SQU/2, SAW/2)
 			Bit8u pcmWave; // 0-127 (1-128)
@@ -91,7 +91,7 @@ struct TimbreParam {
 		struct TVFParam {
 			Bit8u cutoff; // 0-100
 			Bit8u resonance; // 0-30
-			Bit8u keyfollow; // 0-16 (-1,-1/2,1/4,0,1,1/8,1/4,3/8,1/2,5/8,3/2,7/8,1,5/4,3/2,2,s1,s2)
+			Bit8u keyfollow; // -1, -1/2, -1/4, 0, 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8, 1, 5/4, 3/2, 2
 			Bit8u biasPoint; // 0-127 (<1A-<7C >1A-7C)
 			Bit8u biasLevel; // 0-14 (-7 - +7)
 			Bit8u envDepth; // 0-100
