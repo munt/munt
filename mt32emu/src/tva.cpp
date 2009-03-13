@@ -59,12 +59,12 @@ static int multBias(const Tables *tables, Bit8u biasLevel, int bias) {
 
 static int calcBiasAmpSubtraction(const Tables *tables, Bit8u biasPoint, Bit8u biasLevel, int key) {
 	if ((biasPoint & 0x40) == 0) {
-		int bias = 33 - key;
+		int bias = biasPoint + 33 - key;
 		if (bias > 0) {
 			return multBias(tables, biasLevel, bias);
 		}
 	} else {
-		int bias = -31 - key;
+		int bias = biasPoint - 31 - key;
 		if (bias < 0) {
 			bias = -bias;
 			return multBias(tables, biasLevel, bias);
