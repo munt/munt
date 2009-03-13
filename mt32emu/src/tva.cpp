@@ -27,27 +27,33 @@ TVA::TVA(const Partial *partial) :
 
 Bit32u TVA::nextAmp() {
 	// FIXME: This whole method is based on guesswork
+	if (ampIncrement == 0)
+		return currentAmp;
 	Bit8u absAmpIncrement = ampIncrement & 0x7F;
 	Bit32u target = targetAmp * 0x10000;
 	if ((ampIncrement & 0x80) != 0) {
 		// Lowering amp
 		if (absAmpIncrement > currentAmp) {
-			currentAmp = 0;
+			currentAmp = target;
 			nextPhase();
 		} else {
 			currentAmp -= absAmpIncrement;
-			if(currentAmp <= target)
+			if (currentAmp <= target) {
+				currentAmp = target;
 				nextPhase();
+			}
 		}
 	} else {
 		// Raising amp
-		if(0xFF0000 - currentAmp < absAmpIncrement) {
-			currentAmp = 0xFF0000;
+		if (0xFF0000 - currentAmp < absAmpIncrement) {
+			currentAmp = target;
 			nextPhase();
 		} else {
 			currentAmp += absAmpIncrement;
-			if(currentAmp >= target)
+			if(currentAmp >= target) {
+				currentAmp = target;
 				nextPhase();
+			}
 		}
 	}
 	return currentAmp;
