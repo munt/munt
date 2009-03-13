@@ -25,6 +25,34 @@ TVA::TVA(const Partial *partial) :
 	partial(partial), system(&partial->getSynth()->mt32ram.system) {
 }
 
+Bit32u TVA::nextAmp() {
+	// FIXME: This whole method is based on guesswork
+	Bit8u absAmpIncrement = ampIncrement & 0x7F;
+	Bit32u target = targetAmp * 0x10000;
+	if ((ampIncrement & 0x80) != 0) {
+		// Lowering amp
+		if (absAmpIncrement > currentAmp) {
+			currentAmp = 0;
+			nextPhase();
+		} else {
+			currentAmp -= absAmpIncrement;
+			if(currentAmp <= target)
+				nextPhase();
+		}
+	} else {
+		// Raising amp
+		if(0xFF0000 - currentAmp < absAmpIncrement) {
+			currentAmp = 0xFF0000;
+			nextPhase();
+		} else {
+			currentAmp += absAmpIncrement;
+			if(currentAmp >= target)
+				nextPhase();
+		}
+	}
+	return currentAmp;
+}
+
 static int multBias(const Tables *tables, Bit8u biasLevel, int bias) {
 	return (bias * biasLevelToAmpSubtractionCoeff[biasLevel]) >> 5;
 }
@@ -135,6 +163,7 @@ void TVA::reset(const Part *part, const PatchCache *patchCache) {
 		targetPhase = 0;
 	}
 	ampIncrement = (0x80 | 127); // Go downward as quickly as possible. FIXME: Check this is right
+	currentAmp = 0;
 	targetAmp = (Bit8u)newTargetAmp;
 }
 

@@ -33,21 +33,22 @@ private:
 	const MemParams::PatchTemp *patchTemp;
 	const MemParams::RhythmTemp *rhythmTemp;
 
-	bool play;
-
 	int biasAmpSubtraction;
 	int veloAmpSubtraction;
 	int keyTimeAmpSubtraction;
 
 public:
 	// FIXME: These should probably be private (only public for testing purposes atm)
+	bool play;
 	int targetPhase;
 	Bit8u targetAmp;
 	// AFAICT: Lower 7 bits indicate how quickly the amp level should be changed, most significant bit indicates change direction (set=downward)
 	Bit8u ampIncrement;
+	Bit32u currentAmp;
 
 	TVA(const Partial *partial);
 	void reset(const Part *part, const PatchCache *patchCache);
+	Bit32u nextAmp();
 	void nextPhase();
 	void recalcSustain();
 	void startDecay();
