@@ -14,11 +14,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "tva.h"
+#include "mt32emu.h"
 
 namespace MT32Emu {
-
-class Part;
 
 // CONFIRMED: Matches a table in ROM - haven't got around to coming up with a formula for it yet.
 static Bit8u biasLevelToAmpSubtractionCoeff[13] = {255, 187, 137, 100, 74, 54, 40, 29, 21, 15, 10, 5, 0};
@@ -96,6 +94,9 @@ static int calcBasicAmp(const Tables *tables, const Partial *partial, const MemP
 	amp -= veloAmpSubtraction;
 	if (amp < 0)
 		return 0;
+	amp -= partialParam->tvf.resonance >> 1;
+	if (amp < 0)
+		return 0;
 	if (amp > 155)
 		return 155;
 	return amp;
@@ -113,7 +114,6 @@ void TVA::reset(const Part *part, const PatchCache *patchCache) {
 	this->patchTemp = part->getPatchTemp();
 	this->rhythmTemp = part->getRhythmTemp();
 
-	targetPhase = 0;
 	play = true;
 
 	Tables *tables = &partial->getSynth()->tables;
@@ -127,10 +127,6 @@ void TVA::reset(const Part *part, const PatchCache *patchCache) {
 	veloAmpSubtraction = calcVeloAmpSubtraction(tables, partialParam->tva.veloSensitivity, velocity);
 
 	int newTargetAmp = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
-	newTargetAmp -= partialParam->tvf.resonance >> 1;
-	if (newTargetAmp < 0) {
-		newTargetAmp = 0;
-	}
 
 	if (partialParam->tva.envTime[0] == 0) {
 		newTargetAmp += partialParam->tva.envLevel[0];
@@ -138,15 +134,52 @@ void TVA::reset(const Part *part, const PatchCache *patchCache) {
 	} else {
 		targetPhase = 0;
 	}
-	timeToTarget = 255;
+	ampIncrement = (0x80 | 127); // Go downward as quickly as possible. FIXME: Check this is right
+	targetAmp = (Bit8u)newTargetAmp;
+}
+
+void TVA::startDecay() {
+	if (targetPhase >= 6)
+		return;
+	targetPhase = 6;
+	ampIncrement = -partialParam->tva.envTime[4];
+	if (ampIncrement >= 0) {
+		ampIncrement += 1; // I.e. if (ampIncrement == 0) ampIncrement = 1. FIXME: Wtf? Aiui this will raise the volume, not lower it, and therefore never hit the target...
+	}
+	targetAmp = 0;
+}
+
+void TVA::recalcSustain() {
+	// We get pinged periodically by the pitch code to recalculate our values when in sustain
+	// This is done so that the TVA will respond to things like MIDI expression and volume changes while it's sustaining, which it otherwise wouldn't do.
+
+	if (partial->tva->targetPhase != 5 || partialParam->tva.envLevel[3] == 0)
+		return;
+	// We're sustaining. Recalculate all the values
+	Tables *tables = &partial->getSynth()->tables;
+	int newTargetAmp = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
+	newTargetAmp += partialParam->tva.envLevel[3];
+	// FIXME: This whole concept seems flawed.  We don't really know what the *actual* amp value is, right? It may well not be targetAmp yet (unless I've missed something). So we could end up going in the wrong direction...
+	int ampDelta = newTargetAmp - targetAmp;
+
+	// Calculate an increment to get to the new amp value in a short, more or less consistent amount of time
+	int newAmpIncrement;
+	if (ampDelta >= 0) {
+		newAmpIncrement = tables->envLogarithmicTime[(Bit8u)ampDelta] - 2;
+	} else {
+		newAmpIncrement = (tables->envLogarithmicTime[(Bit8u)-ampDelta] - 2) | 0x80;
+	}
 	targetAmp = newTargetAmp;
+	ampIncrement = newAmpIncrement;
+	// Configure so that once the transition's complete and nextPhase() is called, we'll just re-enter sustain phase (or decay phase, depending on parameters at the time).
+	targetPhase = 4;
 }
 
 void TVA::nextPhase() {
 	Tables *tables = &partial->getSynth()->tables;
 
-	if (targetPhase >= 7) {
-		partial->getSynth()->printDebug("TVA::nextPhase(): Shouldn't have got here with targetPhase %d", targetPhase);
+	if (targetPhase >= 7 || !play) {
+		partial->getSynth()->printDebug("TVA::nextPhase(): Shouldn't have got here with targetPhase %d, play=%s", targetPhase, play ? "true" : "false");
 		return;
 	}
 	int currentPhase = targetPhase;
@@ -176,13 +209,10 @@ void TVA::nextPhase() {
 	}
 
 	int newTargetAmp;
-	int newTimeToTarget;
+	int newAmpIncrement;
 
 	if (!allLevelsZeroFromNowOn) {
 		newTargetAmp = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
-		newTargetAmp -= partialParam->tvf.resonance >> 1;
-		if (newTargetAmp < 0)
-			newTargetAmp = 0;
 
 		if (targetPhase == 5 || targetPhase == 6) {
 			if (partialParam->tva.envLevel[3] == 0) {
@@ -192,13 +222,14 @@ void TVA::nextPhase() {
 			if (!partial->getPoly()->sustain) {
 				targetPhase = 6;
 				newTargetAmp = 0;
-				newTimeToTarget = 0 - partialParam->tva.envTime[4];
-				if (newTimeToTarget >= 0) {
-					newTimeToTarget++;
+				newAmpIncrement = -partialParam->tva.envTime[4];
+				if (newAmpIncrement >= 0) {
+					// FIXME: This must mean newAmpIncrement was 0, and we're now making it 1, which makes us go in the wrong direction. WTF?
+					newAmpIncrement++;
 				}
 			} else {
 				newTargetAmp += partialParam->tva.envLevel[3];
-				newTimeToTarget = 0;
+				newAmpIncrement = 0;
 			}
 		} else {
 			newTargetAmp += partialParam->tva.envLevel[currentPhase];
@@ -221,39 +252,49 @@ void TVA::nextPhase() {
 		}
 		if (envTimeSetting > 0)
 		{
-			newTimeToTarget = newTargetAmp - targetAmp;
-			if (newTimeToTarget <= 0) {
-				if (newTimeToTarget == 0) {
-					newTimeToTarget--; // i.e. newTimeToTarget = -1;
+			int ampDelta = newTargetAmp - targetAmp;
+			if (ampDelta <= 0) {
+				if (ampDelta == 0) {
+					// targetAmp and newTargetAmp are the same.
+					// We'd never get anywhere if we used these parameters, so instead make targetAmp one less than it really should be and set ampDelta accordingly
+					ampDelta--; // i.e. ampDelta = -1;
 					newTargetAmp--;
 					if (newTargetAmp < 0) {
-						newTimeToTarget = -newTimeToTarget;
+						// Oops, newTargetAmp is less than zero now, so let's do it the other way:
+						// Make newTargetAmp one more than it really should've been and set ampDelta accordingly
+						// FIXME: This means ampDelta will be positive just below here where it's inverted, and we'll end up using envLogarithmicTime[-1], and we'll be setting newAmpIncrement to be descending later on, etc..
+						ampDelta = -ampDelta; // i.e. ampDelta = 1;
 						newTargetAmp = -newTargetAmp;
 					}
 				}
-				newTimeToTarget = -newTimeToTarget;
-				newTimeToTarget = tables->envLogarithmicTime[(Bit8u)newTimeToTarget] - envTimeSetting;
-				if (newTimeToTarget <= 0) {
-					newTimeToTarget = 1;
+				ampDelta = -ampDelta;
+				newAmpIncrement = tables->envLogarithmicTime[(Bit8u)ampDelta] - envTimeSetting;
+				if (newAmpIncrement <= 0) {
+					newAmpIncrement = 1;
 				}
-				newTimeToTarget = newTimeToTarget | 0x80;
+				newAmpIncrement = newAmpIncrement | 0x80;
 			} else {
-				newTimeToTarget = tables->envLogarithmicTime[(Bit8u)newTimeToTarget] - envTimeSetting;
-				if (newTimeToTarget <= 0) {
-					newTimeToTarget = 1;
+				// FIXME: The last 22 or so entries in this table are 128 - surely that fucks things up, since that ends up being -128 signed?
+				newAmpIncrement = tables->envLogarithmicTime[(Bit8u)ampDelta] - envTimeSetting;
+				if (newAmpIncrement <= 0) {
+					newAmpIncrement = 1;
 				}
 			}
 		}
 		else
-			newTimeToTarget = newTargetAmp >= targetAmp ? -1 : 127;
+		{
+			// FIXME: Shouldn't we be ensuring that targetAmp != newTargetAmp here?
+			newAmpIncrement = newTargetAmp >= targetAmp ? (0x80 | 127) : 127;
+		}
 
-		if (newTimeToTarget == 0) {
-			newTimeToTarget = 1;
+		// FIXME: What's the point of this? It's checked or set to non-zero everywhere above
+		if (newAmpIncrement == 0) {
+			newAmpIncrement = 1;
 		}
 	}
 
-	targetAmp = newTargetAmp;
-	timeToTarget = newTimeToTarget;
+	targetAmp = (Bit8u)newTargetAmp;
+	ampIncrement = (Bit8u)newAmpIncrement;
 }
 
 }

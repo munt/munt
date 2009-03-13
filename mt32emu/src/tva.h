@@ -40,14 +40,17 @@ private:
 	int keyTimeAmpSubtraction;
 
 public:
-	// FIXME: These should probably be private
+	// FIXME: These should probably be private (only public for testing purposes atm)
 	int targetPhase;
-	int targetAmp;
-	int timeToTarget;
+	Bit8u targetAmp;
+	// AFAICT: Lower 7 bits indicate how quickly the amp level should be changed, most significant bit indicates change direction (set=downward)
+	Bit8u ampIncrement;
 
 	TVA(const Partial *partial);
 	void reset(const Part *part, const PatchCache *patchCache);
 	void nextPhase();
+	void recalcSustain();
+	void startDecay();
 };
 
 }
