@@ -93,6 +93,21 @@ class Tables {
 	void initFiltCoeff(float samplerate);
 public:
 	// Constant LUTs
+
+	// CONFIRMED: This is used to convert several parameters to amp-modifying values in the TVA envelope:
+	// - PatchTemp.outputLevel
+	// - RhythmTemp.outlevel
+	// - PartialParam.tva.level
+	// - expression
+	// It's used to determine how much to subtract from the amp envelope's target value
+	Bit8u levelToAmpSubtraction[101];
+
+	// CONFIRMED: ...
+	Bit8u envLogarithmicTime[256];
+
+	// CONFIRMED: ...
+	Bit8u masterVolToAmpSubtraction[101];
+
 	Bit32s tvfKeyfollowMult[217];
 	Bit32u tvaVelfollowMult[128][101];
 	Bit32s tvaBiasMult[13][128];

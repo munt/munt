@@ -178,7 +178,34 @@ void Tables::initEnvelopes(float samplerate) {
 
 void Tables::initMT32ConstantTables(Synth *synth) {
 	int lf;
-	synth->printDebug("Initialising Pitch Tables");
+	synth->printDebug("Initialising Constant Tables");
+	for (lf = 0; lf <= 100; lf++) {
+		// CONFIRMED:KG: This matches a ROM table found by Mok
+		float fVal = (2.0f - log10f(lf + 1.0f)) * 128.0f;
+        int val = (int)(fVal + 1.0);
+        if (val > 255)
+        	val = 255;
+        levelToAmpSubtraction[lf] = (Bit8u)val;
+	}
+
+	envLogarithmicTime[0] = 64;
+	for(lf = 1; lf <= 255; lf++) {
+		// CONFIRMED:KG: This matches a ROM table found by Mok
+		envLogarithmicTime[lf] = (Bit8u)ceilf(64.0f + log2f(lf) * 8.0f);
+	}
+
+	// CONFIRMED:KG: I'm too lazy to work out a real formula for this one, but it matches the LAPC-I table found by Mok
+	// NOTE: Very different in MT-32
+	memset(masterVolToAmpSubtraction, 8, 71);
+	memset(masterVolToAmpSubtraction + 71, 7, 3);
+	memset(masterVolToAmpSubtraction + 74, 6, 4);
+	memset(masterVolToAmpSubtraction + 78, 5, 3);
+	memset(masterVolToAmpSubtraction + 81, 4, 4);
+	memset(masterVolToAmpSubtraction + 85, 3, 3);
+	memset(masterVolToAmpSubtraction + 88, 2, 4);
+	memset(masterVolToAmpSubtraction + 92, 1, 4);
+	memset(masterVolToAmpSubtraction + 96, 0, 5);
+
 	for (lf = -108; lf <= 108; lf++) {
 		tvfKeyfollowMult[lf + 108] = (int)(256 * powf(2.0f, (float)(lf / 24.0f)));
 		//synth->printDebug("KT %d = %d", f, keytable[f+108]);
