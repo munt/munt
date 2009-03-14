@@ -18,6 +18,10 @@
 
 namespace MT32Emu {
 
+// FIXME: Need to confirm that this is correct. Sounds about right.
+const int TVA_TARGET_AMP_MULT = 0x1000;
+const int MAX_CURRENT_AMP = 0xFF * TVA_TARGET_AMP_MULT;
+
 // CONFIRMED: Matches a table in ROM - haven't got around to coming up with a formula for it yet.
 static Bit8u biasLevelToAmpSubtractionCoeff[13] = {255, 187, 137, 100, 74, 54, 40, 29, 21, 15, 10, 5, 0};
 
@@ -27,10 +31,10 @@ TVA::TVA(const Partial *partial) :
 
 Bit32u TVA::nextAmp() {
 	// FIXME: This whole method is based on guesswork
+	Bit32u target = targetAmp * TVA_TARGET_AMP_MULT;
 	if (ampIncrement == 0)
-		return currentAmp;
+		return currentAmp = target;
 	Bit8u absAmpIncrement = ampIncrement & 0x7F;
-	Bit32u target = targetAmp * 0x10000;
 	if ((ampIncrement & 0x80) != 0) {
 		// Lowering amp
 		if (absAmpIncrement > currentAmp) {
@@ -45,7 +49,7 @@ Bit32u TVA::nextAmp() {
 		}
 	} else {
 		// Raising amp
-		if (0xFF0000 - currentAmp < absAmpIncrement) {
+		if (MAX_CURRENT_AMP - currentAmp < absAmpIncrement) {
 			currentAmp = target;
 			nextPhase();
 		} else {
@@ -92,11 +96,11 @@ static int calcBiasAmpSubtractions(const Tables *tables, const TimbreParam::Part
 	return biasAmpSubtraction;
 }
 
-static int calcVeloAmpSubtraction(const Tables *tables, Bit8u veloSensitivity, int key) {
+static int calcVeloAmpSubtraction(const Tables *tables, Bit8u veloSensitivity, int velocity) {
 	// FIXME:KG: Better variable names
 	int velocityMult = veloSensitivity - 50;
 	int absVelocityMult = velocityMult < 0 ? -velocityMult : velocityMult;
-	velocityMult = (velocityMult * (key - 64)) << 2;
+	velocityMult = (velocityMult * (velocity - 64)) << 2;
 	return absVelocityMult - (velocityMult >> 8);
 }
 
@@ -136,7 +140,7 @@ static int calcBasicAmp(const Tables *tables, const Partial *partial, const MemP
 	return amp;
 }
 
-int calcKeyTimeAmpSubtraction(Bit8u envTimeKeyfollow, int key) {
+int calcKeyTimeSubtraction(Bit8u envTimeKeyfollow, int key) {
 	if (envTimeKeyfollow == 0)
 		return 0;
 	return (key - 60) >> (5 - envTimeKeyfollow);
@@ -155,7 +159,7 @@ void TVA::reset(const Part *part, const PatchCache *patchCache) {
 	int key = partial->getPoly()->key;
 	int velocity = partial->getPoly()->vel;
 
-	keyTimeAmpSubtraction = calcKeyTimeAmpSubtraction(partialParam->tva.envTimeKeyfollow, key);
+	keyTimeSubtraction = calcKeyTimeSubtraction(partialParam->tva.envTimeKeyfollow, key);
 
 	biasAmpSubtraction = calcBiasAmpSubtractions(tables, partialParam, key);
 	veloAmpSubtraction = calcVeloAmpSubtraction(tables, partialParam->tva.veloSensitivity, velocity);
@@ -189,7 +193,7 @@ void TVA::recalcSustain() {
 	// We get pinged periodically by the pitch code to recalculate our values when in sustain
 	// This is done so that the TVA will respond to things like MIDI expression and volume changes while it's sustaining, which it otherwise wouldn't do.
 
-	if (partial->tva->targetPhase != 5 || partialParam->tva.envLevel[3] == 0)
+	if (targetPhase != 5 || partialParam->tva.envLevel[3] == 0)
 		return;
 	// We're sustaining. Recalculate all the values
 	Tables *tables = &partial->getSynth()->tables;
@@ -284,7 +288,7 @@ void TVA::nextPhase() {
 					envTimeSetting = 1;
 			}
 		} else {
-			envTimeSetting -= keyTimeAmpSubtraction;
+			envTimeSetting -= keyTimeSubtraction;
 		}
 		if (envTimeSetting > 0)
 		{
