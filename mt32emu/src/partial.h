@@ -26,8 +26,8 @@ struct NoteLookup;
 struct ControlROMPCMStruct;
 
 enum EnvelopeType {
-	EnvelopeType_filt = 1,
-	EnvelopeType_pitch = 2
+	EnvelopeType_filt = 0,
+	EnvelopeType_pitch = 1
 };
 
 struct EnvelopeStatus {
