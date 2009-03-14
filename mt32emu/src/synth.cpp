@@ -315,7 +315,6 @@ bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 		int rAddr = tps[i].pos * 0x800;
 		int rLenExp = (tps[i].len & 0x70) >> 4;
 		int rLen = 0x800 << rLenExp;
-		bool rLoop = (tps[i].len & 0x80) != 0;
 		//Bit8u rFlag = tps[i].len & 0x0F;
 		Bit16u rTuneOffset = (tps[i].pitchMSB << 8) | tps[i].pitchLSB;
 		// The number below is confirmed to a reasonable degree of accuracy on CM-32L
@@ -328,8 +327,10 @@ bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 		}
 		pcmWaves[i].addr = rAddr;
 		pcmWaves[i].len = rLen;
-		pcmWaves[i].loop = rLoop;
+		pcmWaves[i].loop = (tps[i].len & 0x80) != 0;
+		pcmWaves[i].unaffectedByMasterTune = (tps[i].len & 0x01) == 0;
 		pcmWaves[i].tune = rTune;
+		pcmWaves[i].controlROMPCMStruct = &tps[i];
 	}
 	return false;
 }
@@ -605,6 +606,10 @@ void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char 
 		case 0x01:  // Modulation
 			//printDebug("Modulation: %d", velocity);
 			parts[part]->setModulation(velocity);
+			break;
+		case 0x06:
+			// FIXME: This really needs to be implemented (it's supported, at least on the LAPC-I, for bender range setting)
+			printDebug("MIDI data entry unimplemented. Note=0x%02x, Velo=0x%02x", note, velocity);
 			break;
 		case 0x07:  // Set volume
 			//printDebug("Volume set: %d", velocity);
@@ -1068,7 +1073,6 @@ bool Synth::refreshSystem() {
 		report(ReportType_errorSampleRate, NULL);
 		return false;
 	}
-	masterVolume = (Bit16u)(tables.volumeMult[mt32ram.system.masterVol] * 256);
 	return true;
 }
 
@@ -1138,17 +1142,10 @@ int Synth::dumpTimbres(const char *filename, int start, int len) {
 	return 0;
 }
 
-void ProduceOutput1(Bit16s *useBuf, Bit16s *stream, Bit32u len, Bit16s volume) {
-#if MT32EMU_USE_MMX > 2
-	//FIXME:KG: This appears to introduce crackle
-	int donelen = i386_produceOutput1(useBuf, stream, len, volume);
-	len -= donelen;
-	stream += donelen * 2;
-	useBuf += donelen * 2;
-#endif
+void ProduceOutput1(Bit16s *useBuf, Bit16s *stream, Bit32u len) {
 	int end = len * 2;
 	while (end--) {
-		*stream = clipBit16s((Bit32s)*stream + (((Bit32s)*useBuf++ * (Bit32s)volume) >> 14));
+		*stream = clipBit16s((Bit32s)*stream + ((Bit32s)*useBuf++));
 		stream++;
 	}
 }
@@ -1172,7 +1169,7 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 			if (partialManager->shouldReverb(i)) {
 				if (partialManager->produceOutput(i, &tmpBuffer[0], len)) {
-					ProduceOutput1(&tmpBuffer[0], stream, len, masterVolume);
+					ProduceOutput1(&tmpBuffer[0], stream, len);
 				}
 			}
 		}
@@ -1194,14 +1191,14 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 			if (!partialManager->shouldReverb(i)) {
 				if (partialManager->produceOutput(i, &tmpBuffer[0], len)) {
-					ProduceOutput1(&tmpBuffer[0], stream, len, masterVolume);
+					ProduceOutput1(&tmpBuffer[0], stream, len);
 				}
 			}
 		}
 	} else {
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 			if (partialManager->produceOutput(i, &tmpBuffer[0], len))
-				ProduceOutput1(&tmpBuffer[0], stream, len, masterVolume);
+				ProduceOutput1(&tmpBuffer[0], stream, len);
 		}
 	}
 

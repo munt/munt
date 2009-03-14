@@ -27,8 +27,9 @@
 
 using namespace MT32Emu;
 
-Partial::Partial(Synth *useSynth) {
-	this->synth = useSynth;
+Partial::Partial(Synth *useSynth, int debugPartialNum) :
+	synth(useSynth), debugPartialNum(debugPartialNum), tva(new TVA(this))
+{
 	ownerPart = -1;
 	poly = NULL;
 	pair = NULL;
@@ -55,6 +56,7 @@ Partial::~Partial() {
 	delete posSaw;
 	delete negSaw;
 	delete saw;
+	delete tva;
 }
 
 int Partial::getOwnerPart() const {
@@ -142,7 +144,7 @@ int Partial::getKey() const {
 	}
 }
 
-void Partial::startPartial(Poly *usePoly, const PatchCache *useCache, Partial *pairPartial) {
+void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, Partial *pairPartial) {
 	if (usePoly == NULL || useCache == NULL) {
 		synth->printDebug("*** Error: Starting partial for owner %d, usePoly=%s, useCache=%s", ownerPart, usePoly == NULL ? "*** NULL ***" : "OK", useCache == NULL ? "*** NULL ***" : "OK");
 		return;
@@ -194,7 +196,7 @@ void Partial::startPartial(Poly *usePoly, const PatchCache *useCache, Partial *p
 		saw->reset(noteLookup->freq / 2.0f, 0.8);
 	}
 
-	for (int e = 0; e < 3; e++) {
+	for (int e = 0; e < 2; e++) {
 		envs[e].envpos = 0;
 		envs[e].envstat = -1;
 		envs[e].envbase = 0;
@@ -206,7 +208,6 @@ void Partial::startPartial(Poly *usePoly, const PatchCache *useCache, Partial *p
 		envs[e].counter = 0;
 		envs[e].count = 0;
 	}
-	ampEnvVal = 0;
 	pitchEnvVal = 0;
 	pitchSustain = false;
 	loopPos = 0;
@@ -215,6 +216,7 @@ void Partial::startPartial(Poly *usePoly, const PatchCache *useCache, Partial *p
 	useNoisePair = pairPartial == NULL && (mixType == 1 || mixType == 2);
 	age = 0;
 	alreadyOutputed = false;
+	tva->reset(part, patchCache);
 	memset(history,0,sizeof(history));
 }
 
@@ -232,33 +234,13 @@ Bit16s *Partial::generateSamples(long length) {
 	// Generate samples
 
 	Bit16s *partialBuf = &myBuffer[0];
-	Bit32u volume = *poly->volumeptr;
 	while (length--) {
 		Bit32s envval;
 		Bit32s sample = 0;
-		if (!envs[EnvelopeType_amp].sustaining) {
-			if (envs[EnvelopeType_amp].count <= 0) {
-				Bit32u biasvals[2];
-				Bit32u ampval = getAmpEnvelope(&biasvals[0]);
-				if (!play) {
-					deactivate();
-					break;
-				}
-				if (ampval > 100) {
-					ampval = 100;
-				}
-
-				ampval = synth->tables.volumeMult[ampval];
-				ampval = (ampval * volume) / 100;
-				ampval = FIXEDPOINT_UMULT(ampval, synth->tables.tvaVelfollowMult[poly->vel][(int)patchCache->ampEnv.veloSensitivity], 8);
-				ampval = FIXEDPOINT_UMULT(ampval, biasvals[0], 8);
-				ampval = FIXEDPOINT_UMULT(ampval, biasvals[1], 8);
-				//synth->printDebug("Preamp %d, postamp %d, bias1 %d, bias2 %d", ampEnvVal, ampval, biasvals[0], biasvals[1]);
-
-				//if (envs[EnvelopeType_amp].sustaining)
-				ampEnvVal = ampval;
-			}
-			--envs[EnvelopeType_amp].count;
+		Bit32u amp = tva->nextAmp();
+		if (!tva->play) {
+			deactivate();
+			break;
 		}
 
 		unsigned int lfoShift = 0x1000;
@@ -327,7 +309,7 @@ Bit16s *Partial::generateSamples(long length) {
 		delta = (int)tdelta;
 
 		// Get waveform - either PCM or synthesized sawtooth or square
-		if (ampEnvVal > 0) {
+		if (amp > 0) {
 			if (patchCache->PCMPartial) {
 				// Render PCM sample
 				int ra, rb, dist;
@@ -411,9 +393,10 @@ Bit16s *Partial::generateSamples(long length) {
 		partialOff.pcmoffset = (Bit16u)(absOff & 0xFFFF);
 
 		// Put volume envelope over generated sample
-		sample = FIXEDPOINT_SMULT(sample, ampEnvVal, 9);
-		//sample = FIXEDPOINT_SMULT(sample, volume, 7);
-		envs[EnvelopeType_amp].envpos++;
+		// FIXME:KG: Note that the "32768.0f" here is slightly arbitrary, and needs to be confirmed.
+		// FIXME:KG: Obviously we should use something faster once we've got the details sorted out.
+		sample = (Bit32s)(powf(2.0f, amp / TVA_TARGET_AMP_MULT / 16.0f - 1.0f) / 32768.0f * sample);
+
 		envs[EnvelopeType_pitch].envpos++;
 		envs[EnvelopeType_filt].envpos++;
 
@@ -556,6 +539,30 @@ void Partial::mixBuffersStereo(Bit16s *buf1, Bit16s *buf2, Bit16s *outBuf, int l
 			*outBuf++ = *buf2++;
 		}
 	}
+}
+
+bool Partial::hasRingModulatingSlave() const {
+	// FIXME:KG: Check that I got structurePosition the right way around
+	return pair != NULL && structurePosition == 0 && (mixType == 1 || mixType == 2);
+}
+
+bool Partial::isRingModulatingSlave() const {
+	// FIXME:KG: Check that I got structurePosition the right way around
+	return pair != NULL && structurePosition == 1 && (mixType == 1 || mixType == 2);
+}
+
+bool Partial::isPCM() const {
+	return pcmWave != NULL;
+}
+
+const ControlROMPCMStruct *Partial::getControlROMPCMStruct() const {
+	if(pcmWave != NULL)
+		return pcmWave->controlROMPCMStruct;
+	return NULL;
+}
+
+Synth *Partial::getSynth() const {
+	return synth;
 }
 
 bool Partial::produceOutput(Bit16s *partialBuf, long length) {
@@ -776,151 +783,6 @@ bool Partial::shouldReverb() {
 	return patchCache->reverb;
 }
 
-Bit32u Partial::getAmpEnvelope(Bit32u *biasResult) {
-	Bit32s tc;
-
-	EnvelopeStatus *tStat = &envs[EnvelopeType_amp];
-
-	if (!play)
-		return 0;
-
-	if (tStat->decaying) {
-		tc = tStat->envbase;
-		tc += (tStat->envdist * tStat->envpos) / tStat->envsize;
-		if (tc < 0)
-			tc = 0;
-		if ((tStat->envpos >= tStat->envsize) || (tc == 0)) {
-			play = false;
-			// Don't have to worry about prevlevel storage or anything, this partial's about to die
-			return 0;
-		}
-	} else {
-		if ((tStat->envstat == -1) || (tStat->envpos >= tStat->envsize)) {
-			if (tStat->envstat == -1)
-				tStat->envbase = 0;
-			else
-				tStat->envbase = patchCache->ampEnv.envLevel[tStat->envstat];
-			tStat->envstat++;
-			tStat->envpos = 0;
-			if (tStat->envstat == 4) {
-				//synth->printDebug("Envstat %d, size %d", tStat->envstat, tStat->envsize);
-				tc = patchCache->ampEnv.envLevel[3];
-				if (!poly->sustain)
-					startDecay(EnvelopeType_amp, tc);
-				else
-					tStat->sustaining = true;
-				goto PastCalc;
-			}
-			Bit8u targetLevel = patchCache->ampEnv.envLevel[tStat->envstat];
-			tStat->envdist = targetLevel - tStat->envbase;
-			Bit32u envTime = patchCache->ampEnv.envTime[tStat->envstat];
-			//if (targetLevel == 0) {
-			if (tStat->envstat >= patchCache->ampDecayStep) {
-				tStat->envsize = synth->tables.envDecayTime[envTime];
-			} else {
-				int envLevelDelta = abs(tStat->envdist);
-				if (envTime > synth->tables.envDeltaMaxTime[envLevelDelta]) {
-					envTime = synth->tables.envDeltaMaxTime[envLevelDelta];
-				}
-				tStat->envsize = synth->tables.envTime[envTime];
-			}
-
-			// Time keyfollow is used by all sections of the envelope (confirmed on CM-32L)
-			tStat->envsize = FIXEDPOINT_UMULT(tStat->envsize, keyLookup->envTimeMult[(int)patchCache->ampEnv.envTimeKeyfollow], 8);
-
-			switch (tStat->envstat) {
-			case 0:
-				//Spot for velocity time follow
-				//Only used for first attack
-				tStat->envsize = FIXEDPOINT_UMULT(tStat->envsize, synth->tables.envTimeVelfollowMult[(int)patchCache->ampEnv.envTimeVeloSensitivity][poly->vel], 8);
-				//synth->printDebug("Envstat %d, size %d", tStat->envstat, tStat->envsize);
-				break;
-			case 1:
-			case 2:
-			case 3:
-				//synth->printDebug("Envstat %d, size %d", tStat->envstat, tStat->envsize);
-				break;
-			default:
-				synth->printDebug("Invalid TVA envelope number %d hit!", tStat->envstat);
-				break;
-			}
-
-			tStat->envsize++;
-
-			if (tStat->envdist != 0) {
-				tStat->counter = abs(tStat->envsize / tStat->envdist);
-				//synth->printDebug("Pos %d, envsize %d envdist %d", tStat->envstat, tStat->envsize, tStat->envdist);
-			} else {
-				tStat->counter = 0;
-				//synth->printDebug("Pos %d, envsize %d envdist %d", tStat->envstat, tStat->envsize, tStat->envdist);
-			}
-		}
-		tc = tStat->envbase;
-
-		{
-			int sq = 0;
-
-			sq = (tStat->envpos * 100) / tStat->envsize;
-			if (tStat->envdist < 0) {
-				sq = 100 - sq;
-			}
-
-			sq = synth->tables.volumeExp[sq];
-
-			//tc = (tc + ((tStat->envdist * tStat->envpos) / tStat->envsize));
-			//int tmptc = ((tStat->envdist * tStat->envpos) / tStat->envsize);
-			int tmptc = ((tStat->envdist * sq) >> 10);
-			if (tStat->envdist < 0) {
-				//synth->printDebug("envdist: %d\n", tStat->envdist);
-				tmptc = tStat->envdist - tmptc;
-			}
-
-			tc = tc + tmptc;
-		}
-
-		tStat->count = tStat->counter;
-PastCalc:
-		tc = (tc * (Bit32s)patchCache->ampEnv.level) >> 7;
-	}
-
-	// Prevlevel storage is bottle neck
-	tStat->prevlevel = tc;
-
-	//Bias level crap stuff now
-
-	for (int i = 0; i < 2; i++) {
-		biasResult[i] = 256;
-
-		if (patchCache->ampblevel[i]!=0) {
-			int bias = patchCache->ampbias[i];
-			if (patchCache->ampdir[i]==0) {
-				// < Bias
-				if (poly->key < bias) {
-					int dist = bias - poly->key;
-					// Results are scaled linear - store in variable pointer
-					//tc = FIXEDPOINT_UMULT(tc, synth->tables.tvaBiasMult[patchCache->ampblevel[i]][dist], 8);
-					biasResult[i] = synth->tables.tvaBiasMult[patchCache->ampblevel[i]][dist];
-					//synth->printDebug("B%d noteVal: %d key %d dist %d, bias: %d", i, noteVal, poly->key, dist, biasResult[i]);
-				}
-			} else {
-				// > Bias
-				if (poly->key > bias) {
-					int dist = poly->key - bias;
-					// Results are scaled linear - store in variable pointer
-					//tc = FIXEDPOINT_UMULT(tc, synth->tables.tvaBiasMult[patchCache->ampblevel[i]][dist], 8);
-					biasResult[i] = synth->tables.tvaBiasMult[patchCache->ampblevel[i]][dist];
-					//synth->printDebug("B%d noteVal: %d key %d dist %d, bias: %d", i, noteVal, poly->key, dist, biasResult[i]);
-				}
-			}
-		}
-	}
-	if (tc < 0) {
-		synth->printDebug("*** ERROR: tc < 0 (%d) at getAmpEnvelope()", tc);
-		tc = 0;
-	}
-	return (Bit32u)tc;
-}
-
 Bit32s Partial::getPitchEnvelope() {
 	EnvelopeStatus *tStat = &envs[EnvelopeType_pitch];
 
@@ -967,7 +829,7 @@ Bit32s Partial::getPitchEnvelope() {
 }
 
 void Partial::startDecayAll() {
-	startDecay(EnvelopeType_amp, envs[EnvelopeType_amp].prevlevel);
+	tva->startDecay();
 	startDecay(EnvelopeType_filt, envs[EnvelopeType_filt].prevlevel);
 	startDecay(EnvelopeType_pitch, envs[EnvelopeType_pitch].prevlevel);
 	pitchSustain = false;
@@ -982,10 +844,6 @@ void Partial::startDecay(EnvelopeType envnum, Bit32s startval) {
 	tStat->envbase = startval;
 
 	switch (envnum) {
-	case EnvelopeType_amp:
-		tStat->envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->ampEnv.envTime[4]], keyLookup->envTimeMult[(int)patchCache->ampEnv.envTimeKeyfollow], 8);
-		tStat->envdist = -startval;
-		break;
 	case EnvelopeType_filt:
 		tStat->envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->filtEnv.envTime[4]], keyLookup->envTimeMult[(int)patchCache->filtEnv.envTimeKeyfollow], 8);
 		tStat->envdist = -startval;

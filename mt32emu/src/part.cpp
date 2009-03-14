@@ -315,6 +315,8 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 			break;
 		}
 
+		cache[t].partialParam = &timbre->partial[t];
+
 		cache[t].waveform = timbre->partial[t].wg.waveform;
 		cache[t].pulsewidth = timbre->partial[t].wg.pulseWidth;
 		cache[t].pwsens = timbre->partial[t].wg.pulseWidthVeloSensitivity;
@@ -329,25 +331,6 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 		cache[t].pitchEnv = timbre->partial[t].pitchEnv;
 		cache[t].pitchEnv.veloSensitivity = (char)((float)cache[t].pitchEnv.veloSensitivity * 1.27f);
 		cache[t].pitchsustain = cache[t].pitchEnv.level[3];
-
-		// Calculate and cache TVA envelope stuff
-		cache[t].ampEnv = timbre->partial[t].tva;
-		cache[t].ampEnv.level = (char)((float)cache[t].ampEnv.level * 1.27f);
-
-		int jr = 4;
-		for (int jt = 3; jt >= 0; --jt) {
-			if (cache[t].ampEnv.envLevel[jt] > 0) {
-				break;
-			}
-			jr = jt;
-		}
-		cache[t].ampDecayStep = jr;
-
-		cache[t].ampbias[0] = fixBiaslevel(cache[t].ampEnv.biasPoint1, &cache[t].ampdir[0]);
-		cache[t].ampblevel[0] = 12 - cache[t].ampEnv.biasLevel1;
-		cache[t].ampbias[1] = fixBiaslevel(cache[t].ampEnv.biasPoint2, &cache[t].ampdir[1]);
-		cache[t].ampblevel[1] = 12 - cache[t].ampEnv.biasLevel2;
-		cache[t].ampdepth = cache[t].ampEnv.envTimeVeloSensitivity * cache[t].ampEnv.envTimeVeloSensitivity;
 
 		// Calculate and cache filter stuff
 		cache[t].filtEnv = timbre->partial[t].tvf;
@@ -546,7 +529,7 @@ void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, int key, in
 
 	for (int x = 0; x < 4; x++) {
 		if (tpoly->partials[x] != NULL) {
-			tpoly->partials[x]->startPartial(tpoly, &cache[x], tpoly->partials[cache[x].structurePair]);
+			tpoly->partials[x]->startPartial(this, tpoly, &cache[x], tpoly->partials[cache[x].structurePair]);
 			tpoly->partials[x]->setBend(bend);
 		}
 	}

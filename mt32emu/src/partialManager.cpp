@@ -23,7 +23,7 @@ using namespace MT32Emu;
 PartialManager::PartialManager(Synth *useSynth) {
 	this->synth = useSynth;
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++)
-		partialTable[i] = new Partial(synth);
+		partialTable[i] = new Partial(synth, i);
 }
 
 PartialManager::~PartialManager(void) {

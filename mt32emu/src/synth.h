@@ -252,6 +252,7 @@ friend class RhythmPart;
 friend class Partial;
 friend class Tables;
 friend class MemoryRegion;
+friend class TVA;
 private:
 	PatchTempMemoryRegion *patchTempMemoryRegion;
 	RhythmTempMemoryRegion *rhythmTempMemoryRegion;
@@ -288,7 +289,6 @@ private:
 	revmodel *reverbModel;
 
 	float masterTune;
-	Bit16u masterVolume;
 
 	bool isOpen;
 

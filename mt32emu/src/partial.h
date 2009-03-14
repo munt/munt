@@ -20,10 +20,12 @@
 namespace MT32Emu {
 
 class Synth;
+class Part;
+class TVA;
 struct NoteLookup;
+struct ControlROMPCMStruct;
 
 enum EnvelopeType {
-	EnvelopeType_amp = 0,
 	EnvelopeType_filt = 1,
 	EnvelopeType_pitch = 2
 };
@@ -47,6 +49,7 @@ struct EnvelopeStatus {
 class Partial {
 private:
 	Synth *synth;
+	const int debugPartialNum; // Only used for debugging
 
 	int ownerPart; // -1 if unassigned
 	int mixType;
@@ -85,7 +88,6 @@ private:
 	Bit32u lfoPos;
 	soundaddr partialOff;
 
-	Bit32u ampEnvVal;
 	Bit32u pitchEnvVal;
 
 	float history[32];
@@ -104,14 +106,14 @@ private:
 	void mixBuffersStereo(Bit16s *buf1, Bit16s *buf2, Bit16s *outBuf, int len);
 
 	Bit32s getFiltEnvelope();
-	Bit32u getAmpEnvelope(Bit32u *biasResult);
 	Bit32s getPitchEnvelope();
 
 	void initKeyFollow(int freqNum);
 
 public:
 	const PatchCache *patchCache;
-	EnvelopeStatus envs[3];
+	TVA *tva;
+	EnvelopeStatus envs[2];
 	bool play;
 
 	PatchCache cachebackup;
@@ -120,7 +122,7 @@ public:
 	bool alreadyOutputed;
 	Bit32u age;
 
-	Partial(Synth *synth);
+	Partial(Synth *synth, int debugPartialNum);
 	~Partial();
 
 	int getOwnerPart() const;
@@ -129,11 +131,16 @@ public:
 	bool isActive();
 	void activate(int part, int pChan);
 	void deactivate(void);
-	void startPartial(Poly *usePoly, const PatchCache *useCache, Partial *pairPartial);
+	void startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, Partial *pairPartial);
 	void startDecay(EnvelopeType envnum, Bit32s startval);
 	void startDecayAll();
 	void setBend(float factor);
 	bool shouldReverb();
+	bool hasRingModulatingSlave() const;
+	bool isRingModulatingSlave() const;
+	bool isPCM() const;
+	const ControlROMPCMStruct *getControlROMPCMStruct() const;
+	Synth *getSynth() const;
 
 	// Returns true only if data written to buffer
 	// This function (unlike the one below it) returns processed stereo samples

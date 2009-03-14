@@ -173,11 +173,15 @@ struct MemParams {
 #pragma pack()
 #endif
 
+struct ControlROMPCMStruct;
+
 struct PCMWaveEntry {
 	Bit32u addr;
 	Bit32u len;
 	double tune;
 	bool loop;
+	bool unaffectedByMasterTune;
+	ControlROMPCMStruct *controlROMPCMStruct;
 };
 
 struct soundaddr {
@@ -214,19 +218,10 @@ struct PatchCache {
 	int tvfblevel;
 	int tvfdir;
 
-	int ampbias[2];
-	int ampblevel[2];
-	int ampdir[2];
-
-	int ampdepth;
-	int amplevel;
-	int ampDecayStep;
-
 	bool useBender;
 	float benderRange; // 0.0, 1.0, .., 24.0 (semitones)
 
 	TimbreParam::PartialParam::PitchEnvParam pitchEnv;
-	TimbreParam::PartialParam::TVAParam ampEnv;
 	TimbreParam::PartialParam::TVFParam filtEnv;
 
 	Bit32s pitchsustain;
@@ -245,6 +240,9 @@ struct PatchCache {
 	const StereoVolume *pansetptr;
 
 	TimbreParam::PartialParam srcPartial;
+
+	// The following directly points into live sysex-addressable memory
+	const TimbreParam::PartialParam *partialParam;
 };
 
 class Partial; // Forward reference for class defined in partial.h
