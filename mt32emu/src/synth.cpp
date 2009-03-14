@@ -589,15 +589,15 @@ void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char 
 	case 0x8:
 		//printDebug("Note OFF - Part %d", part);
 		// The MT-32 ignores velocity for note off
-		parts[part]->stopNote(note);
+		parts[part]->noteOff(note);
 		break;
 	case 0x9:
 		//printDebug("Note ON - Part %d, Note %d Vel %d", part, note, velocity);
 		if (velocity == 0) {
 			// MIDI defines note-on with velocity 0 as being the same as note-off with velocity 40
-			parts[part]->stopNote(note);
+			parts[part]->noteOff(note);
 		} else {
-			parts[part]->playNote(note, velocity);
+			parts[part]->noteOn(note, velocity);
 		}
 		break;
 	case 0xB: // Control change

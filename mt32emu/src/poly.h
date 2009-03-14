@@ -23,7 +23,6 @@ struct Poly {
 	bool isPlaying;
 
 	unsigned int key;
-	int freqnum;
 	int vel;
 
 	bool isDecay;

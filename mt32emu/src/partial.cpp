@@ -153,13 +153,13 @@ void Partial::startPartial(Poly *usePoly, const PatchCache *useCache, Partial *p
 	structurePosition = patchCache->structurePosition;
 
 	play = true;
-	initKeyFollow(poly->freqnum); // Initialises noteVal, filtVal and realVal
+	initKeyFollow(poly->key); // Initialises noteVal, filtVal and realVal
 #if MT32EMU_ACCURATENOTES == 0
 	noteLookup = &synth->tables.noteLookups[noteVal - LOWEST_NOTE];
 #else
 	Tables::initNote(synth, &noteLookupStorage, noteVal, (float)synth->myProp.sampleRate, synth->masterTune, synth->pcmWaves, NULL);
 #endif
-	keyLookup = &synth->tables.keyLookups[poly->freqnum - 12];
+	keyLookup = &synth->tables.keyLookups[poly->key - 12];
 
 	if (patchCache->PCMPartial) {
 		pcmNum = patchCache->pcm;

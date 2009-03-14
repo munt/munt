@@ -151,7 +151,7 @@ void Part::refresh() {
 	for (int t = 0; t < 4; t++) {
 		// Common parameters, stored redundantly
 		patchCache[t].dirty = true;
-		patchCache[t].pitchShift = (patchTemp->patch.keyShift - 24) + (patchTemp->patch.fineTune - 50) / 100.0f;
+		patchCache[t].pitchShift = (patchTemp->patch.fineTune - 50) / 100.0f;
 		patchCache[t].benderRange = patchTemp->patch.benderRange;
 		patchCache[t].pansetptr = &volumesetting;
 		patchCache[t].reverb = patchTemp->patch.reverbSwitch > 0;
@@ -438,40 +438,47 @@ void Part::setPan(unsigned int midiPan) {
 	//synth->printDebug("%s (%s): Set pan to %d", name, currentInstr, panpot);
 }
 
-void RhythmPart::playNote(unsigned int key, int vel) {
-	if (key < 24 || key > 108)/*> 87 on MT-32)*/ {
-		synth->printDebug("%s: Attempted to play invalid key %d", name, key);
+unsigned int Part::midiKeyToKey(unsigned int midiKey, const char *debugAction) {
+	int key = midiKey + patchTemp->patch.keyShift;
+	if (key < 36) {
+		synth->printDebug("%s (%s): Attempted to perform \"%s\" on invalid key %d (%d after keyshift) < 36; moving up by octaves", name, currentInstr, debugAction, midiKey, key);
+		while (key < 36)
+			key += 12;
+	} else if (key > 132) {
+		synth->printDebug("%s (%s): Attempted to perform \"%s\" on invalid key %d (%d after keyshift) > 132; moving down by octaves", name, currentInstr, debugAction, midiKey, key);
+		while (key > 132) {
+			key -= 12;
+		}
+	}
+	key -= 24;
+	return key;
+}
+
+void RhythmPart::noteOn(unsigned int midiKey, int vel) {
+	if (midiKey < 24 || midiKey > 108)/*> 87 on MT-32)*/ {
+		synth->printDebug("%s: Attempted to play invalid key %d", name, midiKey);
 		return;
 	}
-	int drumNum = key - 24;
+	int drumNum = midiKey - 24;
 	int drumTimbreNum = rhythmTemp[drumNum].timbre;
 	if (drumTimbreNum >= 127) { // 94 on MT-32
-		synth->printDebug("%s: Attempted to play unmapped key %d", name, key);
+		synth->printDebug("%s: Attempted to play unmapped key %d", name, midiKey);
 		return;
 	}
 	int absTimbreNum = drumTimbreNum + 128;
 	TimbreParam *timbre = &synth->mt32ram.timbres[absTimbreNum].timbre;
 	memcpy(currentInstr, timbre->common.name, 10);
 #if MT32EMU_MONITOR_INSTRUMENTS == 1
-	synth->printDebug("%s (%s): starting poly (drum %d, timbre %d) - Vel %d Key %d", name, currentInstr, drumNum, absTimbreNum, vel, key);
+	synth->printDebug("%s (%s): starting poly (drum %d, timbre %d) - Vel %d Key %d", name, currentInstr, drumNum, absTimbreNum, vel, midiKey);
 #endif
 	if (drumCache[drumNum][0].dirty) {
 		cacheTimbre(drumCache[drumNum], timbre);
 	}
-	playPoly(drumCache[drumNum], key, MIDDLEC, vel);
+	playPoly(drumCache[drumNum], midiKey, MIDDLEC, vel);
 }
 
-void Part::playNote(unsigned int key, int vel) {
-	int freqNum = key;
-	if (freqNum < 12) {
-		synth->printDebug("%s (%s): Attempted to play invalid key %d < 12; moving up by octave", name, currentInstr, key);
-		freqNum += 12;
-	} else if (freqNum > 108) {
-		synth->printDebug("%s (%s): Attempted to play invalid key %d > 108; moving down by octave", name, currentInstr, key);
-		while (freqNum > 108) {
-			freqNum -= 12;
-		}
-	}
+void Part::noteOn(unsigned int midiKey, int vel) {
+	unsigned int key = midiKeyToKey(midiKey, "Note On");
 	// POLY1 mode, Single Assign
 	// Haven't found any software that uses any of the other poly modes
 	// FIXME:KG: Should this also apply to rhythm?
@@ -483,21 +490,21 @@ void Part::playNote(unsigned int key, int vel) {
 		}
 	}
 #if MT32EMU_MONITOR_INSTRUMENTS == 1
-	synth->printDebug("%s (%s): starting poly - Vel %d Key %d", name, currentInstr, vel, key);
+	synth->printDebug("%s (%s): starting poly - Vel %d Key %d", name, currentInstr, vel, midiKey);
 #endif
 	if (patchCache[0].dirty) {
 		cacheTimbre(patchCache, timbreTemp);
 	}
-	playPoly(patchCache, key, freqNum, vel);
+	playPoly(patchCache, midiKey, key, vel);
 }
 
-void Part::playPoly(const PatchCache cache[4], unsigned int key, int freqNum, int vel) {
+void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, int key, int vel) {
 	unsigned int needPartials = cache[0].partialCount;
 	unsigned int freePartials = synth->partialManager->getFreePartialCount();
 
 	if (freePartials < needPartials) {
 		if (!synth->partialManager->freePartials(needPartials - freePartials, partNum)) {
-			synth->printDebug("%s (%s): Insufficient free partials to play key %d (vel=%d); needed=%d, free=%d", name, currentInstr, key, vel, needPartials, synth->partialManager->getFreePartialCount());
+			synth->printDebug("%s (%s): Insufficient free partials to play key %d (vel=%d); needed=%d, free=%d", name, currentInstr, midiKey, vel, needPartials, synth->partialManager->getFreePartialCount());
 			return;
 		}
 	}
@@ -509,16 +516,15 @@ void Part::playPoly(const PatchCache cache[4], unsigned int key, int freqNum, in
 		}
 	}
 	if (m == MT32EMU_MAX_POLY) {
-		synth->printDebug("%s (%s): No free poly to play key %d (vel %d)", name, currentInstr, key, vel);
+		synth->printDebug("%s (%s): No free poly to play key %d (vel %d)", name, currentInstr, midiKey, vel);
 		return;
 	}
 
 	Poly *tpoly = &polyTable[m];
 
 	tpoly->isPlaying = true;
-	tpoly->key = key;
 	tpoly->isDecay = false;
-	tpoly->freqnum = freqNum;
+	tpoly->key = key;
 	tpoly->vel = vel;
 	tpoly->pedalhold = false;
 
@@ -578,6 +584,14 @@ void Part::stopPedalHold() {
 		if (tpoly->isActive() && tpoly->pedalhold)
 			stopNote(tpoly->key);
 	}
+}
+
+void RhythmPart::noteOff(unsigned int midiKey) {
+	stopNote(midiKey);
+}
+
+void Part::noteOff(unsigned int midiKey) {
+	stopNote(midiKeyToKey(midiKey, "Note Off"));
 }
 
 void Part::stopNote(unsigned int key) {

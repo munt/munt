@@ -47,6 +47,7 @@ private:
 	static int fixBiaslevel(int srcpnt, int *dir);
 
 	void setPatch(const PatchParam *patch);
+	unsigned int midiKeyToKey(unsigned int midiKey, const char *debugAction);
 
 protected:
 	Synth *synth;
@@ -65,12 +66,13 @@ protected:
 	void backupCacheToPartials(PatchCache cache[4]);
 	void cacheTimbre(PatchCache cache[4], const TimbreParam *timbre);
 	void playPoly(const PatchCache cache[4], unsigned int key, int freqNum, int vel);
+	void stopNote(unsigned int key);
 	const char *getName() const;
 
 public:
 	Part(Synth *synth, unsigned int usePartNum);
-	virtual void playNote(unsigned int key, int vel);
-	void stopNote(unsigned int key);
+	virtual void noteOn(unsigned int key, int vel);
+	virtual void noteOff(unsigned int midiKey);
 	void allNotesOff();
 	void allSoundOff();
 	int getVolume() const;
@@ -107,7 +109,8 @@ public:
 	void refresh();
 	void refreshTimbre(unsigned int timbreNum);
 	void setTimbre(TimbreParam *timbre);
-	void playNote(unsigned int key, int vel);
+	void noteOn(unsigned int key, int vel);
+	void noteOff(unsigned int midiKey);
 	unsigned int getAbsTimbreNum() const;
 	void setPan(unsigned int midiPan);
 	void setProgram(unsigned int patchNum);
