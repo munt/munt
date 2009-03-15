@@ -16,6 +16,8 @@
 
 #include "mt32emu.h"
 
+#include <math.h>
+
 namespace MT32Emu {
 
 // FIXME: Need to confirm that this is correct. Sounds about right.
