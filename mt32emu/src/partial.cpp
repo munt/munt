@@ -387,8 +387,6 @@ Bit16s *Partial::generateSamples(long length) {
 					synth->printDebug("Overdriven amplitude for %d: %d:=%d > 32767", patchCache->waveform, filterInput, sample);
 					sample = 32767;
 				}
-
-
 			}
 		}
 
@@ -431,7 +429,7 @@ void Partial::setBend(float factor) {
 	noteLookup->saw[partialChan]->setFrequency(noteLookup->posSaw[partialChan]->getStartFreq() * mult);
 	*/
 
-	synth->printDebug("setBend(): factor=%f, benderRange=%f, semitones=%f, mult=%f\n", factor, patchCache->benderRange, bendSemitones, mult);
+	//synth->printDebug("setBend(): factor=%f, benderRange=%f, semitones=%f, mult=%f\n", factor, patchCache->benderRange, bendSemitones, mult);
 	bendShift = (int)(mult * 4096.0f);
 }
 
@@ -481,7 +479,7 @@ Bit16s *Partial::mixBuffersRingMix(Bit16s * buf1, Bit16s *buf2, int len) {
 #endif
 	#define CUTOFF 2048
 	while (len--) {
-int a[3], b[3], c[2], d[2], result;
+		int a[3], b[3], c[2], d[2], result;
 		a[0] = ((Bit32s)*buf1);
 		b[0] = ((Bit32s)*buf2);
 
@@ -489,8 +487,6 @@ int a[3], b[3], c[2], d[2], result;
 		a[2] = a[1] + ((CUTOFF * (0 - a[1])) >> 12);
 		pastCarrier = a[2];
 
-
-		
 		b[1] = pastOsc + ((CUTOFF * (b[0] - pastOsc)) >> 12);
 		b[2] = b[1] + ((CUTOFF * (0 - b[1])) >> 12);
 		pastOsc = b[2];
@@ -532,15 +528,13 @@ Bit16s *Partial::mixBuffersRing(Bit16s * buf1, Bit16s *buf2, int len) {
 	buf1 += donelen;
 	buf2 += donelen;
 #endif
-
-
 	while (len--) {
 	int a[3], b[3], c[2], d[2], result;
-		
+
 		a[0] = ((Bit32s)*buf1);
 		b[0] = ((Bit32s)*buf2);
 
-		
+
 		a[1] = pastCarrier + ((CUTOFF * (a[0] - pastCarrier)) >> 12);
 		a[2] = a[1] + ((CUTOFF * (0 - a[1])) >> 12);
 		pastCarrier = a[2];
@@ -557,7 +551,7 @@ Bit16s *Partial::mixBuffersRing(Bit16s * buf1, Bit16s *buf2, int len) {
 		d[1] = d[0] + ((CUTOFF * (c[1] - d[0])) >> 12);
 
 		pastDesCarrier = d[1];
-		
+
 		result = d[0] >> 12;
 
 		if (result>32767)
