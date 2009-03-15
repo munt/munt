@@ -40,7 +40,9 @@ private:
 	int veloAmpSubtraction;
 	int keyTimeSubtraction;
 
-	int largeAmpInc;
+	Bit8u ampIncrement;
+	unsigned int largeAmpInc;
+	void setAmpIncrement(Bit8u ampIncrement);
 
 public:
 	// FIXME: These should probably be private (only public for testing purposes atm)
@@ -48,7 +50,6 @@ public:
 	int targetPhase;
 	Bit8u targetAmp;
 	// AFAICT: Lower 7 bits indicate how quickly the amp level should be changed, most significant bit indicates change direction (set=downward)
-	Bit8u ampIncrement;
 	Bit32u currentAmp;
 
 	TVA(const Partial *partial);

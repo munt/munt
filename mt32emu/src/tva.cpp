@@ -58,6 +58,14 @@ TVA::TVA(const Partial *partial) :
 	partial(partial), system(&partial->getSynth()->mt32ram.system) {
 }
 
+void TVA::setAmpIncrement(Bit8u ampIncrement) {
+	this->ampIncrement = ampIncrement;
+
+	largeAmpInc = ampIncrement & 0x7F;
+	// FIXME: We could use a table for this in future
+	largeAmpInc = (unsigned int)((powf(10.0f, (float)((largeAmpInc - 1.0f) / 26.0f))) * 256.0f);
+}
+
 Bit32u TVA::nextAmp() {
 	// FIXME: This whole method is based on guesswork
 	Bit32u target = targetAmp * TVA_TARGET_AMP_MULT;
@@ -65,15 +73,13 @@ Bit32u TVA::nextAmp() {
 		currentAmp = target;
 		return currentAmp / TVA_TARGET_AMP_MULT;
 	}
-	Bit8u absAmpIncrement = ampIncrement & 0x7F;
 	if ((ampIncrement & 0x80) != 0) {
 		// Lowering amp
 		if (largeAmpInc > currentAmp) {
 			currentAmp = target;
 			nextPhase();
 		} else {
-			currentAmp = currentAmp - largeAmpInc;
-			//currentAmp -= absAmpIncrement;
+			currentAmp -= largeAmpInc;
 			if (currentAmp <= target) {
 				currentAmp = target;
 				nextPhase();
@@ -85,7 +91,7 @@ Bit32u TVA::nextAmp() {
 			currentAmp = target;
 			nextPhase();
 		} else {
-			currentAmp = currentAmp + largeAmpInc;
+			currentAmp += largeAmpInc;
 			if(currentAmp >= target) {
 				currentAmp = target;
 				nextPhase();
@@ -204,15 +210,9 @@ void TVA::reset(const Part *part, const PatchCache *patchCache) {
 	} else {
 		targetPhase = PHASE_ATTACK - 1; // The first target used in nextPhase() will be PHASE_ATTACK
 	}
-	ampIncrement = (0x80 | 127); // Go downward as quickly as possible. FIXME: Check this is right
+	setAmpIncrement(0x80 | 127); // Go downward as quickly as possible.
 	targetAmp = (Bit8u)newTargetAmp;
 
-	largeAmpInc = (float)(ampIncrement & 0x7F);
-	largeAmpInc = (int)((powf(10.0f, (float)((largeAmpInc - 1.0f) / 26.0f))) * 256.0f);
-
-	if(ampIncrement < 0) {
-		largeAmpInc = -largeAmpInc;
-	}
 	currentAmp = 0;
 }
 
@@ -220,16 +220,12 @@ void TVA::startDecay() {
 	if (targetPhase >= PHASE_RELEASE)
 		return;
 	targetPhase = PHASE_RELEASE; // The next time nextPhase() is called, it will think PHASE_RELEASE has finished and the partial will be aborted
-	ampIncrement = -partialParam->tva.envTime[4];
-	if (ampIncrement >= 0) {
-		ampIncrement += 1; // I.e. if (ampIncrement == 0) ampIncrement = 1. FIXME: Wtf? Aiui this will raise the volume, not lower it, and therefore never hit the target...
+	Bit8u newAmpIncrement = -partialParam->tva.envTime[4];
+	// FIXME: Obvious bug here (should be checking newAmpIncrement signed, now decay is always 1!)
+	if (newAmpIncrement >= 0) {
+		newAmpIncrement++; // FIXME: Wtf? Aiui this will raise the volume, not lower it, and therefore never hit the target...
 	}
-	largeAmpInc = (float)(ampIncrement & 0x7F);
-	largeAmpInc = (int)((powf(10.0f, (float)((largeAmpInc - 1.0f) / 26.0f))) * 256.0f);
-
-	if(ampIncrement < 0) {
-		largeAmpInc = -largeAmpInc;
-	}
+	setAmpIncrement(newAmpIncrement);
 	targetAmp = 0;
 }
 
@@ -248,14 +244,12 @@ void TVA::recalcSustain() {
 	int ampDelta = newTargetAmp - targetAmp;
 
 	// Calculate an increment to get to the new amp value in a short, more or less consistent amount of time
-	int newAmpIncrement;
 	if (ampDelta >= 0) {
-		newAmpIncrement = tables->envLogarithmicTime[(Bit8u)ampDelta] - 2;
+		setAmpIncrement(tables->envLogarithmicTime[(Bit8u)ampDelta] - 2);
 	} else {
-		newAmpIncrement = (tables->envLogarithmicTime[(Bit8u)-ampDelta] - 2) | 0x80;
+		setAmpIncrement((tables->envLogarithmicTime[(Bit8u)-ampDelta] - 2) | 0x80);
 	}
 	targetAmp = newTargetAmp;
-	ampIncrement = newAmpIncrement;
 	// Configure so that once the transition's complete and nextPhase() is called, we'll just re-enter sustain phase (or decay phase, depending on parameters at the time).
 	targetPhase = PHASE_SUSTAIN - 1;
 }
@@ -379,16 +373,7 @@ void TVA::nextPhase() {
 	}
 
 	targetAmp = (Bit8u)newTargetAmp;
-	ampIncrement = (Bit8u)newAmpIncrement;
-
-	largeAmpInc = (float)(ampIncrement & 0x7F);
-	largeAmpInc = (int)((powf(10.0f, (float)((largeAmpInc - 1.0f) / 26.0f))) * 256.0f);
-
-	if(ampIncrement < 0) {
-		largeAmpInc = -largeAmpInc;
-	}
-
-
+	setAmpIncrement((Bit8u)newAmpIncrement);
 }
 
 }
