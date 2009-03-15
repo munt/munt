@@ -456,7 +456,7 @@ bool Synth::open(SynthProperties &useProp) {
 	initPCMList(controlROMMap->pcmTable, controlROMMap->pcmCount);
 
 	printDebug("Initialising Rhythm Temp");
-	rhythmTempMemoryRegion->write(0, 0, &controlROMData[controlROMMap->rhythmSettings], controlROMMap->rhythmSettingsCount * 4, true);
+	memcpy(mt32ram.rhythmTemp, &controlROMData[controlROMMap->rhythmSettings], controlROMMap->rhythmSettingsCount * 4);
 
 	printDebug("Initialising Patches");
 	for (Bit8u i = 0; i < 128; i++) {
