@@ -191,7 +191,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	envLogarithmicTime[0] = 64;
 	for(lf = 1; lf <= 255; lf++) {
 		// CONFIRMED:KG: This matches a ROM table found by Mok
-		envLogarithmicTime[lf] = (Bit8u)ceilf(64.0f + log2f(lf) * 8.0f);
+		envLogarithmicTime[lf] = (Bit8u)ceilf(64.0f + logf(lf) / FLOAT_LN_2 * 8.0f);
 	}
 
 	// CONFIRMED:KG: I'm too lazy to work out a real formula for this one, but it matches the LAPC-I table found by Mok
@@ -264,11 +264,11 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 
 	for (lf = 0; lf <= 100; lf++) {
 		// Converts the 0-100 range used by the MT-32 to volume multiplier
-		volumeMult[lf] = FIXEDPOINT_MAKE(powf((float)lf / 100.0f, FLOAT_LN), 7);
+		volumeMult[lf] = FIXEDPOINT_MAKE(powf((float)lf / 100.0f, FLOAT_LN_10), 7);
 
 		// Converts the TVA envelope 0-100 range to the exponential series
 		float fVal = (powf(4.0f, ((float)lf / 100.0f)) - 1.0f) / 3.0f;
-		fVal = powf(fVal, FLOAT_LN);
+		fVal = powf(fVal, FLOAT_LN_10);
 		volumeExp[lf] = FIXEDPOINT_MAKE(fVal, 10);
 	}
 
@@ -379,7 +379,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 
 				// =1 - (((ABS(lf) /12) ^ 2) * (1/(LN(10)/2)) * (distance [0-1]))
 
-				amplog = powf((float)lf / 12.0f, 2.0f) * (1.0f / (FLOAT_LN / 8));
+				amplog = powf((float)lf / 12.0f, 2.0f) * (1.0f / (FLOAT_LN_10 / 8));
 				dval = (float)distval / 128.0f;
 				tvaBiasMult[lf][distval] = (int)((1.0f - (amplog * dval)) * 256.0f);
 				if (tvaBiasMult[lf][distval] < 0) {
