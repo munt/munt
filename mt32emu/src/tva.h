@@ -40,6 +40,8 @@ private:
 	int veloAmpSubtraction;
 	int keyTimeSubtraction;
 
+	int largeAmpInc;
+
 public:
 	// FIXME: These should probably be private (only public for testing purposes atm)
 	bool play;

@@ -100,6 +100,12 @@ private:
 
 	int bendShift;
 
+	Bit32s pastCarrier;
+	Bit32s pastOsc;
+
+	Bit32s pastDesCarrier;
+	Bit32s pastDesOsc;
+
 	Bit16s *mixBuffers(Bit16s *buf1, Bit16s *buf2, int len);
 	Bit16s *mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, int len);
 	Bit16s *mixBuffersRing(Bit16s *buf1, Bit16s *buf2, int len);

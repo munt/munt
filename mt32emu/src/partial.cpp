@@ -176,6 +176,10 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 		pcmWave = NULL;
 	}
 
+	pastCarrier = 0;
+	pastOsc = 0;
+	pastDesCarrier = 0;
+
 	lfoPos = 0;
 	pulsewidth = patchCache->pulsewidth + synth->tables.pwVelfollowAdd[patchCache->pwsens][poly->vel];
 	if (pulsewidth > 100) {
@@ -363,6 +367,15 @@ Bit16s *Partial::generateSamples(long length) {
 				//CC: There used to be a lot of code here.  :-)
 				filterInput = (posSaw->tick() - negSaw->tick()) * WGAMP ;
 
+				if ((patchCache->waveform & 1) != 0) {
+					//CC: Sawtooth samples are finally generated here by multipling an in-sync cosine
+					//with the generated square wave.
+
+					//CC: Computers are fast these days.  Not caring to use a LUT or fixed point anymore.
+					//If I port this to the iPhone I may reconsider.
+					filterInput = (Bit32s)(cos(phase * 2.0f) * filterInput);
+				}
+
 				if (filtval > ((FILTERGRAN * 15) / 16))
 					filtval = ((FILTERGRAN * 15) / 16);
 				sample = (Bit32s)(floorf((synth->iirFilter)((float)filterInput, &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])) / synth->tables.resonanceFactor[patchCache->filtEnv.resonance]);
@@ -375,14 +388,7 @@ Bit16s *Partial::generateSamples(long length) {
 					sample = 32767;
 				}
 
-				if ((patchCache->waveform & 1) != 0) {
-					//CC: Sawtooth samples are finally generated here by multipling an in-sync cosine
-					//with the generated and now filtered square wave.
 
-					//CC: Computers are fast these days.  Not caring to use a LUT or fixed point anymore.
-					//If I port this to the iPhone I may reconsider.
-					sample = (int)(cos(phase * 2.0f) * (float)sample);
-				}
 			}
 		}
 
@@ -395,7 +401,7 @@ Bit16s *Partial::generateSamples(long length) {
 		// Put volume envelope over generated sample
 		// FIXME:KG: Note that the "32768.0f" here is slightly arbitrary, and needs to be confirmed.
 		// FIXME:KG: Obviously we should use something faster once we've got the details sorted out.
-		sample = (Bit32s)(powf(2.0f, amp / TVA_TARGET_AMP_MULT / 16.0f - 1.0f) / 32768.0f * sample);
+		sample = (Bit32s)(powf(2.0f, amp / 16.0f - 1.0f) / 32768.0f * sample);
 
 		envs[EnvelopeType_pitch].envpos++;
 		envs[EnvelopeType_filt].envpos++;
@@ -466,26 +472,46 @@ Bit16s *Partial::mixBuffersRingMix(Bit16s * buf1, Bit16s *buf2, int len) {
 	}
 
 	Bit16s *outBuf = buf1;
-#if MT32EMU_USE_MMX >= 1
+#ifdef MT32EMU_USE_MMX_MIXING
 	// KG: This seems to be fine
 	int donelen = i386_mixBuffersRingMix(buf1, buf2, len);
 	len -= donelen;
 	buf1 += donelen;
 	buf2 += donelen;
 #endif
+	#define CUTOFF 2048
 	while (len--) {
-		float a, b;
-		a = ((float)*buf1) / 8192.0f;
-		b = ((float)*buf2) / 8192.0f;
-		a = (a * b) + a;
-		if (a>1.0)
-			a = 1.0;
-		if (a<-1.0)
-			a = -1.0;
-		*buf1 = (Bit16s)(a * 8192.0f);
+int a[3], b[3], c[2], d[2], result;
+		a[0] = ((Bit32s)*buf1);
+		b[0] = ((Bit32s)*buf2);
+
+		a[1] = pastCarrier + ((CUTOFF * (a[0] - pastCarrier)) >> 12);
+		a[2] = a[1] + ((CUTOFF * (0 - a[1])) >> 12);
+		pastCarrier = a[2];
+
+
+		
+		b[1] = pastOsc + ((CUTOFF * (b[0] - pastOsc)) >> 12);
+		b[2] = b[1] + ((CUTOFF * (0 - b[1])) >> 12);
+		pastOsc = b[2];
+
+		c[0] = a[1] * b[1];
+		c[1] = (a[2] * b[2]);
+
+		d[0] = pastDesCarrier + ((CUTOFF * (c[0] - pastDesCarrier)) >> 12);
+		d[1] = d[0] + ((CUTOFF * (c[1] - d[0])) >> 12);
+
+		pastDesCarrier = d[1];
+
+		result = ((d[0] >> 12) + a[0]) >> 1;
+
+		if (result>32767)
+			result = 32767;
+		if (result<-32768)
+			result = -32768;
+		*buf1 = (Bit16s)(result);
 		buf1++;
 		buf2++;
-		//buf1[i] = (Bit16s)(((Bit32s)buf1[i] * (Bit32s)buf2[i]) >> 10) + buf1[i];
 	}
 	return outBuf;
 }
@@ -499,23 +525,46 @@ Bit16s *Partial::mixBuffersRing(Bit16s * buf1, Bit16s *buf2, int len) {
 	}
 
 	Bit16s *outBuf = buf1;
-#if MT32EMU_USE_MMX >= 1
+#if MT32EMU_USE_MMX_MIXING
 	// FIXME:KG: Not really checked as working
 	int donelen = i386_mixBuffersRing(buf1, buf2, len);
 	len -= donelen;
 	buf1 += donelen;
 	buf2 += donelen;
 #endif
+
+
 	while (len--) {
-		float a, b;
-		a = ((float)*buf1) / 8192.0f;
-		b = ((float)*buf2) / 8192.0f;
-		a *= b;
-		if (a>1.0)
-			a = 1.0;
-		if (a<-1.0)
-			a = -1.0;
-		*buf1 = (Bit16s)(a * 8192.0f);
+	int a[3], b[3], c[2], d[2], result;
+		
+		a[0] = ((Bit32s)*buf1);
+		b[0] = ((Bit32s)*buf2);
+
+		
+		a[1] = pastCarrier + ((CUTOFF * (a[0] - pastCarrier)) >> 12);
+		a[2] = a[1] + ((CUTOFF * (0 - a[1])) >> 12);
+		pastCarrier = a[2];
+
+
+		b[1] = pastOsc + ((CUTOFF * (b[0] - pastOsc)) >> 12);
+		b[2] = b[1] + ((CUTOFF * (0 - b[1])) >> 12);
+		pastOsc = b[2];
+
+		c[0] = a[1] * b[1];
+		c[1] = (a[2] * b[2]);
+
+		d[0] = pastDesCarrier + ((CUTOFF * (c[0] - pastDesCarrier)) >> 12);
+		d[1] = d[0] + ((CUTOFF * (c[1] - d[0])) >> 12);
+
+		pastDesCarrier = d[1];
+		
+		result = d[0] >> 12;
+
+		if (result>32767)
+			result = 32767;
+		if (result<-32768)
+			result = -32768;
+		*buf1 = (Bit16s)(result);
 		buf1++;
 		buf2++;
 	}
