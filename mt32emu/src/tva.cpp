@@ -28,7 +28,7 @@ const int MAX_CURRENT_AMP = 0xFF * TVA_TARGET_AMP_MULT;
 static Bit8u biasLevelToAmpSubtractionCoeff[13] = {255, 187, 137, 100, 74, 54, 40, 29, 21, 15, 10, 5, 0};
 
 // When entering nextPhase, targetPhase is immediately incremented, and the descriptions/names below represent
-// their use after the increment (obviously PHASE_INIT is never actually used in nextPhase()).
+// their use after the increment.
 enum {
 	// When this is the target phase, level[0] is targeted within time[0] are used and velocity is applied
 	PHASE_ATTACK = 1,
