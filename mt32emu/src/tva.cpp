@@ -220,12 +220,10 @@ void TVA::startDecay() {
 	if (targetPhase >= PHASE_RELEASE)
 		return;
 	targetPhase = PHASE_RELEASE; // The next time nextPhase() is called, it will think PHASE_RELEASE has finished and the partial will be aborted
-	Bit8u newAmpIncrement = -partialParam->tva.envTime[4];
-	// FIXME: Obvious bug here (should be checking newAmpIncrement signed, now decay is always 1!)
-	if (newAmpIncrement >= 0) {
-		newAmpIncrement++; // FIXME: Wtf? Aiui this will raise the volume, not lower it, and therefore never hit the target...
-	}
-	setAmpIncrement(newAmpIncrement);
+	if (partialParam->tva.envTime[4] == 0)
+		setAmpIncrement(1);
+	else
+		setAmpIncrement(-partialParam->tva.envTime[4]);
 	targetAmp = 0;
 }
 
