@@ -71,7 +71,7 @@ Bit32u TVA::nextAmp() {
 	Bit32u target = targetAmp * TVA_TARGET_AMP_MULT;
 	if (ampIncrement == 0) {
 		currentAmp = target;
-		return currentAmp / TVA_TARGET_AMP_MULT;
+		return currentAmp;
 	}
 	if ((ampIncrement & 0x80) != 0) {
 		// Lowering amp
@@ -98,7 +98,7 @@ Bit32u TVA::nextAmp() {
 			}
 		}
 	}
-	return currentAmp / TVA_TARGET_AMP_MULT;
+	return currentAmp;
 }
 
 static int multBias(const Tables *tables, Bit8u biasLevel, int bias) {
