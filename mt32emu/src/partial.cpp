@@ -397,8 +397,6 @@ Bit16s *Partial::generateSamples(long length) {
 		partialOff.pcmoffset = (Bit16u)(absOff & 0xFFFF);
 
 		// Put volume envelope over generated sample
-		// FIXME:KG: Note that the "32768.0f" here is slightly arbitrary, and needs to be confirmed.
-		// FIXME:KG: Obviously we should use something faster once we've got the details sorted out.
 		sample = (Bit32s)(amp * sample);
 
 		envs[EnvelopeType_pitch].envpos++;
