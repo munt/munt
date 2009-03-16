@@ -138,8 +138,8 @@ static int calcVeloAmpSubtraction(const Tables *tables, Bit8u veloSensitivity, i
 	// FIXME:KG: Better variable names
 	int velocityMult = veloSensitivity - 50;
 	int absVelocityMult = velocityMult < 0 ? -velocityMult : velocityMult;
-	velocityMult = (velocityMult * (velocity - 64)) << 2;
-	return absVelocityMult - (velocityMult >> 8);
+	velocityMult = (signed)((unsigned)(velocityMult * (velocity - 64)) << 2);
+	return absVelocityMult - (velocityMult >> 8); // PORTABILITY NOTE: Assumes arithmetic shift
 }
 
 static int calcBasicAmp(const Tables *tables, const Partial *partial, const MemParams::System *system, const TimbreParam::PartialParam *partialParam, const MemParams::PatchTemp *patchTemp, const MemParams::RhythmTemp *rhythmTemp, int biasAmpSubtraction, int veloAmpSubtraction, Bit8u expression) {
@@ -181,7 +181,7 @@ static int calcBasicAmp(const Tables *tables, const Partial *partial, const MemP
 int calcKeyTimeSubtraction(Bit8u envTimeKeyfollow, int key) {
 	if (envTimeKeyfollow == 0)
 		return 0;
-	return (key - 60) >> (5 - envTimeKeyfollow);
+	return (key - 60) >> (5 - envTimeKeyfollow); // PORTABILITY NOTE: Assumes arithmetic shift
 }
 
 void TVA::reset(const Part *part, const PatchCache *patchCache) {
@@ -319,7 +319,7 @@ void TVA::nextPhase() {
 		int envTimeSetting  = partialParam->tva.envTime[envPointIndex];
 
 		if (targetPhase == 1) {
-			envTimeSetting -= (partial->getPoly()->vel - 64) >> (6 - partialParam->tva.envTimeVeloSensitivity);
+			envTimeSetting -= (partial->getPoly()->vel - 64) >> (6 - partialParam->tva.envTimeVeloSensitivity);  // PORTABILITY NOTE: Assumes arithmetic shift
 
 			if (envTimeSetting <= 0 && partialParam->tva.envTime[envPointIndex] != 0) {
 					envTimeSetting = 1;
