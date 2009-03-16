@@ -24,14 +24,14 @@
 namespace MT32Emu {
 
 const ControlROMMap ControlROMMaps[7] = {
-	// ID    IDc IDbytes                     PCMmap  PCMc  tmbrA   tmbrAO, tmbrB   tmbrBO, tmbrR   trC  rhythm  rhyC  rsrv    panpot  prog    rhyMax  patMax  sysMax  timMax
-	{0x4014, 22, "\000 ver1.04 14 July 87 ", 0x3000,  128, 0x8000, 0x0000, 0xC000, 0x4000, 0x3200,  30, 0x73A6,  85,  0x57C7, 0x57D0, 0x57E2, 0x5252, 0x525E, 0x526E, 0x520A},
-	{0x4014, 22, "\000 ver1.05 06 Aug, 87 ", 0x3000,  128, 0x8000, 0x0000, 0xC000, 0x4000, 0x3200,  30, 0x7414,  85,  0x57C7, 0x57D0, 0x57E2, 0x5252, 0x525E, 0x526E, 0x520A},
-	{0x4014, 22, "\000 ver1.06 31 Aug, 87 ", 0x3000,  128, 0x8000, 0x0000, 0xC000, 0x4000, 0x3200,  30, 0x7414,  85,  0x57D9, 0x57E2, 0x57F4, 0x5264, 0x5270, 0x5280, 0x521C},
-	{0x4010, 22, "\000 ver1.07 10 Oct, 87 ", 0x3000,  128, 0x8000, 0x0000, 0xC000, 0x4000, 0x3200,  30, 0x73fe,  85,  0x57B1, 0x57BA, 0x57CC, 0x523C, 0x5248, 0x5258, 0x51F4}, // MT-32 revision 1
-	{0x4010, 22, "\000verX.XX  30 Sep, 88 ", 0x3000,  128, 0x8000, 0x0000, 0xC000, 0x4000, 0x3200,  30, 0x741C,  85,  0x57E5, 0x57EE, 0x5800, 0x5270, 0x527C, 0x528C, 0x5228}, // MT-32 Blue Ridge mod
-	{0x2205, 22, "\000CM32/LAPC1.00 890404", 0x8100,  256, 0x8000, 0x8000, 0x8080, 0x8000, 0x8500,  64, 0x5F84,  85,  0x4F65, 0x4F6E, 0x4F80, 0x48A1, 0x48A5, 0x48BE, 0x48D5},
-	{0x2205, 22, "\000CM32/LAPC1.02 891205", 0x8100,  256, 0x8000, 0x8000, 0x8080, 0x8000, 0x8500,  64, 0x5FAE,  85,  0x4F93, 0x4F9C, 0x4FAE, 0x48CB, 0x48CF, 0x48E8, 0x48FF}  // CM-32L
+	// ID    IDc IDbytes                     PCMmap  PCMc  tmbrA   tmbrAO, tmbrAC tmbrB   tmbrBO, tmbrBC tmbrR   trC  rhythm  rhyC  rsrv    panpot  prog    rhyMax  patMax  sysMax  timMax
+	{0x4014, 22, "\000 ver1.04 14 July 87 ", 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x73A6,  85,  0x57C7, 0x57D0, 0x57E2, 0x5252, 0x525E, 0x526E, 0x520A},
+	{0x4014, 22, "\000 ver1.05 06 Aug, 87 ", 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x7414,  85,  0x57C7, 0x57D0, 0x57E2, 0x5252, 0x525E, 0x526E, 0x520A},
+	{0x4014, 22, "\000 ver1.06 31 Aug, 87 ", 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x7414,  85,  0x57D9, 0x57E2, 0x57F4, 0x5264, 0x5270, 0x5280, 0x521C},
+	{0x4010, 22, "\000 ver1.07 10 Oct, 87 ", 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x73fe,  85,  0x57B1, 0x57BA, 0x57CC, 0x523C, 0x5248, 0x5258, 0x51F4}, // MT-32 revision 1
+	{0x4010, 22, "\000verX.XX  30 Sep, 88 ", 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x741C,  85,  0x57E5, 0x57EE, 0x5800, 0x5270, 0x527C, 0x528C, 0x5228}, // MT-32 Blue Ridge mod
+	{0x2205, 22, "\000CM32/LAPC1.00 890404", 0x8100,  256, 0x8000, 0x8000, false, 0x8080, 0x8000, false, 0x8500,  64, 0x5F84,  85,  0x4F65, 0x4F6E, 0x4F80, 0x48A1, 0x48A5, 0x48BE, 0x48D5},
+	{0x2205, 22, "\000CM32/LAPC1.02 891205", 0x8100,  256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500,  64, 0x5FAE,  85,  0x4F93, 0x4F9C, 0x4FAE, 0x48CB, 0x48CF, 0x48E8, 0x48FF}  // CM-32L
 	// (Note that all but CM-32L ROM actually have 86 entries for rhythmTemp)
 };
 
@@ -335,57 +335,48 @@ bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 	return false;
 }
 
-bool Synth::initRhythmTimbre(int timbreNum, const Bit8u *mem, unsigned int memLen) {
-	if (memLen < sizeof(TimbreParam::CommonParam)) {
+bool Synth::initCompressedTimbre(int timbreNum, const Bit8u *src, unsigned int srcLen) {
+	// "Compressed" here means that muted partials aren't present in ROM (except in the case of partial 0 being muted).
+	// Instead the data from the previous unmuted partial is used.
+	if (srcLen < sizeof(TimbreParam::CommonParam)) {
 		return false;
 	}
 	TimbreParam *timbre = &mt32ram.timbres[timbreNum].timbre;
-	timbresMemoryRegion->write(timbreNum, 0, mem, sizeof(TimbreParam::CommonParam), true);
+	timbresMemoryRegion->write(timbreNum, 0, src, sizeof(TimbreParam::CommonParam), true);
+	unsigned int srcPos = sizeof(TimbreParam::CommonParam);
 	unsigned int memPos = sizeof(TimbreParam::CommonParam);
-	char drumname[11];
-	strncpy(drumname, timbre->common.name, 10);
-	drumname[10] = 0;
 	for (int t = 0; t < 4; t++) {
-		if (((timbre->common.partialMute >> t) & 0x1) == 0x1) {
-			if (memPos + sizeof(TimbreParam::PartialParam) >= memLen) {
+		if (t != 0 && ((timbre->common.partialMute >> t) & 0x1) == 0x00) {
+			// This partial is muted - we'll copy the previously copied partial, then
+			srcPos -= sizeof(TimbreParam::PartialParam);
+		} else if (srcPos + sizeof(TimbreParam::PartialParam) >= srcLen) {
+			return false;
+		}
+		timbresMemoryRegion->write(timbreNum, memPos, src + srcPos, sizeof(TimbreParam::PartialParam));
+		srcPos += sizeof(TimbreParam::PartialParam);
+		memPos += sizeof(TimbreParam::PartialParam);
+	}
+	return true;
+}
+
+bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, int count, int startTimbre, bool compressed) {
+	const Bit8u *timbreMap = &controlROMData[mapAddress];
+	for (Bit16u i = 0; i < count * 2; i += 2) {
+		Bit16u address = (timbreMap[i + 1] << 8) | timbreMap[i];
+		if (!compressed && (address + offset + sizeof(TimbreParam) > CONTROL_ROM_SIZE)) {
+			printDebug("Control ROM error: Timbre map entry 0x%04x for timbre %d points to invalid timbre address 0x%04x", i, startTimbre, address);
+			return false;
+		}
+		address += offset;
+		if (compressed) {
+			if(!initCompressedTimbre(startTimbre, &controlROMData[address], CONTROL_ROM_SIZE - address)) {
+				printDebug("Control ROM error: Timbre map entry 0x%04x for timbre %d points to invalid timbre at 0x%04x", i, startTimbre, address);
 				return false;
 			}
-			timbresMemoryRegion->write(timbreNum, memPos, mem + memPos, sizeof(TimbreParam::PartialParam));
-			memPos += sizeof(TimbreParam::PartialParam);
 		}
-	}
-	return true;
-}
-
-bool Synth::initRhythmTimbres(Bit16u mapAddress, Bit16u count) {
-	const Bit8u *drumMap = &controlROMData[mapAddress];
-	int timbreNum = 192;
-	for (Bit16u i = 0; i < count * 2; i += 2) {
-		Bit16u address = (drumMap[i + 1] << 8) | drumMap[i];
-		/*
-		// This check is nonsensical when the control ROM is the full 64KB addressable by 16-bit absolute pointers (which it is)
-		if (address >= CONTROL_ROM_SIZE) {
-			printDebug("Control ROM error: Timbre map entry 0x%04x points to invalid timbre address 0x%04x", i, address);
-			return false;
-		}
-		*/
-		if (!initRhythmTimbre(timbreNum++, &controlROMData[address], CONTROL_ROM_SIZE - address)) {
-			printDebug("Control ROM error: Timbre map entry 0x%04x points to invalid timbre 0x%04x", i, address);
-			return false;
-		}
-	}
-	return true;
-}
-
-bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, int startTimbre) {
-	for (Bit16u i = mapAddress; i < mapAddress + 0x80; i += 2) {
-		Bit16u address = (controlROMData[i + 1] << 8) | controlROMData[i];
-		if (address + sizeof(TimbreParam) > CONTROL_ROM_SIZE) {
-			printDebug("Control ROM error: Timbre map entry 0x%04x points to invalid timbre address 0x%04x", i, address);
-			return false;
-		}
-		address = address + offset;
-		timbresMemoryRegion->write(startTimbre++, 0, &controlROMData[address], sizeof(TimbreParam), true);
+		else
+			timbresMemoryRegion->write(startTimbre, 0, &controlROMData[address], sizeof(TimbreParam), true);
+		startTimbre++;
 	}
 	return true;
 }
@@ -430,17 +421,17 @@ bool Synth::open(SynthProperties &useProp) {
 	}
 
 	printDebug("Initialising Timbre Bank A");
-	if (!initTimbres(controlROMMap->timbreAMap, controlROMMap->timbreAOffset, 0)) {
+	if (!initTimbres(controlROMMap->timbreAMap, controlROMMap->timbreAOffset, 0x40, 0, controlROMMap->timbreACompressed)) {
 		return false;
 	}
 
 	printDebug("Initialising Timbre Bank B");
-	if (!initTimbres(controlROMMap->timbreBMap, controlROMMap->timbreBOffset, 64)) {
+	if (!initTimbres(controlROMMap->timbreBMap, controlROMMap->timbreBOffset, 0x40, 64, controlROMMap->timbreBCompressed)) {
 		return false;
 	}
 
 	printDebug("Initialising Timbre Bank R");
-	if (!initRhythmTimbres(controlROMMap->timbreRMap, controlROMMap->timbreRCount)) {
+	if (!initTimbres(controlROMMap->timbreRMap, 0, controlROMMap->timbreRCount, 192, true)) {
 		return false;
 	}
 

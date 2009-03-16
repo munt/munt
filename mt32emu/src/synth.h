@@ -132,8 +132,10 @@ struct ControlROMMap {
 	Bit16u pcmCount;
 	Bit16u timbreAMap; // 128 bytes
 	Bit16u timbreAOffset;
+	bool timbreACompressed;
 	Bit16u timbreBMap; // 128 bytes
 	Bit16u timbreBOffset;
+	bool timbreBCompressed;
 	Bit16u timbreRMap; // 2 * timbreRCount bytes
 	Bit16u timbreRCount;
 	Bit16u rhythmSettings; // 4 * rhythmSettingsCount bytes
@@ -321,9 +323,8 @@ private:
 	int dumpTimbres(const char *filename, int start, int len);
 
 	bool initPCMList(Bit16u mapAddress, Bit16u count);
-	bool initRhythmTimbres(Bit16u mapAddress, Bit16u count);
-	bool initTimbres(Bit16u mapAddress, Bit16u offset, int startTimbre);
-	bool initRhythmTimbre(int drumNum, const Bit8u *mem, unsigned int memLen);
+	bool initTimbres(Bit16u mapAddress, Bit16u offset, int timbreCount, int startTimbre, bool compressed);
+	bool initCompressedTimbre(int drumNum, const Bit8u *mem, unsigned int memLen);
 	bool refreshSystem();
 	void reset();
 
