@@ -24,7 +24,6 @@ namespace MT32Emu {
 class Part;
 
 // FIXME:KG: This should only exist while we're experimenting to get the right value
-extern const int TVA_TARGET_AMP_MULT;
 
 class TVA {
 private:
@@ -54,7 +53,7 @@ public:
 
 	TVA(const Partial *partial);
 	void reset(const Part *part, const PatchCache *patchCache);
-	Bit32u nextAmp();
+	float nextAmp();
 	void nextPhase();
 	void recalcSustain();
 	void startDecay();

@@ -66,39 +66,39 @@ void TVA::setAmpIncrement(Bit8u ampIncrement) {
 	largeAmpInc = (unsigned int)((powf(10.0f, (float)((largeAmpInc - 1.0f) / 26.0f))) * 256.0f);
 }
 
-Bit32u TVA::nextAmp() {
+float TVA::nextAmp() {
 	// FIXME: This whole method is based on guesswork
 	Bit32u target = targetAmp * TVA_TARGET_AMP_MULT;
 	if (ampIncrement == 0) {
 		currentAmp = target;
-		return currentAmp;
-	}
-	if ((ampIncrement & 0x80) != 0) {
-		// Lowering amp
-		if (largeAmpInc > currentAmp) {
-			currentAmp = target;
-			nextPhase();
-		} else {
-			currentAmp -= largeAmpInc;
-			if (currentAmp <= target) {
-				currentAmp = target;
-				nextPhase();
-			}
-		}
 	} else {
-		// Raising amp
-		if (MAX_CURRENT_AMP - currentAmp < largeAmpInc ) {
-			currentAmp = target;
-			nextPhase();
-		} else {
-			currentAmp += largeAmpInc;
-			if(currentAmp >= target) {
+		if ((ampIncrement & 0x80) != 0) {
+			// Lowering amp
+			if (largeAmpInc > currentAmp) {
 				currentAmp = target;
 				nextPhase();
+			} else {
+				currentAmp -= largeAmpInc;
+				if (currentAmp <= target) {
+					currentAmp = target;
+					nextPhase();
+				}
+			}
+		} else {
+			// Raising amp
+			if (MAX_CURRENT_AMP - currentAmp < largeAmpInc ) {
+				currentAmp = target;
+				nextPhase();
+			} else {
+				currentAmp += largeAmpInc;
+				if(currentAmp >= target) {
+					currentAmp = target;
+					nextPhase();
+				}
 			}
 		}
 	}
-	return currentAmp;
+	return powf(2.0f, (float)currentAmp / TVA_TARGET_AMP_MULT / 16.0f - 1.0f) / 32768.0f;
 }
 
 static int multBias(const Tables *tables, Bit8u biasLevel, int bias) {
