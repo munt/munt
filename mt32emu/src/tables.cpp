@@ -227,20 +227,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	}
 
 	int velt, dep;
-	float tempdep;
 	for (velt = 0; velt < 128; velt++) {
-		for (dep = 0; dep < 5; dep++) {
-			if (dep > 0) {
-				float ff = (float)(exp(3.5f * tvcatconst[dep] * (59.0f - (float)velt)) * tvcatmult[dep]);
-				tempdep = 256.0f * ff;
-				envTimeVelfollowMult[dep][velt] = (int)tempdep;
-				//if ((velt % 16) == 0) {
-				//	synth->printDebug("Key %d, depth %d, factor %d", velt, dep, (int)tempdep);
-				//}
-			} else
-				envTimeVelfollowMult[dep][velt] = 256;
-		}
-
 		for (dep = -7; dep < 8; dep++) {
 			float fldep = (float)abs(dep) / 7.0f;
 			fldep = powf(fldep,2.5f);
@@ -248,28 +235,6 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 				fldep = fldep * -1.0f;
 			pwVelfollowAdd[dep+7][velt] = Bit32s((fldep * (float)velt * 100) / 128.0);
 		}
-	}
-
-	for (lf = 0; lf < 128; lf++) {
-		float veloFract = lf / 127.0f;
-		for (int velsens = 0; velsens <= 100; velsens++) {
-			float sensFract = (velsens - 50) / 50.0f;
-			if (velsens < 50) {
-				tvaVelfollowMult[lf][velsens] = FIXEDPOINT_MAKE(1.0f / powf(2.0f, veloFract * -sensFract * 127.0f / 20.0f), 8);
-			} else {
-				tvaVelfollowMult[lf][velsens] = FIXEDPOINT_MAKE(1.0f / powf(2.0f, (1.0f - veloFract) * sensFract * 127.0f / 20.0f), 8);
-			}
-		}
-	}
-
-	for (lf = 0; lf <= 100; lf++) {
-		// Converts the 0-100 range used by the MT-32 to volume multiplier
-		volumeMult[lf] = FIXEDPOINT_MAKE(powf((float)lf / 100.0f, FLOAT_LN_10), 7);
-
-		// Converts the TVA envelope 0-100 range to the exponential series
-		float fVal = (powf(4.0f, ((float)lf / 100.0f)) - 1.0f) / 3.0f;
-		fVal = powf(fVal, FLOAT_LN_10);
-		volumeExp[lf] = FIXEDPOINT_MAKE(fVal, 10);
 	}
 
 	for (lf = 0; lf <= 100; lf++) {
@@ -366,35 +331,11 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 			//synth->printDebug("lf %d depat %d pval %x", lf,depat,pval);
 		}
 	}
-
-	for (lf = 0; lf <= 12; lf++) {
-		for (int distval = 0; distval < 128; distval++) {
-			float amplog, dval;
-			if (lf == 0) {
-				amplog = 0;
-				dval = 1;
-				tvaBiasMult[lf][distval] = 256;
-			} else {
-				// Distance of full volume reduction
-
-				// =1 - (((ABS(lf) /12) ^ 2) * (1/(LN(10)/2)) * (distance [0-1]))
-
-				amplog = powf((float)lf / 12.0f, 2.0f) * (1.0f / (FLOAT_LN_10 / 8));
-				dval = (float)distval / 128.0f;
-				tvaBiasMult[lf][distval] = (int)((1.0f - (amplog * dval)) * 256.0f);
-				if (tvaBiasMult[lf][distval] < 0) {
-					tvaBiasMult[lf][distval] = 0;
-				}
-			}
-			//synth->printDebug("Ampbias lf %d distval %d = %f (%x) %f", lf, distval, dval, tvaBiasMult[lf][distval],amplog);
-		}
-	}
 }
 
 static void initDep(KeyLookup *keyLookup, float f) {
 	for (int dep = 0; dep < 5; dep++) {
 		if (dep == 0) {
-			keyLookup->envDepthMult[dep] = 256;
 			keyLookup->envTimeMult[dep] = 256;
 		} else {
 			float depfac = 3000.0f;
@@ -403,7 +344,6 @@ static void initDep(KeyLookup *keyLookup, float f) {
 
 			ff = (f - (float)MIDDLEC) / depfac;
 			tempdep = powf(2, ff) * 256.0f;
-			keyLookup->envDepthMult[dep] = (int)tempdep;
 
 			ff = (float)(exp(tkcatconst[dep] * ((float)MIDDLEC - f)) * tkcatmult[dep]);
 			keyLookup->envTimeMult[dep] = (int)(ff * 256.0f);

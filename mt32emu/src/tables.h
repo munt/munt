@@ -80,7 +80,6 @@ struct NoteLookup {
 
 struct KeyLookup {
 	Bit32s envTimeMult[5]; // For envelope time adjustment for key pressed
-	Bit32s envDepthMult[5];
 };
 
 class Tables {
@@ -110,8 +109,6 @@ public:
 	Bit8u masterVolToAmpSubtraction[101];
 
 	Bit32s tvfKeyfollowMult[217];
-	Bit32u tvaVelfollowMult[128][101];
-	Bit32s tvaBiasMult[13][128];
 	Bit16s noiseBuf[MAX_SAMPLE_OUTPUT];
 	Bit16s sintable[65536];
 	Bit32s pitchEnvVal[16][101];
@@ -120,8 +117,6 @@ public:
 	float resonanceFactor[31];
 	Bit32u lfoShift[101][101];
 	float pwFactorf[101];
-	Bit32s volumeMult[101];
-	Bit32s volumeExp[101];
 
 	// LUTs varying with sample rate
 	Bit32u envTime[101];
