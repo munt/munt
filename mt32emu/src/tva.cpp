@@ -98,9 +98,9 @@ float TVA::nextAmp() {
 			}
 		}
 	}
-	// FIXME:KG: Note that the "32768.0f" here is slightly arbitrary, and needs to be confirmed.
+	// FIXME:KG: Note that the "65536.0f" here is slightly arbitrary, and needs to be confirmed. 32768.0f is more likely.
 	// FIXME:KG: We should perhaps use something faster once we've got the details sorted out, but the real synth's amp level changes pretty smoothly.
-	return powf(2.0f, (float)currentAmp / TVA_TARGET_AMP_MULT / 16.0f - 1.0f) / 32768.0f;
+	return powf(2.0f, (float)currentAmp / TVA_TARGET_AMP_MULT / 16.0f - 1.0f) / 65536.0f;
 }
 
 static int multBias(const Tables *tables, Bit8u biasLevel, int bias) {
