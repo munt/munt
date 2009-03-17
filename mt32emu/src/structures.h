@@ -76,10 +76,10 @@ struct TimbreParam {
 
 		struct PitchEnvParam {
 			Bit8u depth; // 0-10
-			Bit8u veloSensitivity; // 1-100
+			Bit8u veloSensitivity; // 0-100
 			Bit8u timeKeyfollow; // 0-4
-			Bit8u time[4]; // 1-100
-			Bit8u level[5]; // 1-100 (-50 - +50) // [3]: SUSTAIN LEVEL, [4]: END LEVEL
+			Bit8u time[4]; // 0-100
+			Bit8u level[5]; // 0-100 (-50 - +50) // [3]: SUSTAIN LEVEL, [4]: END LEVEL
 		} MT32EMU_ALIGN_PACKED pitchEnv;
 
 		struct PitchLFOParam {
@@ -98,8 +98,8 @@ struct TimbreParam {
 			Bit8u envVeloSensitivity; // 0-100
 			Bit8u envDepthKeyfollow; // DEPTH KEY FOLL0W 0-4
 			Bit8u envTimeKeyfollow; // TIME KEY FOLLOW 0-4
-			Bit8u envTime[5]; // 1-100
-			Bit8u envLevel[4]; // 1-100 // [3]: SUSTAIN LEVEL
+			Bit8u envTime[5]; // 0-100
+			Bit8u envLevel[4]; // 0-100 // [3]: SUSTAIN LEVEL
 		} MT32EMU_ALIGN_PACKED tvf;
 
 		struct TVAParam {
@@ -111,8 +111,8 @@ struct TimbreParam {
 			Bit8u biasLevel2; // 0-12 (-12 - 0)
 			Bit8u envTimeKeyfollow; // TIME KEY FOLLOW 0-4
 			Bit8u envTimeVeloSensitivity; // VELOS KEY FOLL0W 0-4
-			Bit8u envTime[5]; // 1-100
-			Bit8u envLevel[4]; // 1-100 // [3]: SUSTAIN LEVEL
+			Bit8u envTime[5]; // 0-100
+			Bit8u envLevel[4]; // 0-100 // [3]: SUSTAIN LEVEL
 		} MT32EMU_ALIGN_PACKED tva;
 	} MT32EMU_ALIGN_PACKED partial[4];
 } MT32EMU_ALIGN_PACKED;
