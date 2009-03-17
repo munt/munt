@@ -1075,6 +1075,7 @@ void Synth::reset() {
 	for (int i = 0; i < 9; i++) {
 		parts[i]->refresh();
 	}
+	refreshSystem();
 	isEnabled = false;
 }
 
