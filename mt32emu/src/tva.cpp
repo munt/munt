@@ -30,7 +30,7 @@ static Bit8u biasLevelToAmpSubtractionCoeff[13] = {255, 187, 137, 100, 74, 54, 4
 // When entering nextPhase, targetPhase is immediately incremented, and the descriptions/names below represent
 // their use after the increment.
 enum {
-	// When this is the target phase, level[0] is targeted within time[0] and velocity is applied
+	// When this is the target phase, level[0] is targeted within time[0], and velocity potentially affects time
 	PHASE_ATTACK = 1,
 
 	// When this is the target phase, level[1] is targeted within time[1]
@@ -207,12 +207,19 @@ void TVA::reset(const Part *part, const PatchCache *patchCache) {
 	int newTargetAmp = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
 
 	if (partialParam->tva.envTime[0] == 0) {
+		// Initially go to the PHASE_ATTACK target amp, and spend the next phase going from there to the PHASE_2 target amp
+		// Note that this means that velocity never affects time for this partial.
 		newTargetAmp += partialParam->tva.envLevel[0];
 		targetPhase = PHASE_2 - 1; // The first target used in nextPhase() will be PHASE_2
 	} else {
+		// Initially go to the base amp determined by TVA level, part volume, etc., and spend the next phase going from there to the full PHASE_ATTACK target amp.
 		targetPhase = PHASE_ATTACK - 1; // The first target used in nextPhase() will be PHASE_ATTACK
 	}
-	setAmpIncrement(0x80 | 127); // Go downward as quickly as possible.
+
+	// "Go downward as quickly as possible".
+	// Since currentAmp is 0, nextAmp() will notice that we're already at or below the target and trying to go downward,
+	// and therefore jump to the target immediately and call nextPhase().
+	setAmpIncrement(0x80 | 127);
 	targetAmp = (Bit8u)newTargetAmp;
 
 	currentAmp = 0;
@@ -320,7 +327,7 @@ void TVA::nextPhase() {
 	if ((targetPhase != PHASE_SUSTAIN && targetPhase != PHASE_RELEASE) || allLevelsZeroFromNowOn) {
 		int envTimeSetting  = partialParam->tva.envTime[envPointIndex];
 
-		if (targetPhase == 1) {
+		if (targetPhase == PHASE_ATTACK) {
 			envTimeSetting -= (partial->getPoly()->vel - 64) >> (6 - partialParam->tva.envTimeVeloSensitivity);  // PORTABILITY NOTE: Assumes arithmetic shift
 
 			if (envTimeSetting <= 0 && partialParam->tva.envTime[envPointIndex] != 0) {
