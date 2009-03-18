@@ -75,7 +75,6 @@ struct NoteLookup {
 	float freq;
 	Bit32u div2;
 	Bit32u *wavTable;
-	int rfiltTable[512];
 };
 
 struct KeyLookup {

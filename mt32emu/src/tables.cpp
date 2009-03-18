@@ -364,15 +364,6 @@ Bit16s Tables::clampWF(Synth *synth, const char *n, float ampVal, double input) 
 	return (Bit16s)x;
 }
 
-static void initRFiltTable(NoteLookup *noteLookup, float freq, float rate) {
-	for (int cf = 0; cf < 512; cf++) {
-		float freqsum = powf(256.0f, (((float)cf / 128.0f) - 1.0f));
-		noteLookup->rfiltTable[cf] = (int)((freq * freqsum) / (rate / 2) * FILTERGRAN);
-		if (noteLookup->rfiltTable[cf] >= ((FILTERGRAN * 15) / 16))
-			noteLookup->rfiltTable[cf] = ((FILTERGRAN * 15) / 16);
-	}
-}
-
 void Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float masterTune, PCMWaveEntry *pcmWaves) {
 	float freq = (float)(masterTune * pow(2.0, ((double)note - MIDDLEA) / 12.0));
 	noteLookup->freq = freq;
@@ -392,8 +383,6 @@ void Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float ra
 	for (int pc = 0; pc < synth->controlROMMap->pcmCount; pc++) {
 		noteLookup->wavTable[pc] = (int)(tuner / pcmWaves[pc].tune * rateMult);
 	}
-
-	initRFiltTable(noteLookup, freq, rate);
 }
 
 bool Tables::initNotes(Synth *synth, PCMWaveEntry *pcmWaves, float rate, float masterTune) {
