@@ -30,7 +30,7 @@ static Bit8u biasLevelToAmpSubtractionCoeff[13] = {255, 187, 137, 100, 74, 54, 4
 // When entering nextPhase, targetPhase is immediately incremented, and the descriptions/names below represent
 // their use after the increment.
 enum {
-	// When this is the target phase, level[0] is targeted within time[0] are used and velocity is applied
+	// When this is the target phase, level[0] is targeted within time[0] and velocity is applied
 	PHASE_ATTACK = 1,
 
 	// When this is the target phase, level[1] is targeted within time[1]
