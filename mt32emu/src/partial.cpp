@@ -133,7 +133,6 @@ void Partial::initKeyFollow(int key) {
 	else if (keyfollow < -108)
 		keyfollow = -108;
 	filtVal = synth->tables.tvfKeyfollowMult[keyfollow + 108];
-	realVal = synth->tables.tvfKeyfollowMult[(noteVal - MIDDLEC) + 108];
 }
 
 int Partial::getKey() const {

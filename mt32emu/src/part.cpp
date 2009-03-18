@@ -58,9 +58,7 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	}
 	currentInstr[0] = 0;
 	currentInstr[10] = 0;
-	midiExpression = 127;
 	expression = 100;
-	volumeMult = 0;
 	volumesetting.leftvol = 32767;
 	volumesetting.rightvol = 32767;
 	bend = 0.0f;
@@ -117,7 +115,6 @@ void Part::setModulation(unsigned int midiModulation) {
 }
 
 void RhythmPart::refresh() {
-	updateVolume();
 	// (Re-)cache all the mapped timbres ahead of time
 	for (unsigned int drumNum = 0; drumNum < synth->controlROMMap->rhythmSettingsCount; drumNum++) {
 		int drumTimbreNum = rhythmTemp[drumNum].timbre;
@@ -146,7 +143,6 @@ void RhythmPart::refresh() {
 }
 
 void Part::refresh() {
-	updateVolume();
 	backupCacheToPartials(patchCache);
 	for (int t = 0; t < 4; t++) {
 		// Common parameters, stored redundantly
@@ -366,20 +362,9 @@ const char *Part::getName() const {
 	return name;
 }
 
-void Part::updateVolume() {
-	// DEPRECATED: This method will soon be obsolete and removed
-	volumeMult = (patchTemp->outputLevel * midiExpression) / 127;
-}
-
-int Part::getVolume() const {
-	// FIXME: Use the mappings for this in the control ROM
-	return patchTemp->outputLevel * 127 / 100;
-}
-
 void Part::setVolume(int midiVolume) {
 	// CONFIRMED: This calculation matches the table used in the control ROM
 	patchTemp->outputLevel = (Bit8u)(midiVolume * 100 / 127);
-	updateVolume();
 	//synth->printDebug("%s (%s): Set volume to %d", name, currentInstr, midiVolume);
 }
 
@@ -390,10 +375,6 @@ Bit8u Part::getExpression() const {
 void Part::setExpression(int midiExpression) {
 	// CONFIRMED: This calculation matches the table used in the control ROM
 	expression = (Bit8u)(midiExpression * 100 / 127);
-
-	// DEPRECATED: This will become obsolete and go away soon
-	this->midiExpression = midiExpression;
-	updateVolume();
 }
 
 void RhythmPart::setPan(unsigned int midiPan)
@@ -525,7 +506,6 @@ void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, int key, in
 		synth->printDebug("%s (%s): No partials to play for this instrument", name, this->currentInstr);
 
 	tpoly->sustain = cache[0].sustain;
-	tpoly->volumeptr = &volumeMult;
 
 	for (int x = 0; x < 4; x++) {
 		if (tpoly->partials[x] != NULL) {

@@ -27,8 +27,6 @@ struct Poly {
 
 	bool isDecay;
 
-	const Bit32u *volumeptr;
-
 	Partial *partials[4];
 
 	bool pedalhold; // This marks keys that have been released on the keyboard, but are being held by the pedal

@@ -58,11 +58,6 @@ protected:
 	Bit32s pitchBend;
 	Bit16u pitchBenderRange; // (patchTemp->patch.benderRange * 683) at the time of the last MIDI program change or MIDI data entry.
 
-	// DEPRECATED: These two fields will soon be obsolete and removed
-	int midiExpression;
-	Bit32u volumeMult;
-
-	void updateVolume();
 	void backupCacheToPartials(PatchCache cache[4]);
 	void cacheTimbre(PatchCache cache[4], const TimbreParam *timbre);
 	void playPoly(const PatchCache cache[4], unsigned int key, int freqNum, int vel);
@@ -75,7 +70,6 @@ public:
 	virtual void noteOff(unsigned int midiKey);
 	void allNotesOff();
 	void allSoundOff();
-	int getVolume() const;
 	void setVolume(int midiVolume);
 	Bit8u getModulation() const;
 	void setModulation(unsigned int midiModulation);

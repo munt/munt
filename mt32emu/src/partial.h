@@ -75,8 +75,7 @@ private:
 	const NoteLookup *noteLookup; // LUTs for this noteVal
 	const KeyLookup *keyLookup; // LUTs for the clamped (12..108) key
 
-	// Keyfollowed filter values
-	int realVal;
+	// Keyfollowed filter value
 	int filtVal;
 
 	// Only used for PCM partials
