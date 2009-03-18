@@ -105,6 +105,10 @@ int Synth::report(ReportType type, const void *data) {
 	return 0;
 }
 
+unsigned int Synth::getSampleRate() const {
+	return myProp.sampleRate;
+}
+
 void Synth::printDebug(const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);

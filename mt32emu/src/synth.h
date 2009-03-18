@@ -55,7 +55,7 @@ enum ReportType {
 
 struct SynthProperties {
 	// Sample rate to use in mixing
-	int sampleRate;
+	unsigned int sampleRate;
 
 	// Flag to activate reverb.  True = use reverb, False = no reverb
 	bool useReverb;
@@ -328,6 +328,7 @@ private:
 	bool refreshSystem();
 	void reset();
 
+	unsigned int getSampleRate() const;
 protected:
 	int report(ReportType type, const void *reportData);
 	File *openFile(const char *filename, File::OpenMode mode);
