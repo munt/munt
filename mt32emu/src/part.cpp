@@ -469,7 +469,7 @@ void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, unsigned in
 		for (unsigned int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
 			Poly *poly = &polys[polyNum];
 			if (poly->isActive() && poly->getKey() == key) {
-				poly->noteOff(false);
+				poly->abort();
 				break;
 			}
 		}
