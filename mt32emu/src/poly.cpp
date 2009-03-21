@@ -55,17 +55,18 @@ void Poly::setBend(float bend) {
 	}
 }
 
-void Poly::noteOff(bool pedalHeld) {
-	// Non-sustaining instruments ignore note off.
-	// They die away eventually anyway.
-	if (state == POLY_Inactive || state == POLY_Releasing || !sustain) {
-		return;
+bool Poly::noteOff(bool pedalHeld) {
+	// Generally, non-sustaining instruments ignore note off. They die away eventually anyway.
+	// Key 0 (only used by special cases on rhythm part) reacts to note off even if non-sustaining or pedal held.
+	if (state == POLY_Inactive || state == POLY_Releasing || (key != 0 && !sustain)) {
+		return false;
 	}
-	if (pedalHeld) {
+	if (pedalHeld && key != 0) {
 		state = POLY_Held;
-		return;
+	} else {
+		startDecay();
 	}
-	startDecay();
+	return true;
 }
 
 void Poly::stopPedalHold() {
