@@ -41,8 +41,6 @@ private:
 
 	Poly polys[MT32EMU_MAX_POLY];
 
-	void abortPoly(Poly *poly);
-
 	static int fixKeyfollow(int srckey);
 	static int fixBiaslevel(int srcpnt, int *dir);
 
