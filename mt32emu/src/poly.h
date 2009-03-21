@@ -17,6 +17,8 @@
 #ifndef MT32EMU_POLY_H
 #define MT32EMU_POLY_H
 
+namespace MT32Emu {
+
 enum PolyState {
 	POLY_Playing,
 	POLY_Held, // This marks keys that have been released on the keyboard, but are being held by the pedal
@@ -24,22 +26,17 @@ enum PolyState {
 	POLY_Inactive
 };
 
-namespace MT32Emu {
-
 class Poly {
 private:
 	unsigned int key;
 	unsigned int velocity;
 	bool sustain;
 
-	bool pedalhold;
+	PolyState state;
 
 	Partial *partials[4];
 
 public:
-
-	bool isPlaying;
-
 	Poly();
 	void reset(unsigned int key, unsigned int velocity, bool sustain, Partial **partials);
 	// DEPRECATED: setBend() will die when the new pitch stuff lands

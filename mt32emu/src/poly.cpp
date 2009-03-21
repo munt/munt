@@ -22,13 +22,10 @@ Poly::Poly() {
 	key = 255;
 	velocity = 255;
 	sustain = false;
-
-	isPlaying = false;
-	pedalhold = false;
-
 	for (int i = 0; i < 4; i++) {
 		partials[i] = NULL;
 	}
+	state = POLY_Inactive;
 }
 
 void Poly::reset(unsigned int key, unsigned int velocity, bool canSustain, Partial **partials) {
@@ -41,13 +38,10 @@ void Poly::reset(unsigned int key, unsigned int velocity, bool canSustain, Parti
 	this->velocity = velocity;
 	this->sustain = canSustain;
 
-	isPlaying = false;
-	pedalhold = false;
-
 	for (int i = 0; i < 4; i++) {
 		this->partials[i] = partials[i];
 		if (partials[i] != NULL) {
-			isPlaying = true;
+			state = POLY_Playing;
 		}
 	}
 }
@@ -64,40 +58,38 @@ void Poly::setBend(float bend) {
 void Poly::noteOff(bool pedalHeld) {
 	// Non-sustaining instruments ignore note off.
 	// They die away eventually anyway.
-	if (!isActive() || !sustain || !isPlaying) {
+	if (state == POLY_Inactive || state == POLY_Releasing || !sustain) {
 		return;
 	}
 	if (pedalHeld) {
-		pedalhold = true;
+		state = POLY_Held;
 		return;
 	}
 	startDecay();
 }
 
 void Poly::stopPedalHold() {
-	if (!isActive() || !pedalhold)
+	if (state != POLY_Held)
 		return;
 	startDecay();
 }
 
 void Poly::startDecay() {
-	if (!isPlaying) {
+	if (state == POLY_Inactive || state == POLY_Releasing) {
 		return;
 	}
-
-	isPlaying = false;
-	pedalhold = false;
+	state = POLY_Releasing;
 
 	for (int t = 0; t < 4; t++) {
 		Partial *partial = partials[t];
-		if (partial == NULL)
-			continue;
-		partial->startDecayAll();
+		if (partial != NULL) {
+			partial->startDecayAll();
+		}
 	}
 }
 
 void Poly::abort() {
-	if (!isActive()) {
+	if (state == POLY_Inactive) {
 		return;
 	}
 	for (int t = 0; t < 4; t++) {
@@ -105,6 +97,11 @@ void Poly::abort() {
 		if (partial != NULL) {
 			partial->deactivate();
 		}
+	}
+	if (state != POLY_Inactive) {
+		// FIXME: Throw out lots of debug output - this should never happen
+		// (Deactivating the partials above should've made them each call partialDeactivated(), ultimately changing the state to POLY_Inactive)
+		state = POLY_Inactive;
 	}
 }
 
@@ -130,8 +127,12 @@ bool Poly::canSustain() const {
 	return sustain;
 }
 
+PolyState Poly::getState() const {
+	return state;
+}
+
 bool Poly::isActive() const {
-	return partials[0] != NULL || partials[1] != NULL || partials[2] != NULL || partials[3] != NULL;
+	return state != POLY_Inactive;
 }
 
 Bit32u Poly::getAge() const {
@@ -145,10 +146,16 @@ Bit32u Poly::getAge() const {
 
 // This is called by Partial to inform the poly that the Partial has deactivated
 void Poly::partialDeactivated(Partial *partial) {
+	bool allNull = true;
 	for (int i = 0; i < 4; i++) {
 		if (partials[i] == partial) {
 			partials[i] = NULL;
+		} else if (partials[i] != NULL) {
+			allNull = false;
 		}
+	}
+	if (allNull) {
+		state = POLY_Inactive;
 	}
 }
 

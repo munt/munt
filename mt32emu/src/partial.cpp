@@ -130,6 +130,7 @@ void Partial::initKeyFollow(int key) {
 	filtVal = synth->tables.tvfKeyfollowMult[keyfollow + 108];
 }
 
+// FIXME: Unused
 int Partial::getKey() const {
 	if (poly == NULL) {
 		return -1;
