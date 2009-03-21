@@ -541,7 +541,7 @@ void Part::stopNote(unsigned int key) {
 	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
 		Poly *poly = &polys[polyNum];
 
-		if (poly->isPlaying && !poly->isDecay) {
+		if (poly->isActive() && poly->isPlaying && !poly->isDecay) {
 			if (poly->getAge() >= oldage) {
 				oldage = poly->getAge();
 				oldest = polyNum;

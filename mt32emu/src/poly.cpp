@@ -22,9 +22,11 @@ Poly::Poly() {
 	key = 255;
 	velocity = 255;
 	sustain = false;
+
 	isPlaying = false;
 	isDecay = false;
 	pedalhold = false;
+
 	for (int i = 0; i < 4; i++) {
 		partials[i] = NULL;
 	}
@@ -40,7 +42,7 @@ void Poly::reset(unsigned int key, unsigned int velocity, bool canSustain, Parti
 	this->velocity = velocity;
 	this->sustain = canSustain;
 
-	isPlaying = true;
+	isPlaying = false;
 	isDecay = false;
 	pedalhold = false;
 
@@ -64,7 +66,7 @@ void Poly::setBend(float bend) {
 void Poly::noteOff(bool pedalHeld) {
 	// Non-sustaining instruments ignore note off.
 	// They die away eventually anyway.
-	if (!sustain || !isPlaying) {
+	if (!isActive() || !sustain || !isPlaying) {
 		return;
 	}
 	if (pedalHeld) {
@@ -84,7 +86,10 @@ void Poly::startDecay() {
 	if (isDecay) {
 		return;
 	}
+
 	isDecay = true;
+	isPlaying = false;
+	pedalhold = false;
 
 	for (int t = 0; t < 4; t++) {
 		Partial *partial = partials[t];
@@ -92,7 +97,6 @@ void Poly::startDecay() {
 			continue;
 		partial->startDecayAll();
 	}
-	isPlaying = false;
 }
 
 void Poly::abort() {
