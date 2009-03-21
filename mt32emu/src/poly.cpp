@@ -64,15 +64,14 @@ void Poly::setBend(float bend) {
 void Poly::noteOff(bool pedalHeld) {
 	// Non-sustaining instruments ignore note off.
 	// They die away eventually anyway.
-	if (!isPlaying)
+	if (!sustain || !isPlaying) {
 		return;
+	}
 	if (pedalHeld) {
 		pedalhold = true;
 		return;
 	}
-	if (sustain) {
-		startDecay();
-	}
+	startDecay();
 }
 
 void Poly::stopPedalHold() {
