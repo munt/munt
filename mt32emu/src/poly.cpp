@@ -24,7 +24,6 @@ Poly::Poly() {
 	sustain = false;
 
 	isPlaying = false;
-	isDecay = false;
 	pedalhold = false;
 
 	for (int i = 0; i < 4; i++) {
@@ -43,7 +42,6 @@ void Poly::reset(unsigned int key, unsigned int velocity, bool canSustain, Parti
 	this->sustain = canSustain;
 
 	isPlaying = false;
-	isDecay = false;
 	pedalhold = false;
 
 	for (int i = 0; i < 4; i++) {
@@ -83,11 +81,10 @@ void Poly::stopPedalHold() {
 }
 
 void Poly::startDecay() {
-	if (isDecay) {
+	if (!isPlaying) {
 		return;
 	}
 
-	isDecay = true;
 	isPlaying = false;
 	pedalhold = false;
 

@@ -39,7 +39,6 @@ private:
 public:
 
 	bool isPlaying;
-	bool isDecay;
 
 	Poly();
 	void reset(unsigned int key, unsigned int velocity, bool sustain, Partial **partials);
