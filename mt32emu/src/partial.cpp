@@ -130,10 +130,14 @@ void Partial::initKeyFollow(int key) {
 	filtVal = synth->tables.tvfKeyfollowMult[keyfollow + 108];
 }
 
-// FIXME: Unused
+// DEPRECATED: This should probably go away eventually, it's currently only used as a kludge to protect our old assumptions that
+// rhythm part notes were always played as key MIDDLEC.
 int Partial::getKey() const {
 	if (poly == NULL) {
 		return -1;
+	} else if (ownerPart == 8) {
+		// FIXME: Hack, should go away after new pitch stuff is committed (and possibly some TVF changes)
+		return MIDDLEC;
 	} else {
 		return poly->getKey();
 	}
@@ -150,13 +154,13 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	structurePosition = patchCache->structurePosition;
 
 	play = true;
-	initKeyFollow(poly->getKey()); // Initialises noteVal, filtVal and realVal
+	initKeyFollow(getKey()); // Initialises noteVal, filtVal and realVal
 #if MT32EMU_ACCURATENOTES == 0
 	noteLookup = &synth->tables.noteLookups[noteVal - LOWEST_NOTE];
 #else
 	Tables::initNote(synth, &noteLookupStorage, noteVal, (float)synth->myProp.sampleRate, synth->masterTune, synth->pcmWaves, NULL);
 #endif
-	keyLookup = &synth->tables.keyLookups[poly->getKey() - 12];
+	keyLookup = &synth->tables.keyLookups[getKey() - 12];
 
 	if (patchCache->PCMPartial) {
 		pcmNum = patchCache->pcm;
@@ -747,17 +751,17 @@ Bit32s Partial::getFiltEnvelope() {
 	}
 
 	cutoff = filtMultKeyfollow[patchCache->srcPartial.tvf.keyfollow] - filtMultKeyfollow[patchCache->srcPartial.wg.pitchKeyfollow];
-	cutoff *= ((Bit32s)poly->getKey() - 60);
+	cutoff *= ((Bit32s)getKey() - 60);
 	int dynamicBiasPoint = (Bit32s)patchCache->srcPartial.tvf.biasPoint;
 	if ((dynamicBiasPoint & 0x40) == 0) {
-		dynamicBiasPoint = dynamicBiasPoint + 33 - (Bit32s)poly->getKey();
+		dynamicBiasPoint = dynamicBiasPoint + 33 - (Bit32s)getKey();
 		if (dynamicBiasPoint > 0) {
 			dynamicBiasPoint = -dynamicBiasPoint;
 			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biasLevel];
 			cutoff += dynamicBiasPoint;
 		}
 	} else {
-		dynamicBiasPoint = dynamicBiasPoint - 31 - (Bit32s)poly->getKey();
+		dynamicBiasPoint = dynamicBiasPoint - 31 - (Bit32s)getKey();
 		if (dynamicBiasPoint <= 0) {
 			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biasLevel];
 			cutoff += dynamicBiasPoint;
@@ -769,7 +773,7 @@ Bit32s Partial::getFiltEnvelope() {
 
 		// FIXME: CC: Coarse pitch calculation placeholder until end-to-end use of MT-32-like pitch calculation
 		// is application-wide.
-		int oc  = poly->getKey() + 12;
+		int oc  = getKey() + 12;
 		int pitch = pitchROMTable[oc % 12];
 		pitch += ((oc / 12) << 12) - 24576;
 
@@ -804,7 +808,7 @@ Bit32s Partial::getFiltEnvelope() {
 	int veloFilEnv = (Bit32s)poly->getVelocity() * (Bit32s)patchCache->srcPartial.tvf.envVeloSensitivity;
 	int filEnv = (veloFilEnv << 2) >> 8;
 	veloFilEnv  = 109 - patchCache->srcPartial.tvf.envVeloSensitivity + filEnv;
-	filEnv = ((Bit32s)poly->getKey() - 60) >> (4 - (Bit32s)patchCache->srcPartial.tvf.envDepthKeyfollow);
+	filEnv = ((Bit32s)getKey() - 60) >> (4 - (Bit32s)patchCache->srcPartial.tvf.envDepthKeyfollow);
 	veloFilEnv += filEnv;
 	if (veloFilEnv < 0) {
 		veloFilEnv = 0;
