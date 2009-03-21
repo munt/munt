@@ -429,16 +429,6 @@ void RhythmPart::noteOn(unsigned int midiKey, unsigned int velocity) {
 
 void Part::noteOn(unsigned int midiKey, unsigned int velocity) {
 	unsigned int key = midiKeyToKey(midiKey, "Note On");
-	// POLY1 mode, Single Assign
-	// Haven't found any software that uses any of the other poly modes
-	// FIXME:KG: Should this also apply to rhythm?
-	for (unsigned int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-		if (polys[polyNum].isActive() && (polys[polyNum].getKey() == key)) {
-			//AbortPoly(&polys[i]);
-			stopNote(key);
-			break;
-		}
-	}
 #if MT32EMU_MONITOR_INSTRUMENTS == 1
 	synth->printDebug("%s (%s): starting poly - key %d (velocity %d)", name, currentInstr, midiKey, velocity);
 #endif
@@ -449,6 +439,18 @@ void Part::noteOn(unsigned int midiKey, unsigned int velocity) {
 }
 
 void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, unsigned int key, unsigned int velocity) {
+	if((patchTemp->patch.assignMode & 2) == 0) {
+		// Single-assign mode
+		// FIXME: Poly priority should be considered, but isn't.
+		for (unsigned int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
+			Poly *poly = &polys[polyNum];
+			if (poly->isActive() && poly->getKey() == key) {
+				poly->noteOff(false);
+				break;
+			}
+		}
+	}
+
 	unsigned int needPartials = cache[0].partialCount;
 	unsigned int freePartials = synth->partialManager->getFreePartialCount();
 
@@ -526,9 +528,6 @@ void Part::noteOff(unsigned int midiKey) {
 }
 
 void Part::stopNote(unsigned int key) {
-	// Non-sustaining instruments ignore stop commands.
-	// They die away eventually anyway
-
 #if MT32EMU_MONITOR_INSTRUMENTS == 1
 	synth->printDebug("%s (%s): stopping key %d", name, currentInstr, key);
 #endif
