@@ -20,8 +20,9 @@
 
 using namespace MT32Emu;
 
-PartialManager::PartialManager(Synth *useSynth) {
+PartialManager::PartialManager(Synth *useSynth, Part **parts) {
 	this->synth = useSynth;
+	this->parts = parts;
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++)
 		partialTable[i] = new Partial(synth, i);
 }
@@ -65,11 +66,9 @@ void PartialManager::deactivateAll() {
 
 unsigned int PartialManager::setReserve(Bit8u *rset) {
 	unsigned int pr = 0;
-	for (int x = 0; x < 9; x++) {
-		for (int y = 0; y < rset[x]; y++) {
-			partialReserveTable[pr] = x;
-			pr++;
-		}
+	for (int x = 0; x <= 8; x++) {
+		numReservedPartialsForPart[x] = rset[x];
+		pr += rset[x];
 	}
 	return pr;
 }
@@ -78,14 +77,12 @@ Partial *PartialManager::allocPartial(int partNum) {
 	Partial *outPartial = NULL;
 
 	int partialChan = 0;
-	// Use the first inactive partial reserved for the specified part (if there are any)
-	// Otherwise, use the last inactive partial, if any
+	// Get the first inactive partial
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		if (!partialTable[i]->isActive()) {
 			outPartial = partialTable[i];
 			partialChan = i;
-			if (partialReserveTable[i] == partNum)
-				break;
+			break;
 		}
 	}
 	if (outPartial != NULL) {
@@ -97,169 +94,107 @@ Partial *PartialManager::allocPartial(int partNum) {
 
 unsigned int PartialManager::getFreePartialCount(void) {
 	int count = 0;
-	memset(partialPart, 0, sizeof(partialPart));
+	memset(numActivePartialsForPart, 0, sizeof(numActivePartialsForPart));
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		if (!partialTable[i]->isActive())
 			count++;
 		else
-			partialPart[partialTable[i]->getOwnerPart()]++;
+			numActivePartialsForPart[partialTable[i]->getOwnerPart()]++;
 	}
 	return count;
 }
 
-/*
-bool PartialManager::freePartials(unsigned int needed, int partNum) {
-	int i;
-	int myPartPrior = (int)mt32ram.system.reserveSettings[partNum];
-	if (myPartPrior<partialPart[partNum]) {
-		//This can have more parts, must kill off those with less priority
-		int most, mostPart;
-		while (needed > 0) {
-			int selectPart = -1;
-			//Find the worst offender with more partials than allocated and kill them
-			most = -1;
-			mostPart = -1;
-			int diff;
-
-			for (i=0;i<9;i++) {
-				diff = partialPart[i] - (int)mt32ram.system.reserveSettings[i];
-
-				if (diff>0) {
-					if (diff>most) {
-						most = diff;
-						mostPart = i;
-					}
-				}
-			}
-			selectPart = mostPart;
-			if (selectPart == -1) {
-				// All parts are within the allocated limits, you suck
-				// Look for first partial not of this part that's decaying perhaps?
-				return false;
-			}
-			bool found;
-			int oldest;
-			int oldnum;
-			while (partialPart[selectPart] > (int)mt32ram.system.reserveSettings[selectPart]) {
-				oldest = -1;
-				oldnum = -1;
-				found = false;
-				for (i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-					if (partialTable[i]->isActive) {
-						if (partialTable[i]->ownerPart == selectPart) {
-							found = true;
-							if (partialTable[i]->age > oldest) {
-								oldest = partialTable[i]->age;
-								oldnum = i;
-							}
-						}
-					}
-				}
-				if (!found) break;
-				partialTable[oldnum]->deactivate();
-				--partialPart[selectPart];
-				--needed;
-			}
-
+// This method assumed that getFreePartials() has been called to make numReservedPartialsForPart up-to-date.
+// The rhythm part is considered part -1 for the purposes of the minPart argument (and as this suggests, is checked last, if at all).
+bool PartialManager::abortWhereReserveExceeded(PolyState polyState, int minPart) {
+	// Abort decaying polys in non-rhythm parts that have exceeded their partial reservation (working backwards from part 7)
+	for (int partNum = 7; partNum >= minPart; partNum--) {
+		int usePartNum = partNum == -1 ? 8 : partNum;
+		if (numActivePartialsForPart[usePartNum] > numReservedPartialsForPart[usePartNum]) {
+			// This part has exceeded its reserved partial count.
+			// We go through and look for a poly with the given state and abort the first one we find.
+			if (parts[usePartNum]->abortFirstPoly(polyState))
+				return true;
 		}
-		return true;
-
-	} else {
-		//This part has reached its max, must kill off its own
-		bool found;
-		int oldest;
-		int oldnum;
-		while (needed > 0) {
-			oldest = -1;
-			oldnum = -1;
-			found = false;
-			for (i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-				if (partialTable[i]->isActive) {
-					if (partialTable[i]->ownerPart == partNum) {
-						found = true;
-						if (partialTable[i]->age > oldest) {
-							oldest = partialTable[i]->age;
-							oldnum = i;
-						}
-					}
-				}
-			}
-			if (!found) break;
-			partialTable[oldnum]->deactivate();
-			--needed;
-		}
-		// Couldn't free enough partials, sorry
-		if (needed>0) return false;
-		return true;
 	}
-
+	return false;
 }
-*/
+
 bool PartialManager::freePartials(unsigned int needed, int partNum) {
+	// CONFIRMED: Barring bugs, and the fact that poly abortion is immediate rather than just very fast,
+	// this matches the real LAPC-I according to information from Mok.
+
+	// BUGS: There are some bugs in the LAPC-I implementation. Simplifying a bit(!):
+	// 1) When allocating for rhythm part, while the number of active rhythm partials is less than the number of reserved rhythm partials,
+	//    held rhythm polys will potentially be aborted before releasing rhythm polys. This bug isn't present on MT-32.
+	// 2) When allocating for any part, once the number of partials on the allocating part is less than the number of partials reserved for that part,
+	//    partials will potentially be aborted in their priority order with no regard for their state (playing, held or releasing).
+	// I consider these to be bugs because I think that playing polys should always have priority over held polys,
+	// and held polys should always have priority over releasing polys.
+
+	// NOTE: This code generally aborts polys in parts (according to certain conditions) in the following order:
+	// 7, 6, 5, 4, 3, 2, 1, 0, 8 (rhythm)
+	// (from lowest priority, meaning most likely to have polys aborted, to highest priority, meaning least likely)
+
 	if (needed == 0) {
 		return true;
 	}
-	// Reclaim partials reserved for this part
-	// Kill those that are already decaying first
-	/*
-	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-		if (partialReserveTable[i] == partNum) {
-			if (partialTable[i]->ownerPart != partNum) {
-				if (partialTable[i]->partCache->envs[AMPENV].decaying) {
-					partialTable[i]->isActive = false;
-					--needed;
-					if (needed == 0)
-						return true;
-				}
-			}
-		}
-	}*/
-	// Then kill those with the lowest part priority -- oldest at the moment
-	while (needed > 0) {
-		Bit32u prior = 0;
-		int priornum = -1;
 
-		for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-			if (partialReserveTable[i] == partNum && partialTable[i]->isActive() && partialTable[i]->getOwnerPart() != partNum) {
-				/*
-				if (mt32ram.system.reserveSettings[partialTable[i]->ownerPart] < prior) {
-					prior = mt32ram.system.reserveSettings[partialTable[i]->ownerPart];
-					priornum = i;
-				}*/
-				if (partialTable[i]->age >= prior) {
-					prior = partialTable[i]->age;
-					priornum = i;
-				}
-			}
-		}
-		if (priornum != -1) {
-			partialTable[priornum]->deactivate();
-			--needed;
-		} else {
+	// Note that calling getFreePartialCount() also ensures that numReservedPartialsPerPart is up-to-date
+	if (getFreePartialCount() >= needed)
+		return true;
+
+	for (;;) {
+		// On the MT-32, this is: if (!abortWhereReserveExceeded(POLY_Releasing, -1)) {
+		if (!abortWhereReserveExceeded(POLY_Releasing, 0)) {
 			break;
 		}
+		if (getFreePartialCount() >= needed)
+			return true;
 	}
 
-	// Kill off the oldest partials within this part
-	while (needed > 0) {
-		Bit32u oldest = 0;
-		int oldlist = -1;
-		for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-			if (partialTable[i]->getOwnerPart() == partNum && partialTable[i]->isActive()) {
-				if (partialTable[i]->age >= oldest) {
-					oldest = partialTable[i]->age;
-					oldlist = i;
-				}
-			}
+	if (numActivePartialsForPart[partNum] + needed > numReservedPartialsForPart[partNum]) {
+		// With the new partials we're freeing for, we would end up using more partials than we have reserved.
+		if (synth->getPart(partNum)->getPatchTemp()->patch.assignMode & 1) {
+			// Priority is given to earlier polys, so just give up
+			return false;
 		}
-		if (oldlist != -1) {
-			partialTable[oldlist]->deactivate();
-			--needed;
-		} else {
-			break;
+		if (needed > numReservedPartialsForPart[partNum]) {
+			// We haven't even reserved enough partials to play this one poly, so:
+			// Only abort held polys in our own part and parts that have a lower priority
+			// (higher part number = lower priority, except for rhythm, which has the highest priority).
+			for (;;) {
+				if (!abortWhereReserveExceeded(POLY_Held, partNum == 8 ? -1 : partNum)) {
+					break;
+				}
+				if (getFreePartialCount() >= needed)
+					return true;
+			}
+			return false;
 		}
 	}
-	return needed == 0;
+	// At this point, we're certain that we've reserved enough partials to play our poly.
+	// Abort held polys in all parts (including rhythm only when being called for the rhythm part),
+	// from lowest to highest priority, until we have enough free partials.
+	for (;;) {
+		if (!abortWhereReserveExceeded(POLY_Held, partNum == 8 ? -1 : 0)) {
+			break;
+		}
+		if (getFreePartialCount() >= needed)
+			return true;
+	}
+
+	// Abort the target part's own polys indiscriminately (regardless of their state)
+	for (;;) {
+		if (!parts[partNum]->abortFirstPoly()) {
+			break;
+		}
+		if (getFreePartialCount() >= needed)
+			return true;
+	}
+
+	// Aww, not enough partials for you.
+	return false;
 }
 
 const Partial *PartialManager::getPartial(unsigned int partialNum) const {

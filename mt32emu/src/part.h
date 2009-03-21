@@ -85,8 +85,13 @@ public:
 	virtual void setTimbre(TimbreParam *timbre);
 	virtual unsigned int getAbsTimbreNum() const;
 	const char *getCurrentInstr() const;
+
 	const MemParams::PatchTemp *getPatchTemp() const;
 	virtual const MemParams::RhythmTemp *getRhythmTemp() const;
+
+	// These are rather specialised, and should probably only be used by PartialManager
+	bool abortFirstPoly(PolyState polyState);
+	bool abortFirstPoly();
 };
 
 class RhythmPart: public Part {

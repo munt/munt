@@ -24,14 +24,17 @@ class Synth;
 class PartialManager {
 private:
 	Synth *synth; // Only used for sending debug output
+	Part **parts;
 
 	Partial *partialTable[MT32EMU_MAX_PARTIALS];
-	Bit32s partialReserveTable[MT32EMU_MAX_PARTIALS];
-	Bit32s partialPart[9]; // The count of partials played per part
+	Bit8u numReservedPartialsForPart[9];
+	Bit32s numActivePartialsForPart[9]; // The count of partials played per part
+
+	bool abortWhereReserveExceeded(PolyState polyState, int minPart);
 
 public:
 
-	PartialManager(Synth *synth);
+	PartialManager(Synth *synth, Part **parts);
 	~PartialManager();
 	Partial *allocPartial(int partNum);
 	unsigned int getFreePartialCount(void);

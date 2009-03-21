@@ -438,6 +438,30 @@ void Part::noteOn(unsigned int midiKey, unsigned int velocity) {
 	playPoly(patchCache, midiKey, key, velocity);
 }
 
+bool Part::abortFirstPoly(PolyState polyState) {
+	// FIXME: Poly priority should be considered, but isn't.
+	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
+		Poly *poly = &polys[polyNum];
+		if (poly->isActive() && poly->getState() == polyState) {
+			poly->abort();
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Part::abortFirstPoly() {
+	// FIXME: Poly priority should be considered, but isn't.
+	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
+		Poly *poly = &polys[polyNum];
+		if (poly->isActive()) {
+			poly->abort();
+			return true;
+		}
+	}
+	return false;
+}
+
 void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, unsigned int key, unsigned int velocity) {
 	if((patchTemp->patch.assignMode & 2) == 0) {
 		// Single-assign mode
@@ -452,14 +476,16 @@ void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, unsigned in
 	}
 
 	unsigned int needPartials = cache[0].partialCount;
-	unsigned int freePartials = synth->partialManager->getFreePartialCount();
-
-	if (freePartials < needPartials) {
-		if (!synth->partialManager->freePartials(needPartials - freePartials, partNum)) {
-			synth->printDebug("%s (%s): Insufficient free partials to play key %d (velocity %d); needed=%d, free=%d", name, currentInstr, midiKey, velocity, needPartials, synth->partialManager->getFreePartialCount());
-			return;
-		}
+	if (needPartials == 0) {
+		synth->printDebug("%s (%s): Completely muted instrument", name, this->currentInstr);
+		return;
 	}
+
+	if (!synth->partialManager->freePartials(needPartials, partNum)) {
+		synth->printDebug("%s (%s): Insufficient free partials to play key %d (velocity %d); needed=%d, free=%d", name, currentInstr, midiKey, velocity, needPartials, synth->partialManager->getFreePartialCount());
+		return;
+	}
+
 	// Find free poly
 	int polyNum;
 	for (polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
@@ -472,20 +498,14 @@ void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, unsigned in
 		return;
 	}
 
-	bool allnull = true;
 	Partial *partials[4];
 	for (int x = 0; x < 4; x++) {
 		if (cache[x].playPartial) {
 			partials[x] = synth->partialManager->allocPartial(partNum);
-			allnull = false;
 		} else {
 			partials[x] = NULL;
 		}
 	}
-
-	if (allnull)
-		synth->printDebug("%s (%s): No partials to play for this instrument - key %d (velocity %d)", name, this->currentInstr, midiKey, velocity);
-
 	Poly *poly = &polys[polyNum];
 	poly->reset(key, velocity, cache[0].sustain, partials);
 

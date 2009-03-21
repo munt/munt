@@ -443,7 +443,7 @@ bool Synth::open(SynthProperties &useProp) {
 	// CM-64 seems to initialise all bytes in this bank to 0.
 	memset(&mt32ram.timbres[128], 0, sizeof (mt32ram.timbres[128]) * 64);
 
-	partialManager = new PartialManager(this);
+	partialManager = new PartialManager(this, parts);
 
 	pcmWaves = new PCMWaveEntry[controlROMMap->pcmCount];
 
