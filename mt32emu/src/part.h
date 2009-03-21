@@ -60,21 +60,21 @@ protected:
 
 	void backupCacheToPartials(PatchCache cache[4]);
 	void cacheTimbre(PatchCache cache[4], const TimbreParam *timbre);
-	void playPoly(const PatchCache cache[4], unsigned int key, int freqNum, int vel);
+	void playPoly(const PatchCache cache[4], unsigned int midiKey, unsigned int key, unsigned int velocity);
 	void stopNote(unsigned int key);
 	const char *getName() const;
 
 public:
 	Part(Synth *synth, unsigned int usePartNum);
-	virtual void noteOn(unsigned int key, int vel);
+	virtual void noteOn(unsigned int midiKey, unsigned int velocity);
 	virtual void noteOff(unsigned int midiKey);
 	void allNotesOff();
 	void allSoundOff();
-	void setVolume(int midiVolume);
+	void setVolume(unsigned int midiVolume);
 	Bit8u getModulation() const;
 	void setModulation(unsigned int midiModulation);
 	Bit8u getExpression() const;
-	void setExpression(int midiExpression);
+	void setExpression(unsigned int midiExpression);
 	virtual void setPan(unsigned int midiPan);
 	Bit32s getPitchBend() const;
 	void setBend(unsigned int midiBend);
@@ -103,7 +103,7 @@ public:
 	void refresh();
 	void refreshTimbre(unsigned int timbreNum);
 	void setTimbre(TimbreParam *timbre);
-	void noteOn(unsigned int key, int vel);
+	void noteOn(unsigned int key, unsigned int velocity);
 	void noteOff(unsigned int midiKey);
 	unsigned int getAbsTimbreNum() const;
 	void setPan(unsigned int midiPan);
