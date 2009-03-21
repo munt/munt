@@ -196,8 +196,8 @@ void TVA::reset(const Part *part, const PatchCache *patchCache) {
 
 	Tables *tables = &partial->getSynth()->tables;
 
-	int key = partial->getPoly()->key;
-	int velocity = partial->getPoly()->vel;
+	int key = partial->getPoly()->getKey();
+	int velocity = partial->getPoly()->getVelocity();
 
 	keyTimeSubtraction = calcKeyTimeSubtraction(partialParam->tva.envTimeKeyfollow, key);
 
@@ -305,7 +305,7 @@ void TVA::nextPhase() {
 				play = false;
 				return;
 			}
-			if (!partial->getPoly()->sustain) {
+			if (!partial->getPoly()->canSustain()) {
 				targetPhase = PHASE_RELEASE;
 				newTargetAmp = 0;
 				newAmpIncrement = -partialParam->tva.envTime[4];
@@ -328,7 +328,7 @@ void TVA::nextPhase() {
 		int envTimeSetting  = partialParam->tva.envTime[envPointIndex];
 
 		if (targetPhase == PHASE_ATTACK) {
-			envTimeSetting -= (partial->getPoly()->vel - 64) >> (6 - partialParam->tva.envTimeVeloSensitivity);  // PORTABILITY NOTE: Assumes arithmetic shift
+			envTimeSetting -= ((signed)partial->getPoly()->getVelocity() - 64) >> (6 - partialParam->tva.envTimeVeloSensitivity);  // PORTABILITY NOTE: Assumes arithmetic shift
 
 			if (envTimeSetting <= 0 && partialParam->tva.envTime[envPointIndex] != 0) {
 					envTimeSetting = 1;

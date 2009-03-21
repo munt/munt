@@ -39,7 +39,7 @@ private:
 
 	float bend; // -1.0 .. +1.0
 
-	Poly polyTable[MT32EMU_MAX_POLY];
+	Poly polys[MT32EMU_MAX_POLY];
 
 	void abortPoly(Poly *poly);
 

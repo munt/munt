@@ -17,24 +17,49 @@
 #ifndef MT32EMU_POLY_H
 #define MT32EMU_POLY_H
 
+enum PolyState {
+	POLY_Playing,
+	POLY_Held, // This marks keys that have been released on the keyboard, but are being held by the pedal
+	POLY_Releasing,
+	POLY_Inactive
+};
+
 namespace MT32Emu {
 
-struct Poly {
-	bool isPlaying;
-
+class Poly {
+private:
 	unsigned int key;
-	int vel;
+	unsigned int velocity;
+	bool sustain;
 
-	bool isDecay;
+	bool pedalhold;
 
 	Partial *partials[4];
 
-	bool pedalhold; // This marks keys that have been released on the keyboard, but are being held by the pedal
-	bool sustain;
+public:
 
-	bool isActive() const;
+	bool isPlaying;
+	bool isDecay;
+
+	Poly();
+	void reset(unsigned int key, unsigned int velocity, bool sustain, Partial **partials);
+	// DEPRECATED: setBend() will die when the new pitch stuff lands
+	void setBend(float bend);
+	void noteOff(bool pedalHeld);
+	void stopPedalHold();
 	void startDecay();
+	void abort();
+
+	void backupCacheToPartials(PatchCache cache[4]);
+
+	unsigned int getKey() const;
+	unsigned int getVelocity() const;
+	bool canSustain() const;
+	PolyState getState() const;
+	bool isActive() const;
 	Bit32u getAge() const;
+
+	void partialDeactivated(Partial *partial);
 };
 
 }

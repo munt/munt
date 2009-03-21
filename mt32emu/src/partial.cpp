@@ -80,12 +80,7 @@ void Partial::activate(int part, int pChan) {
 void Partial::deactivate() {
 	ownerPart = -1;
 	if (poly != NULL) {
-		for (int i = 0; i < 4; i++) {
-			if (poly->partials[i] == this) {
-				poly->partials[i] = NULL;
-				break;
-			}
-		}
+		poly->partialDeactivated(this);
 		if (pair != NULL) {
 			pair->pair = NULL;
 		}
@@ -139,7 +134,7 @@ int Partial::getKey() const {
 	if (poly == NULL) {
 		return -1;
 	} else {
-		return poly->key;
+		return poly->getKey();
 	}
 }
 
@@ -154,13 +149,13 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	structurePosition = patchCache->structurePosition;
 
 	play = true;
-	initKeyFollow(poly->key); // Initialises noteVal, filtVal and realVal
+	initKeyFollow(poly->getKey()); // Initialises noteVal, filtVal and realVal
 #if MT32EMU_ACCURATENOTES == 0
 	noteLookup = &synth->tables.noteLookups[noteVal - LOWEST_NOTE];
 #else
 	Tables::initNote(synth, &noteLookupStorage, noteVal, (float)synth->myProp.sampleRate, synth->masterTune, synth->pcmWaves, NULL);
 #endif
-	keyLookup = &synth->tables.keyLookups[poly->key - 12];
+	keyLookup = &synth->tables.keyLookups[poly->getKey() - 12];
 
 	if (patchCache->PCMPartial) {
 		pcmNum = patchCache->pcm;
@@ -180,7 +175,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	pastDesCarrier = 0;
 
 	lfoPos = 0;
-	pulsewidth = patchCache->pulsewidth + synth->tables.pwVelfollowAdd[patchCache->pwsens][poly->vel];
+	pulsewidth = patchCache->pulsewidth + synth->tables.pwVelfollowAdd[patchCache->pwsens][poly->getVelocity()];
 	if (pulsewidth > 100) {
 		pulsewidth = 100;
 	} else if (pulsewidth < 0) {
@@ -715,7 +710,7 @@ Bit32s Partial::getFiltEnvelope() {
 	} else {
 		if (tStat->envstat==4) {
 			reshigh = patchCache->filtsustain;
-			if (!poly->sustain) {
+			if (!poly->canSustain()) {
 				startDecay(EnvelopeType_filt, reshigh);
 			}
 		} else {
@@ -751,17 +746,17 @@ Bit32s Partial::getFiltEnvelope() {
 	}
 
 	cutoff = filtMultKeyfollow[patchCache->srcPartial.tvf.keyfollow] - filtMultKeyfollow[patchCache->srcPartial.wg.pitchKeyfollow];
-	cutoff *= ((Bit32s)poly->key - 60);
+	cutoff *= ((Bit32s)poly->getKey() - 60);
 	int dynamicBiasPoint = (Bit32s)patchCache->srcPartial.tvf.biasPoint;
 	if ((dynamicBiasPoint & 0x40) == 0) {
-		dynamicBiasPoint = dynamicBiasPoint + 33 - (Bit32s)poly->key;
+		dynamicBiasPoint = dynamicBiasPoint + 33 - (Bit32s)poly->getKey();
 		if (dynamicBiasPoint > 0) {
 			dynamicBiasPoint = -dynamicBiasPoint;
 			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biasLevel];
 			cutoff += dynamicBiasPoint;
 		}
 	} else {
-		dynamicBiasPoint = dynamicBiasPoint - 31 - (Bit32s)poly->key;
+		dynamicBiasPoint = dynamicBiasPoint - 31 - (Bit32s)poly->getKey();
 		if (dynamicBiasPoint <= 0) {
 			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biasLevel];
 			cutoff += dynamicBiasPoint;
@@ -773,7 +768,7 @@ Bit32s Partial::getFiltEnvelope() {
 
 		// FIXME: CC: Coarse pitch calculation placeholder until end-to-end use of MT-32-like pitch calculation
 		// is application-wide.
-		int oc  = poly->key + 12;
+		int oc  = poly->getKey() + 12;
 		int pitch = pitchROMTable[oc % 12];
 		pitch += ((oc / 12) << 12) - 24576;
 
@@ -805,10 +800,10 @@ Bit32s Partial::getFiltEnvelope() {
 		cutoff = 255;
 	}
 
-	int veloFilEnv = (Bit32s)poly->vel * (Bit32s)patchCache->srcPartial.tvf.envVeloSensitivity;
+	int veloFilEnv = (Bit32s)poly->getVelocity() * (Bit32s)patchCache->srcPartial.tvf.envVeloSensitivity;
 	int filEnv = (veloFilEnv << 2) >> 8;
 	veloFilEnv  = 109 - patchCache->srcPartial.tvf.envVeloSensitivity + filEnv;
-	filEnv = ((Bit32s)poly->key - 60) >> (4 - (Bit32s)patchCache->srcPartial.tvf.envDepthKeyfollow);
+	filEnv = ((Bit32s)poly->getKey() - 60) >> (4 - (Bit32s)patchCache->srcPartial.tvf.envDepthKeyfollow);
 	veloFilEnv += filEnv;
 	if (veloFilEnv < 0) {
 		veloFilEnv = 0;
@@ -846,7 +841,7 @@ Bit32s Partial::getPitchEnvelope() {
 	} else {
 		if (tStat->envstat==3) {
 			tc = patchCache->pitchsustain;
-			if (poly->sustain)
+			if (poly->canSustain())
 				pitchSustain = true;
 			else
 				startDecay(EnvelopeType_pitch, tc);

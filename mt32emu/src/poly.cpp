@@ -18,17 +18,67 @@
 
 namespace MT32Emu {
 
-bool Poly::isActive() const {
-	return partials[0] != NULL || partials[1] != NULL || partials[2] != NULL || partials[3] != NULL;
+Poly::Poly() {
+	key = 255;
+	velocity = 255;
+	sustain = false;
+	isPlaying = false;
+	isDecay = false;
+	pedalhold = false;
+	for (int i = 0; i < 4; i++) {
+		partials[i] = NULL;
+	}
 }
 
-Bit32u Poly::getAge() const {
+void Poly::reset(unsigned int key, unsigned int velocity, bool canSustain, Partial **partials) {
+	if(isActive()) {
+		// FIXME: Throw out some big ugly debug output with a lot of exclamation marks - we should never get here
+		abort();
+	}
+
+	this->key = key;
+	this->velocity = velocity;
+	this->sustain = canSustain;
+
+	isPlaying = true;
+	isDecay = false;
+	pedalhold = false;
+
 	for (int i = 0; i < 4; i++) {
+		this->partials[i] = partials[i];
 		if (partials[i] != NULL) {
-			return partials[i]->age;
+			isPlaying = true;
 		}
 	}
-	return 0;
+}
+
+// DEPRECATED: This will die when the new pitch stuff lands
+void Poly::setBend(float bend) {
+	for (int i = 0; i < 4; i++) {
+		if (partials[i] != NULL) {
+			partials[i]->setBend(bend);
+		}
+	}
+}
+
+void Poly::noteOff(bool pedalHeld) {
+	// Non-sustaining instruments ignore note off.
+	// They die away eventually anyway.
+	if (!isPlaying)
+		return;
+	if (pedalHeld) {
+		pedalhold = true;
+		return;
+	}
+	if (sustain) {
+		startDecay();
+	}
+}
+
+void Poly::stopPedalHold() {
+	if (!isActive() || !pedalhold)
+		return;
+	startDecay();
 }
 
 void Poly::startDecay() {
@@ -44,6 +94,62 @@ void Poly::startDecay() {
 		partial->startDecayAll();
 	}
 	isPlaying = false;
+}
+
+void Poly::abort() {
+	if (!isActive()) {
+		return;
+	}
+	for (int t = 0; t < 4; t++) {
+		Partial *partial = partials[t];
+		if (partial != NULL) {
+			partial->deactivate();
+		}
+	}
+}
+
+void Poly::backupCacheToPartials(PatchCache cache[4]) {
+	for (int partialNum = 0; partialNum < 4; partialNum++) {
+		Partial *partial = partials[partialNum];
+		if (partial != NULL && partial->patchCache == &cache[partialNum]) {
+			partial->cachebackup = cache[partialNum];
+			partial->patchCache = &partial->cachebackup;
+		}
+	}
+}
+
+unsigned int Poly::getKey() const {
+	return key;
+}
+
+unsigned int Poly::getVelocity() const {
+	return velocity;
+}
+
+bool Poly::canSustain() const {
+	return sustain;
+}
+
+bool Poly::isActive() const {
+	return partials[0] != NULL || partials[1] != NULL || partials[2] != NULL || partials[3] != NULL;
+}
+
+Bit32u Poly::getAge() const {
+	for (int i = 0; i < 4; i++) {
+		if (partials[i] != NULL) {
+			return partials[i]->age;
+		}
+	}
+	return 0;
+}
+
+// This is called by Partial to inform the poly that the Partial has deactivated
+void Poly::partialDeactivated(Partial *partial) {
+	for (int i = 0; i < 4; i++) {
+		if (partials[i] == partial) {
+			partials[i] = NULL;
+		}
+	}
 }
 
 }
