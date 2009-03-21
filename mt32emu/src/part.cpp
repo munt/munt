@@ -89,10 +89,10 @@ void Part::setBend(unsigned int midiBend) {
 	} else {
 		bend = ((signed int)midiBend - 0x2000) / (float)0x1FFF;
 	}
-	for (int i = 0; i < MT32EMU_MAX_POLY; i++) {
+	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
 		for (int j = 0; j < 4; j++) {
-			if (polyTable[i].partials[j] != NULL) {
-				polyTable[i].partials[j]->setBend(bend);
+			if (polyTable[polyNum].partials[j] != NULL) {
+				polyTable[polyNum].partials[j]->setBend(bend);
 			}
 		}
 	}
@@ -253,9 +253,9 @@ void Part::backupCacheToPartials(PatchCache cache[4]) {
 	// if so then duplicate the cached data from the part to the partial so that
 	// we can change the part's cache without affecting the partial.
 	// We delay this until now to avoid a copy operation with every note played
-	for (int m = 0; m < MT32EMU_MAX_POLY; m++) {
+	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
 		for (int i = 0; i < 4; i++) {
-			Partial *partial = polyTable[m].partials[i];
+			Partial *partial = polyTable[polyNum].partials[i];
 			if (partial != NULL && partial->patchCache == &cache[i]) {
 				partial->cachebackup = cache[i];
 				partial->patchCache = &partial->cachebackup;
@@ -446,8 +446,8 @@ void Part::noteOn(unsigned int midiKey, unsigned int velocity) {
 	// POLY1 mode, Single Assign
 	// Haven't found any software that uses any of the other poly modes
 	// FIXME:KG: Should this also apply to rhythm?
-	for (unsigned int i = 0; i < MT32EMU_MAX_POLY; i++) {
-		if (polyTable[i].isActive() && (polyTable[i].key == key)) {
+	for (unsigned int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
+		if (polyTable[polyNum].isActive() && (polyTable[polyNum].key == key)) {
 			//AbortPoly(&polyTable[i]);
 			stopNote(key);
 			break;
@@ -473,44 +473,44 @@ void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, unsigned in
 		}
 	}
 	// Find free poly
-	int m;
-	for (m = 0; m < MT32EMU_MAX_POLY; m++) {
-		if (!polyTable[m].isActive()) {
+	int polyNum;
+	for (polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
+		if (!polyTable[polyNum].isActive()) {
 			break;
 		}
 	}
-	if (m == MT32EMU_MAX_POLY) {
+	if (polyNum == MT32EMU_MAX_POLY) {
 		synth->printDebug("%s (%s): No free poly to play key %d (velocity %d)", name, currentInstr, midiKey, velocity);
 		return;
 	}
 
-	Poly *tpoly = &polyTable[m];
+	Poly *poly = &polyTable[polyNum];
 
-	tpoly->isPlaying = true;
-	tpoly->isDecay = false;
-	tpoly->key = key;
-	tpoly->vel = velocity;
-	tpoly->pedalhold = false;
+	poly->isPlaying = true;
+	poly->isDecay = false;
+	poly->key = key;
+	poly->vel = velocity;
+	poly->pedalhold = false;
 
 	bool allnull = true;
 	for (int x = 0; x < 4; x++) {
 		if (cache[x].playPartial) {
-			tpoly->partials[x] = synth->partialManager->allocPartial(partNum);
+			poly->partials[x] = synth->partialManager->allocPartial(partNum);
 			allnull = false;
 		} else {
-			tpoly->partials[x] = NULL;
+			poly->partials[x] = NULL;
 		}
 	}
 
 	if (allnull)
 		synth->printDebug("%s (%s): No partials to play for this instrument - key %d (velocity %d)", name, this->currentInstr, midiKey, velocity);
 
-	tpoly->sustain = cache[0].sustain;
+	poly->sustain = cache[0].sustain;
 
 	for (int x = 0; x < 4; x++) {
-		if (tpoly->partials[x] != NULL) {
-			tpoly->partials[x]->startPartial(this, tpoly, &cache[x], tpoly->partials[cache[x].structurePair]);
-			tpoly->partials[x]->setBend(bend);
+		if (poly->partials[x] != NULL) {
+			poly->partials[x]->startPartial(this, poly, &cache[x], poly->partials[cache[x].structurePair]);
+			poly->partials[x]->setBend(bend);
 		}
 	}
 }
@@ -520,32 +520,32 @@ void Part::allNotesOff() {
 	// should treat the hold pedal as usual.
 	// All *sound* off (0x78) should stop notes immediately regardless of the hold pedal.
 	// The latter controller is not implemented on the MT-32 (according to the docs).
-	for (int q = 0; q < MT32EMU_MAX_POLY; q++) {
-		Poly *tpoly = &polyTable[q];
-		if (tpoly->isPlaying) {
+	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
+		Poly *poly = &polyTable[polyNum];
+		if (poly->isPlaying) {
 			if (holdpedal)
-				tpoly->pedalhold = true;
-			else if (tpoly->sustain)
-				tpoly->startDecay();
+				poly->pedalhold = true;
+			else if (poly->sustain)
+				poly->startDecay();
 		}
 	}
 }
 
 void Part::allSoundOff() {
-	for (int q = 0; q < MT32EMU_MAX_POLY; q++) {
-		Poly *tpoly = &polyTable[q];
-		if (tpoly->isPlaying) {
-			tpoly->startDecay();
+	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
+		Poly *poly = &polyTable[polyNum];
+		if (poly->isPlaying) {
+			poly->startDecay();
 		}
 	}
 }
 
 void Part::stopPedalHold() {
-	for (int q = 0; q < MT32EMU_MAX_POLY; q++) {
-		Poly *tpoly;
-		tpoly = &polyTable[q];
-		if (tpoly->isActive() && tpoly->pedalhold)
-			stopNote(tpoly->key);
+	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
+		Poly *poly;
+		poly = &polyTable[polyNum];
+		if (poly->isActive() && poly->pedalhold)
+			stopNote(poly->key);
 	}
 }
 
@@ -566,13 +566,13 @@ void Part::stopNote(unsigned int key) {
 #endif
 
 	if (key != 255) {
-		for (int q = 0; q < MT32EMU_MAX_POLY; q++) {
-			Poly *tpoly = &polyTable[q];
-			if (tpoly->isPlaying && tpoly->key == key) {
+		for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
+			Poly *poly = &polyTable[polyNum];
+			if (poly->isPlaying && poly->key == key) {
 				if (holdpedal)
-					tpoly->pedalhold = true;
-				else if (tpoly->sustain)
-					tpoly->startDecay();
+					poly->pedalhold = true;
+				else if (poly->sustain)
+					poly->startDecay();
 			}
 		}
 		return;
@@ -583,13 +583,13 @@ void Part::stopNote(unsigned int key) {
 	int oldest = -1;
 	Bit32u oldage = 0;
 
-	for (int q = 0; q < MT32EMU_MAX_POLY; q++) {
-		Poly *tpoly = &polyTable[q];
+	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
+		Poly *poly = &polyTable[polyNum];
 
-		if (tpoly->isPlaying && !tpoly->isDecay) {
-			if (tpoly->getAge() >= oldage) {
-				oldage = tpoly->getAge();
-				oldest = q;
+		if (poly->isPlaying && !poly->isDecay) {
+			if (poly->getAge() >= oldage) {
+				oldage = poly->getAge();
+				oldest = polyNum;
 			}
 		}
 	}
