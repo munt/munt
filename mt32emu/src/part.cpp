@@ -399,11 +399,21 @@ void RhythmPart::noteOn(unsigned int midiKey, unsigned int velocity) {
 		synth->printDebug("%s: Attempted to play invalid key %d (velocity %d)", name, midiKey, velocity);
 		return;
 	}
-	int drumNum = midiKey - 24;
+	unsigned int key = midiKey;
+	unsigned int drumNum = key - 24;
 	int drumTimbreNum = rhythmTemp[drumNum].timbre;
 	if (drumTimbreNum >= 127) { // 94 on MT-32
 		synth->printDebug("%s: Attempted to play unmapped key %d (velocity %d)", name, midiKey, velocity);
 		return;
+	}
+	// CONFIRMED: Two special cases described by Mok
+	if (drumTimbreNum == 64 + 6) {
+		noteOff(0);
+		key = 1;
+	} else if (drumTimbreNum == 64 + 7) {
+		// This noteOff(0) is not performed on MT-32, only LAPC-I
+		noteOff(0);
+		key = 0;
 	}
 	int absTimbreNum = drumTimbreNum + 128;
 	TimbreParam *timbre = &synth->mt32ram.timbres[absTimbreNum].timbre;
@@ -414,7 +424,7 @@ void RhythmPart::noteOn(unsigned int midiKey, unsigned int velocity) {
 	if (drumCache[drumNum][0].dirty) {
 		cacheTimbre(drumCache[drumNum], timbre);
 	}
-	playPoly(drumCache[drumNum], midiKey, MIDDLEC, velocity);
+	playPoly(drumCache[drumNum], midiKey, key, velocity);
 }
 
 void Part::noteOn(unsigned int midiKey, unsigned int velocity) {
