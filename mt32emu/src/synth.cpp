@@ -64,6 +64,18 @@ float iir_filter_normal(float input, float *hist1_ptr, float *coef_ptr) {
 
 	*hist2_ptr++ = *hist1_ptr;
 	*hist1_ptr++ = new_hist;
+	hist1_ptr++;
+	hist2_ptr++;
+
+	// i = 2
+	output = output - *hist1_ptr * (*coef_ptr++);
+	new_hist = output - *hist2_ptr * (*coef_ptr++); // poles
+
+	output = new_hist + *hist1_ptr * (*coef_ptr++);
+	output = output + *hist2_ptr * (*coef_ptr++);   // zeros
+
+	*hist2_ptr++ = *hist1_ptr;
+	*hist1_ptr++ = new_hist;
 
 	return(output);
 }
@@ -499,8 +511,8 @@ bool Synth::open(SynthProperties &useProp) {
 	iirFilter = &iir_filter_normal;
 
 #ifdef MT32EMU_HAVE_X86
-	bool availableSSE = DetectSIMD();
-	bool available3DNow = Detect3DNow();
+	bool availableSSE = false; //DetectSIMD();
+	bool available3DNow = false; //Detect3DNow();
 
 	if (availableSSE)
 		report(ReportType_availableSSE, NULL);

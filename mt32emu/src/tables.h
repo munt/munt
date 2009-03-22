@@ -31,7 +31,8 @@ const float FLOAT_LN_2 = 0.6931472f;
 
 // Filter settings
 //const int FILTERGRAN = 512;
-const int FILTERGRAN = 32768;
+//const int FILTERGRAN = 32768;
+const int FILTERGRAN = 16000;
 
 
 // Amplitude of waveform generator
@@ -122,11 +123,13 @@ public:
 	Bit32u envDeltaMaxTime[101];
 	Bit32u envDecayTime[101];
 	Bit32u lfoPeriod[101];
-	float filtCoeff[FILTERGRAN][31][8];
+	float filtCoeff[FILTERGRAN][31][12];
 
 	// Various LUTs for each note and key
 	NoteLookup noteLookups[NUM_NOTES];
 	KeyLookup keyLookups[97];
+
+	float sineTable[32000];
 
 	Tables();
 	bool init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune);

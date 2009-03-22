@@ -194,7 +194,11 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	} else {
 		// CC: Sawtooth waves play at half the frequency as the cosine multiplication
 		// effectively doubles the rate of the square wave.
-		posSaw->reset(noteLookup->freq / 2.0f, synth->tables.pwFactorf[pulsewidth]);
+		float spw = synth->tables.pwFactorf[pulsewidth];
+		if(spw < 0.5f) {
+			spw = 0.5f - ((0.5f - spw) * 2.0f);
+		}
+		posSaw->reset(noteLookup->freq / 2.0f, spw);
 		negSaw->reset(noteLookup->freq / 2.0f, 0.0);
 		saw->reset(noteLookup->freq / 2.0f, 0.8);
 	}
@@ -221,6 +225,130 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	alreadyOutputed = false;
 	tva->reset(part, patchCache);
 	memset(history,0,sizeof(history));
+}
+
+#define FLOAT_T float
+#define ORDER 20
+#define ORDER2 ORDER/2
+#define int16 Bit16s
+#define int32 Bit32s
+
+/*  bessel  function   */
+static FLOAT_T ino(FLOAT_T x)
+{
+    FLOAT_T y, de, e, sde;
+    int i;
+
+    y = x / 2;
+    e = 1.0;
+    de = 1.0;
+    i = 1;
+    do {
+	de = de * y / (FLOAT_T) i;
+	sde = de * de;
+	e += sde;
+    } while (!( (e * 1.0e-08 - sde > 0) || (i++ > 25) ));
+    return(e);
+}
+
+/* Kaiser Window (symetric) */
+static void kaiser(FLOAT_T *w,int n,FLOAT_T beta)
+{
+    FLOAT_T xind, xi;
+    int i;
+
+    xind = (2*n - 1) * (2*n - 1);
+    for (i =0; i<n ; i++)
+	{
+	    xi = i + 0.5;
+	    w[i] = ino((FLOAT_T)(beta * sqrt((double)(1. - 4 * xi * xi / xind))))
+		/ ino((FLOAT_T)beta);
+	}
+}
+
+/*
+ * fir coef in g, cuttoff frequency in fc
+ */
+static void designfir(FLOAT_T *g , FLOAT_T fc)
+{
+    int i;
+    FLOAT_T xi, omega, att, beta ;
+    FLOAT_T w[ORDER2];
+
+    for (i =0; i < ORDER2 ;i++)
+	{
+	    xi = (FLOAT_T) i + 0.5;
+	    omega = PI * xi;
+	    g[i] = sin( (double) omega * fc) / omega;
+	}
+
+    att = 40.; /* attenuation  in  db */
+    beta = (FLOAT_T) exp(log((double)0.58417 * (att - 20.96)) * 0.4) + 0.07886
+	* (att - 20.96);
+    kaiser( w, ORDER2, beta);
+
+    /* Matrix product */
+    for (i =0; i < ORDER2 ; i++)
+	g[i] = g[i] * w[i];
+}
+
+/*
+ * FIR filtering -> apply the filter given by coef[] to the data buffer
+ * Note that we simulate leading and trailing 0 at the border of the
+ * data buffer
+ */
+static void tfilter(int16 *result,int16 *data, int32 length,FLOAT_T coef[])
+{
+    int32 sample,i,sample_window;
+    int16 peak = 0;
+    FLOAT_T sum;
+
+    /* Simulate leading 0 at the begining of the buffer */
+     for (sample = 0; sample < ORDER2 ; sample++ )
+	{
+	    sum = 0.0;
+	    sample_window= sample - ORDER2;
+
+	    for (i = 0; i < ORDER ;i++)
+		sum += coef[i] *
+		    ((sample_window<0)? 0.0 : data[sample_window++]) ;
+
+	    /* Saturation ??? */
+	    if (sum> 32767.) { sum=32767.; peak++; }
+	    if (sum< -32768.) { sum=-32768; peak++; }
+	    result[sample] = (int16) sum;
+	}
+
+    /* The core of the buffer  */
+    for (sample = ORDER2; sample < length - ORDER + ORDER2 ; sample++ )
+	{
+	    sum = 0.0;
+	    sample_window= sample - ORDER2;
+
+	    for (i = 0; i < ORDER ;i++)
+		sum += data[sample_window++] * coef[i];
+
+	    /* Saturation ??? */
+	    if (sum> 32767.) { sum=32767.; peak++; }
+	    if (sum< -32768.) { sum=-32768; peak++; }
+	    result[sample] = (int16) sum;
+	}
+
+    /* Simulate 0 at the end of the buffer */
+    for (sample = length - ORDER + ORDER2; sample < length ; sample++ )
+	{
+	    sum = 0.0;
+	    sample_window= sample - ORDER2;
+
+	    for (i = 0; i < ORDER ;i++)
+		sum += coef[i] *
+		    ((sample_window>=length)? 0.0 : data[sample_window++]) ;
+
+	    /* Saturation ??? */
+	    if (sum> 32767.) { sum=32767.; peak++; }
+	    if (sum< -32768.) { sum=-32768; peak++; }
+	    result[sample] = (int16) sum;
+	}
 }
 
 Bit16s *Partial::generateSamples(long length) {
@@ -358,13 +486,29 @@ Bit16s *Partial::generateSamples(long length) {
 				}
 			} else {
 				// Render synthesised sample
-				Bit32s filterInput;
+				float fSample;
 				Bit32s filtval = getFiltEnvelope();
 
-				float phase = posSaw->getPhase();
+				float phase = (negSaw->getPhase());
+
 
 				//CC: There used to be a lot of code here.  :-)
-				filterInput = (posSaw->tick() - negSaw->tick()) * WGAMP ;
+				fSample = (float)(posSaw->tick() - negSaw->tick()) ;
+
+				float freqsum = 0;
+				freqsum = ((powf(2048.0f, (((float)filtval / 128.0f) - 1.0f))) * posSaw->getStartFreq());
+				
+				if(freqsum >= (FILTERGRAN - 550.0)) 
+					freqsum = (FILTERGRAN - 550.0f);
+
+//				if (filtval > ((FILTERGRAN * 15) / 16))
+//					filtval = ((FILTERGRAN * 15) / 16);
+				filtval = (Bit32s)freqsum;
+
+				//fSample = (floorf((synth->iirFilter)((fSample * WGAMP), &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])) / synth->tables.resonanceFactor[patchCache->filtEnv.resonance]);
+				fSample = (floorf((synth->iirFilter)((fSample * WGAMP), &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])));
+
+				//sample = (Bit32s)(filter->process(fSample *.25f) * WGAMP *4.0f);
 
 				if ((patchCache->waveform & 1) != 0) {
 					//CC: Sawtooth samples are finally generated here by multipling an in-sync cosine
@@ -372,18 +516,18 @@ Bit16s *Partial::generateSamples(long length) {
 
 					//CC: Computers are fast these days.  Not caring to use a LUT or fixed point anymore.
 					//If I port this to the iPhone I may reconsider.
-					filterInput = (Bit32s)(cos(phase * 2.0f) * filterInput);
+					fSample = ((cosf(phase * 2.0f)) * fSample) + (WGAMP * 0.1618f);
 				}
 
-				if (filtval > ((FILTERGRAN * 15) / 16))
-					filtval = ((FILTERGRAN * 15) / 16);
-				sample = (Bit32s)(floorf((synth->iirFilter)((float)filterInput, &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])) / synth->tables.resonanceFactor[patchCache->filtEnv.resonance]);
+
+				sample = (Bit32s)(fSample );
+
 				if (sample < -32768) {
-					synth->printDebug("Overdriven amplitude for %d: %d:=%d < -32768", patchCache->waveform, filterInput, sample);
+					synth->printDebug("Overdriven amplitude for %d: %d < -32768 - %f", patchCache->waveform, sample, freqsum);
 					sample = -32768;
 				}
 				else if (sample > 32767) {
-					synth->printDebug("Overdriven amplitude for %d: %d:=%d > 32767", patchCache->waveform, filterInput, sample);
+					synth->printDebug("Overdriven amplitude for %d: %d > 32767 - %f", patchCache->waveform, sample, freqsum);
 					sample = 32767;
 				}
 			}
@@ -488,7 +632,7 @@ Bit16s *Partial::mixBuffersRingMix(Bit16s * buf1, Bit16s *buf2, int len) {
 		b[2] = b[1] + ((CUTOFF * (0 - b[1])) >> 12);
 		pastOsc = b[2];
 
-		c[0] = a[1] * b[1];
+		c[0] = a[1] ^ b[1];
 		c[1] = (a[2] * b[2]);
 
 		d[0] = pastDesCarrier + ((CUTOFF * (c[0] - pastDesCarrier)) >> 12);
@@ -496,7 +640,7 @@ Bit16s *Partial::mixBuffersRingMix(Bit16s * buf1, Bit16s *buf2, int len) {
 
 		pastDesCarrier = d[1];
 
-		result = ((d[0] >> 12) + a[0]) >> 1;
+		result = ((d[0] >> 5) + a[0]);
 
 		if (result>32767)
 			result = 32767;
@@ -541,7 +685,7 @@ Bit16s *Partial::mixBuffersRing(Bit16s * buf1, Bit16s *buf2, int len) {
 		b[2] = b[1] + ((CUTOFF * (0 - b[1])) >> 12);
 		pastOsc = b[2];
 
-		c[0] = a[1] * b[1];
+		c[0] = a[1] ^ b[1];
 		c[1] = (a[2] * b[2]);
 
 		d[0] = pastDesCarrier + ((CUTOFF * (c[0] - pastDesCarrier)) >> 12);
@@ -549,7 +693,7 @@ Bit16s *Partial::mixBuffersRing(Bit16s * buf1, Bit16s *buf2, int len) {
 
 		pastDesCarrier = d[1];
 
-		result = d[0] >> 12;
+		result = d[0] >> 5;
 
 		if (result>32767)
 			result = 32767;
@@ -821,7 +965,9 @@ Bit32s Partial::getFiltEnvelope() {
 
 	filEnv = (filEnv * reshigh) >> 8;
 
-	int tmp = calcRFilt(noteLookup->freq, synth->getSampleRate(), cutoff + filEnv);
+	
+	//int tmp = noteLookup->rfiltTable[cutoff + filEnv];
+	int tmp = cutoff + filEnv;
 	return tmp;
 }
 

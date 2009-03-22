@@ -117,7 +117,7 @@ static void initFilter(float fs, float fc, float *icoeff, float Q) {
 	a1 = 0;
 	a2 = 0;
 	b0 = 1.0;
-	b1 = 0.765367 / Q; // Divide by resonance or Q
+	b1 = 0.5176387 / Q; // Divide by resonance or Q
 	b2 = 1.0;
 	szxform(&a0, &a1, &a2, &b0, &b1, &b2, fc, fs, &k, coef);
 	coef += 4;         // Point to next filter section
@@ -127,10 +127,19 @@ static void initFilter(float fs, float fc, float *icoeff, float Q) {
 	a1 = 0;
 	a2 = 0;
 	b0 = 1.0;
-	b1 = 1.847759 / Q;
+	b1 = 1.414214  / Q;
 	b2 = 1.0;
 	szxform(&a0, &a1, &a2, &b0, &b1, &b2, fc, fs, &k, coef);
+	coef += 4;         // Point to next filter section
 
+	// Section 3
+	a0 = 1.0;
+	a1 = 0;
+	a2 = 0;
+	b0 = 1.0;
+	b1 = 1.931852 / Q;
+	b2 = 1.0;
+	szxform(&a0, &a1, &a2, &b0, &b1, &b2, fc, fs, &k, coef);
 	icoeff[0] = (float)k;
 }
 
@@ -138,7 +147,7 @@ void Tables::initFiltCoeff(float samplerate) {
 	for (int j = 0; j < FILTERGRAN; j++) {
 		for (int res = 0; res < 31; res++) {
 			float tres = resonanceFactor[res];
-			initFilter((float)samplerate, (((float)(j+1.0)/FILTERGRAN)) * ((float)samplerate/2), filtCoeff[j][res], tres);
+			initFilter((float)samplerate, (float)j, filtCoeff[j][res], tres);
 		}
 	}
 }
@@ -212,7 +221,11 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	}
 
 	for (int res = 0; res < 31; res++) {
-		resonanceFactor[res] = powf((float)res / 30.0f, 5.0f) + 1.0f;
+		resonanceFactor[res] = powf((float)res / 30.0f, 5.0f) +1.0f;
+	}
+
+	for(lf=0;lf<32000;lf++) {
+		sineTable[lf] = sin(((float)lf) / 32000.0f * 2.0f * PI);
 	}
 
 	int period = 65536;
