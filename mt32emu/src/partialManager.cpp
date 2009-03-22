@@ -104,7 +104,7 @@ unsigned int PartialManager::getFreePartialCount(void) {
 	return count;
 }
 
-// This method assumed that getFreePartials() has been called to make numReservedPartialsForPart up-to-date.
+// This method assumes that getFreePartials() has been called to make numReservedPartialsForPart up-to-date.
 // The rhythm part is considered part -1 for the purposes of the minPart argument (and as this suggests, is checked last, if at all).
 bool PartialManager::abortWhereReserveExceeded(PolyState polyState, int minPart) {
 	// Abort decaying polys in non-rhythm parts that have exceeded their partial reservation (working backwards from part 7)
