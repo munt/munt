@@ -225,7 +225,7 @@ void TVP::setupPitchChange(int targetPitchOffset, Bit8u changeDuration) {
 		pitchOffsetDelta = 32767;
 	}
 	// We want to maximise the number of bits of the Bit16s "pitchOffsetChangePerBigTick" we use in order to get the best possible precision later
-	Bit32u absPitchOffsetDelta = abs(pitchOffsetDelta) << 16;
+	Bit32u absPitchOffsetDelta = abs((int)pitchOffsetDelta) << 16;
 	Bit8u normalisationShifts = normalise(absPitchOffsetDelta); // FIXME: Double-check: normalisationShifts is usually between 0 and 15 here, unless the delta is 0, in which case it's 31
 	absPitchOffsetDelta = absPitchOffsetDelta >> 1; // Make room for the sign bit
 
