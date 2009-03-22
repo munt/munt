@@ -541,7 +541,6 @@ void Synth::close(void) {
 	if (!isOpen)
 		return;
 
-	tables.freeNotes();
 	if (partialManager != NULL) {
 		delete partialManager;
 		partialManager = NULL;

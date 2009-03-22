@@ -224,21 +224,6 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		resonanceFactor[res] = powf((float)res / 30.0f, 5.0f) +1.0f;
 	}
 
-	for(lf=0;lf<32000;lf++) {
-		sineTable[lf] = sin(((float)lf) / 32000.0f * 2.0f * PI);
-	}
-
-	int period = 65536;
-
-	for (int ang = 0; ang < period; ang++) {
-		int halfang = (period / 2);
-		int angval = ang % halfang;
-		float tval = (((float)angval / (float)halfang) - 0.5f) * 2;
-		if (ang >= halfang)
-			tval = -tval;
-		sintable[ang] = (Bit16s)(tval * 50.0f) + 50;
-	}
-
 	int velt, dep;
 	for (velt = 0; velt < 128; velt++) {
 		for (dep = -7; dep < 8; dep++) {
@@ -270,80 +255,6 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		//FIXME:KG: Original ultimately set the lowest two bits to 0, for no obvious reason
 		noiseBuf[i] = (Bit16s)myRand;
 	}
-
-	float tdist;
-	float padjtable[51];
-	for (lf = 0; lf <= 50; lf++) {
-		if (lf == 0)
-			padjtable[lf] = 7;
-		else if (lf == 1)
-			padjtable[lf] = 6;
-		else if (lf == 2)
-			padjtable[lf] = 5;
-		else if (lf == 3)
-			padjtable[lf] = 4;
-		else if (lf == 4)
-			padjtable[lf] = 4 - (0.333333f);
-		else if (lf == 5)
-			padjtable[lf] = 4 - (0.333333f * 2);
-		else if (lf == 6)
-			padjtable[lf] = 3;
-		else if ((lf > 6) && (lf <= 12)) {
-			tdist = (lf-6.0f) / 6.0f;
-			padjtable[lf] = 3.0f - tdist;
-		} else if ((lf > 12) && (lf <= 25)) {
-			tdist = (lf - 12.0f) / 13.0f;
-			padjtable[lf] = 2.0f - tdist;
-		} else {
-			tdist = (lf - 25.0f) / 25.0f;
-			padjtable[lf] = 1.0f - tdist;
-		}
-		//synth->printDebug("lf %d = padj %f", lf, padjtable[lf]);
-	}
-
-	float lfp, depf, finalval, tlf;
-	int depat, pval, depti;
-	for (lf = 0; lf <= 10; lf++) {
-		// I believe the depth is cubed or something
-
-		for (depat = 0; depat <= 100; depat++) {
-			if (lf > 0) {
-				depti = abs(depat - 50);
-				tlf = (float)lf - padjtable[depti];
-				if (tlf < 0)
-					tlf = 0;
-				lfp = expf(0.713619942f * tlf) / 407.4945111f;
-
-				if (depat < 50)
-					finalval = 4096.0f * powf(2, -lfp);
-				else
-					finalval = 4096.0f * powf(2, lfp);
-				pval = (int)finalval;
-
-				pitchEnvVal[lf][depat] = pval;
-				//synth->printDebug("lf %d depat %d pval %d tlf %f lfp %f", lf,depat,pval, tlf, lfp);
-			} else {
-				pitchEnvVal[lf][depat] = 4096;
-				//synth->printDebug("lf %d depat %d pval 4096", lf, depat);
-			}
-		}
-	}
-	for (lf = 0; lf <= 100; lf++) {
-		// It's linear - verified on MT-32 - one of the few things linear
-		lfp = ((float)lf * 0.1904f) / 310.55f;
-
-		for (depat = 0; depat <= 100; depat++) {
-			depf = ((float)depat - 50.0f) / 50.0f;
-			//finalval = pow(2, lfp * depf * .5);
-			finalval = 4096.0f + (4096.0f * lfp * depf);
-
-			pval = (int)finalval;
-
-			lfoShift[lf][depat] = pval;
-
-			//synth->printDebug("lf %d depat %d pval %x", lf,depat,pval);
-		}
-	}
 }
 
 static void initDep(KeyLookup *keyLookup, float f) {
@@ -362,7 +273,6 @@ static void initDep(KeyLookup *keyLookup, float f) {
 			keyLookup->envTimeMult[dep] = (int)(ff * 256.0f);
 		}
 	}
-	//synth->printDebug("F %f d1 %x d2 %x d3 %x d4 %x d5 %x", f, noteLookup->fildepTable[0], noteLookup->fildepTable[1], noteLookup->fildepTable[2], noteLookup->fildepTable[3], noteLookup->fildepTable[4]);
 }
 
 Bit16s Tables::clampWF(Synth *synth, const char *n, float ampVal, double input) {
@@ -377,66 +287,9 @@ Bit16s Tables::clampWF(Synth *synth, const char *n, float ampVal, double input) 
 	return (Bit16s)x;
 }
 
-void Tables::initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float masterTune, PCMWaveEntry *pcmWaves) {
-	float freq = (float)(masterTune * pow(2.0, ((double)note - MIDDLEA) / 12.0));
-	noteLookup->freq = freq;
-	float div2 = rate * 2.0f / freq;
-	noteLookup->div2 = (int)div2;
-
-	if (noteLookup->div2 == 0)
-		noteLookup->div2 = 1;
-
-	//synth->printDebug("Note %f; freq=%f, div=%f", note, freq, rate / freq);
-
-	// Create the pitch tables
-	if (noteLookup->wavTable == NULL)
-		noteLookup->wavTable = new Bit32u[synth->controlROMMap->pcmCount];
-	double rateMult = 32000.0 / rate;
-	double tuner = freq * 65536.0f;
-	for (int pc = 0; pc < synth->controlROMMap->pcmCount; pc++) {
-		noteLookup->wavTable[pc] = (int)(tuner / pcmWaves[pc].tune * rateMult);
-	}
-}
-
-bool Tables::initNotes(Synth *synth, PCMWaveEntry *pcmWaves, float rate, float masterTune) {
-	/*
-	const char *NoteNames[12] = {
-		"C ", "C#", "D ", "D#", "E ", "F ", "F#", "G ", "G#", "A ", "A#", "B "
-	};
-	*/
-
-	float progress = 0.0f;
-	bool abort = false;
-	synth->report(ReportType_progressInit, &progress);
-	for (int f = LOWEST_NOTE; f <= HIGHEST_NOTE; f++) {
-		//synth->printDebug("Initialising note %s%d", NoteNames[f % 12], (f / 12) - 2);
-		NoteLookup *noteLookup = &noteLookups[f - LOWEST_NOTE];
-		initNote(synth, noteLookup, (float)f, rate, masterTune, pcmWaves);
-		progress = (f - LOWEST_NOTE + 1) / (float)NUM_NOTES;
-		abort = synth->report(ReportType_progressInit, &progress) != 0;
-		if (abort)
-			break;
-	}
-
-	return !abort;
-}
-
-void Tables::freeNotes() {
-	for (int t = 0; t < 3; t++) {
-		for (int m = 0; m < NUM_NOTES; m++) {
-			if (noteLookups[m].wavTable != NULL) {
-				delete[] noteLookups[m].wavTable;
-				noteLookups[m].wavTable = NULL;
-			}
-		}
-	}
-	initialisedMasterTune = 0.0f;
-}
-
 Tables::Tables() {
 	initialisedSampleRate = 0.0f;
 	initialisedMasterTune = 0.0f;
-	memset(&noteLookups, 0, sizeof(noteLookups));
 }
 
 bool Tables::init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune) {
@@ -455,10 +308,6 @@ bool Tables::init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float 
 		}
 	}
 	if (initialisedSampleRate != sampleRate || initialisedMasterTune != masterTune) {
-		freeNotes();
-		if (!initNotes(synth, pcmWaves, sampleRate, masterTune)) {
-			return false;
-		}
 		initialisedSampleRate = sampleRate;
 		initialisedMasterTune = masterTune;
 	}

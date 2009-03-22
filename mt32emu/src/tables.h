@@ -72,12 +72,6 @@ static const int pitchROMTable[12] = {
 
 class Synth;
 
-struct NoteLookup {
-	float freq;
-	Bit32u div2;
-	Bit32u *wavTable;
-};
-
 struct KeyLookup {
 	Bit32s envTimeMult[5]; // For envelope time adjustment for key pressed
 };
@@ -87,8 +81,7 @@ class Tables {
 	float initialisedMasterTune;
 	void initMT32ConstantTables(Synth *synth);
 	static Bit16s clampWF(Synth *synth, const char *n, float ampVal, double input);
-	static File *initWave(Synth *synth, NoteLookup *noteLookup, float ampsize, float div2, File *file);
-	bool initNotes(Synth *synth, PCMWaveEntry *pcmWaves, float rate, float tuning);
+	static File *initWave(Synth *synth, float ampsize, float div2, File *file);
 	void initEnvelopes(float sampleRate);
 	void initFiltCoeff(float samplerate);
 public:
@@ -110,12 +103,8 @@ public:
 
 	Bit32s tvfKeyfollowMult[217];
 	Bit16s noiseBuf[MAX_SAMPLE_OUTPUT];
-	Bit16s sintable[65536];
-	Bit32s pitchEnvVal[16][101];
-	Bit32s envTimeVelfollowMult[5][128];
 	Bit32s pwVelfollowAdd[15][128];
 	float resonanceFactor[31];
-	Bit32u lfoShift[101][101];
 	float pwFactorf[101];
 
 	// LUTs varying with sample rate
@@ -125,16 +114,11 @@ public:
 	Bit32u lfoPeriod[101];
 	float filtCoeff[FILTERGRAN][31][12];
 
-	// Various LUTs for each note and key
-	NoteLookup noteLookups[NUM_NOTES];
+	// Various LUTs for each key
 	KeyLookup keyLookups[97];
-
-	float sineTable[32000];
 
 	Tables();
 	bool init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune);
-	void initNote(Synth *synth, NoteLookup *noteLookup, float note, float rate, float tuning, PCMWaveEntry *pcmWaves);
-	void freeNotes();
 };
 
 }
