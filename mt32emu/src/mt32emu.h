@@ -31,8 +31,6 @@
 // The maximum number of notes playing simultaneously per part.
 // No point making it more than MT32EMU_MAX_PARTIALS, since each note needs at least one partial.
 #define MT32EMU_MAX_POLY 32
-// This calculates the exact frequencies of notes as they are played, instead of offsetting from pre-cached semitones. Potentially very slow.
-#define MT32EMU_ACCURATENOTES 0
 
 #if (defined (_MSC_VER) && defined(_M_IX86))
 #define MT32EMU_HAVE_X86

@@ -22,7 +22,6 @@ namespace MT32Emu {
 class Synth;
 class Part;
 class TVA;
-struct NoteLookup;
 struct ControlROMPCMStruct;
 
 struct EnvelopeStatus {

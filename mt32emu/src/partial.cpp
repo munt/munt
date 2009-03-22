@@ -38,21 +38,9 @@ Partial::Partial(Synth *useSynth, int debugPartialNum) :
 	posSaw = new BlitSaw(1, 0.5);
 	negSaw = new BlitSaw(1, 0.0);
 	saw = new BlitSaw(1, 0.8);
-#if MT32EMU_ACCURATENOTES == 1
-	for (int i = 0; i < 3; i++) {
-		noteLookupStorage.waveforms[i] = new Bit16s[65536];
-	}
-	noteLookup = &noteLookupStorage;
-#endif
 }
 
 Partial::~Partial() {
-#if MT32EMU_ACCURATENOTES == 1
-	for (int i = 0; i < 3; i++) {
-		delete[] noteLookupStorage.waveforms[i];
-	}
-	delete[] noteLookupStorage.wavTable;
-#endif
 	delete posSaw;
 	delete negSaw;
 	delete saw;
