@@ -48,7 +48,7 @@ private:
 
 	// FIXME: All these names
 	void calcPitch();
-	void calcPitchOffsetChangePerTick(int targetPitchOffset, Bit8u changeDuration);
+	void setupPitchChange(int targetPitchOffset, Bit8u changeDuration);
 	void targetPitchOffsetReached();
 	void nextPhase();
 	void process();

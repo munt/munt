@@ -178,7 +178,8 @@ void TVP::targetPitchOffsetReached() {
 		}
 		lfoPitchOffset = newLFOPitchOffset;
 		int targetPitchOffset = targetPitchOffsetWithoutLFO + lfoPitchOffset;
-		calcPitchOffsetChangePerTick(targetPitchOffset, 101 - partialParam->pitchLFO.rate);
+		setupPitchChange(targetPitchOffset, 101 - partialParam->pitchLFO.rate);
+		calcPitch();
 		break;
 	}
 	case 6:
@@ -198,7 +199,8 @@ void TVP::nextPhase() {
 	int changeDuration = partialParam->pitchEnv.time[envIndex - 1];
 	changeDuration -= timeKeyfollowValue;
 	if (changeDuration > 0) {
-		calcPitchOffsetChangePerTick(targetPitchOffsetWithoutLFO, changeDuration); // changeDuration between 0 and 112 now
+		setupPitchChange(targetPitchOffsetWithoutLFO, changeDuration); // changeDuration between 0 and 112 now
+		calcPitch();
 	} else {
 		targetPitchOffsetReached();
 	}
@@ -216,18 +218,13 @@ static Bit8u normalise(Bit32u &val) {
 	return leftShifts;
 }
 
-void TVP::calcPitchOffsetChangePerTick(int targetPitchOffset, Bit8u changeDuration) {
-	if (changeDuration == 0) {
-		// FIXME: This should never ever happen since I moved the check to nextPhase()
-		targetPitchOffsetReached();
-		return;
-	}
+void TVP::setupPitchChange(int targetPitchOffset, Bit8u changeDuration) {
 	Bit32s pitchOffsetDelta = targetPitchOffset - currentPitchOffset;
 	if (pitchOffsetDelta > 32767 || pitchOffsetDelta < -32768) {
 		// FIXME: Weird, will end up being set to 32767 when it should be < -32768. Apparently a bug in the original, or is it never < -32768?
 		pitchOffsetDelta = 32767;
 	}
-	// We want to maximise the number of bits of the Bit16s "pitchOffsetChangePerTick" we use in order to get the best possible precision later
+	// We want to maximise the number of bits of the Bit16s "pitchOffsetChangePerBigTick" we use in order to get the best possible precision later
 	Bit32u absPitchOffsetDelta = abs(pitchOffsetDelta) << 16;
 	Bit8u normalisationShifts = normalise(absPitchOffsetDelta); // FIXME: Double-check: normalisationShifts is usually between 0 and 15 here, unless the delta is 0, in which case it's 31
 	absPitchOffsetDelta = absPitchOffsetDelta >> 1; // Make room for the sign bit
@@ -236,19 +233,18 @@ void TVP::calcPitchOffsetChangePerTick(int targetPitchOffset, Bit8u changeDurati
 	unsigned int upperDuration = changeDuration >> 3; // upperDuration's now between 0 and 13
 	shifts = normalisationShifts + upperDuration + 2;
 	Bit16u divisor = lowerDurationToDivisor[changeDuration & 7];
-	Bit16s newPitchOffsetChangePerTick = ((absPitchOffsetDelta & 0xFFFF0000) / divisor) >> 1; // Result now fits within 15 bits. FIXME: Check nothing's getting sign-extended incorrectly
+	Bit16s newPitchOffsetChangePerBigTick = ((absPitchOffsetDelta & 0xFFFF0000) / divisor) >> 1; // Result now fits within 15 bits. FIXME: Check nothing's getting sign-extended incorrectly
 	if (pitchOffsetDelta < 0) {
-		newPitchOffsetChangePerTick = -newPitchOffsetChangePerTick;
+		newPitchOffsetChangePerBigTick = -newPitchOffsetChangePerBigTick;
 	}
-	pitchOffsetChangePerBigTick = newPitchOffsetChangePerTick;
+	pitchOffsetChangePerBigTick = newPitchOffsetChangePerBigTick;
 
-	int currentTick = timeElapsed >> 8;
-	int durationInTicks = divisor >> (12 - upperDuration);
-	if (durationInTicks > 32767) {
-		durationInTicks = 32767;
+	int currentBigTick = timeElapsed >> 8;
+	int durationInBigTicks = divisor >> (12 - upperDuration);
+	if (durationInBigTicks > 32767) {
+		durationInBigTicks = 32767;
 	}
-	targetPitchOffsetReachedBigTick = currentTick + durationInTicks;
-	calcPitch();
+	targetPitchOffsetReachedBigTick = currentBigTick + durationInBigTicks;
 }
 
 void TVP::startDecay() {
@@ -284,8 +280,8 @@ void TVP::process() {
 		return;
 	}
 
-	int negativeTicksRemaining = (timeElapsed >> 8) - targetPitchOffsetReachedBigTick;
-	if (negativeTicksRemaining >= 0) {
+	int negativeBigTicksRemaining = (timeElapsed >> 8) - targetPitchOffsetReachedBigTick;
+	if (negativeBigTicksRemaining >= 0) {
 		// We've reached the time for a phase change
 		targetPitchOffsetReached();
 		return;
@@ -294,10 +290,10 @@ void TVP::process() {
 	int rightShifts = shifts;
 	if (rightShifts > 13) {
 		rightShifts -= 13;
-		negativeTicksRemaining = negativeTicksRemaining >> rightShifts; // PORTABILITY NOTE: Assumes arithmetic shift
+		negativeBigTicksRemaining = negativeBigTicksRemaining >> rightShifts; // PORTABILITY NOTE: Assumes arithmetic shift
 		rightShifts = 13;
 	}
-	int newResult = ((Bit32s)(negativeTicksRemaining * pitchOffsetChangePerBigTick)) >> rightShifts; // PORTABILITY NOTE: Assumes arithmetic shift
+	int newResult = ((Bit32s)(negativeBigTicksRemaining * pitchOffsetChangePerBigTick)) >> rightShifts; // PORTABILITY NOTE: Assumes arithmetic shift
 	newResult += targetPitchOffsetWithoutLFO + lfoPitchOffset;
 	currentPitchOffset = newResult;
 	calcPitch();
