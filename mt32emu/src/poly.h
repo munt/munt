@@ -39,8 +39,6 @@ private:
 public:
 	Poly();
 	void reset(unsigned int key, unsigned int velocity, bool sustain, Partial **partials);
-	// DEPRECATED: setBend() will die when the new pitch stuff lands
-	void setBend(float bend);
 	bool noteOff(bool pedalHeld);
 	void stopPedalHold();
 	void startDecay();

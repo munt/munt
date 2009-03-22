@@ -61,7 +61,6 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	expression = 100;
 	volumesetting.leftvol = 32767;
 	volumesetting.rightvol = 32767;
-	bend = 0.0f;
 	memset(patchCache, 0, sizeof(patchCache));
 }
 
@@ -81,16 +80,6 @@ Bit32s Part::getPitchBend() const {
 void Part::setBend(unsigned int midiBend) {
 	// CONFIRMED:
 	pitchBend = ((midiBend - 8192) * pitchBenderRange) >> 14;
-
-	// DEPRECATED: Everything below will soon be obsolete and removed
-	if (midiBend <= 0x2000) {
-		bend = ((signed int)midiBend - 0x2000) / (float)0x2000;
-	} else {
-		bend = ((signed int)midiBend - 0x2000) / (float)0x1FFF;
-	}
-	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-		polys[polyNum].setBend(bend);
-	}
 }
 
 Bit8u Part::getModulation() const {
@@ -514,7 +503,6 @@ void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, unsigned in
 			partials[x]->startPartial(this, poly, &cache[x], partials[cache[x].structurePair]);
 		}
 	}
-	poly->setBend(bend);
 }
 
 void Part::allNotesOff() {

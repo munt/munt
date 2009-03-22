@@ -37,8 +37,6 @@ private:
 
 	PatchCache patchCache[4];
 
-	float bend; // -1.0 .. +1.0
-
 	Poly polys[MT32EMU_MAX_POLY];
 
 	static int fixKeyfollow(int srckey);

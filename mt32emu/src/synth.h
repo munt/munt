@@ -255,6 +255,7 @@ friend class Partial;
 friend class Tables;
 friend class MemoryRegion;
 friend class TVA;
+friend class TVP;
 private:
 	PatchTempMemoryRegion *patchTempMemoryRegion;
 	RhythmTempMemoryRegion *rhythmTempMemoryRegion;

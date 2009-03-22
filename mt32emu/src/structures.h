@@ -184,11 +184,6 @@ struct PCMWaveEntry {
 	ControlROMPCMStruct *controlROMPCMStruct;
 };
 
-struct soundaddr {
-	Bit16u pcmplace;
-	Bit16u pcmoffset;
-};
-
 struct StereoVolume {
 	Bit16s leftvol;
 	Bit16s rightvol;

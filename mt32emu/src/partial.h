@@ -25,11 +25,6 @@ class TVA;
 struct NoteLookup;
 struct ControlROMPCMStruct;
 
-enum EnvelopeType {
-	EnvelopeType_filt = 0,
-	EnvelopeType_pitch = 1
-};
-
 struct EnvelopeStatus {
 	Bit32s envpos;
 	Bit32s envstat;
@@ -45,7 +40,7 @@ struct EnvelopeStatus {
 	Bit32s count;
 };
 
-// Class definition of MT-32 partials.  32 in all.
+// A partial represents one of up to four waveform generators currently playing within a poly.
 class Partial {
 private:
 	Synth *synth;
@@ -56,23 +51,16 @@ private:
 	int structurePosition; // 0 or 1 of a structure pair
 	bool useNoisePair;
 	int partialChan;
-	int pastDelta;
+
+	bool firstSample;
 
 	Bit16s myBuffer[MAX_SAMPLE_OUTPUT];
 
 	// Keyfollowed note value
-#if MT32EMU_ACCURATENOTES == 1
-	NoteLookup noteLookupStorage;
-	float noteVal;
-#else
-	int noteVal;
-	int fineShift;
-#endif
 	BlitSaw *posSaw;
 	BlitSaw *negSaw;
 	BlitSaw *saw;
 
-	const NoteLookup *noteLookup; // LUTs for this noteVal
 	const KeyLookup *keyLookup; // LUTs for the clamped (12..108) key
 
 	// Keyfollowed filter value
@@ -80,24 +68,21 @@ private:
 
 	// Only used for PCM partials
 	int pcmNum;
+	// FIXME: Give this a better name (e.g. pcmWaveInfo)
 	PCMWaveEntry *pcmWave;
 
 	int pulsewidth;
 
-	Bit32u lfoPos;
-	soundaddr partialOff;
+	float pcmPosition;
+	int intPCMPosition;
 
 	Bit32u pitchEnvVal;
 
 	float history[32];
 
-	bool pitchSustain;
-
 	int loopPos;
 
 	Poly *poly;
-
-	int bendShift;
 
 	Bit32s pastCarrier;
 	Bit32s pastOsc;
@@ -111,14 +96,14 @@ private:
 	void mixBuffersStereo(Bit16s *buf1, Bit16s *buf2, Bit16s *outBuf, int len);
 
 	Bit32s getFiltEnvelope();
-	Bit32s getPitchEnvelope();
 
 	void initKeyFollow(int freqNum);
 
 public:
 	const PatchCache *patchCache;
 	TVA *tva;
-	EnvelopeStatus envs[2];
+	TVP *tvp;
+	EnvelopeStatus filtEnv;
 	bool play;
 
 	PatchCache cachebackup;
@@ -137,9 +122,8 @@ public:
 	void activate(int part, int pChan);
 	void deactivate(void);
 	void startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, Partial *pairPartial);
-	void startDecay(EnvelopeType envnum, Bit32s startval);
+	void startFiltDecay(Bit32s startval);
 	void startDecayAll();
-	void setBend(float factor);
 	bool shouldReverb();
 	bool hasRingModulatingSlave() const;
 	bool isRingModulatingSlave() const;

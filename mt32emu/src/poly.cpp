@@ -46,15 +46,6 @@ void Poly::reset(unsigned int key, unsigned int velocity, bool canSustain, Parti
 	}
 }
 
-// DEPRECATED: This will die when the new pitch stuff lands
-void Poly::setBend(float bend) {
-	for (int i = 0; i < 4; i++) {
-		if (partials[i] != NULL) {
-			partials[i]->setBend(bend);
-		}
-	}
-}
-
 bool Poly::noteOff(bool pedalHeld) {
 	// Generally, non-sustaining instruments ignore note off. They die away eventually anyway.
 	// Key 0 (only used by special cases on rhythm part) reacts to note off even if non-sustaining or pedal held.

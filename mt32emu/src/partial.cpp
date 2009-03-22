@@ -28,7 +28,7 @@
 using namespace MT32Emu;
 
 Partial::Partial(Synth *useSynth, int debugPartialNum) :
-	synth(useSynth), debugPartialNum(debugPartialNum), tva(new TVA(this))
+	synth(useSynth), debugPartialNum(debugPartialNum), tva(new TVA(this)), tvp(new TVP(this))
 {
 	ownerPart = -1;
 	poly = NULL;
@@ -57,6 +57,7 @@ Partial::~Partial() {
 	delete negSaw;
 	delete saw;
 	delete tva;
+	delete tvp;
 }
 
 int Partial::getOwnerPart() const {
@@ -88,40 +89,7 @@ void Partial::deactivate() {
 }
 
 void Partial::initKeyFollow(int key) {
-	// Setup partial keyfollow
-	// Note follow relative to middle C
-
-	// Calculate keyfollow for pitch
-#if 1
-	float rel = key == -1 ? 0.0f : (key - MIDDLEC);
-	float newPitch = rel * patchCache->pitchKeyfollow + patchCache->pitch + patchCache->pitchShift;
-	//FIXME:KG: Does it truncate the keyfollowed pitch to a semitone (towards MIDDLEC)?
-	//int newKey = (int)(rel * patchCache->pitchKeyfollow);
-	//float newPitch = newKey + patchCache->pitch + patchCache->pitchShift;
-#else
-	float rel = key == -1 ? 0.0f : (key + patchCache->pitchShift - MIDDLEC);
-	float newPitch = rel * patchCache->pitchKeyfollow + patchCache->pitch;
-#endif
-#if MT32EMU_ACCURATENOTES == 1
-	noteVal = newPitch;
-	//synth->printDebug("key=%d, pitch=%f, pitchKeyfollow=%f, pitchShift=%f, newPitch=%f", key, patchCache->pitch, patchCache->pitchKeyfollow, patchCache->pitchShift, newPitch);
-#else
-	float newPitchInt;
-	float newPitchFract = modff(newPitch, &newPitchInt);
-	if (newPitchFract > 0.5f) {
-		newPitchInt += 1.0f;
-		newPitchFract -= 1.0f;
-	}
-	noteVal = (int)newPitchInt;
-	fineShift = (int)(powf(2.0f, newPitchFract / 12.0f) * 4096.0f);
-	//synth->printDebug("key=%d, pitch=%f, pitchKeyfollow=%f, pitchShift=%f, newPitch=%f, noteVal=%d, fineShift=%d", key, patchCache->pitch, patchCache->pitchKeyfollow, patchCache->pitchShift, newPitch, noteVal, fineShift);
-#endif
-	// FIXME:KG: Raise/lower by octaves until in the supported range.
-	while (noteVal > HIGHEST_NOTE) // FIXME:KG: see tables.cpp: >108?
-		noteVal -= 12;
-	while (noteVal < LOWEST_NOTE) // FIXME:KG: see tables.cpp: <12?
-		noteVal += 12;
-	// Calculate keyfollow for filter
+	// Calculate keyfollow for filter.
 	int keyfollow = ((key - MIDDLEC) * patchCache->filtkeyfollow) / 4096;
 	if (keyfollow > 108)
 		keyfollow = 108;
@@ -154,12 +122,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	structurePosition = patchCache->structurePosition;
 
 	play = true;
-	initKeyFollow(getKey()); // Initialises noteVal, filtVal and realVal
-#if MT32EMU_ACCURATENOTES == 0
-	noteLookup = &synth->tables.noteLookups[noteVal - LOWEST_NOTE];
-#else
-	Tables::initNote(synth, &noteLookupStorage, noteVal, (float)synth->myProp.sampleRate, synth->masterTune, synth->pcmWaves, NULL);
-#endif
+	initKeyFollow(getKey()); // Initialises filtVal and realVal
 	keyLookup = &synth->tables.keyLookups[getKey() - 12];
 
 	if (patchCache->PCMPartial) {
@@ -179,7 +142,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	pastOsc = 0;
 	pastDesCarrier = 0;
 
-	lfoPos = 0;
 	pulsewidth = patchCache->pulsewidth + synth->tables.pwVelfollowAdd[patchCache->pwsens][poly->getVelocity()];
 	if (pulsewidth > 100) {
 		pulsewidth = 100;
@@ -187,44 +149,38 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 		pulsewidth = 0;
 	}
 
-	if ((patchCache->waveform & 1) == 0) {
-		posSaw->reset(noteLookup->freq, synth->tables.pwFactorf[pulsewidth]);
-		negSaw->reset(noteLookup->freq, 0.0);
-		saw->reset(noteLookup->freq, 0.8);
-	} else {
-		// CC: Sawtooth waves play at half the frequency as the cosine multiplication
-		// effectively doubles the rate of the square wave.
-		float spw = synth->tables.pwFactorf[pulsewidth];
-		if(spw < 0.5f) {
-			spw = 0.5f - ((0.5f - spw) * 2.0f);
-		}
-		posSaw->reset(noteLookup->freq / 2.0f, spw);
-		negSaw->reset(noteLookup->freq / 2.0f, 0.0);
-		saw->reset(noteLookup->freq / 2.0f, 0.8);
-	}
+	filtEnv.envpos = 0;
+	filtEnv.envstat = -1;
+	filtEnv.envbase = 0;
+	filtEnv.envdist = 0;
+	filtEnv.envsize = 0;
+	filtEnv.sustaining = false;
+	filtEnv.decaying = false;
+	filtEnv.prevlevel = 0;
+	filtEnv.counter = 0;
+	filtEnv.count = 0;
 
-	for (int e = 0; e < 2; e++) {
-		envs[e].envpos = 0;
-		envs[e].envstat = -1;
-		envs[e].envbase = 0;
-		envs[e].envdist = 0;
-		envs[e].envsize = 0;
-		envs[e].sustaining = false;
-		envs[e].decaying = false;
-		envs[e].prevlevel = 0;
-		envs[e].counter = 0;
-		envs[e].count = 0;
-	}
-	pitchEnvVal = 0;
-	pitchSustain = false;
 	loopPos = 0;
-	partialOff.pcmoffset = partialOff.pcmplace = 0;
+	pcmPosition = 0.0f;
+	intPCMPosition = 0;
 	pair = pairPartial;
 	useNoisePair = pairPartial == NULL && (mixType == 1 || mixType == 2);
 	age = 0;
 	alreadyOutputed = false;
 	tva->reset(part, patchCache);
+	tvp->reset(part, patchCache);
+	firstSample = true;
 	memset(history,0,sizeof(history));
+}
+
+static inline Bit16s getPCMSample(Bit16s *pcmROMData, PCMWaveEntry *pcmWave, Bit32u position) {
+	if (position >= pcmWave->len) {
+		if (!pcmWave->loop) {
+			return 0;
+		}
+		position = position % pcmWave->len;
+	}
+	return pcmROMData[pcmWave->addr + position];
 }
 
 Bit16s *Partial::generateSamples(long length) {
@@ -242,212 +198,113 @@ Bit16s *Partial::generateSamples(long length) {
 
 	Bit16s *partialBuf = &myBuffer[0];
 	while (length--) {
-		Bit32s envval;
-		Bit32s sample = 0;
+		float sample = 0;
 		float amp = tva->nextAmp();
 		if (!tva->play) {
 			deactivate();
 			break;
 		}
 
-		unsigned int lfoShift = 0x1000;
-		if (pitchSustain) {
-			// Calculate LFO position
-			// LFO does not kick in completely until pitch envelope sustains
-			if (patchCache->lfodepth > 0) {
-				lfoPos++;
-				if (lfoPos >= patchCache->lfoperiod)
-					lfoPos = 0;
-				int lfoatm = FIXEDPOINT_UDIV(lfoPos, patchCache->lfoperiod, 16);
-				int lfoatr = synth->tables.sintable[lfoatm];
-				lfoShift = synth->tables.lfoShift[patchCache->lfodepth][lfoatr];
-			}
-		} else {
-			// Calculate Pitch envelope
-			envval = getPitchEnvelope();
-			int pd = patchCache->pitchEnv.depth;
-			pitchEnvVal = synth->tables.pitchEnvVal[pd][envval];
-		}
+		Bit16u pitch = tvp->nextPitch();
 
-		int delta;
+		// Aka (slightly slower): powf(2.0f, pitchVal / 4096.0f - 16.0f) * 32000.0f
+		float freq = powf(2.0f, pitch / 4096.0f - 1.034215715f);
 
-		// Wrap positions or end if necessary
 		if (patchCache->PCMPartial) {
-			// PCM partial
-
-			delta = noteLookup->wavTable[pcmNum];
+			// Render PCM waveform
 			int len = pcmWave->len;
-			if (partialOff.pcmplace >= len) {
-				if (pcmWave->loop) {
-					//partialOff.pcmplace = partialOff.pcmoffset = 0;
-					partialOff.pcmplace %= len;
-				} else {
-					play = false;
-					deactivate();
-					break;
-				}
+			if (intPCMPosition >= len && !pcmWave->loop) {
+				// We're now past the end of a non-looping PCM waveform so it's time to die.
+				play = false;
+				deactivate();
+				break;
 			}
-		} else {
-			// Synthesis partial
-			delta = 0x10000;
-			partialOff.pcmplace %= (Bit16u)noteLookup->div2;
-		}
+			Bit32u pcmAddr = pcmWave->addr;
+			float positionDelta = freq / 32.0f;/* * (32000 / sampleRate) */; // FIXME: sampleRate should be real sample rate // FIXME: 32.0f is pretty random
+			float newPCMPosition = pcmPosition + positionDelta;
+			int newIntPCMPosition = (int)newPCMPosition;
 
-		// Build delta for position of next sample
-		// Fix delta code
-		Bit32u tdelta = delta;
-#if MT32EMU_ACCURATENOTES == 0
-		tdelta = FIXEDPOINT_UMULT(tdelta, fineShift, 12);
-#endif
-		tdelta = FIXEDPOINT_UMULT(tdelta, pitchEnvVal, 12);
-		tdelta = FIXEDPOINT_UMULT(tdelta, lfoShift, 12);
-		tdelta = FIXEDPOINT_UMULT(tdelta, bendShift, 12);
-
-		if (tdelta != pastDelta) {
-			float startFreq = posSaw->getStartFreq();
-			startFreq = startFreq * ((float)tdelta / (float)delta);
-
-			posSaw->setFrequency(startFreq);
-			negSaw->setFrequency(startFreq);
-			pastDelta = tdelta;
-		}
-		//noteLookup->saw[partialChan]->setFrequency(startFreq);
-
-		delta = (int)tdelta;
-
-		// Get waveform - either PCM or synthesized sawtooth or square
-		if (amp > 0) {
-			if (patchCache->PCMPartial) {
-				// Render PCM sample
-				int ra, rb, dist;
-				Bit32u taddr;
-				Bit32u pcmAddr = pcmWave->addr;
-				if (delta < 0x10000) {
-					// Linear sound interpolation
-					taddr = pcmAddr + partialOff.pcmplace;
-					ra = synth->pcmROMData[taddr];
-					taddr++;
-					if (taddr == pcmAddr + pcmWave->len) {
-						// Past end of PCM
-						if (pcmWave->loop) {
-							rb = synth->pcmROMData[pcmAddr];
-						} else {
-							rb = 0;
-						}
-					} else {
-						rb = synth->pcmROMData[taddr];
-					}
-					dist = rb - ra;
-					sample = (ra + ((dist * (Bit32s)(partialOff.pcmoffset >> 8)) >> 8));
+			if (amp != 0.0f) {
+				// Only bother doing the actual sample calculation if someone's going to hear it.
+				if (intPCMPosition == newIntPCMPosition) {
+					// Small optimisation
+					sample = synth->pcmROMData[pcmAddr + newIntPCMPosition];
 				} else {
-					// Sound decimation
-					// The right way to do it is to use a lowpass filter on the waveform before selecting
-					// a point.  This is too slow.  The following approximates this as fast as possible
-					int idelta = delta >> 16;
-					taddr = pcmAddr + partialOff.pcmplace;
-					ra = synth->pcmROMData[taddr++];
-					for (int ix = 0; ix < idelta - 1; ix++) {
-						if (taddr == pcmAddr + pcmWave->len) {
-							// Past end of PCM
-							if (pcmWave->loop) {
-								taddr = pcmAddr;
-							} else {
-								// Behave as if all subsequent samples were 0
-								break;
-							}
-						}
-						ra += synth->pcmROMData[taddr++];
+					// Average all the samples in the range
+					float sampleSum = synth->pcmROMData[pcmAddr + intPCMPosition] * (ceilf(pcmPosition) - pcmPosition); // First sample may not be 100% in range
+					for (int position = intPCMPosition + 1; position < newIntPCMPosition; position++) {
+						sampleSum += getPCMSample(synth->pcmROMData, pcmWave, position);
 					}
-					sample = ra / idelta;
+					sampleSum += getPCMSample(synth->pcmROMData, pcmWave, newIntPCMPosition) * (newPCMPosition - floorf(newPCMPosition)); // Last sample may not be 100% in range
+					sample = sampleSum / positionDelta;
+					if (pcmWave->loop) {
+						newPCMPosition = fmodf(newPCMPosition, pcmWave->len);
+						newIntPCMPosition = newIntPCMPosition % pcmWave->len;
+					}
 				}
 			} else {
-				// Render synthesised sample
-				float fSample;
-				Bit32s filtval = getFiltEnvelope();
-
-				float phase = (negSaw->getPhase());
-
-
-				//CC: There used to be a lot of code here.  :-)
-				fSample = (float)(posSaw->tick() - negSaw->tick()) ;
-
-				float freqsum = 0;
-				freqsum = ((powf(2048.0f, (((float)filtval / 128.0f) - 1.0f))) * posSaw->getStartFreq());
-				
-				if(freqsum >= (FILTERGRAN - 550.0)) 
-					freqsum = (FILTERGRAN - 550.0f);
-
-//				if (filtval > ((FILTERGRAN * 15) / 16))
-//					filtval = ((FILTERGRAN * 15) / 16);
-				filtval = (Bit32s)freqsum;
-
-				//fSample = (floorf((synth->iirFilter)((fSample * WGAMP), &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])) / synth->tables.resonanceFactor[patchCache->filtEnv.resonance]);
-				fSample = (floorf((synth->iirFilter)((fSample * WGAMP), &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])));
-
-				//sample = (Bit32s)(filter->process(fSample *.25f) * WGAMP *4.0f);
-
-				if ((patchCache->waveform & 1) != 0) {
-					//CC: Sawtooth samples are finally generated here by multipling an in-sync cosine
-					//with the generated square wave.
-
-					//CC: Computers are fast these days.  Not caring to use a LUT or fixed point anymore.
-					//If I port this to the iPhone I may reconsider.
-					fSample = ((cosf(phase * 2.0f)) * fSample) + (WGAMP * 0.1618f);
-				}
-
-
-				sample = (Bit32s)(fSample );
-
-				if (sample < -32768) {
-					synth->printDebug("Overdriven amplitude for %d: %d < -32768 - %f", patchCache->waveform, sample, freqsum);
-					sample = -32768;
-				}
-				else if (sample > 32767) {
-					synth->printDebug("Overdriven amplitude for %d: %d > 32767 - %f", patchCache->waveform, sample, freqsum);
-					sample = 32767;
-				}
+				// If a sample is calculated in the woods, and the current TVA value's too low to hear it, is there any point?
+				sample = 0.0f;
 			}
+			pcmPosition = newPCMPosition;
+			intPCMPosition = newIntPCMPosition;
+		} else {
+			// Render synthesised waveform
+			if(firstSample) {
+				firstSample = false;
+				float spw = synth->tables.pwFactorf[pulsewidth];
+				if ((patchCache->waveform & 1) != 0 && spw < 0.5f) {
+					spw = 0.5f - ((0.5f - spw) * 2.0f);
+				}
+				posSaw->reset(freq, spw);
+				negSaw->reset(freq, 0.0);
+				saw->reset(freq, 0.8);
+			} else {
+				posSaw->setFrequency(freq);
+				negSaw->setFrequency(freq);
+				saw->setFrequency(freq);
+			}
+			Bit32s filtval = getFiltEnvelope();
+
+			float phase = negSaw->getPhase();
+
+			sample = posSaw->tick() - negSaw->tick();
+			float freqsum = 0;
+			freqsum = ((powf(2048.0f, (((float)filtval / 128.0f) - 1.0f))) * posSaw->getStartFreq());
+			if(freqsum >= (FILTERGRAN - 550.0))
+				freqsum = (FILTERGRAN - 550.0f);
+			filtval = (Bit32s)freqsum;
+
+			sample = (floorf((synth->iirFilter)((sample * WGAMP), &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])));
+
+			if ((patchCache->waveform & 1) != 0) {
+				//CC: Sawtooth samples are finally generated here by multipling an in-sync cosine
+				//with the generated square wave.
+
+				//CC: Computers are fast these days.  Not caring to use a LUT or fixed point anymore.
+				//If I port this to the iPhone I may reconsider.
+				sample = ((cosf(phase * 2.0f)) * sample) + (WGAMP * 0.1618f);
+			}
+
+			if (sample < -32768.0f) {
+				synth->printDebug("Overdriven amplitude for waveform=%d, freqsum=%f: %f < -32768", patchCache->waveform, freqsum, sample);
+				sample = -32768.0f;
+			}
+			else if (sample > 32767.0f) {
+				synth->printDebug("Overdriven amplitude for waveform=%d, freqsum=%f: %f > 32767", patchCache->waveform, freqsum, sample);
+				sample = 32767.0f;
+			}
+			filtEnv.envpos++;
 		}
 
-		// Add calculated delta to our waveform offset
-		Bit32u absOff = ((partialOff.pcmplace << 16) | partialOff.pcmoffset);
-		absOff += delta;
-		partialOff.pcmplace = (Bit16u)((absOff & 0xFFFF0000) >> 16);
-		partialOff.pcmoffset = (Bit16u)(absOff & 0xFFFF);
-
-		// Put volume envelope over generated sample
-		sample = (Bit32s)(amp * sample);
-
-		envs[EnvelopeType_pitch].envpos++;
-		envs[EnvelopeType_filt].envpos++;
-
-		*partialBuf++ = (Bit16s)sample;
+		// Multiply sample with current TVA value and add to buffer.
+		*partialBuf++ = (Bit16s)(amp * sample);
 	}
 	// We may have deactivated and broken out of the loop before the end of the buffer,
 	// if so then fill the remainder with 0s.
 	if (++length > 0)
 		memset(partialBuf, 0, length * 2);
 	return &myBuffer[0];
-}
-
-void Partial::setBend(float factor) {
-	if (!patchCache->useBender || factor == 0.0f) {
-		bendShift = 4096;
-		return;
-	}
-	// NOTE:KG: We can't do this smoothly with lookup tables, unless we use several MB.
-	// FIXME:KG: Bend should be influenced by pitch key-follow too, according to docs.
-	float bendSemitones = factor * patchCache->benderRange; // -24 .. 24
-	float mult = powf(2.0f, bendSemitones / 12.0f);
-
-	/*
-	noteLookup->posSaw[partialChan]->setFrequency(noteLookup->posSaw[partialChan]->getStartFreq() * mult);
-	noteLookup->negSaw[partialChan]->setFrequency(noteLookup->posSaw[partialChan]->getStartFreq() * mult);
-	noteLookup->saw[partialChan]->setFrequency(noteLookup->posSaw[partialChan]->getStartFreq() * mult);
-	*/
-
-	//synth->printDebug("setBend(): factor=%f, benderRange=%f, semitones=%f, mult=%f\n", factor, patchCache->benderRange, bendSemitones, mult);
-	bendShift = (int)(mult * 4096.0f);
 }
 
 Bit16s *Partial::mixBuffers(Bit16s * buf1, Bit16s *buf2, int len) {
@@ -725,7 +582,7 @@ Bit32s Partial::getFiltEnvelope() {
 
 	int cutoff;
 
-	EnvelopeStatus *tStat  = &envs[EnvelopeType_filt];
+	EnvelopeStatus *tStat = &filtEnv;
 
 	if (tStat->decaying) {
 		reshigh = tStat->envbase;
@@ -736,7 +593,7 @@ Bit32s Partial::getFiltEnvelope() {
 		if (tStat->envstat==4) {
 			reshigh = patchCache->filtsustain;
 			if (!poly->canSustain()) {
-				startDecay(EnvelopeType_filt, reshigh);
+				startFiltDecay(reshigh);
 			}
 		} else {
 			if ((tStat->envstat==-1) || (tStat->envpos >= tStat->envsize)) {
@@ -841,10 +698,7 @@ Bit32s Partial::getFiltEnvelope() {
 
 	filEnv = (filEnv * reshigh) >> 8;
 
-	
-	//int tmp = noteLookup->rfiltTable[cutoff + filEnv];
-	int tmp = cutoff + filEnv;
-	return tmp;
+	return cutoff + filEnv;
 }
 
 bool Partial::shouldReverb() {
@@ -853,77 +707,19 @@ bool Partial::shouldReverb() {
 	return patchCache->reverb;
 }
 
-Bit32s Partial::getPitchEnvelope() {
-	EnvelopeStatus *tStat = &envs[EnvelopeType_pitch];
-
-	Bit32s tc;
-	pitchSustain = false;
-	if (tStat->decaying) {
-		if (tStat->envpos >= tStat->envsize)
-			tc = patchCache->pitchEnv.level[4];
-		else {
-			tc = tStat->envbase;
-			tc = (tc + ((tStat->envdist * tStat->envpos) / tStat->envsize));
-		}
-	} else {
-		if (tStat->envstat==3) {
-			tc = patchCache->pitchsustain;
-			if (poly->canSustain())
-				pitchSustain = true;
-			else
-				startDecay(EnvelopeType_pitch, tc);
-		} else {
-			if ((tStat->envstat==-1) || (tStat->envpos >= tStat->envsize)) {
-				tStat->envstat++;
-
-				tStat->envbase = patchCache->pitchEnv.level[tStat->envstat];
-
-				Bit32u envTime = patchCache->pitchEnv.time[tStat->envstat];
-				int envDiff = abs(patchCache->pitchEnv.level[tStat->envstat] - patchCache->pitchEnv.level[tStat->envstat + 1]);
-				if (envTime > synth->tables.envDeltaMaxTime[envDiff]) {
-					envTime = synth->tables.envDeltaMaxTime[envDiff];
-				}
-
-				tStat->envsize = (synth->tables.envTime[envTime] * keyLookup->envTimeMult[(int)patchCache->pitchEnv.timeKeyfollow]) >> 8;
-
-				tStat->envpos = 0;
-				tStat->envsize++;
-				tStat->envdist = patchCache->pitchEnv.level[tStat->envstat + 1] - tStat->envbase;
-			}
-			tc = tStat->envbase;
-			tc = (tc + ((tStat->envdist * tStat->envpos) / tStat->envsize));
-		}
-		tStat->prevlevel = tc;
-	}
-	return tc;
-}
-
 void Partial::startDecayAll() {
 	tva->startDecay();
-	startDecay(EnvelopeType_filt, envs[EnvelopeType_filt].prevlevel);
-	startDecay(EnvelopeType_pitch, envs[EnvelopeType_pitch].prevlevel);
-	pitchSustain = false;
+	tvp->startDecay();
+	startFiltDecay(filtEnv.prevlevel);
 }
 
-void Partial::startDecay(EnvelopeType envnum, Bit32s startval) {
-	EnvelopeStatus *tStat  = &envs[envnum];
+void Partial::startFiltDecay(Bit32s startval) {
+	filtEnv.sustaining = false;
+	filtEnv.decaying = true;
+	filtEnv.envpos = 0;
+	filtEnv.envbase = startval;
 
-	tStat->sustaining = false;
-	tStat->decaying = true;
-	tStat->envpos = 0;
-	tStat->envbase = startval;
-
-	switch (envnum) {
-	case EnvelopeType_filt:
-		tStat->envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->filtEnv.envTime[4]], keyLookup->envTimeMult[(int)patchCache->filtEnv.envTimeKeyfollow], 8);
-		tStat->envdist = -startval;
-		break;
-	case EnvelopeType_pitch:
-		tStat->envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->pitchEnv.time[3]], keyLookup->envTimeMult[(int)patchCache->pitchEnv.timeKeyfollow], 8);
-		tStat->envdist = patchCache->pitchEnv.level[4] - startval;
-		break;
-	default:
-		break;
-	}
-	tStat->envsize++;
+	filtEnv.envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->filtEnv.envTime[4]], keyLookup->envTimeMult[(int)patchCache->filtEnv.envTimeKeyfollow], 8);
+	filtEnv.envdist = -startval;
+	filtEnv.envsize++;
 }
