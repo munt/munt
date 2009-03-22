@@ -557,14 +557,6 @@ bool Partial::produceOutput(Bit16s *partialBuf, long length) {
 	return true;
 }
 
-static int calcRFilt(float freq, float rate, int cf) {
-	float freqsum = powf(256.0f, (((float)cf / 128.0f) - 1.0f));
-	int rFilt = (int)((freq * freqsum) / (rate / 2) * FILTERGRAN);
-	if (rFilt >= ((FILTERGRAN * 15) / 16))
-		rFilt = ((FILTERGRAN * 15) / 16);
-	return rFilt;
-}
-
 Bit32s Partial::getFiltEnvelope() {
 	int reshigh;
 
