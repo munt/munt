@@ -256,9 +256,9 @@ Bit16s *Partial::generateSamples(long length) {
 
 			sample = posSaw->tick() - negSaw->tick();
 			float freqsum = 0;
-			freqsum = ((powf(2048.0f, (((float)filtval / 128.0f) - 1.0f))) * posSaw->getStartFreq());
-			if(freqsum >= (FILTERGRAN - 550.0))
-				freqsum = (FILTERGRAN - 550.0f);
+			freqsum = ((powf(256.0f, (((float)filtval / 128.0f) - 1.0f))) * posSaw->getStartFreq());
+			if(freqsum >= (FILTERGRAN - 500.0))
+				freqsum = (FILTERGRAN - 500.0f);
 			filtval = (Bit32s)freqsum;
 
 			sample = (floorf((synth->iirFilter)((sample * WGAMP), &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])));
