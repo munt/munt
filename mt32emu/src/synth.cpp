@@ -64,6 +64,7 @@ float iir_filter_normal(float input, float *hist1_ptr, float *coef_ptr) {
 
 	*hist2_ptr++ = *hist1_ptr;
 	*hist1_ptr++ = new_hist;
+	/*
 	hist1_ptr++;
 	hist2_ptr++;
 
@@ -76,6 +77,7 @@ float iir_filter_normal(float input, float *hist1_ptr, float *coef_ptr) {
 
 	*hist2_ptr++ = *hist1_ptr;
 	*hist1_ptr++ = new_hist;
+	*/
 
 	return(output);
 }

@@ -57,7 +57,8 @@ TVP::TVP(const Partial *partial) :
 static Bit16s keyToPitch(unsigned int key) {
 	// We're using a table to do: return round_to_nearest_or_even((key - 60) * (4096.0 / 12.0))
 	// Banker's rounding is just slightly annoying to do in C++
-	Bit16s pitch = keyToPitchTable[abs(key - 60)];
+	int k = (int)key;
+	Bit16s pitch = keyToPitchTable[abs(k - 60)];
 	return key < 60 ? -pitch : pitch;
 }
 
@@ -80,8 +81,8 @@ static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialPa
 
 	const ControlROMPCMStruct *controlROMPCMStruct = partial->getControlROMPCMStruct();
 	if (controlROMPCMStruct != NULL) {
-		Bit16u pcmPitch = (controlROMPCMStruct->pitchMSB << 8) | controlROMPCMStruct->pitchLSB;
-		basePitch += pcmPitch;
+		basePitch += (Bit32s)((((Bit32s)controlROMPCMStruct->pitchMSB) << 8) | (Bit32s)controlROMPCMStruct->pitchLSB);
+		
 	} else {
 		if ((partialParam->wg.waveform & 1) == 0) {
 			basePitch += 37133; // This puts Middle C at around 261.64Hz (assuming no other modifications, masterTune of 64, etc.)

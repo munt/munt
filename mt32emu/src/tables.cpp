@@ -117,7 +117,8 @@ static void initFilter(float fs, float fc, float *icoeff, float Q) {
 	a1 = 0;
 	a2 = 0;
 	b0 = 1.0;
-	b1 = 0.5176387 / Q; // Divide by resonance or Q
+	b1 = 0.765367 / Q;
+	//b1 = 0.5176387 / Q; // Divide by resonance or Q
 	b2 = 1.0;
 	szxform(&a0, &a1, &a2, &b0, &b1, &b2, fc, fs, &k, coef);
 	coef += 4;         // Point to next filter section
@@ -127,11 +128,13 @@ static void initFilter(float fs, float fc, float *icoeff, float Q) {
 	a1 = 0;
 	a2 = 0;
 	b0 = 1.0;
-	b1 = 1.414214  / Q;
+	b1 = 1.847759 / Q;
+	//b1 = 1.414214  / Q;
 	b2 = 1.0;
 	szxform(&a0, &a1, &a2, &b0, &b1, &b2, fc, fs, &k, coef);
 	coef += 4;         // Point to next filter section
 
+	/*
 	// Section 3
 	a0 = 1.0;
 	a1 = 0;
@@ -140,6 +143,7 @@ static void initFilter(float fs, float fc, float *icoeff, float Q) {
 	b1 = 1.931852 / Q;
 	b2 = 1.0;
 	szxform(&a0, &a1, &a2, &b0, &b1, &b2, fc, fs, &k, coef);
+	*/
 	icoeff[0] = (float)k;
 }
 
