@@ -80,7 +80,8 @@ static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialPa
 
 	const ControlROMPCMStruct *controlROMPCMStruct = partial->getControlROMPCMStruct();
 	if (controlROMPCMStruct != NULL) {
-		basePitch += (Bit32s)((controlROMPCMStruct->pitchMSB << 8) | controlROMPCMStruct->pitchLSB);
+		Bit16u pcmPitch = (controlROMPCMStruct->pitchMSB << 8) | controlROMPCMStruct->pitchLSB;
+		basePitch += pcmPitch;
 	} else {
 		if ((partialParam->wg.waveform & 1) == 0) {
 			basePitch += 37133; // This puts Middle C at around 261.64Hz (assuming no other modifications, masterTune of 64, etc.)
