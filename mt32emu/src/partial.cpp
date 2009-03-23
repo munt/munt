@@ -244,6 +244,9 @@ Bit16s *Partial::generateSamples(long length) {
 			if(firstSample) {
 				firstSample = false;
 				float spw = synth->tables.pwFactorf[pulsewidth];
+				if ((patchCache->waveform & 1) != 0 && spw < 0.5f) {
+					spw = 0.5f - ((0.5f - spw) * 2.0f);
+				}
 				posSaw->reset(freq, spw);
 				negSaw->reset(freq, 0.0);
 			} else {
