@@ -46,6 +46,12 @@ static Bit16u keyToPitchTable[] = {
 
 TVP::TVP(const Partial *partial) :
 	partial(partial), system(&partial->getSynth()->mt32ram.system) {
+	unsigned int sampleRate = partial->getSynth()->myProp.sampleRate;
+	// We want to do processing 4000 times per second. FIXME: This is pretty arbitrary.
+	this->maxCounter = sampleRate / 4000;
+	// The timer runs at 500kHz. We only need to bother updating it every maxCounter samples, before we do processing.
+	// This is how much to increment it by every maxCounter samples.
+	this->processTimerIncrement = 500000 * maxCounter / sampleRate;
 }
 
 static Bit16s keyToPitch(unsigned int key) {
@@ -133,17 +139,17 @@ void TVP::reset(const Part *part, const PatchCache *patchCache) {
 	phase = 0;
 
 	if (partialParam->pitchEnv.timeKeyfollow) {
-		timeKeyfollowValue = (key - 60) >> (5 - partialParam->pitchEnv.timeKeyfollow); // PORTABILITY NOTE: Assumes arithmetic shift
+		timeKeyfollowSubtraction = (key - 60) >> (5 - partialParam->pitchEnv.timeKeyfollow); // PORTABILITY NOTE: Assumes arithmetic shift
 	}
 	else
-		timeKeyfollowValue = 0;
+		timeKeyfollowSubtraction = 0;
 	lfoPitchOffset = 0;
 	counter = 0;
 	pitch = basePitch;
 	targetPitchOffsetReachedBigTick = 0; // This isn't really necessary to initialise, but it aids debugging.
 }
 
-void TVP::calcPitch() {
+void TVP::updatePitch() {
 	Bit32s newPitch = basePitch + currentPitchOffset;
 	if (!partial->isPCM() || (partial->getControlROMPCMStruct()->len & 0x01) == 0) { // FIXME: Use !partial->pcmWaveEntry->unaffectedByMasterTune instead
 		// FIXME: masterTune recalculation doesn't really happen here, and there are various bugs not yet emulated
@@ -179,11 +185,11 @@ void TVP::targetPitchOffsetReached() {
 		lfoPitchOffset = newLFOPitchOffset;
 		int targetPitchOffset = targetPitchOffsetWithoutLFO + lfoPitchOffset;
 		setupPitchChange(targetPitchOffset, 101 - partialParam->pitchLFO.rate);
-		calcPitch();
+		updatePitch();
 		break;
 	}
 	case 6:
-		calcPitch();
+		updatePitch();
 		break;
 	default:
 		nextPhase();
@@ -197,10 +203,10 @@ void TVP::nextPhase() {
 	targetPitchOffsetWithoutLFO = calcTargetPitchOffsetWithoutLFO(partialParam, envIndex, partial->getPoly()->getVelocity()); // pitch we'll reach at the end
 
 	int changeDuration = partialParam->pitchEnv.time[envIndex - 1];
-	changeDuration -= timeKeyfollowValue;
+	changeDuration -= timeKeyfollowSubtraction;
 	if (changeDuration > 0) {
 		setupPitchChange(targetPitchOffsetWithoutLFO, changeDuration); // changeDuration between 0 and 112 now
-		calcPitch();
+		updatePitch();
 	} else {
 		targetPitchOffsetReached();
 	}
@@ -257,11 +263,11 @@ Bit16u TVP::nextPitch() {
 	// FIXME: Write explanation of counter and time increment
 	if(counter == 0)
 	{
-		timeElapsed += 125; // FIXME: Assuming 32kHz here.
+		timeElapsed += processTimerIncrement;
 		timeElapsed = timeElapsed & 0x00FFFFFF;
 		process();
 	}
-	counter = (counter + 1) % 8;
+	counter = (counter + 1) % maxCounter;
 	return pitch;
 }
 
@@ -276,7 +282,7 @@ void TVP::process() {
 		return;
 	}
 	if (phase > 7) {
-		calcPitch();
+		updatePitch();
 		return;
 	}
 
@@ -296,7 +302,7 @@ void TVP::process() {
 	int newResult = ((Bit32s)(negativeBigTicksRemaining * pitchOffsetChangePerBigTick)) >> rightShifts; // PORTABILITY NOTE: Assumes arithmetic shift
 	newResult += targetPitchOffsetWithoutLFO + lfoPitchOffset;
 	currentPitchOffset = newResult;
-	calcPitch();
+	updatePitch();
 }
 
 }

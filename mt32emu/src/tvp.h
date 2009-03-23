@@ -24,39 +24,37 @@ namespace MT32Emu {
 class TVP {
 private:
 	const Partial * const partial;
-	const MemParams::System * const system; // FIXME: Necessary?
+	const MemParams::System * const system; // FIXME: Only necessary because masterTune calculation is done in the wrong place atm.
 
 	const Part *part;
 	const TimbreParam::PartialParam *partialParam;
 	const MemParams::PatchTemp *patchTemp;
 
+	int maxCounter;
+	int processTimerIncrement;
 	int counter;
 	Bit32u timeElapsed;
-	// FIXME: Names
 	Bit32u basePitch;
 	Bit32u targetPitchOffsetWithoutLFO;
-	Bit32u currentPitchOffset; // FIXME: Mysterious
-
+	Bit32u currentPitchOffset;
 
 	// FIXME: Names
 	// FIXME: Not initialised
 	Bit16s pitchOffsetChangePerBigTick;
-	int pitch_modulation_value;
 	int targetPitchOffsetReachedBigTick;
 	unsigned int shifts;
 	Bit16u pitch;
 
-	// FIXME: All these names
-	void calcPitch();
+	void updatePitch();
 	void setupPitchChange(int targetPitchOffset, Bit8u changeDuration);
 	void targetPitchOffsetReached();
 	void nextPhase();
 	void process();
 public:
 	int phase;
-	Bit8s lfoPitchOffset; // FIXME
+	Bit8s lfoPitchOffset;
 	// In range -12 - 36
-	Bit8s timeKeyfollowValue; // FIXME
+	Bit8s timeKeyfollowSubtraction;
 
 	TVP(const Partial *partial);
 	void reset(const Part *part, const PatchCache *patchCache);
