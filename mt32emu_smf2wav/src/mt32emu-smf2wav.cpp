@@ -27,6 +27,7 @@
 
 static bool quiet = false;
 
+static const int DEFAULT_BUFFER_SIZE = 512 * 1024;
 static const int DEFAULT_SAMPLE_RATE = 32000;
 
 static const int HEADEROFFS_RIFFLEN = 4;
@@ -151,9 +152,9 @@ static bool playSysexFile(MT32Emu::Synth *synth, char *syxFileName) {
 	return ok;
 }
 
-static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu::SynthProperties &synthProperties) {
+static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu::SynthProperties &synthProperties, int bufferSize) {
 	MT32Emu::Synth *synth = new MT32Emu::Synth();
-	MT32Emu::Bit16s samples[2];
+	MT32Emu::Bit16s *sampleBuffer = NULL;
 	long playedSamples = 0;
 	FILE *dstFile;
 	if (synth->open(synthProperties)) {
@@ -178,13 +179,19 @@ static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu
 					if (eventSamples < playedSamples) {
 						fprintf(stderr, "Event went back in time!\n");
 					} else {
-						while(playedSamples < eventSamples) {
-							synth->render(samples, 2);
-							fputc(samples[0] & 0xFF, dstFile);
-							fputc((samples[0] >> 8) & 0xFF, dstFile);
-							fputc(samples[1] & 0xFF, dstFile);
-							fputc((samples[1] >> 8) & 0xFF, dstFile);
-							playedSamples++;
+						if (sampleBuffer == NULL) {
+							sampleBuffer = new MT32Emu::Bit16s[bufferSize / 2];
+						}
+						int samplesLeft = eventSamples - playedSamples;
+						while(samplesLeft > 0) {
+							int playedThisTime = samplesLeft > bufferSize / 4 ? bufferSize / 4 : samplesLeft;
+							synth->render(sampleBuffer, playedThisTime);
+							for (int i = 0; i < playedThisTime * 2; i++) {
+								fputc(sampleBuffer[i] & 0xFF, dstFile);
+								fputc((sampleBuffer[i] >> 8) & 0xFF, dstFile);
+							}
+							samplesLeft -= playedThisTime;
+							playedSamples += playedThisTime;
 						}
 					}
 
@@ -225,6 +232,7 @@ static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu
 	} else {
 		fprintf(stderr, "Error opening MT32Emu synthesizer.\n");
 	}
+	delete[] sampleBuffer;
 	delete synth;
 }
 
@@ -236,6 +244,7 @@ static void printUsage(char *cmd) {
 	printVersion();
 	fprintf(stdout, "\nusage: %s [arguments] <SMF MIDI file>\n\n", cmd);
 	fprintf(stdout, "Arguments:\n");
+	fprintf(stdout, " -b              Buffer size (in bytes) (default: %d)\n", DEFAULT_BUFFER_SIZE);
 	fprintf(stdout, " -f              Force overwrite of output file if already present\n");
 	fprintf(stdout, " -h              Show this help and exit\n");
 	fprintf(stdout, " -o <filename>   Output file (default: source file name with \".wav\" appended)\n");
@@ -251,10 +260,14 @@ int main(int argc, char *argv[]) {
 	char *syxFileName = NULL, *dstFileNameArg = NULL;
 	smf_t *smf = NULL;
 	char *cmd = argv[0];
-	int sampleRate = 32000;
+	int bufferSize = DEFAULT_BUFFER_SIZE;
+	int sampleRate = DEFAULT_SAMPLE_RATE;
 
-	while ((ch = getopt(argc, argv, "fhqo:r:s:")) != -1) {
+	while ((ch = getopt(argc, argv, "b:fhqo:r:s:")) != -1) {
 		switch (ch) {
+		case 'b':
+			bufferSize = atoi(optarg);
+			break;
 		case 'f':
 			force = true;
 			break;
@@ -324,7 +337,7 @@ int main(int argc, char *argv[]) {
 		synthProperties.sampleRate = sampleRate;
 		synthProperties.useReverb = true;
 		synthProperties.useDefaultReverb = true;
-		processSMF(syxFileName, smf, dstFileName, synthProperties);
+		processSMF(syxFileName, smf, dstFileName, synthProperties, bufferSize);
 		smf_delete(smf);
 	} else {
 		fprintf(stderr, "Error parsing SMF file '%s'.\n", srcFileName);
