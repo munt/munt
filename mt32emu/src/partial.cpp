@@ -37,13 +37,11 @@ Partial::Partial(Synth *useSynth, int debugPartialNum) :
 	// We're not allocating lazily since deferring memory allocations until sound is actually playing doesn't seem like a good idea.
 	posSaw = new BlitSaw(1, 0.5);
 	negSaw = new BlitSaw(1, 0.0);
-	saw = new BlitSaw(1, 0.8);
 }
 
 Partial::~Partial() {
 	delete posSaw;
 	delete negSaw;
-	delete saw;
 	delete tva;
 	delete tvp;
 }
@@ -246,11 +244,9 @@ Bit16s *Partial::generateSamples(long length) {
 				}
 				posSaw->reset(freq, spw);
 				negSaw->reset(freq, 0.0);
-				saw->reset(freq, 0.8);
 			} else {
 				posSaw->setFrequency(freq);
 				negSaw->setFrequency(freq);
-				saw->setFrequency(freq);
 			}
 			Bit32s filtval = getFiltEnvelope();
 

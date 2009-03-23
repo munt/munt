@@ -58,7 +58,6 @@ private:
 	// Keyfollowed note value
 	BlitSaw *posSaw;
 	BlitSaw *negSaw;
-	BlitSaw *saw;
 
 	const KeyLookup *keyLookup; // LUTs for the clamped (12..108) key
 
