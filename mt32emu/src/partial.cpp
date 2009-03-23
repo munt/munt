@@ -159,14 +159,14 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	memset(history,0,sizeof(history));
 }
 
-static inline Bit16s getPCMSample(Bit16s *pcmROMData, PCMWaveEntry *pcmWave, Bit32u position) {
+Bit16s Partial::getPCMSample(unsigned int position) {
 	if (position >= pcmWave->len) {
 		if (!pcmWave->loop) {
 			return 0;
 		}
 		position = position % pcmWave->len;
 	}
-	return pcmROMData[pcmWave->addr + position];
+	return synth->pcmROMData[pcmWave->addr + position];
 }
 
 Bit16s *Partial::generateSamples(long length) {
@@ -199,80 +199,43 @@ Bit16s *Partial::generateSamples(long length) {
 		if (patchCache->PCMPartial) {
 			// Render PCM waveform
 			int len = pcmWave->len;
-
+			if (intPCMPosition >= len && !pcmWave->loop) {
+				// We're now past the end of a non-looping PCM waveform so it's time to die.
+				play = false;
+				deactivate();
+				break;
+			}
 			Bit32u pcmAddr = pcmWave->addr;
-
-			// Core frequency of PCM playback is 32000.  15.625 * 2048 = 32000
-			// By using 16 bits of fixed point math below, we have 5 bits on the MT-32
-			float positionDelta = freq / 15.625; 
+			float positionDelta = freq * 2048.0f / synth->myProp.sampleRate;
 			float newPCMPosition = pcmPosition + positionDelta;
 			int newIntPCMPosition = (int)newPCMPosition;
-			float wholeValue;
-
-			int delta = (positionDelta * 65536.0);
-			int pcmoffset = (int)(modf(pcmPosition, &wholeValue) * 65536.0);
-
-			if (newIntPCMPosition >= len) {
-				if(!pcmWave->loop) {
-					// We're now past the end of a non-looping PCM waveform so it's time to die.
-					play = false;
-					deactivate();
-					break;
-				} else {
-					newPCMPosition = fmodf(newPCMPosition, pcmWave->len);
-					newIntPCMPosition = newIntPCMPosition % pcmWave->len;
-				}
-			}
 
 			if (amp != 0.0f) {
 				// Only bother doing the actual sample calculation if someone's going to hear it.
-				//if ((intPCMPosition == newIntPCMPosition) || (positionDelta == 1.0)) {
+				if (positionDelta < 1.0f) {
+					// Linear interpolation
+					int firstSample = synth->pcmROMData[pcmAddr + intPCMPosition];
+					int nextSample = getPCMSample(intPCMPosition + 1);
+					sample = firstSample + (nextSample - firstSample) * (pcmPosition - intPCMPosition);
+				} else if (intPCMPosition == newIntPCMPosition) {
 					// Small optimisation
-				//	sample = synth->pcmROMData[pcmAddr + newIntPCMPosition];
-
-				if (delta < 0x10000) {
-					// Linear sound interpolation
-					int taddr = pcmAddr + intPCMPosition;
-					int rb;
-					int ra = synth->pcmROMData[taddr];
-					taddr++;
-					if (taddr == pcmAddr + pcmWave->len) {
-						// Past end of PCM
-						if (pcmWave->loop) {
-							rb = synth->pcmROMData[pcmAddr];
-						} else {
-							rb = 0;
-						}
-					} else {
-						rb = synth->pcmROMData[taddr];
-					}
-					int dist = rb - ra;
-					sample = (ra + ((dist * (Bit32s)(pcmoffset >> 8)) >> 8));
+					sample = synth->pcmROMData[pcmAddr + newIntPCMPosition];
 				} else {
-					// Sound decimation
-					// The right way to do it is to use a lowpass filter on the waveform before selecting
-					// a point.  This is too slow.  The following approximates this as fast as possible
-					int idelta = delta >> 16;
-					int taddr = pcmAddr + intPCMPosition;
-					int ra = synth->pcmROMData[taddr++];
-					for (int ix = 0; ix < idelta - 1; ix++) {
-						if (taddr == pcmAddr + pcmWave->len) {
-							// Past end of PCM
-							if (pcmWave->loop) {
-								taddr = pcmAddr;
-							} else {
-								// Behave as if all subsequent samples were 0
-								break;
-							}
-						}
-						ra += synth->pcmROMData[taddr++];
+					// Average all the samples in the range
+					double sampleSum = synth->pcmROMData[pcmAddr + intPCMPosition] * ((intPCMPosition + 1) - pcmPosition); // First sample may not be 100% in range
+					for (int position = intPCMPosition + 1; position < newIntPCMPosition; position++) {
+						sampleSum += getPCMSample(position);
 					}
-					sample = ra / idelta;
+					sampleSum += getPCMSample(newIntPCMPosition) * (newPCMPosition - newIntPCMPosition); // Last sample may not be 100% in range
+					sample = (float)(sampleSum / positionDelta);
 				}
-			} else
-			{
+			} else {
 				// If a sample is calculated in the woods, and the current TVA value's too low to hear it, is there any point?
 				sample = 0.0f;
+			}
+			if (pcmWave->loop) {
+				newPCMPosition = fmodf(newPCMPosition, pcmWave->len);
+				newIntPCMPosition = newIntPCMPosition % pcmWave->len;
 			}
 			pcmPosition = newPCMPosition;
 			intPCMPosition = newIntPCMPosition;
@@ -281,9 +244,6 @@ Bit16s *Partial::generateSamples(long length) {
 			if(firstSample) {
 				firstSample = false;
 				float spw = synth->tables.pwFactorf[pulsewidth];
-				if ((patchCache->waveform & 1) != 0 && spw < 0.5f) {
-					spw = 0.5f - ((0.5f - spw) * 2.0f);
-				}
 				posSaw->reset(freq, spw);
 				negSaw->reset(freq, 0.0);
 			} else {
@@ -296,7 +256,7 @@ Bit16s *Partial::generateSamples(long length) {
 
 			sample = posSaw->tick() - negSaw->tick();
 			float freqsum = 0;
-			freqsum = ((powf(256.0f, (((float)filtval / 128.0f) - 1.0f))) * posSaw->getStartFreq());
+			freqsum = ((powf(2048.0f, (((float)filtval / 128.0f) - 1.0f))) * posSaw->getStartFreq());
 			if(freqsum >= (FILTERGRAN - 550.0))
 				freqsum = (FILTERGRAN - 550.0f);
 			filtval = (Bit32s)freqsum;

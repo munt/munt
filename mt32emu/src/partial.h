@@ -93,6 +93,7 @@ private:
 	Bit16s *mixBuffersRing(Bit16s *buf1, Bit16s *buf2, int len);
 	void mixBuffersStereo(Bit16s *buf1, Bit16s *buf2, Bit16s *outBuf, int len);
 
+	Bit16s getPCMSample(unsigned int position);
 	Bit32s getFiltEnvelope();
 
 	void initKeyFollow(int freqNum);
