@@ -253,7 +253,7 @@ int main(int argc, char *argv[]) {
 	char *cmd = argv[0];
 	int sampleRate = 32000;
 
-	while ((ch = getopt(argc, argv, "fhqo:s:")) != -1) {
+	while ((ch = getopt(argc, argv, "fhqo:r:s:")) != -1) {
 		switch (ch) {
 		case 'f':
 			force = true;
