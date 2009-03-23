@@ -38,11 +38,10 @@ private:
 	Bit32u targetPitchOffsetWithoutLFO;
 	Bit32u currentPitchOffset;
 
-	// FIXME: Names
-	// FIXME: Not initialised
 	Bit16s pitchOffsetChangePerBigTick;
 	int targetPitchOffsetReachedBigTick;
 	unsigned int shifts;
+
 	Bit16u pitch;
 
 	void updatePitch();

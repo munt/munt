@@ -146,7 +146,11 @@ void TVP::reset(const Part *part, const PatchCache *patchCache) {
 	lfoPitchOffset = 0;
 	counter = 0;
 	pitch = basePitch;
-	targetPitchOffsetReachedBigTick = 0; // This isn't really necessary to initialise, but it aids debugging.
+
+	// These don't really need to be initialised, but it aids debugging.
+	pitchOffsetChangePerBigTick = 0;
+	targetPitchOffsetReachedBigTick = 0;
+	shifts = 0;
 }
 
 void TVP::updatePitch() {
