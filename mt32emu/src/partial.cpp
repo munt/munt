@@ -208,7 +208,7 @@ Bit16s *Partial::generateSamples(long length) {
 				break;
 			}
 			Bit32u pcmAddr = pcmWave->addr;
-			float positionDelta = freq / 32.0f;/* * (32000 / sampleRate) */; // FIXME: sampleRate should be real sample rate // FIXME: 32.0f is pretty random
+			float positionDelta = freq * 1000.0f / synth->myProp.sampleRate; // FIXME: 1000.0f is pretty random, needs to be checked.
 			float newPCMPosition = pcmPosition + positionDelta;
 			int newIntPCMPosition = (int)newPCMPosition;
 
