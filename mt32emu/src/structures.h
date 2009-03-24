@@ -198,28 +198,10 @@ struct PatchCache {
 	int pulsewidth;
 	int pwsens;
 
-	float pitch;
-
-	int lfodepth;
-	int lforate;
-	Bit32u lfoperiod;
-	int modsense;
-
-	float pitchKeyfollow;
-
 	int filtkeyfollow;
 
-	int tvfbias;
-	int tvfblevel;
-	int tvfdir;
-
-	bool useBender;
-	float benderRange; // 0.0, 1.0, .., 24.0 (semitones)
-
-	TimbreParam::PartialParam::PitchEnvParam pitchEnv;
 	TimbreParam::PartialParam::TVFParam filtEnv;
 
-	Bit32s pitchsustain;
 	Bit32s filtsustain;
 
 	Bit32u structureMix;
@@ -230,7 +212,6 @@ struct PatchCache {
 	bool dirty;
 	Bit32u partialCount;
 	bool sustain;
-	float pitchShift;
 	bool reverb;
 	const StereoVolume *pansetptr;
 

@@ -88,14 +88,6 @@ Bit8u Part::getModulation() const {
 
 void Part::setModulation(unsigned int midiModulation) {
 	modulation = (Bit8u)midiModulation;
-
-	// DEPRECATED: Everything below will soon be obsolete and removed
-	for (int t = 0; t < 4; t++) {
-		if (patchCache[t].playPartial) {
-			int newrate = (patchCache[t].modsense * midiModulation) >> 7;
-			patchCache[t].lfodepth = newrate;
-		}
-	}
 }
 
 void RhythmPart::refresh() {
@@ -118,8 +110,6 @@ void RhythmPart::refresh() {
 		for (int t = 0; t < 4; t++) {
 			// Common parameters, stored redundantly
 			cache[t].dirty = true;
-			cache[t].pitchShift = 0.0f;
-			cache[t].benderRange = 0.0f;
 			cache[t].pansetptr = &drumPan[drumNum];
 			cache[t].reverb = rhythmTemp[drumNum].reverbSwitch > 0;
 		}
@@ -131,8 +121,6 @@ void Part::refresh() {
 	for (int t = 0; t < 4; t++) {
 		// Common parameters, stored redundantly
 		patchCache[t].dirty = true;
-		patchCache[t].pitchShift = (patchTemp->patch.fineTune - 50) / 100.0f;
-		patchCache[t].benderRange = patchTemp->patch.benderRange;
 		patchCache[t].pansetptr = &volumesetting;
 		patchCache[t].reverb = patchTemp->patch.reverbSwitch > 0;
 	}
@@ -245,7 +233,6 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 		cache[t].srcPartial = timbre->partial[t];
 
 		cache[t].pcm = timbre->partial[t].wg.pcmWave;
-		cache[t].useBender = (timbre->partial[t].wg.pitchBenderEnabled == 1);
 
 		switch (t) {
 		case 0:
@@ -281,31 +268,12 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 		cache[t].waveform = timbre->partial[t].wg.waveform;
 		cache[t].pulsewidth = timbre->partial[t].wg.pulseWidth;
 		cache[t].pwsens = timbre->partial[t].wg.pulseWidthVeloSensitivity;
-		if (timbre->partial[t].wg.pitchKeyfollow > 16) {
-			synth->printDebug("Bad keyfollow value in timbre!");
-			cache[t].pitchKeyfollow = 1.0f;
-		} else {
-			cache[t].pitchKeyfollow = floatKeyfollow[timbre->partial[t].wg.pitchKeyfollow];
-		}
-
-		cache[t].pitch = timbre->partial[t].wg.pitchCoarse + (timbre->partial[t].wg.pitchFine - 50) / 100.0f + 24.0f;
-		cache[t].pitchEnv = timbre->partial[t].pitchEnv;
-		cache[t].pitchEnv.veloSensitivity = (char)((float)cache[t].pitchEnv.veloSensitivity * 1.27f);
-		cache[t].pitchsustain = cache[t].pitchEnv.level[3];
 
 		// Calculate and cache filter stuff
 		cache[t].filtEnv = timbre->partial[t].tvf;
 		cache[t].filtkeyfollow  = fixKeyfollow(cache[t].filtEnv.keyfollow);
 		cache[t].filtEnv.envDepth = (char)((float)cache[t].filtEnv.envDepth);
-		cache[t].tvfbias = fixBiaslevel(cache[t].filtEnv.biasPoint, &cache[t].tvfdir);
-		cache[t].tvfblevel = cache[t].filtEnv.biasLevel;
 		cache[t].filtsustain  = cache[t].filtEnv.envLevel[3];
-
-		// Calculate and cache LFO stuff
-		cache[t].lfodepth = timbre->partial[t].pitchLFO.depth;
-		cache[t].lfoperiod = synth->tables.lfoPeriod[(int)timbre->partial[t].pitchLFO.rate];
-		cache[t].lforate = timbre->partial[t].pitchLFO.rate;
-		cache[t].modsense = timbre->partial[t].pitchLFO.modSensitivity;
 	}
 	for (int t = 0; t < 4; t++) {
 		// Common parameters, stored redundantly
