@@ -52,7 +52,7 @@ public:
 	Bit32u currentAmp;
 
 	TVA(const Partial *partial);
-	void reset(const Part *part, const PatchCache *patchCache);
+	void reset(const Part *part, const PatchCache *patchCache, const MemParams::RhythmTemp *rhythmTemp);
 	float nextAmp();
 	void nextPhase();
 	void recalcSustain();

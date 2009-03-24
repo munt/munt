@@ -120,7 +120,7 @@ public:
 	bool isActive();
 	void activate(int part, int pChan);
 	void deactivate(void);
-	void startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, Partial *pairPartial);
+	void startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial);
 	void startFiltDecay(Bit32s startval);
 	void startDecayAll();
 	bool shouldReverb();

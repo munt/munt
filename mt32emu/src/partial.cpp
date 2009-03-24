@@ -97,7 +97,7 @@ int Partial::getKey() const {
 	}
 }
 
-void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, Partial *pairPartial) {
+void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial) {
 	if (usePoly == NULL || useCache == NULL) {
 		synth->printDebug("*** Error: Starting partial for owner %d, usePoly=%s, useCache=%s", ownerPart, usePoly == NULL ? "*** NULL ***" : "OK", useCache == NULL ? "*** NULL ***" : "OK");
 		return;
@@ -153,7 +153,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	useNoisePair = pairPartial == NULL && (mixType == 1 || mixType == 2);
 	age = 0;
 	alreadyOutputed = false;
-	tva->reset(part, patchCache);
+	tva->reset(part, patchCache, rhythmTemp);
 	tvp->reset(part, patchCache);
 	firstSample = true;
 	memset(history,0,sizeof(history));

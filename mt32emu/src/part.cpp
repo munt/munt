@@ -381,7 +381,7 @@ void RhythmPart::noteOn(unsigned int midiKey, unsigned int velocity) {
 	if (drumCache[drumNum][0].dirty) {
 		cacheTimbre(drumCache[drumNum], timbre);
 	}
-	playPoly(drumCache[drumNum], midiKey, key, velocity);
+	playPoly(drumCache[drumNum], &rhythmTemp[drumNum], midiKey, key, velocity);
 }
 
 void Part::noteOn(unsigned int midiKey, unsigned int velocity) {
@@ -392,7 +392,7 @@ void Part::noteOn(unsigned int midiKey, unsigned int velocity) {
 	if (patchCache[0].dirty) {
 		cacheTimbre(patchCache, timbreTemp);
 	}
-	playPoly(patchCache, midiKey, key, velocity);
+	playPoly(patchCache, NULL, midiKey, key, velocity);
 }
 
 bool Part::abortFirstPoly(PolyState polyState) {
@@ -419,7 +419,7 @@ bool Part::abortFirstPoly() {
 	return false;
 }
 
-void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, unsigned int key, unsigned int velocity) {
+void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhythmTemp, unsigned int midiKey, unsigned int key, unsigned int velocity) {
 	if((patchTemp->patch.assignMode & 2) == 0) {
 		// Single-assign mode
 		// FIXME: Poly priority should be considered, but isn't.
@@ -468,7 +468,7 @@ void Part::playPoly(const PatchCache cache[4], unsigned int midiKey, unsigned in
 
 	for (int x = 0; x < 4; x++) {
 		if (partials[x] != NULL) {
-			partials[x]->startPartial(this, poly, &cache[x], partials[cache[x].structurePair]);
+			partials[x]->startPartial(this, poly, &cache[x], rhythmTemp, partials[cache[x].structurePair]);
 		}
 	}
 }
@@ -541,14 +541,6 @@ void Part::stopNote(unsigned int key) {
 
 const MemParams::PatchTemp *Part::getPatchTemp() const {
 	return patchTemp;
-}
-
-const MemParams::RhythmTemp *Part::getRhythmTemp() const {
-	return NULL;
-}
-
-const MemParams::RhythmTemp *RhythmPart::getRhythmTemp() const {
-	return rhythmTemp;
 }
 
 }

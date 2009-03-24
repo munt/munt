@@ -56,7 +56,7 @@ protected:
 
 	void backupCacheToPartials(PatchCache cache[4]);
 	void cacheTimbre(PatchCache cache[4], const TimbreParam *timbre);
-	void playPoly(const PatchCache cache[4], unsigned int midiKey, unsigned int key, unsigned int velocity);
+	void playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhythmTemp, unsigned int midiKey, unsigned int key, unsigned int velocity);
 	void stopNote(unsigned int key);
 	const char *getName() const;
 
@@ -85,7 +85,6 @@ public:
 	const char *getCurrentInstr() const;
 
 	const MemParams::PatchTemp *getPatchTemp() const;
-	virtual const MemParams::RhythmTemp *getRhythmTemp() const;
 
 	// These are rather specialised, and should probably only be used by PartialManager
 	bool abortFirstPoly(PolyState polyState);
@@ -109,7 +108,6 @@ public:
 	unsigned int getAbsTimbreNum() const;
 	void setPan(unsigned int midiPan);
 	void setProgram(unsigned int patchNum);
-	const MemParams::RhythmTemp *getRhythmTemp() const;
 };
 
 }
