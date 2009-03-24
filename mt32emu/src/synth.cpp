@@ -731,7 +731,7 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 		return;
 	}
 	// This is checked early in the real devices (before any sysex length checks or further processing)
-    if ((command = SYSEX_CMD_DT1) && (sysex[0]==0x7F)) {
+    if (command == SYSEX_CMD_DT1 && sysex[0] == 0x7F) {
     	reset();
         return;
     }
