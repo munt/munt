@@ -101,6 +101,9 @@ public:
 	// CONFIRMED: ...
 	Bit8u masterVolToAmpSubtraction[101];
 
+	// CONFIRMED:
+	Bit8u pulseWidth100To255[101];
+
 	Bit32s tvfKeyfollowMult[217];
 	Bit16s noiseBuf[MAX_SAMPLE_OUTPUT];
 	Bit32s pwVelfollowAdd[15][128];
