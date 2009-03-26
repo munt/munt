@@ -24,10 +24,6 @@
 
 namespace MT32Emu {
 
-//Amplitude time velocity follow exponential coefficients
-static const double tvcatconst[5] = {0.0, 0.002791309, 0.005942882, 0.012652792, 0.026938637};
-static const double tvcatmult[5] = {1.0, 1.072662811, 1.169129367, 1.288579123, 1.229630539};
-
 // These are division constants for the TVF depth key follow
 static const Bit32u depexp[5] = {3000, 950, 485, 255, 138};
 
