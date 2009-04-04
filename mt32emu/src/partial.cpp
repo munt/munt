@@ -50,7 +50,7 @@ int Partial::getOwnerPart() const {
 	return ownerPart;
 }
 
-bool Partial::isActive() {
+bool Partial::isActive() const {
 	return ownerPart > -1;
 }
 

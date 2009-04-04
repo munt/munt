@@ -360,10 +360,13 @@ public:
 	void playSysexWithoutHeader(unsigned char device, unsigned char command, const Bit8u *sysex, Bit32u len);
 	void writeSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 
-	// This callback routine is used to have the MT-32 generate samples to the specified
-	// output stream.  The length is in whole samples, not bytes. (I.E. in 16-bit stereo,
-	// one sample is 4 bytes)
-	void render(Bit16s * stream, Bit32u len);
+	// Renders samples to the specified output stream.
+	// The length is in frames, not bytes (in 16-bit stereo,
+	// one frame is 4 bytes).
+	void render(Bit16s *stream, Bit32u len);
+
+	// Returns true when there is at least one active partial, otherwise false.
+	bool isActive() const;
 
 	const Partial *getPartial(unsigned int partialNum) const;
 

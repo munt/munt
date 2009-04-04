@@ -117,7 +117,7 @@ public:
 	int getOwnerPart() const;
 	int getKey() const;
 	const Poly *getPoly() const;
-	bool isActive();
+	bool isActive() const;
 	void activate(int part, int pChan);
 	void deactivate(void);
 	void startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial);

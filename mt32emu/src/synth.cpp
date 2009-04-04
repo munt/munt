@@ -1225,6 +1225,15 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 #endif
 }
 
+bool Synth::isActive() const {
+	for (int partialNum = 0; partialNum < MT32EMU_MAX_PARTIALS; partialNum++) {
+		if (partialManager->getPartial(partialNum)->isActive()) {
+			return true;
+		}
+	}
+	return false;
+}
+
 const Partial *Synth::getPartial(unsigned int partialNum) const {
 	return partialManager->getPartial(partialNum);
 }
