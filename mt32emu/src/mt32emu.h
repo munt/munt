@@ -35,7 +35,9 @@
 #if (defined (_MSC_VER) && defined(_M_IX86))
 #define MT32EMU_HAVE_X86
 #elif  defined(__GNUC__)
-#if __GNUC__ >= 3 && defined(__i386__)
+// FIXME: Our use of inline assembler is broken in gcc 4, at least for some MMX code.
+// Temporarily enabling inline assembly only for gcc 3.
+#if __GNUC__ == 3 && defined(__i386__)
 #define MT32EMU_HAVE_X86
 #endif
 #endif
