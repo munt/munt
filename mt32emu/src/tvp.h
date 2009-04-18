@@ -17,8 +17,6 @@
 #ifndef MT32EMU_TVP_H
 #define MT32EMU_TVP_H
 
-#include "mt32emu.h"
-
 namespace MT32Emu {
 
 class TVP {
@@ -34,9 +32,15 @@ private:
 	int processTimerIncrement;
 	int counter;
 	Bit32u timeElapsed;
+
+	int phase;
 	Bit32u basePitch;
 	Bit32u targetPitchOffsetWithoutLFO;
 	Bit32u currentPitchOffset;
+
+	Bit8s lfoPitchOffset;
+	// In range -12 - 36
+	Bit8s timeKeyfollowSubtraction;
 
 	Bit16s pitchOffsetChangePerBigTick;
 	int targetPitchOffsetReachedBigTick;
@@ -50,11 +54,6 @@ private:
 	void nextPhase();
 	void process();
 public:
-	int phase;
-	Bit8s lfoPitchOffset;
-	// In range -12 - 36
-	Bit8s timeKeyfollowSubtraction;
-
 	TVP(const Partial *partial);
 	void reset(const Part *part, const PatchCache *patchCache);
 	Bit16u nextPitch();
