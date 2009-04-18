@@ -17,13 +17,9 @@
 #ifndef MT32EMU_TVA_H
 #define MT32EMU_TVA_H
 
-#include "mt32emu.h"
-
 namespace MT32Emu {
 
 class Part;
-
-// FIXME:KG: This should only exist while we're experimenting to get the right value
 
 class TVA {
 private:
@@ -39,22 +35,22 @@ private:
 	int veloAmpSubtraction;
 	int keyTimeSubtraction;
 
+	int targetPhase;
+	Bit32u currentAmp;
+	// AFAICT: Lower 7 bits indicate how quickly currentAmp should be changed, most significant bit indicates change direction (set=downward)
+	Bit8u targetAmp;
 	Bit8u ampIncrement;
 	unsigned int largeAmpInc;
 	void setAmpIncrement(Bit8u ampIncrement);
+	void nextPhase();
 
 public:
-	// FIXME: These should probably be private (only public for testing purposes atm)
+	// FIXME: This should probably have a getter
 	bool play;
-	int targetPhase;
-	Bit8u targetAmp;
-	// AFAICT: Lower 7 bits indicate how quickly the amp level should be changed, most significant bit indicates change direction (set=downward)
-	Bit32u currentAmp;
 
 	TVA(const Partial *partial);
 	void reset(const Part *part, const PatchCache *patchCache, const MemParams::RhythmTemp *rhythmTemp);
 	float nextAmp();
-	void nextPhase();
 	void recalcSustain();
 	void startDecay();
 };

@@ -42,9 +42,9 @@ enum {
 	// When this is the target phase, level[3] is targeted within time[3]
 	PHASE_4 = 4,
 
-	// When this is the target phase, immediately goes to PHASE_RELEASE unless sustain pedal is held.
-	// Aborts if level[3] is 0.
-	// level[3] is continued, no phase change will occur until some external influence (like pedal release)
+	// When this is the target phase, immediately goes to PHASE_RELEASE unless the poly is set to sustain.
+	// Aborts the partial if level[3] is 0.
+	// Otherwise level[3] is continued, no phase change will occur until some external influence (like pedal release)
 	PHASE_SUSTAIN = 5,
 
 	// 0 is targeted within time[4] (the time calculation is quite different from the other phases)
@@ -86,7 +86,7 @@ float TVA::nextAmp() {
 			}
 		} else {
 			// Raising amp
-			if (MAX_CURRENT_AMP - currentAmp < largeAmpInc ) {
+			if (MAX_CURRENT_AMP - currentAmp < largeAmpInc) {
 				currentAmp = target;
 				nextPhase();
 			} else {
@@ -136,11 +136,11 @@ static int calcBiasAmpSubtractions(const Tables *tables, const TimbreParam::Part
 	return biasAmpSubtraction;
 }
 
-static int calcVeloAmpSubtraction(const Tables *tables, Bit8u veloSensitivity, int velocity) {
+static int calcVeloAmpSubtraction(const Tables *tables, Bit8u veloSensitivity, unsigned int velocity) {
 	// FIXME:KG: Better variable names
 	int velocityMult = veloSensitivity - 50;
 	int absVelocityMult = velocityMult < 0 ? -velocityMult : velocityMult;
-	velocityMult = (signed)((unsigned)(velocityMult * (velocity - 64)) << 2);
+	velocityMult = (signed)((unsigned)(velocityMult * ((signed)velocity - 64)) << 2);
 	return absVelocityMult - (velocityMult >> 8); // PORTABILITY NOTE: Assumes arithmetic shift
 }
 
