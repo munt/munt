@@ -59,8 +59,6 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	currentInstr[0] = 0;
 	currentInstr[10] = 0;
 	expression = 100;
-	volumesetting.leftvol = 32767;
-	volumesetting.rightvol = 32767;
 	memset(patchCache, 0, sizeof(patchCache));
 }
 
@@ -97,20 +95,11 @@ void RhythmPart::refresh() {
 		if (drumTimbreNum >= 127) // 94 on MT-32
 			continue;
 		Bit16s pan = rhythmTemp[drumNum].panpot; // They use R-L 0-14...
-		// FIXME:KG: Panning cache should be backed up to partials using it, too
-		if (pan < 7) {
-			drumPan[drumNum].leftvol = pan * 4681;
-			drumPan[drumNum].rightvol = 32767;
-		} else {
-			drumPan[drumNum].rightvol = (14 - pan) * 4681;
-			drumPan[drumNum].leftvol = 32767;
-		}
 		PatchCache *cache = drumCache[drumNum];
 		backupCacheToPartials(cache);
 		for (int t = 0; t < 4; t++) {
 			// Common parameters, stored redundantly
 			cache[t].dirty = true;
-			cache[t].pansetptr = &drumPan[drumNum];
 			cache[t].reverb = rhythmTemp[drumNum].reverbSwitch > 0;
 		}
 	}
@@ -121,7 +110,6 @@ void Part::refresh() {
 	for (int t = 0; t < 4; t++) {
 		// Common parameters, stored redundantly
 		patchCache[t].dirty = true;
-		patchCache[t].pansetptr = &volumesetting;
 		patchCache[t].reverb = patchTemp->patch.reverbSwitch > 0;
 	}
 	memcpy(currentInstr, timbreTemp->common.name, 10);
@@ -312,26 +300,19 @@ void Part::setExpression(unsigned int midiExpression) {
 
 void RhythmPart::setPan(unsigned int midiPan)
 {
-	// FIXME:KG: This is unchangeable for drums (they always use drumPan), is that correct?
-	synth->printDebug("%s: Setting pan (%d) not supported on rhythm", name, midiPan);
+	// CONFIRMED: This does change patchTemp, but has no actual effect on playback.
+	synth->printDebug("%s: Pointlessly setting pan (%d) on rhythm part", name, midiPan);
+	Part::setPan(midiPan);
 }
 
 void Part::setPan(unsigned int midiPan) {
-	// FIXME:KG: Tweaked this a bit so that we have a left 100%, centre and right 100%
-	// (But this makes the range somewhat skewed)
-	// Check against the real thing
 	// NOTE: Panning is inverted compared to GM.
-	if (midiPan < 64) {
-		volumesetting.leftvol = (Bit16s)(midiPan * 512);
-		volumesetting.rightvol = 32767;
-	} else if (midiPan == 64) {
-		volumesetting.leftvol = 32767;
-		volumesetting.rightvol = 32767;
-	} else {
-		volumesetting.rightvol = (Bit16s)((127 - midiPan) * 520);
-		volumesetting.leftvol = 32767;
-	}
-	patchTemp->panpot = (Bit8u)(midiPan * 14 / 127);
+
+	// CM-32L: Divide by 8.5
+	patchTemp->panpot = (Bit8u)((midiPan << 3) / 68);
+	// FIXME: MT-32: Divide by 9
+	//patchTemp->panpot = (Bit8u)(midiPan / 9);
+
 	//synth->printDebug("%s (%s): Set pan to %d", name, currentInstr, panpot);
 }
 

@@ -111,6 +111,11 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	initKeyFollow(getKey()); // Initialises filtVal and realVal
 	keyLookup = &synth->tables.keyLookups[getKey() - 12];
 
+	Bit8u panSetting = rhythmTemp != NULL ? rhythmTemp->panpot : part->getPatchTemp()->panpot;
+	// FIXME: Sample analysis suggests that this is linear, but there are some some quirks that still need to be resolved.
+	stereoVolume.leftvol = panSetting * 32768 / 14;
+	stereoVolume.rightvol = 32768 - stereoVolume.leftvol;
+
 	if (patchCache->PCMPartial) {
 		pcmNum = patchCache->pcm;
 		if (synth->controlROMMap->pcmCount > 128) {
@@ -539,20 +544,16 @@ bool Partial::produceOutput(Bit16s *partialBuf, long length) {
 	if (mixedBuf == NULL)
 		return false;
 
-	Bit16s leftvol, rightvol;
-	leftvol = patchCache->pansetptr->leftvol;
-	rightvol = patchCache->pansetptr->rightvol;
-
 #if MT32EMU_USE_MMX >= 2
 	// FIXME:KG: This appears to introduce crackle
-	int donelen = i386_partialProductOutput(length, leftvol, rightvol, partialBuf, mixedBuf);
+	int donelen = i386_partialProductOutput(length, stereoVolume.leftvol, stereoVolume.rightvol, partialBuf, mixedBuf);
 	length -= donelen;
 	mixedBuf += donelen;
 	partialBuf += donelen * 2;
 #endif
 	while (length--) {
-		*partialBuf++ = (Bit16s)(((Bit32s)*mixedBuf * (Bit32s)leftvol) >> 16);
-		*partialBuf++ = (Bit16s)(((Bit32s)*mixedBuf * (Bit32s)rightvol) >> 16);
+		*partialBuf++ = (Bit16s)(((Bit32s)*mixedBuf * (Bit32s)stereoVolume.leftvol) >> 16);
+		*partialBuf++ = (Bit16s)(((Bit32s)*mixedBuf * (Bit32s)stereoVolume.rightvol) >> 16);
 		mixedBuf++;
 	}
 	return true;

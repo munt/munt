@@ -50,6 +50,7 @@ private:
 	int structurePosition; // 0 or 1 of a structure pair
 	bool useNoisePair;
 	int partialChan;
+	StereoVolume stereoVolume;
 
 	bool firstSample;
 

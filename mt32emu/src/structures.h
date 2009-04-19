@@ -185,8 +185,8 @@ struct PCMWaveEntry {
 };
 
 struct StereoVolume {
-	Bit16s leftvol;
-	Bit16s rightvol;
+	Bit16u leftvol;
+	Bit16u rightvol;
 };
 
 // This is basically a per-partial, pre-processed combination of timbre and patch/rhythm settings
@@ -213,7 +213,6 @@ struct PatchCache {
 	Bit32u partialCount;
 	bool sustain;
 	bool reverb;
-	const StereoVolume *pansetptr;
 
 	TimbreParam::PartialParam srcPartial;
 

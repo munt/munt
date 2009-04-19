@@ -33,8 +33,6 @@ private:
 
 	bool holdpedal;
 
-	StereoVolume volumesetting;
-
 	PatchCache patchCache[4];
 
 	Poly polys[MT32EMU_MAX_POLY];
@@ -97,7 +95,6 @@ class RhythmPart: public Part {
 
 	// This caches the timbres/settings in use by the rhythm part
 	PatchCache drumCache[85][4];
-	StereoVolume drumPan[85];
 public:
 	RhythmPart(Synth *synth, unsigned int usePartNum);
 	void refresh();
