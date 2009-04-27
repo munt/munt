@@ -126,7 +126,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 				panSetting = 14;
 			}
 		}
-		// Do a normal mix of independent of any pair partial.
+		// Do a normal mix independent of any pair partial.
 		mixType = 0;
 		pairPartial = NULL;
 	}
