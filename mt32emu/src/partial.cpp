@@ -112,7 +112,26 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	keyLookup = &synth->tables.keyLookups[getKey() - 12];
 
 	Bit8u panSetting = rhythmTemp != NULL ? rhythmTemp->panpot : part->getPatchTemp()->panpot;
+	if(mixType == 3) {
+		if(structurePosition == 0) {
+			if(panSetting > 7) {
+				panSetting = (panSetting - 7) * 2;
+			} else {
+				panSetting = 0;
+			}
+		} else {
+			if(panSetting < 7) {
+				panSetting = panSetting * 2;
+			} else {
+				panSetting = 14;
+			}
+		}
+		// Do a normal mix of independent of any pair partial.
+		mixType = 0;
+		pairPartial = NULL;
+	}
 	// FIXME: Sample analysis suggests that this is linear, but there are some some quirks that still need to be resolved.
+	// On the real devices, there are only 8 real pan positions.
 	stereoVolume.leftvol = panSetting * 32768 / 14;
 	stereoVolume.rightvol = 32768 - stereoVolume.leftvol;
 
@@ -433,25 +452,6 @@ Bit16s *Partial::mixBuffersRing(Bit16s * buf1, Bit16s *buf2, int len) {
 	return outBuf;
 }
 
-void Partial::mixBuffersStereo(Bit16s *buf1, Bit16s *buf2, Bit16s *outBuf, int len) {
-	if (buf2 == NULL) {
-		while (len--) {
-			*outBuf++ = *buf1++;
-			*outBuf++ = 0;
-		}
-	} else if (buf1 == NULL) {
-		while (len--) {
-			*outBuf++ = 0;
-			*outBuf++ = *buf2++;
-		}
-	} else {
-		while (len--) {
-			*outBuf++ = *buf1++;
-			*outBuf++ = *buf2++;
-		}
-	}
-}
-
 bool Partial::hasRingModulatingSlave() const {
 	// FIXME:KG: Check that I got structurePosition the right way around
 	return pair != NULL && structurePosition == 0 && (mixType == 1 || mixType == 2);
@@ -485,7 +485,7 @@ bool Partial::produceOutput(Bit16s *partialBuf, long length) {
 	}
 
 	Bit16s *pairBuf = NULL;
-	// Check for dependant partial
+	// Check for dependent partial
 	if (pair != NULL) {
 		if (!pair->alreadyOutputed) {
 			// Note: pair may have become NULL after this
@@ -530,12 +530,6 @@ bool Partial::produceOutput(Bit16s *partialBuf, long length) {
 		mixedBuf = mixBuffersRing(p1buf, p2buf, length);
 		break;
 
-	case 3:
-		// Stereo mixing.  One partial to one speaker channel, one to another.
-		// FIXME:KG: Surely we should be multiplying by the left/right volumes here?
-		mixBuffersStereo(p1buf, p2buf, partialBuf, length);
-		return true;
-
 	default:
 		mixedBuf = mixBuffers(p1buf, p2buf, length);
 		break;
@@ -544,13 +538,6 @@ bool Partial::produceOutput(Bit16s *partialBuf, long length) {
 	if (mixedBuf == NULL)
 		return false;
 
-#if MT32EMU_USE_MMX >= 2
-	// FIXME:KG: This appears to introduce crackle
-	int donelen = i386_partialProductOutput(length, stereoVolume.leftvol, stereoVolume.rightvol, partialBuf, mixedBuf);
-	length -= donelen;
-	mixedBuf += donelen;
-	partialBuf += donelen * 2;
-#endif
 	while (length--) {
 		*partialBuf++ = (Bit16s)(((Bit32s)*mixedBuf * (Bit32s)stereoVolume.leftvol) >> 16);
 		*partialBuf++ = (Bit16s)(((Bit32s)*mixedBuf * (Bit32s)stereoVolume.rightvol) >> 16);
