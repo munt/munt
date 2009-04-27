@@ -57,6 +57,7 @@
 #include "poly.h"
 #include "tva.h"
 #include "tvp.h"
+#include "tvf.h"
 #include "partial.h"
 #include "partialManager.h"
 #include "part.h"
