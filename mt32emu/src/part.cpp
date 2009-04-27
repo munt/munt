@@ -94,7 +94,6 @@ void RhythmPart::refresh() {
 		int drumTimbreNum = rhythmTemp[drumNum].timbre;
 		if (drumTimbreNum >= 127) // 94 on MT-32
 			continue;
-		Bit16s pan = rhythmTemp[drumNum].panpot; // They use R-L 0-14...
 		PatchCache *cache = drumCache[drumNum];
 		backupCacheToPartials(cache);
 		for (int t = 0; t < 4; t++) {
