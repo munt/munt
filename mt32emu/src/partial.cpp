@@ -453,12 +453,10 @@ Bit16s *Partial::mixBuffersRing(Bit16s * buf1, Bit16s *buf2, int len) {
 }
 
 bool Partial::hasRingModulatingSlave() const {
-	// FIXME:KG: Check that I got structurePosition the right way around
 	return pair != NULL && structurePosition == 0 && (mixType == 1 || mixType == 2);
 }
 
 bool Partial::isRingModulatingSlave() const {
-	// FIXME:KG: Check that I got structurePosition the right way around
 	return pair != NULL && structurePosition == 1 && (mixType == 1 || mixType == 2);
 }
 
