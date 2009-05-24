@@ -28,7 +28,6 @@ private:
 
 	Partial *partialTable[MT32EMU_MAX_PARTIALS];
 	Bit8u numReservedPartialsForPart[9];
-	Bit32s numActivePartialsForPart[9]; // The count of partials played per part
 
 	bool abortWhereReserveExceeded(PolyState polyState, int minPart);
 
@@ -41,11 +40,9 @@ public:
 	bool freePartials(unsigned int needed, int partNum);
 	unsigned int setReserve(Bit8u *rset);
 	void deactivateAll();
-	void ageAll();
 	bool produceOutput(int i, Bit16s *buffer, Bit32u bufferLength);
 	bool shouldReverb(int i);
 	void clearAlreadyOutputed();
-	void getPerPartPartialUsage(int usage[9]);
 	const Partial *getPartial(unsigned int partialNum) const;
 };
 

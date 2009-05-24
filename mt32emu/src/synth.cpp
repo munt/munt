@@ -1172,8 +1172,6 @@ void Synth::render(Bit16s *stream, Bit32u len) {
 }
 
 void Synth::doRender(Bit16s *stream, Bit32u len) {
-	partialManager->ageAll();
-
 	if (myProp.useReverb) {
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 			if (partialManager->shouldReverb(i)) {

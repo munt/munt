@@ -60,6 +60,20 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	currentInstr[10] = 0;
 	expression = 100;
 	memset(patchCache, 0, sizeof(patchCache));
+	for (int i = 0; i < MT32EMU_MAX_POLY; i++) {
+		freePolys.push_front(new Poly(this));
+	}
+}
+
+Part::~Part() {
+	while (!activePolys.empty()) {
+		delete activePolys.front();
+		activePolys.pop_front();
+	}
+	while (!freePolys.empty()) {
+		delete freePolys.front();
+		freePolys.pop_front();
+	}
 }
 
 void Part::setHoldPedal(bool pedalval) {
@@ -199,8 +213,8 @@ void Part::backupCacheToPartials(PatchCache cache[4]) {
 	// if so then duplicate the cached data from the part to the partial so that
 	// we can change the part's cache without affecting the partial.
 	// We delay this until now to avoid a copy operation with every note played
-	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-		polys[polyNum].backupCacheToPartials(cache);
+	for (std::list<Poly*>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+		(*polyIt)->backupCacheToPartials(cache);
 	}
 }
 
@@ -375,11 +389,21 @@ void Part::noteOn(unsigned int midiKey, unsigned int velocity) {
 	playPoly(patchCache, NULL, midiKey, key, velocity);
 }
 
+bool Part::abortFirstPoly(unsigned int key) {
+	for (std::list<Poly*>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+		Poly *poly = *polyIt;
+		if (poly->getKey() == key) {
+			poly->abort();
+			return true;
+		}
+	}
+	return false;
+}
+
 bool Part::abortFirstPoly(PolyState polyState) {
-	// FIXME: Poly priority should be considered, but isn't.
-	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-		Poly *poly = &polys[polyNum];
-		if (poly->isActive() && poly->getState() == polyState) {
+	for (std::list<Poly*>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+		Poly *poly = *polyIt;
+		if (poly->getState() == polyState) {
 			poly->abort();
 			return true;
 		}
@@ -388,28 +412,16 @@ bool Part::abortFirstPoly(PolyState polyState) {
 }
 
 bool Part::abortFirstPoly() {
-	// FIXME: Poly priority should be considered, but isn't.
-	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-		Poly *poly = &polys[polyNum];
-		if (poly->isActive()) {
-			poly->abort();
-			return true;
-		}
-	}
-	return false;
+	if (activePolys.empty())
+		return false;
+	activePolys.front()->abort();
+	return true;
 }
 
 void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhythmTemp, unsigned int midiKey, unsigned int key, unsigned int velocity) {
 	if((patchTemp->patch.assignMode & 2) == 0) {
 		// Single-assign mode
-		// FIXME: Poly priority should be considered, but isn't.
-		for (unsigned int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-			Poly *poly = &polys[polyNum];
-			if (poly->isActive() && poly->getKey() == key) {
-				poly->abort();
-				break;
-			}
-		}
+		abortFirstPoly(key);
 	}
 
 	unsigned int needPartials = cache[0].partialCount;
@@ -423,27 +435,28 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 		return;
 	}
 
-	// Find free poly
-	int polyNum;
-	for (polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-		if (!polys[polyNum].isActive()) {
-			break;
-		}
-	}
-	if (polyNum == MT32EMU_MAX_POLY) {
+	if (freePolys.empty()) {
 		synth->printDebug("%s (%s): No free poly to play key %d (velocity %d)", name, currentInstr, midiKey, velocity);
 		return;
+	}
+	Poly *poly = freePolys.front();
+	freePolys.pop_front();
+	if (patchTemp->patch.assignMode & 1) {
+		// Priority to data first received
+		activePolys.push_front(poly);
+	} else {
+		activePolys.push_back(poly);
 	}
 
 	Partial *partials[4];
 	for (int x = 0; x < 4; x++) {
 		if (cache[x].playPartial) {
 			partials[x] = synth->partialManager->allocPartial(partNum);
+			activePartialCount++;
 		} else {
 			partials[x] = NULL;
 		}
 	}
-	Poly *poly = &polys[polyNum];
 	poly->reset(key, velocity, cache[0].sustain, partials);
 
 	for (int x = 0; x < 4; x++) {
@@ -454,24 +467,30 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 }
 
 void Part::allNotesOff() {
-	// Note: Unchecked on real MT-32, but the MIDI specification states that all notes off (0x7B)
+	// The MIDI specification states - and Mok confirms - that all notes off (0x7B)
 	// should treat the hold pedal as usual.
-	// All *sound* off (0x78) should stop notes immediately regardless of the hold pedal.
-	// The latter controller is not implemented on the MT-32 (according to the docs).
-	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-		polys[polyNum].noteOff(holdpedal);
+	for (std::list<Poly*>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+		Poly *poly = *polyIt;
+		// FIXME: This has special handling of key 0 in NoteOff that Mok has not yet confirmed
+		// applies to AllNotesOff.
+		poly->noteOff(holdpedal);
 	}
 }
 
 void Part::allSoundOff() {
-	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-		polys[polyNum].startDecay();
+	// MIDI "All sound off" (0x78) should release notes immediately regardless of the hold pedal.
+	// This controller is not actually implemented by the synths, though (according to the docs and Mok) -
+	// we're only using this method internally.
+	for (std::list<Poly*>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+		Poly *poly = *polyIt;
+		poly->startDecay();
 	}
 }
 
 void Part::stopPedalHold() {
-	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-		polys[polyNum].stopPedalHold();
+	for (std::list<Poly*>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+		Poly *poly = *polyIt;
+		poly->stopPedalHold();
 	}
 }
 
@@ -488,39 +507,32 @@ void Part::stopNote(unsigned int key) {
 	synth->printDebug("%s (%s): stopping key %d", name, currentInstr, key);
 #endif
 
-	if (key != 255) {
-		for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-			Poly *poly = &polys[polyNum];
-			if (poly->getKey() == key) {
-				poly->noteOff(holdpedal);
+	for (std::list<Poly*>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+		Poly *poly = *polyIt;
+		// Generally, non-sustaining instruments ignore note off. They die away eventually anyway.
+		// Key 0 (only used by special cases on rhythm part) reacts to note off even if non-sustaining or pedal held.
+		if (poly->getKey() == key && (poly->canSustain() || key == 0)) {
+			if (poly->noteOff(holdpedal && key != 0)) {
+				break;
 			}
 		}
-		return;
-	}
-
-	// Find oldest poly... yes, the MT-32 can be reconfigured to kill different poly first
-	// This is simplest
-	int oldest = -1;
-	Bit32u oldage = 0;
-
-	for (int polyNum = 0; polyNum < MT32EMU_MAX_POLY; polyNum++) {
-		Poly *poly = &polys[polyNum];
-
-		if (poly->getState() == POLY_Playing || poly->getState() == POLY_Held) {
-			if (poly->getAge() >= oldage) {
-				oldage = poly->getAge();
-				oldest = polyNum;
-			}
-		}
-	}
-
-	if (oldest != -1) {
-		polys[oldest].startDecay();
 	}
 }
 
 const MemParams::PatchTemp *Part::getPatchTemp() const {
 	return patchTemp;
+}
+
+int Part::getActivePartialCount() const {
+	return activePartialCount;
+}
+
+void Part::partialDeactivated(Poly *poly) {
+	activePartialCount--;
+	if(!poly->isActive()) {
+		activePolys.remove(poly);
+		freePolys.push_front(poly);
+	}
 }
 
 }

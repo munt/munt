@@ -18,7 +18,8 @@
 
 namespace MT32Emu {
 
-Poly::Poly() {
+Poly::Poly(Part *part) {
+	this->part = part;
 	key = 255;
 	velocity = 255;
 	sustain = false;
@@ -52,7 +53,7 @@ bool Poly::noteOff(bool pedalHeld) {
 	if (state == POLY_Inactive || state == POLY_Releasing || (key != 0 && !sustain)) {
 		return false;
 	}
-	if (pedalHeld && key != 0) {
+	if (pedalHeld) {
 		state = POLY_Held;
 	} else {
 		startDecay();
@@ -127,15 +128,6 @@ bool Poly::isActive() const {
 	return state != POLY_Inactive;
 }
 
-Bit32u Poly::getAge() const {
-	for (int i = 0; i < 4; i++) {
-		if (partials[i] != NULL) {
-			return partials[i]->age;
-		}
-	}
-	return 0;
-}
-
 // This is called by Partial to inform the poly that the Partial has deactivated
 void Poly::partialDeactivated(Partial *partial) {
 	bool allNull = true;
@@ -149,6 +141,7 @@ void Poly::partialDeactivated(Partial *partial) {
 	if (allNull) {
 		state = POLY_Inactive;
 	}
+	part->partialDeactivated(this);
 }
 
 }

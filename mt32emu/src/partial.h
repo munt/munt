@@ -49,7 +49,6 @@ private:
 	int mixType;
 	int structurePosition; // 0 or 1 of a structure pair
 	bool useNoisePair;
-	int partialChan;
 	StereoVolume stereoVolume;
 
 	bool firstSample;
@@ -109,7 +108,6 @@ public:
 
 	Partial *pair;
 	bool alreadyOutputed;
-	Bit32u age;
 
 	Partial(Synth *synth, int debugPartialNum);
 	~Partial();
@@ -118,7 +116,7 @@ public:
 	int getKey() const;
 	const Poly *getPoly() const;
 	bool isActive() const;
-	void activate(int part, int pChan);
+	void activate(int part);
 	void deactivate(void);
 	void startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial);
 	void startFiltDecay(Bit32s startval);

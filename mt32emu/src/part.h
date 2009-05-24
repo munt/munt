@@ -17,6 +17,8 @@
 #ifndef MT32EMU_PART_H
 #define MT32EMU_PART_H
 
+#include <list>
+
 namespace MT32Emu {
 
 class PartialManager;
@@ -33,15 +35,18 @@ private:
 
 	bool holdpedal;
 
+	int activePartialCount;
 	PatchCache patchCache[4];
-
-	Poly polys[MT32EMU_MAX_POLY];
+	std::list<Poly*> freePolys;
+	std::list<Poly*> activePolys;
 
 	static int fixKeyfollow(int srckey);
 	static int fixBiaslevel(int srcpnt, int *dir);
 
 	void setPatch(const PatchParam *patch);
 	unsigned int midiKeyToKey(unsigned int midiKey, const char *debugAction);
+
+	bool abortFirstPoly(unsigned int key);
 
 protected:
 	Synth *synth;
@@ -60,6 +65,7 @@ protected:
 
 public:
 	Part(Synth *synth, unsigned int usePartNum);
+	~Part();
 	virtual void noteOn(unsigned int midiKey, unsigned int velocity);
 	virtual void noteOff(unsigned int midiKey);
 	void allNotesOff();
@@ -81,8 +87,12 @@ public:
 	virtual void setTimbre(TimbreParam *timbre);
 	virtual unsigned int getAbsTimbreNum() const;
 	const char *getCurrentInstr() const;
+	int getActivePartialCount() const;
 
 	const MemParams::PatchTemp *getPatchTemp() const;
+
+	// This should only be called by Poly
+	void partialDeactivated(Poly *poly);
 
 	// These are rather specialised, and should probably only be used by PartialManager
 	bool abortFirstPoly(PolyState polyState);

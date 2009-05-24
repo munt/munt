@@ -58,10 +58,9 @@ const Poly *Partial::getPoly() const {
 	return this->poly;
 }
 
-void Partial::activate(int part, int pChan) {
+void Partial::activate(int part) {
 	// This just marks the partial as being assigned to a part
 	ownerPart = part;
-	this->partialChan = pChan;
 }
 
 void Partial::deactivate() {
@@ -175,7 +174,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	intPCMPosition = 0;
 	pair = pairPartial;
 	useNoisePair = pairPartial == NULL && (mixType == 1 || mixType == 2);
-	age = 0;
 	alreadyOutputed = false;
 	tva->reset(part, patchCache, rhythmTemp);
 	tvp->reset(part, patchCache);

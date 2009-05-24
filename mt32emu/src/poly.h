@@ -19,6 +19,8 @@
 
 namespace MT32Emu {
 
+class Part;
+
 enum PolyState {
 	POLY_Playing,
 	POLY_Held, // This marks keys that have been released on the keyboard, but are being held by the pedal
@@ -28,6 +30,7 @@ enum PolyState {
 
 class Poly {
 private:
+	Part *part;
 	unsigned int key;
 	unsigned int velocity;
 	bool sustain;
@@ -37,7 +40,7 @@ private:
 	Partial *partials[4];
 
 public:
-	Poly();
+	Poly(Part *part);
 	void reset(unsigned int key, unsigned int velocity, bool sustain, Partial **partials);
 	bool noteOff(bool pedalHeld);
 	void stopPedalHold();
@@ -51,7 +54,6 @@ public:
 	bool canSustain() const;
 	PolyState getState() const;
 	bool isActive() const;
-	Bit32u getAge() const;
 
 	void partialDeactivated(Partial *partial);
 };

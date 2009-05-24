@@ -32,22 +32,9 @@ PartialManager::~PartialManager(void) {
 		delete partialTable[i];
 }
 
-void PartialManager::getPerPartPartialUsage(int usage[9]) {
-	memset(usage, 0, 9 * sizeof (int));
-	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-		if (partialTable[i]->isActive())
-			usage[partialTable[i]->getOwnerPart()]++;
-	}
-}
-
 void PartialManager::clearAlreadyOutputed() {
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++)
 		partialTable[i]->alreadyOutputed = false;
-}
-
-void PartialManager::ageAll() {
-	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++)
-		partialTable[i]->age++;
 }
 
 bool PartialManager::shouldReverb(int i) {
@@ -76,30 +63,24 @@ unsigned int PartialManager::setReserve(Bit8u *rset) {
 Partial *PartialManager::allocPartial(int partNum) {
 	Partial *outPartial = NULL;
 
-	int partialChan = 0;
 	// Get the first inactive partial
-	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-		if (!partialTable[i]->isActive()) {
-			outPartial = partialTable[i];
-			partialChan = i;
+	for (int partialNum = 0; partialNum < MT32EMU_MAX_PARTIALS; partialNum++) {
+		if (!partialTable[partialNum]->isActive()) {
+			outPartial = partialTable[partialNum];
 			break;
 		}
 	}
 	if (outPartial != NULL) {
-		outPartial->activate(partNum, partialChan);
-		outPartial->age = 0;
+		outPartial->activate(partNum);
 	}
 	return outPartial;
 }
 
 unsigned int PartialManager::getFreePartialCount(void) {
 	int count = 0;
-	memset(numActivePartialsForPart, 0, sizeof(numActivePartialsForPart));
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		if (!partialTable[i]->isActive())
 			count++;
-		else
-			numActivePartialsForPart[partialTable[i]->getOwnerPart()]++;
 	}
 	return count;
 }
@@ -110,7 +91,7 @@ bool PartialManager::abortWhereReserveExceeded(PolyState polyState, int minPart)
 	// Abort decaying polys in non-rhythm parts that have exceeded their partial reservation (working backwards from part 7)
 	for (int partNum = 7; partNum >= minPart; partNum--) {
 		int usePartNum = partNum == -1 ? 8 : partNum;
-		if (numActivePartialsForPart[usePartNum] > numReservedPartialsForPart[usePartNum]) {
+		if (parts[usePartNum]->getActivePartialCount() > numReservedPartialsForPart[usePartNum]) {
 			// This part has exceeded its reserved partial count.
 			// We go through and look for a poly with the given state and abort the first one we find.
 			if (parts[usePartNum]->abortFirstPoly(polyState))
@@ -153,7 +134,7 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 			return true;
 	}
 
-	if (numActivePartialsForPart[partNum] + needed > numReservedPartialsForPart[partNum]) {
+	if (parts[partNum]->getActivePartialCount() + needed > numReservedPartialsForPart[partNum]) {
 		// With the new partials we're freeing for, we would end up using more partials than we have reserved.
 		if (synth->getPart(partNum)->getPatchTemp()->patch.assignMode & 1) {
 			// Priority is given to earlier polys, so just give up
