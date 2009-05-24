@@ -266,14 +266,7 @@ static void initDep(KeyLookup *keyLookup, float f) {
 		if (dep == 0) {
 			keyLookup->envTimeMult[dep] = 256;
 		} else {
-			float depfac = 3000.0f;
-			float ff, tempdep;
-			depfac = (float)depexp[dep];
-
-			ff = (f - (float)MIDDLEC) / depfac;
-			tempdep = powf(2, ff) * 256.0f;
-
-			ff = (float)(exp(tkcatconst[dep] * ((float)MIDDLEC - f)) * tkcatmult[dep]);
+			float ff = (float)(exp(tkcatconst[dep] * ((float)MIDDLEC - f)) * tkcatmult[dep]);
 			keyLookup->envTimeMult[dep] = (int)(ff * 256.0f);
 		}
 	}
