@@ -591,28 +591,8 @@ Bit32s Partial::getFiltEnvelope() {
 
 	cutoff += (((Bit32s)patchCache->srcPartial.tvf.cutoff << 4) - 800);
 	if (cutoff >= 0) {
-
-		// FIXME: CC: Coarse pitch calculation placeholder until end-to-end use of MT-32-like pitch calculation
-		// is application-wide.
-		int oc  = getKey() + 12;
-		int pitch = pitchROMTable[oc % 12];
-		pitch += ((oc / 12) << 12) - 24576;
-
-		pitch = (pitch * romMultKeyfollow[patchCache->srcPartial.wg.pitchKeyfollow]) >> 13;
-		if (patchCache->srcPartial.wg.waveform & 1) {
-			pitch += 33037;
-		} else {
-			pitch += 37133;
-		}
-
-		if (pitch < 0) {
-			pitch = 0;
-		}
-		if (pitch > 59392) {
-			pitch = 59392;
-		}
-
-		int pitchAdjust = (pitch >> 4) + cutoff - 3584;
+		Bit32u basePitch = tvp->getBasePitch();
+		int pitchAdjust = (basePitch >> 4) + cutoff - 3584;
 		if (pitchAdjust > 0) {
 			cutoff -= pitchAdjust;
 		}
