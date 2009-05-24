@@ -32,26 +32,9 @@
 // No point making it more than MT32EMU_MAX_PARTIALS, since each note needs at least one partial.
 #define MT32EMU_MAX_POLY 32
 
-#if (defined (_MSC_VER) && defined(_M_IX86))
-#define MT32EMU_HAVE_X86
-#elif  defined(__GNUC__)
-// FIXME: Our use of inline assembler is broken in gcc 4, at least for some MMX code.
-// Temporarily enabling inline assembly only for gcc 3.
-#if __GNUC__ == 3 && defined(__i386__)
-#define MT32EMU_HAVE_X86
-#endif
-#endif
-
-#ifdef MT32EMU_HAVE_X86
-#define MT32EMU_USE_MMX 1
-#else
-#define MT32EMU_USE_MMX 0
-#endif
-
 #include "freeverb/revmodel.h"
 
 #include "structures.h"
-#include "i386.h"
 #include "file.h"
 #include "tables.h"
 #include "poly.h"

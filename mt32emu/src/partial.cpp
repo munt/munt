@@ -325,13 +325,6 @@ Bit16s *Partial::mixBuffers(Bit16s * buf1, Bit16s *buf2, int len) {
 		return buf1;
 
 	Bit16s *outBuf = buf1;
-#if MT32EMU_USE_MMX >= 1
-	// KG: This seems to be fine
-	int donelen = i386_mixBuffers(buf1, buf2, len);
-	len -= donelen;
-	buf1 += donelen;
-	buf2 += donelen;
-#endif
 	while (len--) {
 		*buf1 = *buf1 + *buf2;
 		buf1++, buf2++;
@@ -355,13 +348,6 @@ Bit16s *Partial::mixBuffersRingMix(Bit16s * buf1, Bit16s *buf2, int len) {
 	}
 
 	Bit16s *outBuf = buf1;
-#ifdef MT32EMU_USE_MMX_MIXING
-	// KG: This seems to be fine
-	int donelen = i386_mixBuffersRingMix(buf1, buf2, len);
-	len -= donelen;
-	buf1 += donelen;
-	buf2 += donelen;
-#endif
 	#define CUTOFF 2048
 	while (len--) {
 		int a[3], b[3], c[2], d[2], result;
@@ -406,15 +392,8 @@ Bit16s *Partial::mixBuffersRing(Bit16s * buf1, Bit16s *buf2, int len) {
 	}
 
 	Bit16s *outBuf = buf1;
-#if MT32EMU_USE_MMX_MIXING
-	// FIXME:KG: Not really checked as working
-	int donelen = i386_mixBuffersRing(buf1, buf2, len);
-	len -= donelen;
-	buf1 += donelen;
-	buf2 += donelen;
-#endif
 	while (len--) {
-	int a[3], b[3], c[2], d[2], result;
+		int a[3], b[3], c[2], d[2], result;
 
 		a[0] = ((Bit32s)*buf1);
 		b[0] = ((Bit32s)*buf2);
