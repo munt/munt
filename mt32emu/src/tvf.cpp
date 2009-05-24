@@ -105,7 +105,7 @@ void TVF::setIncrement(Bit8u increment) {
 	bigIncrement = (unsigned int)((powf(10.0f, (float)((bigIncrement - 1.0f) / 26.0f))) * 256.0f);
 }
 
-void TVF::reset(const TimbreParam::PartialParam *partialParam, unsigned int initialPitch) {
+void TVF::reset(const TimbreParam::PartialParam *partialParam, unsigned int basePitch) {
 	this->partialParam = partialParam;
 
 	unsigned int key = partial->getPoly()->getKey();
@@ -113,7 +113,7 @@ void TVF::reset(const TimbreParam::PartialParam *partialParam, unsigned int init
 
 	Tables *tables = &partial->getSynth()->tables;
 
-	baseCutoff = calcBaseCutoff(tables, partialParam, initialPitch, key);
+	baseCutoff = calcBaseCutoff(tables, partialParam, basePitch, key);
 
 	int newLevelMult = velocity * partialParam->tvf.envVeloSensitivity;
 	newLevelMult >>= 6;
