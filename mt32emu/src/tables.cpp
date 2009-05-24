@@ -24,9 +24,6 @@
 
 namespace MT32Emu {
 
-// These are division constants for the TVF depth key follow
-static const Bit32u depexp[5] = {3000, 950, 485, 255, 138};
-
 //Envelope time keyfollow exponential coefficients
 static const double tkcatconst[5] = {0.0, 0.005853144, 0.011148054, 0.019086143, 0.043333215};
 static const double tkcatmult[5] = {1.0, 1.058245688, 1.048488989, 1.016049301, 1.097538067};
