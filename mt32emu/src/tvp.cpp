@@ -82,7 +82,6 @@ static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialPa
 	const ControlROMPCMStruct *controlROMPCMStruct = partial->getControlROMPCMStruct();
 	if (controlROMPCMStruct != NULL) {
 		basePitch += (Bit32s)((((Bit32s)controlROMPCMStruct->pitchMSB) << 8) | (Bit32s)controlROMPCMStruct->pitchLSB);
-		
 	} else {
 		if ((partialParam->wg.waveform & 1) == 0) {
 			basePitch += 37133; // This puts Middle C at around 261.64Hz (assuming no other modifications, masterTune of 64, etc.)
@@ -153,6 +152,10 @@ void TVP::reset(const Part *part, const PatchCache *patchCache) {
 	pitchOffsetChangePerBigTick = 0;
 	targetPitchOffsetReachedBigTick = 0;
 	shifts = 0;
+}
+
+Bit32u TVP::getBasePitch() const {
+	return basePitch;
 }
 
 void TVP::updatePitch() {

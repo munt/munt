@@ -56,6 +56,7 @@ private:
 public:
 	TVP(const Partial *partial);
 	void reset(const Part *part, const PatchCache *patchCache);
+	Bit32u getBasePitch() const;
 	Bit16u nextPitch();
 	void startDecay();
 };
