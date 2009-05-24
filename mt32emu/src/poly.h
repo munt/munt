@@ -33,6 +33,7 @@ private:
 	Part *part;
 	unsigned int key;
 	unsigned int velocity;
+	unsigned int activePartialCount;
 	bool sustain;
 
 	PolyState state;
@@ -43,8 +44,8 @@ public:
 	Poly(Part *part);
 	void reset(unsigned int key, unsigned int velocity, bool sustain, Partial **partials);
 	bool noteOff(bool pedalHeld);
-	void stopPedalHold();
-	void startDecay();
+	bool stopPedalHold();
+	bool startDecay();
 	void abort();
 
 	void backupCacheToPartials(PatchCache cache[4]);
@@ -53,6 +54,7 @@ public:
 	unsigned int getVelocity() const;
 	bool canSustain() const;
 	PolyState getState() const;
+	unsigned int getActivePartialCount() const;
 	bool isActive() const;
 
 	void partialDeactivated(Partial *partial);

@@ -23,6 +23,7 @@ Poly::Poly(Part *part) {
 	key = 255;
 	velocity = 255;
 	sustain = false;
+	activePartialCount = 0;
 	for (int i = 0; i < 4; i++) {
 		partials[i] = NULL;
 	}
@@ -39,9 +40,11 @@ void Poly::reset(unsigned int key, unsigned int velocity, bool canSustain, Parti
 	this->velocity = velocity;
 	this->sustain = canSustain;
 
+	activePartialCount = 0;
 	for (int i = 0; i < 4; i++) {
 		this->partials[i] = partials[i];
 		if (partials[i] != NULL) {
+			activePartialCount++;
 			state = POLY_Playing;
 		}
 	}
@@ -50,7 +53,7 @@ void Poly::reset(unsigned int key, unsigned int velocity, bool canSustain, Parti
 bool Poly::noteOff(bool pedalHeld) {
 	// Generally, non-sustaining instruments ignore note off. They die away eventually anyway.
 	// Key 0 (only used by special cases on rhythm part) reacts to note off even if non-sustaining or pedal held.
-	if (state == POLY_Inactive || state == POLY_Releasing || (key != 0 && !sustain)) {
+	if (state == POLY_Inactive || state == POLY_Releasing) {
 		return false;
 	}
 	if (pedalHeld) {
@@ -61,15 +64,15 @@ bool Poly::noteOff(bool pedalHeld) {
 	return true;
 }
 
-void Poly::stopPedalHold() {
+bool Poly::stopPedalHold() {
 	if (state != POLY_Held)
-		return;
-	startDecay();
+		return false;
+	return startDecay();
 }
 
-void Poly::startDecay() {
+bool Poly::startDecay() {
 	if (state == POLY_Inactive || state == POLY_Releasing) {
-		return;
+		return false;
 	}
 	state = POLY_Releasing;
 
@@ -79,6 +82,7 @@ void Poly::startDecay() {
 			partial->startDecayAll();
 		}
 	}
+	return true;
 }
 
 void Poly::abort() {
@@ -124,21 +128,23 @@ PolyState Poly::getState() const {
 	return state;
 }
 
+unsigned int Poly::getActivePartialCount() const {
+	return activePartialCount;
+}
+
 bool Poly::isActive() const {
 	return state != POLY_Inactive;
 }
 
 // This is called by Partial to inform the poly that the Partial has deactivated
 void Poly::partialDeactivated(Partial *partial) {
-	bool allNull = true;
 	for (int i = 0; i < 4; i++) {
 		if (partials[i] == partial) {
 			partials[i] = NULL;
-		} else if (partials[i] != NULL) {
-			allNull = false;
+			activePartialCount--;
 		}
 	}
-	if (allNull) {
+	if (activePartialCount == 0) {
 		state = POLY_Inactive;
 	}
 	part->partialDeactivated(this);

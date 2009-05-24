@@ -59,6 +59,7 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	currentInstr[0] = 0;
 	currentInstr[10] = 0;
 	expression = 100;
+	activePartialCount = 0;
 	memset(patchCache, 0, sizeof(patchCache));
 	for (int i = 0; i < MT32EMU_MAX_POLY; i++) {
 		freePolys.push_front(new Poly(this));
@@ -523,13 +524,24 @@ const MemParams::PatchTemp *Part::getPatchTemp() const {
 	return patchTemp;
 }
 
-int Part::getActivePartialCount() const {
+unsigned int Part::getActivePartialCount() const {
+	return activePartialCount;
+}
+
+unsigned int Part::getActiveNonReleasingPartialCount() const {
+	unsigned int activePartialCount = 0;
+	for (std::list<Poly*>::const_iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+		Poly *poly = *polyIt;
+		if (poly->getState() != POLY_Releasing) {
+			activePartialCount += poly->getActivePartialCount();
+		}
+	}
 	return activePartialCount;
 }
 
 void Part::partialDeactivated(Poly *poly) {
 	activePartialCount--;
-	if(!poly->isActive()) {
+	if (!poly->isActive()) {
 		activePolys.remove(poly);
 		freePolys.push_front(poly);
 	}

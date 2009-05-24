@@ -35,7 +35,7 @@ private:
 
 	bool holdpedal;
 
-	int activePartialCount;
+	unsigned int activePartialCount;
 	PatchCache patchCache[4];
 	std::list<Poly*> freePolys;
 	std::list<Poly*> activePolys;
@@ -87,7 +87,8 @@ public:
 	virtual void setTimbre(TimbreParam *timbre);
 	virtual unsigned int getAbsTimbreNum() const;
 	const char *getCurrentInstr() const;
-	int getActivePartialCount() const;
+	unsigned int getActivePartialCount() const;
+	unsigned int getActiveNonReleasingPartialCount() const;
 
 	const MemParams::PatchTemp *getPatchTemp() const;
 

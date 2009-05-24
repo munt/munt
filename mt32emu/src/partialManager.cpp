@@ -134,7 +134,7 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 			return true;
 	}
 
-	if (parts[partNum]->getActivePartialCount() + needed > numReservedPartialsForPart[partNum]) {
+	if (parts[partNum]->getActiveNonReleasingPartialCount() + needed > numReservedPartialsForPart[partNum]) {
 		// With the new partials we're freeing for, we would end up using more partials than we have reserved.
 		if (synth->getPart(partNum)->getPatchTemp()->patch.assignMode & 1) {
 			// Priority is given to earlier polys, so just give up
