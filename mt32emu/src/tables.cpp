@@ -217,7 +217,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 
 	for (int i = 0; i <= 100; i++) {
 		pulseWidth100To255[i] = (int)(i * 255 / 100.0f + 0.5f);
-		synth->printDebug("%d: %d", i, pulseWidth100To255[i]);
+		//synth->printDebug("%d: %d", i, pulseWidth100To255[i]);
 	}
 	for (lf = -108; lf <= 108; lf++) {
 		tvfKeyfollowMult[lf + 108] = (int)(256 * powf(2.0f, (float)(lf / 24.0f)));
