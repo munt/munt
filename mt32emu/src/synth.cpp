@@ -35,7 +35,7 @@ const ControlROMMap ControlROMMaps[7] = {
 	// (Note that all but CM-32L ROM actually have 86 entries for rhythmTemp)
 };
 
-float iir_filter_normal(float input, float *hist1_ptr, float *coef_ptr) {
+float iir_filter_normal(float input, float *hist1_ptr, const float *coef_ptr) {
 	float *hist2_ptr;
 	float output,new_hist;
 

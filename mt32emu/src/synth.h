@@ -95,7 +95,7 @@ typedef void (*recalcStatusCallback)(int percDone);
 // callback routine, no status is reported.
 bool RecalcWaveforms(char * baseDir, int sampRate, recalcStatusCallback callBack);
 
-typedef float (*iir_filter_type)(float input,float *hist1_ptr, float *coef_ptr);
+typedef float (*iir_filter_type)(float input,float *hist1_ptr, const float *coef_ptr);
 
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
 
