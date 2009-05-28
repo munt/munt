@@ -176,9 +176,6 @@ void Tables::initEnvelopes(float samplerate) {
 		// Not sure why this is a special case, but it's seen to be from the real thing.
 		seconds = powf(2, (elf / 8.0f) + 6) / 32768.0f;
 		envDecayTime[lf]  = (int)(seconds * samplerate);
-
-		// I am certain of this:  Verified by hand LFO log
-		lfoPeriod[lf] = (Bit32u)(((float)samplerate) / (powf(1.088883372f, (float)lf) * 0.021236044f));
 	}
 }
 

@@ -105,7 +105,6 @@ public:
 	Bit32u envTime[101];
 	Bit32u envDeltaMaxTime[101];
 	Bit32u envDecayTime[101];
-	Bit32u lfoPeriod[101];
 	float filtCoeff[FILTERGRAN][31][12];
 
 	// Various LUTs for each key
