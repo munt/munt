@@ -64,6 +64,8 @@ void Partial::activate(int part) {
 }
 
 void Partial::deactivate() {
+	if (!isActive())
+		return;
 	ownerPart = -1;
 	if (poly != NULL) {
 		poly->partialDeactivated(this);
