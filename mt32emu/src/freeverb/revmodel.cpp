@@ -73,7 +73,7 @@ void revmodel::mute()
 	}
 }
 
-void revmodel::processreplace(float *inputL, float *inputR, float *outputL, float *outputR, long numsamples, int skip)
+void revmodel::processreplace(const float *inputL, const float *inputR, float *outputL, float *outputR, long numsamples, int skip)
 {
 	float outL,outR,input;
 
