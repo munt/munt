@@ -400,6 +400,7 @@ bool Synth::open(SynthProperties &useProp) {
 	if (isOpen)
 		return false;
 	Stk::setSampleRate(useProp.sampleRate);
+	reverbModel->setSampleRate(useProp.sampleRate);
 	myProp = useProp;
 	if (useProp.baseDir != NULL) {
 		myProp.baseDir = new char[strlen(useProp.baseDir) + 1];
@@ -1295,6 +1296,10 @@ FreeverbModel::FreeverbModel() {
 
 FreeverbModel::~FreeverbModel() {
 	delete freeverb;
+}
+
+void FreeverbModel::setSampleRate(unsigned int sampleRate) {
+	// FIXME: We don't deal with this at all.
 }
 
 void FreeverbModel::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, long numSamples) {
