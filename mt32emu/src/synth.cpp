@@ -1262,37 +1262,38 @@ void MemoryRegion::read(unsigned int entry, unsigned int off, Bit8u *dst, unsign
 }
 
 void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src, unsigned int len, bool init) const {
-		unsigned int memOff = entry * entrySize + off;
-		// This method should never be called with out-of-bounds parameters,
-		// or on an unsupported region - seeing any of this debug output indicates a bug in the emulator
-		if (off > entrySize * entries - 1) {
-			synth->printDebug("write[%d]: parameters start out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
-			return;
-		}
-		if (off + len > entrySize * entries) {
-			synth->printDebug("write[%d]: parameters end out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
-			len = entrySize * entries - off;
-		}
-		Bit8u *dest = getRealMemory();
-		if (dest == NULL) {
-			synth->printDebug("write[%d]: unwritable region: entry=%d, off=%d, len=%d", type, entry, off, len);
-		}
-
-		for (unsigned int i = 0; i < len; i++) {
-			Bit8u desiredValue = src[i];
-			Bit8u maxValue = getMaxValue(memOff);
-			// maxValue == 0 means write-protected unless called from initialisation code, in which case it really means the maximum value is 0.
-			if (maxValue != 0 || init) {
-				if (desiredValue > maxValue) {
-					synth->printDebug("write[%d]: Wanted 0x%02x at %d, but max 0x%02x", type, desiredValue, memOff, maxValue);
-					desiredValue = maxValue;
-				}
-				dest[memOff] = desiredValue;
-			} else if (desiredValue != 0){
-				// Only output debug info if they wanted to write non-zero, since a lot of things cause this to spit out a lot of debug info otherwise.
-				synth->printDebug("write[%d]: Wanted 0x%02x at %d, but write-protected", type, desiredValue, memOff);
-			}
-			memOff++;
-		}
+	unsigned int memOff = entry * entrySize + off;
+	// This method should never be called with out-of-bounds parameters,
+	// or on an unsupported region - seeing any of this debug output indicates a bug in the emulator
+	if (off > entrySize * entries - 1) {
+		synth->printDebug("write[%d]: parameters start out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
+		return;
 	}
+	if (off + len > entrySize * entries) {
+		synth->printDebug("write[%d]: parameters end out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
+		len = entrySize * entries - off;
+	}
+	Bit8u *dest = getRealMemory();
+	if (dest == NULL) {
+		synth->printDebug("write[%d]: unwritable region: entry=%d, off=%d, len=%d", type, entry, off, len);
+	}
+
+	for (unsigned int i = 0; i < len; i++) {
+		Bit8u desiredValue = src[i];
+		Bit8u maxValue = getMaxValue(memOff);
+		// maxValue == 0 means write-protected unless called from initialisation code, in which case it really means the maximum value is 0.
+		if (maxValue != 0 || init) {
+			if (desiredValue > maxValue) {
+				synth->printDebug("write[%d]: Wanted 0x%02x at %d, but max 0x%02x", type, desiredValue, memOff, maxValue);
+				desiredValue = maxValue;
+			}
+			dest[memOff] = desiredValue;
+		} else if (desiredValue != 0){
+			// Only output debug info if they wanted to write non-zero, since a lot of things cause this to spit out a lot of debug info otherwise.
+			synth->printDebug("write[%d]: Wanted 0x%02x at %d, but write-protected", type, desiredValue, memOff);
+		}
+		memOff++;
+	}
+}
+
 }
