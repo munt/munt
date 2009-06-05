@@ -400,6 +400,7 @@ bool Synth::open(SynthProperties &useProp) {
 	if (isOpen)
 		return false;
 	Stk::setSampleRate(useProp.sampleRate);
+	reverbModel->reset();
 	reverbModel->setSampleRate(useProp.sampleRate);
 	myProp = useProp;
 	if (useProp.baseDir != NULL) {
@@ -1308,8 +1309,7 @@ void FreeverbModel::process(const float *inLeft, const float *inRight, float *ou
 
 void FreeverbModel::setParameters(Bit8u mode, Bit8u time, Bit8u level) {
 	// FIXME:KG: I don't think it's necessary to recreate freeverb's model... Just set the parameters.
-	delete freeverb;
-	freeverb = new revmodel();
+	reset();
 
 	switch (mode) {
 	case 0:
@@ -1341,6 +1341,11 @@ void FreeverbModel::setParameters(Bit8u mode, Bit8u time, Bit8u level) {
 	freeverb->setdry(1);
 	freeverb->setwet((float)level / 5.0f);
 	freeverb->setwidth((float)time / 6.0f);
+}
+
+void FreeverbModel::reset() {
+	delete freeverb;
+	freeverb = new revmodel();
 }
 
 }
