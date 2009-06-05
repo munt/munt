@@ -104,12 +104,16 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 Synth::Synth() {
 	isOpen = false;
 	reverbModel = NULL;
+	reverbEnabled = true;
+	reverbOverridden = false;
+	setReverbModel(NULL); // Creates a default FreeverbModel
 	partialManager = NULL;
 	memset(parts, 0, sizeof(parts));
 }
 
 Synth::~Synth() {
 	close(); // Make sure we're closed and everything is freed
+	delete reverbModel;
 }
 
 int Synth::report(ReportType type, const void *data) {
@@ -135,42 +139,35 @@ void Synth::printDebug(const char *fmt, ...) {
 	va_end(ap);
 }
 
-void Synth::initReverb(Bit8u newRevMode, Bit8u newRevTime, Bit8u newRevLevel) {
-	// FIXME:KG: I don't think it's necessary to recreate the reverbModel... Just set the parameters
-	if (reverbModel != NULL)
-		delete reverbModel;
-	reverbModel = new revmodel();
+void Synth::setReverbModel(ReverbModel *reverbModel) {
+	delete this->reverbModel;
+	if(reverbModel == NULL)
+		reverbModel = new FreeverbModel();
+	this->reverbModel = reverbModel;
+	if(isOpen)
+		setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
+}
 
-	switch (newRevMode) {
-	case 0:
-		reverbModel->setroomsize(.1f);
-		//reverbModel->setdamp(.75f);
-		reverbModel->setdamp(1.0f);
-		break;
-	case 1:
-		reverbModel->setroomsize(.5f);
-		//reverbModel->setdamp(.5f);
-		reverbModel->setdamp(1.0f);
-		break;
-	case 2:
-		reverbModel->setroomsize(.5f);
-		//reverbModel->setdamp(.1f);
-		reverbModel->setdamp(1.0f);
-		break;
-	case 3:
-		reverbModel->setroomsize(1.0f);
-		//reverbModel->setdamp(.75f);
-		reverbModel->setdamp(1.0f);
-		break;
-	default:
-		reverbModel->setroomsize(.1f);
-		//reverbModel->setdamp(.5f);
-		reverbModel->setdamp(1.0f);
-		break;
-	}
-	reverbModel->setdry(1);
-	reverbModel->setwet((float)newRevLevel / 5.0f);
-	reverbModel->setwidth((float)newRevTime / 6.0f);
+void Synth::setReverbEnabled(bool reverbEnabled) {
+	this->reverbEnabled = reverbEnabled;
+}
+
+bool Synth::isReverbEnabled() const {
+	return reverbEnabled;
+}
+
+void Synth::setReverbOverridden(bool reverbOverridden) {
+	this->reverbOverridden = reverbOverridden;
+}
+
+bool Synth::isReverbOverridden() const {
+	return reverbOverridden;
+}
+
+void Synth::setReverbParameters(Bit8u mode, Bit8u time, Bit8u level) {
+	if(reverbOverridden)
+		return;
+	reverbModel->setParameters(mode, time, level);
 }
 
 File *Synth::openFile(const char *filename, File::OpenMode mode) {
@@ -1063,11 +1060,7 @@ bool Synth::refreshSystem() {
 	report(ReportType_newReverbTime,  &mt32ram.system.reverbTime);
 	report(ReportType_newReverbLevel, &mt32ram.system.reverbLevel);
 
-	if (myProp.useDefaultReverb) {
-		initReverb(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
-	} else {
-		initReverb(myProp.reverbType, myProp.reverbTime, mt32ram.system.reverbLevel);
-	}
+	setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
 
 	Bit8u *rset = mt32ram.system.reserveSettings;
 	printDebug(" Partial reserve: 1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
@@ -1172,7 +1165,7 @@ void Synth::render(Bit16s *stream, Bit32u len) {
 }
 
 void Synth::doRender(Bit16s *stream, Bit32u len) {
-	if (myProp.useReverb) {
+	if (reverbEnabled) {
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 			if (partialManager->shouldReverb(i)) {
 				if (partialManager->produceOutput(i, &tmpBuffer[0], len)) {
@@ -1187,7 +1180,7 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 			sndbufr[i] = (float)stream[m] / 32767.0f;
 			m++;
 		}
-		reverbModel->processreplace(sndbufl, sndbufr, outbufl, outbufr, len, 1);
+		reverbModel->process(sndbufl, sndbufr, outbufl, outbufr, len);
 		m=0;
 		for (unsigned int i = 0; i < len; i++) {
 	        stream[m] = clipBit16s(outbufl[i] * 32767.0f);
@@ -1294,6 +1287,55 @@ void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src,
 		}
 		memOff++;
 	}
+}
+
+FreeverbModel::FreeverbModel() {
+	freeverb = NULL; // Will be initialised with the first setParameters() call.
+}
+
+FreeverbModel::~FreeverbModel() {
+	delete freeverb;
+}
+
+void FreeverbModel::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, long numSamples) {
+	freeverb->processreplace(inLeft, inRight, outLeft, outRight, numSamples, 1);
+}
+
+void FreeverbModel::setParameters(Bit8u mode, Bit8u time, Bit8u level) {
+	// FIXME:KG: I don't think it's necessary to recreate freeverb's model... Just set the parameters.
+	delete freeverb;
+	freeverb = new revmodel();
+
+	switch (mode) {
+	case 0:
+		freeverb->setroomsize(.1f);
+		//freeverb->setdamp(.75f);
+		freeverb->setdamp(1.0f);
+		break;
+	case 1:
+		freeverb->setroomsize(.5f);
+		//freeverb->setdamp(.5f);
+		freeverb->setdamp(1.0f);
+		break;
+	case 2:
+		freeverb->setroomsize(.5f);
+		//freeverb->setdamp(.1f);
+		freeverb->setdamp(1.0f);
+		break;
+	case 3:
+		freeverb->setroomsize(1.0f);
+		//freeverb->setdamp(.75f);
+		freeverb->setdamp(1.0f);
+		break;
+	default:
+		freeverb->setroomsize(.1f);
+		//freeverb->setdamp(.5f);
+		freeverb->setdamp(1.0f);
+		break;
+	}
+	freeverb->setdry(1);
+	freeverb->setwet((float)level / 5.0f);
+	freeverb->setwidth((float)time / 6.0f);
 }
 
 }

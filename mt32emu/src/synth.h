@@ -57,17 +57,15 @@ struct SynthProperties {
 	// Sample rate to use in mixing
 	unsigned int sampleRate;
 
-	// Flag to activate reverb.  True = use reverb, False = no reverb
+	// Deprecated - ignored. Use Synth::setReverbEnabled() instead.
 	bool useReverb;
-	// True to use software set reverb settings, False to set reverb settings in
-	// following parameters
+	// Deprecated - ignored. Use Synth::setReverbOverridden() instead.
 	bool useDefaultReverb;
-	// When not using the default settings, this specifies one of the 4 reverb types
-	// 1 = Room 2 = Hall 3 = Plate 4 = Tap
+	// Deprecated - ignored. Use Synth::setReverbParameters() instead.
 	unsigned char reverbType;
-	// This specifies the delay time, from 0-7 (not sure of the actual MT-32's measurement)
+	// Deprecated - ignored. Use Synth::setReverbParameters() instead.
 	unsigned char reverbTime;
-	// This specifies the reverb level, from 0-7 (not sure of the actual MT-32's measurement)
+	// Deprecated - ignored. Use Synth::setReverbParameters() instead.
 	unsigned char reverbLevel;
 	// The name of the directory in which the ROM and data files are stored (with trailing slash/backslash)
 	// Not used if "openFile" is set. May be NULL in any case.
@@ -248,6 +246,22 @@ public:
 	ResetMemoryRegion(Synth *synth) : MemoryRegion(synth, NULL, NULL, MR_Reset, MT32EMU_MEMADDR(0x7F0000), 0x3FFF, 1) {}
 };
 
+class ReverbModel {
+public:
+	virtual ~ReverbModel() {};
+	virtual void setParameters(Bit8u mode, Bit8u time, Bit8u level) = 0;
+	virtual void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, long numSamples) = 0;
+};
+
+class FreeverbModel : public ReverbModel {
+	revmodel *freeverb;
+public:
+	FreeverbModel();
+	~FreeverbModel();
+	void setParameters(Bit8u mode, Bit8u time, Bit8u level);
+	void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, long numSamples);
+};
+
 class Synth {
 friend class Part;
 friend class RhythmPart;
@@ -290,7 +304,9 @@ private:
 
 	MemParams mt32ram, mt32default;
 
-	revmodel *reverbModel;
+	ReverbModel *reverbModel;
+	bool reverbEnabled;
+	bool reverbOverridden;
 
 	float masterTune;
 
@@ -308,7 +324,6 @@ private:
 	SynthProperties myProp;
 
 	bool loadPreset(File *file);
-	void initReverb(Bit8u newRevMode, Bit8u newRevTime, Bit8u newRevLevel);
 	void doRender(Bit16s * stream, Bit32u len);
 
 	void playAddressedSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
@@ -360,6 +375,13 @@ public:
 	void playSysexWithoutFraming(const Bit8u *sysex, Bit32u len);
 	void playSysexWithoutHeader(unsigned char device, unsigned char command, const Bit8u *sysex, Bit32u len);
 	void writeSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
+
+	void setReverbModel(ReverbModel *reverbModel);
+	void setReverbEnabled(bool reverbEnabled);
+	bool isReverbEnabled() const;
+	void setReverbOverridden(bool reverbOverridden);
+	bool isReverbOverridden() const;
+	void setReverbParameters(Bit8u mode, Bit8u time, Bit8u level);
 
 	// Renders samples to the specified output stream.
 	// The length is in frames, not bytes (in 16-bit stereo,
