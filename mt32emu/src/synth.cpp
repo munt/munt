@@ -547,11 +547,6 @@ void Synth::close(void) {
 		partialManager = NULL;
 	}
 
-	if (reverbModel != NULL) {
-		delete reverbModel;
-		reverbModel = NULL;
-	}
-
 	for (int i = 0; i < 9; i++) {
 		if (parts[i] != NULL) {
 			delete parts[i];
