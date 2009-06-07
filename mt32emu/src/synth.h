@@ -309,6 +309,7 @@ private:
 	MemParams mt32ram, mt32default;
 
 	ReverbModel *reverbModel;
+	ReverbModel *delayReverbModel;
 	bool reverbEnabled;
 	bool reverbOverridden;
 
@@ -381,6 +382,7 @@ public:
 	void writeSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 
 	void setReverbModel(ReverbModel *reverbModel);
+	void setDelayReverbModel(ReverbModel *reverbModel);
 	void setReverbEnabled(bool reverbEnabled);
 	bool isReverbEnabled() const;
 	void setReverbOverridden(bool reverbOverridden);

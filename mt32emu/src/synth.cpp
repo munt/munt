@@ -21,6 +21,8 @@
 
 #include "mt32emu.h"
 
+#include "delayReverb.h"
+
 namespace MT32Emu {
 
 const ControlROMMap ControlROMMaps[7] = {
@@ -104,9 +106,11 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 Synth::Synth() {
 	isOpen = false;
 	reverbModel = NULL;
+	delayReverbModel = NULL;
 	reverbEnabled = true;
 	reverbOverridden = false;
 	setReverbModel(NULL); // Creates a default FreeverbModel
+	setDelayReverbModel(NULL); // Creates a default DelayReverb.
 	partialManager = NULL;
 	memset(parts, 0, sizeof(parts));
 }
@@ -114,6 +118,7 @@ Synth::Synth() {
 Synth::~Synth() {
 	close(); // Make sure we're closed and everything is freed
 	delete reverbModel;
+	delete delayReverbModel;
 }
 
 int Synth::report(ReportType type, const void *data) {
@@ -148,6 +153,15 @@ void Synth::setReverbModel(ReverbModel *reverbModel) {
 		setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
 }
 
+void Synth::setDelayReverbModel(ReverbModel *delayReverbModel) {
+	delete this->delayReverbModel;
+	if(delayReverbModel == NULL)
+		delayReverbModel = new DelayReverb();
+	this->delayReverbModel = delayReverbModel;
+	if(isOpen)
+		setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
+}
+
 void Synth::setReverbEnabled(bool reverbEnabled) {
 	this->reverbEnabled = reverbEnabled;
 }
@@ -167,7 +181,10 @@ bool Synth::isReverbOverridden() const {
 void Synth::setReverbParameters(Bit8u mode, Bit8u time, Bit8u level) {
 	if(reverbOverridden)
 		return;
-	reverbModel->setParameters(mode, time, level);
+	if(mode == 3)
+		delayReverbModel->setParameters(mode, time, level);
+	else
+		reverbModel->setParameters(mode, time, level);
 }
 
 File *Synth::openFile(const char *filename, File::OpenMode mode) {
@@ -402,6 +419,8 @@ bool Synth::open(SynthProperties &useProp) {
 	Stk::setSampleRate(useProp.sampleRate);
 	reverbModel->reset();
 	reverbModel->setSampleRate(useProp.sampleRate);
+	delayReverbModel->reset();
+	delayReverbModel->setSampleRate(useProp.sampleRate);
 	myProp = useProp;
 	if (useProp.baseDir != NULL) {
 		myProp.baseDir = new char[strlen(useProp.baseDir) + 1];
@@ -1177,7 +1196,12 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 			sndbufr[i] = (float)stream[m] / 32767.0f;
 			m++;
 		}
-		reverbModel->process(sndbufl, sndbufr, outbufl, outbufr, len);
+		if (mt32ram.system.reverbMode == 3) {
+			delayReverbModel->process(sndbufl, sndbufr, outbufl, outbufr, len);
+		}
+		else {
+			reverbModel->process(sndbufl, sndbufr, outbufl, outbufr, len);
+		}
 		m=0;
 		for (unsigned int i = 0; i < len; i++) {
 	        stream[m] = clipBit16s(outbufl[i] * 32767.0f);
