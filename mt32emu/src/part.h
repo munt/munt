@@ -55,6 +55,8 @@ protected:
 	Bit8u modulation;
 	Bit8u expression;
 	Bit32s pitchBend;
+	bool nrpn;
+	Bit16u rpn;
 	Bit16u pitchBenderRange; // (patchTemp->patch.benderRange * 683) at the time of the last MIDI program change or MIDI data entry.
 
 	void backupCacheToPartials(PatchCache cache[4]);
@@ -66,6 +68,12 @@ protected:
 public:
 	Part(Synth *synth, unsigned int usePartNum);
 	~Part();
+	void reset();
+	void setDataEntryMSB(unsigned char midiDataEntryMSB);
+	void setNRPN();
+	void setRPNLSB(unsigned char midiRPNLSB);
+	void setRPNMSB(unsigned char midiRPNMSB);
+	void resetAllControllers();
 	virtual void noteOn(unsigned int midiKey, unsigned int velocity);
 	virtual void noteOff(unsigned int midiKey);
 	void allNotesOff();

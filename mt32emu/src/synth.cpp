@@ -629,8 +629,7 @@ void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char 
 			parts[part]->setModulation(velocity);
 			break;
 		case 0x06:
-			// FIXME: This really needs to be implemented (it's supported, at least on the LAPC-I, for bender range setting)
-			printDebug("MIDI data entry unimplemented. Note=0x%02x, Velo=0x%02x", note, velocity);
+			parts[part]->setDataEntryMSB(velocity);
 			break;
 		case 0x07:  // Set volume
 			//printDebug("Volume set: %d", velocity);
@@ -646,16 +645,23 @@ void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char 
 			break;
 		case 0x40: // Hold (sustain) pedal
 			//printDebug("Hold pedal set: %d", velocity);
-			parts[part]->setHoldPedal(velocity>=64);
+			parts[part]->setHoldPedal(velocity >= 64);
+			break;
+
+		case 0x62:
+		case 0x63:
+			parts[part]->setNRPN();
+			break;
+		case 0x64:
+			parts[part]->setRPNLSB(velocity);
+			break;
+		case 0x65:
+			parts[part]->setRPNMSB(velocity);
 			break;
 
 		case 0x79: // Reset all controllers
 			//printDebug("Reset all controllers");
-			// CONFIRMED:Mok: A real LAPC-I responds to this controller as follows:
-			parts[part]->setHoldPedal(false);
-			parts[part]->setModulation(0);
-			parts[part]->setExpression(127);
-			parts[part]->setBend(0x2000);
+			parts[part]->resetAllControllers();
 			break;
 
 		case 0x7B: // All notes off
@@ -1099,7 +1105,12 @@ void Synth::reset() {
 	partialManager->deactivateAll();
 	mt32ram = mt32default;
 	for (int i = 0; i < 9; i++) {
-		parts[i]->refresh();
+		parts[i]->reset();
+		if (i != 8) {
+			parts[i]->setProgram(controlROMData[controlROMMap->programSettings + i]);
+		} else {
+			parts[8]->refresh();
+		}
 	}
 	refreshSystem();
 	isEnabled = false;

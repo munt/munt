@@ -77,12 +77,41 @@ Part::~Part() {
 	}
 }
 
-void Part::setHoldPedal(bool pedalval) {
-	if (holdpedal && !pedalval) {
+void Part::setDataEntryMSB(unsigned char midiDataEntryMSB) {
+	if (nrpn) {
+		// The last RPN-related control change was for an NRPN,
+		// which the real synths don't support.
+		return;
+	}
+	if (rpn != 0) {
+		// The RPN has been set to something other than 0,
+		// which is the only RPN that these synths support
+		return;
+	}
+	patchTemp->patch.benderRange = midiDataEntryMSB > 24 ? 24 : midiDataEntryMSB;
+	updatePitchBenderRange();
+}
+
+void Part::setNRPN() {
+	nrpn = true;
+}
+
+void Part::setRPNLSB(unsigned char midiRPNLSB) {
+	nrpn = false;
+	rpn = (rpn & 0xFF00) | midiRPNLSB;
+}
+
+void Part::setRPNMSB(unsigned char midiRPNMSB) {
+	nrpn = false;
+	rpn = (rpn & 0x00FF) | (midiRPNMSB << 8);
+}
+
+void Part::setHoldPedal(bool pressed) {
+	if (holdpedal && !pressed) {
 		holdpedal = false;
 		stopPedalHold();
 	} else {
-		holdpedal = pedalval;
+		holdpedal = pressed;
 	}
 }
 
@@ -101,6 +130,19 @@ Bit8u Part::getModulation() const {
 
 void Part::setModulation(unsigned int midiModulation) {
 	modulation = (Bit8u)midiModulation;
+}
+
+void Part::resetAllControllers() {
+	modulation = 0;
+	expression = 100;
+	pitchBend = 0;
+	setHoldPedal(false);
+}
+
+void Part::reset() {
+	resetAllControllers();
+	allSoundOff();
+	rpn = 0xFFFF;
 }
 
 void RhythmPart::refresh() {
@@ -195,18 +237,16 @@ void RhythmPart::setProgram(unsigned int patchNum) {
 	synth->printDebug("%s: Attempt to set program (%d) on rhythm is invalid", name, patchNum);
 }
 
-void Part::updatePitchBenderRange() {
-	pitchBenderRange = patchTemp->patch.benderRange * 683;
-}
-
 void Part::setProgram(unsigned int patchNum) {
 	setPatch(&synth->mt32ram.patches[patchNum]);
 	updatePitchBenderRange();
+	allSoundOff();
 	setTimbre(&synth->mt32ram.timbres[getAbsTimbreNum()].timbre);
-
 	refresh();
+}
 
-	allSoundOff(); //FIXME:KG: Is this correct?
+void Part::updatePitchBenderRange() {
+	pitchBenderRange = patchTemp->patch.benderRange * 683;
 }
 
 void Part::backupCacheToPartials(PatchCache cache[4]) {
