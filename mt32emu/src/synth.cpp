@@ -530,26 +530,6 @@ bool Synth::open(SynthProperties &useProp) {
 
 	iirFilter = &iir_filter_normal;
 
-#ifdef MT32EMU_HAVE_X86
-	bool availableSSE = false; //DetectSIMD();
-	bool available3DNow = false; //Detect3DNow();
-
-	if (availableSSE)
-		report(ReportType_availableSSE, NULL);
-	if (available3DNow)
-		report(ReportType_available3DNow, NULL);
-
-	if (available3DNow) {
-		printDebug("Detected and using SIMD (AMD 3DNow) extensions");
-		iirFilter = &iir_filter_3dnow;
-		report(ReportType_using3DNow, NULL);
-	} else if (availableSSE) {
-		printDebug("Detected and using SIMD (Intel SSE) extensions");
-		iirFilter = &iir_filter_sse;
-		report(ReportType_usingSSE, NULL);
-	}
-#endif
-
 	isOpen = true;
 	isEnabled = false;
 
