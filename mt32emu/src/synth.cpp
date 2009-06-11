@@ -730,10 +730,10 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 		return;
 	}
 	// This is checked early in the real devices (before any sysex length checks or further processing)
-    if (command == SYSEX_CMD_DT1 && sysex[0] == 0x7F) {
-    	reset();
-        return;
-    }
+	if (command == SYSEX_CMD_DT1 && sysex[0] == 0x7F) {
+	  reset();
+	  return;
+	}
 	if (len < 4) {
 		printDebug("playSysexWithoutHeader: Message is too short (%d bytes)!", len);
 		return;
@@ -1195,10 +1195,10 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 		}
 		m=0;
 		for (unsigned int i = 0; i < len; i++) {
-	        stream[m] = clipBit16s(outbufl[i] * 32767.0f);
-	        m++;
-	        stream[m] = clipBit16s(outbufr[i] * 32767.0f);
-	        m++;
+			stream[m] = clipBit16s(outbufl[i] * 32767.0f);
+			m++;
+			stream[m] = clipBit16s(outbufr[i] * 32767.0f);
+			m++;
 		}
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 			if (!partialManager->shouldReverb(i)) {
