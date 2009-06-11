@@ -731,8 +731,8 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 	}
 	// This is checked early in the real devices (before any sysex length checks or further processing)
 	if (command == SYSEX_CMD_DT1 && sysex[0] == 0x7F) {
-	  reset();
-	  return;
+		reset();
+		return;
 	}
 	if (len < 4) {
 		printDebug("playSysexWithoutHeader: Message is too short (%d bytes)!", len);
