@@ -516,14 +516,31 @@ bool Synth::open(SynthProperties &useProp) {
 	if (!refreshSystem())
 		return false;
 
-	for (int i = 0; i < 8; i++) {
-		mt32ram.patchTemp[i].outputLevel = 80;
-		mt32ram.patchTemp[i].panpot = controlROMData[controlROMMap->panSettings + i];
-		memset(mt32ram.patchTemp[i].dummyv, 0, sizeof(mt32ram.patchTemp[i].dummyv));
-		parts[i] = new Part(this, i);
-		parts[i]->setProgram(controlROMData[controlROMMap->programSettings + i]);
+	for (int i = 0; i < 9; i++) {
+		MemParams::PatchTemp *patchTemp = &mt32ram.patchTemp[i];
+
+		// Note that except for the rhythm part, these patch fields will be set in setProgram() below anyway.
+		patchTemp->patch.timbreGroup = 0;
+		patchTemp->patch.timbreNum = 0;
+		patchTemp->patch.keyShift = 24;
+		patchTemp->patch.fineTune = 50;
+		patchTemp->patch.benderRange = 12;
+		patchTemp->patch.assignMode = 0;
+		patchTemp->patch.reverbSwitch = 1;
+		patchTemp->patch.dummy = 0;
+
+		patchTemp->outputLevel = 80;
+		patchTemp->panpot = controlROMData[controlROMMap->panSettings + i];
+		memset(patchTemp->dummyv, 0, sizeof(patchTemp->dummyv));
+		patchTemp->dummyv[1] = 127;
+
+		if(i < 8) {
+			parts[i] = new Part(this, i);
+			parts[i]->setProgram(controlROMData[controlROMMap->programSettings + i]);
+		} else {
+			parts[i] = new RhythmPart(this, i);
+		}
 	}
-	parts[8] = new RhythmPart(this, 8);
 
 	// For resetting mt32 mid-execution
 	mt32default = mt32ram;
