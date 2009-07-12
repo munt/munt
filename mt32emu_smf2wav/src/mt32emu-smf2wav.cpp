@@ -165,6 +165,8 @@ static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu
 		dstFile = fopen(dstFileName, "w");
 		if (dstFile != NULL) {
 			if (writeWAVEHeader(dstFile, synthProperties.sampleRate)) {
+				int unterminatedSysexLen = 0;
+				unsigned char *unterminatedSysex = NULL;
 				for (;;) {
 					smf_event_t *event = smf_get_next_event(smf);
 					long eventSamples;
@@ -199,9 +201,49 @@ static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu
 						char *decoded = smf_event_decode(event);
 						if (decoded && !quiet)
 							fprintf(stdout, "Metadata: %s\n", decoded);
-					} else if (smf_event_is_system_common(event))  {
-						if (event->midi_buffer[0] == 0xF0) {
-							synth->playSysex(event->midi_buffer, event->midi_buffer_length);
+					} else if (smf_event_is_sysex(event) || smf_event_is_sysex_continuation(event))  {
+						bool unterminated = smf_event_is_unterminated_sysex(event);
+						bool addUnterminated = unterminated;
+						bool continuation = smf_event_is_sysex_continuation(event);
+						unsigned char *buf;
+						int len;
+						if (continuation) {
+							if (unterminatedSysex != NULL) {
+								addUnterminated = true;
+							} else {
+								fprintf(stderr, "Sysex continuation received without preceding unterminated sysex - hoping for the best\n");
+							}
+							buf = event->midi_buffer + 1;
+							len = event->midi_buffer_length - 1;
+						} else {
+							if (unterminatedSysex != NULL) {
+								fprintf(stderr, "New sysex received with an unterminated sysex pending - ignoring unterminated\n");
+								delete[] unterminatedSysex;
+								unterminatedSysex = NULL;
+								unterminatedSysexLen = 0;
+							}
+							buf = event->midi_buffer;
+							len = event->midi_buffer_length;
+						}
+						if (addUnterminated) {
+							unsigned char *newUnterminatedSysex = new unsigned char[unterminatedSysexLen + len];
+							if(unterminatedSysex != NULL) {
+								memcpy(newUnterminatedSysex, unterminatedSysex, unterminatedSysexLen);
+								delete[] unterminatedSysex;
+							}
+							memcpy(newUnterminatedSysex + unterminatedSysexLen, buf, len);
+							unterminatedSysex = newUnterminatedSysex;
+							unterminatedSysexLen += len;
+							buf = unterminatedSysex;
+							len = unterminatedSysexLen;
+						}
+						if (!unterminated) {
+							synth->playSysex(buf, len);
+							if (addUnterminated) {
+								delete[] unterminatedSysex;
+								unterminatedSysex = NULL;
+								unterminatedSysexLen = 0;
+							}
 						}
 					} else {
 						if (event->midi_buffer_length > 3) {
@@ -218,6 +260,9 @@ static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu
 							synth->playMsg(msg);
 						}
 					}
+				}
+				if (unterminatedSysex != NULL) {
+					delete[] unterminatedSysex;
 				}
 				if (!fillWAVESizes(dstFile, playedSamples)) {
 					fprintf(stderr, "Error writing final sizes to WAVE header\n");
