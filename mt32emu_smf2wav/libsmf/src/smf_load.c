@@ -295,13 +295,6 @@ expected_sysex_length(const unsigned char status, const unsigned char *second_by
 	return (sysex_length + 1);
 }
 
-static int
-expected_escaped_length(const unsigned char status, const unsigned char *second_byte, const int buffer_length, int *consumed_bytes)
-{
-	/* -1, because we do not want to account for 0x7F status. */
-	return (expected_sysex_length(status, second_byte, buffer_length, consumed_bytes) - 1);
-}
-
 /**
  * Returns expected length of the midi message (including the status byte), in bytes, for the given status byte.
  * The "second_byte" points to the expected second byte of the MIDI message.  "buffer_length" is the buffer
@@ -382,7 +375,7 @@ expected_message_length(unsigned char status, const unsigned char *second_byte, 
 }
 
 static int
-extract_sysex_event(const unsigned char *buf, const int buffer_length, smf_event_t *event, int *len, int last_status)
+extract_sysex_event(const unsigned char *buf, const int buffer_length, smf_event_t *event, int *len, int last_status, int *has_unterminated_sysex)
 {
 	int status, message_length, vlq_length;
 	const unsigned char *c = buf;
@@ -415,13 +408,15 @@ extract_sysex_event(const unsigned char *buf, const int buffer_length, smf_event
 	event->midi_buffer[0] = status;
 	memcpy(event->midi_buffer + 1, c, message_length - 1);
 
+	*has_unterminated_sysex = event->midi_buffer[event->midi_buffer_length - 1] != 0xF7;
+
 	*len = vlq_length + message_length;
 
 	return (0);
 }
 
 static int
-extract_escaped_event(const unsigned char *buf, const int buffer_length, smf_event_t *event, int *len, int last_status)
+extract_escaped_event(const unsigned char *buf, const int buffer_length, smf_event_t *event, int *len, int last_status, int *has_unterminated_sysex)
 {
 	int status, message_length, vlq_length;
 	const unsigned char *c = buf;
@@ -432,37 +427,46 @@ extract_escaped_event(const unsigned char *buf, const int buffer_length, smf_eve
 
 	c++;
 
-	message_length = expected_escaped_length(status, c, buffer_length - 1, &vlq_length);
-
-	if (message_length < 0)
+	if (extract_vlq(c, buffer_length - 1, &message_length, &vlq_length) != 0)
 		return (-3);
+
+	if (message_length < 1) {
+		g_critical("0-length escaped event in extract_escaped_event().");
+		return (-4);
+	}
 
 	c += vlq_length;
 
-	if (vlq_length + message_length >= buffer_length) {
+	if (1 + vlq_length + message_length > buffer_length) {
 		g_critical("End of buffer in extract_escaped_event().");
 		return (-5);
 	}
 
-	event->midi_buffer_length = message_length;
+	/* If *has_unterminated_sysex is non-zero, we want to add the F7 status byte to the start of the message
+	   so that it can be identified as such. */
+	event->midi_buffer_length = *has_unterminated_sysex ? message_length + 1 : message_length;
 	event->midi_buffer = malloc(event->midi_buffer_length);
 	if (event->midi_buffer == NULL) {
 		g_critical("Cannot allocate memory in extract_escaped_event(): %s", strerror(errno));
 		return (-4);
 	}
+	if (*has_unterminated_sysex) {
+		event->midi_buffer[0] = 0xF7;
+		memcpy(event->midi_buffer + 1, c, message_length);
+		*has_unterminated_sysex = c[message_length - 1] != 0xF7;
+	} else {
+		memcpy(event->midi_buffer, c, message_length);
+		if (smf_event_is_system_realtime(event) || smf_event_is_system_common(event)) {
+			g_warning("Escaped event is not System Realtime nor System Common.");
+		}
+	}
 
-	memcpy(event->midi_buffer, c, message_length);
-
-	if (smf_event_is_valid(event)) {
+	if (!smf_event_is_valid(event)) {
 		g_critical("Escaped event is invalid.");
 		return (-1);
 	}
 
-	if (smf_event_is_system_realtime(event) || smf_event_is_system_common(event)) {
-		g_warning("Escaped event is not System Realtime nor System Common.");
-	}
-
-	*len = vlq_length + message_length;
+	*len = 1 + vlq_length + message_length;
 
 	return (0);
 }
@@ -474,7 +478,7 @@ extract_escaped_event(const unsigned char *buf, const int buffer_length, smf_eve
  * Returns 0 iff everything went OK, value < 0 in case of error.
  */
 static int
-extract_midi_event(const unsigned char *buf, const int buffer_length, smf_event_t *event, int *len, int last_status)
+extract_midi_event(const unsigned char *buf, const int buffer_length, smf_event_t *event, int *len, int last_status, int *has_unterminated_sysex)
 {
 	int status, message_length;
 	const unsigned char *c = buf;
@@ -497,10 +501,10 @@ extract_midi_event(const unsigned char *buf, const int buffer_length, smf_event_
 	}
 
 	if (is_sysex_byte(status))
-		return (extract_sysex_event(buf, buffer_length, event, len, last_status));
+		return (extract_sysex_event(buf, buffer_length, event, len, last_status, has_unterminated_sysex));
 
 	if (is_escape_byte(status))
-		return (extract_escaped_event(buf, buffer_length, event, len, last_status));
+		return (extract_escaped_event(buf, buffer_length, event, len, last_status, has_unterminated_sysex));
 
 	/* At this point, "c" points to first byte following the status byte. */
 	message_length = expected_message_length(status, c, buffer_length - (c - buf));
@@ -564,7 +568,7 @@ parse_next_event(smf_track_t *track)
 		goto error;
 
 	/* Now, extract the actual event. */
-	if (extract_midi_event(c, buffer_length, event, &len, track->last_status))
+	if (extract_midi_event(c, buffer_length, event, &len, track->last_status, &track->has_unterminated_sysex))
 		goto error;
 
 	c += len;
@@ -718,8 +722,8 @@ smf_event_length_is_valid(const smf_event_t *event)
 	if (event->midi_buffer_length < 1)
 		return (0);
 
-	/* We cannot use expected_message_length on sysexes. */
-	if (smf_event_is_sysex(event))
+	/* We cannot use expected_message_length on sysexes or sysex continuations. */
+	if (smf_event_is_sysex(event) || smf_event_is_sysex_continuation(event))
 		return (1);
 
 	if (event->midi_buffer_length != expected_message_length(event->midi_buffer[0],
@@ -744,7 +748,7 @@ smf_event_is_valid(const smf_event_t *event)
 	assert(event->midi_buffer_length >= 1);
 
 	if (!is_status_byte(event->midi_buffer[0])) {
-		g_critical("First byte of MIDI message is not a valid status byte.");
+		g_critical("First byte of MIDI message (%02X) is not a valid status byte.", event->midi_buffer[0] & 0xFF);
 
 		return (0);
 	}

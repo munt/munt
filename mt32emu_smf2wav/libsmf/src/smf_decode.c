@@ -108,6 +108,30 @@ smf_event_is_sysex(const smf_event_t *event)
 	return (0);
 }
 
+int
+smf_event_is_sysex_continuation(const smf_event_t *event)
+{
+	assert(event->midi_buffer);
+	assert(event->midi_buffer_length > 0);
+
+	if (event->midi_buffer[0] == 0xF7)
+		return (1);
+
+	return (0);
+}
+
+int
+smf_event_is_unterminated_sysex(const smf_event_t *event)
+{
+	assert(event->midi_buffer);
+	assert(event->midi_buffer_length > 0);
+
+	if (!smf_event_is_sysex(event) && !smf_event_is_sysex_continuation(event))
+		return 0;
+
+	return event->midi_buffer[event->midi_buffer_length - 1] != 0xF7;
+}
+
 static char *
 smf_event_decode_textual(const smf_event_t *event, const char *name)
 {
