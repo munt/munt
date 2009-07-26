@@ -193,21 +193,21 @@ Bit16s Partial::getPCMSample(unsigned int position) {
 	return synth->pcmROMData[pcmWave->addr + position];
 }
 
-Bit16s *Partial::generateSamples(long length) {
+unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length) {
 	if (!isActive() || alreadyOutputed) {
-		return NULL;
+		return 0;
 	}
 	if (poly == NULL) {
 		synth->printDebug("*** ERROR: poly is NULL at Partial::generateSamples()!");
-		return NULL;
+		return 0;
 	}
 
 	alreadyOutputed = true;
 
 	// Generate samples
 
-	Bit16s *partialBuf = &myBuffer[0];
-	while (length--) {
+	unsigned long sampleNum;
+	for(sampleNum = 0; sampleNum < length; sampleNum++) {
 		float sample = 0;
 		float amp = tva->nextAmp();
 		if (!tva->play) {
@@ -313,11 +313,8 @@ Bit16s *Partial::generateSamples(long length) {
 		// Multiply sample with current TVA value and add to buffer.
 		*partialBuf++ = (Bit16s)(amp * sample);
 	}
-	// We may have deactivated and broken out of the loop before the end of the buffer,
-	// if so then fill the remainder with 0s.
-	if (++length > 0)
-		memset(partialBuf, 0, length * 2);
-	return &myBuffer[0];
+	// At this point, sampleNum represents the number of samples rendered
+	return sampleNum;
 }
 
 Bit32s Partial::calcRingMod(Bit16s sample1, Bit16s sample2) {
@@ -345,24 +342,13 @@ Bit32s Partial::calcRingMod(Bit16s sample1, Bit16s sample2) {
 	return d[0] >> 5;
 }
 
-Bit16s *Partial::mixBuffers(Bit16s * buf1, Bit16s *buf2, int len) {
-	if (buf1 == NULL)
-		return buf2;
-	if (buf2 == NULL)
-		return buf1;
-
-	Bit16s *outBuf = buf1;
-	while (len--) {
-		*buf1 = *buf1 + *buf2;
-		buf1++, buf2++;
-	}
-	return outBuf;
-}
-
-Bit16s *Partial::mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, int len) {
+Bit16s *Partial::mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, unsigned long len) {
 	if (buf1 == NULL)
 		return NULL;
 	if (buf2 == NULL) {
+		return buf1;
+		// FIXME:KG: Not sure what the reason for this was, but hopefully it's obsolete
+/*
 		Bit16s *outBuf = buf1;
 		while (len--) {
 			if (*buf1 < -8192)
@@ -372,6 +358,7 @@ Bit16s *Partial::mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, int len) {
 			buf1++;
 		}
 		return outBuf;
+*/
 	}
 
 	Bit16s *outBuf = buf1;
@@ -389,7 +376,7 @@ Bit16s *Partial::mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, int len) {
 	return outBuf;
 }
 
-Bit16s *Partial::mixBuffersRing(Bit16s *buf1, Bit16s *buf2, int len) {
+Bit16s *Partial::mixBuffersRing(Bit16s *buf1, Bit16s *buf2, unsigned long len) {
 	if (buf1 == NULL) {
 		return NULL;
 	}
@@ -434,73 +421,53 @@ Synth *Partial::getSynth() const {
 	return synth;
 }
 
-bool Partial::produceOutput(Bit16s *partialBuf, long length) {
-	if (!isActive() || alreadyOutputed)
+bool Partial::produceOutput(Bit16s *partialBuf, unsigned long length) {
+	if (!isActive() || alreadyOutputed || isRingModulatingSlave())
 		return false;
 	if (poly == NULL) {
 		synth->printDebug("*** ERROR: poly is NULL at Partial::produceOutput()!");
 		return false;
 	}
 
-	Bit16s *pairBuf = NULL;
-	// Check for dependent partial
-	if (pair != NULL) {
-		if (!pair->alreadyOutputed) {
-			// Note: pair may have become NULL after this
-			pairBuf = pair->generateSamples(length);
+	Bit16s *myBuf = &myBuffer[0];
+	unsigned long numGenerated = generateSamples(myBuf, length);
+	if (mixType == 1 || mixType == 2) {
+		Bit16s *pairBuf;
+		unsigned long pairNumGenerated;
+		if (pair == NULL) {
+			pairBuf = NULL;
+			pairNumGenerated = 0;
+		} else {
+			pairBuf = &pair->myBuffer[0];
+			pairNumGenerated = generateSamples(pairBuf, numGenerated);
+			if (!isActive()) {
+				pair->deactivate();
+				pair = NULL;
+			} else if (!pair->isActive()) {
+				pair = NULL;
+			}
 		}
-	} else if (useNoisePair) {
-		// Generate noise for pairless ring mix
-		pairBuf = synth->tables.noiseBuf;
+		if (pairNumGenerated > 0) {
+			if(mixType == 1)
+				mixBuffersRingMix(myBuf, pairBuf, pairNumGenerated);
+			else
+				mixBuffersRing(myBuf, pairBuf, pairNumGenerated);
+		}
+		if (numGenerated > pairNumGenerated) {
+			if(mixType == 1)
+				mixBuffersRingMix(myBuf + pairNumGenerated, NULL, numGenerated - pairNumGenerated);
+			else
+				mixBuffersRing(myBuf + pairNumGenerated, NULL, numGenerated - pairNumGenerated);
+		}
 	}
 
-	Bit16s *myBuf = generateSamples(length);
-
-	if (myBuf == NULL && pairBuf == NULL)
-		return false;
-
-	Bit16s *p1buf, *p2buf;
-
-	if (structurePosition == 0 || pairBuf == NULL) {
-		p1buf = myBuf;
-		p2buf = pairBuf;
-	} else {
-		p2buf = myBuf;
-		p1buf = pairBuf;
+	for (unsigned int i = 0; i < numGenerated; i++) {
+		*partialBuf++ = (Bit16s)(((Bit32s)*myBuf * (Bit32s)stereoVolume.leftvol) >> 16);
+		*partialBuf++ = (Bit16s)(((Bit32s)*myBuf * (Bit32s)stereoVolume.rightvol) >> 16);
+		myBuf++;
 	}
-
-	//synth->printDebug("mixType: %d", mixType);
-
-	Bit16s *mixedBuf;
-	switch (mixType) {
-	case 0:
-		// Standard sound mix
-		mixedBuf = mixBuffers(p1buf, p2buf, length);
-		break;
-
-	case 1:
-		// Ring modulation with sound mix
-		mixedBuf = mixBuffersRingMix(p1buf, p2buf, length);
-		break;
-
-	case 2:
-		// Ring modulation alone
-		mixedBuf = mixBuffersRing(p1buf, p2buf, length);
-		break;
-
-	default:
-		mixedBuf = mixBuffers(p1buf, p2buf, length);
-		break;
-	}
-
-	if (mixedBuf == NULL)
-		return false;
-
-	while (length--) {
-		*partialBuf++ = (Bit16s)(((Bit32s)*mixedBuf * (Bit32s)stereoVolume.leftvol) >> 16);
-		*partialBuf++ = (Bit16s)(((Bit32s)*mixedBuf * (Bit32s)stereoVolume.rightvol) >> 16);
-		mixedBuf++;
-	}
+	if (numGenerated < length)
+		memset(partialBuf, 0, sizeof(Bit16s) * 2 * (length - numGenerated));
 	return true;
 }
 

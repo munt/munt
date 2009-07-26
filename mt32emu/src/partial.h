@@ -89,9 +89,8 @@ private:
 	Bit32s pastDesOsc;
 
 	Bit32s calcRingMod(Bit16s sample1, Bit16s sample2);
-	Bit16s *mixBuffers(Bit16s *buf1, Bit16s *buf2, int len);
-	Bit16s *mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, int len);
-	Bit16s *mixBuffersRing(Bit16s *buf1, Bit16s *buf2, int len);
+	Bit16s *mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, unsigned long len);
+	Bit16s *mixBuffersRing(Bit16s *buf1, Bit16s *buf2, unsigned long len);
 
 	Bit16s getPCMSample(unsigned int position);
 	Bit32s getFiltEnvelope();
@@ -132,10 +131,10 @@ public:
 	// Returns true only if data written to buffer
 	// This function (unlike the one below it) returns processed stereo samples
 	// made from combining this single partial with its pair, if it has one.
-	bool produceOutput(Bit16s * partialBuf, long length);
+	bool produceOutput(Bit16s * partialBuf, unsigned long length);
 
-	// This function produces mono sample output using the partial's private internal buffer
-	Bit16s *generateSamples(long length);
+	// This function writes mono sample output to the provided buffer, and returns the number of samples written
+	unsigned long generateSamples(Bit16s *buffer, unsigned long length);
 };
 
 }
