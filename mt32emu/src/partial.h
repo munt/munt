@@ -88,6 +88,7 @@ private:
 	Bit32s pastDesCarrier;
 	Bit32s pastDesOsc;
 
+	Bit32s calcRingMod(Bit16s sample1, Bit16s sample2);
 	Bit16s *mixBuffers(Bit16s *buf1, Bit16s *buf2, int len);
 	Bit16s *mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, int len);
 	Bit16s *mixBuffersRing(Bit16s *buf1, Bit16s *buf2, int len);
