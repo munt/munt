@@ -15,7 +15,6 @@
  */
 
 #include <string.h>
-#include <math.h>
 
 #include "mt32emu.h"
 
