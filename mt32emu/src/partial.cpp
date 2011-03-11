@@ -439,12 +439,15 @@ bool Partial::produceOutput(Bit16s *partialBuf, unsigned long length) {
 			pairNumGenerated = 0;
 		} else {
 			pairBuf = &pair->myBuffer[0];
-			pairNumGenerated = generateSamples(pairBuf, numGenerated);
-			if (!isActive()) {
-				pair->deactivate();
-				pair = NULL;
-			} else if (!pair->isActive()) {
-				pair = NULL;
+			pairNumGenerated = pair->generateSamples(pairBuf, numGenerated);
+			// pair will have been set to NULL if it deactivated within generateSamples()
+			if (pair != null) {
+				if (!isActive()) {
+					pair->deactivate();
+					pair = NULL;
+				} else if (!pair->isActive()) {
+					pair = NULL;
+				}
 			}
 		}
 		if (pairNumGenerated > 0) {
