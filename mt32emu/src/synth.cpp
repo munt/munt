@@ -890,7 +890,7 @@ void Synth::deleteMemoryRegions() {
 	delete resetMemoryRegion;
 	resetMemoryRegion = NULL;
 
-	delete paddedTimbreMaxTable;
+	delete[] paddedTimbreMaxTable;
 	paddedTimbreMaxTable = NULL;
 }
 
