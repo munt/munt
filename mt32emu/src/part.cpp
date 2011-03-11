@@ -57,7 +57,9 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	}
 	currentInstr[0] = 0;
 	currentInstr[10] = 0;
+	modulation = 0;
 	expression = 100;
+	pitchBend = 0;
 	activePartialCount = 0;
 	memset(patchCache, 0, sizeof(patchCache));
 	for (int i = 0; i < MT32EMU_MAX_POLY; i++) {
