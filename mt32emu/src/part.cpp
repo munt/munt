@@ -160,6 +160,7 @@ void RhythmPart::refresh() {
 			cache[t].reverb = rhythmTemp[drumNum].reverbSwitch > 0;
 		}
 	}
+	updatePitchBenderRange();
 }
 
 void Part::refresh() {
@@ -170,6 +171,7 @@ void Part::refresh() {
 		patchCache[t].reverb = patchTemp->patch.reverbSwitch > 0;
 	}
 	memcpy(currentInstr, timbreTemp->common.name, 10);
+	updatePitchBenderRange();
 }
 
 const char *Part::getCurrentInstr() const {
@@ -240,7 +242,6 @@ void RhythmPart::setProgram(unsigned int patchNum) {
 
 void Part::setProgram(unsigned int patchNum) {
 	setPatch(&synth->mt32ram.patches[patchNum]);
-	updatePitchBenderRange();
 	allSoundOff();
 	setTimbre(&synth->mt32ram.timbres[getAbsTimbreNum()].timbre);
 	refresh();
