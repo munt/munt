@@ -85,8 +85,17 @@ void lcd_flags_bounds(char *str, int &w, int &h)
 		c = str[i];		
 		if (!c) 
 			break;
-		nw = lcd_flagfont->per_char[c].width;
-		nh = lcd_flagfont->per_char[c].ascent + lcd_flagfont->per_char[c].descent;
+		/* From xfontstruct man page: "If the per_char pointer is NULL, all glyphs between the
+		first and last character indexes inclusive have the same information, as given by both
+		min_bounds and max_bounds." */
+		if (lcd_flagfont->per_char == NULL)
+		{
+			nw = lcd_flagfont->max_bounds.width;
+			nh = lcd_flagfont->max_bounds.ascent + lcd_flagfont->max_bounds.descent;
+		} else {
+			nw = lcd_flagfont->per_char[c].width;
+			nh = lcd_flagfont->per_char[c].ascent + lcd_flagfont->per_char[c].descent;
+		}
 		
 		if (nw > w) w = nw;
 		if (nh > h) h = nh;

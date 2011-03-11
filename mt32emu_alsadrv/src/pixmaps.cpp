@@ -71,8 +71,18 @@ void get_string_dims(XFontStruct *fs, char *txt, int *_w, int *_h)
 			break;
 	
 		c = txt[i];
-		w += fs->per_char[c].width;			
-		nh = fs->per_char[c].ascent; // + fs->per_char[c].descent;
+		
+		/* From xfontstruct man page: "If the per_char pointer is NULL, all glyphs between the
+		first and last character indexes inclusive have the same information, as given by both
+		min_bounds and max_bounds." */
+		if (fs->per_char == NULL)
+		{
+			w += fs->max_bounds.width;
+			nh = fs->max_bounds.ascent; // + fs->max_bounds.descent;
+		} else {
+			w += fs->per_char[c].width;			
+			nh = fs->per_char[c].ascent; // + fs->per_char[c].descent;
+		}
 		
 		if (nh > h)
 			h = nh;
