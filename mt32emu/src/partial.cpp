@@ -345,21 +345,8 @@ Bit32s Partial::calcRingMod(Bit16s sample1, Bit16s sample2) {
 Bit16s *Partial::mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, unsigned long len) {
 	if (buf1 == NULL)
 		return NULL;
-	if (buf2 == NULL) {
+	if (buf2 == NULL)
 		return buf1;
-		// FIXME:KG: Not sure what the reason for this was, but hopefully it's obsolete
-/*
-		Bit16s *outBuf = buf1;
-		while (len--) {
-			if (*buf1 < -8192)
-				*buf1 = -8192;
-			else if (*buf1 > 8192)
-				*buf1 = 8192;
-			buf1++;
-		}
-		return outBuf;
-*/
-	}
 
 	Bit16s *outBuf = buf1;
 	while (len--) {
