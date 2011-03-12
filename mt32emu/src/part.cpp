@@ -345,6 +345,10 @@ void Part::setVolume(unsigned int midiVolume) {
 	//synth->printDebug("%s (%s): Set volume to %d", name, currentInstr, midiVolume);
 }
 
+Bit8u Part::getVolume() const {
+	return patchTemp->outputLevel;
+}
+
 Bit8u Part::getExpression() const {
 	return expression;
 }

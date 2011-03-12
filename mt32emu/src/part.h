@@ -78,6 +78,7 @@ public:
 	virtual void noteOff(unsigned int midiKey);
 	void allNotesOff();
 	void allSoundOff();
+	Bit8u getVolume() const; // Internal volume, 0-100, exposed for use by ExternalInterface
 	void setVolume(unsigned int midiVolume);
 	Bit8u getModulation() const;
 	void setModulation(unsigned int midiModulation);
