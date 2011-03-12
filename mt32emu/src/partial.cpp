@@ -149,10 +149,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 		pcmWave = NULL;
 	}
 
-	pastCarrier = 0;
-	pastOsc = 0;
-	pastDesCarrier = 0;
-
 	pulsewidth = patchCache->pulsewidth + synth->tables.pwVelfollowAdd[patchCache->pwsens][poly->getVelocity()];
 	if (pulsewidth > 100) {
 		pulsewidth = 100;
@@ -317,31 +313,6 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 	return sampleNum;
 }
 
-Bit32s Partial::calcRingMod(Bit16s sample1, Bit16s sample2) {
-	static const Bit32s CUTOFF = 2048;
-	Bit32s a[3], b[3], c[2], d[2];
-	a[0] = (Bit32s)sample1;
-	b[0] = (Bit32s)sample2;
-
-	a[1] = pastCarrier + ((CUTOFF * (a[0] - pastCarrier)) >> 12);
-	a[2] = a[1] + ((CUTOFF * (0 - a[1])) >> 12);
-	pastCarrier = a[2];
-
-	b[1] = pastOsc + ((CUTOFF * (b[0] - pastOsc)) >> 12);
-	b[2] = b[1] + ((CUTOFF * (0 - b[1])) >> 12);
-	pastOsc = b[2];
-
-	c[0] = a[1] ^ b[1];
-	c[1] = a[2] * b[2];
-
-	d[0] = pastDesCarrier + ((CUTOFF * (c[0] - pastDesCarrier)) >> 12);
-	d[1] = d[0] + ((CUTOFF * (c[1] - d[0])) >> 12);
-
-	pastDesCarrier = d[1];
-
-	return d[0] >> 5;
-}
-
 Bit16s *Partial::mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, unsigned long len) {
 	if (buf1 == NULL)
 		return NULL;
@@ -350,7 +321,7 @@ Bit16s *Partial::mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, unsigned long len
 
 	Bit16s *outBuf = buf1;
 	while (len--) {
-		Bit32s result = calcRingMod(*buf1, *buf2) + *buf1;
+		Bit32s result = ((*buf1 * *buf2) >> 16) + *buf1;
 
 		if (result > 32767)
 			result = 32767;
@@ -373,12 +344,8 @@ Bit16s *Partial::mixBuffersRing(Bit16s *buf1, Bit16s *buf2, unsigned long len) {
 
 	Bit16s *outBuf = buf1;
 	while (len--) {
-		Bit32s result = calcRingMod(*buf1, *buf2);
+		Bit32s result = (*buf1 * *buf2) >> 16;
 
-		if (result > 32767)
-			result = 32767;
-		if (result < -32768)
-			result = -32768;
 		*buf1 = (Bit16s)(result);
 		buf1++;
 		buf2++;
