@@ -1,9 +1,12 @@
+*.[oa]
+.deps/
 autom4te.cache
-configure
-Makefile
+aclocal.m4
+config.log
 config.status
-install-sh
+configure
 depcomp
+install-sh
+Makefile
 Makefile.in
 missing
-aclocal.m4
