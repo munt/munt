@@ -27,33 +27,6 @@ const int MAX_CURRENT_AMP = 0xFF * TVA_TARGET_AMP_MULT;
 // CONFIRMED: Matches a table in ROM - haven't got around to coming up with a formula for it yet.
 static Bit8u biasLevelToAmpSubtractionCoeff[13] = {255, 187, 137, 100, 74, 54, 40, 29, 21, 15, 10, 5, 0};
 
-// When entering nextPhase, targetPhase is immediately incremented, and the descriptions/names below represent
-// their use after the increment.
-enum {
-	// When this is the target phase, level[0] is targeted within time[0], and velocity potentially affects time
-	PHASE_ATTACK = 1,
-
-	// When this is the target phase, level[1] is targeted within time[1]
-	PHASE_2 = 2,
-
-	// When this is the target phase, level[2] is targeted within time[2]
-	PHASE_3 = 3,
-
-	// When this is the target phase, level[3] is targeted within time[3]
-	PHASE_4 = 4,
-
-	// When this is the target phase, immediately goes to PHASE_RELEASE unless the poly is set to sustain.
-	// Aborts the partial if level[3] is 0.
-	// Otherwise level[3] is continued, no phase change will occur until some external influence (like pedal release)
-	PHASE_SUSTAIN = 5,
-
-	// 0 is targeted within time[4] (the time calculation is quite different from the other phases)
-	PHASE_RELEASE = 6,
-
-	// It's PHASE_DEAD, Jim.
-	PHASE_DEAD = 7
-};
-
 TVA::TVA(const Partial *partial) :
 	partial(partial), system(&partial->getSynth()->mt32ram.system) {
 }
@@ -207,13 +180,13 @@ void TVA::reset(const Part *part, const PatchCache *patchCache, const MemParams:
 	int newTargetAmp = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
 
 	if (partialParam->tva.envTime[0] == 0) {
-		// Initially go to the PHASE_ATTACK target amp, and spend the next phase going from there to the PHASE_2 target amp
+		// Initially go to the TVA_PHASE_ATTACK target amp, and spend the next phase going from there to the TVA_PHASE_2 target amp
 		// Note that this means that velocity never affects time for this partial.
 		newTargetAmp += partialParam->tva.envLevel[0];
-		targetPhase = PHASE_2 - 1; // The first target used in nextPhase() will be PHASE_2
+		targetPhase = TVA_PHASE_2 - 1; // The first target used in nextPhase() will be TVA_PHASE_2
 	} else {
-		// Initially go to the base amp determined by TVA level, part volume, etc., and spend the next phase going from there to the full PHASE_ATTACK target amp.
-		targetPhase = PHASE_ATTACK - 1; // The first target used in nextPhase() will be PHASE_ATTACK
+		// Initially go to the base amp determined by TVA level, part volume, etc., and spend the next phase going from there to the full TVA_PHASE_ATTACK target amp.
+		targetPhase = TVA_PHASE_ATTACK - 1; // The first target used in nextPhase() will be TVA_PHASE_ATTACK
 	}
 
 	// "Go downward as quickly as possible".
@@ -226,9 +199,9 @@ void TVA::reset(const Part *part, const PatchCache *patchCache, const MemParams:
 }
 
 void TVA::startDecay() {
-	if (targetPhase >= PHASE_RELEASE)
+	if (targetPhase >= TVA_PHASE_RELEASE)
 		return;
-	targetPhase = PHASE_RELEASE; // The next time nextPhase() is called, it will think PHASE_RELEASE has finished and the partial will be aborted
+	targetPhase = TVA_PHASE_RELEASE; // The next time nextPhase() is called, it will think TVA_PHASE_RELEASE has finished and the partial will be aborted
 	if (partialParam->tva.envTime[4] == 0)
 		setAmpIncrement(1);
 	else
@@ -241,7 +214,7 @@ void TVA::recalcSustain() {
 	// This is done so that the TVA will respond to things like MIDI expression and volume changes while it's sustaining, which it otherwise wouldn't do.
 
 	// The check for envLevel[3] == 0 strikes me as slightly dumb. FIXME: Explain why
-	if (targetPhase != PHASE_SUSTAIN || partialParam->tva.envLevel[3] == 0)
+	if (targetPhase != TVA_PHASE_SUSTAIN || partialParam->tva.envLevel[3] == 0)
 		return;
 	// We're sustaining. Recalculate all the values
 	Tables *tables = &partial->getSynth()->tables;
@@ -258,35 +231,39 @@ void TVA::recalcSustain() {
 	}
 	targetAmp = newTargetAmp;
 	// Configure so that once the transition's complete and nextPhase() is called, we'll just re-enter sustain phase (or decay phase, depending on parameters at the time).
-	targetPhase = PHASE_SUSTAIN - 1;
+	targetPhase = TVA_PHASE_SUSTAIN - 1;
+}
+
+int TVA::getPhase() const {
+	return targetPhase;
 }
 
 void TVA::nextPhase() {
 	Tables *tables = &partial->getSynth()->tables;
 
-	if (targetPhase >= PHASE_DEAD || !play) {
+	if (targetPhase >= TVA_PHASE_DEAD || !play) {
 		partial->getSynth()->printDebug("TVA::nextPhase(): Shouldn't have got here with targetPhase %d, play=%s", targetPhase, play ? "true" : "false");
 		return;
 	}
 	targetPhase++;
 
-	if (targetPhase == PHASE_DEAD) {
+	if (targetPhase == TVA_PHASE_DEAD) {
 		play = false;
 		return;
 	}
 
 	bool allLevelsZeroFromNowOn = false;
 	if (partialParam->tva.envLevel[3] == 0) {
-		if (targetPhase == PHASE_4)
+		if (targetPhase == TVA_PHASE_4)
 			allLevelsZeroFromNowOn = true;
 		else if (partialParam->tva.envLevel[2] == 0) {
-			if (targetPhase == PHASE_3)
+			if (targetPhase == TVA_PHASE_3)
 				allLevelsZeroFromNowOn = true;
 			else if (partialParam->tva.envLevel[1] == 0) {
-				if (targetPhase == PHASE_2)
+				if (targetPhase == TVA_PHASE_2)
 					allLevelsZeroFromNowOn = true;
 				else if (partialParam->tva.envLevel[0] == 0) {
-					if (targetPhase == PHASE_ATTACK) // this line added, missing in ROM - FIXME: Add description of repercussions
+					if (targetPhase == TVA_PHASE_ATTACK) // this line added, missing in ROM - FIXME: Add description of repercussions
 						allLevelsZeroFromNowOn = true;
 				}
 			}
@@ -300,13 +277,13 @@ void TVA::nextPhase() {
 	if (!allLevelsZeroFromNowOn) {
 		newTargetAmp = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
 
-		if (targetPhase == PHASE_SUSTAIN || targetPhase == PHASE_RELEASE) {
+		if (targetPhase == TVA_PHASE_SUSTAIN || targetPhase == TVA_PHASE_RELEASE) {
 			if (partialParam->tva.envLevel[3] == 0) {
 				play = false;
 				return;
 			}
 			if (!partial->getPoly()->canSustain()) {
-				targetPhase = PHASE_RELEASE;
+				targetPhase = TVA_PHASE_RELEASE;
 				newTargetAmp = 0;
 				newAmpIncrement = -partialParam->tva.envTime[4];
 				if (newAmpIncrement >= 0) {
@@ -324,10 +301,10 @@ void TVA::nextPhase() {
 		newTargetAmp = 0;
 	}
 
-	if ((targetPhase != PHASE_SUSTAIN && targetPhase != PHASE_RELEASE) || allLevelsZeroFromNowOn) {
+	if ((targetPhase != TVA_PHASE_SUSTAIN && targetPhase != TVA_PHASE_RELEASE) || allLevelsZeroFromNowOn) {
 		int envTimeSetting  = partialParam->tva.envTime[envPointIndex];
 
-		if (targetPhase == PHASE_ATTACK) {
+		if (targetPhase == TVA_PHASE_ATTACK) {
 			envTimeSetting -= ((signed)partial->getPoly()->getVelocity() - 64) >> (6 - partialParam->tva.envTimeVeloSensitivity);  // PORTABILITY NOTE: Assumes arithmetic shift
 
 			if (envTimeSetting <= 0 && partialParam->tva.envTime[envPointIndex] != 0) {

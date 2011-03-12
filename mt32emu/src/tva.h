@@ -21,6 +21,33 @@ namespace MT32Emu {
 
 class Part;
 
+// When entering nextPhase, targetPhase is immediately incremented, and the descriptions/names below represent
+// their use after the increment.
+enum {
+	// When this is the target phase, level[0] is targeted within time[0], and velocity potentially affects time
+	TVA_PHASE_ATTACK = 1,
+
+	// When this is the target phase, level[1] is targeted within time[1]
+	TVA_PHASE_2 = 2,
+
+	// When this is the target phase, level[2] is targeted within time[2]
+	TVA_PHASE_3 = 3,
+
+	// When this is the target phase, level[3] is targeted within time[3]
+	TVA_PHASE_4 = 4,
+
+	// When this is the target phase, immediately goes to PHASE_RELEASE unless the poly is set to sustain.
+	// Aborts the partial if level[3] is 0.
+	// Otherwise level[3] is continued, no phase change will occur until some external influence (like pedal release)
+	TVA_PHASE_SUSTAIN = 5,
+
+	// 0 is targeted within time[4] (the time calculation is quite different from the other phases)
+	TVA_PHASE_RELEASE = 6,
+
+	// It's PHASE_DEAD, Jim.
+	TVA_PHASE_DEAD = 7
+};
+
 class TVA {
 private:
 	const Partial * const partial;
@@ -53,6 +80,8 @@ public:
 	float nextAmp();
 	void recalcSustain();
 	void startDecay();
+
+	int getPhase() const;
 };
 
 }
