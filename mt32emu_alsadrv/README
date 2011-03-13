@@ -62,6 +62,7 @@ CPU more aggressively.
 
 The user interface for xmt32
 ----------------------------
+
 The main screen shows the latency (top left), outputs (top right), LCD
 messages (centre) and general messages (below LCD messages).
 
@@ -75,6 +76,28 @@ The buttons on the right control several aspects of operation:
 
  Clear - Clears the currently playing midi events
  Reset - Causes the emulated device to revert to its power up state
+
+
+License
+-------
+
+Copyright (C) 2003 Tristan
+Copyright (C) 2004, 2005 Tristan, Jerome Fisher
+Copyright (C) 2008, 2011 Tristan, Jerome Fisher, Jörg Walter
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 Trademark disclaimer
