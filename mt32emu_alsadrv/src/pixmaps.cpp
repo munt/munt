@@ -40,7 +40,7 @@ void create_pixmaps()
 	button_width = atr.width; button_height = atr.height;	
 }
 
-XFontStruct * load_font(char **fontlist)
+XFontStruct * load_font(const char **fontlist)
 {
 	XFontStruct *fs;
 	int i;
@@ -58,7 +58,7 @@ XFontStruct * load_font(char **fontlist)
 	return fs;
 }
 
-void get_string_dims(XFontStruct *fs, char *txt, int *_w, int *_h)
+void get_string_dims(XFontStruct *fs, const char *txt, int *_w, int *_h)
 {
 	unsigned char c;
 	int tl, w, h, nh, i;
@@ -92,7 +92,7 @@ void get_string_dims(XFontStruct *fs, char *txt, int *_w, int *_h)
 	*_h = h;
 }
 
-char *button_fonts[] =
+const char *button_fonts[] =
 {
 	"-*-helvetica-medium-r-*--10-*",
 		"-*-fixed-medium-r-*--10-*",
@@ -102,7 +102,7 @@ char *button_fonts[] =
 };
 
 
-Pixmap create_button(char *txt)
+Pixmap create_button(const char *txt)
 {
 	Pixmap p;
 	int tl, x, y, w, h;

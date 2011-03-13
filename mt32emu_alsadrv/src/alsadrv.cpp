@@ -85,7 +85,7 @@ int consumer_types = 0;
 snd_pcm_t *pcm_handle = NULL;
 snd_pcm_hw_params_t *pcm_hwparams;
 // char *pcm_name = "plughw:0,0";
-char *pcm_name = "default";
+const char *pcm_name = "default";
 
 
 /* midi queue control variables */
@@ -103,7 +103,7 @@ char rvsysex[] = {
 
 
 #ifdef DEBUG
-void debug_msg(char *msg, ...)
+void debug_msg(const char *msg, ...)
 {
 	va_list ap;
 	
@@ -112,7 +112,7 @@ void debug_msg(char *msg, ...)
 	va_end(ap);
 }
 #else
-void debug_msg(char *msg, ...)
+void debug_msg(const char *msg, ...)
 {
 	
 }
@@ -656,7 +656,7 @@ static inline int convert_to_mt(snd_seq_event_t *seq_ev)
 	return 0;
 }
 
-char *create_filename(char *base, char *ext)
+char *create_filename(const char *base, const char *ext)
 {
 	char fullname[128], *n;
 	struct stat buf;

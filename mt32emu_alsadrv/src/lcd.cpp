@@ -13,7 +13,7 @@
 #define LCD_CLEAR_DELAY   3
 time_t lcd_last_age;
 
-char *lcd_font1[] = 	
+const char *lcd_font1[] = 	
 {		
 	"-*-times-medium-r-*--20-*",
 		"-*-fixed-medium-r-*--20-*",
@@ -21,7 +21,7 @@ char *lcd_font1[] =
 		"*", NULL
 };
 
-char *lcd_flagfont_info[] = 	
+const char *lcd_flagfont_info[] = 	
 {		
 	"-*-helvetica-medium-r-*--8-*",
 		"-*-fixed-medium-r-*--8-*",
@@ -29,7 +29,7 @@ char *lcd_flagfont_info[] =
 		"*", NULL
 };
 
-char *lcd_font2[] = 
+const char *lcd_font2[] = 
 {      
 	"-*-helvetica-medium-r-*--10-*",
 		"-*-fixed-medium-r-*--10-*",
@@ -188,7 +188,7 @@ void sysex_lcd_message(char *buf)
 	lcd_redraw();
 }
 
-void general_lcd_message(char *buf)
+void general_lcd_message(const char *buf)
 {
 	int length;
 			

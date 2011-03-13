@@ -37,9 +37,9 @@ extern XColor buttonColour;
 /* Some settings */
 extern int xreverb_switch;
 
-XFontStruct * load_font(char **fontlist);
-void get_string_dims(XFontStruct *fs, char *txt, int *_w, int *_h);
-Pixmap create_button(char *txt);
+XFontStruct * load_font(const char **fontlist);
+void get_string_dims(XFontStruct *fs, const char *txt, int *_w, int *_h);
+Pixmap create_button(const char *txt);
 
 void create_pixmaps();
 void quit();
