@@ -85,7 +85,7 @@ BEGIN
             VALUE "FileDescription", "MT-32 Synth Emulator Library"
             VALUE "FileVersion", "1, 1, 0, 6"
             VALUE "InternalName", "mt32emu"
-            VALUE "LegalCopyright", "Copyright (c) 2003-2005 Various contributors"
+            VALUE "LegalCopyright", "Copyright (C) 2003, 2004, 2005, 2011 Dean Beeler, Jerome Fisher, Sergey V. Mikayev"
             VALUE "OriginalFilename", "mt32emu.DLL"
             VALUE "ProductName", "MT-32 Synth Emulator"
             VALUE "ProductVersion", "1, 1, 0, 6"

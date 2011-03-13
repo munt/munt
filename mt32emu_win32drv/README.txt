@@ -1,14 +1,8 @@
 MT32Emu DirectMusic/WinMM Driver
 ********************************
 
-Copyright (c) 2003-2005 Various contributors
-
-License:
-
-See COPYING.txt. In short, this project has a MIT-style license, with no
-warranty of any kind.
-
-First-time Installation:
+First-time Installation
+-----------------------
 
  1) Ensure that you have oemsetup.inf and mt32emu.dll unpacked to the same
     directory as your MT32_PCM.ROM and MT32_CONTROL.ROM (not provided).
@@ -43,7 +37,9 @@ To begin playing back MIDI through the emulator, perform the following:
     the MIDI playback device.
 
 
-Upgrading:
+Upgrading
+---------
+
  1) Click on "Start", then "Run...".
  2) Type "devmgmt.msc" and press enter.
  3) Click on the "+" Next to "Sound, Video and Game Controllers".
@@ -58,3 +54,33 @@ Upgrading:
 12) If a dialog pops up asking for the ROM files, navigate *again* to the directory to show it where the ROMs are and click OK.
 13) If asked about change in languages, confirm that you want the file replaced.
 14) You almost certainly *will* need to reboot the computer for the change to take effect.
+
+
+License
+-------
+
+Copyright (C) 2003, 2004, 2005, 2011 Dean Beeler, Jerome Fisher
+Copyright (C) 2011 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+
+Trademark disclaimer
+--------------------
+
+Roland is a trademark of Roland Corp. All other brand and product names are
+trademarks or registered trademarks of their respective holder. Use of
+trademarks is for informational purposes only and does not imply endorsement by
+or affiliation with the holder.
