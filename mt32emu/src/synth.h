@@ -53,6 +53,13 @@ enum ReportType {
 	ReportType_newReverbLevel
 };
 
+enum LoadResult {
+	LoadResult_OK,
+	LoadResult_NotFound,
+	LoadResult_Unreadable,
+	LoadResult_Invalid
+};
+
 struct SynthProperties {
 	// Sample rate to use in mixing
 	unsigned int sampleRate;
@@ -339,8 +346,8 @@ private:
 	void writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, const Bit8u *data);
 	void readMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len, Bit8u *data);
 
-	bool loadControlROM(const char *filename);
-	bool loadPCMROM(const char *filename);
+	LoadResult loadControlROM(const char *filename);
+	LoadResult loadPCMROM(const char *filename);
 	bool dumpTimbre(File *file, const TimbreParam *timbre, Bit32u addr);
 	int dumpTimbres(const char *filename, int start, int len);
 

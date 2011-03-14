@@ -247,47 +247,48 @@ bool Synth::loadPreset(File *file) {
 	return rc;
 }
 
-bool Synth::loadControlROM(const char *filename) {
+LoadResult Synth::loadControlROM(const char *filename) {
 	File *file = openFile(filename, File::OpenMode_read); // ROM File
 	if (file == NULL) {
-		return false;
+		return LoadResult_NotFound;
 	}
 	bool rc = (file->read(controlROMData, CONTROL_ROM_SIZE) == CONTROL_ROM_SIZE);
 
 	closeFile(file);
 	if (!rc)
-		return rc;
+		return LoadResult_Unreadable;
 
 	// Control ROM successfully loaded, now check whether it's a known type
 	controlROMMap = NULL;
 	for (unsigned int i = 0; i < sizeof (ControlROMMaps) / sizeof (ControlROMMaps[0]); i++) {
 		if (memcmp(&controlROMData[ControlROMMaps[i].idPos], ControlROMMaps[i].idBytes, ControlROMMaps[i].idLen) == 0) {
 			controlROMMap = &ControlROMMaps[i];
-			return true;
+			return LoadResult_OK;
 		}
 	}
-	return false;
+	printDebug("%s does not match a known control ROM type", filename);
+	return LoadResult_Invalid;
 }
 
-bool Synth::loadPCMROM(const char *filename) {
+LoadResult Synth::loadPCMROM(const char *filename) {
 	File *file = openFile(filename, File::OpenMode_read); // ROM File
 	if (file == NULL) {
-		return false;
+		return LoadResult_NotFound;
 	}
-	bool rc = true;
+	LoadResult rc = LoadResult_OK;
 	int i;
 	for (i = 0; i < pcmROMSize; i++) {
 		Bit8u s;
 		if (!file->readBit8u(&s)) {
 			if (!file->isEOF()) {
-				rc = false;
+				rc = LoadResult_Unreadable;
 			}
 			break;
 		}
 		Bit8u c;
 		if (!file->readBit8u(&c)) {
 			if (!file->isEOF()) {
-				rc = false;
+				rc = LoadResult_Unreadable;
 			} else {
 				printDebug("PCM ROM file has an odd number of bytes! Ignoring last");
 			}
@@ -335,7 +336,7 @@ bool Synth::loadPCMROM(const char *filename) {
 	}
 	if (i != pcmROMSize) {
 		printDebug("PCM ROM file is too short (expected %d, got %d)", pcmROMSize, i);
-		rc = false;
+		rc = LoadResult_Invalid;
 	}
 	closeFile(file);
 	return rc;
@@ -431,8 +432,8 @@ bool Synth::open(SynthProperties &useProp) {
 	memset(&mt32ram, '?', sizeof(mt32ram));
 
 	printDebug("Loading Control ROM");
-	if (!loadControlROM("CM32L_CONTROL.ROM")) {
-		if (!loadControlROM("MT32_CONTROL.ROM")) {
+	if (loadControlROM("CM32L_CONTROL.ROM") != LoadResult_OK) {
+		if (loadControlROM("MT32_CONTROL.ROM") != LoadResult_OK) {
 			printDebug("Init Error - Missing or invalid MT32_CONTROL.ROM");
 			report(ReportType_errorControlROM, &errno);
 			return false;
@@ -448,8 +449,8 @@ bool Synth::open(SynthProperties &useProp) {
 	pcmROMData = new Bit16s[pcmROMSize];
 
 	printDebug("Loading PCM ROM");
-	if (!loadPCMROM("CM32L_PCM.ROM")) {
-		if (!loadPCMROM("MT32_PCM.ROM")) {
+	if (loadPCMROM("CM32L_PCM.ROM") != LoadResult_OK) {
+		if (loadPCMROM("MT32_PCM.ROM") != LoadResult_OK) {
 			printDebug("Init Error - Missing MT32_PCM.ROM");
 			report(ReportType_errorPCMROM, &errno);
 			return false;
