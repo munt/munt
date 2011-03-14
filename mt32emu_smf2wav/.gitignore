@@ -1,0 +1,16 @@
+*.[oa]
+.deps/
+autom4te.cache/
+src/mt32emu-smf2wav
+aclocal.m4
+config.h
+config.h.in
+config.log
+config.status
+configure
+depcomp
+install-sh
+Makefile
+Makefile.in
+missing
+stamp-h1
