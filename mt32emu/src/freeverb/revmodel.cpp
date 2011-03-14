@@ -1,6 +1,7 @@
 // Reverb model implementation
 //
 // Written by Jezar at Dreampoint, June 2000
+// Modifications by Jerome Fisher, 2009, 2011
 // http://www.dreampoint.co.uk
 // This code is public domain
 
