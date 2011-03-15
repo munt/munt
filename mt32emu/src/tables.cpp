@@ -198,8 +198,9 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		envLogarithmicTime[lf] = (Bit8u)ceilf(64.0f + logf(lf) / FLOAT_LN_2 * 8.0f);
 	}
 
-	// CONFIRMED:KG: I'm too lazy to work out a real formula for this one, but it matches the LAPC-I table found by Mok
-	// NOTE: Very different in MT-32
+#ifdef EMULATE_LAPC_I // Dummy #ifdef - we'll have runtime emulation mode selection in future.
+	// CONFIRMED: Based on a table found by Mok in the LAPC-I control ROM
+	// Note that this matches the MT-32 table, but with the values clamped to a maximum of 8.
 	memset(masterVolToAmpSubtraction, 8, 71);
 	memset(masterVolToAmpSubtraction + 71, 7, 3);
 	memset(masterVolToAmpSubtraction + 74, 6, 4);
@@ -209,7 +210,14 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	memset(masterVolToAmpSubtraction + 88, 2, 4);
 	memset(masterVolToAmpSubtraction + 92, 1, 4);
 	memset(masterVolToAmpSubtraction + 96, 0, 5);
-
+#else
+	// CONFIRMED: Based on a table found by Mok in the MT-32 control ROM
+	masterVolToAmpSubtraction[0] = 255;
+	for (int masterVol = 1; masterVol <= 100; masterVol++) {
+		masterVolToAmpSubtraction[masterVol] = (int)(106.31 - 16.0f * log2f(masterVol));
+	}
+#endif
+		
 	for (int i = 0; i <= 100; i++) {
 		pulseWidth100To255[i] = (int)(i * 255 / 100.0f + 0.5f);
 		//synth->printDebug("%d: %d", i, pulseWidth100To255[i]);
