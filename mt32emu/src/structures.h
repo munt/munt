@@ -196,8 +196,6 @@ struct PatchCache {
 	bool PCMPartial;
 	int pcm;
 	char waveform;
-	int pulsewidth;
-	int pwsens;
 
 	int filtkeyfollow;
 

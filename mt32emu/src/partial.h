@@ -70,7 +70,9 @@ private:
 	// FIXME: Give this a better name (e.g. pcmWaveInfo)
 	PCMWaveEntry *pcmWave;
 
-	int pulsewidth;
+	// Final pulse width value, with velfollow applied, matching what is sent to the LA32.
+	// Range: 0-255
+	int pulseWidthVal;
 
 	float pcmPosition;
 	int intPCMPosition;

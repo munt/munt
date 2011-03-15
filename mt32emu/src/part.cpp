@@ -311,8 +311,6 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 		cache[t].partialParam = &timbre->partial[t];
 
 		cache[t].waveform = timbre->partial[t].wg.waveform;
-		cache[t].pulsewidth = timbre->partial[t].wg.pulseWidth;
-		cache[t].pwsens = timbre->partial[t].wg.pulseWidthVeloSensitivity;
 
 		// Calculate and cache filter stuff
 		cache[t].filtEnv = timbre->partial[t].tvf;

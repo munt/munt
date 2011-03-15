@@ -150,12 +150,12 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 		pcmWave = NULL;
 	}
 
-	pulsewidth = patchCache->pulsewidth + synth->tables.pwVelfollowAdd[patchCache->pwsens][poly->getVelocity()];
-	if (pulsewidth > 100) {
-		pulsewidth = 100;
-	} else if (pulsewidth < 0) {
-		pulsewidth = 0;
-	}
+	// CONFIRMED: pulseWidthVal calculation is based on information from Mok
+	pulseWidthVal = (poly->getVelocity() - 64) * (patchCache->srcPartial.wg.pulseWidthVeloSensitivity - 7) + synth->tables.pulseWidth100To255[patchCache->srcPartial.wg.pulseWidth];
+	if (pulseWidthVal < 0)
+		pulseWidthVal = 0;
+	else if (pulseWidthVal > 255)
+		pulseWidthVal = 255;
 
 	filtEnv.envpos = 0;
 	filtEnv.envstat = -1;
@@ -264,7 +264,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			// Render synthesised waveform
 			if(firstSample) {
 				firstSample = false;
-				float spw = synth->tables.pwFactorf[pulsewidth];
+				float spw = synth->tables.pwFactorf[pulseWidthVal];
 				if ((patchCache->waveform & 1) != 0 && spw < 0.5f) {
 					spw = 0.5f - ((0.5f - spw) * 2.0f);
 				}

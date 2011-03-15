@@ -10,7 +10,7 @@
 	* "All Notes Off" no longer stops notes held by the sustain controller.
 	* Implemented "Reset all controllers".
 	* Stereo pan positions are no longer inverted.
-	* Volume, pitch, filter and envelopes are now more accurately calculated. Overall, the sound emulation is much more accurate.
+	* Volume, pitch, filter, pulse width and envelopes are now more accurately calculated. Overall, the sound emulation is much more accurate.
 	* Waveforms are now generated on the fly. Waveform cache files are no longer necessary and can be deleted.
 	* Handling of unusual sysex messages has been improved (fixes sysex messages from Java's MIDI classes on Windows).
 	* Fixed a reverb bug during periods of silence.

@@ -186,10 +186,10 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	for (lf = 0; lf <= 100; lf++) {
 		// CONFIRMED:KG: This matches a ROM table found by Mok
 		float fVal = (2.0f - log10f(lf + 1.0f)) * 128.0f;
-        int val = (int)(fVal + 1.0);
-        if (val > 255)
-        	val = 255;
-        levelToAmpSubtraction[lf] = (Bit8u)val;
+		int val = (int)(fVal + 1.0);
+		if (val > 255)
+			val = 255;
+		levelToAmpSubtraction[lf] = (Bit8u)val;
 	}
 
 	envLogarithmicTime[0] = 64;
@@ -242,14 +242,14 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		}
 	}
 
-	for (lf = 0; lf <= 100; lf++) {
-		float mv = lf / 100.0f;
+	for (lf = 0; lf < 256; lf++) {
+		float mv = lf / 255.0f;
 		float pt = mv - 0.5f;
 		if (pt < 0)
 			pt = 0;
 
 		// Approximation from sample comparison
-		pwFactorf[lf] = ((pt * 179.0f) + 128.0f) / 64.0f;
+		pwFactorf[lf] = ((pt * 70.0f) + 128.0f) / 64.0f;
 		pwFactorf[lf] = 1.0f / pwFactorf[lf];
 	}
 

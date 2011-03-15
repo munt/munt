@@ -100,7 +100,7 @@ public:
 	Bit16s noiseBuf[MAX_SAMPLE_OUTPUT];
 	Bit32s pwVelfollowAdd[15][128];
 	float resonanceFactor[31];
-	float pwFactorf[101];
+	float pwFactorf[256];
 
 	// LUTs varying with sample rate
 	Bit32u envTime[101];
