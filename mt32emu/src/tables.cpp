@@ -249,7 +249,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 			pt = 0;
 
 		// Approximation from sample comparison
-		pwFactorf[lf] = ((pt * 70.0f) + 128.0f) / 64.0f;
+		pwFactorf[lf] = ((pt * 179.0f) + 128.0f) / 64.0f;
 		pwFactorf[lf] = 1.0f / pwFactorf[lf];
 	}
 
