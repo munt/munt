@@ -231,29 +231,10 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			float newPCMPosition = pcmPosition + positionDelta;
 			int newIntPCMPosition = (int)newPCMPosition;
 
-			if (amp != 0.0f) {
-				// Only bother doing the actual sample calculation if someone's going to hear it.
-				if (positionDelta < 1.0f) {
-					// Linear interpolation
-					int firstSample = synth->pcmROMData[pcmAddr + intPCMPosition];
-					int nextSample = getPCMSample(intPCMPosition + 1);
-					sample = firstSample + (nextSample - firstSample) * (pcmPosition - intPCMPosition);
-				} else if (intPCMPosition == newIntPCMPosition) {
-					// Small optimisation
-					sample = synth->pcmROMData[pcmAddr + newIntPCMPosition];
-				} else {
-					// Average all the samples in the range
-					double sampleSum = synth->pcmROMData[pcmAddr + intPCMPosition] * ((intPCMPosition + 1) - pcmPosition); // First sample may not be 100% in range
-					for (int position = intPCMPosition + 1; position < newIntPCMPosition; position++) {
-						sampleSum += getPCMSample(position);
-					}
-					sampleSum += getPCMSample(newIntPCMPosition) * (newPCMPosition - newIntPCMPosition); // Last sample may not be 100% in range
-					sample = (float)(sampleSum / positionDelta);
-				}
-			} else {
-				// If a sample is calculated in the woods, and the current TVA value's too low to hear it, is there any point?
-				sample = 0.0f;
-			}
+			// Linear interpolation
+			int firstSample = synth->pcmROMData[pcmAddr + intPCMPosition];
+			int nextSample = getPCMSample(intPCMPosition + 1);
+			sample = firstSample + (nextSample - firstSample) * (pcmPosition - intPCMPosition);
 			if (pcmWave->loop) {
 				newPCMPosition = fmodf(newPCMPosition, pcmWave->len);
 				newIntPCMPosition = newIntPCMPosition % pcmWave->len;
