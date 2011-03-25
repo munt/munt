@@ -32,6 +32,7 @@ static const int DEFAULT_SAMPLE_RATE = 32000;
 
 static const int HEADEROFFS_RIFFLEN = 4;
 static const int HEADEROFFS_SAMPLERATE = 24;
+static const int HEADEROFFS_BYTERATE = 28;
 static const int HEADEROFFS_DATALEN = 40;
 
 static long secondsToSamples(double seconds, int sampleRate) {
@@ -39,6 +40,7 @@ static long secondsToSamples(double seconds, int sampleRate) {
 }
 
 static bool writeWAVEHeader(FILE *dstFile, int sampleRate) {
+	int byteRate = sampleRate * 4;
 	// All values are little-endian
 	unsigned char waveHeader[] = {
 		'R','I','F','F',
@@ -51,7 +53,7 @@ static bool writeWAVEHeader(FILE *dstFile, int sampleRate) {
 		0x01, 0x00, // 0x0001 - PCM/Uncompressed
 		0x02, 0x00, // 0x0002 - 2 channels
 		0x00, 0x7D, 0x00, 0x00, // 0x00007D00 - 32kHz, overwritten by real sample rate below
-		0x00, 0x80 ,0x0C, 0x00, // 0x000C8000 - 819200 bytes/sec
+		0x00, 0xF4, 0x01, 0x00, // 0x0001F400 - 128000 bytes/sec, overwritten with real value below
 		0x04, 0x00, // 0x0004 - 4 byte alignment
 		0x10, 0x00, // 0x0010 - 16 bits/sample
 
@@ -63,6 +65,10 @@ static bool writeWAVEHeader(FILE *dstFile, int sampleRate) {
 	waveHeader[HEADEROFFS_SAMPLERATE + 1] = (sampleRate >> 8) & 0xFF;
 	waveHeader[HEADEROFFS_SAMPLERATE + 2] = (sampleRate >> 16) & 0xFF;
 	waveHeader[HEADEROFFS_SAMPLERATE + 3] = (sampleRate >> 24) & 0xFF;
+	waveHeader[HEADEROFFS_BYTERATE] = byteRate & 0xFF;
+	waveHeader[HEADEROFFS_BYTERATE + 1] = (byteRate >> 8) & 0xFF;
+	waveHeader[HEADEROFFS_BYTERATE + 2] = (byteRate >> 16) & 0xFF;
+	waveHeader[HEADEROFFS_BYTERATE + 3] = (byteRate >> 24) & 0xFF;
 	return fwrite(waveHeader, 1, sizeof(waveHeader), dstFile) == sizeof(waveHeader);
 }
 
