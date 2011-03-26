@@ -39,7 +39,11 @@
 #include <assert.h>
 #include <math.h>
 #include <errno.h>
+#ifdef __MINGW32__
+#include <windows.h>
+#else /* ! __MINGW32__ */
 #include <arpa/inet.h>
+#endif /* ! __MINGW32__ */
 #include "smf.h"
 #include "smf_private.h"
 
@@ -395,7 +399,7 @@ write_file(smf_t *smf, const char *file_name)
 {
 	FILE *stream;
 
-	stream = fopen(file_name, "w+");
+	stream = fopen(file_name, "wb+");
 	if (stream == NULL) {
 		g_critical("Cannot open input file: %s", strerror(errno));
 

@@ -37,7 +37,11 @@
 #include <assert.h>
 #include <math.h>
 #include <errno.h>
+#ifdef __MINGW32__
+#include <windows.h>
+#else /* ! __MINGW32__ */
 #include <arpa/inet.h>
+#endif /* ! __MINGW32__ */
 #include <stdint.h>
 #include "smf.h"
 #include "smf_private.h"

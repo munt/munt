@@ -1,3 +1,12 @@
+Changes between 1.2 and 1.3:
+
+ - Make libsmf more tolerant for broken MIDI files - try to load as much
+   as possible instead of not loading the track at all.
+
+ - Add user pointers to smf_event_t and smf_track_t.
+
+ - Make it easier to use libsmf under Microsoft Windows.
+
 Changes between 1.1 and 1.2:
 
  - Relaxed some overly restrictive tests that could trip asserts without

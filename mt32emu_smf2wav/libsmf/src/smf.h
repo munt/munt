@@ -288,6 +288,12 @@ struct smf_track_struct {
 	/** Absolute time of next event on events_queue. */
 	int		time_of_next_event;
 	GPtrArray	*events_array;
+
+	/** API consumer is free to use this for whatever purpose.  NULL in freshly allocated track.
+	    Note that tracks might be deallocated not only explicitly, by calling smf_track_delete(),
+	    but also implicitly, e.g. when calling smf_delete() with tracks still added to
+	    the smf; there is no mechanism for libsmf to notify you about removal of the track. */
+	void		*user_pointer;
 };
 
 typedef struct smf_track_struct smf_track_t;
@@ -318,6 +324,12 @@ struct smf_event_struct {
 
 	/** Length of the MIDI message in the buffer, in bytes. */
 	int		midi_buffer_length; 
+
+	/** API consumer is free to use this for whatever purpose.  NULL in freshly allocated event.
+	    Note that events might be deallocated not only explicitly, by calling smf_event_delete(),
+	    but also implicitly, e.g. when calling smf_track_delete() with events still added to
+	    the track; there is no mechanism for libsmf to notify you about removal of the event. */
+	void		*user_pointer;
 };
 
 typedef struct smf_event_struct smf_event_t;
