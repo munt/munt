@@ -40,11 +40,6 @@
 #include <math.h>
 #include <errno.h>
 #include <ctype.h>
-#ifdef __MINGW32__
-#include <windows.h>
-#else /* ! __MINGW32__ */
-#include <arpa/inet.h>
-#endif /* ! __MINGW32__ */
 #include "smf.h"
 #include "smf_private.h"
 
@@ -80,7 +75,7 @@ next_chunk(smf_t *smf)
 	 * XXX: On SPARC, after compiling with "-fast" option there will be SIGBUS here.
 	 * Please compile with -xmemalign=8i".
 	 */
-	smf->next_chunk_offset += sizeof(struct chunk_header_struct) + ntohl(chunk->length);
+	smf->next_chunk_offset += sizeof(struct chunk_header_struct) + g_ntohl(chunk->length);
 
 	if (smf->next_chunk_offset > smf->file_buffer_length) {
 		g_critical("SMF warning: malformed chunk; truncated file?");
@@ -139,7 +134,7 @@ parse_mthd_header(smf_t *smf)
 
 	assert(mthd == tmp_mthd);
 
-	len = ntohl(mthd->length);
+	len = g_ntohl(mthd->length);
 	if (len != 6) {
 		g_critical("SMF error: MThd chunk length %d, must be 6.", len);
 
@@ -166,7 +161,7 @@ parse_mthd_chunk(smf_t *smf)
 
 	mthd = (struct mthd_chunk_struct *)smf->file_buffer;
 
-	smf->format = ntohs(mthd->format);
+	smf->format = g_ntohs(mthd->format);
 	if (smf->format < 0 || smf->format > 2) {
 		g_critical("SMF error: bad MThd format field value: %d, valid values are 0-2, inclusive.", smf->format);
 		return (-1);
@@ -177,7 +172,7 @@ parse_mthd_chunk(smf_t *smf)
 		return (-2);
 	}
 
-	smf->expected_number_of_tracks = ntohs(mthd->number_of_tracks);
+	smf->expected_number_of_tracks = g_ntohs(mthd->number_of_tracks);
 	if (smf->expected_number_of_tracks <= 0) {
 		g_critical("SMF error: bad number of tracks: %d, must be greater than zero.", smf->expected_number_of_tracks);
 		return (-3);
@@ -188,7 +183,7 @@ parse_mthd_chunk(smf_t *smf)
 	second_byte_of_division = *((signed char *)&(mthd->division) + 1);
 
 	if (first_byte_of_division >= 0) {
-		smf->ppqn = ntohs(mthd->division);
+		smf->ppqn = g_ntohs(mthd->division);
 		smf->frames_per_second = 0;
 		smf->resolution = 0;
 	} else {
@@ -696,7 +691,7 @@ parse_mtrk_header(smf_track_t *track)
 	}
 
 	track->file_buffer = mtrk;
-	track->file_buffer_length = sizeof(struct chunk_header_struct) + ntohl(mtrk->length);
+	track->file_buffer_length = sizeof(struct chunk_header_struct) + g_ntohl(mtrk->length);
 	track->next_event_offset = sizeof(struct chunk_header_struct);
 
 	return (0);
