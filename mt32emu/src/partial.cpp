@@ -207,7 +207,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 	for(sampleNum = 0; sampleNum < length; sampleNum++) {
 		float sample = 0;
 		float amp = tva->nextAmp();
-		if (!tva->play) {
+		if (!tva->isPlaying()) {
 			deactivate();
 			break;
 		}

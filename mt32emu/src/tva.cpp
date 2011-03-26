@@ -166,7 +166,7 @@ void TVA::reset(const Part *part, const PatchCache *patchCache, const MemParams:
 	this->patchTemp = part->getPatchTemp();
 	this->rhythmTemp = rhythmTemp;
 
-	play = true;
+	playing = true;
 
 	Tables *tables = &partial->getSynth()->tables;
 
@@ -235,6 +235,10 @@ void TVA::recalcSustain() {
 	targetPhase = TVA_PHASE_SUSTAIN - 1;
 }
 
+bool TVA::isPlaying() const {
+	return playing;
+}
+
 int TVA::getPhase() const {
 	return targetPhase;
 }
@@ -242,14 +246,14 @@ int TVA::getPhase() const {
 void TVA::nextPhase() {
 	Tables *tables = &partial->getSynth()->tables;
 
-	if (targetPhase >= TVA_PHASE_DEAD || !play) {
-		partial->getSynth()->printDebug("TVA::nextPhase(): Shouldn't have got here with targetPhase %d, play=%s", targetPhase, play ? "true" : "false");
+	if (targetPhase >= TVA_PHASE_DEAD || !playing) {
+		partial->getSynth()->printDebug("TVA::nextPhase(): Shouldn't have got here with targetPhase %d, playing=%s", targetPhase, playing ? "true" : "false");
 		return;
 	}
 	targetPhase++;
 
 	if (targetPhase == TVA_PHASE_DEAD) {
-		play = false;
+		playing = false;
 		return;
 	}
 
@@ -280,7 +284,7 @@ void TVA::nextPhase() {
 
 		if (targetPhase == TVA_PHASE_SUSTAIN || targetPhase == TVA_PHASE_RELEASE) {
 			if (partialParam->tva.envLevel[3] == 0) {
-				play = false;
+				playing = false;
 				return;
 			}
 			if (!partial->getPoly()->canSustain()) {

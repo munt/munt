@@ -59,6 +59,8 @@ private:
 	const MemParams::PatchTemp *patchTemp;
 	const MemParams::RhythmTemp *rhythmTemp;
 
+	bool playing;
+
 	int biasAmpSubtraction;
 	int veloAmpSubtraction;
 	int keyTimeSubtraction;
@@ -73,15 +75,13 @@ private:
 	void nextPhase();
 
 public:
-	// FIXME: This should probably have a getter
-	bool play;
-
 	TVA(const Partial *partial);
 	void reset(const Part *part, const PatchCache *patchCache, const MemParams::RhythmTemp *rhythmTemp);
 	float nextAmp();
 	void recalcSustain();
 	void startDecay();
 
+	bool isPlaying() const;
 	int getPhase() const;
 };
 
