@@ -31,16 +31,18 @@ bool ExternalInterface::start() {
 
 	if (!SDLNet_ResolveHost(&ipxServerIp, NULL, 0xc307)) {
 		ipxServerSocket = SDLNet_UDP_Open(1987);
-		if (ipxServerSocket == NULL)
+		if (ipxServerSocket == NULL) {
 			return false;
+		}
 		regPacket = SDLNet_AllocPacket(4096);
-		if (regPacket == NULL)
+		if (regPacket == NULL) {
 			return false;
+		}
 
 		this->openedPort = true;
 		return true;
 	} else {
-        return false;
+		return false;
 	}
 }
 
@@ -60,7 +62,7 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 					bufptr = (Bit16u *)(&buffer[0]);
 					*bufptr++ = (Bit16u)reqType;
 					*bufptr++ = (Bit16u)MT32EMU_MAX_PARTIALS;
-					for (i=0;i<MT32EMU_MAX_PARTIALS;i++) {
+					for (i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 						if (!synth->getPartial(i)->isActive()) {
 							*bufptr++ = 0;
 							*bufptr++ = 0;
@@ -71,14 +73,15 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 							*bufptr++ = 0;
 						} else {
 							int tvaPhase = synth->getPartial(i)->tva->getPhase();
-							if (tvaPhase == TVA_PHASE_SUSTAIN)
+							if (tvaPhase == TVA_PHASE_SUSTAIN) {
 								*bufptr++ = 2;
-							else if (tvaPhase == TVA_PHASE_RELEASE)
+							} else if (tvaPhase == TVA_PHASE_RELEASE) {
 								*bufptr++ = 3;
-							else if (tvaPhase == TVA_PHASE_DEAD)
+							} else if (tvaPhase == TVA_PHASE_DEAD) {
 								*bufptr++ = 0;
-							else
+							} else {
 								*bufptr++ = 1;
+							}
 
 							*bufptr++ = (Bit16u)synth->getPartial(i)->getOwnerPart();
 							*bufptr++ = (Bit16u)synth->getPartial(i)->getKey();
@@ -95,7 +98,7 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 					}
 					// 8 channel names with description
 					*bufptr++ = 8;
-					for (i=0;i<8;i++) {
+					for (i = 0; i < 8; i++) {
 						memcpy(bufptr, synth->getPart(i)->getCurrentInstr(), 10);
 						bufptr++;
 						bufptr++;
@@ -103,7 +106,7 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 						bufptr++;
 						bufptr++;
 					}
-					for (i=0;i<9;i++) {
+					for (i = 0; i < 9; i++) {
 						*bufptr++ = (Bit16u)(synth->getPart(i)->getVolume() * 127 / 100);
 					}
 					*(int *)bufptr = sndBufLength;
@@ -124,7 +127,7 @@ void ExternalInterface::doControlPanelComm(Synth *synth, int sndBufLength) {
 				// Reserved for raw sysex reads
 				break;
 			case 4:
-				// Message data from control panel.  Specified with part and not channel mappings
+				// Message data from control panel. Specified with part and not channel mappings
 				// Format:
 				// 1 byte = part (0 - 8)
 				// 1 byte = code
@@ -173,7 +176,7 @@ bool ExternalInterface::getStatusRequest(int *requestType, char * buffer) {
 		}
 		return true;
 	} else {
-        return false;
+		return false;
 	}
 }
 
@@ -184,16 +187,15 @@ bool ExternalInterface::sendResponse(int /*requestType*/, char *requestBuf, int 
 	//regPacket->address.host = 0xffffffff;
 	//regPacket->address.port = 0x641e;
 	regPacket->address = this->ipxClientIp;
-	SDLNet_UDP_Send(ipxServerSocket,-1,regPacket);
+	SDLNet_UDP_Send(ipxServerSocket, -1, regPacket);
 
 	if ((this->knownClient) && (this->textToDisplay)) {
-
 		memcpy(regPacket->data, txtBuffer, requestLen);
 		regPacket->len = 22;
 		regPacket->address = this->ipxClientIp;
 		//regPacket->address.host = 0xffffffff;
 		//regPacket->address.port = 0x641e;
-		SDLNet_UDP_Send(ipxServerSocket,-1,regPacket);
+		SDLNet_UDP_Send(ipxServerSocket, -1, regPacket);
 		this->textToDisplay = false;
 	}
 
@@ -202,7 +204,7 @@ bool ExternalInterface::sendResponse(int /*requestType*/, char *requestBuf, int 
 
 bool ExternalInterface::sendDisplayText(char *requestBuf, int requestLen) {
 	if (!this->knownClient) {
-        memcpy(&txtBuffer[0], requestBuf, requestLen);
+		memcpy(&txtBuffer[0], requestBuf, requestLen);
 		this->textToDisplay = true;
 	} else {
 		this->sendResponse(2, requestBuf, requestLen);
@@ -213,7 +215,7 @@ bool ExternalInterface::sendDisplayText(char *requestBuf, int requestLen) {
 bool ExternalInterface::stop() {
 	if (this->openedPort) {
 		if (ipxServerSocket != NULL) {
-		SDLNet_UDP_Close(ipxServerSocket);
+			SDLNet_UDP_Close(ipxServerSocket);
 		}
 		this->openedPort = false;
 	}

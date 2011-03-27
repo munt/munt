@@ -32,7 +32,7 @@ Poly::Poly(Part *part) {
 }
 
 void Poly::reset(unsigned int key, unsigned int velocity, bool canSustain, Partial **partials) {
-	if(isActive()) {
+	if (isActive()) {
 		// FIXME: Throw out some big ugly debug output with a lot of exclamation marks - we should never get here
 		abort();
 	}
@@ -66,8 +66,9 @@ bool Poly::noteOff(bool pedalHeld) {
 }
 
 bool Poly::stopPedalHold() {
-	if (state != POLY_Held)
+	if (state != POLY_Held) {
 		return false;
+	}
 	return startDecay();
 }
 

@@ -29,8 +29,7 @@
 using namespace MT32Emu;
 
 Partial::Partial(Synth *useSynth, int debugPartialNum) :
-	synth(useSynth), debugPartialNum(debugPartialNum), tva(new TVA(this)), tvp(new TVP(this))
-{
+	synth(useSynth), debugPartialNum(debugPartialNum), tva(new TVA(this)), tvp(new TVP(this)) {
 	ownerPart = -1;
 	poly = NULL;
 	pair = NULL;
@@ -59,8 +58,9 @@ void Partial::activate(int part) {
 }
 
 void Partial::deactivate() {
-	if (!isActive())
+	if (!isActive()) {
 		return;
+	}
 	ownerPart = -1;
 	if (poly != NULL) {
 		poly->partialDeactivated(this);
@@ -73,10 +73,11 @@ void Partial::deactivate() {
 void Partial::initKeyFollow(int key) {
 	// Calculate keyfollow for filter.
 	int keyfollow = ((key - MIDDLEC) * patchCache->filtkeyfollow) / 4096;
-	if (keyfollow > 108)
+	if (keyfollow > 108) {
 		keyfollow = 108;
-	else if (keyfollow < -108)
+	} else if (keyfollow < -108) {
 		keyfollow = -108;
+	}
 	filtVal = synth->tables.tvfKeyfollowMult[keyfollow + 108];
 }
 
@@ -108,15 +109,15 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	keyLookup = &synth->tables.keyLookups[getKey() - 12];
 
 	Bit8u panSetting = rhythmTemp != NULL ? rhythmTemp->panpot : part->getPatchTemp()->panpot;
-	if(mixType == 3) {
-		if(structurePosition == 0) {
-			if(panSetting > 7) {
+	if (mixType == 3) {
+		if (structurePosition == 0) {
+			if (panSetting > 7) {
 				panSetting = (panSetting - 7) * 2;
 			} else {
 				panSetting = 0;
 			}
 		} else {
-			if(panSetting < 7) {
+			if (panSetting < 7) {
 				panSetting = panSetting * 2;
 			} else {
 				panSetting = 14;
@@ -147,10 +148,11 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 
 	// CONFIRMED: pulseWidthVal calculation is based on information from Mok
 	pulseWidthVal = (poly->getVelocity() - 64) * (patchCache->srcPartial.wg.pulseWidthVeloSensitivity - 7) + synth->tables.pulseWidth100To255[patchCache->srcPartial.wg.pulseWidth];
-	if (pulseWidthVal < 0)
+	if (pulseWidthVal < 0) {
 		pulseWidthVal = 0;
-	else if (pulseWidthVal > 255)
+	} else if (pulseWidthVal > 255) {
 		pulseWidthVal = 255;
+	}
 
 	filtEnv.envpos = 0;
 	filtEnv.envstat = -1;
@@ -198,7 +200,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 	// Generate samples
 
 	unsigned long sampleNum;
-	for(sampleNum = 0; sampleNum < length; sampleNum++) {
+	for (sampleNum = 0; sampleNum < length; sampleNum++) {
 		float sample = 0;
 		float amp = tva->nextAmp();
 		if (!tva->isPlaying()) {
@@ -281,10 +283,12 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			// Limit filter freq to slightly under the Nyquist frequency to avoid aliasing
 			// FIXME: Move this calculation elsewhere (if it remains necessary at all)
 			float filtergran = 0.484375f * synth->myProp.sampleRate;
-			if (filtergran > FILTERGRAN)
+			if (filtergran > FILTERGRAN) {
 				filtergran = FILTERGRAN;
-			if (freqsum > filtergran)
+			}
+			if (freqsum > filtergran) {
 				freqsum = filtergran;
+			}
 
 			sample = (floor((synth->iirFilter)((sample), &history[0], synth->tables.filtCoeff[(Bit32s)freqsum][(int)patchCache->filtEnv.resonance])));
 
@@ -301,8 +305,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			if (sample < -32768.0f) {
 				synth->printDebug("Overdriven amplitude for waveform=%d, freqsum=%f: %f < -32768", patchCache->waveform, freqsum, sample);
 				sample = -32768.0f;
-			}
-			else if (sample > 32767.0f) {
+			} else if (sample > 32767.0f) {
 				synth->printDebug("Overdriven amplitude for waveform=%d, freqsum=%f: %f > 32767", patchCache->waveform, freqsum, sample);
 				sample = 32767.0f;
 			}
@@ -317,19 +320,23 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 }
 
 Bit16s *Partial::mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, unsigned long len) {
-	if (buf1 == NULL)
+	if (buf1 == NULL) {
 		return NULL;
-	if (buf2 == NULL)
+	}
+	if (buf2 == NULL) {
 		return buf1;
+	}
 
 	Bit16s *outBuf = buf1;
 	while (len--) {
 		Bit32s result = ((*buf1 * *buf2) >> 16) + *buf1;
 
-		if (result > 32767)
+		if (result > 32767) {
 			result = 32767;
-		if (result < -32768)
+		}
+		if (result < -32768) {
 			result = -32768;
+		}
 		*buf1 = (Bit16s)(result);
 		buf1++;
 		buf2++;
@@ -369,8 +376,9 @@ bool Partial::isPCM() const {
 }
 
 const ControlROMPCMStruct *Partial::getControlROMPCMStruct() const {
-	if(pcmWave != NULL)
+	if (pcmWave != NULL) {
 		return pcmWave->controlROMPCMStruct;
+	}
 	return NULL;
 }
 
@@ -379,8 +387,9 @@ Synth *Partial::getSynth() const {
 }
 
 bool Partial::produceOutput(Bit16s *partialBuf, unsigned long length) {
-	if (!isActive() || alreadyOutputed || isRingModulatingSlave())
+	if (!isActive() || alreadyOutputed || isRingModulatingSlave()) {
 		return false;
+	}
 	if (poly == NULL) {
 		synth->printDebug("*** ERROR: poly is NULL at Partial::produceOutput()!");
 		return false;
@@ -408,16 +417,18 @@ bool Partial::produceOutput(Bit16s *partialBuf, unsigned long length) {
 			}
 		}
 		if (pairNumGenerated > 0) {
-			if(mixType == 1)
+			if (mixType == 1) {
 				mixBuffersRingMix(myBuf, pairBuf, pairNumGenerated);
-			else
+			} else {
 				mixBuffersRing(myBuf, pairBuf, pairNumGenerated);
+			}
 		}
 		if (numGenerated > pairNumGenerated) {
-			if(mixType == 1)
+			if (mixType == 1) {
 				mixBuffersRingMix(myBuf + pairNumGenerated, NULL, numGenerated - pairNumGenerated);
-			else
+			} else {
 				mixBuffersRing(myBuf + pairNumGenerated, NULL, numGenerated - pairNumGenerated);
+			}
 		}
 	}
 
@@ -426,8 +437,9 @@ bool Partial::produceOutput(Bit16s *partialBuf, unsigned long length) {
 		*partialBuf++ = (Bit16s)(((Bit32s)*myBuf * (Bit32s)stereoVolume.rightvol) >> 16);
 		myBuf++;
 	}
-	if (numGenerated < length)
+	if (numGenerated < length) {
 		memset(partialBuf, 0, sizeof(Bit16s) * 2 * (length - numGenerated));
+	}
 	return true;
 }
 
@@ -441,20 +453,22 @@ Bit32s Partial::getFiltEnvelope() {
 	if (tStat->decaying) {
 		reshigh = tStat->envbase;
 		reshigh = (reshigh + ((tStat->envdist * tStat->envpos) / tStat->envsize));
-		if (tStat->envpos >= tStat->envsize)
+		if (tStat->envpos >= tStat->envsize) {
 			reshigh = 0;
+		}
 	} else {
-		if (tStat->envstat==4) {
+		if (tStat->envstat == 4) {
 			reshigh = patchCache->filtsustain;
 			if (!poly->canSustain()) {
 				startFiltDecay(reshigh);
 			}
 		} else {
-			if ((tStat->envstat==-1) || (tStat->envpos >= tStat->envsize)) {
-				if (tStat->envstat==-1)
+			if ((tStat->envstat == -1) || (tStat->envpos >= tStat->envsize)) {
+				if (tStat->envstat == -1) {
 					tStat->envbase = 0;
-				else
+				} else {
 					tStat->envbase = patchCache->filtEnv.envLevel[tStat->envstat];
+				}
 				tStat->envstat++;
 				tStat->envpos = 0;
 				if (tStat->envstat == 3) {
@@ -518,7 +532,7 @@ Bit32s Partial::getFiltEnvelope() {
 
 	int veloFilEnv = (Bit32s)poly->getVelocity() * (Bit32s)patchCache->srcPartial.tvf.envVeloSensitivity;
 	int filEnv = (veloFilEnv << 2) >> 8;
-	veloFilEnv  = 109 - patchCache->srcPartial.tvf.envVeloSensitivity + filEnv;
+	veloFilEnv = 109 - patchCache->srcPartial.tvf.envVeloSensitivity + filEnv;
 	filEnv = ((Bit32s)getKey() - 60) >> (4 - (Bit32s)patchCache->srcPartial.tvf.envDepthKeyfollow);
 	veloFilEnv += filEnv;
 	if (veloFilEnv < 0) {
@@ -536,8 +550,9 @@ Bit32s Partial::getFiltEnvelope() {
 }
 
 bool Partial::shouldReverb() {
-	if (!isActive())
+	if (!isActive()) {
 		return false;
+	}
 	return patchCache->reverb;
 }
 

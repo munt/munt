@@ -24,18 +24,21 @@ using namespace MT32Emu;
 PartialManager::PartialManager(Synth *useSynth, Part **parts) {
 	this->synth = useSynth;
 	this->parts = parts;
-	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++)
+	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		partialTable[i] = new Partial(synth, i);
+	}
 }
 
 PartialManager::~PartialManager(void) {
-	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++)
+	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		delete partialTable[i];
+	}
 }
 
 void PartialManager::clearAlreadyOutputed() {
-	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++)
+	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		partialTable[i]->alreadyOutputed = false;
+	}
 }
 
 bool PartialManager::shouldReverb(int i) {
@@ -80,8 +83,9 @@ Partial *PartialManager::allocPartial(int partNum) {
 unsigned int PartialManager::getFreePartialCount(void) {
 	int count = 0;
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-		if (!partialTable[i]->isActive())
+		if (!partialTable[i]->isActive()) {
 			count++;
+		}
 	}
 	return count;
 }
@@ -95,8 +99,9 @@ bool PartialManager::abortWhereReserveExceeded(PolyState polyState, int minPart)
 		if (parts[usePartNum]->getActivePartialCount() > numReservedPartialsForPart[usePartNum]) {
 			// This part has exceeded its reserved partial count.
 			// We go through and look for a poly with the given state and abort the first one we find.
-			if (parts[usePartNum]->abortFirstPoly(polyState))
+			if (parts[usePartNum]->abortFirstPoly(polyState)) {
 				return true;
+			}
 		}
 	}
 	return false;
@@ -123,16 +128,18 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 	}
 
 	// Note that calling getFreePartialCount() also ensures that numReservedPartialsPerPart is up-to-date
-	if (getFreePartialCount() >= needed)
+	if (getFreePartialCount() >= needed) {
 		return true;
+	}
 
 	for (;;) {
 		// On the MT-32, this is: if (!abortWhereReserveExceeded(POLY_Releasing, -1)) {
 		if (!abortWhereReserveExceeded(POLY_Releasing, 0)) {
 			break;
 		}
-		if (getFreePartialCount() >= needed)
+		if (getFreePartialCount() >= needed) {
 			return true;
+		}
 	}
 
 	if (parts[partNum]->getActiveNonReleasingPartialCount() + needed > numReservedPartialsForPart[partNum]) {
@@ -149,8 +156,9 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 				if (!abortWhereReserveExceeded(POLY_Held, partNum == 8 ? -1 : partNum)) {
 					break;
 				}
-				if (getFreePartialCount() >= needed)
+				if (getFreePartialCount() >= needed) {
 					return true;
+				}
 			}
 			return false;
 		}
@@ -162,8 +170,9 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 		if (!abortWhereReserveExceeded(POLY_Held, partNum == 8 ? -1 : 0)) {
 			break;
 		}
-		if (getFreePartialCount() >= needed)
+		if (getFreePartialCount() >= needed) {
 			return true;
+		}
 	}
 
 	// Abort the target part's own polys indiscriminately (regardless of their state)
@@ -171,8 +180,9 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 		if (!parts[partNum]->abortFirstPoly()) {
 			break;
 		}
-		if (getFreePartialCount() >= needed)
+		if (getFreePartialCount() >= needed) {
 			return true;
+		}
 	}
 
 	// Aww, not enough partials for you.
@@ -180,7 +190,8 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 }
 
 const Partial *PartialManager::getPartial(unsigned int partialNum) const {
-	if (partialNum > MT32EMU_MAX_PARTIALS - 1)
+	if (partialNum > MT32EMU_MAX_PARTIALS - 1) {
 		return NULL;
+	}
 	return partialTable[partialNum];
 }

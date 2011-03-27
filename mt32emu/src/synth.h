@@ -122,8 +122,7 @@ const int MAX_SYSEX_SIZE = 512;
 
 const unsigned int CONTROL_ROM_SIZE = 64 * 1024;
 
-struct ControlROMPCMStruct
-{
+struct ControlROMPCMStruct {
 	Bit8u pos;
 	Bit8u len;
 	Bit8u pitchLSB;

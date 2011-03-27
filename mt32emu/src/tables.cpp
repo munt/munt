@@ -72,10 +72,10 @@ static void bilinear(double a0, double a1, double a2, double b0, double b1, doub
 	// alpha (Numerator in s-domain)
 	ad = 4. * a2 * fs * fs + 2. * a1 * fs + a0;
 	// beta (Denominator in s-domain)
-	bd = 4. * b2 * fs * fs + 2. * b1* fs + b0;
+	bd = 4. * b2 * fs * fs + 2. * b1 * fs + b0;
 
 	// update gain constant for this section
-	*k *= ad/bd;
+	*k *= ad / bd;
 
 	// Denominator
 	*coef++ = (float)((2. * b0 - 8. * b2 * fs * fs) / bd);           // beta1
@@ -176,7 +176,7 @@ void Tables::initEnvelopes(float samplerate) {
 		// This (approximately) represents the time durations when the target level is 0.
 		// Not sure why this is a special case, but it's seen to be from the real thing.
 		seconds = pow(2.0f, (elf / 8.0f) + 6) / 32768.0f;
-		envDecayTime[lf]  = (int)(seconds * samplerate);
+		envDecayTime[lf] = (int)(seconds * samplerate);
 	}
 }
 
@@ -187,13 +187,14 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		// CONFIRMED:KG: This matches a ROM table found by Mok
 		float fVal = (2.0f - log10((float)lf + 1.0f)) * 128.0f;
 		int val = (int)(fVal + 1.0);
-		if (val > 255)
+		if (val > 255) {
 			val = 255;
+		}
 		levelToAmpSubtraction[lf] = (Bit8u)val;
 	}
 
 	envLogarithmicTime[0] = 64;
-	for(lf = 1; lf <= 255; lf++) {
+	for (lf = 1; lf <= 255; lf++) {
 		// CONFIRMED:KG: This matches a ROM table found by Mok
 		envLogarithmicTime[lf] = (Bit8u)ceil(64.0f + log((float)lf) / FLOAT_LN_2 * 8.0f);
 	}
@@ -217,7 +218,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		masterVolToAmpSubtraction[masterVol] = (int)(106.31 - 16.0f * log((float)masterVol) / FLOAT_LN_2);
 	}
 #endif
-		
+
 	for (int i = 0; i <= 100; i++) {
 		pulseWidth100To255[i] = (int)(i * 255 / 100.0f + 0.5f);
 		//synth->printDebug("%d: %d", i, pulseWidth100To255[i]);
@@ -228,7 +229,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	}
 
 	for (int res = 0; res < 31; res++) {
-		resonanceFactor[res] = pow((float)res / 30.0f, 5.0f) +1.0f;
+		resonanceFactor[res] = pow((float)res / 30.0f, 5.0f) + 1.0f;
 	}
 
 	int velt, dep;
@@ -236,8 +237,9 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		for (dep = -7; dep < 8; dep++) {
 			float fldep = (float)abs(dep) / 7.0f;
 			fldep = pow(fldep, 2.5f);
-			if (dep < 0)
+			if (dep < 0) {
 				fldep = fldep * -1.0f;
+			}
 			pwVelfollowAdd[dep+7][velt] = Bit32s((fldep * (float)velt * 100) / 128.0);
 		}
 	}
@@ -245,8 +247,9 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	for (lf = 0; lf < 256; lf++) {
 		float mv = lf / 255.0f;
 		float pt = mv - 0.5f;
-		if (pt < 0)
+		if (pt < 0) {
 			pt = 0;
+		}
 
 		// Approximation from sample comparison
 		pwFactorf[lf] = ((pt * 179.0f) + 128.0f) / 64.0f;

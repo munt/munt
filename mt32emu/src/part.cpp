@@ -23,16 +23,18 @@ namespace MT32Emu {
 
 static const Bit8u PartialStruct[13] = {
 	0, 0, 2, 2, 1, 3,
-	3, 0, 3, 0, 2, 1, 3 };
+	3, 0, 3, 0, 2, 1, 3
+};
 
 static const Bit8u PartialMixStruct[13] = {
 	0, 1, 0, 1, 1, 0,
-	1, 3, 3, 2, 2, 2, 2 };
+	1, 3, 3, 2, 2, 2, 2
+};
 
 static const float floatKeyfollow[17] = {
-	-1.0f, -1.0f/2.0f, -1.0f/4.0f, 0.0f,
-	1.0f/8.0f, 1.0f/4.0f, 3.0f/8.0f, 1.0f/2.0f, 5.0f/8.0f, 3.0f/4.0f, 7.0f/8.0f, 1.0f,
-	5.0f/4.0f, 3.0f/2.0f, 2.0f,
+	-1.0f, -1.0f / 2.0f, -1.0f / 4.0f, 0.0f,
+	1.0f / 8.0f, 1.0f / 4.0f, 3.0f / 8.0f, 1.0f / 2.0f, 5.0f / 8.0f, 3.0f / 4.0f, 7.0f / 8.0f, 1.0f,
+	5.0f / 4.0f, 3.0f / 2.0f, 2.0f,
 	1.0009765625f, 1.0048828125f
 };
 
@@ -151,8 +153,9 @@ void RhythmPart::refresh() {
 	// (Re-)cache all the mapped timbres ahead of time
 	for (unsigned int drumNum = 0; drumNum < synth->controlROMMap->rhythmSettingsCount; drumNum++) {
 		int drumTimbreNum = rhythmTemp[drumNum].timbre;
-		if (drumTimbreNum >= 127) // 94 on MT-32
+		if (drumTimbreNum >= 127) { // 94 on MT-32
 			continue;
+		}
 		PatchCache *cache = drumCache[drumNum];
 		backupCacheToPartials(cache);
 		for (int t = 0; t < 4; t++) {
@@ -181,8 +184,9 @@ const char *Part::getCurrentInstr() const {
 
 void RhythmPart::refreshTimbre(unsigned int absTimbreNum) {
 	for (int m = 0; m < 85; m++) {
-		if (rhythmTemp[m].timbre == absTimbreNum - 128)
+		if (rhythmTemp[m].timbre == absTimbreNum - 128) {
 			drumCache[m][0].dirty = true;
+		}
 	}
 }
 
@@ -196,10 +200,11 @@ void Part::refreshTimbre(unsigned int absTimbreNum) {
 int Part::fixBiaslevel(int srcpnt, int *dir) {
 	int noteat = srcpnt & 0x3F;
 	int outnote;
-	if (srcpnt < 64)
+	if (srcpnt < 64) {
 		*dir = 0;
-	else
+	} else {
 		*dir = 1;
+	}
 	outnote = 33 + noteat;
 	//synth->printDebug("Bias note %d, dir %d", outnote, *dir);
 
@@ -207,8 +212,8 @@ int Part::fixBiaslevel(int srcpnt, int *dir) {
 }
 
 int Part::fixKeyfollow(int srckey) {
-	if (srckey>=0 && srckey<=16) {
-		int keyfix[17] = { -256*16, -128*16, -64*16, 0, 32*16, 64*16, 96*16, 128*16, (128+32)*16, 192*16, (192+32)*16, 256*16, (256+64)*16, (256+128)*16, (512)*16, 4100, 4116};
+	if (srckey >= 0 && srckey <= 16) {
+		int keyfix[17] = { -256 * 16, -128 * 16, -64 * 16, 0, 32 * 16, 64 * 16, 96 * 16, 128 * 16, (128 + 32) * 16, 192 * 16, (192 + 32) * 16, 256 * 16, (256 + 64) * 16, (256 + 128) * 16, (512) * 16, 4100, 4116};
 		return keyfix[srckey];
 	} else {
 		//LOG(LOG_ERROR|LOG_MISC,"Missed key: %d", srckey);
@@ -314,9 +319,9 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 
 		// Calculate and cache filter stuff
 		cache[t].filtEnv = timbre->partial[t].tvf;
-		cache[t].filtkeyfollow  = fixKeyfollow(cache[t].filtEnv.keyfollow);
+		cache[t].filtkeyfollow = fixKeyfollow(cache[t].filtEnv.keyfollow);
 		cache[t].filtEnv.envDepth = (char)((float)cache[t].filtEnv.envDepth);
-		cache[t].filtsustain  = cache[t].filtEnv.envLevel[3];
+		cache[t].filtsustain = cache[t].filtEnv.envLevel[3];
 	}
 	for (int t = 0; t < 4; t++) {
 		// Common parameters, stored redundantly
@@ -357,8 +362,7 @@ void Part::setExpression(unsigned int midiExpression) {
 	expression = (Bit8u)(midiExpression * 100 / 127);
 }
 
-void RhythmPart::setPan(unsigned int midiPan)
-{
+void RhythmPart::setPan(unsigned int midiPan) {
 	// CONFIRMED: This does change patchTemp, but has no actual effect on playback.
 	synth->printDebug("%s: Pointlessly setting pan (%d) on rhythm part", name, midiPan);
 	Part::setPan(midiPan);
@@ -379,8 +383,9 @@ unsigned int Part::midiKeyToKey(unsigned int midiKey, const char *debugAction) {
 	int key = midiKey + patchTemp->patch.keyShift;
 	if (key < 36) {
 		synth->printDebug("%s (%s): Attempted to perform \"%s\" on invalid key %d (%d after keyshift) < 36; moving up by octaves", name, currentInstr, debugAction, midiKey, key);
-		while (key < 36)
+		while (key < 36) {
 			key += 12;
+		}
 	} else if (key > 132) {
 		synth->printDebug("%s (%s): Attempted to perform \"%s\" on invalid key %d (%d after keyshift) > 132; moving down by octaves", name, currentInstr, debugAction, midiKey, key);
 		while (key > 132) {
@@ -392,7 +397,7 @@ unsigned int Part::midiKeyToKey(unsigned int midiKey, const char *debugAction) {
 }
 
 void RhythmPart::noteOn(unsigned int midiKey, unsigned int velocity) {
-	if (midiKey < 24 || midiKey > 108)/*> 87 on MT-32)*/ {
+	if (midiKey < 24 || midiKey > 108) { /*> 87 on MT-32)*/
 		synth->printDebug("%s: Attempted to play invalid key %d (velocity %d)", name, midiKey, velocity);
 		return;
 	}
@@ -458,14 +463,15 @@ bool Part::abortFirstPoly(PolyState polyState) {
 }
 
 bool Part::abortFirstPoly() {
-	if (activePolys.empty())
+	if (activePolys.empty()) {
 		return false;
+	}
 	activePolys.front()->abort();
 	return true;
 }
 
 void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhythmTemp, unsigned int midiKey, unsigned int key, unsigned int velocity) {
-	if((patchTemp->patch.assignMode & 2) == 0) {
+	if ((patchTemp->patch.assignMode & 2) == 0) {
 		// Single-assign mode
 		abortFirstPoly(key);
 	}

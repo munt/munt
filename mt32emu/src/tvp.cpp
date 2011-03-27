@@ -34,15 +34,15 @@ static Bit16s pitchKeyfollowMult[] = {-8192, -4096, -2048, 0, 1024, 2048, 3072, 
 // Note: Keys < 60 use keyToPitchTable[60 - key], keys >= 60 use keyToPitchTable[key - 60].
 // FIXME: This table could really be shorter, since we never use e.g. key 127.
 static Bit16u keyToPitchTable[] = {
-		    0,   341,   683,  1024,  1365,  1707,  2048,  2389,
-		 2731,  3072,  3413,  3755,  4096,  4437,  4779,  5120,
-		 5461,  5803,  6144,  6485,  6827,  7168,  7509,  7851,
-		 8192,  8533,  8875,  9216,  9557,  9899, 10240, 10581,
-		10923, 11264, 11605, 11947, 12288, 12629, 12971, 13312,
-		13653, 13995, 14336, 14677, 15019, 15360, 15701, 16043,
-		16384, 16725, 17067, 17408, 17749, 18091, 18432, 18773,
-		19115, 19456, 19797, 20139, 20480, 20821, 21163, 21504,
-		21845, 22187, 22528, 22869
+	    0,   341,   683,  1024,  1365,  1707,  2048,  2389,
+	 2731,  3072,  3413,  3755,  4096,  4437,  4779,  5120,
+	 5461,  5803,  6144,  6485,  6827,  7168,  7509,  7851,
+	 8192,  8533,  8875,  9216,  9557,  9899, 10240, 10581,
+	10923, 11264, 11605, 11947, 12288, 12629, 12971, 13312,
+	13653, 13995, 14336, 14677, 15019, 15360, 15701, 16043,
+	16384, 16725, 17067, 17408, 17749, 18091, 18432, 18773,
+	19115, 19456, 19797, 20139, 20480, 20821, 21163, 21504,
+	21845, 22187, 22528, 22869
 };
 
 TVP::TVP(const Partial *partial) :
@@ -116,8 +116,7 @@ static Bit32u calcVeloMult(Bit8u veloSensitivity, unsigned int velocity) {
 	return veloMult;
 }
 
-static Bit32s calcTargetPitchOffsetWithoutLFO(const TimbreParam::PartialParam *partialParam, int levelIndex, unsigned int velocity)
-{
+static Bit32s calcTargetPitchOffsetWithoutLFO(const TimbreParam::PartialParam *partialParam, int levelIndex, unsigned int velocity) {
 	int veloMult = calcVeloMult(partialParam->pitchEnv.veloSensitivity, velocity);
 	int targetPitchOffsetWithoutLFO = partialParam->pitchEnv.level[levelIndex] - 50;
 	targetPitchOffsetWithoutLFO = (Bit32s)(targetPitchOffsetWithoutLFO * veloMult) >> (16 - partialParam->pitchEnv.depth); // PORTABILITY NOTE: Assumes arithmetic shift
@@ -142,9 +141,9 @@ void TVP::reset(const Part *part, const PatchCache *patchCache) {
 
 	if (partialParam->pitchEnv.timeKeyfollow) {
 		timeKeyfollowSubtraction = (key - 60) >> (5 - partialParam->pitchEnv.timeKeyfollow); // PORTABILITY NOTE: Assumes arithmetic shift
-	}
-	else
+	} else {
 		timeKeyfollowSubtraction = 0;
+	}
 	lfoPitchOffset = 0;
 	counter = 0;
 	pitch = basePitch;
@@ -169,10 +168,12 @@ void TVP::updatePitch() {
 	if ((partialParam->wg.pitchBenderEnabled & 1) != 0) {
 		newPitch += part->getPitchBend();
 	}
-	if (newPitch < 0)
+	if (newPitch < 0) {
 		newPitch = 0;
-	if (newPitch > 59392)
+	}
+	if (newPitch > 59392) {
 		newPitch = 59392;
+	}
 	pitch = (Bit16u)newPitch;
 
 	// FIXME: We're doing this here because that's what the CM-32L does - we should probably move this somewhere more appropriate in future.
@@ -225,8 +226,8 @@ void TVP::nextPhase() {
 // Shifts val to the left until bit 31 is 1 and returns the number of shifts
 static Bit8u normalise(Bit32u &val) {
 	Bit8u leftShifts;
-	for(leftShifts = 0; leftShifts < 31; leftShifts++) {
-		if((val & 0x80000000) != 0) {
+	for (leftShifts = 0; leftShifts < 31; leftShifts++) {
+		if ((val & 0x80000000) != 0) {
 			break;
 		}
 		val = val << 1;
@@ -271,8 +272,7 @@ void TVP::startDecay() {
 
 Bit16u TVP::nextPitch() {
 	// FIXME: Write explanation of counter and time increment
-	if(counter == 0)
-	{
+	if (counter == 0) {
 		timeElapsed += processTimerIncrement;
 		timeElapsed = timeElapsed & 0x00FFFFFF;
 		process();
@@ -282,7 +282,6 @@ Bit16u TVP::nextPitch() {
 }
 
 void TVP::process() {
-
 	if (phase == 0) {
 		targetPitchOffsetReached();
 		return;

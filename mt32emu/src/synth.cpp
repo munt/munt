@@ -85,8 +85,7 @@ float iir_filter_normal(float input, float *hist1_ptr, const float *coef_ptr) {
 	return(output);
 }
 
-static inline Bit16s clipBit16s(Bit32s a)
-{
+static inline Bit16s clipBit16s(Bit32s a) {
 	// Clamp values above 32767 to 32767, and values below -32768 to -32768
 	if ((a + 32768) & ~65535) {
 		return (a >> 31) ^ 32767;
@@ -99,8 +98,9 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 		checksum = checksum + data[i];
 	}
 	checksum = checksum & 0x7f;
-	if (checksum)
+	if (checksum) {
 		checksum = 0x80 - checksum;
+	}
 	return checksum;
 }
 
@@ -147,20 +147,24 @@ void Synth::printDebug(const char *fmt, ...) {
 
 void Synth::setReverbModel(ReverbModel *reverbModel) {
 	delete this->reverbModel;
-	if(reverbModel == NULL)
+	if (reverbModel == NULL) {
 		reverbModel = new FreeverbModel();
+	}
 	this->reverbModel = reverbModel;
-	if(isOpen)
+	if (isOpen) {
 		setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
+	}
 }
 
 void Synth::setDelayReverbModel(ReverbModel *delayReverbModel) {
 	delete this->delayReverbModel;
-	if(delayReverbModel == NULL)
+	if (delayReverbModel == NULL) {
 		delayReverbModel = new DelayReverb();
+	}
 	this->delayReverbModel = delayReverbModel;
-	if(isOpen)
+	if (isOpen) {
 		setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
+	}
 }
 
 void Synth::setReverbEnabled(bool reverbEnabled) {
@@ -180,12 +184,14 @@ bool Synth::isReverbOverridden() const {
 }
 
 void Synth::setReverbParameters(Bit8u mode, Bit8u time, Bit8u level) {
-	if(reverbOverridden)
+	if (reverbOverridden) {
 		return;
-	if(mode == 3)
+	}
+	if (mode == 3) {
 		delayReverbModel->setParameters(mode, time, level);
-	else
+	} else {
 		reverbModel->setParameters(mode, time, level);
+	}
 }
 
 File *Synth::openFile(const char *filename, File::OpenMode mode) {
@@ -256,12 +262,13 @@ LoadResult Synth::loadControlROM(const char *filename) {
 	bool rc = (file->read(controlROMData, CONTROL_ROM_SIZE) == CONTROL_ROM_SIZE);
 
 	closeFile(file);
-	if (!rc)
+	if (!rc) {
 		return LoadResult_Unreadable;
+	}
 
 	// Control ROM successfully loaded, now check whether it's a known type
 	controlROMMap = NULL;
-	for (unsigned int i = 0; i < sizeof (ControlROMMaps) / sizeof (ControlROMMaps[0]); i++) {
+	for (unsigned int i = 0; i < sizeof(ControlROMMaps) / sizeof(ControlROMMaps[0]); i++) {
 		if (memcmp(&controlROMData[ControlROMMaps[i].idPos], ControlROMMaps[i].idBytes, ControlROMMaps[i].idLen) == 0) {
 			controlROMMap = &ControlROMMaps[i];
 			return LoadResult_OK;
@@ -303,17 +310,19 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 
 		e = 0;
 		for (u = 0; u < 15; u++) {
-			if (order[u] < 8)
+			if (order[u] < 8) {
 				bit = (s >> (7 - order[u])) & 0x1;
-			else
-				bit = (c >> (7  - (order[u] - 8))) & 0x1;
+			} else {
+				bit = (c >> (7 - (order[u] - 8))) & 0x1;
+			}
 			e = e | (short)(bit << (15 - u));
 		}
 
 		/*
 		//Bit16s e = (((s & 0x7f) << 4) | ((c & 0x40) << 6) | ((s & 0x80) << 6) | ((c & 0x3f))) << 2;
-		if (e<0)
+		if (e<0) {
 			e = -32767 - e;
+		}
 		int ut = abs(e);
 		int dif = 0x7fff - ut;
 		x = exp(((float)((float)0x8000-(float)dif) / (float)0x1000));
@@ -329,8 +338,9 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 		//testval = -(testval / 341.32291666666666666666666666667);
 		float vol = pow(8.0f, testval / 20) * 32767.0f;
 
-		if (e > 0)
+		if (e > 0) {
 			vol = -vol;
+		}
 
 		//pcmROMData[i] = (Bit16s)vol;
 		pcmROMData[i] = (Bit16s)(vol / 2);
@@ -403,21 +413,22 @@ bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, int count, int startTi
 		}
 		address += offset;
 		if (compressed) {
-			if(!initCompressedTimbre(startTimbre, &controlROMData[address], CONTROL_ROM_SIZE - address)) {
+			if (!initCompressedTimbre(startTimbre, &controlROMData[address], CONTROL_ROM_SIZE - address)) {
 				printDebug("Control ROM error: Timbre map entry 0x%04x for timbre %d points to invalid timbre at 0x%04x", i, startTimbre, address);
 				return false;
 			}
-		}
-		else
+		} else {
 			timbresMemoryRegion->write(startTimbre, 0, &controlROMData[address], sizeof(TimbreParam), true);
+		}
 		startTimbre++;
 	}
 	return true;
 }
 
 bool Synth::open(SynthProperties &useProp) {
-	if (isOpen)
+	if (isOpen) {
 		return false;
+	}
 	reverbModel->reset();
 	reverbModel->setSampleRate(useProp.sampleRate);
 	delayReverbModel->reset();
@@ -474,7 +485,7 @@ bool Synth::open(SynthProperties &useProp) {
 
 	printDebug("Initialising Timbre Bank M");
 	// CM-64 seems to initialise all bytes in this bank to 0.
-	memset(&mt32ram.timbres[128], 0, sizeof (mt32ram.timbres[128]) * 64);
+	memset(&mt32ram.timbres[128], 0, sizeof(mt32ram.timbres[128]) * 64);
 
 	partialManager = new PartialManager(this, parts);
 
@@ -514,8 +525,9 @@ bool Synth::open(SynthProperties &useProp) {
 		mt32ram.system.chanAssign[i] = i + 1;
 	}
 	mt32ram.system.masterVol = 100; // Confirmed
-	if (!refreshSystem())
+	if (!refreshSystem()) {
 		return false;
+	}
 
 	for (int i = 0; i < 9; i++) {
 		MemParams::PatchTemp *patchTemp = &mt32ram.patchTemp[i];
@@ -535,7 +547,7 @@ bool Synth::open(SynthProperties &useProp) {
 		memset(patchTemp->dummyv, 0, sizeof(patchTemp->dummyv));
 		patchTemp->dummyv[1] = 127;
 
-		if(i < 8) {
+		if (i < 8) {
 			parts[i] = new Part(this, i);
 			parts[i]->setProgram(controlROMData[controlROMMap->programSettings + i]);
 		} else {
@@ -556,8 +568,9 @@ bool Synth::open(SynthProperties &useProp) {
 }
 
 void Synth::close(void) {
-	if (!isOpen)
+	if (!isOpen) {
 		return;
+	}
 
 	if (partialManager != NULL) {
 		delete partialManager;
@@ -586,7 +599,7 @@ void Synth::close(void) {
 void Synth::playMsg(Bit32u msg) {
 	// FIXME: Implement active sensing
 	unsigned char code     = (unsigned char)((msg & 0x0000F0) >> 4);
-	unsigned char chan     = (unsigned char) (msg & 0x00000F);
+	unsigned char chan     = (unsigned char)(msg & 0x00000F);
 	unsigned char note     = (unsigned char)((msg & 0x00FF00) >> 8);
 	unsigned char velocity = (unsigned char)((msg & 0xFF0000) >> 16);
 	isEnabled = true;
@@ -709,10 +722,10 @@ void Synth::playSysex(const Bit8u *sysex, Bit32u len) {
 	}
 	// Due to some programs (e.g. Java) sending buffers with junk at the end, we have to go through and find the end marker rather than relying on len.
 	Bit32u endPos;
-	for (endPos = 1; endPos < len; endPos++)
-	{
-		if (sysex[endPos] == 0xF7)
+	for (endPos = 1; endPos < len; endPos++) {
+		if (sysex[endPos] == 0xF7) {
 			break;
+		}
 	}
 	if (endPos == len) {
 		printDebug("playSysex: Message lacks end-of-sysex (0xf7)");
@@ -733,8 +746,7 @@ void Synth::playSysexWithoutFraming(const Bit8u *sysex, Bit32u len) {
 	if (sysex[2] == SYSEX_MDL_D50) {
 		printDebug("playSysexWithoutFraming: Header is intended for model D-50 (not yet supported): %02x %02x %02x %02x", (int)sysex[0], (int)sysex[1], (int)sysex[2], (int)sysex[3]);
 		return;
-	}
-	else if (sysex[2] != SYSEX_MDL_MT32) {
+	} else if (sysex[2] != SYSEX_MDL_MT32) {
 		printDebug("playSysexWithoutFraming: Header not intended for model MT-32: %02x %02x %02x %02x", (int)sysex[0], (int)sysex[1], (int)sysex[2], (int)sysex[3]);
 		return;
 	}
@@ -897,15 +909,16 @@ void Synth::deleteMemoryRegions() {
 
 MemoryRegion *Synth::findMemoryRegion(Bit32u addr) {
 	MemoryRegion *regions[] = {
-			patchTempMemoryRegion,
-			rhythmTempMemoryRegion,
-			timbreTempMemoryRegion,
-			patchesMemoryRegion,
-			timbresMemoryRegion,
-			systemMemoryRegion,
-			displayMemoryRegion,
-			resetMemoryRegion,
-			NULL};
+		patchTempMemoryRegion,
+		rhythmTempMemoryRegion,
+		timbreTempMemoryRegion,
+		patchesMemoryRegion,
+		timbresMemoryRegion,
+		systemMemoryRegion,
+		displayMemoryRegion,
+		resetMemoryRegion,
+		NULL
+	};
 	for (int pos = 0; regions[pos] != NULL; pos++) {
 		if (regions[pos]->contains(addr)) {
 			return regions[pos];
@@ -1085,8 +1098,9 @@ bool Synth::refreshSystem() {
 	Bit8u *rset = mt32ram.system.reserveSettings;
 	printDebug(" Partial reserve: 1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
 	int pr = partialManager->setReserve(rset);
-	if (pr != 32)
+	if (pr != 32) {
 		printDebug(" (Partial Reserve Table with less than 32 partials reserved!)");
+	}
 	rset = mt32ram.system.chanAssign;
 	printDebug(" Part assign:     1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
 	printDebug(" Master volume: %d", mt32ram.system.masterVol);
@@ -1116,54 +1130,67 @@ void Synth::reset() {
 
 bool Synth::dumpTimbre(File *file, const TimbreParam *timbre, Bit32u address) {
 	// Sysex header
-	if (!file->writeBit8u(0xF0))
+	if (!file->writeBit8u(0xF0)) {
 		return false;
-	if (!file->writeBit8u(0x41))
+	}
+	if (!file->writeBit8u(0x41)) {
 		return false;
-	if (!file->writeBit8u(0x10))
+	}
+	if (!file->writeBit8u(0x10)) {
 		return false;
-	if (!file->writeBit8u(0x16))
+	}
+	if (!file->writeBit8u(0x16)) {
 		return false;
-	if (!file->writeBit8u(0x12))
+	}
+	if (!file->writeBit8u(0x12)) {
 		return false;
+	}
 
 	char lsb = (char)(address & 0x7f);
 	char isb = (char)((address >> 7) & 0x7f);
 	char msb = (char)(((address >> 14) & 0x7f) | 0x08);
 
 	//Address
-	if (!file->writeBit8u(msb))
+	if (!file->writeBit8u(msb)) {
 		return false;
-	if (!file->writeBit8u(isb))
+	}
+	if (!file->writeBit8u(isb)) {
 		return false;
-	if (!file->writeBit8u(lsb))
+	}
+	if (!file->writeBit8u(lsb)) {
 		return false;
+	}
 
 	//Data
-	if (file->write(timbre, 246) != 246)
+	if (file->write(timbre, 246) != 246) {
 		return false;
+	}
 
 	//Checksum
 	unsigned char checksum = calcSysexChecksum((const Bit8u *)timbre, 246, msb + isb + lsb);
-	if (!file->writeBit8u(checksum))
+	if (!file->writeBit8u(checksum)) {
 		return false;
+	}
 
 	//End of sysex
-	if (!file->writeBit8u(0xF7))
+	if (!file->writeBit8u(0xF7)) {
 		return false;
+	}
 	return true;
 }
 
 int Synth::dumpTimbres(const char *filename, int start, int len) {
 	File *file = openFile(filename, File::OpenMode_write);
-	if (file == NULL)
+	if (file == NULL) {
 		return -1;
+	}
 
 	for (int timbreNum = start; timbreNum < start + len; timbreNum++) {
 		int useaddr = (timbreNum - start) * 256;
 		TimbreParam *timbre = &mt32ram.timbres[timbreNum].timbre;
-		if (!dumpTimbre(file, timbre, useaddr))
+		if (!dumpTimbre(file, timbre, useaddr)) {
 			break;
+		}
 	}
 	closeFile(file);
 	return 0;
@@ -1178,9 +1205,10 @@ void ProduceOutput1(Bit16s *useBuf, Bit16s *stream, Bit32u len) {
 }
 
 void Synth::render(Bit16s *stream, Bit32u len) {
-	memset(stream, 0, len * sizeof (Bit16s) * 2);
-	if (!isEnabled)
+	memset(stream, 0, len * sizeof(Bit16s) * 2);
+	if (!isEnabled) {
 		return;
+	}
 	while (len > 0) {
 		Bit32u thisLen = len > MAX_SAMPLE_OUTPUT ? MAX_SAMPLE_OUTPUT : len;
 		doRender(stream, thisLen);
@@ -1207,8 +1235,7 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 		}
 		if (mt32ram.system.reverbMode == 3) {
 			delayReverbModel->process(sndbufl, sndbufr, outbufl, outbufr, len);
-		}
-		else {
+		} else {
 			reverbModel->process(sndbufl, sndbufr, outbufl, outbufr, len);
 		}
 		m=0;
@@ -1227,8 +1254,9 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 		}
 	} else {
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-			if (partialManager->produceOutput(i, &tmpBuffer[0], len))
+			if (partialManager->produceOutput(i, &tmpBuffer[0], len)) {
 				ProduceOutput1(&tmpBuffer[0], stream, len);
+			}
 		}
 	}
 
@@ -1260,8 +1288,9 @@ const Partial *Synth::getPartial(unsigned int partialNum) const {
 }
 
 const Part *Synth::getPart(unsigned int partNum) const {
-	if (partNum > 8)
+	if (partNum > 8) {
 		return NULL;
+	}
 	return parts[partNum];
 }
 
@@ -1311,7 +1340,7 @@ void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src,
 				desiredValue = maxValue;
 			}
 			dest[memOff] = desiredValue;
-		} else if (desiredValue != 0){
+		} else if (desiredValue != 0) {
 			// Only output debug info if they wanted to write non-zero, since a lot of things cause this to spit out a lot of debug info otherwise.
 			synth->printDebug("write[%d]: Wanted 0x%02x at %d, but write-protected", type, desiredValue, memOff);
 		}

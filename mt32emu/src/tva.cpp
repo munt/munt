@@ -65,7 +65,7 @@ float TVA::nextAmp() {
 				nextPhase();
 			} else {
 				currentAmp += largeAmpInc;
-				if(currentAmp >= target) {
+				if (currentAmp >= target) {
 					currentAmp = target;
 					nextPhase();
 				}
@@ -99,14 +99,17 @@ static int calcBiasAmpSubtraction(const Tables *tables, Bit8u biasPoint, Bit8u b
 
 static int calcBiasAmpSubtractions(const Tables *tables, const TimbreParam::PartialParam *partialParam, int key) {
 	int biasAmpSubtraction1 = calcBiasAmpSubtraction(tables, partialParam->tva.biasPoint1, partialParam->tva.biasLevel1, key);
-	if (biasAmpSubtraction1 > 255)
+	if (biasAmpSubtraction1 > 255) {
 		return 255;
+	}
 	int biasAmpSubtraction2 = calcBiasAmpSubtraction(tables, partialParam->tva.biasPoint2, partialParam->tva.biasLevel2, key);
-	if (biasAmpSubtraction2 > 255)
+	if (biasAmpSubtraction2 > 255) {
 		return 255;
+	}
 	int biasAmpSubtraction = biasAmpSubtraction1 + biasAmpSubtraction2;
-	if (biasAmpSubtraction > 255)
+	if (biasAmpSubtraction > 255) {
 		return 255;
+	}
 	return biasAmpSubtraction;
 }
 
@@ -123,40 +126,50 @@ static int calcBasicAmp(const Tables *tables, const Partial *partial, const MemP
 
 	if (!partial->isRingModulatingSlave()) {
 		amp -= tables->masterVolToAmpSubtraction[system->masterVol];
-		if (amp < 0)
+		if (amp < 0) {
 			return 0;
+		}
 		amp -= tables->levelToAmpSubtraction[patchTemp->outputLevel];
-		if (amp < 0)
+		if (amp < 0) {
 			return 0;
+		}
 		amp -= tables->levelToAmpSubtraction[expression];
-		if (amp < 0)
+		if (amp < 0) {
 			return 0;
+		}
 		if (rhythmTemp != NULL) {
 			amp -= tables->levelToAmpSubtraction[rhythmTemp->outputLevel];
-			if (amp < 0)
+			if (amp < 0) {
 				return 0;
+			}
 		}
 	}
 	amp -= biasAmpSubtraction;
-	if (amp < 0)
+	if (amp < 0) {
 		return 0;
+	}
 	amp -= tables->levelToAmpSubtraction[partialParam->tva.level];
-	if (amp < 0)
+	if (amp < 0) {
 		return 0;
+	}
 	amp -= veloAmpSubtraction;
-	if (amp < 0)
+	if (amp < 0) {
 		return 0;
-	if (amp > 155)
+	}
+	if (amp > 155) {
 		amp = 155;
+	}
 	amp -= partialParam->tvf.resonance >> 1;
-	if (amp < 0)
+	if (amp < 0) {
 		return 0;
+	}
 	return amp;
 }
 
 int calcKeyTimeSubtraction(Bit8u envTimeKeyfollow, int key) {
-	if (envTimeKeyfollow == 0)
+	if (envTimeKeyfollow == 0) {
 		return 0;
+	}
 	return (key - 60) >> (5 - envTimeKeyfollow); // PORTABILITY NOTE: Assumes arithmetic shift
 }
 
@@ -200,13 +213,15 @@ void TVA::reset(const Part *part, const PatchCache *patchCache, const MemParams:
 }
 
 void TVA::startDecay() {
-	if (targetPhase >= TVA_PHASE_RELEASE)
+	if (targetPhase >= TVA_PHASE_RELEASE) {
 		return;
+	}
 	targetPhase = TVA_PHASE_RELEASE; // The next time nextPhase() is called, it will think TVA_PHASE_RELEASE has finished and the partial will be aborted
-	if (partialParam->tva.envTime[4] == 0)
+	if (partialParam->tva.envTime[4] == 0) {
 		setAmpIncrement(1);
-	else
+	} else {
 		setAmpIncrement(-partialParam->tva.envTime[4]);
+	}
 	targetAmp = 0;
 }
 
@@ -215,13 +230,14 @@ void TVA::recalcSustain() {
 	// This is done so that the TVA will respond to things like MIDI expression and volume changes while it's sustaining, which it otherwise wouldn't do.
 
 	// The check for envLevel[3] == 0 strikes me as slightly dumb. FIXME: Explain why
-	if (targetPhase != TVA_PHASE_SUSTAIN || partialParam->tva.envLevel[3] == 0)
+	if (targetPhase != TVA_PHASE_SUSTAIN || partialParam->tva.envLevel[3] == 0) {
 		return;
+	}
 	// We're sustaining. Recalculate all the values
 	Tables *tables = &partial->getSynth()->tables;
 	int newTargetAmp = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
 	newTargetAmp += partialParam->tva.envLevel[3];
-	// FIXME: This whole concept seems flawed.  We don't really know what the *actual* amp value is, right? It may well not be targetAmp yet (unless I've missed something). So we could end up going in the wrong direction...
+	// FIXME: This whole concept seems flawed. We don't really know what the *actual* amp value is, right? It may well not be targetAmp yet (unless I've missed something). So we could end up going in the wrong direction...
 	int ampDelta = newTargetAmp - targetAmp;
 
 	// Calculate an increment to get to the new amp value in a short, more or less consistent amount of time
@@ -259,17 +275,18 @@ void TVA::nextPhase() {
 
 	bool allLevelsZeroFromNowOn = false;
 	if (partialParam->tva.envLevel[3] == 0) {
-		if (targetPhase == TVA_PHASE_4)
+		if (targetPhase == TVA_PHASE_4) {
 			allLevelsZeroFromNowOn = true;
-		else if (partialParam->tva.envLevel[2] == 0) {
-			if (targetPhase == TVA_PHASE_3)
+		} else if (partialParam->tva.envLevel[2] == 0) {
+			if (targetPhase == TVA_PHASE_3) {
 				allLevelsZeroFromNowOn = true;
-			else if (partialParam->tva.envLevel[1] == 0) {
-				if (targetPhase == TVA_PHASE_2)
+			} else if (partialParam->tva.envLevel[1] == 0) {
+				if (targetPhase == TVA_PHASE_2) {
 					allLevelsZeroFromNowOn = true;
-				else if (partialParam->tva.envLevel[0] == 0) {
-					if (targetPhase == TVA_PHASE_ATTACK) // this line added, missing in ROM - FIXME: Add description of repercussions
+				} else if (partialParam->tva.envLevel[0] == 0) {
+					if (targetPhase == TVA_PHASE_ATTACK)  { // this line added, missing in ROM - FIXME: Add description of repercussions
 						allLevelsZeroFromNowOn = true;
+					}
 				}
 			}
 		}
@@ -307,19 +324,18 @@ void TVA::nextPhase() {
 	}
 
 	if ((targetPhase != TVA_PHASE_SUSTAIN && targetPhase != TVA_PHASE_RELEASE) || allLevelsZeroFromNowOn) {
-		int envTimeSetting  = partialParam->tva.envTime[envPointIndex];
+		int envTimeSetting = partialParam->tva.envTime[envPointIndex];
 
 		if (targetPhase == TVA_PHASE_ATTACK) {
-			envTimeSetting -= ((signed)partial->getPoly()->getVelocity() - 64) >> (6 - partialParam->tva.envTimeVeloSensitivity);  // PORTABILITY NOTE: Assumes arithmetic shift
+			envTimeSetting -= ((signed)partial->getPoly()->getVelocity() - 64) >> (6 - partialParam->tva.envTimeVeloSensitivity); // PORTABILITY NOTE: Assumes arithmetic shift
 
 			if (envTimeSetting <= 0 && partialParam->tva.envTime[envPointIndex] != 0) {
-					envTimeSetting = 1;
+				envTimeSetting = 1;
 			}
 		} else {
 			envTimeSetting -= keyTimeSubtraction;
 		}
-		if (envTimeSetting > 0)
-		{
+		if (envTimeSetting > 0) {
 			int ampDelta = newTargetAmp - targetAmp;
 			if (ampDelta <= 0) {
 				if (ampDelta == 0) {
@@ -348,9 +364,7 @@ void TVA::nextPhase() {
 					newAmpIncrement = 1;
 				}
 			}
-		}
-		else
-		{
+		} else {
 			// FIXME: Shouldn't we be ensuring that targetAmp != newTargetAmp here?
 			newAmpIncrement = newTargetAmp >= targetAmp ? (0x80 | 127) : 127;
 		}

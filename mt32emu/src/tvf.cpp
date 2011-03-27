@@ -177,7 +177,7 @@ unsigned int TVF::nextFilt() {
 				nextPhase();
 			} else {
 				current += bigIncrement;
-				if(current >= bigTarget) {
+				if (current >= bigTarget) {
 					current = bigTarget;
 					nextPhase();
 				}
@@ -191,13 +191,15 @@ unsigned int TVF::nextFilt() {
 }
 
 void TVF::startDecay() {
-	if (targetPhase >= PHASE_RELEASE)
+	if (targetPhase >= PHASE_RELEASE) {
 		return;
+	}
 	targetPhase = PHASE_DONE - 1;
-	if (partialParam->tvf.envTime[4] == 0)
+	if (partialParam->tvf.envTime[4] == 0) {
 		setIncrement(1);
-	else
+	} else {
 		setIncrement(-partialParam->tvf.envTime[4]);
+	}
 	target = 0;
 }
 
@@ -230,8 +232,8 @@ void TVF::nextPhase() {
 	int newIncrement;
 	if (envTimeSetting > 0) {
 		int targetDelta = newTarget - target;
-		if (targetDelta == 0 ) {
-			if (newTarget == 0 ) {
+		if (targetDelta == 0) {
+			if (newTarget == 0) {
 				targetDelta = 1;
 				newTarget = 1;
 			} else {
