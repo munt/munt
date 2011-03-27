@@ -116,7 +116,7 @@ static bool playSysexFile(MT32Emu::Synth *synth, char *syxFileName) {
 	long len;
 	long start = -1;
 	MT32Emu::Bit8u *syxbuf;
-	FILE *syxFile = fopen(syxFileName, "r");
+	FILE *syxFile = fopen(syxFileName, "rb");
 	if (syxFile != NULL) {
 		// FIXME: Add error checking
 		len = getFileLength(syxFile);
@@ -168,7 +168,7 @@ static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu
 			playSysexFile(synth, syxFileName);
 		}
 
-		dstFile = fopen(dstFileName, "w");
+		dstFile = fopen(dstFileName, "wb");
 		if (dstFile != NULL) {
 			if (writeWAVEHeader(dstFile, synthProperties.sampleRate)) {
 				int unterminatedSysexLen = 0;
@@ -376,7 +376,7 @@ int main(int argc, char *argv[]) {
 	if (!force) {
 		// FIXME: Lame way of checking whether the file exists
 		FILE *testDstFile;
-		if (dstFileName != NULL && (testDstFile = fopen(dstFileName, "r")) != NULL) {
+		if (dstFileName != NULL && (testDstFile = fopen(dstFileName, "rb")) != NULL) {
 			fclose(testDstFile);
 			fprintf(stderr, "Destination file '%s' exists.\n", dstFileName);
 			goto cleanup;
