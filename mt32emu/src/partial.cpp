@@ -299,6 +299,12 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 				sample *= cos(FLOAT_2PI * (synthPulseCounter - pulseLen) / wavePeriod);
 			}
 
+			// Instead, we attenuate samples below cutoff 50 another way
+			if (filtVal < 128) {
+				// Found by sample analysis
+				sample *= pow(2.0f, (filtVal - 128) * 0.048820569f);
+			}
+
 			// Multiply sample with current TVA value
 			sample *= amp;
 
