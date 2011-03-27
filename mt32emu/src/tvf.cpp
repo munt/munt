@@ -21,7 +21,7 @@
 
 namespace MT32Emu {
 
-// FIXME: Need to confirm that this is correct. Sounds about right.
+// FIXME: Need to confirm that this is correct.
 const int TVF_TARGET_MULT = 0x800000;
 const int MAX_CURRENT = 0xFF * TVF_TARGET_MULT;
 
