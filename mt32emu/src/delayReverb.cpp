@@ -71,7 +71,7 @@ void DelayReverb::setParameters(Bit8u mode, Bit8u time, Bit8u level) {
 	}
 }
 
-void DelayReverb::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, long numSamples) {
+void DelayReverb::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) {
 	for (unsigned int sampleIx = 0; sampleIx < numSamples; sampleIx++) {
 		float leftSample = inLeft[sampleIx];
 		float rightSample = inRight[sampleIx];

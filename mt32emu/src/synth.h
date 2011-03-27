@@ -259,7 +259,7 @@ public:
 	virtual ~ReverbModel() {};
 	virtual void setSampleRate(unsigned int sampleRate) = 0;
 	virtual void setParameters(Bit8u mode, Bit8u time, Bit8u level) = 0;
-	virtual void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, long numSamples) = 0;
+	virtual void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) = 0;
 	virtual void reset() = 0;
 };
 
@@ -270,7 +270,7 @@ public:
 	~FreeverbModel();
 	void setSampleRate(unsigned int sampleRate);
 	void setParameters(Bit8u mode, Bit8u time, Bit8u level);
-	void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, long numSamples);
+	void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples);
 	void reset();
 };
 

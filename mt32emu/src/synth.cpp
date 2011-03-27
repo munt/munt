@@ -1332,7 +1332,7 @@ void FreeverbModel::setSampleRate(unsigned int sampleRate) {
 	// FIXME: We don't deal with this at all.
 }
 
-void FreeverbModel::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, long numSamples) {
+void FreeverbModel::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) {
 	freeverb->processreplace(inLeft, inRight, outLeft, outRight, numSamples, 1);
 }
 
