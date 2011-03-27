@@ -2,10 +2,12 @@ Munt mt32emu-smf2wav
 ********************
 
 mt32emu-smf2wav makes use of libmt32emu to produce a WAVE file from an SMF file.
-SMF stands for "Standard MIDI file", and files in this format commonly have the
+SMF stands for "Standard MIDI File", and files in this format commonly have the
 extension ".smf" or ".mid".
 
-This program is experimental and mainly intended as an aid to Munt developers.
+This program is experimental and mainly intended as an aid to Munt developers
+and an example of embedding libmt32emu in a program.
+
 There is no documentation, program arguments are likely to change in future and
 there are undoubtedly bugs.
 
