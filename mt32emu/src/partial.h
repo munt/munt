@@ -52,8 +52,8 @@ private:
 	bool useNoisePair;
 	StereoVolume stereoVolume;
 
-	// variables for fast bandlimited Synth
-	float synthPulseCounter;
+	// Distance in (possibly fractional) samples from the start of the current pulse
+	float wavePos;
 
 	Bit16s myBuffer[MAX_SAMPLE_OUTPUT];
 

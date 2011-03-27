@@ -143,7 +143,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 		pcmWave = &synth->pcmWaves[pcmNum];
 	} else {
 		pcmWave = NULL;
-		synthPulseCounter = 0.0f;
+		wavePos = 0.0f;
 	}
 
 	// CONFIRMED: pulseWidthVal calculation is based on information from Mok
@@ -256,19 +256,19 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			pulseLen *= wavePeriod;
 
 			//Square wave
-			if (pulseLen - synthPulseCounter >= 1.0f) {
+			if (pulseLen - wavePos >= 1.0f) {
 				sample = -float(WGAMP);
-			} else if (pulseLen - synthPulseCounter > 0.0f) {
-				sample = float(2 * WGAMP) * (1.0f + synthPulseCounter - pulseLen) - float(WGAMP);
-			} else if (wavePeriod - synthPulseCounter >= 1.0f) {
+			} else if (pulseLen - wavePos > 0.0f) {
+				sample = float(2 * WGAMP) * (1.0f + wavePos - pulseLen) - float(WGAMP);
+			} else if (wavePeriod - wavePos >= 1.0f) {
 				sample = float(WGAMP);
 			} else {
-				sample = float(2 * WGAMP) * (wavePeriod - synthPulseCounter) - float(WGAMP);
+				sample = float(2 * WGAMP) * (wavePeriod - wavePos) - float(WGAMP);
 			}
 
-			synthPulseCounter++;
-			if (synthPulseCounter > wavePeriod) {
-				synthPulseCounter -= wavePeriod;
+			wavePos++;
+			if (wavePos > wavePeriod) {
+				wavePos -= wavePeriod;
 			}
 
 			Bit32s filtVal = getFiltEnvelope();
@@ -296,7 +296,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 				// Sawtooth waveform:
 				// Confirmed from sample analysis and manuals to be produced simply
 				// by multiplying a square wave with the same parameters by a cosine wave.
-				sample *= cos(FLOAT_2PI * (synthPulseCounter - pulseLen) / wavePeriod);
+				sample *= cos(FLOAT_2PI * (wavePos - pulseLen) / wavePeriod);
 			}
 
 			// Instead, we attenuate samples below cutoff 50 another way
