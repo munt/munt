@@ -367,7 +367,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		dstFileName = (char *)malloc(strlen(srcFileName) + 5);
 		if(dstFileName == NULL) {
-			fprintf(stderr, "Error allocating %ld bytes for destination filename.\n", strlen(srcFileName) + 5);
+			fprintf(stderr, "Error allocating %lu bytes for destination filename.\n", (unsigned long)strlen(srcFileName) + 5);
 			return -1;
 		}
 		sprintf(dstFileName, "%s.wav", srcFileName);
