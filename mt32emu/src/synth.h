@@ -18,7 +18,7 @@
 #ifndef MT32EMU_SYNTH_H
 #define MT32EMU_SYNTH_H
 
-#include <stdarg.h>
+#include <cstdarg>
 
 class revmodel;
 

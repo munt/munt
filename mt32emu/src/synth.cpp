@@ -15,10 +15,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <math.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
+#include <cerrno>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 #include "mt32emu.h"
 
@@ -327,7 +327,7 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 		testval = (float)((~e) & 0x7fff);
 		testval = -(testval / 400.00f);
 		//testval = -(testval / 341.32291666666666666666666666667);
-		float vol = powf(8, testval / 20) * 32767.0f;
+		float vol = pow(8.0f, testval / 20) * 32767.0f;
 
 		if (e > 0)
 			vol = -vol;
@@ -1074,7 +1074,7 @@ bool Synth::refreshSystem() {
 	//FIXME:KG: This is just an educated guess.
 	// The LAPC-I documentation claims a range of 427.5Hz-452.6Hz (similar to what we have here)
 	// The MT-32 documentation claims a range of 432.1Hz-457.6Hz
-	masterTune = 440.0f * powf(2.0f, (mt32ram.system.masterTune - 64.0f) / (128.0f * 12.0f));
+	masterTune = 440.0f * pow(2.0f, (mt32ram.system.masterTune - 64.0f) / (128.0f * 12.0f));
 	printDebug(" Master Tune: %f", masterTune);
 	printDebug(" Reverb: mode=%d, time=%d, level=%d", mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
 	report(ReportType_newReverbMode,  &mt32ram.system.reverbMode);

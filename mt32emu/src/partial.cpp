@@ -15,9 +15,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 #include "mt32emu.h"
 
@@ -214,8 +214,8 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 
 		Bit16u pitch = tvp->nextPitch();
 
-		// Aka (slightly slower): powf(2.0f, pitchVal / 4096.0f - 16.0f) * 32000.0f
-		float freq = powf(2.0f, pitch / 4096.0f - 1.034215715f);
+		// Aka (slightly slower): pow(2.0f, pitchVal / 4096.0f - 16.0f) * 32000.0f
+		float freq = pow(2.0f, pitch / 4096.0f - 1.034215715f);
 
 		if (patchCache->PCMPartial) {
 			// Render PCM waveform
@@ -236,7 +236,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			int nextSample = getPCMSample(intPCMPosition + 1);
 			sample = firstSample + (nextSample - firstSample) * (pcmPosition - intPCMPosition);
 			if (pcmWave->loop) {
-				newPCMPosition = fmodf(newPCMPosition, pcmWave->len);
+				newPCMPosition = fmod(newPCMPosition, (float)pcmWave->len);
 				newIntPCMPosition = newIntPCMPosition % pcmWave->len;
 			}
 			pcmPosition = newPCMPosition;
@@ -261,12 +261,12 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 
 			sample = posSaw->tick() - negSaw->tick();
 			float freqsum = 0;
-			freqsum = ((powf(256.0f, (((float)filtval / 128.0f) - 1.0f))) * posSaw->getStartFreq());
+			freqsum = ((pow(256.0f, (((float)filtval / 128.0f) - 1.0f))) * posSaw->getStartFreq());
 			if(freqsum >= (FILTERGRAN - 500.0))
 				freqsum = (FILTERGRAN - 500.0f);
 			filtval = (Bit32s)freqsum;
 
-			sample = (floorf((synth->iirFilter)((sample * WGAMP), &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])));
+			sample = (floor((synth->iirFilter)((sample * WGAMP), &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])));
 
 			if ((patchCache->waveform & 1) != 0) {
 				//CC: Sawtooth samples are finally generated here by multipling an in-sync cosine
@@ -274,7 +274,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 
 				//CC: Computers are fast these days.  Not caring to use a LUT or fixed point anymore.
 				//If I port this to the iPhone I may reconsider.
-				sample = ((cosf(phase * 2.0f)) * sample) + (WGAMP * 0.1618f);
+				sample = ((cos(phase * 2.0f)) * sample) + (WGAMP * 0.1618f);
 			}
 
 			if (sample < -32768.0f) {

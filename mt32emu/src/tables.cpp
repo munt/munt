@@ -15,9 +15,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 #include "mt32emu.h"
 
@@ -158,7 +158,7 @@ void Tables::initEnvelopes(float samplerate) {
 		// This formula fits observation of the CM-32L by +/- 0.03s or so for the second time value in the filter,
 		// when all other times were 0 and all levels were 100. Note that variations occur depending on the level
 		// delta of the section, which we're not fully emulating.
-		float seconds = powf(2.0f, (elf / 8.0f) + 7.0f) / 32768.0f;
+		float seconds = pow(2.0f, (elf / 8.0f) + 7.0f) / 32768.0f;
 		int samples = (int)(seconds * samplerate);
 		envTime[lf] = samples;
 
@@ -166,7 +166,7 @@ void Tables::initEnvelopes(float samplerate) {
 		if (elf == 0) {
 			envDeltaMaxTime[lf] = 63;
 		} else {
-			float cap = 11.0f * logf(elf) + 64;
+			float cap = 11.0f * log(elf) + 64;
 			if (cap > 100.0f) {
 				cap = 100.0f;
 			}
@@ -175,7 +175,7 @@ void Tables::initEnvelopes(float samplerate) {
 
 		// This (approximately) represents the time durations when the target level is 0.
 		// Not sure why this is a special case, but it's seen to be from the real thing.
-		seconds = powf(2, (elf / 8.0f) + 6) / 32768.0f;
+		seconds = pow(2.0f, (elf / 8.0f) + 6) / 32768.0f;
 		envDecayTime[lf]  = (int)(seconds * samplerate);
 	}
 }
@@ -185,7 +185,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	synth->printDebug("Initialising Constant Tables");
 	for (lf = 0; lf <= 100; lf++) {
 		// CONFIRMED:KG: This matches a ROM table found by Mok
-		float fVal = (2.0f - log10f(lf + 1.0f)) * 128.0f;
+		float fVal = (2.0f - log10((float)lf + 1.0f)) * 128.0f;
 		int val = (int)(fVal + 1.0);
 		if (val > 255)
 			val = 255;
@@ -195,7 +195,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	envLogarithmicTime[0] = 64;
 	for(lf = 1; lf <= 255; lf++) {
 		// CONFIRMED:KG: This matches a ROM table found by Mok
-		envLogarithmicTime[lf] = (Bit8u)ceilf(64.0f + logf(lf) / FLOAT_LN_2 * 8.0f);
+		envLogarithmicTime[lf] = (Bit8u)ceil(64.0f + log((float)lf) / FLOAT_LN_2 * 8.0f);
 	}
 
 #ifdef EMULATE_LAPC_I // Dummy #ifdef - we'll have runtime emulation mode selection in future.
@@ -214,7 +214,7 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	// CONFIRMED: Based on a table found by Mok in the MT-32 control ROM
 	masterVolToAmpSubtraction[0] = 255;
 	for (int masterVol = 1; masterVol <= 100; masterVol++) {
-		masterVolToAmpSubtraction[masterVol] = (int)(106.31 - 16.0f * log2f(masterVol));
+		masterVolToAmpSubtraction[masterVol] = (int)(106.31 - 16.0f * log((float)masterVol) / FLOAT_LN_2);
 	}
 #endif
 		
@@ -223,19 +223,19 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		//synth->printDebug("%d: %d", i, pulseWidth100To255[i]);
 	}
 	for (lf = -108; lf <= 108; lf++) {
-		tvfKeyfollowMult[lf + 108] = (int)(256 * powf(2.0f, (float)(lf / 24.0f)));
+		tvfKeyfollowMult[lf + 108] = (int)(256 * pow(2.0f, (float)(lf / 24.0f)));
 		//synth->printDebug("KT %d = %d", f, keytable[f+108]);
 	}
 
 	for (int res = 0; res < 31; res++) {
-		resonanceFactor[res] = powf((float)res / 30.0f, 5.0f) +1.0f;
+		resonanceFactor[res] = pow((float)res / 30.0f, 5.0f) +1.0f;
 	}
 
 	int velt, dep;
 	for (velt = 0; velt < 128; velt++) {
 		for (dep = -7; dep < 8; dep++) {
 			float fldep = (float)abs(dep) / 7.0f;
-			fldep = powf(fldep,2.5f);
+			fldep = pow(fldep, 2.5f);
 			if (dep < 0)
 				fldep = fldep * -1.0f;
 			pwVelfollowAdd[dep+7][velt] = Bit32s((fldep * (float)velt * 100) / 128.0);

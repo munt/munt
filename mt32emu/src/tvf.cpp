@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <math.h>
+#include <cmath>
 
 #include "mt32emu.h"
 
@@ -103,7 +103,7 @@ void TVF::setIncrement(Bit8u increment) {
 
 	bigIncrement = increment & 0x7F;
 	// FIXME: We could use a table for this in future
-	bigIncrement = (unsigned int)((powf(10.0f, (float)((bigIncrement - 1.0f) / 26.0f))) * 256.0f);
+	bigIncrement = (unsigned int)((pow(10.0f, (float)((bigIncrement - 1.0f) / 26.0f))) * 256.0f);
 }
 
 void TVF::reset(const TimbreParam::PartialParam *partialParam, unsigned int basePitch) {

@@ -18,7 +18,7 @@
 #ifndef MT32EMU_FILE_H
 #define MT32EMU_FILE_H
 
-#include <stdio.h>
+#include <cstdio>
 
 namespace MT32Emu {
 
