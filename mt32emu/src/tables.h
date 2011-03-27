@@ -18,29 +18,19 @@
 #ifndef MT32EMU_TABLES_H
 #define MT32EMU_TABLES_H
 
-#include "blit/BlitSaw.h"
-#include "blit/BlitSquare.h"
-
 namespace MT32Emu {
 
 // Mathematical constants
 const double DOUBLE_PI = 3.1415926535897932384626433832795;
 const double DOUBLE_LN_10 = 2.3025850929940456840179914546844;
 const float FLOAT_PI = 3.1415926535897932384626433832795f;
+const float FLOAT_2PI = 6.2831853;
 const float FLOAT_LN_10 = 2.3025850929940456840179914546844f;
 const float FLOAT_LN_2 = 0.6931472f;
 
-// Filter settings
-//const int FILTERGRAN = 512;
-//const int FILTERGRAN = 32768;
 const int FILTERGRAN = 16000;
 
-
-// Amplitude of waveform generator
-// FIXME: This value is the amplitude possible whilst avoiding
-// overdriven values immediately after filtering when playing
-// back SQ3MT.MID. Needs to be checked.
-const int WGAMP = 12382;
+const int WGAMP = 15700; // Found from sample analysis
 
 const int MIDDLEC = 60;
 const int MIDDLEA = 69; // By this I mean "A above middle C"

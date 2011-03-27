@@ -52,13 +52,10 @@ private:
 	bool useNoisePair;
 	StereoVolume stereoVolume;
 
-	bool firstSample;
+	// variables for fast bandlimited Synth
+	float synthPulseCounter;
 
 	Bit16s myBuffer[MAX_SAMPLE_OUTPUT];
-
-	// Keyfollowed note value
-	BlitSaw *posSaw;
-	BlitSaw *negSaw;
 
 	const KeyLookup *keyLookup; // LUTs for the clamped (12..108) key
 

@@ -418,7 +418,6 @@ bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, int count, int startTi
 bool Synth::open(SynthProperties &useProp) {
 	if (isOpen)
 		return false;
-	Stk::setSampleRate(useProp.sampleRate);
 	reverbModel->reset();
 	reverbModel->setSampleRate(useProp.sampleRate);
 	delayReverbModel->reset();

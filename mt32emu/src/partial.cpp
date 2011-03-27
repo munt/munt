@@ -34,15 +34,9 @@ Partial::Partial(Synth *useSynth, int debugPartialNum) :
 	ownerPart = -1;
 	poly = NULL;
 	pair = NULL;
-	// BlitSaws are initialised with dummy values here - they'll be reset the first time they're used anyway.
-	// We're not allocating lazily since deferring memory allocations until sound is actually playing doesn't seem like a good idea.
-	posSaw = new BlitSaw(1, 0.5);
-	negSaw = new BlitSaw(1, 0.0);
 }
 
 Partial::~Partial() {
-	delete posSaw;
-	delete negSaw;
 	delete tva;
 	delete tvp;
 }
@@ -148,6 +142,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 		pcmWave = &synth->pcmWaves[pcmNum];
 	} else {
 		pcmWave = NULL;
+		synthPulseCounter = 0.0f;
 	}
 
 	// CONFIRMED: pulseWidthVal calculation is based on information from Mok
@@ -176,7 +171,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	alreadyOutputed = false;
 	tva->reset(part, patchCache, rhythmTemp);
 	tvp->reset(part, patchCache);
-	firstSample = true;
 	memset(history,0,sizeof(history));
 }
 
@@ -241,41 +235,68 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			}
 			pcmPosition = newPCMPosition;
 			intPCMPosition = newIntPCMPosition;
+
+			// Multiply sample with current TVA value
+			sample *= amp;
 		} else {
 			// Render synthesised waveform
-			if(firstSample) {
-				firstSample = false;
-				float spw = synth->tables.pwFactorf[pulseWidthVal];
-				if ((patchCache->waveform & 1) != 0 && spw < 0.5f) {
-					spw = 0.5f - ((0.5f - spw) * 2.0f);
-				}
-				posSaw->reset(freq, spw);
-				negSaw->reset(freq, 0.0);
-			} else {
-				posSaw->setFrequency(freq);
-				negSaw->setFrequency(freq);
+			float wavePeriod = synth->myProp.sampleRate / freq;
+
+			// Confirmed from sample analysis that a partial with a pulseWidth parameter <= 50
+			// (without any keyfollow) gets a 50% high / low ratio
+			float pulseLen = 0.5f;
+			if (pulseWidthVal > 128) {
+				// Formula determined from sample analysis.
+				float pt = 0.5f / 127.0f * (pulseWidthVal - 128);
+				pulseLen += (1.239f - pt) * pt;
 			}
-			Bit32s filtval = getFiltEnvelope();
 
-			float phase = negSaw->getPhase();
+			pulseLen *= wavePeriod;
 
-			sample = posSaw->tick() - negSaw->tick();
-			float freqsum = 0;
-			freqsum = ((pow(256.0f, (((float)filtval / 128.0f) - 1.0f))) * posSaw->getStartFreq());
-			if(freqsum >= (FILTERGRAN - 500.0))
-				freqsum = (FILTERGRAN - 500.0f);
-			filtval = (Bit32s)freqsum;
+			//Square wave
+			if (pulseLen - synthPulseCounter >= 1.0f) {
+				sample = -float(WGAMP);
+			} else if (pulseLen - synthPulseCounter > 0.0f) {
+				sample = float(2 * WGAMP) * (1.0f + synthPulseCounter - pulseLen) - float(WGAMP);
+			} else if (wavePeriod - synthPulseCounter >= 1.0f) {
+				sample = float(WGAMP);
+			} else {
+				sample = float(2 * WGAMP) * (wavePeriod - synthPulseCounter) - float(WGAMP);
+			}
 
-			sample = (floor((synth->iirFilter)((sample * WGAMP), &history[0], synth->tables.filtCoeff[filtval][(int)patchCache->filtEnv.resonance])));
+			synthPulseCounter++;
+			if (synthPulseCounter > wavePeriod) {
+				synthPulseCounter -= wavePeriod;
+			}
+
+			Bit32s filtVal = getFiltEnvelope();
+			float freqsum;
+			if (filtVal < 128) {
+				// We really don't want the filter to attenuate samples below cutoff 50
+				freqsum = freq;
+			} else {
+				freqsum = pow(2.0f, 8.0f * (((float)filtVal / 128.0f) - 1.0f)) * freq;
+			}
+
+			// Limit filter freq to slightly under the Nyquist frequency to avoid aliasing
+			// FIXME: Move this calculation elsewhere (if it remains necessary at all)
+			float filtergran = 0.484375f * synth->myProp.sampleRate;
+			if (filtergran > FILTERGRAN)
+				filtergran = FILTERGRAN;
+			if (freqsum > filtergran)
+				freqsum = filtergran;
+
+			sample = (floor((synth->iirFilter)((sample), &history[0], synth->tables.filtCoeff[(Bit32s)freqsum][(int)patchCache->filtEnv.resonance])));
 
 			if ((patchCache->waveform & 1) != 0) {
-				//CC: Sawtooth samples are finally generated here by multipling an in-sync cosine
-				//with the generated square wave.
-
-				//CC: Computers are fast these days.  Not caring to use a LUT or fixed point anymore.
-				//If I port this to the iPhone I may reconsider.
-				sample = ((cos(phase * 2.0f)) * sample) + (WGAMP * 0.1618f);
+				// Sawtooth waveform:
+				// Confirmed from sample analysis and manuals to be produced simply
+				// by multiplying a square wave with the same parameters by a cosine wave.
+				sample *= cos(FLOAT_2PI * (synthPulseCounter - pulseLen) / wavePeriod);
 			}
+
+			// Multiply sample with current TVA value
+			sample *= amp;
 
 			if (sample < -32768.0f) {
 				synth->printDebug("Overdriven amplitude for waveform=%d, freqsum=%f: %f < -32768", patchCache->waveform, freqsum, sample);
@@ -288,8 +309,8 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			filtEnv.envpos++;
 		}
 
-		// Multiply sample with current TVA value and add to buffer.
-		*partialBuf++ = (Bit16s)(amp * sample);
+		// Add sample to buffer
+		*partialBuf++ = (Bit16s)sample;
 	}
 	// At this point, sampleNum represents the number of samples rendered
 	return sampleNum;
