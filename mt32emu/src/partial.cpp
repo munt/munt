@@ -156,7 +156,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	alreadyOutputed = false;
 	tva->reset(part, patchCache, rhythmTemp);
 	tvp->reset(part, patchCache);
-	memset(history,0,sizeof(history));
+	memset(history, 0, sizeof(history));
 }
 
 Bit16s Partial::getPCMSample(unsigned int position) {

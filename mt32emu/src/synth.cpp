@@ -40,7 +40,7 @@ const ControlROMMap ControlROMMaps[7] = {
 
 float iir_filter_normal(float input, float *hist1_ptr, const float *coef_ptr) {
 	float *hist2_ptr;
-	float output,new_hist;
+	float output, new_hist;
 
 	hist2_ptr = hist1_ptr + 1; // next history
 
@@ -306,7 +306,7 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 		short e;
 		int bit;
 		int u;
-		int order[16] = {0, 9, 1 ,2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 8};
+		int order[16] = {0, 9, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 8};
 
 		e = 0;
 		for (u = 0; u < 15; u++) {
@@ -1236,7 +1236,7 @@ void Synth::doRender(Bit16s *stream, Bit32u len) {
 		} else {
 			reverbModel->process(sndbufl, sndbufr, outbufl, outbufr, len);
 		}
-		m=0;
+		m = 0;
 		for (unsigned int i = 0; i < len; i++) {
 			stream[m] = clipBit16s(outbufl[i] * 32767.0f);
 			m++;
