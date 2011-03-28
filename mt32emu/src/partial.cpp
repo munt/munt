@@ -29,7 +29,7 @@
 using namespace MT32Emu;
 
 Partial::Partial(Synth *useSynth, int debugPartialNum) :
-	synth(useSynth), debugPartialNum(debugPartialNum), tva(new TVA(this)), tvp(new TVP(this)) {
+	synth(useSynth), debugPartialNum(debugPartialNum), tva(new TVA(this)), tvp(new TVP(this)), tvf(new TVF(this)) {
 	ownerPart = -1;
 	poly = NULL;
 	pair = NULL;
@@ -156,6 +156,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	alreadyOutputed = false;
 	tva->reset(part, patchCache, rhythmTemp);
 	tvp->reset(part, patchCache);
+	tvf->reset(patchCache->partialParam, tvp->getBasePitch());
 	memset(history, 0, sizeof(history));
 }
 
@@ -253,8 +254,16 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			if (wavePos > wavePeriod) {
 				wavePos -= wavePeriod;
 			}
-
+#ifdef USE_NEW_TVF
+			Bit32u filtVal = tvf->getBaseCutoff();
+			// The modifier may not be supposed to be added to the cutoff at all -
+			// it may for example need to be multiplied in some way.
+			filtVal += (Bit8u)tvf->nextCutoffModifier();
+			if (filtVal > 255)
+				filtVal = 255;
+#else
 			Bit32s filtVal = getFiltEnvelope();
+#endif
 			float freqsum;
 			if (filtVal < 128) {
 				// We really don't want the filter to attenuate samples below cutoff 50

@@ -22,8 +22,8 @@
 namespace MT32Emu {
 
 // FIXME: Need to confirm that this is correct.
-const int TVF_TARGET_MULT = 0x800000;
-const int MAX_CURRENT = 0xFF * TVF_TARGET_MULT;
+const unsigned int TVF_TARGET_MULT = 0x800000;
+const unsigned int MAX_CURRENT = 0xFF * TVF_TARGET_MULT;
 
 // When entering nextPhase, targetPhase is immediately incremented, and the descriptions/names below represent
 // their use after the increment.
@@ -147,12 +147,16 @@ void TVF::reset(const TimbreParam::PartialParam *partialParam, unsigned int base
 			newIncrement = 1;
 		}
 	}
-	increment = newIncrement;
+	setIncrement(newIncrement);
 	target = newTarget;
 	targetPhase = PHASE_2 - 1;
 }
 
-unsigned int TVF::nextFilt() {
+Bit8u TVF::getBaseCutoff() const {
+	return baseCutoff;
+}
+
+float TVF::nextCutoffModifier() {
 	// FIXME: This whole method is basically a copy of TVA::nextAmp(), which may be completely inappropriate for TVF.
 	Bit32u bigTarget = target * TVF_TARGET_MULT;
 	if (increment == 0) {
@@ -184,10 +188,7 @@ unsigned int TVF::nextFilt() {
 			}
 		}
 	}
-	// FIXME: Absolutely nfi whether this is right
-	int cutoff = baseCutoff * current / TVF_TARGET_MULT;
-	cutoff >>= 8;
-	return cutoff;
+	return (float)current / TVF_TARGET_MULT;
 }
 
 void TVF::startDecay() {
@@ -209,7 +210,7 @@ void TVF::nextPhase() {
 
 	switch (targetPhase) {
 	case PHASE_DONE:
-		increment = 0;
+		setIncrement(0);
 		target = 0;
 		return;
 	case PHASE_SUSTAIN:
@@ -219,7 +220,7 @@ void TVF::nextPhase() {
 			startDecay(); // FIXME: This should actually start decay even if phase is already 6. Does that matter?
 			return;
 		}
-		increment = 0;
+		setIncrement(0);
 		target = (levelMult * partialParam->tvf.envLevel[3]) >> 8;
 		return;
 	}
@@ -252,7 +253,7 @@ void TVF::nextPhase() {
 	} else {
 		newIncrement = newTarget >= target ? (0x80 | 127) : 127;
 	}
-	increment = newIncrement;
+	setIncrement(newIncrement);
 	target = newTarget;
 }
 

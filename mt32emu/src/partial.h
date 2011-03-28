@@ -80,6 +80,7 @@ public:
 	const PatchCache *patchCache;
 	TVA *tva;
 	TVP *tvp;
+	TVF *tvf;
 	EnvelopeStatus filtEnv;
 	bool play;
 
