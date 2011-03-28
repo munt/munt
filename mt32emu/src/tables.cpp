@@ -223,47 +223,9 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		pulseWidth100To255[i] = (int)(i * 255 / 100.0f + 0.5f);
 		//synth->printDebug("%d: %d", i, pulseWidth100To255[i]);
 	}
-	for (lf = -108; lf <= 108; lf++) {
-		tvfKeyfollowMult[lf + 108] = (int)(256 * pow(2.0f, (float)(lf / 24.0f)));
-		//synth->printDebug("KT %d = %d", f, keytable[f+108]);
-	}
 
 	for (int res = 0; res < 31; res++) {
 		resonanceFactor[res] = pow((float)res / 30.0f, 5.0f) + 1.0f;
-	}
-
-	int velt, dep;
-	for (velt = 0; velt < 128; velt++) {
-		for (dep = -7; dep < 8; dep++) {
-			float fldep = (float)abs(dep) / 7.0f;
-			fldep = pow(fldep, 2.5f);
-			if (dep < 0) {
-				fldep = fldep * -1.0f;
-			}
-			pwVelfollowAdd[dep+7][velt] = Bit32s((fldep * (float)velt * 100) / 128.0);
-		}
-	}
-
-	for (lf = 0; lf < 256; lf++) {
-		float mv = lf / 255.0f;
-		float pt = mv - 0.5f;
-		if (pt < 0) {
-			pt = 0;
-		}
-
-		// Approximation from sample comparison
-		pwFactorf[lf] = ((pt * 179.0f) + 128.0f) / 64.0f;
-		pwFactorf[lf] = 1.0f / pwFactorf[lf];
-	}
-
-	for (unsigned int i = 0; i < MAX_SAMPLE_OUTPUT; i++) {
-		int myRand;
-		myRand = rand();
-		//myRand = ((myRand - 16383) * 7168) >> 16;
-		// This one is slower but works with all values of RAND_MAX
-		myRand = (int)((myRand - RAND_MAX / 2) / (float)RAND_MAX * (7168 / 2));
-		//FIXME:KG: Original ultimately set the lowest two bits to 0, for no obvious reason
-		noiseBuf[i] = (Bit16s)myRand;
 	}
 }
 
@@ -276,18 +238,6 @@ static void initDep(KeyLookup *keyLookup, float f) {
 			keyLookup->envTimeMult[dep] = (int)(ff * 256.0f);
 		}
 	}
-}
-
-Bit16s Tables::clampWF(Synth *synth, const char *n, float ampVal, double input) {
-	Bit32s x = (Bit32s)(input * ampVal);
-	if (x < -ampVal - 1) {
-		synth->printDebug("%s==%d<-WGAMP-1!", n, x);
-		x = (Bit32s)(-ampVal - 1);
-	} else if (x > ampVal) {
-		synth->printDebug("%s==%d>WGAMP!", n, x);
-		x = (Bit32s)ampVal;
-	}
-	return (Bit16s)x;
 }
 
 Tables::Tables() {

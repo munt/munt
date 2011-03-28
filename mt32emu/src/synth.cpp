@@ -372,8 +372,6 @@ bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 		pcmWaves[i].addr = rAddr;
 		pcmWaves[i].len = rLen;
 		pcmWaves[i].loop = (tps[i].len & 0x80) != 0;
-		pcmWaves[i].unaffectedByMasterTune = (tps[i].len & 0x01) == 0;
-		pcmWaves[i].tune = rTune;
 		pcmWaves[i].controlROMPCMStruct = &tps[i];
 	}
 	return false;

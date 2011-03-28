@@ -32,12 +32,8 @@ struct EnvelopeStatus {
 	Bit32s envdist;
 	Bit32s envsize;
 
-	bool sustaining;
 	bool decaying;
 	Bit32s prevlevel;
-
-	Bit32s counter;
-	Bit32s count;
 };
 
 // A partial represents one of up to four waveform generators currently playing within a poly.
@@ -49,7 +45,6 @@ private:
 	int ownerPart; // -1 if unassigned
 	int mixType;
 	int structurePosition; // 0 or 1 of a structure pair
-	bool useNoisePair;
 	StereoVolume stereoVolume;
 
 	// Distance in (possibly fractional) samples from the start of the current pulse
@@ -58,9 +53,6 @@ private:
 	Bit16s myBuffer[MAX_SAMPLE_OUTPUT];
 
 	const KeyLookup *keyLookup; // LUTs for the clamped (12..108) key
-
-	// Keyfollowed filter value
-	int filtVal;
 
 	// Only used for PCM partials
 	int pcmNum;
@@ -74,11 +66,7 @@ private:
 	float pcmPosition;
 	int intPCMPosition;
 
-	Bit32u pitchEnvVal;
-
 	float history[32];
-
-	int loopPos;
 
 	Poly *poly;
 
@@ -87,8 +75,6 @@ private:
 
 	Bit16s getPCMSample(unsigned int position);
 	Bit32s getFiltEnvelope();
-
-	void initKeyFollow(int freqNum);
 
 public:
 	const PatchCache *patchCache;
@@ -124,7 +110,7 @@ public:
 	// Returns true only if data written to buffer
 	// This function (unlike the one below it) returns processed stereo samples
 	// made from combining this single partial with its pair, if it has one.
-	bool produceOutput(Bit16s * partialBuf, unsigned long length);
+	bool produceOutput(Bit16s *partialBuf, unsigned long length);
 
 	// This function writes mono sample output to the provided buffer, and returns the number of samples written
 	unsigned long generateSamples(Bit16s *buffer, unsigned long length);

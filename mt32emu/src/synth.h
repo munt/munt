@@ -95,12 +95,6 @@ struct SynthProperties {
 // function
 typedef void (*recalcStatusCallback)(int percDone);
 
-// This external function recreates the base waveform file (waveforms.raw) using a specifed
-// sampling rate.  The callback routine provides interactivity to let the user know what
-// percentage is complete in regenerating the waveforms.  When a NULL pointer is used as the
-// callback routine, no status is reported.
-bool RecalcWaveforms(char * baseDir, int sampRate, recalcStatusCallback callBack);
-
 typedef float (*iir_filter_type)(float input,float *hist1_ptr, const float *coef_ptr);
 
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;

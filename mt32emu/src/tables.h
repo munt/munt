@@ -62,8 +62,6 @@ class Tables {
 	float initialisedSampleRate;
 	float initialisedMasterTune;
 	void initMT32ConstantTables(Synth *synth);
-	static Bit16s clampWF(Synth *synth, const char *n, float ampVal, double input);
-	static File *initWave(Synth *synth, float ampsize, float div2, File *file);
 	void initEnvelopes(float sampleRate);
 	void initFiltCoeff(float samplerate);
 public:
@@ -86,11 +84,7 @@ public:
 	// CONFIRMED:
 	Bit8u pulseWidth100To255[101];
 
-	Bit32s tvfKeyfollowMult[217];
-	Bit16s noiseBuf[MAX_SAMPLE_OUTPUT];
-	Bit32s pwVelfollowAdd[15][128];
 	float resonanceFactor[31];
-	float pwFactorf[256];
 
 	// LUTs varying with sample rate
 	Bit32u envTime[101];

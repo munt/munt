@@ -70,17 +70,6 @@ void Partial::deactivate() {
 	}
 }
 
-void Partial::initKeyFollow(int key) {
-	// Calculate keyfollow for filter.
-	int keyfollow = ((key - MIDDLEC) * patchCache->filtkeyfollow) / 4096;
-	if (keyfollow > 108) {
-		keyfollow = 108;
-	} else if (keyfollow < -108) {
-		keyfollow = -108;
-	}
-	filtVal = synth->tables.tvfKeyfollowMult[keyfollow + 108];
-}
-
 // DEPRECATED: This should probably go away eventually, it's currently only used as a kludge to protect our old assumptions that
 // rhythm part notes were always played as key MIDDLEC.
 int Partial::getKey() const {
@@ -105,7 +94,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	structurePosition = patchCache->structurePosition;
 
 	play = true;
-	initKeyFollow(getKey()); // Initialises filtVal and realVal
 	keyLookup = &synth->tables.keyLookups[getKey() - 12];
 
 	Bit8u panSetting = rhythmTemp != NULL ? rhythmTemp->panpot : part->getPatchTemp()->panpot;
@@ -159,17 +147,12 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	filtEnv.envbase = 0;
 	filtEnv.envdist = 0;
 	filtEnv.envsize = 0;
-	filtEnv.sustaining = false;
 	filtEnv.decaying = false;
 	filtEnv.prevlevel = 0;
-	filtEnv.counter = 0;
-	filtEnv.count = 0;
 
-	loopPos = 0;
 	pcmPosition = 0.0f;
 	intPCMPosition = 0;
 	pair = pairPartial;
-	useNoisePair = pairPartial == NULL && (mixType == 1 || mixType == 2);
 	alreadyOutputed = false;
 	tva->reset(part, patchCache, rhythmTemp);
 	tvp->reset(part, patchCache);
@@ -464,7 +447,7 @@ Bit32s Partial::getFiltEnvelope() {
 		}
 	} else {
 		if (tStat->envstat == 4) {
-			reshigh = patchCache->filtsustain;
+			reshigh = patchCache->filtEnv.envLevel[3];
 			if (!poly->canSustain()) {
 				startFiltDecay(reshigh);
 			}
@@ -569,7 +552,6 @@ void Partial::startDecayAll() {
 }
 
 void Partial::startFiltDecay(Bit32s startval) {
-	filtEnv.sustaining = false;
 	filtEnv.decaying = true;
 	filtEnv.envpos = 0;
 	filtEnv.envbase = startval;

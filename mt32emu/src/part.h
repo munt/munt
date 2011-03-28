@@ -41,9 +41,6 @@ private:
 	std::list<Poly*> freePolys;
 	std::list<Poly*> activePolys;
 
-	static int fixKeyfollow(int srckey);
-	static int fixBiaslevel(int srcpnt, int *dir);
-
 	void setPatch(const PatchParam *patch);
 	unsigned int midiKeyToKey(unsigned int midiKey, const char *debugAction);
 

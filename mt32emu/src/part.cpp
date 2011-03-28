@@ -197,30 +197,6 @@ void Part::refreshTimbre(unsigned int absTimbreNum) {
 	}
 }
 
-int Part::fixBiaslevel(int srcpnt, int *dir) {
-	int noteat = srcpnt & 0x3F;
-	int outnote;
-	if (srcpnt < 64) {
-		*dir = 0;
-	} else {
-		*dir = 1;
-	}
-	outnote = 33 + noteat;
-	//synth->printDebug("Bias note %d, dir %d", outnote, *dir);
-
-	return outnote;
-}
-
-int Part::fixKeyfollow(int srckey) {
-	if (srckey >= 0 && srckey <= 16) {
-		int keyfix[17] = { -256 * 16, -128 * 16, -64 * 16, 0, 32 * 16, 64 * 16, 96 * 16, 128 * 16, (128 + 32) * 16, 192 * 16, (192 + 32) * 16, 256 * 16, (256 + 64) * 16, (256 + 128) * 16, (512) * 16, 4100, 4116};
-		return keyfix[srckey];
-	} else {
-		//LOG(LOG_ERROR|LOG_MISC,"Missed key: %d", srckey);
-		return 256;
-	}
-}
-
 void Part::setPatch(const PatchParam *patch) {
 	patchTemp->patch = *patch;
 }
@@ -319,9 +295,7 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 
 		// Calculate and cache filter stuff
 		cache[t].filtEnv = timbre->partial[t].tvf;
-		cache[t].filtkeyfollow = fixKeyfollow(cache[t].filtEnv.keyfollow);
 		cache[t].filtEnv.envDepth = (char)((float)cache[t].filtEnv.envDepth);
-		cache[t].filtsustain = cache[t].filtEnv.envLevel[3];
 	}
 	for (int t = 0; t < 4; t++) {
 		// Common parameters, stored redundantly

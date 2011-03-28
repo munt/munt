@@ -179,9 +179,7 @@ struct ControlROMPCMStruct;
 struct PCMWaveEntry {
 	Bit32u addr;
 	Bit32u len;
-	double tune;
 	bool loop;
-	bool unaffectedByMasterTune;
 	ControlROMPCMStruct *controlROMPCMStruct;
 };
 
@@ -197,11 +195,7 @@ struct PatchCache {
 	int pcm;
 	char waveform;
 
-	int filtkeyfollow;
-
 	TimbreParam::PartialParam::TVFParam filtEnv;
-
-	Bit32s filtsustain;
 
 	Bit32u structureMix;
 	int structurePosition;
