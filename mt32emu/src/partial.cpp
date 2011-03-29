@@ -20,11 +20,7 @@
 #include <cstring>
 
 #include "mt32emu.h"
-
-#define FIXEDPOINT_UDIV(x, y, point) (((x) << (point)) / ((y)))
-#define FIXEDPOINT_SDIV(x, y, point) (((x) * (1 << point)) / ((y)))
-#define FIXEDPOINT_UMULT(x, y, point) (((x) * (y)) >> point)
-#define FIXEDPOINT_SMULT(x, y, point) (((x) * (y)) / (1 << point))
+#include "mmath.h"
 
 using namespace MT32Emu;
 
@@ -195,8 +191,8 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 
 		Bit16u pitch = tvp->nextPitch();
 
-		// Aka (slightly slower): pow(2.0f, pitchVal / 4096.0f - 16.0f) * 32000.0f
-		float freq = pow(2.0f, pitch / 4096.0f - 1.034215715f);
+		// Aka (slightly slower): EXP2F(pitchVal / 4096.0f - 16.0f) * 32000.0f
+		float freq = EXP2F(pitch / 4096.0f - 1.034215715f);
 
 		if (patchCache->PCMPartial) {
 			// Render PCM waveform
@@ -270,7 +266,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 				// We really don't want the filter to attenuate samples below cutoff 50
 				freqsum = freq;
 			} else {
-				freqsum = pow(2.0f, 8.0f * (((float)filtVal / 128.0f) - 1.0f)) * freq;
+				freqsum = EXP2F(8.0f * (((float)filtVal / 128.0f) - 1.0f)) * freq;
 			}
 
 			// Limit filter freq to slightly under the Nyquist frequency to avoid aliasing
@@ -295,7 +291,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			// Instead, we attenuate samples below cutoff 50 another way
 			if (filtVal < 128) {
 				// Found by sample analysis
-				sample *= pow(2.0f, (filtVal - 128) * 0.048820569f);
+				sample *= EXP2F((filtVal - 128) * 0.048820569f);
 			}
 
 			// Multiply sample with current TVA value

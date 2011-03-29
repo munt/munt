@@ -20,14 +20,6 @@
 
 namespace MT32Emu {
 
-// Mathematical constants
-const double DOUBLE_PI = 3.1415926535897932384626433832795;
-const double DOUBLE_LN_10 = 2.3025850929940456840179914546844;
-const float FLOAT_PI = 3.1415926535897932384626433832795f;
-const float FLOAT_2PI = 6.2831853;
-const float FLOAT_LN_10 = 2.3025850929940456840179914546844f;
-const float FLOAT_LN_2 = 0.6931472f;
-
 const int FILTERGRAN = 16000;
 
 const int WGAMP = 15700; // Found from sample analysis
