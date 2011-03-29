@@ -38,6 +38,7 @@ Partial::Partial(Synth *useSynth, int debugPartialNum) :
 Partial::~Partial() {
 	delete tva;
 	delete tvp;
+	delete tvf;
 }
 
 int Partial::getOwnerPart() const {
