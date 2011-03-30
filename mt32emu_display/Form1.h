@@ -269,7 +269,7 @@ private: mt32emu_display_controls::SysexImporter *  sysexImporter1;
 			// timer1
 			// 
 			this->timer1->Interval = 20;
-			this->timer1->Tick += new System::EventHandler(this, timer1_Tick);
+			this->timer1->Tick += new System::EventHandler(this, &Form1::timer1_Tick);
 			// 
 			// groupBox3
 			// 
@@ -296,7 +296,7 @@ private: mt32emu_display_controls::SysexImporter *  sysexImporter1;
 			this->settingsIcon->Size = System::Drawing::Size(32, 32);
 			this->settingsIcon->TabIndex = 2;
 			this->settingsIcon->TabStop = false;
-			this->settingsIcon->Click += new System::EventHandler(this, panel_Click);
+			this->settingsIcon->Click += new System::EventHandler(this, &Form1::panel_Click);
 			// 
 			// oscoIcon
 			// 
@@ -308,7 +308,7 @@ private: mt32emu_display_controls::SysexImporter *  sysexImporter1;
 			this->oscoIcon->Size = System::Drawing::Size(32, 32);
 			this->oscoIcon->TabIndex = 1;
 			this->oscoIcon->TabStop = false;
-			this->oscoIcon->Click += new System::EventHandler(this, panel_Click);
+			this->oscoIcon->Click += new System::EventHandler(this, &Form1::panel_Click);
 			// 
 			// channelIcon
 			// 
@@ -320,7 +320,7 @@ private: mt32emu_display_controls::SysexImporter *  sysexImporter1;
 			this->channelIcon->Size = System::Drawing::Size(32, 32);
 			this->channelIcon->TabIndex = 0;
 			this->channelIcon->TabStop = false;
-			this->channelIcon->Click += new System::EventHandler(this, panel_Click);
+			this->channelIcon->Click += new System::EventHandler(this, &Form1::panel_Click);
 			// 
 			// label1
 			// 
@@ -374,7 +374,7 @@ private: mt32emu_display_controls::SysexImporter *  sysexImporter1;
 			// 
 			this->notifyIcon1->Icon = (__try_cast<System::Drawing::Icon *  >(resources->GetObject(S"notifyIcon1.Icon")));
 			this->notifyIcon1->Text = S"Munt Control Panel";
-			this->notifyIcon1->DoubleClick += new System::EventHandler(this, notifyIcon1_DoubleClick);
+			this->notifyIcon1->DoubleClick += new System::EventHandler(this, &Form1::notifyIcon1_DoubleClick);
 			// 
 			// contextMenu2
 			// 
@@ -423,7 +423,7 @@ private: mt32emu_display_controls::SysexImporter *  sysexImporter1;
 			this->Name = S"Form1";
 			this->StartPosition = System::Windows::Forms::FormStartPosition::CenterScreen;
 			this->Text = S"Munt Control Panel";
-			this->Load += new System::EventHandler(this, Form1_Load_1);
+			this->Load += new System::EventHandler(this, &Form1::Form1_Load_1);
 			this->groupBox3->ResumeLayout(false);
 			this->ResumeLayout(false);
 
@@ -649,7 +649,7 @@ private: mt32emu_display_controls::SysexImporter *  sysexImporter1;
 								chanList[i].vel = buffer[2 + (i * wPC) + 5];
 							}
 
-							channelStatus->sendUpdateData((char *)&buffer[0], count, chanList, wPC);
+							channelStatus->sendUpdateData((char *)buffer, count, chanList, wPC);
 
 							if(anyActive) {
 								this->facePlate->turnOnMidiLight();

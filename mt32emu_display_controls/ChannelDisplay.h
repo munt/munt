@@ -30,8 +30,11 @@ struct noteInfo {
 chanInfo *chanList;
 volInfo volList[9];
 
+#pragma make_public(chanInfo)
+
 namespace mt32emu_display_controls
 {
+
 	/// <summary> 
 	/// Summary for ChannelDisplay
 	/// </summary>

@@ -243,7 +243,7 @@ namespace mt32emu_display_controls
 			this->volumeBar->TabIndex = 2;
 			this->volumeBar->TickFrequency = 10;
 			this->volumeBar->TickStyle = System::Windows::Forms::TickStyle::None;
-			this->volumeBar->Scroll += new System::EventHandler(this, volumeBar_Scroll);
+			this->volumeBar->Scroll += new System::EventHandler(this, &SettingsDisplay::volumeBar_Scroll);
 			// 
 			// label4
 			// 
@@ -279,7 +279,7 @@ namespace mt32emu_display_controls
 			this->reverbLevel->Name = S"reverbLevel";
 			this->reverbLevel->Size = System::Drawing::Size(120, 16);
 			this->reverbLevel->TabIndex = 6;
-			this->reverbLevel->Scroll += new System::EventHandler(this, reverbLevel_Scroll);
+			this->reverbLevel->Scroll += new System::EventHandler(this, &SettingsDisplay::reverbLevel_Scroll);
 			// 
 			// label3
 			// 
@@ -297,7 +297,7 @@ namespace mt32emu_display_controls
 			this->reverbTime->Name = S"reverbTime";
 			this->reverbTime->Size = System::Drawing::Size(120, 16);
 			this->reverbTime->TabIndex = 4;
-			this->reverbTime->Scroll += new System::EventHandler(this, reverbTime_Scroll);
+			this->reverbTime->Scroll += new System::EventHandler(this, &SettingsDisplay::reverbTime_Scroll);
 			// 
 			// label2
 			// 
@@ -320,7 +320,7 @@ namespace mt32emu_display_controls
 			this->reverbMode->Name = S"reverbMode";
 			this->reverbMode->Size = System::Drawing::Size(121, 21);
 			this->reverbMode->TabIndex = 2;
-			this->reverbMode->SelectedIndexChanged += new System::EventHandler(this, reverbMode_SelectedIndexChanged);
+			this->reverbMode->SelectedIndexChanged += new System::EventHandler(this, &SettingsDisplay::reverbMode_SelectedIndexChanged);
 			// 
 			// label1
 			// 
