@@ -22,7 +22,7 @@ namespace mt32emu_display_controls
 		SettingsDisplay(void)
 		{
 			InitializeComponent();
-			systemParam = new MT32Emu::MemParams::SystemArea();
+			systemParam = new MT32Emu::MemParams::System();
 			freezeComboBox = false;
 			this->reverbMode->GotFocus += new System::EventHandler(this, &SettingsDisplay::reverbMode_GotFocus);
 			this->reverbMode->LostFocus += new System::EventHandler(this, &SettingsDisplay::reverbMode_LostFocus);
@@ -125,7 +125,7 @@ namespace mt32emu_display_controls
 	private: System::Windows::Forms::TrackBar *  reverbTime;
 	private: System::Windows::Forms::ComboBox *  reverbMode;
 	private: System::Windows::Forms::GroupBox *  reverbBox;
-	private: MT32Emu::MemParams::SystemArea * systemParam;
+	private: MT32Emu::MemParams::System * systemParam;
 	private: System::Boolean freezeComboBox;
 
 

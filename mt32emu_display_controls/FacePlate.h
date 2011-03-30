@@ -51,7 +51,7 @@ public __gc class FacePlate : public System::Windows::Forms::UserControl, public
 			InitializeComponent();
 			displayMode = 0;
 			notifyCountDown = 0;
-			systemParam = new MT32Emu::MemParams::SystemArea();
+			systemParam = new MT32Emu::MemParams::System();
 			setLCDText(S"1 2 3 4 5 R |vol:100", false);
 		}
 
@@ -350,7 +350,7 @@ public __gc class FacePlate : public System::Windows::Forms::UserControl, public
 	private: System::Int32 notifyCountDown;
 	private: mt32emu_display_controls::LCDDisplay *  lcdDisplay1;
 	private: mt32emu_display_controls::DisplayKnob *  displayKnob1;
-	private: MT32Emu::MemParams::SystemArea * systemParam;
+	private: MT32Emu::MemParams::System * systemParam;
 
 
     
