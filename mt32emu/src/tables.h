@@ -78,6 +78,8 @@ public:
 
 	float resonanceFactor[31];
 
+	float pitchToFreq[65536];
+
 	// LUTs varying with sample rate
 	Bit32u envTime[101];
 	Bit32u envDeltaMaxTime[101];

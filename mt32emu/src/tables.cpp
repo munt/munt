@@ -226,6 +226,11 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	for (int res = 0; res < 31; res++) {
 		resonanceFactor[res] = POWF((float)res / 30.0f, 5.0f) + 1.0f;
 	}
+
+	for (int i = 0; i < 65536; i++) {
+		// Aka (slightly slower): EXP2F(pitchVal / 4096.0f - 16.0f) * 32000.0f
+		pitchToFreq[i] = EXP2F(i / 4096.0f - 1.034215715f);
+	}
 }
 
 static void initDep(KeyLookup *keyLookup, float f) {

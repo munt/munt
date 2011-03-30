@@ -191,8 +191,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 
 		Bit16u pitch = tvp->nextPitch();
 
-		// Aka (slightly slower): EXP2F(pitchVal / 4096.0f - 16.0f) * 32000.0f
-		float freq = EXP2F(pitch / 4096.0f - 1.034215715f);
+		float freq = synth->tables.pitchToFreq[pitch];
 
 		if (patchCache->PCMPartial) {
 			// Render PCM waveform
