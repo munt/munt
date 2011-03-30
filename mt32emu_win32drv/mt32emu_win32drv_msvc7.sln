@@ -1,45 +1,26 @@
-Microsoft Visual Studio Solution File, Format Version 8.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu_display_controls", "..\mt32emu_display_controls\mt32emu_display_controls.vcproj", "{896C32F8-77E0-4C8B-B78A-DDB172E66062}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual C++ Express 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu_win32drv", "mt32emu_win32drv_msvc7.vcproj", "{BD7491C1-986F-4D48-99E6-018AB4ACF801}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu", "..\mt32emu\mt32emu_msvc7.vcproj", "{063A149D-E48C-499B-B13F-7A70C140A662}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu_display", "..\mt32emu_display\mt32emu_display.vcproj", "{15D87DDD-291D-4501-BAC4-83067E468EF3}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu_win32drv", "mt32emu_win32drv_msvc7.vcproj", "{BD7491C1-986F-4D48-99E6-018AB4ACF801}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
 EndProject
 Global
-	GlobalSection(SolutionConfiguration) = preSolution
-		Debug = Debug
-		Release = Release
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ProjectConfiguration) = postSolution
-		{896C32F8-77E0-4C8B-B78A-DDB172E66062}.Debug.ActiveCfg = Debug|Win32
-		{896C32F8-77E0-4C8B-B78A-DDB172E66062}.Debug.Build.0 = Debug|Win32
-		{896C32F8-77E0-4C8B-B78A-DDB172E66062}.Release.ActiveCfg = Release|Win32
-		{896C32F8-77E0-4C8B-B78A-DDB172E66062}.Release.Build.0 = Release|Win32
-		{063A149D-E48C-499B-B13F-7A70C140A662}.Debug.ActiveCfg = Debug|Win32
-		{063A149D-E48C-499B-B13F-7A70C140A662}.Debug.Build.0 = Debug|Win32
-		{063A149D-E48C-499B-B13F-7A70C140A662}.Release.ActiveCfg = Release|Win32
-		{063A149D-E48C-499B-B13F-7A70C140A662}.Release.Build.0 = Release|Win32
-		{15D87DDD-291D-4501-BAC4-83067E468EF3}.Debug.ActiveCfg = Debug|Win32
-		{15D87DDD-291D-4501-BAC4-83067E468EF3}.Debug.Build.0 = Debug|Win32
-		{15D87DDD-291D-4501-BAC4-83067E468EF3}.Release.ActiveCfg = Release|Win32
-		{15D87DDD-291D-4501-BAC4-83067E468EF3}.Release.Build.0 = Release|Win32
-		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Debug.ActiveCfg = Debug|Win32
-		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Debug.Build.0 = Debug|Win32
-		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Release.ActiveCfg = Release|Win32
-		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Release.Build.0 = Release|Win32
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Debug|Win32.Build.0 = Debug|Win32
+		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Release|Win32.ActiveCfg = Release|Win32
+		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Release|Win32.Build.0 = Release|Win32
+		{063A149D-E48C-499B-B13F-7A70C140A662}.Debug|Win32.ActiveCfg = Debug|Win32
+		{063A149D-E48C-499B-B13F-7A70C140A662}.Debug|Win32.Build.0 = Debug|Win32
+		{063A149D-E48C-499B-B13F-7A70C140A662}.Release|Win32.ActiveCfg = Release|Win32
+		{063A149D-E48C-499B-B13F-7A70C140A662}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-	EndGlobalSection
-	GlobalSection(ExtensibilityAddIns) = postSolution
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
