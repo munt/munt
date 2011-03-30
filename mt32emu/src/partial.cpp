@@ -290,7 +290,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			// Instead, we attenuate samples below cutoff 50 another way
 			if (filtVal < 128) {
 				// Found by sample analysis
-				sample *= EXP2F((filtVal - 128) * 0.048820569f);
+				sample *= EXP2F(-0.048820569f * (128 - filtVal));
 			}
 
 			// Multiply sample with current TVA value
