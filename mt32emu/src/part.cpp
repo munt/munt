@@ -292,10 +292,6 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 		cache[t].partialParam = &timbre->partial[t];
 
 		cache[t].waveform = timbre->partial[t].wg.waveform;
-
-		// Calculate and cache filter stuff
-		cache[t].filtEnv = timbre->partial[t].tvf;
-		cache[t].filtEnv.envDepth = (char)((float)cache[t].filtEnv.envDepth);
 	}
 	for (int t = 0; t < 4; t++) {
 		// Common parameters, stored redundantly

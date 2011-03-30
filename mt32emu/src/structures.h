@@ -195,8 +195,6 @@ struct PatchCache {
 	int pcm;
 	char waveform;
 
-	TimbreParam::PartialParam::TVFParam filtEnv;
-
 	Bit32u structureMix;
 	int structurePosition;
 	int structurePair;

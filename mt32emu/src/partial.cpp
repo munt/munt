@@ -91,7 +91,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	structurePosition = patchCache->structurePosition;
 
 	play = true;
-	keyLookup = &synth->tables.keyLookups[getKey() - 12];
 
 	Bit8u panSetting = rhythmTemp != NULL ? rhythmTemp->panpot : part->getPatchTemp()->panpot;
 	if (mixType == 3) {
@@ -138,14 +137,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	} else if (pulseWidthVal > 255) {
 		pulseWidthVal = 255;
 	}
-
-	filtEnv.envpos = 0;
-	filtEnv.envstat = -1;
-	filtEnv.envbase = 0;
-	filtEnv.envdist = 0;
-	filtEnv.envsize = 0;
-	filtEnv.decaying = false;
-	filtEnv.prevlevel = 0;
 
 	pcmPosition = 0.0f;
 	intPCMPosition = 0;
@@ -250,16 +241,12 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			if (wavePos > wavePeriod) {
 				wavePos -= wavePeriod;
 			}
-#ifdef USE_NEW_TVF
-			Bit32u filtVal = tvf->getBaseCutoff();
+			float filtVal = tvf->getBaseCutoff();
 			// The modifier may not be supposed to be added to the cutoff at all -
 			// it may for example need to be multiplied in some way.
-			filtVal += (Bit8u)tvf->nextCutoffModifier();
-			if (filtVal > 255)
-				filtVal = 255;
-#else
-			Bit32s filtVal = getFiltEnvelope();
-#endif
+			filtVal += tvf->nextCutoffModifier();
+			if (filtVal > 255.0f)
+				filtVal = 255.0f;
 			float freqsum;
 			if (filtVal < 128) {
 				// We really don't want the filter to attenuate samples below cutoff 50
@@ -278,7 +265,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 				freqsum = filtergran;
 			}
 
-			sample = (floor((synth->iirFilter)((sample), &history[0], synth->tables.filtCoeff[(Bit32s)freqsum][(int)patchCache->filtEnv.resonance])));
+			sample = (floor((synth->iirFilter)((sample), &history[0], synth->tables.filtCoeff[(Bit32s)freqsum][(int)patchCache->srcPartial.tvf.resonance])));
 
 			if ((patchCache->waveform & 1) != 0) {
 				// Sawtooth waveform:
@@ -303,7 +290,6 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 				synth->printDebug("Overdriven amplitude for waveform=%d, freqsum=%f: %f > 32767", patchCache->waveform, freqsum, sample);
 				sample = 32767.0f;
 			}
-			filtEnv.envpos++;
 		}
 
 		// Add sample to buffer
@@ -437,112 +423,6 @@ bool Partial::produceOutput(Bit16s *partialBuf, unsigned long length) {
 	return true;
 }
 
-Bit32s Partial::getFiltEnvelope() {
-	int reshigh;
-
-	int cutoff;
-
-	EnvelopeStatus *tStat = &filtEnv;
-
-	if (tStat->decaying) {
-		reshigh = tStat->envbase;
-		reshigh = (reshigh + ((tStat->envdist * tStat->envpos) / tStat->envsize));
-		if (tStat->envpos >= tStat->envsize) {
-			reshigh = 0;
-		}
-	} else {
-		if (tStat->envstat == 4) {
-			reshigh = patchCache->filtEnv.envLevel[3];
-			if (!poly->canSustain()) {
-				startFiltDecay(reshigh);
-			}
-		} else {
-			if ((tStat->envstat == -1) || (tStat->envpos >= tStat->envsize)) {
-				if (tStat->envstat == -1) {
-					tStat->envbase = 0;
-				} else {
-					tStat->envbase = patchCache->filtEnv.envLevel[tStat->envstat];
-				}
-				tStat->envstat++;
-				tStat->envpos = 0;
-				if (tStat->envstat == 3) {
-					tStat->envsize = synth->tables.envTime[(int)patchCache->filtEnv.envTime[tStat->envstat]];
-				} else {
-					Bit32u envTime = (int)patchCache->filtEnv.envTime[tStat->envstat];
-					if (tStat->envstat > 1) {
-						int envDiff = abs(patchCache->filtEnv.envLevel[tStat->envstat] - patchCache->filtEnv.envLevel[tStat->envstat - 1]);
-						if (envTime > synth->tables.envDeltaMaxTime[envDiff]) {
-							envTime = synth->tables.envDeltaMaxTime[envDiff];
-						}
-					}
-
-					tStat->envsize = (synth->tables.envTime[envTime] * keyLookup->envTimeMult[(int)patchCache->filtEnv.envTimeKeyfollow]) >> 8;
-				}
-
-				tStat->envsize++;
-				tStat->envdist = patchCache->filtEnv.envLevel[tStat->envstat] - tStat->envbase;
-			}
-
-			reshigh = tStat->envbase;
-			reshigh = (reshigh + ((tStat->envdist * tStat->envpos) / tStat->envsize));
-		}
-		tStat->prevlevel = reshigh;
-	}
-
-	cutoff = filtMultKeyfollow[patchCache->srcPartial.tvf.keyfollow] - filtMultKeyfollow[patchCache->srcPartial.wg.pitchKeyfollow];
-	cutoff *= ((Bit32s)getKey() - 60);
-	int dynamicBiasPoint = (Bit32s)patchCache->srcPartial.tvf.biasPoint;
-	if ((dynamicBiasPoint & 0x40) == 0) {
-		dynamicBiasPoint = dynamicBiasPoint + 33 - (Bit32s)getKey();
-		if (dynamicBiasPoint > 0) {
-			dynamicBiasPoint = -dynamicBiasPoint;
-			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biasLevel];
-			cutoff += dynamicBiasPoint;
-		}
-	} else {
-		dynamicBiasPoint = dynamicBiasPoint - 31 - (Bit32s)getKey();
-		if (dynamicBiasPoint <= 0) {
-			dynamicBiasPoint *= BiasLevel_MulTable[patchCache->srcPartial.tvf.biasLevel];
-			cutoff += dynamicBiasPoint;
-		}
-	}
-
-	cutoff += (((Bit32s)patchCache->srcPartial.tvf.cutoff << 4) - 800);
-	if (cutoff >= 0) {
-		Bit32u basePitch = tvp->getBasePitch();
-		int pitchAdjust = (basePitch >> 4) + cutoff - 3584;
-		if (pitchAdjust > 0) {
-			cutoff -= pitchAdjust;
-		}
-	} else {
-		if (cutoff < -2048) {
-			cutoff = -2048;
-		}
-	}
-	cutoff = (cutoff + 2056) >> 4;
-	if (cutoff > 255) {
-		cutoff = 255;
-	}
-
-	int veloFilEnv = (Bit32s)poly->getVelocity() * (Bit32s)patchCache->srcPartial.tvf.envVeloSensitivity;
-	int filEnv = (veloFilEnv << 2) >> 8;
-	veloFilEnv = 109 - patchCache->srcPartial.tvf.envVeloSensitivity + filEnv;
-	filEnv = ((Bit32s)getKey() - 60) >> (4 - (Bit32s)patchCache->srcPartial.tvf.envDepthKeyfollow);
-	veloFilEnv += filEnv;
-	if (veloFilEnv < 0) {
-		veloFilEnv = 0;
-	}
-	veloFilEnv *= patchCache->srcPartial.tvf.envDepth;
-	filEnv = (veloFilEnv << 2) >> 8;
-	if (filEnv > 255) {
-		filEnv = 255;
-	}
-
-	filEnv = (filEnv * reshigh) >> 8;
-
-	return cutoff + filEnv;
-}
-
 bool Partial::shouldReverb() {
 	if (!isActive()) {
 		return false;
@@ -553,15 +433,5 @@ bool Partial::shouldReverb() {
 void Partial::startDecayAll() {
 	tva->startDecay();
 	tvp->startDecay();
-	startFiltDecay(filtEnv.prevlevel);
-}
-
-void Partial::startFiltDecay(Bit32s startval) {
-	filtEnv.decaying = true;
-	filtEnv.envpos = 0;
-	filtEnv.envbase = startval;
-
-	filtEnv.envsize = FIXEDPOINT_UMULT(synth->tables.envDecayTime[(int)patchCache->filtEnv.envTime[4]], keyLookup->envTimeMult[(int)patchCache->filtEnv.envTimeKeyfollow], 8);
-	filtEnv.envdist = -startval;
-	filtEnv.envsize++;
+	tvf->startDecay();
 }

@@ -27,34 +27,11 @@ const int WGAMP = 15700; // Found from sample analysis
 const int MIDDLEC = 60;
 const int MIDDLEA = 69; // By this I mean "A above middle C"
 
-// FIXME:KG: may only need to do 12 to 108
-// 12..108 is the range allowed by note on commands, but the key can be modified by pitch keyfollow
-// and adjustment for timbre pitch, so the results can be outside that range.
-// Should we move it (by octave) into the 12..108 range, or keep it in 0..127 range,
-// or something else altogether?
-const int LOWEST_NOTE = 12;
-const int HIGHEST_NOTE = 127;
-const int NUM_NOTES = HIGHEST_NOTE - LOWEST_NOTE + 1; // Number of slots for note LUT
-
-static const int filtMultKeyfollow[17] = {
-	-21, -10, -5, 0, 2, 5, 8, 10, 13, 16, 18, 21, 26, 32, 42, 21, 21
-};
-
-static const int BiasLevel_MulTable[15] = {
-	85, 42, 21, 16, 10, 5, 2, 0, -2, -5, -10, -16, -21, -74, -85
-};
-
 class Synth;
-
-struct KeyLookup {
-	Bit32s envTimeMult[5]; // For envelope time adjustment for key pressed
-};
 
 class Tables {
 	float initialisedSampleRate;
-	float initialisedMasterTune;
 	void initMT32ConstantTables(Synth *synth);
-	void initEnvelopes(float sampleRate);
 	void initFiltCoeff(float samplerate);
 public:
 	// Constant LUTs
@@ -80,17 +57,11 @@ public:
 
 	float pitchToFreq[65536];
 
-	// LUTs varying with sample rate
-	Bit32u envTime[101];
-	Bit32u envDeltaMaxTime[101];
-	Bit32u envDecayTime[101];
+	// LUT varying with sample rate
 	float filtCoeff[FILTERGRAN][31][12];
 
-	// Various LUTs for each key
-	KeyLookup keyLookups[97];
-
 	Tables();
-	bool init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune);
+	bool init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate);
 };
 
 }

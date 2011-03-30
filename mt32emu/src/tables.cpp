@@ -149,36 +149,6 @@ void Tables::initFiltCoeff(float samplerate) {
 	}
 }
 
-void Tables::initEnvelopes(float samplerate) {
-	for (int lf = 0; lf <= 100; lf++) {
-		float elf = (float)lf;
-
-		// General envelope
-		// This formula fits observation of the CM-32L by +/- 0.03s or so for the second time value in the filter,
-		// when all other times were 0 and all levels were 100. Note that variations occur depending on the level
-		// delta of the section, which we're not fully emulating.
-		float seconds = EXP2F((elf / 8.0f) + 7.0f) / 32768.0f;
-		int samples = (int)(seconds * samplerate);
-		envTime[lf] = samples;
-
-		// Cap on envelope times depending on the level delta
-		if (elf == 0) {
-			envDeltaMaxTime[lf] = 63;
-		} else {
-			float cap = 11.0f * LOGF(elf) + 64;
-			if (cap > 100.0f) {
-				cap = 100.0f;
-			}
-			envDeltaMaxTime[lf] = (int)cap;
-		}
-
-		// This (approximately) represents the time durations when the target level is 0.
-		// Not sure why this is a special case, but it's seen to be from the real thing.
-		seconds = EXP2F((elf / 8.0f) + 6) / 32768.0f;
-		envDecayTime[lf] = (int)(seconds * samplerate);
-	}
-}
-
 void Tables::initMT32ConstantTables(Synth *synth) {
 	int lf;
 	synth->printDebug("Initialising Constant Tables");
@@ -233,23 +203,11 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 	}
 }
 
-static void initDep(KeyLookup *keyLookup, float f) {
-	for (int dep = 0; dep < 5; dep++) {
-		if (dep == 0) {
-			keyLookup->envTimeMult[dep] = 256;
-		} else {
-			float ff = (float)(EXPF(tkcatconst[dep] * ((float)MIDDLEC - f)) * tkcatmult[dep]);
-			keyLookup->envTimeMult[dep] = (int)(ff * 256.0f);
-		}
-	}
-}
-
 Tables::Tables() {
 	initialisedSampleRate = 0.0f;
-	initialisedMasterTune = 0.0f;
 }
 
-bool Tables::init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float masterTune) {
+bool Tables::init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate) {
 	if (sampleRate <= 0.0f) {
 		synth->printDebug("Bad sampleRate (%f <= 0.0f)", sampleRate);
 		return false;
@@ -259,14 +217,7 @@ bool Tables::init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate, float 
 	}
 	if (initialisedSampleRate != sampleRate) {
 		initFiltCoeff(sampleRate);
-		initEnvelopes(sampleRate);
-		for (int key = 12; key <= 108; key++) {
-			initDep(&keyLookups[key - 12], (float)key);
-		}
-	}
-	if (initialisedSampleRate != sampleRate || initialisedMasterTune != masterTune) {
 		initialisedSampleRate = sampleRate;
-		initialisedMasterTune = masterTune;
 	}
 	return true;
 }

@@ -1098,7 +1098,9 @@ bool Synth::refreshSystem() {
 	rset = mt32ram.system.chanAssign;
 	printDebug(" Part assign:     1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
 	printDebug(" Master volume: %d", mt32ram.system.masterVol);
-	if (!tables.init(this, pcmWaves, (float)myProp.sampleRate, masterTune)) {
+	// FIXME:KG: I don't think a table init needs to be done on every system parameter change anymore:
+	// Pretty sure it was only here because some obsolete tables depended on masterTune.
+	if (!tables.init(this, pcmWaves, (float)myProp.sampleRate)) {
 		report(ReportType_errorSampleRate, NULL);
 		return false;
 	}

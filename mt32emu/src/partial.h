@@ -25,17 +25,6 @@ class Part;
 class TVA;
 struct ControlROMPCMStruct;
 
-struct EnvelopeStatus {
-	Bit32s envpos;
-	Bit32s envstat;
-	Bit32s envbase;
-	Bit32s envdist;
-	Bit32s envsize;
-
-	bool decaying;
-	Bit32s prevlevel;
-};
-
 // A partial represents one of up to four waveform generators currently playing within a poly.
 class Partial {
 private:
@@ -51,8 +40,6 @@ private:
 	float wavePos;
 
 	Bit16s myBuffer[MAX_SAMPLE_OUTPUT];
-
-	const KeyLookup *keyLookup; // LUTs for the clamped (12..108) key
 
 	// Only used for PCM partials
 	int pcmNum;
@@ -74,14 +61,12 @@ private:
 	Bit16s *mixBuffersRing(Bit16s *buf1, Bit16s *buf2, unsigned long len);
 
 	Bit16s getPCMSample(unsigned int position);
-	Bit32s getFiltEnvelope();
 
 public:
 	const PatchCache *patchCache;
 	TVA *tva;
 	TVP *tvp;
 	TVF *tvf;
-	EnvelopeStatus filtEnv;
 	bool play;
 
 	PatchCache cachebackup;
@@ -99,7 +84,6 @@ public:
 	void activate(int part);
 	void deactivate(void);
 	void startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial);
-	void startFiltDecay(Bit32s startval);
 	void startDecayAll();
 	bool shouldReverb();
 	bool hasRingModulatingSlave() const;
