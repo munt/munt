@@ -566,21 +566,16 @@ void Synth::close(void) {
 		return;
 	}
 
-	if (partialManager != NULL) {
-		delete partialManager;
-		partialManager = NULL;
-	}
+	delete partialManager;
+	partialManager = NULL;
 
 	for (int i = 0; i < 9; i++) {
-		if (parts[i] != NULL) {
-			delete parts[i];
-			parts[i] = NULL;
-		}
+		delete parts[i];
+		parts[i] = NULL;
 	}
-	if (myProp.baseDir != NULL) {
-		delete myProp.baseDir;
-		myProp.baseDir = NULL;
-	}
+
+	delete myProp.baseDir;
+	myProp.baseDir = NULL;
 
 	delete[] pcmWaves;
 	delete[] pcmROMData;
@@ -781,7 +776,8 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 	}
 }
 
-void Synth::readSysex(unsigned char /*device*/, const Bit8u * /*sysex*/, Bit32u /*len*/) {
+void Synth::readSysex(unsigned char /*device*/, const Bit8u * /*sysex*/, Bit32u /*len*/) const {
+	// NYI
 }
 
 void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {

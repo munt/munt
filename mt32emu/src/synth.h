@@ -333,7 +333,7 @@ private:
 	void doRender(Bit16s * stream, Bit32u len);
 
 	void playAddressedSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
-	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
+	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len) const;
 	void initMemoryRegions();
 	void deleteMemoryRegions();
 	MemoryRegion *findMemoryRegion(Bit32u addr);
