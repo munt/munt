@@ -52,14 +52,6 @@ bool ANSIFile::readBit8u(Bit8u *in) {
 	return true;
 }
 
-size_t ANSIFile::write(const void *out, size_t size) {
-	return fwrite(out, 1, size, fp);
-}
-
-bool ANSIFile::writeBit8u(Bit8u out) {
-	return fputc(out, fp) != EOF;
-}
-
 bool ANSIFile::isEOF() {
 	return feof(fp) != 0;
 }

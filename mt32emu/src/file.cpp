@@ -36,29 +36,3 @@ bool File::readBit32u(Bit32u *in) {
 	*in = ((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]);
 	return true;
 }
-
-bool File::writeBit16u(Bit16u out) {
-	if (!writeBit8u((Bit8u)((out & 0xFF00) >> 8))) {
-		return false;
-	}
-	if (!writeBit8u((Bit8u)(out & 0x00FF))) {
-		return false;
-	}
-	return true;
-}
-
-bool File::writeBit32u(Bit32u out) {
-	if (!writeBit8u((Bit8u)((out & 0xFF000000) >> 24))) {
-		return false;
-	}
-	if (!writeBit8u((Bit8u)((out & 0x00FF0000) >> 16))) {
-		return false;
-	}
-	if (!writeBit8u((Bit8u)((out & 0x0000FF00) >> 8))) {
-		return false;
-	}
-	if (!writeBit8u((Bit8u)(out & 0x000000FF))) {
-		return false;
-	}
-	return true;
-}

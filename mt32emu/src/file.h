@@ -26,6 +26,7 @@ class File {
 public:
 	enum OpenMode {
 		OpenMode_read  = 0,
+		// DEPRECATED: Only read operations are necessary.
 		OpenMode_write = 1
 	};
 	virtual ~File() {}
@@ -35,13 +36,16 @@ public:
 	virtual bool readBit8u(Bit8u *in) = 0;
 	virtual bool readBit16u(Bit16u *in);
 	virtual bool readBit32u(Bit32u *in);
-	virtual size_t write(const void *out, size_t size) = 0;
-	virtual bool writeBit8u(Bit8u out) = 0;
-	// Note: May write a single byte to the file before failing
-	virtual bool writeBit16u(Bit16u out);
-	// Note: May write some (<4) bytes to the file before failing
-	virtual bool writeBit32u(Bit32u out);
 	virtual bool isEOF() = 0;
+
+	// DEPRECATED: Only read operations need to be implemented.
+	virtual size_t write(const void *out, size_t size) {return 0;};
+	// DEPRECATED: Only read operations need to be implemented.
+	virtual bool writeBit8u(Bit8u out) {return false;};
+	// DEPRECATED: Only read operations need to be implemented.
+	virtual bool writeBit16u(Bit16u out) {return false;};
+	// DEPRECATED: Only read operations need to be implemented.
+	virtual bool writeBit32u(Bit32u out) {return false;};
 };
 
 }

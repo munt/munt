@@ -342,8 +342,6 @@ private:
 
 	LoadResult loadControlROM(const char *filename);
 	LoadResult loadPCMROM(const char *filename);
-	bool dumpTimbre(File *file, const TimbreParam *timbre, Bit32u addr);
-	int dumpTimbres(const char *filename, int start, int len);
 
 	bool initPCMList(Bit16u mapAddress, Bit16u count);
 	bool initTimbres(Bit16u mapAddress, Bit16u offset, int timbreCount, int startTimbre, bool compressed);
