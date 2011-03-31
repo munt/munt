@@ -22,6 +22,7 @@
 
 #include "mt32emu.h"
 #include "mmath.h"
+#include "ansiFile.h"
 
 #include "delayReverb.h"
 

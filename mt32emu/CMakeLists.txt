@@ -5,6 +5,7 @@ set(libmt32emu_VERSION_MINOR 1)
 set(libmt32emu_VERSION_PATCH 3)
 
 add_library(mt32emu STATIC
+  src/ansiFile.cpp
   src/delayReverb.cpp
 #  src/externalInterface.cpp
   src/file.cpp
