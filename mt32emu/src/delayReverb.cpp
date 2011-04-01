@@ -37,6 +37,8 @@ DelayReverb::DelayReverb() {
 	rightDelaySeconds = 0;
 	targetReverbLevel = 0;
 	targetFeedbackLevel = 0;
+	// Will be set to something reasonable in setSampleRate():
+	rampTarget = 1;
 }
 
 DelayReverb::~DelayReverb() {
