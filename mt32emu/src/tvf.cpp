@@ -151,6 +151,8 @@ void TVF::reset(const TimbreParam::PartialParam *partialParam, unsigned int base
 	setIncrement(newIncrement);
 	target = newTarget;
 	targetPhase = PHASE_2 - 1;
+
+	current = 0;
 }
 
 Bit8u TVF::getBaseCutoff() const {
