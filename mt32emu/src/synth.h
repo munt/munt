@@ -249,7 +249,7 @@ public:
 
 class ReverbModel {
 public:
-	virtual ~ReverbModel() {};
+	virtual ~ReverbModel() {}
 	virtual void setSampleRate(unsigned int sampleRate) = 0;
 	virtual void setParameters(Bit8u mode, Bit8u time, Bit8u level) = 0;
 	virtual void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) = 0;
