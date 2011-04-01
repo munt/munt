@@ -385,8 +385,11 @@ int main(int argc, char *argv[]) {
 
 	smf = smf_load(srcFileName);
 	if (smf != NULL) {
-		if (!quiet)
-			fprintf(stdout, "%s.", smf_decode(smf));
+		if (!quiet) {
+			char *decoded = smf_decode(smf);
+			fprintf(stdout, "%s.", decoded);
+			free(decoded);
+		}
 		assert(smf->number_of_tracks >= 1);
 		MT32Emu::SynthProperties synthProperties = {0};
 		synthProperties.sampleRate = sampleRate;
