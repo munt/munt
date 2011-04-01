@@ -32,12 +32,13 @@ public:
 	virtual ~File() {}
 	virtual void close() = 0;
 	virtual size_t read(void *in, size_t size) = 0;
-	virtual bool readLine(char *in, size_t size) = 0;
 	virtual bool readBit8u(Bit8u *in) = 0;
 	virtual bool readBit16u(Bit16u *in);
 	virtual bool readBit32u(Bit32u *in);
 	virtual bool isEOF() = 0;
 
+	// DEPRECATED: Unused
+	virtual bool readLine(char * /*in*/, size_t /*size*/) {return false;};
 	// DEPRECATED: Only read operations need to be implemented.
 	virtual size_t write(const void * /*out*/, size_t /*size*/) {return 0;};
 	// DEPRECATED: Only read operations need to be implemented.
