@@ -35,7 +35,7 @@ private:
 public:
 
 	PartialManager(Synth *synth, Part **parts);
-	~PartialManager();
+	virtual ~PartialManager();
 	Partial *allocPartial(int partNum);
 	unsigned int getFreePartialCount(void);
 	bool freePartials(unsigned int needed, int partNum);

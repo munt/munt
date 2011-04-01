@@ -260,7 +260,7 @@ class FreeverbModel : public ReverbModel {
 	revmodel *freeverb;
 public:
 	FreeverbModel();
-	~FreeverbModel();
+	virtual ~FreeverbModel();
 	void setSampleRate(unsigned int sampleRate);
 	void setParameters(Bit8u mode, Bit8u time, Bit8u level);
 	void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples);
@@ -360,7 +360,7 @@ public:
 	static Bit8u calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum);
 
 	Synth();
-	~Synth();
+	virtual ~Synth();
 
 	// Used to initialise the MT-32. Must be called before any other function.
 	// Returns true if initialization was sucessful, otherwise returns false.

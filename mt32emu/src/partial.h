@@ -75,7 +75,7 @@ public:
 	bool alreadyOutputed;
 
 	Partial(Synth *synth, int debugPartialNum);
-	~Partial();
+	virtual ~Partial();
 
 	int getOwnerPart() const;
 	int getKey() const;
