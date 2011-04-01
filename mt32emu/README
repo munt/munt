@@ -10,14 +10,12 @@ into a driver or application. "Official" drivers for Windows and Linux (with
 ALSA) are available in the Munt project and use this library: mt32emu_win32drv
 and mt32emu_alsadrv, respectively.
 
-mt32emu can be built using Microsoft Visual Studio .NET 2003 using the provided
-project file (mt32emu_msvc7.vcproj).
+mt32emu requires CMake to build. See http://www.cmake.org/ for details. For a
+simple in-tree build, you can probably just do:
 
-For information on building mt32emu using the GNU toolchain, see the INSTALL
-file. If this file is not present (e.g. if you have freshly checked this module
-out from CVS), run:
-
-sh autogen.sh
+cmake .
+make
+sudo make install
 
 
 License
