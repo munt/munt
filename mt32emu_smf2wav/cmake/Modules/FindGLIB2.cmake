@@ -14,9 +14,8 @@ find_path(GLIB2_INCLUDE_DIR glib.h
   PATH_SUFFIXES glib-2.0
 )
 
-find_path(GLIB2_CONFIG_INCLUDE_DIR
-  glibconfig.h
-  HINTS ${PC_GLIB2_LIBDIR} ${PC_GLIB2_LIBRARY_DIRS}
+find_path(GLIB2_CONFIG_INCLUDE_DIR glibconfig.h
+  HINTS ${PC_GLIB2_INCLUDEDIR} ${PC_GLIB2_INCLUDE_DIRS}
   PATH_SUFFIXES lib/glib-2.0/include
 )
 
