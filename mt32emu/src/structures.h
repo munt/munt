@@ -29,12 +29,8 @@ const unsigned int MAX_SAMPLE_OUTPUT = 4096;
 
 #ifdef _MSC_VER
 #define  MT32EMU_ALIGN_PACKED __declspec(align(1))
-typedef unsigned __int64   Bit64u;
-typedef   signed __int64   Bit64s;
 #else
 #define MT32EMU_ALIGN_PACKED __attribute__((packed))
-typedef unsigned long long Bit64u;
-typedef   signed long long Bit64s;
 #endif
 
 typedef unsigned int       Bit32u;
