@@ -55,7 +55,7 @@ void DelayReverb::setSampleRate(unsigned int sampleRate) {
 	}
 }
 
-void DelayReverb::setParameters(Bit8u mode, Bit8u time, Bit8u level) {
+void DelayReverb::setParameters(Bit8u /*mode*/, Bit8u time, Bit8u level) {
 	float oldLeftDelaySeconds = leftDelaySeconds;
 	float oldRightDelaySeconds = rightDelaySeconds;
 	float oldTargetReverbLevel = targetReverbLevel;

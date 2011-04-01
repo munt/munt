@@ -61,7 +61,7 @@ public:
 	float filtCoeff[FILTERGRAN][31][12];
 
 	Tables();
-	bool init(Synth *synth, PCMWaveEntry *pcmWaves, float sampleRate);
+	bool init(Synth *synth, float sampleRate);
 };
 
 }

@@ -1097,7 +1097,7 @@ bool Synth::refreshSystem() {
 	printDebug(" Master volume: %d", mt32ram.system.masterVol);
 	// FIXME:KG: I don't think a table init needs to be done on every system parameter change anymore:
 	// Pretty sure it was only here because some obsolete tables depended on masterTune.
-	if (!tables.init(this, pcmWaves, (float)myProp.sampleRate)) {
+	if (!tables.init(this, (float)myProp.sampleRate)) {
 		report(ReportType_errorSampleRate, NULL);
 		return false;
 	}
@@ -1281,7 +1281,7 @@ FreeverbModel::~FreeverbModel() {
 	delete freeverb;
 }
 
-void FreeverbModel::setSampleRate(unsigned int sampleRate) {
+void FreeverbModel::setSampleRate(unsigned int /*sampleRate*/) {
 	// FIXME: We don't deal with this at all.
 }
 

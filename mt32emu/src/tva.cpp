@@ -78,32 +78,32 @@ float TVA::nextAmp() {
 	return EXP2F((float)currentAmp / TVA_TARGET_AMP_MULT / 16.0f - 1.0f) / 65536.0f;
 }
 
-static int multBias(const Tables *tables, Bit8u biasLevel, int bias) {
+static int multBias(Bit8u biasLevel, int bias) {
 	return (bias * biasLevelToAmpSubtractionCoeff[biasLevel]) >> 5;
 }
 
-static int calcBiasAmpSubtraction(const Tables *tables, Bit8u biasPoint, Bit8u biasLevel, int key) {
+static int calcBiasAmpSubtraction(Bit8u biasPoint, Bit8u biasLevel, int key) {
 	if ((biasPoint & 0x40) == 0) {
 		int bias = biasPoint + 33 - key;
 		if (bias > 0) {
-			return multBias(tables, biasLevel, bias);
+			return multBias(biasLevel, bias);
 		}
 	} else {
 		int bias = biasPoint - 31 - key;
 		if (bias < 0) {
 			bias = -bias;
-			return multBias(tables, biasLevel, bias);
+			return multBias(biasLevel, bias);
 		}
 	}
 	return 0;
 }
 
-static int calcBiasAmpSubtractions(const Tables *tables, const TimbreParam::PartialParam *partialParam, int key) {
-	int biasAmpSubtraction1 = calcBiasAmpSubtraction(tables, partialParam->tva.biasPoint1, partialParam->tva.biasLevel1, key);
+static int calcBiasAmpSubtractions(const TimbreParam::PartialParam *partialParam, int key) {
+	int biasAmpSubtraction1 = calcBiasAmpSubtraction(partialParam->tva.biasPoint1, partialParam->tva.biasLevel1, key);
 	if (biasAmpSubtraction1 > 255) {
 		return 255;
 	}
-	int biasAmpSubtraction2 = calcBiasAmpSubtraction(tables, partialParam->tva.biasPoint2, partialParam->tva.biasLevel2, key);
+	int biasAmpSubtraction2 = calcBiasAmpSubtraction(partialParam->tva.biasPoint2, partialParam->tva.biasLevel2, key);
 	if (biasAmpSubtraction2 > 255) {
 		return 255;
 	}
@@ -114,7 +114,7 @@ static int calcBiasAmpSubtractions(const Tables *tables, const TimbreParam::Part
 	return biasAmpSubtraction;
 }
 
-static int calcVeloAmpSubtraction(const Tables *tables, Bit8u veloSensitivity, unsigned int velocity) {
+static int calcVeloAmpSubtraction(Bit8u veloSensitivity, unsigned int velocity) {
 	// FIXME:KG: Better variable names
 	int velocityMult = veloSensitivity - 50;
 	int absVelocityMult = velocityMult < 0 ? -velocityMult : velocityMult;
@@ -189,8 +189,8 @@ void TVA::reset(const Part *part, const PatchCache *patchCache, const MemParams:
 
 	keyTimeSubtraction = calcKeyTimeSubtraction(partialParam->tva.envTimeKeyfollow, key);
 
-	biasAmpSubtraction = calcBiasAmpSubtractions(tables, partialParam, key);
-	veloAmpSubtraction = calcVeloAmpSubtraction(tables, partialParam->tva.veloSensitivity, velocity);
+	biasAmpSubtraction = calcBiasAmpSubtractions(partialParam, key);
+	veloAmpSubtraction = calcVeloAmpSubtraction(partialParam->tva.veloSensitivity, velocity);
 
 	int newTargetAmp = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
 
