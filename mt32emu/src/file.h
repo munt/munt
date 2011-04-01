@@ -39,13 +39,13 @@ public:
 	virtual bool isEOF() = 0;
 
 	// DEPRECATED: Only read operations need to be implemented.
-	virtual size_t write(const void *out, size_t size) {return 0;};
+	virtual size_t write(const void * /*out*/, size_t /*size*/) {return 0;};
 	// DEPRECATED: Only read operations need to be implemented.
-	virtual bool writeBit8u(Bit8u out) {return false;};
+	virtual bool writeBit8u(Bit8u /*out*/) {return false;};
 	// DEPRECATED: Only read operations need to be implemented.
-	virtual bool writeBit16u(Bit16u out) {return false;};
+	virtual bool writeBit16u(Bit16u /*out*/) {return false;};
 	// DEPRECATED: Only read operations need to be implemented.
-	virtual bool writeBit32u(Bit32u out) {return false;};
+	virtual bool writeBit32u(Bit32u /*out*/) {return false;};
 };
 
 }
