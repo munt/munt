@@ -65,7 +65,7 @@ protected:
 
 public:
 	Part(Synth *synth, unsigned int usePartNum);
-	~Part();
+	virtual ~Part();
 	void reset();
 	void setDataEntryMSB(unsigned char midiDataEntryMSB);
 	void setNRPN();
