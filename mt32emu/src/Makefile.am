@@ -1,3 +1,0 @@
-lib_LIBRARIES = libmt32emu.a
-libmt32emu_a_SOURCES = delayReverb.cpp file.cpp part.cpp partial.cpp partialManager.cpp poly.cpp synth.cpp tables.cpp tva.cpp tvf.cpp tvp.cpp freeverb/allpass.cpp freeverb/comb.cpp freeverb/revmodel.cpp
-nobase_pkginclude_HEADERS = file.h mt32emu.h part.h partial.h partialManager.h poly.h structures.h synth.h tables.h tva.h tvf.h tvp.h freeverb/allpass.h freeverb/comb.h freeverb/denormals.h freeverb/tuning.h freeverb/revmodel.h
