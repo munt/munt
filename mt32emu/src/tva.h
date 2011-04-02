@@ -67,10 +67,12 @@ private:
 
 	int targetPhase;
 	Bit32u currentAmp;
-	// AFAICT: Lower 7 bits indicate how quickly currentAmp should be changed, most significant bit indicates change direction (set=downward)
-	Bit8u targetAmp;
-	Bit8u ampIncrement;
 	unsigned int largeAmpInc;
+
+	// See comment at the top of tva.cpp for an explanation on the meaning of these variables.
+	Bit8u la32TargetAmp;
+	Bit8u la32AmpIncrement;
+
 	void setAmpIncrement(Bit8u ampIncrement);
 	void nextPhase();
 
