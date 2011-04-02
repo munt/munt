@@ -320,7 +320,6 @@ static void printUsage(char *cmd) {
 	fprintf(stdout, "Arguments:\n");
 	fprintf(stdout, " -b              Buffer size (in bytes) (minimum: 4, default: %d)\n", DEFAULT_BUFFER_SIZE);
 	fprintf(stdout, " -e              End after rendering at most this many samples. 0=unlimited (default: 0)\n");
-	fprintf(stdout, "                 (Default: 0)\n");
 	fprintf(stdout, " -f              Force overwrite of output file if already present\n");
 	fprintf(stdout, " -h              Show this help and exit\n");
 	fprintf(stdout, " -o <filename>   Output file (default: source file name with \".wav\" appended)\n");
