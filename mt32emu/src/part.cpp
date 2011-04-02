@@ -19,6 +19,7 @@
 #include <cstring>
 
 #include "mt32emu.h"
+#include "partialManager.h"
 
 namespace MT32Emu {
 

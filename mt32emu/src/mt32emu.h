@@ -33,8 +33,6 @@
 // No point making it more than MT32EMU_MAX_PARTIALS, since each note needs at least one partial.
 #define MT32EMU_MAX_POLY 32
 
-#include "freeverb/revmodel.h"
-
 #include "structures.h"
 #include "file.h"
 #include "tables.h"
@@ -43,7 +41,6 @@
 #include "tvp.h"
 #include "tvf.h"
 #include "partial.h"
-#include "partialManager.h"
 #include "part.h"
 #include "synth.h"
 

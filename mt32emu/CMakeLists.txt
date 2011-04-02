@@ -30,7 +30,6 @@ install(FILES
   src/mt32emu.h
   src/part.h
   src/partial.h
-  src/partialManager.h
   src/poly.h
   src/structures.h
   src/synth.h
@@ -39,14 +38,6 @@ install(FILES
   src/tvf.h
   src/tvp.h
   DESTINATION include/mt32emu
-)
-install(FILES
-  src/freeverb/allpass.h
-  src/freeverb/comb.h
-  src/freeverb/denormals.h
-  src/freeverb/tuning.h
-  src/freeverb/revmodel.h
-  DESTINATION include/mt32emu/freeverb
 )
 
 # build a CPack driven installer package
