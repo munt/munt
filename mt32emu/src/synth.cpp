@@ -147,38 +147,38 @@ void Synth::printDebug(const char *fmt, ...) {
 	va_end(ap);
 }
 
-void Synth::setReverbModel(ReverbModel *reverbModel) {
-	delete this->reverbModel;
-	if (reverbModel == NULL) {
-		reverbModel = new FreeverbModel();
+void Synth::setReverbModel(ReverbModel *newReverbModel) {
+	delete reverbModel;
+	if (newReverbModel == NULL) {
+		newReverbModel = new FreeverbModel();
 	}
-	this->reverbModel = reverbModel;
+	reverbModel = newReverbModel;
 	if (isOpen) {
 		setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
 	}
 }
 
-void Synth::setDelayReverbModel(ReverbModel *delayReverbModel) {
-	delete this->delayReverbModel;
-	if (delayReverbModel == NULL) {
-		delayReverbModel = new DelayReverb();
+void Synth::setDelayReverbModel(ReverbModel *newDelayReverbModel) {
+	delete delayReverbModel;
+	if (newDelayReverbModel == NULL) {
+		newDelayReverbModel = new DelayReverb();
 	}
-	this->delayReverbModel = delayReverbModel;
+	delayReverbModel = newDelayReverbModel;
 	if (isOpen) {
 		setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
 	}
 }
 
-void Synth::setReverbEnabled(bool reverbEnabled) {
-	this->reverbEnabled = reverbEnabled;
+void Synth::setReverbEnabled(bool newReverbEnabled) {
+	reverbEnabled = newReverbEnabled;
 }
 
 bool Synth::isReverbEnabled() const {
 	return reverbEnabled;
 }
 
-void Synth::setReverbOverridden(bool reverbOverridden) {
-	this->reverbOverridden = reverbOverridden;
+void Synth::setReverbOverridden(bool newReverbOverridden) {
+	reverbOverridden = newReverbOverridden;
 }
 
 bool Synth::isReverbOverridden() const {

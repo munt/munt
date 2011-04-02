@@ -161,14 +161,14 @@ public:
 	MemoryRegionType type;
 	Bit32u startAddr, entrySize, entries;
 
-	MemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable, MemoryRegionType type, Bit32u startAddr, Bit32u entrySize, Bit32u entries) {
-		this->synth = synth;
-		this->realMemory = realMemory;
-		this->maxTable = maxTable;
-		this->type = type;
-		this->startAddr = startAddr;
-		this->entrySize = entrySize;
-		this->entries = entries;
+	MemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable, MemoryRegionType useType, Bit32u useStartAddr, Bit32u useEntrySize, Bit32u useEntries) {
+		synth = useSynth;
+		realMemory = useRealMemory;
+		maxTable = useMaxTable;
+		type = useType;
+		startAddr = useStartAddr;
+		entrySize = useEntrySize;
+		entries = useEntries;
 	}
 	int lastTouched(Bit32u addr, Bit32u len) const {
 		return (offset(addr) + len - 1) / entrySize;
@@ -216,35 +216,35 @@ public:
 
 class PatchTempMemoryRegion : public MemoryRegion {
 public:
-	PatchTempMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_PatchTemp, MT32EMU_MEMADDR(0x030000), sizeof(MemParams::PatchTemp), 9) {}
+	PatchTempMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_PatchTemp, MT32EMU_MEMADDR(0x030000), sizeof(MemParams::PatchTemp), 9) {}
 };
 class RhythmTempMemoryRegion : public MemoryRegion {
 public:
-	RhythmTempMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_RhythmTemp, MT32EMU_MEMADDR(0x030110), sizeof(MemParams::RhythmTemp), 85) {}
+	RhythmTempMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_RhythmTemp, MT32EMU_MEMADDR(0x030110), sizeof(MemParams::RhythmTemp), 85) {}
 };
 class TimbreTempMemoryRegion : public MemoryRegion {
 public:
-	TimbreTempMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_TimbreTemp, MT32EMU_MEMADDR(0x040000), sizeof(TimbreParam), 8) {}
+	TimbreTempMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_TimbreTemp, MT32EMU_MEMADDR(0x040000), sizeof(TimbreParam), 8) {}
 };
 class PatchesMemoryRegion : public MemoryRegion {
 public:
-	PatchesMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_Patches, MT32EMU_MEMADDR(0x050000), sizeof(PatchParam), 128) {}
+	PatchesMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_Patches, MT32EMU_MEMADDR(0x050000), sizeof(PatchParam), 128) {}
 };
 class TimbresMemoryRegion : public MemoryRegion {
 public:
-	TimbresMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_Timbres, MT32EMU_MEMADDR(0x080000), sizeof(MemParams::PaddedTimbre), 64 + 64 + 64 + 64) {}
+	TimbresMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_Timbres, MT32EMU_MEMADDR(0x080000), sizeof(MemParams::PaddedTimbre), 64 + 64 + 64 + 64) {}
 };
 class SystemMemoryRegion : public MemoryRegion {
 public:
-	SystemMemoryRegion(Synth *synth, Bit8u *realMemory, Bit8u *maxTable) : MemoryRegion(synth, realMemory, maxTable, MR_System, MT32EMU_MEMADDR(0x100000), sizeof(MemParams::System), 1) {}
+	SystemMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_System, MT32EMU_MEMADDR(0x100000), sizeof(MemParams::System), 1) {}
 };
 class DisplayMemoryRegion : public MemoryRegion {
 public:
-	DisplayMemoryRegion(Synth *synth) : MemoryRegion(synth, NULL, NULL, MR_Display, MT32EMU_MEMADDR(0x200000), MAX_SYSEX_SIZE - 1, 1) {}
+	DisplayMemoryRegion(Synth *useSynth) : MemoryRegion(useSynth, NULL, NULL, MR_Display, MT32EMU_MEMADDR(0x200000), MAX_SYSEX_SIZE - 1, 1) {}
 };
 class ResetMemoryRegion : public MemoryRegion {
 public:
-	ResetMemoryRegion(Synth *synth) : MemoryRegion(synth, NULL, NULL, MR_Reset, MT32EMU_MEMADDR(0x7F0000), 0x3FFF, 1) {}
+	ResetMemoryRegion(Synth *useSynth) : MemoryRegion(useSynth, NULL, NULL, MR_Reset, MT32EMU_MEMADDR(0x7F0000), 0x3FFF, 1) {}
 };
 
 class ReverbModel {

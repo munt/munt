@@ -45,14 +45,14 @@ DelayReverb::~DelayReverb() {
 	delete[] buf;
 }
 
-void DelayReverb::setSampleRate(unsigned int sampleRate) {
-	if (sampleRate != this->sampleRate) {
-		this->sampleRate = sampleRate;
+void DelayReverb::setSampleRate(unsigned int newSampleRate) {
+	if (newSampleRate != sampleRate) {
+		sampleRate = newSampleRate;
 		delete[] buf;
 		// FIXME: Always 2 second buffer - we could reduce this to what we actually need after we've tweaked the parameters
-		bufSize = 2 * sampleRate;
+		bufSize = 2 * newSampleRate;
 		buf = new float[bufSize];
-		this->rampTarget = (unsigned int)(RAMP_TIME * sampleRate);
+		rampTarget = (unsigned int)(RAMP_TIME * newSampleRate);
 		reset();
 	}
 }

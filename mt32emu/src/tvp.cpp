@@ -45,14 +45,14 @@ static Bit16u keyToPitchTable[] = {
 	21845, 22187, 22528, 22869
 };
 
-TVP::TVP(const Partial *partial) :
-	partial(partial), system(&partial->getSynth()->mt32ram.system) {
-	unsigned int sampleRate = partial->getSynth()->myProp.sampleRate;
+TVP::TVP(const Partial *usePartial) :
+	partial(usePartial), system(&usePartial->getSynth()->mt32ram.system) {
+	unsigned int sampleRate = usePartial->getSynth()->myProp.sampleRate;
 	// We want to do processing 4000 times per second. FIXME: This is pretty arbitrary.
-	this->maxCounter = sampleRate / 4000;
+	maxCounter = sampleRate / 4000;
 	// The timer runs at 500kHz. We only need to bother updating it every maxCounter samples, before we do processing.
 	// This is how much to increment it by every maxCounter samples.
-	this->processTimerIncrement = 500000 * maxCounter / sampleRate;
+	processTimerIncrement = 500000 * maxCounter / sampleRate;
 }
 
 static Bit16s keyToPitch(unsigned int key) {
@@ -123,10 +123,10 @@ static Bit32s calcTargetPitchOffsetWithoutLFO(const TimbreParam::PartialParam *p
 	return targetPitchOffsetWithoutLFO;
 }
 
-void TVP::reset(const Part *part, const PatchCache *patchCache) {
-	this->part = part;
-	this->partialParam = patchCache->partialParam;
-	this->patchTemp = part->getPatchTemp();
+void TVP::reset(const Part *usePart, const PatchCache *patchCache) {
+	part = usePart;
+	partialParam = patchCache->partialParam;
+	patchTemp = part->getPatchTemp();
 
 	unsigned int key = partial->getPoly()->getKey();
 	unsigned int velocity = partial->getPoly()->getVelocity();

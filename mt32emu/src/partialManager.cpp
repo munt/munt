@@ -21,9 +21,9 @@
 
 using namespace MT32Emu;
 
-PartialManager::PartialManager(Synth *useSynth, Part **parts) {
-	this->synth = useSynth;
-	this->parts = parts;
+PartialManager::PartialManager(Synth *useSynth, Part **useParts) {
+	synth = useSynth;
+	parts = useParts;
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		partialTable[i] = new Partial(synth, i);
 	}

@@ -47,8 +47,8 @@ RhythmPart::RhythmPart(Synth *useSynth, unsigned int usePartNum): Part(useSynth,
 }
 
 Part::Part(Synth *useSynth, unsigned int usePartNum) {
-	this->synth = useSynth;
-	this->partNum = usePartNum;
+	synth = useSynth;
+	partNum = usePartNum;
 	patchCache[0].dirty = true;
 	holdpedal = false;
 	patchTemp = &synth->mt32ram.patchTemp[partNum];
@@ -449,7 +449,7 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 
 	unsigned int needPartials = cache[0].partialCount;
 	if (needPartials == 0) {
-		synth->printDebug("%s (%s): Completely muted instrument", name, this->currentInstr);
+		synth->printDebug("%s (%s): Completely muted instrument", name, currentInstr);
 		return;
 	}
 
@@ -551,14 +551,14 @@ unsigned int Part::getActivePartialCount() const {
 }
 
 unsigned int Part::getActiveNonReleasingPartialCount() const {
-	unsigned int activePartialCount = 0;
+	unsigned int activeNonReleasingPartialCount = 0;
 	for (std::list<Poly *>::const_iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
 		Poly *poly = *polyIt;
 		if (poly->getState() != POLY_Releasing) {
-			activePartialCount += poly->getActivePartialCount();
+			activeNonReleasingPartialCount += poly->getActivePartialCount();
 		}
 	}
-	return activePartialCount;
+	return activeNonReleasingPartialCount;
 }
 
 void Part::partialDeactivated(Poly *poly) {

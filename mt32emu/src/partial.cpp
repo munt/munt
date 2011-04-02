@@ -24,8 +24,8 @@
 
 using namespace MT32Emu;
 
-Partial::Partial(Synth *useSynth, int debugPartialNum) :
-	synth(useSynth), debugPartialNum(debugPartialNum), tva(new TVA(this)), tvp(new TVP(this)), tvf(new TVF(this)) {
+Partial::Partial(Synth *useSynth, int useDebugPartialNum) :
+	synth(useSynth), debugPartialNum(useDebugPartialNum), tva(new TVA(this)), tvp(new TVP(this)), tvf(new TVF(this)) {
 	ownerPart = -1;
 	poly = NULL;
 	pair = NULL;
@@ -46,7 +46,7 @@ bool Partial::isActive() const {
 }
 
 const Poly *Partial::getPoly() const {
-	return this->poly;
+	return poly;
 }
 
 void Partial::activate(int part) {

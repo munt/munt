@@ -94,51 +94,51 @@ static int calcBaseCutoff(const TimbreParam::PartialParam *partialParam, Bit32u 
 	return (Bit8u)baseCutoff;
 }
 
-TVF::TVF(const Partial *partial) :
-	partial(partial) {
+TVF::TVF(const Partial *usePartial) :
+	partial(usePartial) {
 }
 
-void TVF::setIncrement(Bit8u increment) {
+void TVF::setIncrement(Bit8u newIncrement) {
 	// FIXME: This is just a guess - absolutely no idea whether this is the same as for TVA::setAmpIncrement(), which it copies.
-	this->increment = increment;
+	increment = newIncrement;
 
-	bigIncrement = increment & 0x7F;
+	bigIncrement = newIncrement & 0x7F;
 	// FIXME: We could use a table for this in future
 	bigIncrement = (unsigned int)(EXP10F((bigIncrement - 1) / 26.0f) * 256.0f);
 }
 
-void TVF::reset(const TimbreParam::PartialParam *partialParam, unsigned int basePitch) {
-	this->partialParam = partialParam;
+void TVF::reset(const TimbreParam::PartialParam *newPartialParam, unsigned int basePitch) {
+	partialParam = newPartialParam;
 
 	unsigned int key = partial->getPoly()->getKey();
 	unsigned int velocity = partial->getPoly()->getVelocity();
 
 	Tables *tables = &partial->getSynth()->tables;
 
-	baseCutoff = calcBaseCutoff(partialParam, basePitch, key);
+	baseCutoff = calcBaseCutoff(newPartialParam, basePitch, key);
 
-	int newLevelMult = velocity * partialParam->tvf.envVeloSensitivity;
+	int newLevelMult = velocity * newPartialParam->tvf.envVeloSensitivity;
 	newLevelMult >>= 6;
-	newLevelMult += 109 - partialParam->tvf.envVeloSensitivity;
-	newLevelMult += ((signed)key - 60) >> (4 - partialParam->tvf.envDepthKeyfollow);
+	newLevelMult += 109 - newPartialParam->tvf.envVeloSensitivity;
+	newLevelMult += ((signed)key - 60) >> (4 - newPartialParam->tvf.envDepthKeyfollow);
 	if (newLevelMult < 0) {
 		newLevelMult = 0;
 	}
-	newLevelMult *= partialParam->tvf.envDepth;
+	newLevelMult *= newPartialParam->tvf.envDepth;
 	newLevelMult >>= 6;
 	if (newLevelMult > 255) {
 		newLevelMult = 255;
 	}
 	levelMult = newLevelMult;
 
-	if (partialParam->tvf.envTimeKeyfollow != 0) {
-		keyTimeSubtraction = ((signed)key - 60) >> (5 - partialParam->tvf.envTimeKeyfollow);
+	if (newPartialParam->tvf.envTimeKeyfollow != 0) {
+		keyTimeSubtraction = ((signed)key - 60) >> (5 - newPartialParam->tvf.envTimeKeyfollow);
 	} else {
 		keyTimeSubtraction = 0;
 	}
 
-	int newTarget = (newLevelMult * partialParam->tvf.envLevel[0]) >> 8;
-	int envTimeSetting = partialParam->tvf.envTime[0] - keyTimeSubtraction;
+	int newTarget = (newLevelMult * newPartialParam->tvf.envLevel[0]) >> 8;
+	int envTimeSetting = newPartialParam->tvf.envTime[0] - keyTimeSubtraction;
 	int newIncrement;
 	if (envTimeSetting <= 0) {
 		newIncrement = (0x80 | 127);

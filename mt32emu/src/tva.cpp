@@ -29,14 +29,14 @@ const int MAX_CURRENT_AMP = 0xFF * TVA_TARGET_AMP_MULT;
 // CONFIRMED: Matches a table in ROM - haven't got around to coming up with a formula for it yet.
 static Bit8u biasLevelToAmpSubtractionCoeff[13] = {255, 187, 137, 100, 74, 54, 40, 29, 21, 15, 10, 5, 0};
 
-TVA::TVA(const Partial *partial) :
-	partial(partial), system(&partial->getSynth()->mt32ram.system) {
+TVA::TVA(const Partial *usePartial) :
+	partial(usePartial), system(&usePartial->getSynth()->mt32ram.system) {
 }
 
-void TVA::setAmpIncrement(Bit8u ampIncrement) {
-	this->ampIncrement = ampIncrement;
+void TVA::setAmpIncrement(Bit8u newAmpIncrement) {
+	ampIncrement = newAmpIncrement;
 
-	largeAmpInc = ampIncrement & 0x7F;
+	largeAmpInc = newAmpIncrement & 0x7F;
 	// FIXME: We could use a table for this in future
 	largeAmpInc = (unsigned int)(EXP10F((largeAmpInc - 1) / 26.0f) * 256.0f);
 }
@@ -174,11 +174,11 @@ int calcKeyTimeSubtraction(Bit8u envTimeKeyfollow, int key) {
 	return (key - 60) >> (5 - envTimeKeyfollow); // PORTABILITY NOTE: Assumes arithmetic shift
 }
 
-void TVA::reset(const Part *part, const PatchCache *patchCache, const MemParams::RhythmTemp *rhythmTemp) {
-	this->part = part;
-	this->partialParam = patchCache->partialParam;
-	this->patchTemp = part->getPatchTemp();
-	this->rhythmTemp = rhythmTemp;
+void TVA::reset(const Part *newPart, const PatchCache *newPatchCache, const MemParams::RhythmTemp *newRhythmTemp) {
+	part = newPart;
+	partialParam = newPatchCache->partialParam;
+	patchTemp = newPart->getPatchTemp();
+	rhythmTemp = newRhythmTemp;
 
 	playing = true;
 
@@ -192,7 +192,7 @@ void TVA::reset(const Part *part, const PatchCache *patchCache, const MemParams:
 	biasAmpSubtraction = calcBiasAmpSubtractions(partialParam, key);
 	veloAmpSubtraction = calcVeloAmpSubtraction(partialParam->tva.veloSensitivity, velocity);
 
-	int newTargetAmp = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
+	int newTargetAmp = calcBasicAmp(tables, partial, system, partialParam, patchTemp, newRhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
 
 	if (partialParam->tva.envTime[0] == 0) {
 		// Initially go to the TVA_PHASE_ATTACK target amp, and spend the next phase going from there to the TVA_PHASE_2 target amp

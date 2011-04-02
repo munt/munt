@@ -19,8 +19,8 @@
 
 namespace MT32Emu {
 
-Poly::Poly(Part *part) {
-	this->part = part;
+Poly::Poly(Part *usePart) {
+	part = usePart;
 	key = 255;
 	velocity = 255;
 	sustain = false;
@@ -31,20 +31,20 @@ Poly::Poly(Part *part) {
 	state = POLY_Inactive;
 }
 
-void Poly::reset(unsigned int key, unsigned int velocity, bool canSustain, Partial **partials) {
+void Poly::reset(unsigned int newKey, unsigned int newVelocity, bool newSustain, Partial **newPartials) {
 	if (isActive()) {
 		// FIXME: Throw out some big ugly debug output with a lot of exclamation marks - we should never get here
 		abort();
 	}
 
-	this->key = key;
-	this->velocity = velocity;
-	this->sustain = canSustain;
+	key = newKey;
+	velocity = newVelocity;
+	sustain = newSustain;
 
 	activePartialCount = 0;
 	for (int i = 0; i < 4; i++) {
-		this->partials[i] = partials[i];
-		if (partials[i] != NULL) {
+		partials[i] = newPartials[i];
+		if (newPartials[i] != NULL) {
 			activePartialCount++;
 			state = POLY_Playing;
 		}
