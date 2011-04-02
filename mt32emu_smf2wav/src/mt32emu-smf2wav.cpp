@@ -338,7 +338,7 @@ int main(int argc, char *argv[]) {
 	char *cmd = argv[0];
 	unsigned int bufferSize = DEFAULT_BUFFER_SIZE;
 	unsigned int sampleRate = DEFAULT_SAMPLE_RATE;
-	unsigned int endAfter = 0;
+	unsigned int endAfter = UINT_MAX;
 	bool renderUntilInactive = true;
 
 	while ((ch = getopt(argc, argv, "b:e:fhqo:r:s:t")) != -1) {
