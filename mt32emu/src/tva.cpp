@@ -174,9 +174,9 @@ int calcKeyTimeSubtraction(Bit8u envTimeKeyfollow, int key) {
 	return (key - 60) >> (5 - envTimeKeyfollow); // PORTABILITY NOTE: Assumes arithmetic shift
 }
 
-void TVA::reset(const Part *newPart, const PatchCache *newPatchCache, const MemParams::RhythmTemp *newRhythmTemp) {
+void TVA::reset(const Part *newPart, const TimbreParam::PartialParam *newPartialParam, const MemParams::RhythmTemp *newRhythmTemp) {
 	part = newPart;
-	partialParam = newPatchCache->partialParam;
+	partialParam = newPartialParam;
 	patchTemp = newPart->getPatchTemp();
 	rhythmTemp = newRhythmTemp;
 

@@ -56,7 +56,7 @@ private:
 	void process();
 public:
 	TVP(const Partial *partial);
-	void reset(const Part *part, const PatchCache *patchCache);
+	void reset(const Part *part, const TimbreParam::PartialParam *partialParam);
 	Bit32u getBasePitch() const;
 	Bit16u nextPitch();
 	void startDecay();

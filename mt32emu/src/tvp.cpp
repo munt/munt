@@ -123,9 +123,9 @@ static Bit32s calcTargetPitchOffsetWithoutLFO(const TimbreParam::PartialParam *p
 	return targetPitchOffsetWithoutLFO;
 }
 
-void TVP::reset(const Part *usePart, const PatchCache *patchCache) {
+void TVP::reset(const Part *usePart, const TimbreParam::PartialParam *usePartialParam) {
 	part = usePart;
-	partialParam = patchCache->partialParam;
+	partialParam = usePartialParam;
 	patchTemp = part->getPatchTemp();
 
 	unsigned int key = partial->getPoly()->getKey();

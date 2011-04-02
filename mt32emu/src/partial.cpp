@@ -80,12 +80,12 @@ int Partial::getKey() const {
 	}
 }
 
-void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial) {
-	if (usePoly == NULL || useCache == NULL) {
-		synth->printDebug("*** Error: Starting partial for owner %d, usePoly=%s, useCache=%s", ownerPart, usePoly == NULL ? "*** NULL ***" : "OK", useCache == NULL ? "*** NULL ***" : "OK");
+void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *usePatchCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial) {
+	if (usePoly == NULL || usePatchCache == NULL) {
+		synth->printDebug("*** Error: Starting partial for owner %d, usePoly=%s, usePatchCache=%s", ownerPart, usePoly == NULL ? "*** NULL ***" : "OK", usePatchCache == NULL ? "*** NULL ***" : "OK");
 		return;
 	}
-	patchCache = useCache;
+	patchCache = usePatchCache;
 	poly = usePoly;
 	mixType = patchCache->structureMix;
 	structurePosition = patchCache->structurePosition;
@@ -142,8 +142,8 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	intPCMPosition = 0;
 	pair = pairPartial;
 	alreadyOutputed = false;
-	tva->reset(part, patchCache, rhythmTemp);
-	tvp->reset(part, patchCache);
+	tva->reset(part, patchCache->partialParam, rhythmTemp);
+	tvp->reset(part, patchCache->partialParam);
 	tvf->reset(patchCache->partialParam, tvp->getBasePitch());
 	memset(history, 0, sizeof(history));
 }

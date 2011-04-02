@@ -76,7 +76,7 @@ private:
 
 public:
 	TVA(const Partial *partial);
-	void reset(const Part *part, const PatchCache *patchCache, const MemParams::RhythmTemp *rhythmTemp);
+	void reset(const Part *part, const TimbreParam::PartialParam *partialParam, const MemParams::RhythmTemp *rhythmTemp);
 	float nextAmp();
 	void recalcSustain();
 	void startDecay();
