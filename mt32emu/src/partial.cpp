@@ -245,8 +245,10 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			// The modifier may not be supposed to be added to the cutoff at all -
 			// it may for example need to be multiplied in some way.
 			filtVal += tvf->nextCutoffModifier();
-			if (filtVal > 255.0f)
-				filtVal = 255.0f;
+
+			// FIXME: sample analysis suggests there is no saturation
+//			if (filtVal > 255.0f)
+//				filtVal = 255.0f;
 			float freqsum;
 			if (filtVal < 128) {
 				// We really don't want the filter to attenuate samples below cutoff 50
