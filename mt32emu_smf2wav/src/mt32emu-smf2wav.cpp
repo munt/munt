@@ -342,7 +342,7 @@ int main(int argc, char *argv[]) {
 	unsigned int endAfter = 0;
 	bool renderUntilInactive = true;
 
-	while ((ch = getopt(argc, argv, "b:fhqo:r:s:")) != -1) {
+	while ((ch = getopt(argc, argv, "b:e:fhqo:r:s:t")) != -1) {
 		switch (ch) {
 		case 'b':
 			bufferSize = atoi(optarg);
