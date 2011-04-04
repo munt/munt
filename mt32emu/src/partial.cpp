@@ -273,7 +273,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 
 			// Correct resAmp for cutoff in range 50..60
 			if (cutoffVal < 138) {
-				resAmp *= (1.0f - (138 - cutoffVal) / 30.0f);
+				resAmp *= (1.0f - (138 - cutoffVal) / 10.0f);
 			}
 
 			// Produce filtered square wave with 2 cosine waves on slopes
