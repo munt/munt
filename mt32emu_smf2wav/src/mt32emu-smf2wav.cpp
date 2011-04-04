@@ -130,13 +130,13 @@ static bool playSysexFile(MT32Emu::Synth *synth, char *syxFileName) {
 					for (long i = 0; i < len; i++) {
 						if (syxbuf[i] == 0xF0) {
 							if (start != -1) {
-								fprintf(stderr, "Started a new sysex message before the last finished - sysex file '%s' may be in an unsupported format.", syxFileName);
+								fprintf(stderr, "Started a new sysex message before the last finished - sysex file '%s' may be in an unsupported format.\n", syxFileName);
 							}
 							start = i;
 						}
 						else if (syxbuf[i] == 0xF7) {
 							if (start == -1) {
-								fprintf(stderr, "Ended a sysex message without a start byte - sysex file '%s' may be in an unsupported format.", syxFileName);
+								fprintf(stderr, "Ended a sysex message without a start byte - sysex file '%s' may be in an unsupported format.\n", syxFileName);
 							} else {
 								synth->playSysex((MT32Emu::Bit8u*)(syxbuf + start), i - start + 1);
 							}
@@ -161,26 +161,39 @@ static bool playSysexFile(MT32Emu::Synth *synth, char *syxFileName) {
 }
 
 /**
- * Render numFrames frames to the buffer.
- * bufferFrameSize determines the maximum number of frames to be rendered by the emulator in one pass.
+ * Render numSamples samples to the buffer.
+ * bufferSampleSize determines the maximum number of samples to be rendered by the emulator in one pass.
  * This can have a big impact on performance (more at a time=better).
  */
-static void render(MT32Emu::Synth *synth, MT32Emu::Bit16s sampleBuffer[], unsigned int bufferFrameSize, FILE *dstFile, unsigned int numFrames) {
-	while(numFrames > 0) {
-		unsigned int framesRendered = numFrames > bufferFrameSize ? bufferFrameSize : numFrames;
-		synth->render(sampleBuffer, framesRendered);
-		for (unsigned int i = 0; i < framesRendered * 2; i++) {
-			fputc(sampleBuffer[i] & 0xFF, dstFile);
-			fputc((sampleBuffer[i] >> 8) & 0xFF, dstFile);
+static unsigned int render(MT32Emu::Synth *synth, MT32Emu::Bit16s sampleBuffer[], unsigned int bufferSampleSize, FILE *dstFile, unsigned int numSamples, bool &waitingForNoise) {
+	unsigned int skippedSamples = 0;
+	unsigned int renderedSamples = numSamples;
+	while (numSamples > 0) {
+		unsigned int renderedSamplesThisPass = numSamples > bufferSampleSize ? bufferSampleSize : numSamples;
+		synth->render(sampleBuffer, renderedSamplesThisPass);
+		for (unsigned int i = 0; i < renderedSamplesThisPass; i++) {
+			if (waitingForNoise) {
+				if (sampleBuffer[i] == 0 && sampleBuffer[i + 1] == 0) {
+					skippedSamples++;
+					continue;
+				}
+				waitingForNoise = false;
+			}
+			fputc(sampleBuffer[i * 2] & 0xFF, dstFile);
+			fputc((sampleBuffer[i * 2] >> 8) & 0xFF, dstFile);
+			fputc(sampleBuffer[i * 2 + 1] & 0xFF, dstFile);
+			fputc((sampleBuffer[i * 2 + 1] >> 8) & 0xFF, dstFile);
 		}
-		numFrames -= framesRendered;
+		numSamples -= renderedSamplesThisPass;
 	}
+	return renderedSamples - skippedSamples;
 }
 
-static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu::SynthProperties &synthProperties, unsigned int bufferSize, unsigned int endAfter, bool renderUntilInactive) {
+static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu::SynthProperties &synthProperties, unsigned int bufferSize, unsigned int endAfter, bool renderUntilInactive, bool recordInitialSilence) {
 	MT32Emu::Synth *synth = new MT32Emu::Synth();
 	MT32Emu::Bit16s *sampleBuffer = NULL;
 	FILE *dstFile;
+	bool waitingForNoise = !recordInitialSilence;
 	if (synth->open(synthProperties)) {
 		if (syxFileName != NULL) {
 			playSysexFile(synth, syxFileName);
@@ -191,10 +204,11 @@ static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu
 			if (writeWAVEHeader(dstFile, synthProperties.sampleRate)) {
 				int unterminatedSysexLen = 0;
 				unsigned char *unterminatedSysex = NULL;
-				unsigned long playedSamples = 0;
+				unsigned long renderedSamples = 0;
+				unsigned long writtenSamples = 0;
 				for (;;) {
 					smf_event_t *event = smf_get_next_event(smf);
-					unsigned long eventSamples;
+					unsigned long eventSampleIx;
 
 					if (event == NULL) {
 						break;
@@ -202,20 +216,20 @@ static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu
 
 					assert(event->track->track_number >= 0);
 
-					eventSamples = secondsToSamples(event->time_seconds, synthProperties.sampleRate);
-					if (eventSamples < playedSamples) {
+					eventSampleIx = secondsToSamples(event->time_seconds, synthProperties.sampleRate);
+					if (eventSampleIx < renderedSamples) {
 						fprintf(stderr, "Event went back in time!\n");
 					} else {
 						if (sampleBuffer == NULL) {
 							sampleBuffer = new MT32Emu::Bit16s[bufferSize / 2];
 						}
-						if (eventSamples > endAfter) {
-							eventSamples = endAfter;
+						if (eventSampleIx > endAfter) {
+							eventSampleIx = endAfter;
 						}
-						unsigned int renderLength = eventSamples - playedSamples;
-						render(synth, sampleBuffer, bufferSize / 4, dstFile, renderLength);
-						playedSamples += renderLength;
-						if (eventSamples == endAfter) {
+						unsigned int renderLength = eventSampleIx - renderedSamples;
+						writtenSamples += render(synth, sampleBuffer, bufferSize / 4, dstFile, renderLength, waitingForNoise);
+						renderedSamples += renderLength;
+						if (eventSampleIx == endAfter) {
 							break;
 						}
 					}
@@ -285,15 +299,15 @@ static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu
 					}
 				}
 				if (renderUntilInactive) {
-					while (playedSamples < endAfter && synth->isActive()) {
-						// FIXME: Very inefficient, use a bigger buffer
+					while (renderedSamples < endAfter && synth->isActive()) {
+						// FIXME: Very inefficient, perhaps we should add a renderWhileActive() to Synth.
 						MT32Emu::Bit16s tmpBuffer[2];
-						render(synth, tmpBuffer, 1, dstFile, 1);
-						playedSamples++;
+						writtenSamples += render(synth, tmpBuffer, 1, dstFile, 1, waitingForNoise);
+						renderedSamples++;
 					}
 				}
 				delete[] unterminatedSysex;
-				if (!fillWAVESizes(dstFile, playedSamples)) {
+				if (!fillWAVESizes(dstFile, writtenSamples)) {
 					fprintf(stderr, "Error writing final sizes to WAVE header\n");
 				}
 			} else {
@@ -318,6 +332,7 @@ static void printUsage(char *cmd) {
 	printVersion();
 	fprintf(stdout, "\nusage: %s [arguments] <SMF MIDI file>\n\n", cmd);
 	fprintf(stdout, "Arguments:\n");
+	fprintf(stdout, " -a              Record silent samples at the start of the render\n");
 	fprintf(stdout, " -b              Buffer size (in bytes) (minimum: 4, default: %d)\n", DEFAULT_BUFFER_SIZE);
 	fprintf(stdout, " -e              End after rendering at most this many samples. 0=unlimited (default: 0)\n");
 	fprintf(stdout, " -f              Force overwrite of output file if already present\n");
@@ -340,9 +355,13 @@ int main(int argc, char *argv[]) {
 	unsigned int sampleRate = DEFAULT_SAMPLE_RATE;
 	unsigned int endAfter = UINT_MAX;
 	bool renderUntilInactive = true;
+	bool recordInitialSilence = false;
 
-	while ((ch = getopt(argc, argv, "b:e:fhqo:r:s:t")) != -1) {
+	while ((ch = getopt(argc, argv, "ab:e:fho:qr:s:t")) != -1) {
 		switch (ch) {
+		case 'a':
+			recordInitialSilence = true;
+			break;
 		case 'b':
 			bufferSize = atoi(optarg);
 			if (bufferSize < 4) {
@@ -359,6 +378,12 @@ int main(int argc, char *argv[]) {
 		case 'f':
 			force = true;
 			break;
+		case 'o':
+			dstFileNameArg = optarg;
+			break;
+		case 'q':
+			quiet = true;
+			break;
 		case 'r':
 			sampleRate = atoi(optarg);
 			break;
@@ -367,11 +392,6 @@ int main(int argc, char *argv[]) {
 			break;
 		case 't':
 			renderUntilInactive = false;
-		case 'o':
-			dstFileNameArg = optarg;
-			break;
-		case 'q':
-			quiet = true;
 			break;
 		case '?':
 		case 'h':
@@ -422,7 +442,7 @@ int main(int argc, char *argv[]) {
 	if (smf != NULL) {
 		if (!quiet) {
 			char *decoded = smf_decode(smf);
-			fprintf(stdout, "%s.", decoded);
+			fprintf(stdout, "%s.\n", decoded);
 			free(decoded);
 		}
 		assert(smf->number_of_tracks >= 1);
@@ -430,7 +450,7 @@ int main(int argc, char *argv[]) {
 		synthProperties.sampleRate = sampleRate;
 		synthProperties.useReverb = true;
 		synthProperties.useDefaultReverb = true;
-		processSMF(syxFileName, smf, dstFileName, synthProperties, bufferSize, endAfter, renderUntilInactive);
+		processSMF(syxFileName, smf, dstFileName, synthProperties, bufferSize, endAfter, renderUntilInactive, recordInitialSilence);
 		smf_delete(smf);
 	} else {
 		fprintf(stderr, "Error parsing SMF file '%s'.\n", srcFileName);
