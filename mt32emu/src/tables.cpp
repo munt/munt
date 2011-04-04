@@ -22,134 +22,19 @@
 #include "mt32emu.h"
 #include "mmath.h"
 
-namespace MT32Emu {
+using namespace MT32Emu;
 
-//Envelope time keyfollow exponential coefficients
-static const double tkcatconst[5] = {0.0, 0.005853144, 0.011148054, 0.019086143, 0.043333215};
-static const double tkcatmult[5] = {1.0, 1.058245688, 1.048488989, 1.016049301, 1.097538067};
-
-// Begin filter stuff
-
-// Pre-warp the coefficients of a numerator or denominator.
-// Note that a0 is assumed to be 1, so there is no wrapping
-// of it.
-static void prewarp(double *a1, double *a2, double fc, double fs) {
-	double wp;
-
-	wp = 2.0 * fs * tan(DOUBLE_PI * fc / fs);
-
-	*a2 = *a2 / (wp * wp);
-	*a1 = *a1 / wp;
+Tables::Tables() {
+	initialised = false;
 }
 
-// Transform the numerator and denominator coefficients
-// of s-domain biquad section into corresponding
-// z-domain coefficients.
-//
-//      Store the 4 IIR coefficients in array pointed by coef
-//      in following order:
-//             beta1, beta2    (denominator)
-//             alpha1, alpha2  (numerator)
-//
-// Arguments:
-//             a0-a2   - s-domain numerator coefficients
-//             b0-b2   - s-domain denominator coefficients
-//             k               - filter gain factor. initially set to 1
-//                                and modified by each biquad section in such
-//                                a way, as to make it the coefficient by
-//                                which to multiply the overall filter gain
-//                                in order to achieve a desired overall filter gain,
-//                                specified in initial value of k.
-//             fs             - sampling rate (Hz)
-//             coef    - array of z-domain coefficients to be filled in.
-//
-// Return:
-//             On return, set coef z-domain coefficients
-static void bilinear(double a0, double a1, double a2, double b0, double b1, double b2, double *k, double fs, float *coef) {
-	double ad, bd;
 
-	// alpha (Numerator in s-domain)
-	ad = 4. * a2 * fs * fs + 2. * a1 * fs + a0;
-	// beta (Denominator in s-domain)
-	bd = 4. * b2 * fs * fs + 2. * b1 * fs + b0;
-
-	// update gain constant for this section
-	*k *= ad / bd;
-
-	// Denominator
-	*coef++ = (float)((2. * b0 - 8. * b2 * fs * fs) / bd);           // beta1
-	*coef++ = (float)((4. * b2 * fs * fs - 2. * b1 * fs + b0) / bd); // beta2
-
-	// Nominator
-	*coef++ = (float)((2. * a0 - 8. * a2 * fs * fs) / ad);           // alpha1
-	*coef = (float)((4. * a2 * fs * fs - 2. * a1 * fs + a0) / ad);   // alpha2
-}
-
-// a0-a2: numerator coefficients
-// b0-b2: denominator coefficients
-// fc: Filter cutoff frequency
-// fs: sampling rate
-// k: overall gain factor
-// coef: pointer to 4 iir coefficients
-static void szxform(double *a0, double *a1, double *a2, double *b0, double *b1, double *b2, double fc, double fs, double *k, float *coef) {
-	// Calculate a1 and a2 and overwrite the original values
-	prewarp(a1, a2, fc, fs);
-	prewarp(b1, b2, fc, fs);
-	bilinear(*a0, *a1, *a2, *b0, *b1, *b2, k, fs, coef);
-}
-
-static void initFilter(float fs, float fc, float *icoeff, float Q) {
-	float *coef;
-	double a0, a1, a2, b0, b1, b2;
-
-	double k = 1.0;    // Set overall filter gain factor
-	coef = icoeff + 1; // Skip k, or gain
-
-	// Section 1
-	a0 = 1.0;
-	a1 = 0;
-	a2 = 0;
-	b0 = 1.0;
-	b1 = 0.765367 / Q;
-	//b1 = 0.5176387 / Q; // Divide by resonance or Q
-	b2 = 1.0;
-	szxform(&a0, &a1, &a2, &b0, &b1, &b2, fc, fs, &k, coef);
-	coef += 4;         // Point to next filter section
-
-	// Section 2
-	a0 = 1.0;
-	a1 = 0;
-	a2 = 0;
-	b0 = 1.0;
-	b1 = 1.847759 / Q;
-	//b1 = 1.414214  / Q;
-	b2 = 1.0;
-	szxform(&a0, &a1, &a2, &b0, &b1, &b2, fc, fs, &k, coef);
-	coef += 4;         // Point to next filter section
-
-	/*
-	// Section 3
-	a0 = 1.0;
-	a1 = 0;
-	a2 = 0;
-	b0 = 1.0;
-	b1 = 1.931852 / Q;
-	b2 = 1.0;
-	szxform(&a0, &a1, &a2, &b0, &b1, &b2, fc, fs, &k, coef);
-	*/
-	icoeff[0] = (float)k;
-}
-
-void Tables::initFiltCoeff(float samplerate) {
-	for (int j = 0; j < FILTERGRAN; j++) {
-		for (int res = 0; res < 31; res++) {
-			float tres = resonanceFactor[res];
-			initFilter((float)samplerate, (float)j, filtCoeff[j][res], tres);
-		}
+void Tables::init(Synth *synth) {
+	if (initialised) {
+		return;
 	}
-}
+	initialised = true;
 
-void Tables::initMT32ConstantTables(Synth *synth) {
 	int lf;
 	synth->printDebug("Initialising Constant Tables");
 	for (lf = 0; lf <= 100; lf++) {
@@ -193,33 +78,8 @@ void Tables::initMT32ConstantTables(Synth *synth) {
 		//synth->printDebug("%d: %d", i, pulseWidth100To255[i]);
 	}
 
-	for (int res = 0; res < 31; res++) {
-		resonanceFactor[res] = POWF((float)res / 30.0f, 5.0f) + 1.0f;
-	}
-
 	for (int i = 0; i < 65536; i++) {
 		// Aka (slightly slower): EXP2F(pitchVal / 4096.0f - 16.0f) * 32000.0f
 		pitchToFreq[i] = EXP2F(i / 4096.0f - 1.034215715f);
 	}
-}
-
-Tables::Tables() {
-	initialisedSampleRate = 0.0f;
-}
-
-bool Tables::init(Synth *synth, float sampleRate) {
-	if (sampleRate <= 0.0f) {
-		synth->printDebug("Bad sampleRate (%f <= 0.0f)", sampleRate);
-		return false;
-	}
-	if (initialisedSampleRate == 0.0f) {
-		initMT32ConstantTables(synth);
-	}
-	if (initialisedSampleRate != sampleRate) {
-		initFiltCoeff(sampleRate);
-		initialisedSampleRate = sampleRate;
-	}
-	return true;
-}
-
 }

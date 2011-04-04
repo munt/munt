@@ -20,8 +20,6 @@
 
 namespace MT32Emu {
 
-const int FILTERGRAN = 16000;
-
 const int WGAMP = 16384;
 
 const float RESAMPFACTOR = 512.0f; // Found from sample analysis
@@ -29,14 +27,12 @@ const float RESAMPMAX = 1.75f; // Found from sample analysis
 const float RESAMPFADE = 0.1f; // Found from sample analysis
 
 const int MIDDLEC = 60;
-const int MIDDLEA = 69; // By this I mean "A above middle C"
 
 class Synth;
 
 class Tables {
-	float initialisedSampleRate;
-	void initMT32ConstantTables(Synth *synth);
-	void initFiltCoeff(float samplerate);
+	bool initialised;
+
 public:
 	// Constant LUTs
 
@@ -57,15 +53,10 @@ public:
 	// CONFIRMED:
 	Bit8u pulseWidth100To255[101];
 
-	float resonanceFactor[31];
-
 	float pitchToFreq[65536];
 
-	// LUT varying with sample rate
-	float filtCoeff[FILTERGRAN][31][12];
-
 	Tables();
-	bool init(Synth *synth, float sampleRate);
+	void init(Synth *synth);
 };
 
 }
