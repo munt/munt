@@ -388,11 +388,9 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			if (wavePos > wavePeriod) {
 				wavePos -= wavePeriod;
 			}
-
 			float filtVal = tvf->getBaseCutoff();
 			// Sample analysis suggests that the modifier is simply added directly to filtVal.
 			filtVal += tvf->nextCutoffModifier();
-
 			float freqsum;
 			if (filtVal < 128) {
 				// We really don't want the filter to attenuate samples below cutoff 50
@@ -423,7 +421,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			// Instead, we attenuate samples below cutoff 50 another way
 			if (filtVal < 128) {
 				// Found by sample analysis
-				sample *= EXP2F(-0.048820569f * (128 - filtVal));
+				sample *= EXP2F(-0.125f * (128 - cutoffVal));
 			}
 
 			// Multiply sample with current TVA value
