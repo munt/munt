@@ -22,7 +22,7 @@ namespace MT32Emu {
 
 const int FILTERGRAN = 16000;
 
-const int WGAMP = 15700; // Found from sample analysis
+const int WGAMP = 16384;
 
 const int MIDDLEC = 60;
 const int MIDDLEA = 69; // By this I mean "A above middle C"
