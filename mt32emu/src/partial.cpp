@@ -213,6 +213,153 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			sample *= amp;
 		} else {
 			// Render synthesised waveform
+#ifndef LINEAR_WG
+			float resAmp = powf(RESAMPFACTOR, -(1.0f - patchCache->srcPartial.tvf.resonance / 30.0f));
+
+			float cutoffVal = tvf->getBaseCutoff();
+			// The modifier may not be supposed to be added to the cutoff at all -
+			// it may for example need to be multiplied in some way.
+			cutoffVal += tvf->nextCutoffModifier();
+
+			// Wave lenght in samples
+			float waveLen = synth->myProp.sampleRate / freq;
+
+			// Anti-aliasing feature
+			if (waveLen < 4.0f) {
+				waveLen = 4.0f;
+			}
+
+			// Init cosineLen
+			float cosineLen = 0.5f * waveLen;
+			if (cutoffVal > 128) {
+				float ft = (cutoffVal - 128) / 128.0f;
+				cosineLen *= EXP2F(-8.0f * ft); // found from sample analysis
+			}
+
+			// Anti-aliasing feature
+			if (cosineLen < 2.0f) {
+				cosineLen = 2.0f;
+				resAmp = 0.0f;
+			}
+
+			// Start playing in center of first cosine segment
+			// relWavePos is shifted by a half of cosineLen
+			float relWavePos = wavePos + 0.5f * cosineLen;
+			if (relWavePos > waveLen) {
+				relWavePos -= waveLen;
+			}
+
+			// Ratio of negative segment to waveLen
+			float pulseLen = 0.5f;
+			if (pulseWidthVal > 128) {
+				// Formula determined from sample analysis.
+				float pt = 0.5f / 127.0f * (pulseWidthVal - 128);
+				pulseLen += (1.239f - pt) * pt;
+			}
+			pulseLen *= waveLen;
+
+			float lLen = pulseLen - cosineLen;
+
+			// Ignore pulsewidths too high for given freq
+			if (lLen < 0.0f) {
+				lLen = 0.0f;
+			}
+
+			// Ignore pulsewidths too high for given freq and cutoff
+			float hLen = waveLen - lLen - 2 * cosineLen;
+			if (hLen < 0.0f) {
+				hLen = 0.0f;
+			}
+
+			// Correct resAmp for cutoff in range 50..60
+			if (cutoffVal < 138) {
+				resAmp *= (1.0f - (138 - cutoffVal) / 30.0f);
+			}
+
+			// Produce filtered square wave with 2 cosine waves on slopes
+
+			// 1st cosine segment
+			if (relWavePos < cosineLen) {
+				sample = -cosf(FLOAT_PI * relWavePos / cosineLen);
+			} else
+
+			// high linear segment
+			if (relWavePos < (cosineLen + hLen)) {
+				sample = 1.f;
+			} else
+
+			// 2nd cosine segment
+			if (relWavePos < (2 * cosineLen + hLen)) {
+				sample = cosf(FLOAT_PI * (relWavePos - (cosineLen + hLen)) / cosineLen);
+			} else {
+
+			// low linear segment
+				sample = -1.f;
+			}
+
+			if (cutoffVal < 128) {
+
+				// Attenuate samples below cutoff 50 another way
+				// Found by sample analysis
+				sample *= EXP2F(-0.125f * (128 - cutoffVal));
+			} else {
+
+				// Add resonance sine. Effective for cutoff > 50 only
+				float resSample = 1.0f;
+				float resAmpFade = 0.0f;
+
+				// Now relWavePos counts from the middle of first cosine
+				relWavePos = wavePos;
+
+				// negative segments
+				if (!(relWavePos < (cosineLen + hLen))) {
+					resSample = -resSample;
+					relWavePos -= cosineLen + hLen;
+				}
+
+				// Resonance sine WG
+				resSample *= sinf(FLOAT_PI * relWavePos / cosineLen);
+
+				// Resonance sine amp
+				resAmpFade = RESAMPMAX - RESAMPFADE * (relWavePos / cosineLen);
+
+				// Now relWavePos set negative to the left from center of any cosine
+				relWavePos = wavePos;
+
+				// negative segment
+				if (!(wavePos < (waveLen - 0.5f * cosineLen))) {
+					relWavePos -= waveLen;
+				} else
+
+				// positive segment
+				if (!(wavePos < (hLen + 0.5f * cosineLen))) {
+					relWavePos -= cosineLen + hLen;
+				}
+
+				// Fading to zero while in first half of cosine segment to avoid jumps in the wave
+				// FIXME: sample analysis suggests that this window isn't linear
+				if (relWavePos < 0.0f) {
+					resAmpFade *= -relWavePos / (0.5f * cosineLen);
+				}
+
+				sample += resSample * resAmp * resAmpFade;
+			}
+
+			// sawtooth waves
+			if ((patchCache->waveform & 1) != 0) {
+				sample *= cosf(FLOAT_2PI * wavePos / waveLen);
+			}
+
+			wavePos++;
+			if (wavePos > waveLen)
+				wavePos -= waveLen;
+
+			// Multiply sample with current TVA value
+			sample *= WGAMP * amp;
+
+#endif
+
+#ifdef LINEAR_WG
 			float wavePeriod = synth->myProp.sampleRate / freq;
 
 			// Confirmed from sample analysis that a partial with a pulseWidth parameter <= 50
@@ -289,6 +436,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 				synth->printDebug("Overdriven amplitude for waveform=%d, freqsum=%f: %f > 32767", patchCache->waveform, freqsum, sample);
 				sample = 32767.0f;
 			}
+#endif
 		}
 
 		// Add sample to buffer
