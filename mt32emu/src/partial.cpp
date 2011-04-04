@@ -560,8 +560,8 @@ bool Partial::produceOutput(Bit16s *partialBuf, unsigned long length) {
 	}
 
 	for (unsigned int i = 0; i < numGenerated; i++) {
-		*partialBuf++ = (Bit16s)(((Bit32s)*myBuf * (Bit32s)stereoVolume.leftvol) >> 16);
-		*partialBuf++ = (Bit16s)(((Bit32s)*myBuf * (Bit32s)stereoVolume.rightvol) >> 16);
+		*partialBuf++ = (Bit16s)(((Bit32s)*myBuf * (Bit32s)stereoVolume.leftvol) >> 14);
+		*partialBuf++ = (Bit16s)(((Bit32s)*myBuf * (Bit32s)stereoVolume.rightvol) >> 14);
 		myBuf++;
 	}
 	if (numGenerated < length) {
