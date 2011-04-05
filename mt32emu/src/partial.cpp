@@ -213,7 +213,6 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			sample *= amp;
 		} else {
 			// Render synthesised waveform
-#ifndef LINEAR_WG
 			float resAmp = EXP2F(-9.0f *(1.0f - patchCache->srcPartial.tvf.resonance / 30.0f));
 
 			float cutoffVal = tvf->getBaseCutoff();
@@ -358,85 +357,6 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 
 			// Multiply sample with current TVA value
 			sample *= WGAMP * amp;
-
-#endif
-
-#ifdef LINEAR_WG
-			float wavePeriod = synth->myProp.sampleRate / freq;
-
-			// Confirmed from sample analysis that a partial with a pulseWidth parameter <= 50
-			// (without any keyfollow) gets a 50% high / low ratio
-			float pulseLen = 0.5f;
-			if (pulseWidthVal > 128) {
-				// Formula determined from sample analysis.
-				float pt = 0.5f / 127.0f * (pulseWidthVal - 128);
-				pulseLen += (1.239f - pt) * pt;
-			}
-
-			pulseLen *= wavePeriod;
-
-			//Square wave
-			if (pulseLen - wavePos >= 1.0f) {
-				sample = -float(WGAMP);
-			} else if (pulseLen - wavePos > 0.0f) {
-				sample = float(2 * WGAMP) * (1.0f + wavePos - pulseLen) - float(WGAMP);
-			} else if (wavePeriod - wavePos >= 1.0f) {
-				sample = float(WGAMP);
-			} else {
-				sample = float(2 * WGAMP) * (wavePeriod - wavePos) - float(WGAMP);
-			}
-
-			wavePos++;
-			if (wavePos > wavePeriod) {
-				wavePos -= wavePeriod;
-			}
-			float filtVal = tvf->getBaseCutoff();
-			// Sample analysis suggests that the modifier is simply added directly to filtVal.
-			filtVal += tvf->nextCutoffModifier();
-			float freqsum;
-			if (filtVal < 128) {
-				// We really don't want the filter to attenuate samples below cutoff 50
-				freqsum = freq;
-			} else {
-				freqsum = EXP2F(8.0f * (((float)filtVal / 128.0f) - 1.0f)) * freq;
-			}
-
-			// Limit filter freq to slightly under the Nyquist frequency to avoid aliasing
-			// FIXME: Move this calculation elsewhere (if it remains necessary at all)
-			float filtergran = 0.484375f * synth->myProp.sampleRate;
-			if (filtergran > FILTERGRAN) {
-				filtergran = FILTERGRAN;
-			}
-			if (freqsum > filtergran) {
-				freqsum = filtergran;
-			}
-
-			sample = (floor((synth->iirFilter)((sample), &history[0], synth->tables.filtCoeff[(Bit32s)freqsum][(int)patchCache->srcPartial.tvf.resonance])));
-
-			if ((patchCache->waveform & 1) != 0) {
-				// Sawtooth waveform:
-				// Confirmed from sample analysis and manuals to be produced simply
-				// by multiplying a square wave with the same parameters by a cosine wave.
-				sample *= cos(FLOAT_2PI * (wavePos - pulseLen) / wavePeriod);
-			}
-
-			// Instead, we attenuate samples below cutoff 50 another way
-			if (filtVal < 128) {
-				// Found by sample analysis
-				sample *= EXP2F(-0.125f * (128 - filtVal));
-			}
-
-			// Multiply sample with current TVA value
-			sample *= amp;
-
-			if (sample < -32768.0f) {
-				synth->printDebug("Overdriven amplitude for waveform=%d, freqsum=%f: %f < -32768", patchCache->waveform, freqsum, sample);
-				sample = -32768.0f;
-			} else if (sample > 32767.0f) {
-				synth->printDebug("Overdriven amplitude for waveform=%d, freqsum=%f: %f > 32767", patchCache->waveform, freqsum, sample);
-				sample = 32767.0f;
-			}
-#endif
 		}
 
 		// Add sample to buffer

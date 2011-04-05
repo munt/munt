@@ -20,8 +20,6 @@
 
 namespace MT32Emu {
 
-const int FILTERGRAN = 16000;
-
 const int WGAMP = 16384;
 
 const float RESAMPMAX = 1.75f; // Found from sample analysis
@@ -35,7 +33,6 @@ class Synth;
 class Tables {
 	float initialisedSampleRate;
 	void initMT32ConstantTables(Synth *synth);
-	void initFiltCoeff(float samplerate);
 public:
 	// Constant LUTs
 
@@ -56,12 +53,7 @@ public:
 	// CONFIRMED:
 	Bit8u pulseWidth100To255[101];
 
-	float resonanceFactor[31];
-
 	float pitchToFreq[65536];
-
-	// LUT varying with sample rate
-	float filtCoeff[FILTERGRAN][31][12];
 
 	Tables();
 	bool init(Synth *synth, float sampleRate);

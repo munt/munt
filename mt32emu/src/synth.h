@@ -95,8 +95,6 @@ struct SynthProperties {
 // function
 typedef void (*recalcStatusCallback)(int percDone);
 
-typedef float (*iir_filter_type)(float input,float *hist1_ptr, const float *coef_ptr);
-
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
 
 const Bit8u SYSEX_MDL_MT32 = 0x16;
@@ -289,8 +287,6 @@ private:
 	Bit8u *paddedTimbreMaxTable;
 
 	bool isEnabled;
-
-	iir_filter_type iirFilter;
 
 	PCMWaveEntry *pcmWaves; // Array
 

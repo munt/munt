@@ -42,53 +42,6 @@ const ControlROMMap ControlROMMaps[7] = {
 	// (Note that all but CM-32L ROM actually have 86 entries for rhythmTemp)
 };
 
-float iir_filter_normal(float input, float *hist1_ptr, const float *coef_ptr) {
-	float *hist2_ptr;
-	float output, new_hist;
-
-	hist2_ptr = hist1_ptr + 1; // next history
-
-	// 1st number of coefficients array is overall input scale factor, or filter gain
-	output = input * (*coef_ptr++);
-
-	output = output - *hist1_ptr * (*coef_ptr++);
-	new_hist = output - *hist2_ptr * (*coef_ptr++); // poles
-
-	output = new_hist + *hist1_ptr * (*coef_ptr++);
-	output = output + *hist2_ptr * (*coef_ptr++);   // zeros
-
-	*hist2_ptr++ = *hist1_ptr;
-	*hist1_ptr++ = new_hist;
-	hist1_ptr++;
-	hist2_ptr++;
-
-	// i = 1
-	output = output - *hist1_ptr * (*coef_ptr++);
-	new_hist = output - *hist2_ptr * (*coef_ptr++); // poles
-
-	output = new_hist + *hist1_ptr * (*coef_ptr++);
-	output = output + *hist2_ptr * (*coef_ptr++);   // zeros
-
-	*hist2_ptr++ = *hist1_ptr;
-	*hist1_ptr++ = new_hist;
-	/*
-	hist1_ptr++;
-	hist2_ptr++;
-
-	// i = 2
-	output = output - *hist1_ptr * (*coef_ptr++);
-	new_hist = output - *hist2_ptr * (*coef_ptr++); // poles
-
-	output = new_hist + *hist1_ptr * (*coef_ptr++);
-	output = output + *hist2_ptr * (*coef_ptr++);   // zeros
-
-	*hist2_ptr++ = *hist1_ptr;
-	*hist1_ptr++ = new_hist;
-	*/
-
-	return(output);
-}
-
 static inline Bit16s clipBit16s(Bit32s a) {
 	// Clamp values above 32767 to 32767, and values below -32768 to -32768
 	if ((a + 32768) & ~65535) {
@@ -554,8 +507,6 @@ bool Synth::open(SynthProperties &useProp) {
 
 	// For resetting mt32 mid-execution
 	mt32default = mt32ram;
-
-	iirFilter = &iir_filter_normal;
 
 	isOpen = true;
 	isEnabled = false;
