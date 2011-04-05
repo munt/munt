@@ -214,7 +214,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 		} else {
 			// Render synthesised waveform
 #ifndef LINEAR_WG
-			float resAmp = powf(RESAMPFACTOR, -(1.0f - patchCache->srcPartial.tvf.resonance / 30.0f));
+			float resAmp = EXP2F(-9.0f *(1.0f - patchCache->srcPartial.tvf.resonance / 30.0f));
 
 			float cutoffVal = tvf->getBaseCutoff();
 			// The modifier may not be supposed to be added to the cutoff at all -
