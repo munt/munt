@@ -363,12 +363,12 @@ bool Synth::open(SynthProperties &useProp) {
 	if (isOpen) {
 		return false;
 	}
+	myProp = useProp;
 	tables.init(this);
 	reverbModel->reset();
 	reverbModel->setSampleRate(useProp.sampleRate);
 	delayReverbModel->reset();
 	delayReverbModel->setSampleRate(useProp.sampleRate);
-	myProp = useProp;
 	if (useProp.baseDir != NULL) {
 		myProp.baseDir = new char[strlen(useProp.baseDir) + 1];
 		strcpy(myProp.baseDir, useProp.baseDir);
