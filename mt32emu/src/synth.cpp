@@ -260,13 +260,11 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 			break;
 		}
 
-		short e;
-		int bit;
-		int u;
 		int order[16] = {0, 9, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 8};
 
-		e = 0;
-		for (u = 0; u < 15; u++) {
+		signed short e = 0;
+		for (int u = 0; u < 15; u++) {
+			int bit;
 			if (order[u] < 8) {
 				bit = (s >> (7 - order[u])) & 0x1;
 			} else {
@@ -274,32 +272,16 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 			}
 			e = e | (short)(bit << (15 - u));
 		}
+		bool negative = e < 0;
+		e = (~e) & 0x7FFFF;
 
-		/*
-		//Bit16s e = (((s & 0x7f) << 4) | ((c & 0x40) << 6) | ((s & 0x80) << 6) | ((c & 0x3f))) << 2;
-		if (e<0) {
-			e = -32767 - e;
-		}
-		int ut = abs(e);
-		int dif = 0x7fff - ut;
-		x = exp(((float)((float)0x8000-(float)dif) / (float)0x1000));
-		e = (int)((float)e * (x/3200));
-		*/
+		// FIXME: Not yet 100% confirmed:
+		float vol = EXP2F(e / -2048.0f) * 32767.0f;
 
-		// File is companded (dB?), convert to linear PCM
-		// MINDB = -96
-		// MAXDB = -15
-		float testval;
-		testval = (float)((~e) & 0x7fff);
-		testval = -(testval / 400.00f);
-		//testval = -(testval / 341.32291666666666666666666666667);
-		float vol = POWF(8.0f, testval / 20) * 32767.0f;
-
-		if (e > 0) {
+		if (negative) {
 			vol = -vol;
 		}
 
-		//pcmROMData[i] = (Bit16s)vol;
 		pcmROMData[i] = (Bit16s)(vol / 2);
 	}
 	if (i != pcmROMSize) {
@@ -316,7 +298,6 @@ bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 		int rAddr = tps[i].pos * 0x800;
 		int rLenExp = (tps[i].len & 0x70) >> 4;
 		int rLen = 0x800 << rLenExp;
-		//printDebug("%f,%d,%d", pTune, tps[i].pitchCoarse, tps[i].pitchFine);
 		if (rAddr + rLen > pcmROMSize) {
 			printDebug("Control ROM error: Wave map entry %d points to invalid PCM address 0x%04X, length 0x%04X", i, rAddr, rLen);
 			return false;
@@ -325,6 +306,9 @@ bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 		pcmWaves[i].len = rLen;
 		pcmWaves[i].loop = (tps[i].len & 0x80) != 0;
 		pcmWaves[i].controlROMPCMStruct = &tps[i];
+		//int pitch = (tps[i].pitchMSB << 8) | tps[i].pitchLSB;
+		//bool unaffectedByMasterTune = (tps[i].len & 0x01) == 0;
+		//printDebug("PCM %d: pos=%d, len=%d, pitch=%d, loop=%s, unaffectedByMasterTune=%s", i, rAddr, rLen, pitch, pcmWaves[i].loop ? "YES" : "NO", unaffectedByMasterTune ? "YES" : "NO");
 	}
 	return false;
 }
