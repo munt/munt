@@ -273,7 +273,7 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 			e = e | (short)(bit << (15 - u));
 		}
 		bool negative = e < 0;
-		e = (~e) & 0x7FFFF;
+		e = (~e) & 0x7FFF;
 
 		// FIXME: Not yet 100% confirmed:
 		float vol = EXP2F(e / -2048.0f) * 32767.0f;
