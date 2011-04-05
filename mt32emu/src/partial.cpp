@@ -213,7 +213,7 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			sample *= amp;
 		} else {
 			// Render synthesised waveform
-			float resAmp = powf(RESAMPFACTOR, -(1.0f - patchCache->srcPartial.tvf.resonance / 30.0f));
+			float resAmp = EXP2F(-9.0f *(1.0f - patchCache->srcPartial.tvf.resonance / 30.0f));
 
 			float cutoffVal = tvf->getBaseCutoff();
 			// The modifier may not be supposed to be added to the cutoff at all -
@@ -338,7 +338,9 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 				// Fading to zero while in first half of cosine segment to avoid jumps in the wave
 				// FIXME: sample analysis suggests that this window isn't linear
 				if (relWavePos < 0.0f) {
-					resAmpFade *= -relWavePos / (0.5f * cosineLen);
+//					resAmpFade *= -relWavePos / (0.5f * cosineLen);                                  // linear
+					resAmpFade *= 0.5f * (1.0f - cosf(FLOAT_PI * relWavePos / (0.5f * cosineLen)));  // full cosine
+//					resAmpFade *= (1.0f - cosf(0.5f * FLOAT_PI * relWavePos / (0.5f * cosineLen)));  // half cosine
 				}
 
 				sample += resSample * resAmp * resAmpFade;

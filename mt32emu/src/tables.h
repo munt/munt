@@ -22,7 +22,6 @@ namespace MT32Emu {
 
 const int WGAMP = 16384;
 
-const float RESAMPFACTOR = 512.0f; // Found from sample analysis
 const float RESAMPMAX = 1.75f; // Found from sample analysis
 const float RESAMPFADE = 0.1f; // Found from sample analysis
 
