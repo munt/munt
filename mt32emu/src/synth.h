@@ -292,7 +292,7 @@ private:
 
 	const ControlROMMap *controlROMMap;
 	Bit8u controlROMData[CONTROL_ROM_SIZE];
-	Bit16s *pcmROMData;
+	float *pcmROMData;
 	int pcmROMSize; // This is in 16-bit samples, therefore half the number of bytes in the ROM
 
 	Bit8s chantable[32];

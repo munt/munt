@@ -148,7 +148,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	memset(history, 0, sizeof(history));
 }
 
-Bit16s Partial::getPCMSample(unsigned int position) {
+float Partial::getPCMSample(unsigned int position) {
 	if (position >= pcmWave->len) {
 		if (!pcmWave->loop) {
 			return 0;
@@ -199,8 +199,8 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			int newIntPCMPosition = (int)newPCMPosition;
 
 			// Linear interpolation
-			int firstSample = synth->pcmROMData[pcmAddr + intPCMPosition];
-			int nextSample = getPCMSample(intPCMPosition + 1);
+			float firstSample = synth->pcmROMData[pcmAddr + intPCMPosition];
+			float nextSample = getPCMSample(intPCMPosition + 1);
 			sample = firstSample + (nextSample - firstSample) * (pcmPosition - intPCMPosition);
 			if (pcmWave->loop) {
 				newPCMPosition = fmod(newPCMPosition, (float)pcmWave->len);
@@ -208,9 +208,6 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			}
 			pcmPosition = newPCMPosition;
 			intPCMPosition = newIntPCMPosition;
-
-			// Multiply sample with current TVA value
-			sample *= amp;
 		} else {
 			// Render synthesised waveform
 			float resAmp = EXP2F(-9.0f *(1.0f - patchCache->srcPartial.tvf.resonance / 30.0f));
@@ -354,12 +351,15 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 			wavePos++;
 			if (wavePos > waveLen)
 				wavePos -= waveLen;
-
-			// Multiply sample with current TVA value
-			sample *= WGAMP * amp;
 		}
 
-		// Add sample to buffer
+		// Multiply sample with current TVA value
+		sample *= amp;
+
+		// Scale for float->Bit16s
+		// FIXME: We should probably keep the samples as floats until the mixing phase
+		// We need more sample analysis of overdrive effects in the real devices.
+		sample *= 16384;
 		*partialBuf++ = (Bit16s)sample;
 	}
 	// At this point, sampleNum represents the number of samples rendered

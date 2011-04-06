@@ -262,7 +262,7 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 
 		int order[16] = {0, 9, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 8};
 
-		signed short e = 0;
+		signed short log = 0;
 		for (int u = 0; u < 15; u++) {
 			int bit;
 			if (order[u] < 8) {
@@ -270,19 +270,19 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 			} else {
 				bit = (c >> (7 - (order[u] - 8))) & 0x1;
 			}
-			e = e | (short)(bit << (15 - u));
+			log = log | (short)(bit << (15 - u));
 		}
-		bool negative = e < 0;
-		e = (~e) & 0x7FFF;
+		bool negative = log < 0;
+		log = (~log) & 0x7FFF;
 
-		// FIXME: Not yet 100% confirmed:
-		float vol = EXP2F(e / -2048.0f) * 32767.0f;
+		// CONFIRMED from sample analysis to be 99.99%+ accurate
+		float lin = EXP2F(log / -2048.0f);
 
 		if (negative) {
-			vol = -vol;
+			lin = -lin;
 		}
 
-		pcmROMData[i] = (Bit16s)(vol / 2);
+		pcmROMData[i] = lin;
 	}
 	if (i != pcmROMSize) {
 		printDebug("PCM ROM file is too short (expected %d, got %d)", pcmROMSize, i);
@@ -392,7 +392,7 @@ bool Synth::open(SynthProperties &useProp) {
 	// 1MB PCM ROM for CM-32L, LAPC-I, CM-64, CM-500
 	// Note that the size below is given in samples (16-bit), not bytes
 	pcmROMSize = controlROMMap->pcmCount == 256 ? 512 * 1024 : 256 * 1024;
-	pcmROMData = new Bit16s[pcmROMSize];
+	pcmROMData = new float[pcmROMSize];
 
 	printDebug("Loading PCM ROM");
 	if (loadPCMROM("CM32L_PCM.ROM") != LoadResult_OK) {

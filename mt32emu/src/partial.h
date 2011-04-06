@@ -60,7 +60,7 @@ private:
 	Bit16s *mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, unsigned long len);
 	Bit16s *mixBuffersRing(Bit16s *buf1, Bit16s *buf2, unsigned long len);
 
-	Bit16s getPCMSample(unsigned int position);
+	float getPCMSample(unsigned int position);
 
 public:
 	const PatchCache *patchCache;
