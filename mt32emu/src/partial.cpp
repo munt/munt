@@ -24,6 +24,16 @@
 
 using namespace MT32Emu;
 
+#ifdef INACCURATE_SMOOTH_PAN
+// Mok wanted an option for smoother panning, and we love Mok.
+static const float PAN_NUMERATOR_NORMAL[] = {0.0f, 0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f};
+#else
+// CONFIRMED by Mok: These NUMERATOR values (as bytes, not floats, obviously) are sent exactly like this to the LA32.
+static const float PAN_NUMERATOR_NORMAL[] = {0.0f, 0.0f, 1.0f, 1.0f, 2.0f, 2.0f, 3.0f, 3.0f, 4.0f, 4.0f, 5.0f, 5.0f, 6.0f, 6.0f, 7.0f};
+#endif
+static const float PAN_NUMERATOR_MASTER[] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f};
+static const float PAN_NUMERATOR_SLAVE[]  = {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f};
+
 Partial::Partial(Synth *useSynth, int useDebugPartialNum) :
 	synth(useSynth), debugPartialNum(useDebugPartialNum), tva(new TVA(this)), tvp(new TVP(this)), tvf(new TVF(this)) {
 	ownerPart = -1;
@@ -93,27 +103,22 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	play = true;
 
 	Bit8u panSetting = rhythmTemp != NULL ? rhythmTemp->panpot : part->getPatchTemp()->panpot;
+	float panVal;
 	if (mixType == 3) {
 		if (structurePosition == 0) {
-			if (panSetting > 7) {
-				panSetting = (panSetting - 7) * 2;
-			} else {
-				panSetting = 0;
-			}
+			panVal = PAN_NUMERATOR_MASTER[panSetting];
 		} else {
-			if (panSetting < 7) {
-				panSetting = panSetting * 2;
-			} else {
-				panSetting = 14;
-			}
+			panVal = PAN_NUMERATOR_SLAVE[panSetting];
 		}
 		// Do a normal mix independent of any pair partial.
 		mixType = 0;
 		pairPartial = NULL;
+	} else {
+		panVal = PAN_NUMERATOR_NORMAL[panSetting];
 	}
-	// FIXME: Sample analysis suggests that this is linear, but there are some some quirks that still need to be resolved.
-	// On the real devices, there are only 8 real pan positions.
-	stereoVolume.leftVol = panSetting / 14.0f;
+
+	// FIXME: Sample analysis suggests that the use of panVal is linear, but there are some some quirks that still need to be resolved.
+	stereoVolume.leftVol = panVal / 7.0f;
 	stereoVolume.rightVol = 1.0f - stereoVolume.leftVol;
 
 	if (patchCache->PCMPartial) {
