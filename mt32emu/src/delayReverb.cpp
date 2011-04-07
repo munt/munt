@@ -82,8 +82,8 @@ void DelayReverb::process(const float *inLeft, const float *inRight, float *outL
 		float reverbLeft = buf[(bufIx + leftDelay) % bufSize];
 		float reverbRight = buf[(bufIx + rightDelay) % bufSize];
 
-		outLeft[sampleIx] = (reverbLeft * reverbLevel) + leftSample;
-		outRight[sampleIx] = (reverbRight * reverbLevel) + rightSample;
+		outLeft[sampleIx] = reverbLeft * reverbLevel;
+		outRight[sampleIx] = reverbRight * reverbLevel;
 
 		buf[bufIx] = (reverbLeft * feedbackLevel) + (leftSample + rightSample) / 2.0f;
 

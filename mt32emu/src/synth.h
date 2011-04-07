@@ -317,16 +317,24 @@ private:
 	PartialManager *partialManager;
 	Part *parts[9];
 
-	Bit16s tmpBuffer[MAX_SAMPLE_OUTPUT * 2];
-	float sndbufl[MAX_SAMPLE_OUTPUT];
-	float sndbufr[MAX_SAMPLE_OUTPUT];
-	float outbufl[MAX_SAMPLE_OUTPUT];
-	float outbufr[MAX_SAMPLE_OUTPUT];
+	float tmpBufPartialLeft[MAX_SAMPLE_OUTPUT];
+	float tmpBufPartialRight[MAX_SAMPLE_OUTPUT];
+	float tmpBufMixLeft[MAX_SAMPLE_OUTPUT];
+	float tmpBufMixRight[MAX_SAMPLE_OUTPUT];
+	float tmpBufReverbOutLeft[MAX_SAMPLE_OUTPUT];
+	float tmpBufReverbOutRight[MAX_SAMPLE_OUTPUT];
+
+	Bit16s tmpNonReverbLeft[MAX_SAMPLE_OUTPUT];
+	Bit16s tmpNonReverbRight[MAX_SAMPLE_OUTPUT];
+	Bit16s tmpReverbDryLeft[MAX_SAMPLE_OUTPUT];
+	Bit16s tmpReverbDryRight[MAX_SAMPLE_OUTPUT];
+	Bit16s tmpReverbWetLeft[MAX_SAMPLE_OUTPUT];
+	Bit16s tmpReverbWetRight[MAX_SAMPLE_OUTPUT];
 
 	SynthProperties myProp;
 
 	bool loadPreset(File *file);
-	void doRender(Bit16s * stream, Bit32u len);
+	void doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
 
 	void playAddressedSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len) const;
@@ -388,6 +396,9 @@ public:
 	// The length is in frames, not bytes (in 16-bit stereo,
 	// one frame is 4 bytes).
 	void render(Bit16s *stream, Bit32u len);
+
+	// Renders samples to the specified output streams (any or all of which may be NULL).
+	void renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
 
 	// Returns true when there is at least one active partial, otherwise false.
 	bool isActive() const;

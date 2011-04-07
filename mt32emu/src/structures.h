@@ -179,11 +179,6 @@ struct PCMWaveEntry {
 	ControlROMPCMStruct *controlROMPCMStruct;
 };
 
-struct StereoVolume {
-	Bit16u leftvol;
-	Bit16u rightvol;
-};
-
 // This is basically a per-partial, pre-processed combination of timbre and patch/rhythm settings
 struct PatchCache {
 	bool playPartial;

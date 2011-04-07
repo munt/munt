@@ -113,8 +113,8 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	}
 	// FIXME: Sample analysis suggests that this is linear, but there are some some quirks that still need to be resolved.
 	// On the real devices, there are only 8 real pan positions.
-	stereoVolume.leftvol = panSetting * 32768 / 14;
-	stereoVolume.rightvol = 32768 - stereoVolume.leftvol;
+	stereoVolume.leftVol = panSetting / 14.0f;
+	stereoVolume.rightVol = 1.0f - stereoVolume.leftVol;
 
 	if (patchCache->PCMPartial) {
 		pcmNum = patchCache->pcm;
@@ -158,7 +158,7 @@ float Partial::getPCMSample(unsigned int position) {
 	return synth->pcmROMData[pcmWave->addr + position];
 }
 
-unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length) {
+unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) {
 	if (!isActive() || alreadyOutputed) {
 		return 0;
 	}
@@ -355,18 +355,13 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 
 		// Multiply sample with current TVA value
 		sample *= amp;
-
-		// Scale for float->Bit16s
-		// FIXME: We should probably keep the samples as floats until the mixing phase
-		// We need more sample analysis of overdrive effects in the real devices.
-		sample *= 16384;
-		*partialBuf++ = (Bit16s)sample;
+		*partialBuf++ = sample;
 	}
 	// At this point, sampleNum represents the number of samples rendered
 	return sampleNum;
 }
 
-Bit16s *Partial::mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, unsigned long len) {
+float *Partial::mixBuffersRingMix(float *buf1, float *buf2, unsigned long len) {
 	if (buf1 == NULL) {
 		return NULL;
 	}
@@ -374,24 +369,16 @@ Bit16s *Partial::mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, unsigned long len
 		return buf1;
 	}
 
-	Bit16s *outBuf = buf1;
 	while (len--) {
-		Bit32s result = ((*buf1 * *buf2) >> 16) + *buf1;
-
-		if (result > 32767) {
-			result = 32767;
-		}
-		if (result < -32768) {
-			result = -32768;
-		}
-		*buf1 = (Bit16s)(result);
+		// FIXME: At this point we have no idea whether this is remotely correct...
+		*buf1 = *buf1 * *buf2 + *buf1;
 		buf1++;
 		buf2++;
 	}
-	return outBuf;
+	return buf1;
 }
 
-Bit16s *Partial::mixBuffersRing(Bit16s *buf1, Bit16s *buf2, unsigned long len) {
+float *Partial::mixBuffersRing(float *buf1, float *buf2, unsigned long len) {
 	if (buf1 == NULL) {
 		return NULL;
 	}
@@ -399,15 +386,13 @@ Bit16s *Partial::mixBuffersRing(Bit16s *buf1, Bit16s *buf2, unsigned long len) {
 		return NULL;
 	}
 
-	Bit16s *outBuf = buf1;
 	while (len--) {
-		Bit32s result = (*buf1 * *buf2) >> 16;
-
-		*buf1 = (Bit16s)(result);
+		// FIXME: At this point we have no idea whether this is remotely correct...
+		*buf1 = *buf1 * *buf2;
 		buf1++;
 		buf2++;
 	}
-	return outBuf;
+	return buf1;
 }
 
 bool Partial::hasRingModulatingSlave() const {
@@ -433,7 +418,7 @@ Synth *Partial::getSynth() const {
 	return synth;
 }
 
-bool Partial::produceOutput(Bit16s *partialBuf, unsigned long length) {
+bool Partial::produceOutput(float *leftBuf, float *rightBuf, unsigned long length) {
 	if (!isActive() || alreadyOutputed || isRingModulatingSlave()) {
 		return false;
 	}
@@ -442,10 +427,10 @@ bool Partial::produceOutput(Bit16s *partialBuf, unsigned long length) {
 		return false;
 	}
 
-	Bit16s *myBuf = &myBuffer[0];
-	unsigned long numGenerated = generateSamples(myBuf, length);
+	float *partialBuf = &myBuffer[0];
+	unsigned long numGenerated = generateSamples(partialBuf, length);
 	if (mixType == 1 || mixType == 2) {
-		Bit16s *pairBuf;
+		float *pairBuf;
 		unsigned long pairNumGenerated;
 		if (pair == NULL) {
 			pairBuf = NULL;
@@ -465,27 +450,30 @@ bool Partial::produceOutput(Bit16s *partialBuf, unsigned long length) {
 		}
 		if (pairNumGenerated > 0) {
 			if (mixType == 1) {
-				mixBuffersRingMix(myBuf, pairBuf, pairNumGenerated);
+				mixBuffersRingMix(partialBuf, pairBuf, pairNumGenerated);
 			} else {
-				mixBuffersRing(myBuf, pairBuf, pairNumGenerated);
+				mixBuffersRing(partialBuf, pairBuf, pairNumGenerated);
 			}
 		}
 		if (numGenerated > pairNumGenerated) {
 			if (mixType == 1) {
-				mixBuffersRingMix(myBuf + pairNumGenerated, NULL, numGenerated - pairNumGenerated);
+				mixBuffersRingMix(partialBuf + pairNumGenerated, NULL, numGenerated - pairNumGenerated);
 			} else {
-				mixBuffersRing(myBuf + pairNumGenerated, NULL, numGenerated - pairNumGenerated);
+				mixBuffersRing(partialBuf + pairNumGenerated, NULL, numGenerated - pairNumGenerated);
 			}
 		}
 	}
 
 	for (unsigned int i = 0; i < numGenerated; i++) {
-		*partialBuf++ = (Bit16s)(((Bit32s)*myBuf * (Bit32s)stereoVolume.leftvol) >> 14);
-		*partialBuf++ = (Bit16s)(((Bit32s)*myBuf * (Bit32s)stereoVolume.rightvol) >> 14);
-		myBuf++;
+		*leftBuf++ = partialBuf[i] * stereoVolume.leftVol;
 	}
-	if (numGenerated < length) {
-		memset(partialBuf, 0, sizeof(Bit16s) * 2 * (length - numGenerated));
+	for (unsigned int i = 0; i < numGenerated; i++) {
+		*rightBuf++ = partialBuf[i] * stereoVolume.rightVol;
+	}
+	while (numGenerated < length) {
+		*leftBuf++ = 0.0f;
+		*rightBuf++ = 0.0f;
+		numGenerated++;
 	}
 	return true;
 }

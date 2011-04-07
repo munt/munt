@@ -1053,72 +1053,143 @@ void Synth::reset() {
 	isEnabled = false;
 }
 
-void ProduceOutput1(Bit16s *useBuf, Bit16s *stream, Bit32u len) {
-	int end = len * 2;
-	while (end--) {
-		*stream = clipBit16s((Bit32s)*stream + ((Bit32s)*useBuf++));
-		stream++;
-	}
-}
-
 void Synth::render(Bit16s *stream, Bit32u len) {
-	memset(stream, 0, len * sizeof(Bit16s) * 2);
 	if (!isEnabled) {
+		memset(stream, 0, len * sizeof(Bit16s) * 2);
 		return;
 	}
 	while (len > 0) {
 		Bit32u thisLen = len > MAX_SAMPLE_OUTPUT ? MAX_SAMPLE_OUTPUT : len;
-		doRender(stream, thisLen);
+		doRenderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisLen);
+		for (Bit32u i = 0; i < thisLen; i++) {
+			stream[0] = clipBit16s((Bit32s)tmpNonReverbLeft[i] + (Bit32s)tmpReverbDryLeft[i] + (Bit32s)tmpReverbWetLeft[i]);
+			stream[1] = clipBit16s((Bit32s)tmpNonReverbRight[i] + (Bit32s)tmpReverbDryRight[i] + (Bit32s)tmpReverbWetRight[i]);
+			stream += 2;
+		}
 		len -= thisLen;
-		stream += 2 * thisLen;
 	}
 }
 
-void Synth::doRender(Bit16s *stream, Bit32u len) {
-	if (reverbEnabled) {
+
+static Bit16s *off(Bit16s *stream, Bit32u pos) {
+	return stream == NULL ? NULL : stream + pos;
+}
+
+static void clearIfNonNull(Bit16s *stream, Bit32u len) {
+	if (stream != NULL) {
+		memset(stream, 0, len * 2);
+	}
+}
+
+void Synth::renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len) {
+	if (!isEnabled) {
+		clearIfNonNull(nonReverbLeft, len);
+		clearIfNonNull(nonReverbRight, len);
+		clearIfNonNull(reverbDryLeft, len);
+		clearIfNonNull(reverbDryRight, len);
+		clearIfNonNull(reverbWetLeft, len);
+		clearIfNonNull(reverbWetRight, len);
+		return;
+	}
+	Bit32u pos = 0;
+	while (len > 0) {
+		Bit32u thisLen = len > MAX_SAMPLE_OUTPUT ? MAX_SAMPLE_OUTPUT : len;
+		doRenderStreams(off(nonReverbLeft, pos), off(nonReverbRight, pos), off(reverbDryLeft, pos), off(reverbDryRight, pos), off(reverbWetLeft, pos), off(reverbWetRight, pos), thisLen);
+		len -= thisLen;
+		pos += thisLen;
+	}
+}
+
+static void mix(float *target, const float *stream, Bit32u len) {
+	while (len--) {
+		*target += *stream;
+		stream++;
+		target++;
+	}
+}
+
+static void floatToBit16s(Bit16s *target, const float *source, Bit32u len) {
+	while (len--) {
+		*target = clipBit16s((Bit32s)(*source * 32767.0f));
+		source++;
+		target++;
+	}
+}
+
+static void clearFloats(float *leftBuf, float *rightBuf, Bit32u len) {
+	// FIXME: Use memset() where compatibility is guaranteed (if this turns out to be a win)
+	while (len--) {
+		*leftBuf++ = 0.0f;
+		*rightBuf++ = 0.0f;
+	}
+}
+
+// FIXME: Using more temporary buffers than we need to
+void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len) {
+	clearFloats(&tmpBufMixLeft[0], &tmpBufMixRight[0], len);
+	if (!reverbEnabled) {
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-			if (partialManager->shouldReverb(i)) {
-				if (partialManager->produceOutput(i, &tmpBuffer[0], len)) {
-					ProduceOutput1(&tmpBuffer[0], stream, len);
-				}
+			if (partialManager->produceOutput(i, &tmpBufPartialLeft[0], &tmpBufPartialRight[0], len)) {
+				mix(&tmpBufMixLeft[0], &tmpBufPartialLeft[0], len);
+				mix(&tmpBufMixRight[0], &tmpBufPartialRight[0], len);
 			}
 		}
-		Bit32u m = 0;
-		for (unsigned int i = 0; i < len; i++) {
-			sndbufl[i] = (float)stream[m] / 32767.0f;
-			m++;
-			sndbufr[i] = (float)stream[m] / 32767.0f;
-			m++;
+		if (nonReverbLeft != NULL) {
+			floatToBit16s(nonReverbLeft, &tmpBufMixLeft[0], len);
 		}
-		if (mt32ram.system.reverbMode == 3) {
-			delayReverbModel->process(sndbufl, sndbufr, outbufl, outbufr, len);
-		} else {
-			reverbModel->process(sndbufl, sndbufr, outbufl, outbufr, len);
+		if (nonReverbRight != NULL) {
+			floatToBit16s(nonReverbRight, &tmpBufMixRight[0], len);
 		}
-		m = 0;
-		for (unsigned int i = 0; i < len; i++) {
-			stream[m] = clipBit16s(outbufl[i] * 32767.0f);
-			m++;
-			stream[m] = clipBit16s(outbufr[i] * 32767.0f);
-			m++;
-		}
-		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-			if (!partialManager->shouldReverb(i)) {
-				if (partialManager->produceOutput(i, &tmpBuffer[0], len)) {
-					ProduceOutput1(&tmpBuffer[0], stream, len);
-				}
-			}
-		}
+		clearIfNonNull(reverbDryLeft, len);
+		clearIfNonNull(reverbDryRight, len);
+		clearIfNonNull(reverbWetLeft, len);
+		clearIfNonNull(reverbWetRight, len);
 	} else {
 		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-			if (partialManager->produceOutput(i, &tmpBuffer[0], len)) {
-				ProduceOutput1(&tmpBuffer[0], stream, len);
+			if (!partialManager->shouldReverb(i)) {
+				if (partialManager->produceOutput(i, &tmpBufPartialLeft[0], &tmpBufPartialRight[0], len)) {
+					mix(&tmpBufMixLeft[0], &tmpBufPartialLeft[0], len);
+					mix(&tmpBufMixRight[0], &tmpBufPartialRight[0], len);
+				}
 			}
 		}
+		if (nonReverbLeft != NULL) {
+			floatToBit16s(nonReverbLeft, &tmpBufMixLeft[0], len);
+		}
+		if (nonReverbRight != NULL) {
+			floatToBit16s(nonReverbRight, &tmpBufMixRight[0], len);
+		}
+
+		clearFloats(&tmpBufMixLeft[0], &tmpBufMixRight[0], len);
+		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
+			if (partialManager->shouldReverb(i)) {
+				if (partialManager->produceOutput(i, &tmpBufPartialLeft[0], &tmpBufPartialRight[0], len)) {
+					mix(&tmpBufMixLeft[0], &tmpBufPartialLeft[0], len);
+					mix(&tmpBufMixRight[0], &tmpBufPartialRight[0], len);
+				}
+			}
+		}
+		if (reverbDryLeft != NULL) {
+			floatToBit16s(reverbDryLeft, &tmpBufMixLeft[0], len);
+		}
+		if (reverbDryRight != NULL) {
+			floatToBit16s(reverbDryRight, &tmpBufMixRight[0], len);
+		}
+
+		// FIXME: Note that on the real devices, reverb input and output are signed linear 16-bit (well, kinda, there's some fudging) PCM, not float.
+		if (mt32ram.system.reverbMode == 3) {
+			delayReverbModel->process(&tmpBufMixLeft[0], &tmpBufMixRight[0], &tmpBufReverbOutLeft[0], &tmpBufReverbOutRight[0], len);
+		} else {
+			reverbModel->process(&tmpBufMixLeft[0], &tmpBufMixRight[0], &tmpBufReverbOutLeft[0], &tmpBufReverbOutRight[0], len);
+		}
+		if (reverbWetLeft != NULL) {
+			floatToBit16s(reverbWetLeft, &tmpBufReverbOutLeft[0], len);
+		}
+		if (reverbWetRight != NULL) {
+			floatToBit16s(reverbWetRight, &tmpBufReverbOutRight[0], len);
+		}
 	}
-
 	partialManager->clearAlreadyOutputed();
-
 #if MT32EMU_MONITOR_PARTIALS == 1
 	samplepos += len;
 	if (samplepos > myProp.SampleRate * 5) {
@@ -1252,7 +1323,7 @@ void FreeverbModel::setParameters(Bit8u mode, Bit8u time, Bit8u level) {
 		freeverb->setdamp(1.0f);
 		break;
 	}
-	freeverb->setdry(1);
+	freeverb->setdry(0);
 	freeverb->setwet((float)level / 5.0f);
 	freeverb->setwidth((float)time / 6.0f);
 }

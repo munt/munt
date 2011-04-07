@@ -25,6 +25,11 @@ class Part;
 class TVA;
 struct ControlROMPCMStruct;
 
+struct StereoVolume {
+	float leftVol;
+	float rightVol;
+};
+
 // A partial represents one of up to four waveform generators currently playing within a poly.
 class Partial {
 private:
@@ -39,7 +44,7 @@ private:
 	// Distance in (possibly fractional) samples from the start of the current pulse
 	float wavePos;
 
-	Bit16s myBuffer[MAX_SAMPLE_OUTPUT];
+	float myBuffer[MAX_SAMPLE_OUTPUT];
 
 	// Only used for PCM partials
 	int pcmNum;
@@ -57,8 +62,8 @@ private:
 
 	Poly *poly;
 
-	Bit16s *mixBuffersRingMix(Bit16s *buf1, Bit16s *buf2, unsigned long len);
-	Bit16s *mixBuffersRing(Bit16s *buf1, Bit16s *buf2, unsigned long len);
+	float *mixBuffersRingMix(float *buf1, float *buf2, unsigned long len);
+	float *mixBuffersRing(float *buf1, float *buf2, unsigned long len);
 
 	float getPCMSample(unsigned int position);
 
@@ -95,10 +100,10 @@ public:
 	// Returns true only if data written to buffer
 	// This function (unlike the one below it) returns processed stereo samples
 	// made from combining this single partial with its pair, if it has one.
-	bool produceOutput(Bit16s *partialBuf, unsigned long length);
+	bool produceOutput(float *leftBuf, float *rightBuf, unsigned long length);
 
 	// This function writes mono sample output to the provided buffer, and returns the number of samples written
-	unsigned long generateSamples(Bit16s *buffer, unsigned long length);
+	unsigned long generateSamples(float *partialBuf, unsigned long length);
 };
 
 }
