@@ -1110,7 +1110,19 @@ static void mix(float *target, const float *stream, Bit32u len) {
 
 static void floatToBit16s(Bit16s *target, const float *source, Bit32u len) {
 	while (len--) {
+#if DAC_INPUT_MODE == 1
+		// Produce the LA32 output on CM-32L without shifting.
+		*target = clipBit16s((Bit32s)(*source * 8192.0f));
+#elif DAC_INPUT_MODE == 2
+		// Emulate the hacky shifting of the DAC input seen in the CM-32L.
+		// Other models have similar behaviour, but need to be confirmed.
+		// See http://en.wikipedia.org/wiki/Roland_MT-32#Digital_overflow
+		*target = clipBit16s((Bit32s)(*source * 8192.0f));
+		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE) | ((*target >> 14) & 0x0001);
+#else
+		 // Highest quality
 		*target = clipBit16s((Bit32s)(*source * 16384.0f));
+#endif
 		source++;
 		target++;
 	}
