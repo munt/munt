@@ -33,6 +33,19 @@
 // No point making it more than MT32EMU_MAX_PARTIALS, since each note needs at least one partial.
 #define MT32EMU_MAX_POLY 32
 
+// Set emulation mode of bit shifting at the DAC
+// DAC_INPUT_MODE == 1 
+// Produces the raw LA32 output without shifting
+
+// DAC_INPUT_MODE == 2
+// Emulate the hacky shifting of the DAC input seen in the CM-32L.
+// Other models have similar behaviour, but need to be confirmed.
+// See http://en.wikipedia.org/wiki/Roland_MT-32#Digital_overflow
+
+// If not set produces highest quality output but likely overdriven for much reverb
+
+#define DAC_INPUT_MODE 1
+
 #include "structures.h"
 #include "file.h"
 #include "tables.h"
