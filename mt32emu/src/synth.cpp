@@ -1110,7 +1110,7 @@ static void mix(float *target, const float *stream, Bit32u len) {
 
 static void floatToBit16s(Bit16s *target, const float *source, Bit32u len) {
 	while (len--) {
-		*target = clipBit16s((Bit32s)(*source * 32767.0f));
+		*target = clipBit16s((Bit32s)(*source * 16384.0f));
 		source++;
 		target++;
 	}
