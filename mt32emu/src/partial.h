@@ -56,7 +56,6 @@ private:
 	int pulseWidthVal;
 
 	float pcmPosition;
-	int intPCMPosition;
 
 	float history[32];
 

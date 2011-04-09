@@ -144,7 +144,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	}
 
 	pcmPosition = 0.0f;
-	intPCMPosition = 0;
 	pair = pairPartial;
 	alreadyOutputed = false;
 	tva->reset(part, patchCache->partialParam, rhythmTemp);
@@ -192,6 +191,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		if (patchCache->PCMPartial) {
 			// Render PCM waveform
 			int len = pcmWave->len;
+			int intPCMPosition = (int)pcmPosition;
 			if (intPCMPosition >= len && !pcmWave->loop) {
 				// We're now past the end of a non-looping PCM waveform so it's time to die.
 				play = false;
@@ -200,19 +200,17 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			}
 			Bit32u pcmAddr = pcmWave->addr;
 			float positionDelta = freq * 2048.0f / synth->myProp.sampleRate;
-			float newPCMPosition = pcmPosition + positionDelta;
-			int newIntPCMPosition = (int)newPCMPosition;
 
 			// Linear interpolation
 			float firstSample = synth->pcmROMData[pcmAddr + intPCMPosition];
 			float nextSample = getPCMSample(intPCMPosition + 1);
 			sample = firstSample + (nextSample - firstSample) * (pcmPosition - intPCMPosition);
+
+			float newPCMPosition = pcmPosition + positionDelta;
 			if (pcmWave->loop) {
 				newPCMPosition = fmod(newPCMPosition, (float)pcmWave->len);
-				newIntPCMPosition = newIntPCMPosition % pcmWave->len;
 			}
 			pcmPosition = newPCMPosition;
-			intPCMPosition = newIntPCMPosition;
 		} else {
 			// Render synthesised waveform
 			float resAmp = EXP2F(-9.0f *(1.0f - patchCache->srcPartial.tvf.resonance / 30.0f));
