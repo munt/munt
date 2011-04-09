@@ -1077,7 +1077,7 @@ static Bit16s *off(Bit16s *stream, Bit32u pos) {
 
 static void clearIfNonNull(Bit16s *stream, Bit32u len) {
 	if (stream != NULL) {
-		memset(stream, 0, len * 2);
+		memset(stream, 0, len * sizeof(Bit16s));
 	}
 }
 
