@@ -42,12 +42,77 @@ const ControlROMMap ControlROMMaps[7] = {
 	// (Note that all but CM-32L ROM actually have 86 entries for rhythmTemp)
 };
 
+static inline Bit16s *streamOffset(Bit16s *stream, Bit32u pos) {
+	return stream == NULL ? NULL : stream + pos;
+}
+
+static inline void clearIfNonNull(Bit16s *stream, Bit32u len) {
+	if (stream != NULL) {
+		memset(stream, 0, len * sizeof(Bit16s));
+	}
+}
+
+static inline void mix(float *target, const float *stream, Bit32u len) {
+	while (len--) {
+		*target += *stream;
+		stream++;
+		target++;
+	}
+}
+
+static inline void clearFloats(float *leftBuf, float *rightBuf, Bit32u len) {
+	// FIXME: Use memset() where compatibility is guaranteed (if this turns out to be a win)
+	while (len--) {
+		*leftBuf++ = 0.0f;
+		*rightBuf++ = 0.0f;
+	}
+}
+
 static inline Bit16s clipBit16s(Bit32s a) {
 	// Clamp values above 32767 to 32767, and values below -32768 to -32768
 	if ((a + 32768) & ~65535) {
 		return (a >> 31) ^ 32767;
 	}
 	return a;
+}
+
+static void floatToBit16s_nice(Bit16s *target, const float *source, Bit32u len) {
+	while (len--) {
+		 // Highest quality
+		*target = clipBit16s((Bit32s)(*source * 16384.0f));
+		source++;
+		target++;
+	}
+}
+
+static void floatToBit16s_pure(Bit16s *target, const float *source, Bit32u len) {
+	while (len--) {
+		// Produce the LA32 output on CM-32L without shifting.
+		*target = clipBit16s((Bit32s)(*source * 8192.0f));
+		source++;
+		target++;
+	}
+}
+
+static void floatToBit16s_generation1(Bit16s *target, const float *source, Bit32u len) {
+	while (len--) {
+		*target = clipBit16s((Bit32s)(*source * 8192.0f));
+		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE) | ((*target >> 14) & 0x0001);
+		source++;
+		target++;
+	}
+}
+
+static void floatToBit16s_generation2(Bit16s *target, const float *source, Bit32u len) {
+	while (len--) {
+		// Emulate the hacky shifting of the DAC input seen in the CM-32L.
+		// Other models have similar behaviour, but need to be confirmed.
+		// See http://en.wikipedia.org/wiki/Roland_MT-32#Digital_overflow
+		*target = clipBit16s((Bit32s)(*source * 8192.0f));
+		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE);
+		source++;
+		target++;
+	}
 }
 
 Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
@@ -69,6 +134,7 @@ Synth::Synth() {
 	reverbOverridden = false;
 	setReverbModel(NULL); // Creates a default FreeverbModel
 	setDelayReverbModel(NULL); // Creates a default DelayReverb.
+	setDACInputMode(DACInputMode_NICE);
 	partialManager = NULL;
 	memset(parts, 0, sizeof(parts));
 }
@@ -148,6 +214,24 @@ void Synth::setReverbParameters(Bit8u mode, Bit8u time, Bit8u level) {
 		delayReverbModel->setParameters(mode, time, level);
 	} else {
 		reverbModel->setParameters(mode, time, level);
+	}
+}
+
+void Synth::setDACInputMode(DACInputMode mode) {
+	switch(mode) {
+	case DACInputMode_GENERATION1:
+		la32FloatToBit16sFunc = floatToBit16s_generation1;
+		break;
+	case DACInputMode_GENERATION2:
+		la32FloatToBit16sFunc = floatToBit16s_generation2;
+		break;
+	case DACInputMode_PURE:
+		la32FloatToBit16sFunc = floatToBit16s_pure;
+		break;
+	case DACInputMode_NICE:
+	default:
+		la32FloatToBit16sFunc = floatToBit16s_nice;
+		break;
 	}
 }
 
@@ -1071,16 +1155,6 @@ void Synth::render(Bit16s *stream, Bit32u len) {
 }
 
 
-static Bit16s *off(Bit16s *stream, Bit32u pos) {
-	return stream == NULL ? NULL : stream + pos;
-}
-
-static void clearIfNonNull(Bit16s *stream, Bit32u len) {
-	if (stream != NULL) {
-		memset(stream, 0, len * sizeof(Bit16s));
-	}
-}
-
 void Synth::renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len) {
 	if (!isEnabled) {
 		clearIfNonNull(nonReverbLeft, len);
@@ -1094,45 +1168,16 @@ void Synth::renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s 
 	Bit32u pos = 0;
 	while (len > 0) {
 		Bit32u thisLen = len > MAX_SAMPLE_OUTPUT ? MAX_SAMPLE_OUTPUT : len;
-		doRenderStreams(off(nonReverbLeft, pos), off(nonReverbRight, pos), off(reverbDryLeft, pos), off(reverbDryRight, pos), off(reverbWetLeft, pos), off(reverbWetRight, pos), thisLen);
+		doRenderStreams(
+			streamOffset(nonReverbLeft, pos),
+			streamOffset(nonReverbRight, pos),
+			streamOffset(reverbDryLeft, pos),
+			streamOffset(reverbDryRight, pos),
+			streamOffset(reverbWetLeft, pos),
+			streamOffset(reverbWetRight, pos),
+			thisLen);
 		len -= thisLen;
 		pos += thisLen;
-	}
-}
-
-static void mix(float *target, const float *stream, Bit32u len) {
-	while (len--) {
-		*target += *stream;
-		stream++;
-		target++;
-	}
-}
-
-static void floatToBit16s(Bit16s *target, const float *source, Bit32u len) {
-	while (len--) {
-#if DAC_INPUT_MODE == 1
-		// Produce the LA32 output on CM-32L without shifting.
-		*target = clipBit16s((Bit32s)(*source * 8192.0f));
-#elif DAC_INPUT_MODE == 2
-		// Emulate the hacky shifting of the DAC input seen in the CM-32L.
-		// Other models have similar behaviour, but need to be confirmed.
-		// See http://en.wikipedia.org/wiki/Roland_MT-32#Digital_overflow
-		*target = clipBit16s((Bit32s)(*source * 8192.0f));
-		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE) | ((*target >> 14) & 0x0001);
-#else
-		 // Highest quality
-		*target = clipBit16s((Bit32s)(*source * 16384.0f));
-#endif
-		source++;
-		target++;
-	}
-}
-
-static void clearFloats(float *leftBuf, float *rightBuf, Bit32u len) {
-	// FIXME: Use memset() where compatibility is guaranteed (if this turns out to be a win)
-	while (len--) {
-		*leftBuf++ = 0.0f;
-		*rightBuf++ = 0.0f;
 	}
 }
 
@@ -1147,10 +1192,10 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 			}
 		}
 		if (nonReverbLeft != NULL) {
-			floatToBit16s(nonReverbLeft, &tmpBufMixLeft[0], len);
+			la32FloatToBit16sFunc(nonReverbLeft, &tmpBufMixLeft[0], len);
 		}
 		if (nonReverbRight != NULL) {
-			floatToBit16s(nonReverbRight, &tmpBufMixRight[0], len);
+			la32FloatToBit16sFunc(nonReverbRight, &tmpBufMixRight[0], len);
 		}
 		clearIfNonNull(reverbDryLeft, len);
 		clearIfNonNull(reverbDryRight, len);
@@ -1166,10 +1211,10 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 			}
 		}
 		if (nonReverbLeft != NULL) {
-			floatToBit16s(nonReverbLeft, &tmpBufMixLeft[0], len);
+			la32FloatToBit16sFunc(nonReverbLeft, &tmpBufMixLeft[0], len);
 		}
 		if (nonReverbRight != NULL) {
-			floatToBit16s(nonReverbRight, &tmpBufMixRight[0], len);
+			la32FloatToBit16sFunc(nonReverbRight, &tmpBufMixRight[0], len);
 		}
 
 		clearFloats(&tmpBufMixLeft[0], &tmpBufMixRight[0], len);
@@ -1182,10 +1227,10 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 			}
 		}
 		if (reverbDryLeft != NULL) {
-			floatToBit16s(reverbDryLeft, &tmpBufMixLeft[0], len);
+			la32FloatToBit16sFunc(reverbDryLeft, &tmpBufMixLeft[0], len);
 		}
 		if (reverbDryRight != NULL) {
-			floatToBit16s(reverbDryRight, &tmpBufMixRight[0], len);
+			la32FloatToBit16sFunc(reverbDryRight, &tmpBufMixRight[0], len);
 		}
 
 		// FIXME: Note that on the real devices, reverb input and output are signed linear 16-bit (well, kinda, there's some fudging) PCM, not float.
@@ -1195,10 +1240,10 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 			reverbModel->process(&tmpBufMixLeft[0], &tmpBufMixRight[0], &tmpBufReverbOutLeft[0], &tmpBufReverbOutRight[0], len);
 		}
 		if (reverbWetLeft != NULL) {
-			floatToBit16s(reverbWetLeft, &tmpBufReverbOutLeft[0], len);
+		floatToBit16s_pure(reverbWetLeft, &tmpBufReverbOutLeft[0], len);
 		}
 		if (reverbWetRight != NULL) {
-			floatToBit16s(reverbWetRight, &tmpBufReverbOutRight[0], len);
+			floatToBit16s_pure(reverbWetRight, &tmpBufReverbOutRight[0], len);
 		}
 	}
 	partialManager->clearAlreadyOutputed();

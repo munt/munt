@@ -30,6 +30,36 @@ class Partial;
 class PartialManager;
 class Part;
 
+/**
+ * Methods for emulating the connection between the LA32 and the DAC, which involves
+ * some hacks in the real devices for doubling the volume.
+ * See also http://en.wikipedia.org/wiki/Roland_MT-32#Digital_overflow
+ */
+enum DACInputMode {
+	// Produces samples at double the volume, without tricks.
+	// * Nicer overdrive characteristics than the DAC hacks (it simply clips samples within range)
+	// * Higher quality than the real devices
+	DACInputMode_NICE,
+
+	// Produces samples that exactly match the bits output from the emulated LA32.
+	// * Nicer overdrive characteristics than the DAC hacks (it simply clips samples within range)
+	// * Much less likely to overdrive than any other mode.
+	// * Half the volume of any of the other modes, meaning its volume relative to the reverb
+	//   output when mixed together directly will sound wrong.
+	// * Perfect for developers while debugging :)
+	DACInputMode_PURE,
+
+	// Re-orders the LA32 output bits as in early generation MT-32s (according to Wikipedia).
+	// Bit order at DAC (where each number represents the original LA32 output bit number, and XX means the bit is always low):
+	// 15 13 12 11 10 09 08 07 06 05 04 03 02 01 00 XX
+	DACInputMode_GENERATION1,
+
+	// Re-orders the LA32 output bits as in later geneerations (personally confirmed on my CM-32L - KG).
+	// Bit order at DAC (where each number represents the original LA32 output bit number):
+	// 15 13 12 11 10 09 08 07 06 05 04 03 02 01 00 14
+	DACInputMode_GENERATION2
+};
+
 enum ReportType {
 	// Errors
 	ReportType_errorControlROM = 1,
@@ -94,6 +124,8 @@ struct SynthProperties {
 // This is the specification of the Callback routine used when calling the RecalcWaveforms
 // function
 typedef void (*recalcStatusCallback)(int percDone);
+
+typedef void (*FloatToBit16sFunc)(Bit16s *target, const float *source, Bit32u len);
 
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
 
@@ -310,6 +342,8 @@ private:
 	bool reverbEnabled;
 	bool reverbOverridden;
 
+	FloatToBit16sFunc la32FloatToBit16sFunc;
+
 	float masterTune;
 
 	bool isOpen;
@@ -391,6 +425,7 @@ public:
 	void setReverbOverridden(bool reverbOverridden);
 	bool isReverbOverridden() const;
 	void setReverbParameters(Bit8u mode, Bit8u time, Bit8u level);
+	void setDACInputMode(DACInputMode mode);
 
 	// Renders samples to the specified output stream.
 	// The length is in frames, not bytes (in 16-bit stereo,
