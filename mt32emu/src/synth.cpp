@@ -97,7 +97,7 @@ static void floatToBit16s_pure(Bit16s *target, const float *source, Bit32u len) 
 static void floatToBit16s_generation1(Bit16s *target, const float *source, Bit32u len) {
 	while (len--) {
 		*target = clipBit16s((Bit32s)(*source * 8192.0f));
-		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE) | ((*target >> 14) & 0x0001);
+		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE);
 		source++;
 		target++;
 	}
@@ -109,7 +109,7 @@ static void floatToBit16s_generation2(Bit16s *target, const float *source, Bit32
 		// Other models have similar behaviour, but need to be confirmed.
 		// See http://en.wikipedia.org/wiki/Roland_MT-32#Digital_overflow
 		*target = clipBit16s((Bit32s)(*source * 8192.0f));
-		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE);
+		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE) | ((*target >> 14) & 0x0001);
 		source++;
 		target++;
 	}
