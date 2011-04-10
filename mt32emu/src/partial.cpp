@@ -213,7 +213,11 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			pcmPosition = newPCMPosition;
 		} else {
 			// Render synthesised waveform
-			float resAmp = EXP2F(-9.0f *(1.0f - patchCache->srcPartial.tvf.resonance / 30.0f));
+
+			// This corresponds the value set to LA-32 port
+			Bit8u res = patchCache->srcPartial.tvf.resonance + 1;
+//			float resAmp = 2.0f * EXP2F((31 - res) * 574.0f / -2048.0f);
+			float resAmp = EXP2F((9.0f * res - 256.0f) / 32.0f);	// nicer a bit :)
 
 			float cutoffVal = tvf->getBaseCutoff();
 			// The modifier may not be supposed to be added to the cutoff at all -
@@ -305,7 +309,28 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 				// Add resonance sine. Effective for cutoff > 50 only
 				float resSample = 1.0f;
-				float resAmpFade = 0.0f;
+				float resAmpFade;
+
+				switch (res >> 2) {
+				case 7:
+					resAmpFade = 1.0f / 8.0f;
+					break;
+				case 6:
+					resAmpFade = 2.0f / 8.0f;
+					break;
+				case 5:
+					resAmpFade = 3.0f / 8.0f;
+					break;
+				case 4:
+					resAmpFade = 5.0f / 8.0f;
+					break;
+				case 3:
+					resAmpFade = 8.0f / 8.0f;
+					break;
+				default:
+					resAmpFade = 12.0f / 8.0f;
+					break;
+				}
 
 				// Now relWavePos counts from the middle of first cosine
 				relWavePos = wavePos;
@@ -320,7 +345,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				resSample *= sinf(FLOAT_PI * relWavePos / cosineLen);
 
 				// Resonance sine amp
-				resAmpFade = RESAMPMAX - RESAMPFADE * (relWavePos / cosineLen);
+//				resAmpFade = RESAMPMAX - RESAMPFADE * (relWavePos / cosineLen); // rough linear approx
+				resAmpFade = EXP2F(-resAmpFade * (relWavePos / cosineLen));	// seems to be exact
 
 				// Now relWavePos set negative to the left from center of any cosine
 				relWavePos = wavePos;
