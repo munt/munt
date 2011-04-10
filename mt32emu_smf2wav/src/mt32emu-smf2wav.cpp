@@ -189,144 +189,142 @@ static unsigned int render(MT32Emu::Synth *synth, MT32Emu::Bit16s sampleBuffer[]
 	return renderedSamples - skippedSamples;
 }
 
-static void processSMF(char *syxFileName, smf_t *smf, char *dstFileName, MT32Emu::SynthProperties &synthProperties, unsigned int bufferSize, unsigned int endAfter, bool renderUntilInactive, bool recordInitialSilence) {
-	MT32Emu::Synth *synth = new MT32Emu::Synth();
+static void processSMF(MT32Emu::Synth *synth, smf_t *smf, char *dstFileName, int sampleRate, unsigned int bufferSize, unsigned int endAfter, bool renderUntilInactive, bool recordInitialSilence) {
 	MT32Emu::Bit16s *sampleBuffer = NULL;
 	FILE *dstFile;
 	bool waitingForNoise = !recordInitialSilence;
-	if (synth->open(synthProperties)) {
-		if (syxFileName != NULL) {
-			playSysexFile(synth, syxFileName);
-		}
 
-		dstFile = fopen(dstFileName, "wb");
-		if (dstFile != NULL) {
-			if (writeWAVEHeader(dstFile, synthProperties.sampleRate)) {
-				int unterminatedSysexLen = 0;
-				unsigned char *unterminatedSysex = NULL;
-				unsigned long renderedSamples = 0;
-				unsigned long writtenSamples = 0;
-				for (;;) {
-					smf_event_t *event = smf_get_next_event(smf);
-					unsigned long eventSampleIx;
+	dstFile = fopen(dstFileName, "wb");
+	if (dstFile != NULL) {
+		if (writeWAVEHeader(dstFile, sampleRate)) {
+			int unterminatedSysexLen = 0;
+			unsigned char *unterminatedSysex = NULL;
+			unsigned long renderedSamples = 0;
+			unsigned long writtenSamples = 0;
+			for (;;) {
+				smf_event_t *event = smf_get_next_event(smf);
+				unsigned long eventSampleIx;
 
-					if (event == NULL) {
+				if (event == NULL) {
+					break;
+				}
+
+				assert(event->track->track_number >= 0);
+
+				eventSampleIx = secondsToSamples(event->time_seconds, sampleRate);
+				if (eventSampleIx < renderedSamples) {
+					fprintf(stderr, "Event went back in time!\n");
+				} else {
+					if (sampleBuffer == NULL) {
+						sampleBuffer = new MT32Emu::Bit16s[bufferSize / 2];
+					}
+					if (eventSampleIx > endAfter) {
+						eventSampleIx = endAfter;
+					}
+					unsigned int renderLength = eventSampleIx - renderedSamples;
+					writtenSamples += render(synth, sampleBuffer, bufferSize / 4, dstFile, renderLength, waitingForNoise);
+					renderedSamples += renderLength;
+					if (eventSampleIx == endAfter) {
 						break;
 					}
+				}
 
-					assert(event->track->track_number >= 0);
-
-					eventSampleIx = secondsToSamples(event->time_seconds, synthProperties.sampleRate);
-					if (eventSampleIx < renderedSamples) {
-						fprintf(stderr, "Event went back in time!\n");
-					} else {
-						if (sampleBuffer == NULL) {
-							sampleBuffer = new MT32Emu::Bit16s[bufferSize / 2];
-						}
-						if (eventSampleIx > endAfter) {
-							eventSampleIx = endAfter;
-						}
-						unsigned int renderLength = eventSampleIx - renderedSamples;
-						writtenSamples += render(synth, sampleBuffer, bufferSize / 4, dstFile, renderLength, waitingForNoise);
-						renderedSamples += renderLength;
-						if (eventSampleIx == endAfter) {
-							break;
-						}
-					}
-
-					if (smf_event_is_metadata(event)) {
-						char *decoded = smf_event_decode(event);
-						if (decoded && !quiet)
-							fprintf(stdout, "Metadata: %s\n", decoded);
-					} else if (smf_event_is_sysex(event) || smf_event_is_sysex_continuation(event))  {
-						bool unterminated = smf_event_is_unterminated_sysex(event);
-						bool addUnterminated = unterminated;
-						bool continuation = smf_event_is_sysex_continuation(event);
-						unsigned char *buf;
-						int len;
-						if (continuation) {
-							if (unterminatedSysex != NULL) {
-								addUnterminated = true;
-							} else {
-								fprintf(stderr, "Sysex continuation received without preceding unterminated sysex - hoping for the best\n");
-							}
-							buf = event->midi_buffer + 1;
-							len = event->midi_buffer_length - 1;
+				if (smf_event_is_metadata(event)) {
+					char *decoded = smf_event_decode(event);
+					if (decoded && !quiet)
+						fprintf(stdout, "Metadata: %s\n", decoded);
+				} else if (smf_event_is_sysex(event) || smf_event_is_sysex_continuation(event))  {
+					bool unterminated = smf_event_is_unterminated_sysex(event);
+					bool addUnterminated = unterminated;
+					bool continuation = smf_event_is_sysex_continuation(event);
+					unsigned char *buf;
+					int len;
+					if (continuation) {
+						if (unterminatedSysex != NULL) {
+							addUnterminated = true;
 						} else {
-							if (unterminatedSysex != NULL) {
-								fprintf(stderr, "New sysex received with an unterminated sysex pending - ignoring unterminated\n");
-								delete[] unterminatedSysex;
-								unterminatedSysex = NULL;
-								unterminatedSysexLen = 0;
-							}
-							buf = event->midi_buffer;
-							len = event->midi_buffer_length;
+							fprintf(stderr, "Sysex continuation received without preceding unterminated sysex - hoping for the best\n");
 						}
+						buf = event->midi_buffer + 1;
+						len = event->midi_buffer_length - 1;
+					} else {
+						if (unterminatedSysex != NULL) {
+							fprintf(stderr, "New sysex received with an unterminated sysex pending - ignoring unterminated\n");
+							delete[] unterminatedSysex;
+							unterminatedSysex = NULL;
+							unterminatedSysexLen = 0;
+						}
+						buf = event->midi_buffer;
+						len = event->midi_buffer_length;
+					}
+					if (addUnterminated) {
+						unsigned char *newUnterminatedSysex = new unsigned char[unterminatedSysexLen + len];
+						if(unterminatedSysex != NULL) {
+							memcpy(newUnterminatedSysex, unterminatedSysex, unterminatedSysexLen);
+							delete[] unterminatedSysex;
+						}
+						memcpy(newUnterminatedSysex + unterminatedSysexLen, buf, len);
+						unterminatedSysex = newUnterminatedSysex;
+						unterminatedSysexLen += len;
+						buf = unterminatedSysex;
+						len = unterminatedSysexLen;
+					}
+					if (!unterminated) {
+						synth->playSysex(buf, len);
 						if (addUnterminated) {
-							unsigned char *newUnterminatedSysex = new unsigned char[unterminatedSysexLen + len];
-							if(unterminatedSysex != NULL) {
-								memcpy(newUnterminatedSysex, unterminatedSysex, unterminatedSysexLen);
-								delete[] unterminatedSysex;
-							}
-							memcpy(newUnterminatedSysex + unterminatedSysexLen, buf, len);
-							unterminatedSysex = newUnterminatedSysex;
-							unterminatedSysexLen += len;
-							buf = unterminatedSysex;
-							len = unterminatedSysexLen;
+							delete[] unterminatedSysex;
+							unterminatedSysex = NULL;
+							unterminatedSysexLen = 0;
 						}
-						if (!unterminated) {
-							synth->playSysex(buf, len);
-							if (addUnterminated) {
-								delete[] unterminatedSysex;
-								unterminatedSysex = NULL;
-								unterminatedSysexLen = 0;
-							}
+					}
+				} else {
+					if (event->midi_buffer_length > 3) {
+						fprintf(stderr, "Got message with unusual length: %d\n", event->midi_buffer_length);
+						for (int i = 0; i < event->midi_buffer_length; i++) {
+							fprintf(stderr, " %02x", event->midi_buffer[i]);
 						}
+						fprintf(stderr, "\n");
 					} else {
-						if (event->midi_buffer_length > 3) {
-							fprintf(stderr, "Got message with unusual length: %d\n", event->midi_buffer_length);
-							for (int i = 0; i < event->midi_buffer_length; i++) {
-								fprintf(stderr, " %02x", event->midi_buffer[i]);
-							}
-							fprintf(stderr, "\n");
-						} else {
-							MT32Emu::Bit32u msg = 0;
-							for (int i = 0; i < event->midi_buffer_length; i++) {
-								msg |= (event->midi_buffer[i] << (8 * i));
-							}
-							synth->playMsg(msg);
+						MT32Emu::Bit32u msg = 0;
+						for (int i = 0; i < event->midi_buffer_length; i++) {
+							msg |= (event->midi_buffer[i] << (8 * i));
 						}
+						synth->playMsg(msg);
 					}
 				}
-				if (renderUntilInactive) {
-					while (renderedSamples < endAfter && synth->isActive()) {
-						// FIXME: Very inefficient, perhaps we should add a renderWhileActive() to Synth.
-						MT32Emu::Bit16s tmpBuffer[2];
-						writtenSamples += render(synth, tmpBuffer, 1, dstFile, 1, waitingForNoise);
-						renderedSamples++;
-					}
-				}
-				delete[] unterminatedSysex;
-				if (!fillWAVESizes(dstFile, writtenSamples)) {
-					fprintf(stderr, "Error writing final sizes to WAVE header\n");
-				}
-			} else {
-				fprintf(stderr, "Error writing WAVE header to '%s'\n", dstFileName);
 			}
-			fclose(dstFile);
+			if (renderUntilInactive) {
+				while (renderedSamples < endAfter && synth->isActive()) {
+					// FIXME: Very inefficient, perhaps we should add a renderWhileActive() to Synth.
+					MT32Emu::Bit16s tmpBuffer[2];
+					writtenSamples += render(synth, tmpBuffer, 1, dstFile, 1, waitingForNoise);
+					renderedSamples++;
+				}
+			}
+			delete[] unterminatedSysex;
+			if (!fillWAVESizes(dstFile, writtenSamples)) {
+				fprintf(stderr, "Error writing final sizes to WAVE header\n");
+			}
 		} else {
-			fprintf(stderr, "Error opening file '%s' for writing.\n", dstFileName);
+			fprintf(stderr, "Error writing WAVE header to '%s'\n", dstFileName);
 		}
+		fclose(dstFile);
 	} else {
-		fprintf(stderr, "Error opening MT32Emu synthesizer.\n");
+		fprintf(stderr, "Error opening file '%s' for writing.\n", dstFileName);
 	}
 	delete[] sampleBuffer;
-	delete synth;
 }
 
 static void printVersion(void) {
 	fprintf(stdout, "%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
 }
+
+static  MT32Emu::DACInputMode DAC_INPUT_MODES[] = {
+	MT32Emu::DACInputMode_NICE,
+	MT32Emu::DACInputMode_PURE,
+	MT32Emu::DACInputMode_GENERATION1,
+	MT32Emu::DACInputMode_GENERATION2
+};
 
 static void printUsage(char *cmd) {
 	printVersion();
@@ -334,6 +332,11 @@ static void printUsage(char *cmd) {
 	fprintf(stdout, "Arguments:\n");
 	fprintf(stdout, " -a              Record silent samples at the start of the render\n");
 	fprintf(stdout, " -b              Buffer size (in bytes) (minimum: 4, default: %d)\n", DEFAULT_BUFFER_SIZE);
+	fprintf(stdout, " -d <dacmode>    LA-32 to DAC input mode (default: 0)\n");
+	fprintf(stdout, "                 0: NICE\n");
+	fprintf(stdout, "                 1: PURE\n");
+	fprintf(stdout, "                 2: GENERATION1\n");
+	fprintf(stdout, "                 3: GENERATION2\n");
 	fprintf(stdout, " -e              End after rendering at most this many samples. 0=unlimited (default: 0)\n");
 	fprintf(stdout, " -f              Force overwrite of output file if already present\n");
 	fprintf(stdout, " -h              Show this help and exit\n");
@@ -341,7 +344,7 @@ static void printUsage(char *cmd) {
 	fprintf(stdout, " -q              Be quiet\n");
 	fprintf(stdout, " -r <samplerate> Set the sample rate (in Hz) (default: %d)\n", DEFAULT_SAMPLE_RATE);
 	fprintf(stdout, " -s <filename>   Sysex file to play before the SMF file\n");
-	fprintf(stdout, " -t              Don't render until the synth becomes inactive - stop once the SMF has ended");
+	fprintf(stdout, " -t              Don't render until the synth becomes inactive - stop once the SMF has ended\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -356,8 +359,9 @@ int main(int argc, char *argv[]) {
 	unsigned int endAfter = UINT_MAX;
 	bool renderUntilInactive = true;
 	bool recordInitialSilence = false;
+	MT32Emu::DACInputMode dacInputMode = DAC_INPUT_MODES[0];
 
-	while ((ch = getopt(argc, argv, "ab:e:fho:qr:s:t")) != -1) {
+	while ((ch = getopt(argc, argv, "ab:d:e:fho:qr:s:t")) != -1) {
 		switch (ch) {
 		case 'a':
 			recordInitialSilence = true;
@@ -366,9 +370,18 @@ int main(int argc, char *argv[]) {
 			bufferSize = atoi(optarg);
 			if (bufferSize < 4) {
 				printUsage(cmd);
-				return 0;
+				return -1;
 			}
 			break;
+		case 'd': {
+			int dacInputModeIx = atoi(optarg);
+			if (dacInputModeIx > 3) {
+				printUsage(cmd);
+				return -1;
+			}
+			dacInputMode = DAC_INPUT_MODES[dacInputModeIx];
+			break;
+		}
 		case 'e':
 			endAfter = atoi(optarg);
 			if (endAfter == 0) {
@@ -450,7 +463,17 @@ int main(int argc, char *argv[]) {
 		synthProperties.sampleRate = sampleRate;
 		synthProperties.useReverb = true;
 		synthProperties.useDefaultReverb = true;
-		processSMF(syxFileName, smf, dstFileName, synthProperties, bufferSize, endAfter, renderUntilInactive, recordInitialSilence);
+		MT32Emu::Synth *synth = new MT32Emu::Synth();
+		if (synth->open(synthProperties)) {
+			synth->setDACInputMode(dacInputMode);
+			if (syxFileName != NULL) {
+				playSysexFile(synth, syxFileName);
+			}
+			processSMF(synth, smf, dstFileName, sampleRate, bufferSize, endAfter, renderUntilInactive, recordInitialSilence);
+		} else {
+			fprintf(stderr, "Error opening MT32Emu synthesizer.\n");
+		}
+		delete synth;
 		smf_delete(smf);
 	} else {
 		fprintf(stderr, "Error parsing SMF file '%s'.\n", srcFileName);
