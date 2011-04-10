@@ -20,9 +20,6 @@
 
 namespace MT32Emu {
 
-const float RESAMPMAX = 1.75f; // Found from sample analysis
-const float RESAMPFADE = 0.1f; // Found from sample analysis
-
 const int MIDDLEC = 60;
 
 class Synth;
