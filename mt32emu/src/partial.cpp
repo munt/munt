@@ -216,8 +216,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// This corresponds the value set to LA-32 port
 			Bit8u res = patchCache->srcPartial.tvf.resonance + 1;
-//			float resAmp = 2.0f * EXP2F((31 - res) * 574.0f / -2048.0f);
-			float resAmp = EXP2F((9.0f * res - 256.0f) / 32.0f);	// nicer a bit :)
+			float resAmp = EXP2F(1.0f - (32 - res) / 4.0f);	// seems to be exact
 
 			float cutoffVal = tvf->getBaseCutoff();
 			// The modifier may not be supposed to be added to the cutoff at all -
