@@ -256,7 +256,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			if (pulseWidthVal > 128) {
 				// Formula determined from sample analysis.
 				float pt = 0.5f / 127.0f * (pulseWidthVal - 128);
-				pulseLen += (1.239f - pt) * pt;
+				pulseLen += (1.2397077f - pt) * pt;    // seems to be 2 ^ 0.31 = 1.2397077...
 			}
 			pulseLen *= waveLen;
 
