@@ -326,8 +326,14 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				case 3:
 					resAmpFade = 8.0f / 8.0f;
 					break;
-				default:
+				case 2:
 					resAmpFade = 12.0f / 8.0f;
+					break;
+				case 1:
+					resAmpFade = 16.0f / 8.0f;
+					break;
+				default:
+					resAmpFade = 31.0f / 8.0f;
 					break;
 				}
 
