@@ -310,6 +310,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				float resSample = 1.0f;
 				float resAmpFade;
 
+				// FIXME: Needs to be turned to a nice table
 				switch (res >> 2) {
 				case 7:
 					resAmpFade = 1.0f / 8.0f;
@@ -350,7 +351,6 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				resSample *= sinf(FLOAT_PI * relWavePos / cosineLen);
 
 				// Resonance sine amp
-//				resAmpFade = RESAMPMAX - RESAMPFADE * (relWavePos / cosineLen); // rough linear approx
 				resAmpFade = EXP2F(-resAmpFade * (relWavePos / cosineLen));	// seems to be exact
 
 				// Now relWavePos set negative to the left from center of any cosine
@@ -367,11 +367,9 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				}
 
 				// Fading to zero while in first half of cosine segment to avoid jumps in the wave
-				// FIXME: sample analysis suggests that this window isn't linear
+				// Sample analysis suggests that this window is very close to half cosine
 				if (relWavePos < 0.0f) {
-//					resAmpFade *= -relWavePos / (0.5f * cosineLen);                                  // linear
-					resAmpFade *= 0.5f * (1.0f - cosf(FLOAT_PI * relWavePos / (0.5f * cosineLen)));  // full cosine
-//					resAmpFade *= (1.0f - cosf(0.5f * FLOAT_PI * relWavePos / (0.5f * cosineLen)));  // half cosine
+					resAmpFade *= 0.5f * (1.0f - cosf(FLOAT_PI * relWavePos / (0.5f * cosineLen)));
 				}
 
 				sample += resSample * resAmp * resAmpFade;
