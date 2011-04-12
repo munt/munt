@@ -273,9 +273,9 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				hLen = 0.0f;
 			}
 
-			// Correct resAmp for cutoff in range 50..60
-			if (cutoffVal < 138) {
-				resAmp *= (1.0f - (138 - cutoffVal) / 10.0f);
+			// Correct resAmp for cutoff in range 50..66
+			if (cutoffVal < 144) {
+				resAmp *= sinf(FLOAT_PI * (cutoffVal - 128) / 32)
 			}
 
 			// Produce filtered square wave with 2 cosine waves on slopes
