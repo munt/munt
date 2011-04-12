@@ -366,9 +366,9 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 					relWavePos -= cosineLen + hLen;
 				}
 
-				// Fading to zero while in first half of cosine segment to avoid jumps in the wave
-				// Sample analysis suggests that this window is very close to half cosine
-				if (relWavePos < 0.0f) {
+				// Fading to zero while within cosine segments to avoid jumps in the wave
+				// Sample analysis suggests that this window is very close to cosine
+				if (relWavePos < 0.5f * cosineLen) {
 					resAmpFade *= 0.5f * (1.0f - cosf(FLOAT_PI * relWavePos / (0.5f * cosineLen)));
 				}
 
