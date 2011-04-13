@@ -216,9 +216,11 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// This corresponds the value set to LA-32 port
 			Bit8u res = patchCache->srcPartial.tvf.resonance + 1;
-			float resAmp = EXP2F(1.0f - (32 - res) / 4.0f);	// seems to be exact
+//			float resAmp = EXP2F(1.0f - (32 - res) / 4.0f);	// seems to be exact
+			float resAmp = synth->tables.resAmpMax[res];
 
-			float cutoffVal = tvf->getBaseCutoff();
+//			float cutoffVal = tvf->getBaseCutoff();
+			Bit8u cutoffVal = tvf->getBaseCutoff();
 			// The modifier may not be supposed to be added to the cutoff at all -
 			// it may for example need to be multiplied in some way.
 			cutoffVal += tvf->nextCutoffModifier();
@@ -234,8 +236,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			// Init cosineLen
 			float cosineLen = 0.5f * waveLen;
 			if (cutoffVal > 128) {
-				float ft = (cutoffVal - 128) / 128.0f;
-				cosineLen *= EXP2F(-8.0f * ft); // found from sample analysis
+//				cosineLen *= EXP2F((cutoffVal - 128) / -16.0f); // found from sample analysis
+				cosineLen *= synth->tables.cutoffToCosineLen[cutoffVal - 128];
 			}
 
 			// Anti-aliasing feature
@@ -251,12 +253,9 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				relWavePos -= waveLen;
 			}
 
-			// Ratio of negative segment to waveLen
 			float pulseLen = 0.5f;
 			if (pulseWidthVal > 128) {
-				// Formula determined from sample analysis.
-				float pt = 0.5f / 127.0f * (pulseWidthVal - 128);
-				pulseLen += (1.241857812f - pt) * pt;    // seems to be 2 ^ (5 / 16) = 1.241857812f
+				pulseLen += synth->tables.pulseLenFactor[pulseWidthVal - 128];
 			}
 			pulseLen *= waveLen;
 
@@ -275,14 +274,16 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// Correct resAmp for cutoff in range 50..66
 			if (cutoffVal < 144) {
-				resAmp *= sinf(FLOAT_PI * (cutoffVal - 128) / 32);
+//				resAmp *= sinf(FLOAT_PI * (cutoffVal - 128) / 32);
+				resAmp *= synth->tables.sinf10[64 * (cutoffVal - 128)];
 			}
 
 			// Produce filtered square wave with 2 cosine waves on slopes
 
 			// 1st cosine segment
 			if (relWavePos < cosineLen) {
-				sample = -cosf(FLOAT_PI * relWavePos / cosineLen);
+//				sample = -cosf(FLOAT_PI * relWavePos / cosineLen);
+				sample = -synth->tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) + 1024];
 			} else
 
 			// high linear segment
@@ -292,7 +293,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// 2nd cosine segment
 			if (relWavePos < (2 * cosineLen + hLen)) {
-				sample = cosf(FLOAT_PI * (relWavePos - (cosineLen + hLen)) / cosineLen);
+//				sample = cosf(FLOAT_PI * (relWavePos - (cosineLen + hLen)) / cosineLen);
+				sample = synth->tables.sinf10[Bit32u(2048.0f * (relWavePos - (cosineLen + hLen)) / cosineLen) + 1024];
 			} else {
 
 			// low linear segment
@@ -301,42 +303,14 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			if (cutoffVal < 128) {
 
-				// Attenuate samples below cutoff 50 another way
+				// Attenuate samples below cutoff 50
 				// Found by sample analysis
-				sample *= EXP2F(-0.125f * (128 - cutoffVal));
+//				sample *= EXP2F(-0.125f * (128 - cutoffVal));
+				sample *= synth->tables.cutoffToFilterAmp[cutoffVal];
 			} else {
 
 				// Add resonance sine. Effective for cutoff > 50 only
 				float resSample = 1.0f;
-				float resAmpFade;
-
-				// FIXME: Needs to be turned to a nice table
-				switch (res >> 2) {
-				case 7:
-					resAmpFade = 1.0f / 8.0f;
-					break;
-				case 6:
-					resAmpFade = 2.0f / 8.0f;
-					break;
-				case 5:
-					resAmpFade = 3.0f / 8.0f;
-					break;
-				case 4:
-					resAmpFade = 5.0f / 8.0f;
-					break;
-				case 3:
-					resAmpFade = 8.0f / 8.0f;
-					break;
-				case 2:
-					resAmpFade = 12.0f / 8.0f;
-					break;
-				case 1:
-					resAmpFade = 16.0f / 8.0f;
-					break;
-				default:
-					resAmpFade = 31.0f / 8.0f;
-					break;
-				}
 
 				// Now relWavePos counts from the middle of first cosine
 				relWavePos = wavePos;
@@ -348,10 +322,11 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				}
 
 				// Resonance sine WG
-				resSample *= sinf(FLOAT_PI * relWavePos / cosineLen);
+//				resSample *= sinf(FLOAT_PI * relWavePos / cosineLen);
+				resSample *= synth->tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) & 4095];
 
 				// Resonance sine amp
-				resAmpFade = EXP2F(-resAmpFade * (relWavePos / cosineLen));	// seems to be exact
+				float resAmpFade = EXP2F(-synth->tables.resAmpFadeFactor[res >> 2] * (relWavePos / cosineLen));	// seems to be exact
 
 				// Now relWavePos set negative to the left from center of any cosine
 				relWavePos = wavePos;
@@ -369,7 +344,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				// Fading to zero while within cosine segments to avoid jumps in the wave
 				// Sample analysis suggests that this window is very close to cosine
 				if (relWavePos < 0.5f * cosineLen) {
-					resAmpFade *= 0.5f * (1.0f - cosf(FLOAT_PI * relWavePos / (0.5f * cosineLen)));
+//					resAmpFade *= 0.5f * (1.0f - cosf(FLOAT_PI * relWavePos / (0.5f * cosineLen)));
+					resAmpFade *= 0.5f * (1.0f + synth->tables.sinf10[Bit32s(2048.0f * relWavePos / (0.5f * cosineLen)) + 3072]);
 				}
 
 				sample += resSample * resAmp * resAmpFade;
@@ -377,7 +353,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// sawtooth waves
 			if ((patchCache->waveform & 1) != 0) {
-				sample *= cosf(FLOAT_2PI * wavePos / waveLen);
+//				sample *= cosf(FLOAT_2PI * wavePos / waveLen);
+				sample *= synth->tables.sinf10[Bit32u(4096.0f * wavePos / waveLen) + 1024];
 			}
 
 			wavePos++;

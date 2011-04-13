@@ -47,7 +47,13 @@ public:
 	// CONFIRMED:
 	Bit8u pulseWidth100To255[101];
 
+	float pulseLenFactor[128];
 	float pitchToFreq[65536];
+	float cutoffToCosineLen[128];
+	float cutoffToFilterAmp[128];
+	float resAmpMax[32];
+	float resAmpFadeFactor[8];
+	float sinf10[5120];
 
 	Tables();
 	void init(Synth *synth);

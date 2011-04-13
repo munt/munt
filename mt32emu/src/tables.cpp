@@ -78,8 +78,44 @@ void Tables::init(Synth *synth) {
 		//synth->printDebug("%d: %d", i, pulseWidth100To255[i]);
 	}
 
+	// Ratio of negative segment to wave length
+	for (int i = 0; i < 128; i++) {
+		// Formula determined from sample analysis.
+		float pt = 0.5f / 127.0f * i;
+		pulseLenFactor[i] = (1.241857812f - pt) * pt;    // seems to be 2 ^ (5 / 16) = 1.241857812f
+	}
+
 	for (int i = 0; i < 65536; i++) {
 		// Aka (slightly slower): EXP2F(pitchVal / 4096.0f - 16.0f) * 32000.0f
 		pitchToFreq[i] = EXP2F(i / 4096.0f - 1.034215715f);
+	}
+
+	// found from sample analysis
+	for (int i = 0; i < 128; i++) {
+		cutoffToCosineLen[i] = EXP2F(i / -16.0f);
+	}
+
+	// found from sample analysis
+	for (int i = 0; i < 128; i++) {
+		cutoffToFilterAmp[i] = EXP2F(-0.125f * (128 - i));
+	}
+
+	// found from sample analysis
+	for (int i = 0; i < 32; i++) {
+		resAmpMax[i] = EXP2F(1.0f - (32 - i) / 4.0f);
+	}
+
+	// found from sample analysis
+	resAmpFadeFactor[7] = 1.0f / 8.0f;
+	resAmpFadeFactor[6] = 2.0f / 8.0f;
+	resAmpFadeFactor[5] = 3.0f / 8.0f;
+	resAmpFadeFactor[4] = 5.0f / 8.0f;
+	resAmpFadeFactor[3] = 8.0f / 8.0f;
+	resAmpFadeFactor[2] = 12.0f / 8.0f;
+	resAmpFadeFactor[1] = 16.0f / 8.0f;
+	resAmpFadeFactor[0] = 31.0f / 8.0f;
+
+	for (int i = 0; i < 5120; i++) {
+		sinf10[i] = sin(FLOAT_PI * i / 2048.0f);
 	}
 }
