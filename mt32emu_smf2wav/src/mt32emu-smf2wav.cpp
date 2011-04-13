@@ -387,6 +387,7 @@ static void printUsage(char *cmd) {
 	fprintf(stdout, " -e              End after rendering at most this many samples. 0=unlimited (default: 0)\n");
 	fprintf(stdout, " -f              Force overwrite of output file if already present\n");
 	fprintf(stdout, " -h              Show this help and exit\n");
+	fprintf(stdout, " -m              Directory in which ROMs are stored (including trailing path separator)\n");
 	fprintf(stdout, " -o <filename>   Output file (default: source file name with \".wav\" appended)\n");
 	fprintf(stdout, " -q              Be quiet\n");
 	fprintf(stdout, " -r <samplerate> Set the sample rate (in Hz) (default: %d)\n", DEFAULT_SAMPLE_RATE);
@@ -420,7 +421,8 @@ int main(int argc, char *argv[]) {
 	MT32Emu::DACInputMode dacInputMode = DAC_INPUT_MODES[0];
 	int rawChannelMap[8];
 	int rawChannelCount = 0;
-	while ((ch = getopt(argc, argv, "ab:d:e:fho:qr:s:tw:")) != -1) {
+	char *romDir;
+	while ((ch = getopt(argc, argv, "ab:d:e:fhm:o:qr:s:tw:")) != -1) {
 		switch (ch) {
 		case 'a':
 			recordInitialSilence = true;
@@ -449,6 +451,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'f':
 			force = true;
+			break;
+		case 'm':
+			romDir = optarg;
 			break;
 		case 'o':
 			dstFileNameArg = optarg;
@@ -522,6 +527,7 @@ int main(int argc, char *argv[]) {
 	synthProperties.sampleRate = sampleRate;
 	synthProperties.useReverb = true;
 	synthProperties.useDefaultReverb = true;
+	synthProperties.baseDir = romDir;
 	MT32Emu::Synth *synth = new MT32Emu::Synth();
 	if (synth->open(synthProperties)) {
 		synth->setDACInputMode(dacInputMode);
