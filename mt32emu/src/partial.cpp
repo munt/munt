@@ -354,7 +354,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			// sawtooth waves
 			if ((patchCache->waveform & 1) != 0) {
 //				sample *= cosf(FLOAT_2PI * wavePos / waveLen);
-				sample *= synth->tables.sinf10[Bit32u(4096.0f * wavePos / waveLen) + 1024];
+				sample *= synth->tables.sinf10[(Bit32u(4096.0f * wavePos / waveLen) & 4095) + 1024];
 			}
 
 			wavePos++;
