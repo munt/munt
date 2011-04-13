@@ -78,6 +78,7 @@ static inline Bit16s clipBit16s(Bit32s a) {
 
 static void floatToBit16s_nice(Bit16s *target, const float *source, Bit32u len) {
 	while (len--) {
+		// Since we're not shooting for accuracy here, don't worry about the rounding mode.
 		*target = clipBit16s((Bit32s)(*source * 16384.0f));
 		source++;
 		target++;
@@ -86,7 +87,7 @@ static void floatToBit16s_nice(Bit16s *target, const float *source, Bit32u len) 
 
 static void floatToBit16s_pure(Bit16s *target, const float *source, Bit32u len) {
 	while (len--) {
-		*target = clipBit16s((Bit32s)(*source * 8192.0f));
+		*target = clipBit16s((Bit32s)floor(*source * 8192.0f));
 		source++;
 		target++;
 	}
@@ -94,7 +95,7 @@ static void floatToBit16s_pure(Bit16s *target, const float *source, Bit32u len) 
 
 static void floatToBit16s_generation1(Bit16s *target, const float *source, Bit32u len) {
 	while (len--) {
-		*target = clipBit16s((Bit32s)(*source * 8192.0f));
+		*target = clipBit16s((Bit32s)floor(*source * 8192.0f));
 		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE);
 		source++;
 		target++;
@@ -103,7 +104,7 @@ static void floatToBit16s_generation1(Bit16s *target, const float *source, Bit32
 
 static void floatToBit16s_generation2(Bit16s *target, const float *source, Bit32u len) {
 	while (len--) {
-		*target = clipBit16s((Bit32s)(*source * 8192.0f));
+		*target = clipBit16s((Bit32s)floor(*source * 8192.0f));
 		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE) | ((*target >> 14) & 0x0001);
 		source++;
 		target++;

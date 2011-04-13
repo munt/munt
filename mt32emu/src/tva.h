@@ -65,6 +65,7 @@ private:
 	int veloAmpSubtraction;
 	int keyTimeSubtraction;
 
+	int interruptCountdown;
 	int targetPhase;
 	Bit32u currentAmp;
 	unsigned int largeAmpInc;

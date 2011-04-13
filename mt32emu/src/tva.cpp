@@ -47,6 +47,16 @@ namespace MT32Emu {
 const int TVA_TARGET_AMP_MULT = 0x800000;
 const int MAX_CURRENT_AMP = 0xFF * TVA_TARGET_AMP_MULT;
 
+// We simulate the delay in handling "target was reached" interrupts by waiting
+// this many samples before calling nextPhase().
+// FIXME: This should vary with the sample rate, but doesn't.
+// SEMI-CONFIRMED: Since this involves asynchronous activity between the LA32
+// and the 8095, a good value is hard to pin down.
+// This one matches observed behaviour on a few digital captures I had handy,
+// and should be double-checked. We may also need a more complicated delay
+// scheme eventually.
+const int INTERRUPT_TIME = 7;
+
 // CONFIRMED: Matches a table in ROM - haven't got around to coming up with a formula for it yet.
 static Bit8u biasLevelToAmpSubtractionCoeff[13] = {255, 187, 137, 100, 74, 54, 40, 29, 21, 15, 10, 5, 0};
 
@@ -65,38 +75,45 @@ void TVA::setAmpIncrement(Bit8u newAmpIncrement) {
 float TVA::nextAmp() {
 	// FIXME: This whole method is based on guesswork
 	Bit32u target = la32TargetAmp * TVA_TARGET_AMP_MULT;
-	if (la32AmpIncrement == 0) {
+	if (interruptCountdown > 0) {
+		if (--interruptCountdown == 0) {
+			nextPhase();
+		}
+	} else if (la32AmpIncrement == 0) {
 		currentAmp = target;
 	} else {
 		if ((la32AmpIncrement & 0x80) != 0) {
 			// Lowering amp
 			if (largeAmpInc > currentAmp) {
 				currentAmp = target;
-				nextPhase();
+				interruptCountdown = INTERRUPT_TIME;
 			} else {
 				currentAmp -= largeAmpInc;
 				if (currentAmp <= target) {
 					currentAmp = target;
-					nextPhase();
+					interruptCountdown = INTERRUPT_TIME;
 				}
 			}
 		} else {
 			// Raising amp
 			if (MAX_CURRENT_AMP - currentAmp < largeAmpInc) {
 				currentAmp = target;
-				nextPhase();
+				interruptCountdown = INTERRUPT_TIME;
 			} else {
 				currentAmp += largeAmpInc;
 				if (currentAmp >= target) {
 					currentAmp = target;
-					nextPhase();
+					interruptCountdown = INTERRUPT_TIME;
 				}
 			}
 		}
 	}
-	// SEMI-CONFIRMED: From sample analysis, this gives at least approximately correct results.
-	// FIXME: We should perhaps use something faster once we've got the details sorted out, but the real synth's amp level changes pretty smoothly.
-	return EXP2F((float)currentAmp / TVA_TARGET_AMP_MULT / 16.0f - 1.0f) / 32768.0f;
+	// SEMI-CONFIRMED: From sample analysis, this gives results within +/- 2 at the output (before any DAC bitshifting)
+	// when sustaining at levels 156 - 255 with no modifiers.
+	// Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
+	// What isn't yet confirmed is the behaviour when ramping between levels, as well as the timing.
+	int cAmp = currentAmp / (TVA_TARGET_AMP_MULT / 128);
+	return EXP2F((32792 - cAmp) / -2048.0f); //EXP2F((float)currentAmp / TVA_TARGET_AMP_MULT / 16.0f - 1.0f) / 32768.0f;
 }
 
 static int multBias(Bit8u biasLevel, int bias) {
@@ -232,6 +249,7 @@ void TVA::reset(const Part *newPart, const TimbreParam::PartialParam *newPartial
 	la32TargetAmp = (Bit8u)newTargetAmp;
 
 	currentAmp = 0;
+	interruptCountdown = 0;
 }
 
 void TVA::startDecay() {
