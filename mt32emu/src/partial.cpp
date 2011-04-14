@@ -233,6 +233,11 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				waveLen = 4.0f;
 			}
 
+			// wavePos isn't supposed to be > waveLen
+			// so, correct it here if waveLen was changed
+			while (wavePos > waveLen)
+				wavePos -= waveLen;
+
 			// Init cosineLen
 			float cosineLen = 0.5f * waveLen;
 			if (cutoffVal > 128) {
@@ -358,8 +363,6 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			}
 
 			wavePos++;
-			if (wavePos > waveLen)
-				wavePos -= waveLen;
 		}
 
 		// Multiply sample with current TVA value
