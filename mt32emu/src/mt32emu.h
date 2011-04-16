@@ -19,10 +19,15 @@
 #define MT32EMU_MT32EMU_H
 
 // Debugging
-// Show the instruments played
+// Shows the instruments played
 #define MT32EMU_MONITOR_INSTRUMENTS 0
 // Shows number of partials MT-32 is playing, and on which parts
 #define MT32EMU_MONITOR_PARTIALS 0
+
+// 0: No TVA-related debug output.
+// 1: Shows changes to TVA target, increment and phase.
+// 2: Additionally shows the current amp at every sample.
+#define MT32EMU_MONITOR_TVA 0
 
 #define MT32EMU_USE_EXTINT 0
 

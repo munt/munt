@@ -71,10 +71,12 @@ private:
 	unsigned int largeAmpInc;
 
 	// See comment at the top of tva.cpp for an explanation on the meaning of these variables.
-	Bit8u la32TargetAmp;
+	Bit8u la32AmpTarget;
 	Bit8u la32AmpIncrement;
 
-	void setAmpIncrement(Bit8u ampIncrement);
+	void startRamp(Bit8u newLA32AmpTarget, Bit8u newLA32AmpIncrement, int newTargetPhase);
+	void end(int newTargetPhase);
+	//void setAmpIncrement(Bit8u ampIncrement);
 	void nextPhase();
 
 public:
