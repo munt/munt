@@ -343,15 +343,16 @@ static unsigned long processSMF(FILE *dstFile, MT32Emu::Synth *synth, smf_t *smf
 		}
 	}
 	if (renderUntilInactive) {
+		// FIXME: Very inefficient, perhaps we should add a renderWhileActive() to Synth.
 		while (renderedSamples < endAfter && synth->isActive()) {
 			if (rawChannelCount > 0) {
 				if (rawSampleBuffer[0] == NULL) {
-					rawSampleBuffer[0] = new MT32Emu::Bit16s[bufferSize];
-					rawSampleBuffer[1] = new MT32Emu::Bit16s[bufferSize];
-					rawSampleBuffer[2] = new MT32Emu::Bit16s[bufferSize];
-					rawSampleBuffer[3] = new MT32Emu::Bit16s[bufferSize];
-					rawSampleBuffer[4] = new MT32Emu::Bit16s[bufferSize];
-					rawSampleBuffer[5] = new MT32Emu::Bit16s[bufferSize];
+					rawSampleBuffer[0] = new MT32Emu::Bit16s[1];
+					rawSampleBuffer[1] = new MT32Emu::Bit16s[1];
+					rawSampleBuffer[2] = new MT32Emu::Bit16s[1];
+					rawSampleBuffer[3] = new MT32Emu::Bit16s[1];
+					rawSampleBuffer[4] = new MT32Emu::Bit16s[1];
+					rawSampleBuffer[5] = new MT32Emu::Bit16s[1];
 				}
 				writtenSamples += renderRaw(synth, rawSampleBuffer, 1, dstFile, 1, waitingForNoise, rawChannelMap, rawChannelCount);
 			} else {
