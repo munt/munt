@@ -27,7 +27,7 @@ Here's what we're pretty confident about:
  - The most significant bit of la32AmpIncrement indicates the direction that the LA32's current internal amp value (currentAmp in our emulation) should change in.
    Set means downward, clear means upward.
  - The lower 7 bits of la32AmpIncrement indicate how quickly currentAmp should be changed.
- - la32AmpIncrement is 0, currentAmp is set immediately to the equivalent of la32AmpTarget and no interrupt is raised.
+ - If la32AmpIncrement is 0, no change to currentAmp is made and no interrupt is raised. [SEMI-CONFIRMED by sample analysis]
  - Otherwise, if the MSb is set:
     - If currentAmp already corresponds to a value <= la32AmpTarget, currentAmp is set immediately to the equivalent of la32AmpTarget and an interrupt is raised.
     - Otherwise, currentAmp is gradually reduced (at a rate determined by the lower 7 bits of la32AmpIncrement), and once it reaches the equivalent of la32AmpTarget an interrupt is raised.
@@ -100,9 +100,8 @@ float TVA::nextAmp() {
 		if (--interruptCountdown == 0) {
 			nextPhase();
 		}
-	} else if (la32AmpIncrement == 0) {
-		currentAmp = target;
-	} else {
+	} else if (la32AmpIncrement != 0) {
+		// CONFIRMED from sample analysis: When la32AmpIncrement is 0, the LA32 does *not* change the amp at all (and of course doesn't fire an interrupt).
 		if ((la32AmpIncrement & 0x80) != 0) {
 			// Lowering amp
 			if (largeAmpInc > currentAmp) {
