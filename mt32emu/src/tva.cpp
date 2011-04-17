@@ -299,9 +299,7 @@ void TVA::recalcSustain() {
 	Tables *tables = &partial->getSynth()->tables;
 	int newAmpTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
 	newAmpTarget += partialParam->tva.envLevel[3];
-	// FIXME: This whole concept seems flawed. We don't really know what the *actual* amp value is, right?
-	// It may well not be la32AmpTarget yet (unless I've missed something).
-	// So we could end up setting the increment to "go in the wrong direction" and therefore jump to the new value instantly...
+	// Since we're in TVA_PHASE_SUSTAIN at this point, we know that la32AmpTarget has been reached and an interrupt fired, so we can rely on it being the current amp.
 	int ampDelta = newAmpTarget - la32AmpTarget;
 
 	// Calculate an increment to get to the new amp value in a short, more or less consistent amount of time
