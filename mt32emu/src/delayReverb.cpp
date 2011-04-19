@@ -21,6 +21,9 @@
 
 using namespace MT32Emu;
 
+
+// The values below are found via analysis of digital samples
+
 const float REVERB_DELAY[8] = {0.012531f, 0.0195f, 0.03f, 0.0465625f, 0.070625f, 0.10859375f, 0.165f, 0.25f};
 const float REVERB_FADE[8] = {0.0f, 0.072265218f, 0.120255297f, 0.192893979f, 0.288687407f, 0.384667566f, 0.504922864f, 0.745338317f};
 const float REVERB_FEEDBACK = -175.0f / 256.0f;
@@ -45,7 +48,7 @@ void DelayReverb::setSampleRate(unsigned int newSampleRate) {
 		delete[] bufLeft;
 		delete[] bufRight;
 
-		// FIXME: set bufSize to EXP2F(ceil(log2(bufSize))) and use & instead of % to find buf indexes to speedup
+		// If we ever need a speedup, set bufSize to EXP2F(ceil(log2(bufSize))) and use & instead of % to find buf indexes
 		bufSize = Bit32u(2.0f * REVERB_DELAY[7] * sampleRate);
 		bufLeft = new float[bufSize];
 		bufRight = new float[bufSize];
@@ -55,7 +58,11 @@ void DelayReverb::setSampleRate(unsigned int newSampleRate) {
 }
 
 void DelayReverb::setParameters(Bit8u /*mode*/, Bit8u time, Bit8u level) {
+
+	// Time in samples between impulse responses
 	delay = Bit32u(REVERB_DELAY[time] * sampleRate);
+
+	// Fading speed, i.e. amplitude ratio of neighbor responses
 	fade = REVERB_FADE[level];
 	resetBuffer();
 }
@@ -67,14 +74,16 @@ void DelayReverb::process(const float *inLeft, const float *inRight, float *outL
 
 	for (unsigned int sampleIx = 0; sampleIx < numSamples; sampleIx++) {
 
-		//FIXME: for speed burst % should be replaced by &
-		Bit32u bufIxP1 = (bufSize + bufIx + 1) % bufSize;
+		// Since speed isn't likely an issue here, we use a simple approach for ring buffer indexing
+		Bit32u bufIxP1 = (bufIx + 1) % bufSize;
 		Bit32u bufIxMDelay = (bufSize + bufIx - delay) % bufSize;
 		Bit32u bufIxM2Delay = (bufSize + bufIx - delay - delay) % bufSize;
 
+		// Attenuate each next response
 		float left = REVERB_FEEDBACK * bufLeft[bufIxM2Delay];
 		float right = REVERB_FEEDBACK * bufRight[bufIxM2Delay];
 
+		// Single-pole IIR filter found on real devices
 		bufLeft[bufIxP1] = bufLeft[bufIx] + (left - bufLeft[bufIx]) * LPF_VALUE;
 		bufRight[bufIxP1] = bufRight[bufIx] + (right - bufRight[bufIx]) * LPF_VALUE;
 
@@ -84,13 +93,13 @@ void DelayReverb::process(const float *inLeft, const float *inRight, float *outL
 		left = inLeft[sampleIx] * fade;
 		right = inRight[sampleIx] * fade;
 
+		// Store attenuated input samples by directly adding to corresponding ring buffer locations
 		bufLeft[bufIxMDelay] += right;
 		bufRight[bufIxMDelay] += left;
 		bufLeft[bufIx] += left;
 		bufRight[bufIx] += right;
 
-		bufIx++;
-		bufIx %= bufSize;
+		bufIx = bufIxP1;
 	}
 }
 
