@@ -22,41 +22,33 @@
 using namespace MT32Emu;
 
 const float REVERB_DELAY[8] = {0.012531f, 0.0195f, 0.03f, 0.0465625f, 0.070625f, 0.10859375f, 0.165f, 0.25f};
-const float REVERB_FADE[8] = {0.0f, -0.049400051f, -0.08220577f, -0.131861118f, -0.197344907f, -0.262956344f, -0.345162114f, -0.509508615f};
+const float REVERB_FADE[8] = {0.0f, 0.072265218f, 0.120255297f, 0.192893979f, 0.288687407f, 0.384667566f, 0.504922864f, 0.745338317f};
 const float REVERB_FEEDBACK = -175.0f / 256.0f;
 const float LPF_VALUE = 0.594603558f; // = EXP2F(-0.75f)
 
 DelayReverb::DelayReverb() {
-	bufLeftDry = NULL;
-	bufRightDry = NULL;
-	bufLeftWet = NULL;
-	bufRightWet = NULL;
+	bufLeft = NULL;
+	bufRight = NULL;
 	sampleRate = 0;
 	resetParameters();
 }
 
 DelayReverb::~DelayReverb() {
-	delete[] bufLeftDry;
-	delete[] bufRightDry;
-	delete[] bufLeftWet;
-	delete[] bufRightWet;
+	delete[] bufLeft;
+	delete[] bufRight;
 }
 
 void DelayReverb::setSampleRate(unsigned int newSampleRate) {
 	if (newSampleRate != sampleRate) {
 		sampleRate = newSampleRate;
 
-		delete[] bufLeftDry;
-		delete[] bufRightDry;
-		delete[] bufLeftWet;
-		delete[] bufRightWet;
+		delete[] bufLeft;
+		delete[] bufRight;
 
 		// FIXME: set bufSize to EXP2F(ceil(log2(bufSize))) and use & instead of % to find buf indexes to speedup
 		bufSize = Bit32u(2.0f * REVERB_DELAY[7] * sampleRate);
-		bufLeftDry = new float[bufSize];
-		bufRightDry = new float[bufSize];
-		bufLeftWet = new float[bufSize];
-		bufRightWet = new float[bufSize];
+		bufLeft = new float[bufSize];
+		bufRight = new float[bufSize];
 
 		reset();
 	}
@@ -69,7 +61,7 @@ void DelayReverb::setParameters(Bit8u /*mode*/, Bit8u time, Bit8u level) {
 }
 
 void DelayReverb::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) {
-	if ((bufLeftDry == NULL) || (bufRightDry == NULL) || (bufLeftWet == NULL) || (bufRightWet == NULL)) {
+	if ((bufLeft == NULL) || (bufRight == NULL)) {
 		return;
 	}
 
@@ -80,17 +72,22 @@ void DelayReverb::process(const float *inLeft, const float *inRight, float *outL
 		Bit32u bufIxMDelay = (bufSize + bufIx - delay) % bufSize;
 		Bit32u bufIxM2Delay = (bufSize + bufIx - delay - delay) % bufSize;
 
-		bufLeftDry[bufIx] = inLeft[sampleIx] * fade;
-		bufRightDry[bufIx] = inRight[sampleIx] * fade;
+		float left = REVERB_FEEDBACK * bufLeft[bufIxM2Delay];
+		float right = REVERB_FEEDBACK * bufRight[bufIxM2Delay];
 
-		float left = REVERB_FEEDBACK * bufLeftWet[bufIxM2Delay] + bufLeftDry[bufIxM2Delay] + bufRightDry[bufIxMDelay];
-		float right = REVERB_FEEDBACK * bufRightWet[bufIxM2Delay] + bufRightDry[bufIxM2Delay] + bufLeftDry[bufIxMDelay];
+		bufLeft[bufIxP1] = bufLeft[bufIx] + (left - bufLeft[bufIx]) * LPF_VALUE;
+		bufRight[bufIxP1] = bufRight[bufIx] + (right - bufRight[bufIx]) * LPF_VALUE;
 
-		bufLeftWet[bufIxP1] = bufLeftWet[bufIx] + (left - bufLeftWet[bufIx]) * LPF_VALUE;
-		bufRightWet[bufIxP1] = bufRightWet[bufIx] + (right - bufRightWet[bufIx]) * LPF_VALUE;
+		outLeft[sampleIx] = bufLeft[bufIxP1];
+		outRight[sampleIx] = bufRight[bufIxP1];
 
-		outLeft[sampleIx] = bufLeftWet[bufIxP1];
-		outRight[sampleIx] = bufRightWet[bufIxP1];
+		left = inLeft[sampleIx] * fade;
+		right = inRight[sampleIx] * fade;
+
+		bufLeft[bufIxMDelay] += right;
+		bufRight[bufIxMDelay] += left;
+		bufLeft[bufIx] += left;
+		bufRight[bufIx] += right;
 
 		bufIx++;
 		bufIx %= bufSize;
@@ -104,17 +101,11 @@ void DelayReverb::reset() {
 
 void DelayReverb::resetBuffer() {
 	bufIx = 0;
-	if (bufLeftDry != NULL) {
-		memset(bufLeftDry, 0, bufSize * sizeof(float));
+	if (bufLeft != NULL) {
+		memset(bufLeft, 0, bufSize * sizeof(float));
 	}
-	if (bufRightDry != NULL) {
-		memset(bufRightDry, 0, bufSize * sizeof(float));
-	}
-	if (bufLeftWet != NULL) {
-		memset(bufLeftWet, 0, bufSize * sizeof(float));
-	}
-	if (bufRightWet != NULL) {
-		memset(bufRightWet, 0, bufSize * sizeof(float));
+	if (bufRight != NULL) {
+		memset(bufRight, 0, bufSize * sizeof(float));
 	}
 }
 
