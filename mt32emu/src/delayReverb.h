@@ -22,26 +22,17 @@ namespace MT32Emu {
 
 class DelayReverb : public ReverbModel {
 private:
-	float *buf;
-
 	unsigned int sampleRate;
-	unsigned int bufSize;
-	unsigned int bufIx;
-	unsigned int rampCount;
-	unsigned int rampTarget;
+	Bit32u bufSize;
+	Bit32u bufIx;
 
-	unsigned int leftDelay;
-	unsigned int rightDelay;
+	float *bufLeftDry;
+	float *bufRightDry;
+	float *bufLeftWet;
+	float *bufRightWet;
 
-	float leftDelaySeconds;
-	float rightDelaySeconds;
-	float targetReverbLevel;
-	float reverbLevelRampInc;
-	float reverbLevel;
-
-	float targetFeedbackLevel;
-	float feedbackLevelRampInc;
-	float feedbackLevel;
+	Bit32u delay;
+	float fade;
 
 	void resetBuffer();
 	void resetParameters();
