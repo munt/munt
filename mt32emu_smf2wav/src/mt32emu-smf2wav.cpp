@@ -433,7 +433,7 @@ int main(int argc, char *argv[]) {
 	MT32Emu::DACInputMode dacInputMode = DAC_INPUT_MODES[0];
 	int rawChannelMap[8];
 	int rawChannelCount = 0;
-	char *romDir;
+	char *romDir = NULL;
 	while ((ch = getopt(argc, argv, "ab:d:e:fhm:o:qr:s:tw:")) != -1) {
 		switch (ch) {
 		case 'a':
