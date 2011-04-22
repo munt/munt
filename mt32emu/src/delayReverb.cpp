@@ -27,7 +27,7 @@ using namespace MT32Emu;
 
 const float REVERB_DELAY[8] = {0.012531f, 0.0195f, 0.03f, 0.0465625f, 0.070625f, 0.10859375f, 0.165f, 0.25f};
 const float REVERB_FADE[8] = {0.0f, 0.072265218f, 0.120255297f, 0.192893979f, 0.288687407f, 0.384667566f, 0.504922864f, 0.745338317f};
-const float REVERB_FEEDBACK = -175.0f / 256.0f;
+const float REVERB_FEEDBACK = -0.629960524947437f; // = -EXP2F(-2 / 3)
 const float LPF_VALUE = 0.594603558f; // = EXP2F(-0.75f)
 
 DelayReverb::DelayReverb() {
