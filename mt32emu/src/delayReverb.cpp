@@ -47,7 +47,7 @@ void DelayReverb::setSampleRate(unsigned int newSampleRate) {
 		delete[] buf;
 
 		// If we ever need a speedup, set bufSize to EXP2F(ceil(log2(bufSize))) and use & instead of % to find buf indexes
-		bufSize = Bit32u(2.0f * REVERB_DELAY[7] * sampleRate);
+		bufSize = Bit32u(2.0f * REVERB_DELAY[7] * sampleRate) + 512;
 		buf = new float[bufSize];
 
 		reset();
