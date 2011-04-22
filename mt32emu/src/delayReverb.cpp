@@ -111,6 +111,7 @@ void DelayReverb::resetBuffer() {
 
 void DelayReverb::resetParameters() {
 	delay = Bit32u(REVERB_DELAY[0] * sampleRate);
+	feedback = REVERB_FEEDBACK;
 	fade = REVERB_FADE[0];
 }
 
