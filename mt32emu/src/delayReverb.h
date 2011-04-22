@@ -26,8 +26,7 @@ private:
 	Bit32u bufSize;
 	Bit32u bufIx;
 
-	float *bufLeft;
-	float *bufRight;
+	float *buf;
 
 	Bit32u delay;
 	float fade;

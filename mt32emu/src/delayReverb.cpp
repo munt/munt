@@ -17,7 +17,6 @@
 
 #include <cmath>
 #include <cstring>
-
 #include "mt32emu.h"
 #include "delayReverb.h"
 
@@ -32,28 +31,24 @@ const float REVERB_FEEDBACK = -175.0f / 256.0f;
 const float LPF_VALUE = 0.594603558f; // = EXP2F(-0.75f)
 
 DelayReverb::DelayReverb() {
-	bufLeft = NULL;
-	bufRight = NULL;
+	buf = NULL;
 	sampleRate = 0;
 	resetParameters();
 }
 
 DelayReverb::~DelayReverb() {
-	delete[] bufLeft;
-	delete[] bufRight;
+	delete[] buf;
 }
 
 void DelayReverb::setSampleRate(unsigned int newSampleRate) {
 	if (newSampleRate != sampleRate) {
 		sampleRate = newSampleRate;
 
-		delete[] bufLeft;
-		delete[] bufRight;
+		delete[] buf;
 
 		// If we ever need a speedup, set bufSize to EXP2F(ceil(log2(bufSize))) and use & instead of % to find buf indexes
 		bufSize = Bit32u(2.0f * REVERB_DELAY[7] * sampleRate);
-		bufLeft = new float[bufSize];
-		bufRight = new float[bufSize];
+		buf = new float[bufSize];
 
 		reset();
 	}
@@ -70,38 +65,28 @@ void DelayReverb::setParameters(Bit8u /*mode*/, Bit8u time, Bit8u level) {
 }
 
 void DelayReverb::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) {
-	if ((bufLeft == NULL) || (bufRight == NULL)) {
+	if (buf == NULL) {
 		return;
 	}
 
 	for (unsigned int sampleIx = 0; sampleIx < numSamples; sampleIx++) {
 
 		// Since speed isn't likely an issue here, we use a simple approach for ring buffer indexing
-		Bit32u bufIxP1 = (bufIx + 1) % bufSize;
+		Bit32u bufIxM1 = (bufSize + bufIx - 1) % bufSize;
 		Bit32u bufIxMDelay = (bufSize + bufIx - delay) % bufSize;
 		Bit32u bufIxM2Delay = (bufSize + bufIx - delay - delay) % bufSize;
 
-		// Attenuate each next response
-		float left = REVERB_FEEDBACK * bufLeft[bufIxM2Delay];
-		float right = REVERB_FEEDBACK * bufRight[bufIxM2Delay];
+		// Attenuated input samples and feedback response are directly added to the current ring buffer location
+		float sample = REVERB_FEEDBACK * ((inLeft[sampleIx] + inRight[sampleIx]) * fade + buf[bufIxM2Delay]);
 
 		// Single-pole IIR filter found on real devices
-		bufLeft[bufIxP1] = bufLeft[bufIx] + (left - bufLeft[bufIx]) * LPF_VALUE;
-		bufRight[bufIxP1] = bufRight[bufIx] + (right - bufRight[bufIx]) * LPF_VALUE;
+		buf[bufIx] = buf[bufIxM1] + (sample - buf[bufIxM1]) * LPF_VALUE;
 
-		outLeft[sampleIx] = bufLeft[bufIxP1];
-		outRight[sampleIx] = bufRight[bufIxP1];
+		// Output left channel by Delay samples earlier
+		outLeft[sampleIx] = buf[bufIxMDelay];
+		outRight[sampleIx] = buf[bufIxM2Delay];
 
-		left = inLeft[sampleIx] * fade;
-		right = inRight[sampleIx] * fade;
-
-		// Store attenuated input samples by directly adding to corresponding ring buffer locations
-		bufLeft[bufIxMDelay] += right;
-		bufRight[bufIxMDelay] += left;
-		bufLeft[bufIx] += left;
-		bufRight[bufIx] += right;
-
-		bufIx = bufIxP1;
+		bufIx = (bufIx + 1) % bufSize;
 	}
 }
 
@@ -112,11 +97,8 @@ void DelayReverb::reset() {
 
 void DelayReverb::resetBuffer() {
 	bufIx = 0;
-	if (bufLeft != NULL) {
-		memset(bufLeft, 0, bufSize * sizeof(float));
-	}
-	if (bufRight != NULL) {
-		memset(bufRight, 0, bufSize * sizeof(float));
+	if (buf != NULL) {
+		memset(buf, 0, bufSize * sizeof(float));
 	}
 }
 
