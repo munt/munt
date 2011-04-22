@@ -1263,7 +1263,6 @@ bool Synth::isActive() const {
 	}
 	if (reverbEnabled) {
 		if (mt32ram.system.reverbMode == 3) {
-			((Synth *)this)->printDebug("Active check");
 			return delayReverbModel->isActive();
 		} else {
 			return reverbModel->isActive();
