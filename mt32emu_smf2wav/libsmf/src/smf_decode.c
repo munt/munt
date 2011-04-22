@@ -149,7 +149,7 @@ smf_event_decode_textual(const smf_event_t *event, const char *name)
 		return (NULL);
 	}
 
-	snprintf(buf + off, BUFFER_SIZE - off, "%s: %s", name, extracted);
+	g_snprintf(buf + off, BUFFER_SIZE - off, "%s: %s", name, extracted);
 
 	return (buf);
 }
@@ -157,7 +157,7 @@ smf_event_decode_textual(const smf_event_t *event, const char *name)
 static char *
 smf_event_decode_metadata(const smf_event_t *event)
 {
-	int off = 0, mspqn, flats, isminor;
+	int mspqn, flats, isminor;
 	char *buf;
 
 	static const char *const major_keys[] = {"Fb", "Cb", "Gb", "Db", "Ab",
@@ -208,7 +208,7 @@ smf_event_decode_metadata(const smf_event_t *event)
 
 	switch (event->midi_buffer[1]) {
 		case 0x00:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Sequence number");
+			g_snprintf(buf, BUFFER_SIZE, "Sequence number");
 			break;
 
 		/* http://music.columbia.edu/pipermail/music-dsp/2004-August/061196.html */
@@ -218,7 +218,7 @@ smf_event_decode_metadata(const smf_event_t *event)
 				goto error;
 			}
 
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Channel Prefix: %d", event->midi_buffer[3]);
+			g_snprintf(buf, BUFFER_SIZE, "Channel Prefix: %d", event->midi_buffer[3]);
 			break;
 
 		case 0x21:
@@ -227,11 +227,11 @@ smf_event_decode_metadata(const smf_event_t *event)
 				goto error;
 			}
 
-			off += snprintf(buf + off, BUFFER_SIZE - off, "MIDI Port: %d", event->midi_buffer[3]);
+			g_snprintf(buf, BUFFER_SIZE, "MIDI Port: %d", event->midi_buffer[3]);
 			break;
 
 		case 0x2F:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "End Of Track");
+			g_snprintf(buf, BUFFER_SIZE, "End Of Track");
 			break;
 
 		case 0x51:
@@ -242,12 +242,12 @@ smf_event_decode_metadata(const smf_event_t *event)
 
 			mspqn = (event->midi_buffer[3] << 16) + (event->midi_buffer[4] << 8) + event->midi_buffer[5];
 
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Tempo: %d microseconds per quarter note, %.2f BPM",
+			g_snprintf(buf, BUFFER_SIZE, "Tempo: %d microseconds per quarter note, %.2f BPM",
 				mspqn, 60000000.0 / (double)mspqn);
 			break;
 
 		case 0x54:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "SMPTE Offset");
+			g_snprintf(buf, BUFFER_SIZE, "SMPTE Offset");
 			break;
 
 		case 0x58:
@@ -256,7 +256,7 @@ smf_event_decode_metadata(const smf_event_t *event)
 				goto error;
 			}
 
-			off += snprintf(buf + off, BUFFER_SIZE - off,
+			g_snprintf(buf, BUFFER_SIZE,
 				"Time Signature: %d/%d, %d clocks per click, %d notated 32nd notes per quarter note",
 				event->midi_buffer[3], (int)pow(2, event->midi_buffer[4]), event->midi_buffer[5],
 				event->midi_buffer[6]);
@@ -276,10 +276,8 @@ smf_event_decode_metadata(const smf_event_t *event)
 				goto error;
 			}
 
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Key Signature: ");
-
 			if (flats > 8 && flats < 248) {
-				off += snprintf(buf + off, BUFFER_SIZE - off, "%d %s, %s key", abs((int8_t)flats),
+				g_snprintf(buf, BUFFER_SIZE, "Key Signature: %d %s, %s key", abs((int8_t)flats),
 					flats > 127 ? "flats" : "sharps", isminor ? "minor" : "major");
 			} else {
 				int i = (flats - 248) & 255;
@@ -288,15 +286,15 @@ smf_event_decode_metadata(const smf_event_t *event)
 				assert(i >= 0 && i < sizeof(major_keys) / sizeof(*major_keys));
 
 				if (isminor)
-					off += snprintf(buf + off, BUFFER_SIZE - off, "%s", minor_keys[i]);
+					g_snprintf(buf, BUFFER_SIZE, "Key Signature: %s", minor_keys[i]);
 				else
-					off += snprintf(buf + off, BUFFER_SIZE - off, "%s", major_keys[i]);
+					g_snprintf(buf, BUFFER_SIZE, "Key Signature: %s", major_keys[i]);
 			}
 
 			break;
 
 		case 0x7F:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Proprietary (aka Sequencer) Event, length %d",
+			g_snprintf(buf, BUFFER_SIZE, "Proprietary (aka Sequencer) Event, length %d",
 				event->midi_buffer_length);
 			break;
 
@@ -315,7 +313,6 @@ error:
 static char *
 smf_event_decode_system_realtime(const smf_event_t *event)
 {
-	int off = 0;
 	char *buf;
 
 	assert(smf_event_is_system_realtime(event));
@@ -333,27 +330,27 @@ smf_event_decode_system_realtime(const smf_event_t *event)
 
 	switch (event->midi_buffer[0]) {
 		case 0xF8:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "MIDI Clock (realtime)");
+			g_snprintf(buf, BUFFER_SIZE, "MIDI Clock (realtime)");
 			break;
 
 		case 0xF9:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Tick (realtime)");
+			g_snprintf(buf, BUFFER_SIZE, "Tick (realtime)");
 			break;
 
 		case 0xFA:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "MIDI Start (realtime)");
+			g_snprintf(buf, BUFFER_SIZE, "MIDI Start (realtime)");
 			break;
 
 		case 0xFB:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "MIDI Continue (realtime)");
+			g_snprintf(buf, BUFFER_SIZE, "MIDI Continue (realtime)");
 			break;
 
 		case 0xFC:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "MIDI Stop (realtime)");
+			g_snprintf(buf, BUFFER_SIZE, "MIDI Stop (realtime)");
 			break;
 
 		case 0xFE:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Active Sense (realtime)");
+			g_snprintf(buf, BUFFER_SIZE, "Active Sense (realtime)");
 			break;
 
 		default:
@@ -386,83 +383,86 @@ smf_event_decode_sysex(const smf_event_t *event)
 	manufacturer = event->midi_buffer[1];
 
 	if (manufacturer == 0x7F) {
-		off += snprintf(buf + off, BUFFER_SIZE - off, "SysEx, realtime, channel %d", event->midi_buffer[2]);
+		off = g_snprintf(buf, BUFFER_SIZE, "SysEx, realtime, channel %d", event->midi_buffer[2]);
 	} else if (manufacturer == 0x7E) {
-		off += snprintf(buf + off, BUFFER_SIZE - off, "SysEx, non-realtime, channel %d", event->midi_buffer[2]);
+		off = g_snprintf(buf, BUFFER_SIZE, "SysEx, non-realtime, channel %d", event->midi_buffer[2]);
 	} else {
-		off += snprintf(buf + off, BUFFER_SIZE - off, "SysEx, manufacturer 0x%x", manufacturer);
+		g_snprintf(buf, BUFFER_SIZE, "SysEx, manufacturer 0x%x", manufacturer);
 
 		return (buf);
 	}
+
+	if (off >= BUFFER_SIZE)
+		return (buf);
 
 	subid = event->midi_buffer[3];
 	subid2 = event->midi_buffer[4];
 
 	if (subid == 0x01)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Header");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Header");
 
 	else if (subid == 0x02)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Data Packet");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Data Packet");
 
 	else if (subid == 0x03)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Request");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Request");
 
 	else if (subid == 0x04 && subid2 == 0x01)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Master Volume");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Master Volume");
 
 	else if (subid == 0x05 && subid2 == 0x01)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Loop Point Retransmit");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Loop Point Retransmit");
 
 	else if (subid == 0x05 && subid2 == 0x02)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Loop Point Request");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Loop Point Request");
 
 	else if (subid == 0x06 && subid2 == 0x01)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Identity Request");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Identity Request");
 
 	else if (subid == 0x06 && subid2 == 0x02)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Identity Reply");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Identity Reply");
 
 	else if (subid == 0x08 && subid2 == 0x00)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Bulk Tuning Dump Request");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Bulk Tuning Dump Request");
 
 	else if (subid == 0x08 && subid2 == 0x01)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Bulk Tuning Dump");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Bulk Tuning Dump");
 
 	else if (subid == 0x08 && subid2 == 0x02)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Single Note Tuning Change");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Single Note Tuning Change");
 
 	else if (subid == 0x08 && subid2 == 0x03)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Bulk Tuning Dump Request (Bank)");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Bulk Tuning Dump Request (Bank)");
 
 	else if (subid == 0x08 && subid2 == 0x04)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Key Based Tuning Dump");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Key Based Tuning Dump");
 
 	else if (subid == 0x08 && subid2 == 0x05)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Scale/Octave Tuning Dump, 1 byte format");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Scale/Octave Tuning Dump, 1 byte format");
 
 	else if (subid == 0x08 && subid2 == 0x06)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Scale/Octave Tuning Dump, 2 byte format");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Scale/Octave Tuning Dump, 2 byte format");
 
 	else if (subid == 0x08 && subid2 == 0x07)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Single Note Tuning Change (Bank)");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Single Note Tuning Change (Bank)");
 
 	else if (subid == 0x09)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", General MIDI %s", subid2 == 0 ? "disable" : "enable");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", General MIDI %s", subid2 == 0 ? "disable" : "enable");
 
 	else if (subid == 0x7C)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Wait");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Wait");
 
 	else if (subid == 0x7D)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Cancel");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump Cancel");
 
 	else if (subid == 0x7E)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump NAK");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump NAK");
 
 	else if (subid == 0x7F)
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump ACK");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Sample Dump ACK");
 
 	else
-		off += snprintf(buf + off, BUFFER_SIZE - off, ", Unknown");
+		g_snprintf(buf + off, BUFFER_SIZE - off, ", Unknown");
 
 	return (buf);
 }
@@ -470,7 +470,6 @@ smf_event_decode_sysex(const smf_event_t *event)
 static char *
 smf_event_decode_system_common(const smf_event_t *event)
 {
-	int off = 0;
 	char *buf;
 
 	assert(smf_event_is_system_common(event));
@@ -486,19 +485,19 @@ smf_event_decode_system_common(const smf_event_t *event)
 
 	switch (event->midi_buffer[0]) {
 		case 0xF1:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "MTC Quarter Frame");
+			g_snprintf(buf, BUFFER_SIZE, "MTC Quarter Frame");
 			break;
 
 		case 0xF2:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Song Position Pointer");
+			g_snprintf(buf, BUFFER_SIZE, "Song Position Pointer");
 			break;
 
 		case 0xF3:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Song Select");
+			g_snprintf(buf, BUFFER_SIZE, "Song Select");
 			break;
 
 		case 0xF6:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Tune Request");
+			g_snprintf(buf, BUFFER_SIZE, "Tune Request");
 			break;
 
 		default:
@@ -532,7 +531,7 @@ note_from_int(char *buf, int note_number)
 char *
 smf_event_decode(const smf_event_t *event)
 {
-	int off = 0, channel;
+	int channel;
 	char *buf, note[5];
 
 	if (smf_event_is_metadata(event))
@@ -561,39 +560,39 @@ smf_event_decode(const smf_event_t *event)
 	switch (event->midi_buffer[0] & 0xF0) {
 		case 0x80:
 			note_from_int(note, event->midi_buffer[1]);
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Note Off, channel %d, note %s, velocity %d",
+			g_snprintf(buf, BUFFER_SIZE, "Note Off, channel %d, note %s, velocity %d",
 					channel, note, event->midi_buffer[2]);
 			break;
 
 		case 0x90:
 			note_from_int(note, event->midi_buffer[1]);
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Note On, channel %d, note %s, velocity %d",
+			g_snprintf(buf, BUFFER_SIZE, "Note On, channel %d, note %s, velocity %d",
 					channel, note, event->midi_buffer[2]);
 			break;
 
 		case 0xA0:
 			note_from_int(note, event->midi_buffer[1]);
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Aftertouch, channel %d, note %s, pressure %d",
+			g_snprintf(buf, BUFFER_SIZE, "Aftertouch, channel %d, note %s, pressure %d",
 					channel, note, event->midi_buffer[2]);
 			break;
 
 		case 0xB0:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Controller, channel %d, controller %d, value %d",
+			g_snprintf(buf, BUFFER_SIZE, "Controller, channel %d, controller %d, value %d",
 					channel, event->midi_buffer[1], event->midi_buffer[2]);
 			break;
 
 		case 0xC0:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Program Change, channel %d, controller %d",
+			g_snprintf(buf, BUFFER_SIZE, "Program Change, channel %d, controller %d",
 					channel, event->midi_buffer[1]);
 			break;
 
 		case 0xD0:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Channel Pressure, channel %d, pressure %d",
+			g_snprintf(buf, BUFFER_SIZE, "Channel Pressure, channel %d, pressure %d",
 					channel, event->midi_buffer[1]);
 			break;
 
 		case 0xE0:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "Pitch Wheel, channel %d, value %d",
+			g_snprintf(buf, BUFFER_SIZE, "Pitch Wheel, channel %d, value %d",
 					channel, ((int)event->midi_buffer[2] << 7) | (int)event->midi_buffer[2]);
 			break;
 
@@ -625,32 +624,38 @@ smf_decode(const smf_t *smf)
 		return (NULL);
 	}
 
-	off += snprintf(buf + off, BUFFER_SIZE - off, "format: %d ", smf->format);
+	off += g_snprintf(buf + off, BUFFER_SIZE - off, "format: %d ", smf->format);
+	if (off >= BUFFER_SIZE)
+		return (buf);
 
 	switch (smf->format) {
 		case 0:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "(single track)");
+			off += g_snprintf(buf + off, BUFFER_SIZE - off, "(single track)");
 			break;
 
 		case 1:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "(several simultaneous tracks)");
+			off += g_snprintf(buf + off, BUFFER_SIZE - off, "(several simultaneous tracks)");
 			break;
 
 		case 2:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "(several independent tracks)");
+			off += g_snprintf(buf + off, BUFFER_SIZE - off, "(several independent tracks)");
 			break;
 
 		default:
-			off += snprintf(buf + off, BUFFER_SIZE - off, "(INVALID FORMAT)");
+			off += g_snprintf(buf + off, BUFFER_SIZE - off, "(INVALID FORMAT)");
 			break;
 	}
+	if (off >= BUFFER_SIZE)
+		return (buf);
 
-	off += snprintf(buf + off, BUFFER_SIZE - off, "; number of tracks: %d", smf->number_of_tracks);
+	off += g_snprintf(buf + off, BUFFER_SIZE - off, "; number of tracks: %d", smf->number_of_tracks);
+	if (off >= BUFFER_SIZE)
+		return (buf);
 
 	if (smf->ppqn != 0)
-		off += snprintf(buf + off, BUFFER_SIZE - off, "; division: %d PPQN", smf->ppqn);
+		off += g_snprintf(buf + off, BUFFER_SIZE - off, "; division: %d PPQN", smf->ppqn);
 	else
-		off += snprintf(buf + off, BUFFER_SIZE - off, "; division: %d FPS, %d resolution", smf->frames_per_second, smf->resolution);
+		off += g_snprintf(buf + off, BUFFER_SIZE - off, "; division: %d FPS, %d resolution", smf->frames_per_second, smf->resolution);
 
 	return (buf);
 }
