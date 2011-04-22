@@ -113,15 +113,10 @@ bool DelayReverb::isActive() const {
 	if (bufSize == 0) {
 		return false;
 	}
-	Bit32s lastL = (Bit32s)floor(bufLeft[0] * 8192.0f);
-	Bit32s lastR = (Bit32s)floor(bufRight[0] * 8192.0f);
+	Bit32s last = (Bit32s)floor(buf[0] * 8192.0f);
 	for (unsigned int i = 1; i < bufSize; i++) {
-		Bit32s l = (Bit32s)floor(bufLeft[i] * 8192.0f);
-		if (l != lastL) {
-			return true;
-		}
-		Bit32s r = (Bit32s)floor(bufRight[i] * 8192.0f);
-		if (r != lastR) {
+		Bit32s s = (Bit32s)floor(buf[i] * 8192.0f);
+		if (s != last) {
 			return true;
 		}
 	}
