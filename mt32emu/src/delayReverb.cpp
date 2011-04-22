@@ -26,8 +26,9 @@ using namespace MT32Emu;
 // The values below are found via analysis of digital samples
 
 const float REVERB_DELAY[8] = {0.012531f, 0.0195f, 0.03f, 0.0465625f, 0.070625f, 0.10859375f, 0.165f, 0.25f};
-const float REVERB_FADE[8] = {0.0f, 0.072265218f, 0.120255297f, 0.192893979f, 0.288687407f, 0.384667566f, 0.504922864f, 0.745338317f};
-const float REVERB_FEEDBACK = -0.629960524947437f; // = -EXP2F(-2 / 3)
+const float REVERB_FADE[8] = {0.0f, -0.049400051f, -0.08220577f, -0.131861118f, -0.197344907f, -0.262956344f, -0.345162114f, -0.509508615f};
+const float REVERB_FEEDBACK67 = -0.629960524947437f; // = -EXP2F(-2 / 3)
+const float REVERB_FEEDBACK = -0.682034520443118f; // = -EXP2F(-53 / 96)
 const float LPF_VALUE = 0.594603558f; // = EXP2F(-0.75f)
 
 DelayReverb::DelayReverb() {
@@ -59,6 +60,12 @@ void DelayReverb::setParameters(Bit8u /*mode*/, Bit8u time, Bit8u level) {
 	// Time in samples between impulse responses
 	delay = Bit32u(REVERB_DELAY[time] * sampleRate);
 
+	if (time < 6) {
+		feedback = REVERB_FEEDBACK;
+	} else {
+		feedback = REVERB_FEEDBACK67;
+	}
+
 	// Fading speed, i.e. amplitude ratio of neighbor responses
 	fade = REVERB_FADE[level];
 	resetBuffer();
@@ -77,7 +84,7 @@ void DelayReverb::process(const float *inLeft, const float *inRight, float *outL
 		Bit32u bufIxM2Delay = (bufSize + bufIx - delay - delay) % bufSize;
 
 		// Attenuated input samples and feedback response are directly added to the current ring buffer location
-		float sample = REVERB_FEEDBACK * ((inLeft[sampleIx] + inRight[sampleIx]) * fade + buf[bufIxM2Delay]);
+		float sample = fade * (inLeft[sampleIx] + inRight[sampleIx]) + feedback * buf[bufIxM2Delay];
 
 		// Single-pole IIR filter found on real devices
 		buf[bufIx] = buf[bufIxM1] + (sample - buf[bufIxM1]) * LPF_VALUE;

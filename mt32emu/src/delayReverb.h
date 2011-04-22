@@ -30,6 +30,7 @@ private:
 
 	Bit32u delay;
 	float fade;
+	float feedback;
 
 	void resetBuffer();
 	void resetParameters();
