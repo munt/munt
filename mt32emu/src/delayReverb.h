@@ -42,6 +42,7 @@ public:
 	void setParameters(Bit8u mode, Bit8u time, Bit8u level);
 	void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples);
 	void reset();
+	bool isActive() const;
 };
 }
 #endif

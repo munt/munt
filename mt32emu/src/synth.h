@@ -284,6 +284,7 @@ public:
 	virtual void setParameters(Bit8u mode, Bit8u time, Bit8u level) = 0;
 	virtual void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) = 0;
 	virtual void reset() = 0;
+	virtual bool isActive() const = 0;
 };
 
 class FreeverbModel : public ReverbModel {
@@ -295,6 +296,7 @@ public:
 	void setParameters(Bit8u mode, Bit8u time, Bit8u level);
 	void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples);
 	void reset();
+	bool isActive() const;
 };
 
 class Synth {

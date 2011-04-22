@@ -15,7 +15,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cmath>
 #include <cstring>
+
 #include "mt32emu.h"
 #include "delayReverb.h"
 
@@ -121,4 +123,25 @@ void DelayReverb::resetBuffer() {
 void DelayReverb::resetParameters() {
 	delay = Bit32u(REVERB_DELAY[0] * sampleRate);
 	fade = REVERB_FADE[0];
+}
+
+bool DelayReverb::isActive() const {
+	// Quick hack: Return true iff all samples in the left buffer are the same and
+	// all samples in the right buffers are the same (within the sample output threshold).
+	if (bufSize == 0) {
+		return false;
+	}
+	Bit32s lastL = (Bit32s)floor(bufLeft[0] * 8192.0f);
+	Bit32s lastR = (Bit32s)floor(bufRight[0] * 8192.0f);
+	for (unsigned int i = 1; i < bufSize; i++) {
+		Bit32s l = (Bit32s)floor(bufLeft[i] * 8192.0f);
+		if (l != lastL) {
+			return true;
+		}
+		Bit32s r = (Bit32s)floor(bufRight[i] * 8192.0f);
+		if (r != lastR) {
+			return true;
+		}
+	}
+	return false;
 }

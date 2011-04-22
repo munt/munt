@@ -1236,7 +1236,7 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 			reverbModel->process(&tmpBufMixLeft[0], &tmpBufMixRight[0], &tmpBufReverbOutLeft[0], &tmpBufReverbOutRight[0], len);
 		}
 		if (reverbWetLeft != NULL) {
-		floatToBit16s_pure(reverbWetLeft, &tmpBufReverbOutLeft[0], len);
+			floatToBit16s_pure(reverbWetLeft, &tmpBufReverbOutLeft[0], len);
 		}
 		if (reverbWetRight != NULL) {
 			floatToBit16s_pure(reverbWetRight, &tmpBufReverbOutRight[0], len);
@@ -1259,6 +1259,14 @@ bool Synth::isActive() const {
 	for (int partialNum = 0; partialNum < MT32EMU_MAX_PARTIALS; partialNum++) {
 		if (partialManager->getPartial(partialNum)->isActive()) {
 			return true;
+		}
+	}
+	if (reverbEnabled) {
+		if (mt32ram.system.reverbMode == 3) {
+			((Synth *)this)->printDebug("Active check");
+			return delayReverbModel->isActive();
+		} else {
+			return reverbModel->isActive();
 		}
 	}
 	return false;
@@ -1384,6 +1392,11 @@ void FreeverbModel::setParameters(Bit8u mode, Bit8u time, Bit8u level) {
 void FreeverbModel::reset() {
 	delete freeverb;
 	freeverb = new revmodel();
+}
+
+bool FreeverbModel::isActive() const {
+	// FIXME: Not bothering to do this properly since we'll be replacing Freeverb soon...
+	return false;
 }
 
 }
