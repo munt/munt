@@ -134,13 +134,13 @@ void DelayReverb::reset() {
 bool DelayReverb::isActive() const {
 	// Quick hack: Return true iff all samples in the left buffer are the same and
 	// all samples in the right buffers are the same (within the sample output threshold).
-	if (bufSize == 0) {
+	if (buf == NULL) {
 		return false;
 	}
-	Bit32s last = (Bit32s)floor(buf[0] * 8192.0f);
+	float last = buf[0] * 8192.0f;
 	for (unsigned int i = 1; i < bufSize; i++) {
-		Bit32s s = (Bit32s)floor(buf[i] * 8192.0f);
-		if (s != last) {
+		float s = (buf[i] * 8192.0f);
+		if (fabs(s - last) > 1.0f) {
 			return true;
 		}
 	}
