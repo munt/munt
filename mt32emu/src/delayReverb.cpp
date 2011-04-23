@@ -23,9 +23,23 @@
 using namespace MT32Emu;
 
 
-// The values below are found via analysis of digital samples
+// CONFIRMED: The values below are found via analysis of digital samples. Checked with all time and level combinations.
+// Obviously:
+// rightDelay = (leftDelay - 2) * 2 + 2
+// echoDelay = rightDelay - 1
+// Leaving these separate in case it's useful for work on other reverb modes...
+const Bit32u REVERB_TIMINGS[8][3]= {
+	// {leftDelay, rightDelay, feedbackDelay}
+	{402, 802, 801},
+	{626, 1250, 1249},
+	{962, 1922, 1921},
+	{1490, 2978, 2977},
+	{2258, 4514, 4513},
+	{3474, 6946, 6945},
+	{5282, 10562, 10561},
+	{8002, 16002, 16001}
+};
 
-const float REVERB_DELAY[8] = {0.012531f, 0.0195f, 0.03f, 0.0465625f, 0.070625f, 0.10859375f, 0.165f, 0.25f};
 const float REVERB_FADE[8] = {0.0f, -0.049400051f, -0.08220577f, -0.131861118f, -0.197344907f, -0.262956344f, -0.345162114f, -0.509508615f};
 const float REVERB_FEEDBACK67 = -0.629960524947437f; // = -EXP2F(-2 / 3)
 const float REVERB_FEEDBACK = -0.682034520443118f; // = -EXP2F(-53 / 96)
@@ -34,7 +48,7 @@ const float LPF_VALUE = 0.594603558f; // = EXP2F(-0.75f)
 DelayReverb::DelayReverb() {
 	buf = NULL;
 	sampleRate = 0;
-	resetParameters();
+	setParameters(3, 0, 0);
 }
 
 DelayReverb::~DelayReverb() {
@@ -48,17 +62,27 @@ void DelayReverb::setSampleRate(unsigned int newSampleRate) {
 		delete[] buf;
 
 		// If we ever need a speedup, set bufSize to EXP2F(ceil(log2(bufSize))) and use & instead of % to find buf indexes
-		bufSize = Bit32u(2.0f * REVERB_DELAY[7] * sampleRate) + 512;
+		bufSize = 16384 * sampleRate / 32000;
 		buf = new float[bufSize];
 
-		reset();
+		recalcParameters();
 	}
 }
 
-void DelayReverb::setParameters(Bit8u /*mode*/, Bit8u time, Bit8u level) {
+// This method will always trigger a flush of the buffer
+void DelayReverb::setParameters(Bit8u /*mode*/, Bit8u newTime, Bit8u newLevel) {
+	time = newTime;
+	level = newLevel;
+	recalcParameters();
+}
 
-	// Time in samples between impulse responses
-	delay = Bit32u(REVERB_DELAY[time] * sampleRate);
+void DelayReverb::recalcParameters() {
+	// Number of samples between impulse and eventual appearance on the left channel
+	delayLeft = REVERB_TIMINGS[time][0] * sampleRate / 32000;
+	// Number of samples between impulse and eventual appearance on the right channel
+	delayRight = REVERB_TIMINGS[time][1] * sampleRate / 32000;
+	// Number of samples between a response and that response feeding back/echoing
+	delayFeedback = REVERB_TIMINGS[time][2] * sampleRate / 32000;
 
 	if (time < 6) {
 		feedback = REVERB_FEEDBACK;
@@ -68,7 +92,13 @@ void DelayReverb::setParameters(Bit8u /*mode*/, Bit8u time, Bit8u level) {
 
 	// Fading speed, i.e. amplitude ratio of neighbor responses
 	fade = REVERB_FADE[level];
-	resetBuffer();
+
+	bufIx = 0;
+	if (buf != NULL) {
+		for (unsigned int i = 0; i < bufSize; i++) {
+			buf[i] = 0.0f;
+		}
+	}
 }
 
 void DelayReverb::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) {
@@ -77,42 +107,28 @@ void DelayReverb::process(const float *inLeft, const float *inRight, float *outL
 	}
 
 	for (unsigned int sampleIx = 0; sampleIx < numSamples; sampleIx++) {
-
-		// Since speed isn't likely an issue here, we use a simple approach for ring buffer indexing
-		Bit32u bufIxM1 = (bufSize + bufIx - 1) % bufSize;
-		Bit32u bufIxMDelay = (bufSize + bufIx - delay) % bufSize;
-		Bit32u bufIxM2Delay = (bufSize + bufIx - delay - delay) % bufSize;
+		// The ring buffer write index moves backwards; reads are all done with positive offsets.
+		Bit32u bufIxPrev = (bufIx + 1) % bufSize;
+		Bit32u bufIxLeft = (bufIx + delayLeft) % bufSize;
+		Bit32u bufIxRight = (bufIx + delayRight) % bufSize;
+		Bit32u bufIxFeedback = (bufIx + delayFeedback) % bufSize;
 
 		// Attenuated input samples and feedback response are directly added to the current ring buffer location
-		float sample = fade * (inLeft[sampleIx] + inRight[sampleIx]) + feedback * buf[bufIxM2Delay];
+		float sample = fade * (inLeft[sampleIx] + inRight[sampleIx]) + feedback * buf[bufIxFeedback];
 
 		// Single-pole IIR filter found on real devices
-		buf[bufIx] = buf[bufIxM1] + (sample - buf[bufIxM1]) * LPF_VALUE;
+		buf[bufIx] = buf[bufIxPrev] + (sample - buf[bufIxPrev]) * LPF_VALUE;
 
-		// Output left channel by Delay samples earlier
-		outLeft[sampleIx] = buf[bufIxMDelay];
-		outRight[sampleIx] = buf[bufIxM2Delay];
+		outLeft[sampleIx] = buf[bufIxLeft];
+		outRight[sampleIx] = buf[bufIxRight];
 
-		bufIx = (bufIx + 1) % bufSize;
+		bufIx = (bufSize + bufIx - 1) % bufSize;
 	}
 }
 
+// Resets to default parameters and flushes the buffer
 void DelayReverb::reset() {
-	resetBuffer();
-	resetParameters();
-}
-
-void DelayReverb::resetBuffer() {
-	bufIx = 0;
-	if (buf != NULL) {
-		memset(buf, 0, bufSize * sizeof(float));
-	}
-}
-
-void DelayReverb::resetParameters() {
-	delay = Bit32u(REVERB_DELAY[0] * sampleRate);
-	feedback = REVERB_FEEDBACK;
-	fade = REVERB_FADE[0];
+	setParameters(3, 0, 0);
 }
 
 bool DelayReverb::isActive() const {

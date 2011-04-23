@@ -22,18 +22,23 @@ namespace MT32Emu {
 
 class DelayReverb : public ReverbModel {
 private:
+	Bit8u time;
+	Bit8u level;
+
 	unsigned int sampleRate;
 	Bit32u bufSize;
 	Bit32u bufIx;
 
 	float *buf;
 
-	Bit32u delay;
+	Bit32u delayLeft;
+	Bit32u delayRight;
+	Bit32u delayFeedback;
+
 	float fade;
 	float feedback;
 
-	void resetBuffer();
-	void resetParameters();
+	void recalcParameters();
 
 public:
 	DelayReverb();
