@@ -450,8 +450,9 @@ bool Synth::open(SynthProperties &useProp) {
 	delayReverbModel->reset();
 	delayReverbModel->setSampleRate(useProp.sampleRate);
 	if (useProp.baseDir != NULL) {
-		myProp.baseDir = new char[strlen(useProp.baseDir) + 1];
-		strcpy(myProp.baseDir, useProp.baseDir);
+		char *baseDirCopy = new char[strlen(useProp.baseDir) + 1];
+		strcpy(baseDirCopy, useProp.baseDir);
+		myProp.baseDir = baseDirCopy;
 	}
 
 	// This is to help detect bugs

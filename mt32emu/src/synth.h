@@ -107,7 +107,7 @@ struct SynthProperties {
 	unsigned char reverbLevel;
 	// The name of the directory in which the ROM and data files are stored (with trailing slash/backslash)
 	// Not used if "openFile" is set. May be NULL in any case.
-	char *baseDir;
+	const char *baseDir;
 	// This is used as the first argument to all callbacks
 	void *userData;
 	// Callback for reporting various errors and information. May be NULL
