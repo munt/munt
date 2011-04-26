@@ -44,7 +44,7 @@ private:
 	Bit8s timeKeyfollowSubtraction;
 
 	Bit16s pitchOffsetChangePerBigTick;
-	int targetPitchOffsetReachedBigTick;
+	Bit16u targetPitchOffsetReachedBigTick;
 	unsigned int shifts;
 
 	Bit16u pitch;

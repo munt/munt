@@ -261,6 +261,7 @@ void TVP::setupPitchChange(int targetPitchOffset, Bit8u changeDuration) {
 	if (durationInBigTicks > 32767) {
 		durationInBigTicks = 32767;
 	}
+	// The result of the addition may exceed 16 bits, but wrapping is fine and intended here.
 	targetPitchOffsetReachedBigTick = currentBigTick + durationInBigTicks;
 }
 
@@ -295,7 +296,7 @@ void TVP::process() {
 		return;
 	}
 
-	int negativeBigTicksRemaining = (timeElapsed >> 8) - targetPitchOffsetReachedBigTick;
+	Bit16s negativeBigTicksRemaining = (timeElapsed >> 8) - targetPitchOffsetReachedBigTick;
 	if (negativeBigTicksRemaining >= 0) {
 		// We've reached the time for a phase change
 		targetPitchOffsetReached();
