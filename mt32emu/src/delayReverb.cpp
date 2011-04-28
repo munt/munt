@@ -67,6 +67,7 @@ void DelayReverb::setSampleRate(unsigned int newSampleRate) {
 
 		recalcParameters();
 	}
+	// FIXME: IIR filter value depends on sample rate as well
 }
 
 // This method will always trigger a flush of the buffer
