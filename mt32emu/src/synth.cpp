@@ -1339,6 +1339,7 @@ void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src,
 
 FreeverbModel::FreeverbModel() {
 	freeverb = NULL; // Will be initialised with the first setParameters() call.
+	scaletuning = 1.0f;
 }
 
 FreeverbModel::~FreeverbModel() {
