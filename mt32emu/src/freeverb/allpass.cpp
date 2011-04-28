@@ -32,3 +32,8 @@ float allpass::getfeedback()
 {
 	return feedback;
 }
+
+void allpass::deletebuffer()
+{
+	delete buffer;
+}

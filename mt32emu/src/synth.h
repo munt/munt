@@ -289,6 +289,7 @@ public:
 
 class FreeverbModel : public ReverbModel {
 	revmodel *freeverb;
+	float scaletuning;
 public:
 	FreeverbModel();
 	~FreeverbModel();

@@ -1345,53 +1345,59 @@ FreeverbModel::~FreeverbModel() {
 	delete freeverb;
 }
 
-void FreeverbModel::setSampleRate(unsigned int /*sampleRate*/) {
-	// FIXME: We don't deal with this at all.
+void FreeverbModel::setSampleRate(unsigned int sampleRate) {
+	// FIXME: scaletuning must be multiplied by sample rate to 32000Hz ratio
+	// IIR filter values depend on sample rate as well
 }
 
 void FreeverbModel::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) {
-	freeverb->processreplace(inLeft, inRight, outLeft, outRight, numSamples, 1);
+	freeverb->process(inLeft, inRight, outLeft, outRight, numSamples);
 }
 
 void FreeverbModel::setParameters(Bit8u mode, Bit8u time, Bit8u level) {
 	// FIXME:KG: I don't think it's necessary to recreate freeverb's model... Just set the parameters.
-	reset();
+	float filtval, wet, room, damp;
 
 	switch (mode) {
-	case 0:
-		freeverb->setroomsize(.1f);
-		//freeverb->setdamp(.75f);
-		freeverb->setdamp(1.0f);
-		break;
 	case 1:
-		freeverb->setroomsize(.5f);
-		//freeverb->setdamp(.5f);
-		freeverb->setdamp(1.0f);
+		filtval = 0.712025098f;
+		scaletuning = 2.0f;
+		wet = 0.86f;
+		room = 0.9f;
+		damp = 0.5f;
 		break;
 	case 2:
-		freeverb->setroomsize(.5f);
-		//freeverb->setdamp(.1f);
-		freeverb->setdamp(1.0f);
+		filtval = 0.939522749f;
+		scaletuning = 0.4f;
+		wet = 0.38f;
+		room = 1.01f;
+		damp = 0.05f;
 		break;
-	case 3:
-		freeverb->setroomsize(1.0f);
-		//freeverb->setdamp(.75f);
-		freeverb->setdamp(1.0f);
-		break;
-	default:
-		freeverb->setroomsize(.1f);
-		//freeverb->setdamp(.5f);
-		freeverb->setdamp(1.0f);
+	default:	// default mode 0
+		filtval = 0.687770909f;
+		scaletuning = 0.76f;
+		wet = 0.63f;
+		room = 1.0f;
+		damp = 0.5f;
 		break;
 	}
-	freeverb->setdry(0);
-	freeverb->setwet((float)level / 5.0f);
-	freeverb->setwidth((float)time / 6.0f);
+
+	reset();
+	freeverb->setfiltval(filtval);
+
+	// wet signal level
+	freeverb->setwet((float)level / 7.0f * wet);
+
+	// wet signal decay speed
+	freeverb->setroomsize((0.5f + 0.5f * (float)time / 7.0f) * room);
+
+	// decay speed of high frequencies in the wet signal
+	freeverb->setdamp(damp);
 }
 
 void FreeverbModel::reset() {
 	delete freeverb;
-	freeverb = new revmodel();
+	freeverb = new revmodel(scaletuning);
 }
 
 bool FreeverbModel::isActive() const {

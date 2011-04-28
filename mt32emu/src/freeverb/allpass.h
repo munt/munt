@@ -13,6 +13,7 @@ class allpass
 public:
 	                allpass();
 	        void    setbuffer(float *buf, int size);
+	        void    deletebuffer();
 	inline  float   process(float inp);
 	        void    mute();
 	        void    setfeedback(float val);

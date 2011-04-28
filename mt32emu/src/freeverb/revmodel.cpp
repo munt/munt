@@ -7,43 +7,28 @@
 
 #include "revmodel.h"
 
-revmodel::revmodel()
+revmodel::revmodel(float scaletuning)
 {
-	// Tie the components to their buffers
-	combL[0].setbuffer(bufcombL1,combtuningL1);
-	combR[0].setbuffer(bufcombR1,combtuningR1);
-	combL[1].setbuffer(bufcombL2,combtuningL2);
-	combR[1].setbuffer(bufcombR2,combtuningR2);
-	combL[2].setbuffer(bufcombL3,combtuningL3);
-	combR[2].setbuffer(bufcombR3,combtuningR3);
-	combL[3].setbuffer(bufcombL4,combtuningL4);
-	combR[3].setbuffer(bufcombR4,combtuningR4);
-	combL[4].setbuffer(bufcombL5,combtuningL5);
-	combR[4].setbuffer(bufcombR5,combtuningR5);
-	combL[5].setbuffer(bufcombL6,combtuningL6);
-	combR[5].setbuffer(bufcombR6,combtuningR6);
-	combL[6].setbuffer(bufcombL7,combtuningL7);
-	combR[6].setbuffer(bufcombR7,combtuningR7);
-	combL[7].setbuffer(bufcombL8,combtuningL8);
-	combR[7].setbuffer(bufcombR8,combtuningR8);
-	allpassL[0].setbuffer(bufallpassL1,allpasstuningL1);
-	allpassR[0].setbuffer(bufallpassR1,allpasstuningR1);
-	allpassL[1].setbuffer(bufallpassL2,allpasstuningL2);
-	allpassR[1].setbuffer(bufallpassR2,allpasstuningR2);
-	allpassL[2].setbuffer(bufallpassL3,allpasstuningL3);
-	allpassR[2].setbuffer(bufallpassR3,allpasstuningR3);
-	allpassL[3].setbuffer(bufallpassL4,allpasstuningL4);
-	allpassR[3].setbuffer(bufallpassR4,allpasstuningR4);
+	int i;
+	int bufsize;
+
+	// Allocate buffers for the components
+	for (i = 0; i < numcombs; i++) {
+		bufsize = scaletuning * combtuning[i];
+		combL[i].setbuffer(new float[bufsize], bufsize);
+		bufsize += scaletuning * stereospread;
+		combR[i].setbuffer(new float[bufsize], bufsize);
+	}
+	for (i = 0; i < numallpasses; i++) {
+		bufsize = scaletuning * allpasstuning[i];
+		allpassL[i].setbuffer(new float[bufsize], bufsize);
+		allpassL[i].setfeedback(0.5f);
+		bufsize += scaletuning * stereospread;
+		allpassR[i].setbuffer(new float[bufsize], bufsize);
+		allpassR[i].setfeedback(0.5f);
+	}
 
 	// Set default values
-	allpassL[0].setfeedback(0.5f);
-	allpassR[0].setfeedback(0.5f);
-	allpassL[1].setfeedback(0.5f);
-	allpassR[1].setfeedback(0.5f);
-	allpassL[2].setfeedback(0.5f);
-	allpassR[2].setfeedback(0.5f);
-	allpassL[3].setfeedback(0.5f);
-	allpassR[3].setfeedback(0.5f);
 	dry = initialdry;
 	wet = initialwet*scalewet;
 	damp = initialdamp*scaledamp;
@@ -54,6 +39,20 @@ revmodel::revmodel()
 
 	// Buffer will be full of rubbish - so we MUST mute them
 	mute();
+}
+
+revmodel::~revmodel()
+{
+	int i;
+
+	for (i = 0; i < numcombs; i++) {
+		combL[i].deletebuffer();
+		combR[i].deletebuffer();
+	}
+	for (i = 0; i < numallpasses; i++) {
+		allpassL[i].deletebuffer();
+		allpassR[i].deletebuffer();
+	}
 }
 
 void revmodel::mute()
@@ -73,9 +72,13 @@ void revmodel::mute()
 		allpassL[i].mute();
 		allpassR[i].mute();
 	}
+
+	// Init LPF history
+	filtprev1 = 0;
+	filtprev2 = 0;
 }
 
-void revmodel::processreplace(const float *inputL, const float *inputR, float *outputL, float *outputR, long numsamples, int skip)
+void revmodel::process(const float *inputL, const float *inputR, float *outputL, float *outputR, long numsamples)
 {
 	float outL,outR,input;
 
@@ -85,6 +88,12 @@ void revmodel::processreplace(const float *inputL, const float *inputR, float *o
 
 		outL = outR = 0;
 		input = (*inputL + *inputR) * gain;
+
+		// Implementation of 2-stage IIR single-pole low-pass filter
+		// found at the entrance of reverb processing on real devices
+		filtprev1 += (input - filtprev1) * filtval;
+		filtprev2 += (filtprev1 - filtprev2) * filtval;
+		input = filtprev2;
 
 		// Accumulate comb filters in parallel
 		for (i=0; i<numcombs; i++)
@@ -101,51 +110,8 @@ void revmodel::processreplace(const float *inputL, const float *inputR, float *o
 		}
 
 		// Calculate output REPLACING anything already there
-		*outputL = outL*wet1 + outR*wet2 + *inputL*dry;
-		*outputR = outR*wet1 + outL*wet2 + *inputR*dry;
-
-		// Increment sample pointers, allowing for interleave (if any)
-		inputL += skip;
-		inputR += skip;
-		outputL += skip;
-		outputR += skip;
-	}
-}
-
-void revmodel::processmix(float *inputL, float *inputR, float *outputL, float *outputR, long numsamples, int skip)
-{
-	float outL,outR,input;
-
-	while (numsamples-- > 0)
-	{
-		int i;
-
-		outL = outR = 0;
-		input = (*inputL + *inputR) * gain;
-
-		// Accumulate comb filters in parallel
-		for (i=0; i<numcombs; i++)
-		{
-			outL += combL[i].process(input);
-			outR += combR[i].process(input);
-		}
-
-		// Feed through allpasses in series
-		for (i=0; i<numallpasses; i++)
-		{
-			outL = allpassL[i].process(outL);
-			outR = allpassR[i].process(outR);
-		}
-
-		// Calculate output MIXING with anything already there
-		*outputL += outL*wet1 + outR*wet2 + *inputL*dry;
-		*outputR += outR*wet1 + outL*wet2 + *inputR*dry;
-
-		// Increment sample pointers, allowing for interleave (if any)
-		inputL += skip;
-		inputR += skip;
-		outputL += skip;
-		outputR += skip;
+		*outputL = outL*wet1 + outR*wet2;
+		*outputR = outR*wet1 + outL*wet2;
 	}
 }
 
@@ -255,4 +221,9 @@ float revmodel::getmode()
 		return 1;
 	else
 		return 0;
+}
+
+void revmodel::setfiltval(float value)
+{
+	filtval = value;
 }
