@@ -132,6 +132,9 @@ void usage(char *argv[])
 	printf("-i msec      : Minimum (initial) buffer size in milliseconds\n");
 	
 	printf("\n");
+	printf("-d name      : ALSA PCM device name (default: \"default\") \n");
+	
+	printf("\n");
 	
 	printf("\n");
 	exit(1);
@@ -191,6 +194,11 @@ int main(int argc, char **argv)
 			break;
 		    case 'i': i++; if (i == argc) usage(argv);
 			minimum_msec = atoi(argv[i]);
+			break;
+
+		    case 'd': i++; if (i == argc) usage(argv);
+			pcm_name = (char *)malloc(strlen(argv[i]) + 1);
+			strcpy(pcm_name, argv[i]);
 			break;
 			
 		    default:
