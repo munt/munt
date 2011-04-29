@@ -21,7 +21,7 @@
 
 #if MT32EMU_USE_EXTINT == 1
 
-#include "externalInterface.h"
+#include "ExternalInterface.h"
 
 namespace MT32Emu {
 

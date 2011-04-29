@@ -22,10 +22,10 @@
 
 #include "mt32emu.h"
 #include "mmath.h"
-#include "ansiFile.h"
-#include "partialManager.h"
+#include "ANSIFile.h"
+#include "PartialManager.h"
 
-#include "delayReverb.h"
+#include "DelayReverb.h"
 #include "freeverb/revmodel.h"
 
 namespace MT32Emu {

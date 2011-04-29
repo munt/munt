@@ -5,19 +5,19 @@ set(libmt32emu_VERSION_MINOR 1)
 set(libmt32emu_VERSION_PATCH 3)
 
 add_library(mt32emu STATIC
-  src/ansiFile.cpp
-  src/delayReverb.cpp
+  src/ANSIFile.cpp
+  src/DelayReverb.cpp
 #  src/externalInterface.cpp
-  src/file.cpp
-  src/part.cpp
-  src/partial.cpp
-  src/partialManager.cpp
-  src/poly.cpp
-  src/synth.cpp
-  src/tables.cpp
-  src/tva.cpp
-  src/tvf.cpp
-  src/tvp.cpp
+  src/File.cpp
+  src/Part.cpp
+  src/Partial.cpp
+  src/PartialManager.cpp
+  src/Poly.cpp
+  src/Synth.cpp
+  src/Tables.cpp
+  src/TVA.cpp
+  src/TVF.cpp
+  src/TVP.cpp
   src/freeverb/allpass.cpp
   src/freeverb/comb.cpp
   src/freeverb/revmodel.cpp
@@ -26,17 +26,17 @@ install(TARGETS mt32emu
   ARCHIVE DESTINATION lib
 )
 install(FILES
-  src/file.h
+  src/File.h
   src/mt32emu.h
-  src/part.h
-  src/partial.h
-  src/poly.h
-  src/structures.h
-  src/synth.h
-  src/tables.h
-  src/tva.h
-  src/tvf.h
-  src/tvp.h
+  src/Part.h
+  src/Partial.h
+  src/Poly.h
+  src/Structures.h
+  src/Synth.h
+  src/Tables.h
+  src/TVA.h
+  src/TVF.h
+  src/TVP.h
   DESTINATION include/mt32emu
 )
 

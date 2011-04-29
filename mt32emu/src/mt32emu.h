@@ -38,15 +38,15 @@
 // No point making it more than MT32EMU_MAX_PARTIALS, since each note needs at least one partial.
 #define MT32EMU_MAX_POLY 32
 
-#include "structures.h"
-#include "file.h"
-#include "tables.h"
-#include "poly.h"
-#include "tva.h"
-#include "tvp.h"
-#include "tvf.h"
-#include "partial.h"
-#include "part.h"
-#include "synth.h"
+#include "Structures.h"
+#include "File.h"
+#include "Tables.h"
+#include "Poly.h"
+#include "TVA.h"
+#include "TVP.h"
+#include "TVF.h"
+#include "Partial.h"
+#include "Part.h"
+#include "Synth.h"
 
 #endif

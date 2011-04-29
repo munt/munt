@@ -20,7 +20,7 @@
 
 #include <cstdio>
 
-#include "file.h"
+#include "File.h"
 
 namespace MT32Emu {
 

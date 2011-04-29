@@ -18,7 +18,7 @@
 #include <cmath>
 #include <cstring>
 #include "mt32emu.h"
-#include "delayReverb.h"
+#include "DelayReverb.h"
 
 using namespace MT32Emu;
 

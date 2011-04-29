@@ -16,7 +16,7 @@
  */
 
 #include "mt32emu.h"
-#include "ansiFile.h"
+#include "ANSIFile.h"
 
 using namespace MT32Emu;
 
