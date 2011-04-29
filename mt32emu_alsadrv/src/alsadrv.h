@@ -81,6 +81,7 @@ void send_rvlevel_sysex(int newlevel);
 extern int alsa_buffer_size;
 extern char rom_path[];
 extern int eventpipe[];
+extern char *pcm_name;
 
 int init_alsadrv();
 int process_loop(int rv);

@@ -103,7 +103,7 @@ int consumer_types = 0;
 snd_pcm_t *pcm_handle = NULL;
 snd_pcm_hw_params_t *pcm_hwparams;
 // char *pcm_name = "plughw:0,0";
-const char *pcm_name = "default";
+char *pcm_name = "default";
 
 
 /* midi queue control variables */
