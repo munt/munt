@@ -26,7 +26,7 @@
 #include "PartialManager.h"
 
 #include "DelayReverb.h"
-#include "freeverb/revmodel.h"
+#include "FreeverbModel.h"
 
 namespace MT32Emu {
 
@@ -125,11 +125,13 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 Synth::Synth() {
 	isOpen = false;
 	reverbModel = NULL;
-	delayReverbModel = NULL;
 	reverbEnabled = true;
 	reverbOverridden = false;
-	setReverbModel(NULL); // Creates a default FreeverbModel
-	setDelayReverbModel(NULL); // Creates a default DelayReverb.
+	reverbModels[0] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 1.0f, 0.5f);
+	reverbModels[1] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 0.9f, 0.5f);
+	reverbModels[2] = new FreeverbModel(0.4f, 0.939522749f, 0.38f, 1.01f, 0.05f);
+	reverbModels[3] = new DelayReverb();
+	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
 	partialManager = NULL;
 	memset(parts, 0, sizeof(parts));
@@ -137,8 +139,9 @@ Synth::Synth() {
 
 Synth::~Synth() {
 	close(); // Make sure we're closed and everything is freed
-	delete reverbModel;
-	delete delayReverbModel;
+	for (int i = 0; i < 4; i++) {
+		delete reverbModels[i];
+	}
 }
 
 int Synth::report(ReportType type, const void *data) {
@@ -164,28 +167,6 @@ void Synth::printDebug(const char *fmt, ...) {
 	va_end(ap);
 }
 
-void Synth::setReverbModel(ReverbModel *newReverbModel) {
-	delete reverbModel;
-	if (newReverbModel == NULL) {
-		newReverbModel = new FreeverbModel();
-	}
-	reverbModel = newReverbModel;
-	if (isOpen) {
-		setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
-	}
-}
-
-void Synth::setDelayReverbModel(ReverbModel *newDelayReverbModel) {
-	delete delayReverbModel;
-	if (newDelayReverbModel == NULL) {
-		newDelayReverbModel = new DelayReverb();
-	}
-	delayReverbModel = newDelayReverbModel;
-	if (isOpen) {
-		setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
-	}
-}
-
 void Synth::setReverbEnabled(bool newReverbEnabled) {
 	reverbEnabled = newReverbEnabled;
 }
@@ -206,11 +187,21 @@ void Synth::setReverbParameters(Bit8u mode, Bit8u time, Bit8u level) {
 	if (reverbOverridden) {
 		return;
 	}
-	if (mode == 3) {
-		delayReverbModel->setParameters(mode, time, level);
-	} else {
-		reverbModel->setParameters(mode, time, level);
+	if (mode < 0) {
+		mode = 0;
+	} else if (mode > 3) {
+		mode = 3;
 	}
+#if MT32EMU_REDUCE_REVERB_MEMORY
+	if (reverbModel != reverbModels[mode]) {
+		if (reverbModel != NULL) {
+			reverbModel->close();
+		}
+		reverbModels[mode]->open(myProp.sampleRate);
+	}
+#endif
+	reverbModel = reverbModels[mode];
+	reverbModel->setParameters(time, level);
 }
 
 void Synth::setDACInputMode(DACInputMode mode) {
@@ -445,10 +436,11 @@ bool Synth::open(SynthProperties &useProp) {
 	}
 	myProp = useProp;
 	tables.init(this);
-	reverbModel->reset();
-	reverbModel->setSampleRate(useProp.sampleRate);
-	delayReverbModel->reset();
-	delayReverbModel->setSampleRate(useProp.sampleRate);
+#if !MT32EMU_REDUCE_REVERB_MEMORY
+	for (int i = 0; i < 4; i++) {
+		reverbModels[i]->open(useProp.sampleRate);
+	}
+#endif
 	if (useProp.baseDir != NULL) {
 		char *baseDirCopy = new char[strlen(useProp.baseDir) + 1];
 		strcpy(baseDirCopy, useProp.baseDir);
@@ -579,7 +571,7 @@ bool Synth::open(SynthProperties &useProp) {
 	return true;
 }
 
-void Synth::close(void) {
+void Synth::close() {
 	if (!isOpen) {
 		return;
 	}
@@ -600,6 +592,9 @@ void Synth::close(void) {
 
 	deleteMemoryRegions();
 
+	for (int i = 0; i < 4; i++) {
+		reverbModels[i]->close();
+	}
 	isOpen = false;
 }
 
@@ -1265,11 +1260,7 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 		}
 
 		// FIXME: Note that on the real devices, reverb input and output are signed linear 16-bit (well, kinda, there's some fudging) PCM, not float.
-		if (mt32ram.system.reverbMode == 3) {
-			delayReverbModel->process(&tmpBufMixLeft[0], &tmpBufMixRight[0], &tmpBufReverbOutLeft[0], &tmpBufReverbOutRight[0], len);
-		} else {
-			reverbModel->process(&tmpBufMixLeft[0], &tmpBufMixRight[0], &tmpBufReverbOutLeft[0], &tmpBufReverbOutRight[0], len);
-		}
+		reverbModel->process(&tmpBufMixLeft[0], &tmpBufMixRight[0], &tmpBufReverbOutLeft[0], &tmpBufReverbOutRight[0], len);
 		if (reverbWetLeft != NULL) {
 			floatToBit16s_pure(reverbWetLeft, &tmpBufReverbOutLeft[0], len);
 		}
@@ -1297,11 +1288,7 @@ bool Synth::isActive() const {
 		}
 	}
 	if (reverbEnabled) {
-		if (mt32ram.system.reverbMode == 3) {
-			return delayReverbModel->isActive();
-		} else {
-			return reverbModel->isActive();
-		}
+		return reverbModel->isActive();
 	}
 	return false;
 }
@@ -1369,75 +1356,6 @@ void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src,
 		}
 		memOff++;
 	}
-}
-
-FreeverbModel::FreeverbModel() {
-	freeverb = NULL; // Will be initialised with the first setParameters() call.
-	scaletuning = 1.0f;
-}
-
-FreeverbModel::~FreeverbModel() {
-	delete freeverb;
-}
-
-void FreeverbModel::setSampleRate(unsigned int sampleRate) {
-	// FIXME: scaletuning must be multiplied by sample rate to 32000Hz ratio
-	// IIR filter values depend on sample rate as well
-}
-
-void FreeverbModel::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) {
-	freeverb->process(inLeft, inRight, outLeft, outRight, numSamples);
-}
-
-void FreeverbModel::setParameters(Bit8u mode, Bit8u time, Bit8u level) {
-	// FIXME:KG: I don't think it's necessary to recreate freeverb's model... Just set the parameters.
-	float filtval, wet, room, damp;
-
-	switch (mode) {
-	case 1:
-		filtval = 0.712025098f;
-		scaletuning = 2.0f;
-		wet = 0.86f;
-		room = 0.9f;
-		damp = 0.5f;
-		break;
-	case 2:
-		filtval = 0.939522749f;
-		scaletuning = 0.4f;
-		wet = 0.38f;
-		room = 1.01f;
-		damp = 0.05f;
-		break;
-	default:	// default mode 0
-		filtval = 0.687770909f;
-		scaletuning = 0.76f;
-		wet = 0.63f;
-		room = 1.0f;
-		damp = 0.5f;
-		break;
-	}
-
-	reset();
-	freeverb->setfiltval(filtval);
-
-	// wet signal level
-	freeverb->setwet((float)level / 7.0f * wet);
-
-	// wet signal decay speed
-	freeverb->setroomsize((0.5f + 0.5f * (float)time / 7.0f) * room);
-
-	// decay speed of high frequencies in the wet signal
-	freeverb->setdamp(damp);
-}
-
-void FreeverbModel::reset() {
-	delete freeverb;
-	freeverb = new revmodel(scaletuning);
-}
-
-bool FreeverbModel::isActive() const {
-	// FIXME: Not bothering to do this properly since we'll be replacing Freeverb soon...
-	return false;
 }
 
 }

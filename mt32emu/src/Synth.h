@@ -20,8 +20,6 @@
 
 #include <cstdarg>
 
-class revmodel;
-
 namespace MT32Emu {
 
 class File;
@@ -280,24 +278,13 @@ public:
 class ReverbModel {
 public:
 	virtual ~ReverbModel() {}
-	virtual void setSampleRate(unsigned int sampleRate) = 0;
-	virtual void setParameters(Bit8u mode, Bit8u time, Bit8u level) = 0;
+	// After construction or a close(), open() will be called at least once before any other call (with the exception of close()).
+	virtual void open(unsigned int sampleRate) = 0;
+	// May be called multiple times without an open() in between.
+	virtual void close() = 0;
+	virtual void setParameters(Bit8u time, Bit8u level) = 0;
 	virtual void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) = 0;
-	virtual void reset() = 0;
 	virtual bool isActive() const = 0;
-};
-
-class FreeverbModel : public ReverbModel {
-	revmodel *freeverb;
-	float scaletuning;
-public:
-	FreeverbModel();
-	~FreeverbModel();
-	void setSampleRate(unsigned int sampleRate);
-	void setParameters(Bit8u mode, Bit8u time, Bit8u level);
-	void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples);
-	void reset();
-	bool isActive() const;
 };
 
 class Synth {
@@ -340,8 +327,8 @@ private:
 
 	MemParams mt32ram, mt32default;
 
+	ReverbModel *reverbModels[4];
 	ReverbModel *reverbModel;
-	ReverbModel *delayReverbModel;
 	bool reverbEnabled;
 	bool reverbOverridden;
 
@@ -427,8 +414,6 @@ public:
 	void playSysexWithoutHeader(unsigned char device, unsigned char command, const Bit8u *sysex, Bit32u len);
 	void writeSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 
-	void setReverbModel(ReverbModel *reverbModel);
-	void setDelayReverbModel(ReverbModel *reverbModel);
 	void setReverbEnabled(bool reverbEnabled);
 	bool isReverbEnabled() const;
 	void setReverbOverridden(bool reverbOverridden);

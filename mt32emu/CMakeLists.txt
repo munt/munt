@@ -9,6 +9,7 @@ add_library(mt32emu STATIC
   src/DelayReverb.cpp
 #  src/externalInterface.cpp
   src/File.cpp
+  src/FreeverbModel.cpp
   src/Part.cpp
   src/Partial.cpp
   src/PartialManager.cpp

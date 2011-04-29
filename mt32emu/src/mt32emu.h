@@ -38,6 +38,10 @@
 // No point making it more than MT32EMU_MAX_PARTIALS, since each note needs at least one partial.
 #define MT32EMU_MAX_POLY 32
 
+// If non-zero, deletes reverb buffers that are not in use to save memory.
+// If zero, keeps reverb buffers for all modes around all the time to avoid allocating/freeing in the critical path.
+#define MT32EMU_REDUCE_REVERB_MEMORY 1
+
 #include "Structures.h"
 #include "File.h"
 #include "Tables.h"

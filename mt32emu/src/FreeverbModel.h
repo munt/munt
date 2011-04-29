@@ -15,39 +15,30 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MT32EMU_DELAYREVERB_H
-#define MT32EMU_DELAYREVERB_H
+#ifndef MT32EMU_FREEVERB_MODEL_H
+#define MT32EMU_FREEVERB_MODEL_H
+
+class revmodel;
 
 namespace MT32Emu {
 
-class DelayReverb : public ReverbModel {
-private:
-	Bit8u time;
-	Bit8u level;
-
-	unsigned int sampleRate;
-	Bit32u bufSize;
-	Bit32u bufIx;
-
-	float *buf;
-
-	Bit32u delayLeft;
-	Bit32u delayRight;
-	Bit32u delayFeedback;
-
-	float fade;
-	float feedback;
-
-	void recalcParameters();
-
+class FreeverbModel : public ReverbModel {
+	revmodel *freeverb;
+	float scaleTuning;
+	float filtVal;
+	float wet;
+	float room;
+	float damp;
 public:
-	DelayReverb();
-	~DelayReverb();
+	FreeverbModel(float useScaleTuning, float useFiltVal, float useWet, float useRoom, float useDamp);
+	~FreeverbModel();
 	void open(unsigned int sampleRate);
 	void close();
 	void setParameters(Bit8u time, Bit8u level);
 	void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples);
 	bool isActive() const;
 };
+
 }
+
 #endif
