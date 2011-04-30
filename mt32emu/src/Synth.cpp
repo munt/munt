@@ -708,7 +708,8 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 		return;
 	}
 	// This is checked early in the real devices (before any sysex length checks or further processing)
-	if (command == SYSEX_CMD_DT1 && sysex[0] == 0x7F) {
+	// FIXME: Response to SYSEX_CMD_DAT reset with partials active (and in general) is untested.
+	if ((command == SYSEX_CMD_DT1 || command == SYSEX_CMD_DAT) && sysex[0] == 0x7F) {
 		reset();
 		return;
 	}
@@ -723,9 +724,23 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 	}
 	len -= 1; // Exclude checksum
 	switch (command) {
+	case SYSEX_CMD_DAT:
+		if (hasActivePartials()) {
+			printDebug("playSysexWithoutHeader: Got SYSEX_CMD_DAT but partials are active - ignoring");
+			// FIXME: We should send SYSEX_CMD_RJC in this case
+			break;
+		}
+		// Deliberate fall-through
 	case SYSEX_CMD_DT1:
 		writeSysex(device, sysex, len);
 		break;
+	case SYSEX_CMD_RQD:
+		if (hasActivePartials()) {
+			printDebug("playSysexWithoutHeader: Got SYSEX_CMD_RQD but partials are active - ignoring");
+			// FIXME: We should send SYSEX_CMD_RJC in this case
+			break;
+		}
+		// Deliberate fall-through
 	case SYSEX_CMD_RQ1:
 		readSysex(device, sysex, len);
 		break;
@@ -1241,11 +1256,18 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 #endif
 }
 
-bool Synth::isActive() const {
+bool Synth::hasActivePartials() const {
 	for (int partialNum = 0; partialNum < MT32EMU_MAX_PARTIALS; partialNum++) {
 		if (partialManager->getPartial(partialNum)->isActive()) {
 			return true;
 		}
+	}
+	return false;
+}
+
+bool Synth::isActive() const {
+	if (hasActivePartials()) {
+		return true;
 	}
 	if (reverbEnabled) {
 		return reverbModel->isActive();

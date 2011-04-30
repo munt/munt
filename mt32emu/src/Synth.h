@@ -428,6 +428,9 @@ public:
 	void renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
 
 	// Returns true when there is at least one active partial, otherwise false.
+	bool hasActivePartials() const;
+
+	// Returns true if hasActivePartials() returns true, or reverb is (somewhat unreliably) detected as being active.
 	bool isActive() const;
 
 	const Partial *getPartial(unsigned int partialNum) const;
