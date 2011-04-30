@@ -1,0 +1,35 @@
+Munt mt32emu-qt
+***************
+
+mt32emu-qt makes use of libmt32emu and Qt to provide a GUI to:
+
+1) Configure synths, expose via RTP-MIDI (NYI)
+2) Play/record MIDI files (NYI)
+
+
+License
+-------
+
+Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+Trademark disclaimer
+--------------------
+
+Roland is a trademark of Roland Corp. All other brand and product names are
+trademarks or registered trademarks of their respective holder. Use of
+trademarks is for informational purposes only and does not imply endorsement by
+or affiliation with the holder.
