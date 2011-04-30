@@ -97,11 +97,11 @@ struct SynthProperties {
 	bool useReverb;
 	// Deprecated - ignored. Use Synth::setReverbOverridden() instead.
 	bool useDefaultReverb;
-	// Deprecated - ignored. Use Synth::playSysex() to configure reverb instead.
+	// Deprecated - ignored. Use Synth::playSysex*() to configure reverb instead.
 	unsigned char reverbType;
-	// Deprecated - ignored. Use Synth::playSysex() to configure reverb instead.
+	// Deprecated - ignored. Use Synth::playSysex*() to configure reverb instead.
 	unsigned char reverbTime;
-	// Deprecated - ignored. Use Synth::playSysex() to configure reverb instead.
+	// Deprecated - ignored. Use Synth::playSysex*() to configure reverb instead.
 	unsigned char reverbLevel;
 	// The name of the directory in which the ROM and data files are stored (with trailing slash/backslash)
 	// Not used if "openFile" is set. May be NULL in any case.
@@ -357,7 +357,6 @@ private:
 
 	SynthProperties myProp;
 
-	bool loadPreset(File *file);
 	void doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
 
 	void playAddressedSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);

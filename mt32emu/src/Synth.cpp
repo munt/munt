@@ -228,39 +228,6 @@ void Synth::closeFile(File *file) {
 	}
 }
 
-bool Synth::loadPreset(File *file) {
-	bool inSys = false;
-	Bit8u sysexBuf[MAX_SYSEX_SIZE];
-	Bit16u syslen = 0;
-	bool rc = true;
-	for (;;) {
-		Bit8u c;
-		if (!file->readBit8u(&c)) {
-			if (!file->isEOF()) {
-				rc = false;
-			}
-			break;
-		}
-		sysexBuf[syslen] = c;
-		if (inSys) {
-			syslen++;
-			if (c == 0xF7) {
-				playSysex(&sysexBuf[0], syslen);
-				inSys = false;
-				syslen = 0;
-			} else if (syslen == MAX_SYSEX_SIZE) {
-				printDebug("MAX_SYSEX_SIZE (%d) exceeded while processing preset, ignoring message", MAX_SYSEX_SIZE);
-				inSys = false;
-				syslen = 0;
-			}
-		} else if (c == 0xF0) {
-			syslen++;
-			inSys = true;
-		}
-	}
-	return rc;
-}
-
 LoadResult Synth::loadControlROM(const char *filename) {
 	File *file = openFile(filename, File::OpenMode_read); // ROM File
 	if (file == NULL) {
