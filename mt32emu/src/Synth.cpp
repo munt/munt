@@ -183,27 +183,6 @@ bool Synth::isReverbOverridden() const {
 	return reverbOverridden;
 }
 
-void Synth::setReverbParameters(Bit8u mode, Bit8u time, Bit8u level) {
-	if (reverbOverridden) {
-		return;
-	}
-	if (mode < 0) {
-		mode = 0;
-	} else if (mode > 3) {
-		mode = 3;
-	}
-#if MT32EMU_REDUCE_REVERB_MEMORY
-	if (reverbModel != reverbModels[mode]) {
-		if (reverbModel != NULL) {
-			reverbModel->close();
-		}
-		reverbModels[mode]->open(myProp.sampleRate);
-	}
-#endif
-	reverbModel = reverbModels[mode];
-	reverbModel->setParameters(time, level);
-}
-
 void Synth::setDACInputMode(DACInputMode mode) {
 	switch(mode) {
 	case DACInputMode_GENERATION1:
@@ -1103,11 +1082,25 @@ void Synth::refreshSystemMasterTune() {
 
 void Synth::refreshSystemReverbParameters() {
 	printDebug(" Reverb: mode=%d, time=%d, level=%d", mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
+	if (reverbOverridden && reverbModel != NULL) {
+		printDebug(" (Reverb overridden - ignoring)");
+		return;
+	}
 	report(ReportType_newReverbMode,  &mt32ram.system.reverbMode);
 	report(ReportType_newReverbTime,  &mt32ram.system.reverbTime);
 	report(ReportType_newReverbLevel, &mt32ram.system.reverbLevel);
 
-	setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
+	ReverbModel *newReverbModel = reverbModels[mt32ram.system.reverbMode];
+#if MT32EMU_REDUCE_REVERB_MEMORY
+	if (reverbModel != newReverbModel) {
+		if (reverbModel != NULL) {
+			reverbModel->close();
+		}
+		newReverbModel->open(myProp.sampleRate);
+	}
+#endif
+	reverbModel = newReverbModel;
+	reverbModel->setParameters(mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
 }
 
 void Synth::refreshSystemReserveSettings() {

@@ -97,11 +97,11 @@ struct SynthProperties {
 	bool useReverb;
 	// Deprecated - ignored. Use Synth::setReverbOverridden() instead.
 	bool useDefaultReverb;
-	// Deprecated - ignored. Use Synth::setReverbParameters() instead.
+	// Deprecated - ignored. Use Synth::playSysex() to configure reverb instead.
 	unsigned char reverbType;
-	// Deprecated - ignored. Use Synth::setReverbParameters() instead.
+	// Deprecated - ignored. Use Synth::playSysex() to configure reverb instead.
 	unsigned char reverbTime;
-	// Deprecated - ignored. Use Synth::setReverbParameters() instead.
+	// Deprecated - ignored. Use Synth::playSysex() to configure reverb instead.
 	unsigned char reverbLevel;
 	// The name of the directory in which the ROM and data files are stored (with trailing slash/backslash)
 	// Not used if "openFile" is set. May be NULL in any case.
@@ -418,7 +418,6 @@ public:
 	bool isReverbEnabled() const;
 	void setReverbOverridden(bool reverbOverridden);
 	bool isReverbOverridden() const;
-	void setReverbParameters(Bit8u mode, Bit8u time, Bit8u level);
 	void setDACInputMode(DACInputMode mode);
 
 	// Renders samples to the specified output stream.
