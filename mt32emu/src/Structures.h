@@ -125,6 +125,16 @@ struct PatchParam {
 	Bit8u dummy; // (DUMMY)
 } MT32EMU_ALIGN_PACKED;
 
+const int SYSTEM_MASTER_TUNE_OFF = 0;
+const int SYSTEM_REVERB_MODE_OFF = 1;
+const int SYSTEM_REVERB_TIME_OFF = 2;
+const int SYSTEM_REVERB_LEVEL_OFF = 3;
+const int SYSTEM_RESERVE_SETTINGS_START_OFF = 4;
+const int SYSTEM_RESERVE_SETTINGS_END_OFF = 12;
+const int SYSTEM_CHAN_ASSIGN_START_OFF = 13;
+const int SYSTEM_CHAN_ASSIGN_END_OFF = 21;
+const int SYSTEM_MASTER_VOL_OFF = 22;
+
 struct MemParams {
 	// NOTE: The MT-32 documentation only specifies PatchTemp areas for parts 1-8.
 	// The LAPC-I documentation specified an additional area for rhythm at the end,

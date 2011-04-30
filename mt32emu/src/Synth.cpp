@@ -541,9 +541,7 @@ bool Synth::open(SynthProperties &useProp) {
 		mt32ram.system.chanAssign[i] = i + 1;
 	}
 	mt32ram.system.masterVol = 100; // Confirmed
-	if (!refreshSystem()) {
-		return false;
-	}
+	refreshSystem();
 
 	for (int i = 0; i < 9; i++) {
 		MemParams::PatchTemp *patchTemp = &mt32ram.patchTemp[i];
@@ -1065,9 +1063,27 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		region->write(0, off, data, len);
 
 		report(ReportType_devReconfig, NULL);
-
+		// FIXME: We haven't properly confirmed any of this behaviour
+		// In particular, we tend to reset things such as reverb even if the write contained
+		// the same parameters as were already set, which may be wrong.
+		// On the other hand, the real thing could be resetting things even when they aren't touched
+		// by the write at all.
 		printDebug("WRITE-SYSTEM:");
-		refreshSystem();
+		if (off <= SYSTEM_MASTER_TUNE_OFF && off + len > SYSTEM_MASTER_TUNE_OFF) {
+			refreshSystemMasterTune();
+		}
+		if (off <= SYSTEM_REVERB_LEVEL_OFF && off + len > SYSTEM_REVERB_MODE_OFF) {
+			refreshSystemReverbParameters();
+		}
+		if (off <= SYSTEM_RESERVE_SETTINGS_END_OFF && off + len > SYSTEM_RESERVE_SETTINGS_START_OFF) {
+			refreshSystemReserveSettings();
+		}
+		if (off <= SYSTEM_CHAN_ASSIGN_END_OFF && off + len > SYSTEM_CHAN_ASSIGN_START_OFF) {
+			refreshSystemChanAssign();
+		}
+		if (off <= SYSTEM_MASTER_VOL_OFF && off + len > SYSTEM_MASTER_VOL_OFF) {
+			refreshSystemMasterVol();
+		}
 		break;
 	case MR_Display:
 		char buf[MAX_SYSEX_SIZE];
@@ -1082,7 +1098,33 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 	}
 }
 
-bool Synth::refreshSystem() {
+void Synth::refreshSystemMasterTune() {
+	//FIXME:KG: This is just an educated guess.
+	// The LAPC-I documentation claims a range of 427.5Hz-452.6Hz (similar to what we have here)
+	// The MT-32 documentation claims a range of 432.1Hz-457.6Hz
+	masterTune = 440.0f * EXP2F((mt32ram.system.masterTune - 64.0f) / (128.0f * 12.0f));
+	printDebug(" Master Tune: %f", masterTune);
+}
+
+void Synth::refreshSystemReverbParameters() {
+	printDebug(" Reverb: mode=%d, time=%d, level=%d", mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
+	report(ReportType_newReverbMode,  &mt32ram.system.reverbMode);
+	report(ReportType_newReverbTime,  &mt32ram.system.reverbTime);
+	report(ReportType_newReverbLevel, &mt32ram.system.reverbLevel);
+
+	setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
+}
+
+void Synth::refreshSystemReserveSettings() {
+	Bit8u *rset = mt32ram.system.reserveSettings;
+	printDebug(" Partial reserve: 1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
+	int pr = partialManager->setReserve(rset);
+	if (pr != 32) {
+		printDebug(" (Partial Reserve Table with less than 32 partials reserved!)");
+	}
+}
+
+void Synth::refreshSystemChanAssign() {
 	memset(chantable, -1, sizeof(chantable));
 
 	for (unsigned int i = 0; i < 9; i++) {
@@ -1093,28 +1135,20 @@ bool Synth::refreshSystem() {
 			chantable[(int)mt32ram.system.chanAssign[i]] = (char)i;
 		}
 	}
-	//FIXME:KG: This is just an educated guess.
-	// The LAPC-I documentation claims a range of 427.5Hz-452.6Hz (similar to what we have here)
-	// The MT-32 documentation claims a range of 432.1Hz-457.6Hz
-	masterTune = 440.0f * EXP2F((mt32ram.system.masterTune - 64.0f) / (128.0f * 12.0f));
-	printDebug(" Master Tune: %f", masterTune);
-	printDebug(" Reverb: mode=%d, time=%d, level=%d", mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
-	report(ReportType_newReverbMode,  &mt32ram.system.reverbMode);
-	report(ReportType_newReverbTime,  &mt32ram.system.reverbTime);
-	report(ReportType_newReverbLevel, &mt32ram.system.reverbLevel);
-
-	setReverbParameters(mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
-
-	Bit8u *rset = mt32ram.system.reserveSettings;
-	printDebug(" Partial reserve: 1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
-	int pr = partialManager->setReserve(rset);
-	if (pr != 32) {
-		printDebug(" (Partial Reserve Table with less than 32 partials reserved!)");
-	}
-	rset = mt32ram.system.chanAssign;
+	Bit8u *rset = mt32ram.system.chanAssign;
 	printDebug(" Part assign:     1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
+}
+
+void Synth::refreshSystemMasterVol() {
 	printDebug(" Master volume: %d", mt32ram.system.masterVol);
-	return true;
+}
+
+void Synth::refreshSystem() {
+	refreshSystemMasterTune();
+	refreshSystemReverbParameters();
+	refreshSystemReserveSettings();
+	refreshSystemChanAssign();
+	refreshSystemMasterVol();
 }
 
 void Synth::reset() {

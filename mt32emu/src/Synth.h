@@ -387,7 +387,13 @@ private:
 	bool initPCMList(Bit16u mapAddress, Bit16u count);
 	bool initTimbres(Bit16u mapAddress, Bit16u offset, int timbreCount, int startTimbre, bool compressed);
 	bool initCompressedTimbre(int drumNum, const Bit8u *mem, unsigned int memLen);
-	bool refreshSystem();
+
+	void refreshSystemMasterTune();
+	void refreshSystemReverbParameters();
+	void refreshSystemReserveSettings();
+	void refreshSystemChanAssign();
+	void refreshSystemMasterVol();
+	void refreshSystem();
 	void reset();
 
 	unsigned int getSampleRate() const;
