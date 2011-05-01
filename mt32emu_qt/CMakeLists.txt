@@ -65,7 +65,6 @@ add_executable(mt32emu-qt
 )
 
 target_link_libraries(mt32emu-qt
-  ${ALSA_LIBRARIES}
   ${QT_LIBRARIES}
   ${EXT_LIBS}
 )
