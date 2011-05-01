@@ -33,6 +33,9 @@ set(mt32emu_qt_FORMS
   src/SynthPropertiesDialog.ui
 )
 
+find_package(ALSA REQUIRED)
+set(EXT_LIBS ${EXT_LIBS} ${ALSA_LIBRARIES})
+
 find_package(Qt4 4.6.0 REQUIRED)
 set(EXT_LIBS ${EXT_LIBS} ${QT_LIBRARIES})
 include(${QT_USE_FILE})
@@ -62,6 +65,8 @@ add_executable(mt32emu-qt
 )
 
 target_link_libraries(mt32emu-qt
+  ${ALSA_LIBRARIES}
+  ${QT_LIBRARIES}
   ${EXT_LIBS}
 )
 
