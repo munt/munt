@@ -37,8 +37,8 @@ find_package(ALSA REQUIRED)
 set(EXT_LIBS ${EXT_LIBS} ${ALSA_LIBRARIES})
 
 find_package(Qt4 4.6.0 REQUIRED)
-set(EXT_LIBS ${EXT_LIBS} ${QT_LIBRARIES})
 include(${QT_USE_FILE})
+set(EXT_LIBS ${EXT_LIBS} ${QT_LIBRARIES})
 
 find_package(QtMobility REQUIRED)
 if(NOT QT_MOBILITY_MULTIMEDIAKIT_FOUND)
@@ -65,7 +65,6 @@ add_executable(mt32emu-qt
 )
 
 target_link_libraries(mt32emu-qt
-  ${QT_LIBRARIES}
   ${EXT_LIBS}
 )
 
