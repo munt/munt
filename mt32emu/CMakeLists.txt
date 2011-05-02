@@ -51,6 +51,12 @@ install(DIRECTORY
   DESTINATION include
 )
 
+# Locations are exported for the benefit of a higher-level CMakeLists.txt.
+# These lines are irrelevant if compiling stand-alone.
+set(MT32EMU_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" PARENT_SCOPE)
+get_target_property(MT32EMU_LIBRARY mt32emu LOCATION)
+set(MT32EMU_LIBRARY "${MT32EMU_LIBRARY}" PARENT_SCOPE)
+
 # build a CPack driven installer package
 include(InstallRequiredSystemLibraries)
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER")
