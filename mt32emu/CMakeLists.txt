@@ -19,6 +19,10 @@ set(libmt32emu_HEADERS
   src/TVP.h
 )
 
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
+  add_definitions(-Wall -Wextra -Wnon-virtual-dtor -Wshadow -ansi -pedantic)
+endif()
+
 foreach(HEADER ${libmt32emu_HEADERS})
   get_filename_component(FILENAME "${HEADER}" NAME)
   configure_file(${HEADER} "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu/${FILENAME}" COPYONLY)
