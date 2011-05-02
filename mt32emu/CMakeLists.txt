@@ -4,10 +4,29 @@ set(libmt32emu_VERSION_MAJOR 0)
 set(libmt32emu_VERSION_MINOR 1)
 set(libmt32emu_VERSION_PATCH 3)
 
+# Only headers that need to be installed should be listed here:
+set(libmt32emu_HEADERS
+  src/File.h
+  src/mt32emu.h
+  src/Part.h
+  src/Partial.h
+  src/Poly.h
+  src/Structures.h
+  src/Synth.h
+  src/Tables.h
+  src/TVA.h
+  src/TVF.h
+  src/TVP.h
+)
+
+foreach(HEADER ${libmt32emu_HEADERS})
+  get_filename_component(FILENAME "${HEADER}" NAME)
+  configure_file(${HEADER} "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu/${FILENAME}" COPYONLY)
+endforeach(HEADER)
+
 add_library(mt32emu STATIC
   src/ANSIFile.cpp
   src/DelayReverb.cpp
-#  src/externalInterface.cpp
   src/File.cpp
   src/FreeverbModel.cpp
   src/Part.cpp
@@ -23,22 +42,13 @@ add_library(mt32emu STATIC
   src/freeverb/comb.cpp
   src/freeverb/revmodel.cpp
 )
+
 install(TARGETS mt32emu
   ARCHIVE DESTINATION lib
 )
-install(FILES
-  src/File.h
-  src/mt32emu.h
-  src/Part.h
-  src/Partial.h
-  src/Poly.h
-  src/Structures.h
-  src/Synth.h
-  src/Tables.h
-  src/TVA.h
-  src/TVF.h
-  src/TVP.h
-  DESTINATION include/mt32emu
+install(DIRECTORY
+  "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu"
+  DESTINATION include
 )
 
 # build a CPack driven installer package
