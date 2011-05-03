@@ -20,8 +20,6 @@
 
 namespace MT32Emu {
 
-const unsigned int MAX_SAMPLE_OUTPUT = 4096;
-
 // MT32EMU_MEMADDR() converts from sysex-padded, MT32EMU_SYSEXMEMADDR converts to it
 // Roland provides documentation using the sysex-padded addresses, so we tend to use that in code and output
 #define MT32EMU_MEMADDR(x) ((((x) & 0x7f0000) >> 2) | (((x) & 0x7f00) >> 1) | ((x) & 0x7f))

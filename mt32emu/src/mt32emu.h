@@ -42,6 +42,24 @@
 // If zero, keeps reverb buffers for all modes around all the time to avoid allocating/freeing in the critical path.
 #define MT32EMU_REDUCE_REVERB_MEMORY 1
 
+namespace MT32Emu
+{
+// The higher this number, the more memory will be used, but the more samples can be processed in one run -
+// various parts of sample generation can be processed more efficiently in a single run.
+// A run's maximum length is that given to Synth::render(), so giving a value here higher than render() is ever
+// called with will give no gain (but simply waste the memory).
+// Note that this value does *not* in any way impose limitations on the length given to render(), and has no effect
+// on the generated audio.
+// This value must be >= 1.
+const unsigned int MAX_SAMPLES_PER_RUN = 4096;
+
+// This determines the amount of memory available for simulating delays.
+// If set too low, partials aborted to allow other partials to play will not end gracefully, but will terminate
+// abruptly and potentially cause a pop/crackle in the audio output.
+// This value must be >= 1.
+const unsigned int MAX_PRERENDER_SAMPLES = 1024;
+}
+
 #include "Structures.h"
 #include "File.h"
 #include "Tables.h"

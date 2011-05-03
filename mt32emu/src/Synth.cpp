@@ -380,6 +380,7 @@ bool Synth::open(SynthProperties &useProp) {
 	if (isOpen) {
 		return false;
 	}
+	prerenderReadIx = prerenderWriteIx = 0;
 	myProp = useProp;
 	tables.init(this);
 #if !MT32EMU_REDUCE_REVERB_MEMORY
@@ -1144,7 +1145,7 @@ void Synth::render(Bit16s *stream, Bit32u len) {
 		return;
 	}
 	while (len > 0) {
-		Bit32u thisLen = len > MAX_SAMPLE_OUTPUT ? MAX_SAMPLE_OUTPUT : len;
+		Bit32u thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
 		doRenderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisLen);
 		for (Bit32u i = 0; i < thisLen; i++) {
 			stream[0] = clipBit16s((Bit32s)tmpNonReverbLeft[i] + (Bit32s)tmpReverbDryLeft[i] + (Bit32s)tmpReverbWetLeft[i]);
@@ -1155,6 +1156,69 @@ void Synth::render(Bit16s *stream, Bit32u len) {
 	}
 }
 
+bool Synth::prerender() {
+	int newPrerenderWriteIx = (prerenderWriteIx + 1) % MAX_PRERENDER_SAMPLES;
+	if (newPrerenderWriteIx == prerenderReadIx) {
+		// The prerender buffer is full
+		return false;
+	}
+	doRenderStreams(
+		prerenderNonReverbLeft + prerenderWriteIx,
+		prerenderNonReverbRight + prerenderWriteIx,
+		prerenderReverbDryLeft + prerenderWriteIx,
+		prerenderReverbDryRight + prerenderWriteIx,
+		prerenderReverbWetLeft + prerenderWriteIx,
+		prerenderReverbWetRight + prerenderWriteIx,
+		1);
+	prerenderWriteIx = newPrerenderWriteIx;
+	return true;
+}
+
+static inline void maybeCopy(Bit16s *out, Bit32u outPos, Bit16s *in, Bit32u inPos, Bit32u len) {
+	if (out == NULL) {
+		return;
+	}
+	memcpy(out + outPos, in + inPos, len);
+}
+
+void Synth::copyPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u pos, Bit32u len) {
+	maybeCopy(nonReverbLeft, pos, prerenderNonReverbLeft, prerenderReadIx, len);
+	maybeCopy(nonReverbRight, pos, prerenderNonReverbRight, prerenderReadIx, len);
+	maybeCopy(reverbDryLeft, pos, prerenderReverbDryLeft, prerenderReadIx, len);
+	maybeCopy(reverbDryRight, pos, prerenderReverbDryRight, prerenderReadIx, len);
+	maybeCopy(reverbWetLeft, pos, prerenderReverbWetLeft, prerenderReadIx, len);
+	maybeCopy(reverbWetRight, pos, prerenderReverbWetRight, prerenderReadIx, len);
+}
+
+void Synth::checkPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u &pos, Bit32u &len) {
+	if (prerenderReadIx > prerenderWriteIx) {
+		// There's data in the prerender buffer, and the write index has wrapped.
+		Bit32u prerenderCopyLen = MAX_PRERENDER_SAMPLES - prerenderReadIx;
+		if (prerenderCopyLen > len) {
+			prerenderCopyLen = len;
+		}
+		copyPrerender(nonReverbLeft, nonReverbRight, reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, pos, prerenderCopyLen);
+		len -= prerenderCopyLen;
+		pos += prerenderCopyLen;
+		prerenderReadIx = (prerenderReadIx + prerenderCopyLen) % MAX_PRERENDER_SAMPLES;
+	}
+	if (prerenderReadIx < prerenderWriteIx) {
+		// There's data in the prerender buffer, and the write index is ahead of the read index.
+		Bit32u prerenderCopyLen = prerenderWriteIx - prerenderReadIx;
+		if (prerenderCopyLen > len) {
+			prerenderCopyLen = len;
+		}
+		copyPrerender(nonReverbLeft, nonReverbRight, reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, pos, prerenderCopyLen);
+		len -= prerenderCopyLen;
+		pos += prerenderCopyLen;
+		prerenderReadIx += prerenderCopyLen;
+	}
+	if (prerenderReadIx == prerenderWriteIx) {
+		// If the ring buffer's empty, reset it to start at 0 to minimise wrapping,
+		// which requires two writes instead of one.
+		prerenderReadIx = prerenderWriteIx = 0;
+	}
+}
 
 void Synth::renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len) {
 	if (!isEnabled) {
@@ -1167,8 +1231,13 @@ void Synth::renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s 
 		return;
 	}
 	Bit32u pos = 0;
+
+	// First, check for data in the prerender buffer and spit that out before generating anything new.
+	// Note that the prerender buffer is rarely used - see comments elsewhere for details.
+	checkPrerender(nonReverbLeft, nonReverbRight, reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, pos, len);
+
 	while (len > 0) {
-		Bit32u thisLen = len > MAX_SAMPLE_OUTPUT ? MAX_SAMPLE_OUTPUT : len;
+		Bit32u thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
 		doRenderStreams(
 			streamOffset(nonReverbLeft, pos),
 			streamOffset(nonReverbRight, pos),

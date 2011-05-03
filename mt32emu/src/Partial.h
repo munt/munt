@@ -44,7 +44,7 @@ private:
 	// Distance in (possibly fractional) samples from the start of the current pulse
 	float wavePos;
 
-	float myBuffer[MAX_SAMPLE_OUTPUT];
+	float myBuffer[MAX_SAMPLES_PER_RUN];
 
 	// Only used for PCM partials
 	int pcmNum;

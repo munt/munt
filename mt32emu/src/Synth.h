@@ -290,12 +290,13 @@ public:
 class Synth {
 friend class Part;
 friend class RhythmPart;
+friend class Poly;
 friend class Partial;
 friend class Tables;
 friend class MemoryRegion;
 friend class TVA;
-friend class TVP;
 friend class TVF;
+friend class TVP;
 private:
 	PatchTempMemoryRegion *patchTempMemoryRegion;
 	RhythmTempMemoryRegion *rhythmTempMemoryRegion;
@@ -341,22 +342,37 @@ private:
 	PartialManager *partialManager;
 	Part *parts[9];
 
-	float tmpBufPartialLeft[MAX_SAMPLE_OUTPUT];
-	float tmpBufPartialRight[MAX_SAMPLE_OUTPUT];
-	float tmpBufMixLeft[MAX_SAMPLE_OUTPUT];
-	float tmpBufMixRight[MAX_SAMPLE_OUTPUT];
-	float tmpBufReverbOutLeft[MAX_SAMPLE_OUTPUT];
-	float tmpBufReverbOutRight[MAX_SAMPLE_OUTPUT];
+	float tmpBufPartialLeft[MAX_SAMPLES_PER_RUN];
+	float tmpBufPartialRight[MAX_SAMPLES_PER_RUN];
+	float tmpBufMixLeft[MAX_SAMPLES_PER_RUN];
+	float tmpBufMixRight[MAX_SAMPLES_PER_RUN];
+	float tmpBufReverbOutLeft[MAX_SAMPLES_PER_RUN];
+	float tmpBufReverbOutRight[MAX_SAMPLES_PER_RUN];
 
-	Bit16s tmpNonReverbLeft[MAX_SAMPLE_OUTPUT];
-	Bit16s tmpNonReverbRight[MAX_SAMPLE_OUTPUT];
-	Bit16s tmpReverbDryLeft[MAX_SAMPLE_OUTPUT];
-	Bit16s tmpReverbDryRight[MAX_SAMPLE_OUTPUT];
-	Bit16s tmpReverbWetLeft[MAX_SAMPLE_OUTPUT];
-	Bit16s tmpReverbWetRight[MAX_SAMPLE_OUTPUT];
+	Bit16s tmpNonReverbLeft[MAX_SAMPLES_PER_RUN];
+	Bit16s tmpNonReverbRight[MAX_SAMPLES_PER_RUN];
+	Bit16s tmpReverbDryLeft[MAX_SAMPLES_PER_RUN];
+	Bit16s tmpReverbDryRight[MAX_SAMPLES_PER_RUN];
+	Bit16s tmpReverbWetLeft[MAX_SAMPLES_PER_RUN];
+	Bit16s tmpReverbWetRight[MAX_SAMPLES_PER_RUN];
+
+	// These ring buffers are only used to simulate delays present on the real device.
+	// In particular, when a partial needs to be aborted to free it up for use by a new Poly,
+	// the controller will busy-loop waiting for the sound to finish.
+	Bit16s prerenderNonReverbLeft[MAX_PRERENDER_SAMPLES];
+	Bit16s prerenderNonReverbRight[MAX_PRERENDER_SAMPLES];
+	Bit16s prerenderReverbDryLeft[MAX_PRERENDER_SAMPLES];
+	Bit16s prerenderReverbDryRight[MAX_PRERENDER_SAMPLES];
+	Bit16s prerenderReverbWetLeft[MAX_PRERENDER_SAMPLES];
+	Bit16s prerenderReverbWetRight[MAX_PRERENDER_SAMPLES];
+	int prerenderReadIx;
+	int prerenderWriteIx;
 
 	SynthProperties myProp;
 
+	bool prerender();
+	void copyPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u pos, Bit32u len);
+	void checkPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u &pos, Bit32u &len);
 	void doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
 
 	void playAddressedSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
