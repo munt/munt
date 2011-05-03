@@ -565,7 +565,7 @@ void Synth::playMsg(Bit32u msg) {
 void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity) {
 	Bit32u bend;
 
-	//printDebug("Synth::playMsg(0x%02x)",msg);
+	//printDebug("Synth::playMsgOnPart(%02x, %02x, %02x, %02x)", part, code, note, velocity);
 	switch (code) {
 	case 0x8:
 		//printDebug("Note OFF - Part %d", part);
@@ -768,7 +768,7 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 		if (/*addr >= MT32EMU_MEMADDR(0x000000) && */addr < MT32EMU_MEMADDR(0x010000)) {
 			int offset;
 			if (chantable[device] == -1) {
-				printDebug(" (Channel not mapped to a partial... 0 offset)");
+				printDebug(" (Channel not mapped to a part... 0 offset)");
 				offset = 0;
 			} else if (chantable[device] == 8) {
 				printDebug(" (Channel mapped to rhythm... 0 offset)");
@@ -778,12 +778,12 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 				printDebug(" (Setting extra offset to %d)", offset);
 			}
 			addr += MT32EMU_MEMADDR(0x030000) + offset;
-		} else if (/*addr >= 0x010000 && */ addr < MT32EMU_MEMADDR(0x020000)) {
+		} else if (/*addr >= MT32EMU_MEMADDR(0x010000) && */ addr < MT32EMU_MEMADDR(0x020000)) {
 			addr += MT32EMU_MEMADDR(0x030110) - MT32EMU_MEMADDR(0x010000);
-		} else if (/*addr >= 0x020000 && */ addr < MT32EMU_MEMADDR(0x030000)) {
+		} else if (/*addr >= MT32EMU_MEMADDR(0x020000) && */ addr < MT32EMU_MEMADDR(0x030000)) {
 			int offset;
 			if (chantable[device] == -1) {
-				printDebug(" (Channel not mapped to a partial... 0 offset)");
+				printDebug(" (Channel not mapped to a part... 0 offset)");
 				offset = 0;
 			} else if (chantable[device] == 8) {
 				printDebug(" (Channel mapped to rhythm... 0 offset)");
@@ -794,7 +794,7 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 			}
 			addr += MT32EMU_MEMADDR(0x040000) - MT32EMU_MEMADDR(0x020000) + offset;
 		} else {
-			printDebug("writeSysex: Invalid channel %d address 0x%06x", device, MT32EMU_SYSEXMEMADDR(addr));
+			printDebug(" Invalid channel");
 			return;
 		}
 	}
