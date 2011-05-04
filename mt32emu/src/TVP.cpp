@@ -246,7 +246,7 @@ void TVP::setupPitchChange(int targetPitchOffset, Bit8u changeDuration) {
 	}
 #else
 	if (pitchOffsetDelta < -32768) {
-		pitchOffsetDelta = -32768;
+		pitchOffsetDelta = -32767;
 	} else if (pitchOffsetDelta > 32767) {
 		pitchOffsetDelta = 32767;
 	}
