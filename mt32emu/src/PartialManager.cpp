@@ -109,8 +109,7 @@ bool PartialManager::abortWhereReserveExceeded(PolyState polyState, int minPart)
 }
 
 bool PartialManager::freePartials(unsigned int needed, int partNum) {
-	// CONFIRMED: Barring bugs, and the fact that poly abortion is immediate rather than just very fast,
-	// this matches the real LAPC-I according to information from Mok.
+	// CONFIRMED: Barring bugs, this matches the real LAPC-I according to information from Mok.
 
 	// BUGS: There are some bugs in the LAPC-I implementation. Simplifying a bit(!):
 	// 1) When allocating for rhythm part, while the number of active rhythm partials is less than the number of reserved rhythm partials,

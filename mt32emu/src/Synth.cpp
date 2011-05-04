@@ -1326,6 +1326,11 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 }
 
 bool Synth::hasActivePartials() const {
+	if (prerenderReadIx != prerenderWriteIx) {
+		// Data in the prerender buffer means that the current isActive() states are "in the future".
+		// It also means that partials are definitely active at this render point.
+		return true;
+	}
 	for (int partialNum = 0; partialNum < MT32EMU_MAX_PARTIALS; partialNum++) {
 		if (partialManager->getPartial(partialNum)->isActive()) {
 			return true;

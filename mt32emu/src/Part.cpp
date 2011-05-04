@@ -417,6 +417,7 @@ void Part::abortPoly(Poly *poly) {
 		while (poly->isActive()) {
 			if (!synth->prerender()) {
 				synth->printDebug("%s (%s): Ran out of prerender space to abort poly gracefully", name, currentInstr);
+				poly->terminate();
 				break;
 			}
 		}
