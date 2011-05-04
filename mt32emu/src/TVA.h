@@ -89,6 +89,7 @@ public:
 	float nextAmp();
 	void recalcSustain();
 	void startDecay();
+	void startAbort();
 
 	bool isPlaying() const;
 	int getPhase() const;

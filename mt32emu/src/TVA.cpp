@@ -273,6 +273,10 @@ void TVA::reset(const Part *newPart, const TimbreParam::PartialParam *newPartial
 	startRamp((Bit8u)newAmpTarget, 0x80 | 127, newPhase);
 }
 
+void TVA::startAbort() {
+	startRamp(64, 0x80 | 127, TVA_PHASE_RELEASE);
+}
+
 void TVA::startDecay() {
 	if (phase >= TVA_PHASE_RELEASE) {
 		return;

@@ -34,7 +34,7 @@ Poly::Poly(Part *usePart) {
 void Poly::reset(unsigned int newKey, unsigned int newVelocity, bool newSustain, Partial **newPartials) {
 	if (isActive()) {
 		// FIXME: Throw out some big ugly debug output with a lot of exclamation marks - we should never get here
-		abort();
+		terminate();
 	}
 
 	key = newKey;
@@ -87,7 +87,20 @@ bool Poly::startDecay() {
 	return true;
 }
 
-void Poly::abort() {
+bool Poly::startAbort() {
+	if (state == POLY_Inactive) {
+		return false;
+	}
+	for (int t = 0; t < 4; t++) {
+		Partial *partial = partials[t];
+		if (partial != NULL) {
+			partial->startAbort();
+		}
+	}
+	return true;
+}
+
+void Poly::terminate() {
 	if (state == POLY_Inactive) {
 		return;
 	}

@@ -1146,7 +1146,7 @@ void Synth::render(Bit16s *stream, Bit32u len) {
 	}
 	while (len > 0) {
 		Bit32u thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
-		doRenderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisLen);
+		renderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisLen);
 		for (Bit32u i = 0; i < thisLen; i++) {
 			stream[0] = clipBit16s((Bit32s)tmpNonReverbLeft[i] + (Bit32s)tmpReverbDryLeft[i] + (Bit32s)tmpReverbWetLeft[i]);
 			stream[1] = clipBit16s((Bit32s)tmpNonReverbRight[i] + (Bit32s)tmpReverbDryRight[i] + (Bit32s)tmpReverbWetRight[i]);
@@ -1178,7 +1178,7 @@ static inline void maybeCopy(Bit16s *out, Bit32u outPos, Bit16s *in, Bit32u inPo
 	if (out == NULL) {
 		return;
 	}
-	memcpy(out + outPos, in + inPos, len);
+	memcpy(out + outPos, in + inPos, len * sizeof(Bit16s));
 }
 
 void Synth::copyPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u pos, Bit32u len) {

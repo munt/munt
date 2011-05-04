@@ -342,6 +342,9 @@ private:
 	PartialManager *partialManager;
 	Part *parts[9];
 
+	// FIXME: We can reorganise things so that we don't need all these separate tmpBuf, tmp and prerender buffers.
+	// This should be rationalised when things have stabilised a bit (if prerender buffers don't die in the mean time).
+
 	float tmpBufPartialLeft[MAX_SAMPLES_PER_RUN];
 	float tmpBufPartialRight[MAX_SAMPLES_PER_RUN];
 	float tmpBufMixLeft[MAX_SAMPLES_PER_RUN];

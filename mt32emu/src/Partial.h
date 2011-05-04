@@ -88,6 +88,7 @@ public:
 	void activate(int part);
 	void deactivate(void);
 	void startPartial(const Part *part, Poly *usePoly, const PatchCache *useCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial);
+	void startAbort();
 	void startDecayAll();
 	bool shouldReverb();
 	bool hasRingModulatingSlave() const;

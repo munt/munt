@@ -44,6 +44,7 @@ private:
 	void setPatch(const PatchParam *patch);
 	unsigned int midiKeyToKey(unsigned int midiKey, const char *debugAction);
 
+	void abortPoly(Poly *poly);
 	bool abortFirstPoly(unsigned int key);
 
 protected:

@@ -497,6 +497,11 @@ bool Partial::shouldReverb() {
 	return patchCache->reverb;
 }
 
+void Partial::startAbort() {
+	// This is called when the partial manager needs to terminate partials for re-use by a new Poly.
+	tva->startAbort();
+}
+
 void Partial::startDecayAll() {
 	tva->startDecay();
 	tvp->startDecay();

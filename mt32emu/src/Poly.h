@@ -47,7 +47,8 @@ public:
 	bool noteOff(bool pedalHeld);
 	bool stopPedalHold();
 	bool startDecay();
-	void abort();
+	bool startAbort();
+	void terminate();
 
 	void backupCacheToPartials(PatchCache cache[4]);
 
