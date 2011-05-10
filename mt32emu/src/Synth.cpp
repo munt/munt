@@ -124,7 +124,6 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 
 Synth::Synth() {
 	isOpen = false;
-	reverbModel = NULL;
 	reverbEnabled = true;
 	reverbOverridden = false;
 	reverbModels[0] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 1.0f, 0.5f);
@@ -542,6 +541,7 @@ void Synth::close() {
 	for (int i = 0; i < 4; i++) {
 		reverbModels[i]->close();
 	}
+	reverbModel = NULL;
 	isOpen = false;
 }
 
