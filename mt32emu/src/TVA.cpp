@@ -131,12 +131,18 @@ float TVA::nextAmp() {
 #if MT32EMU_MONITOR_TVA >= 2
 	partial->getSynth()->printDebug("TVA,next,%d,%d,%d", currentAmp, target, largeAmpInc);
 #endif
-	// SEMI-CONFIRMED: From sample analysis, this gives results within +/- 2 at the output (before any DAC bitshifting)
+	// SEMI-CONFIRMED: From sample analysis:
+	// (1) Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
+	// This gives results within +/- 2 at the output (before any DAC bitshifting)
 	// when sustaining at levels 156 - 255 with no modifiers.
-	// Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
-	// What isn't yet confirmed is the behaviour when ramping between levels, as well as the timing.
+	// (2) Tested with a special square wave partial (internal capture ID tva5) at TVA envelope levels 155-255.
+	// This gives deltas between -1 and 0 compared to the real output. Note that this special partial only produces
+	// positive amps, so negative still needs to be explored, as well as lower levels.
+	// 
+	// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
+	// 
 	int cAmp = currentAmp / (TVA_AMP_TARGET_MULT / 128);
-	return EXP2F((32792 - cAmp) / -2048.0f);
+	return EXP2F((32772 - cAmp) / -2048.0f);
 }
 
 static int multBias(Bit8u biasLevel, int bias) {

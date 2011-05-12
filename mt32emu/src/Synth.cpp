@@ -289,10 +289,10 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 			log = log | (short)(bit << (15 - u));
 		}
 		bool negative = log < 0;
-		log = (~log) & 0x7FFF;
+		log &= 0x7FFF;
 
-		// CONFIRMED from sample analysis to be 99.99%+ accurate
-		float lin = EXP2F(log / -2048.0f);
+		// CONFIRMED from sample analysis to be 99.99%+ accurate with current TVA multiplier
+		float lin = EXP2F((32787 - log) / -2048.0f);
 
 		if (negative) {
 			lin = -lin;
