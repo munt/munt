@@ -57,8 +57,6 @@ private:
 
 	float pcmPosition;
 
-	float history[32];
-
 	Poly *poly;
 
 	float *mixBuffersRingMix(float *buf1, float *buf2, unsigned long len);
@@ -71,7 +69,6 @@ public:
 	TVA *tva;
 	TVP *tvp;
 	TVF *tvf;
-	bool play;
 
 	PatchCache cachebackup;
 

@@ -100,8 +100,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	mixType = patchCache->structureMix;
 	structurePosition = patchCache->structurePosition;
 
-	play = true;
-
 	Bit8u panSetting = rhythmTemp != NULL ? rhythmTemp->panpot : part->getPatchTemp()->panpot;
 	float panVal;
 	if (mixType == 3) {
@@ -149,7 +147,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	tva->reset(part, patchCache->partialParam, rhythmTemp);
 	tvp->reset(part, patchCache->partialParam);
 	tvf->reset(patchCache->partialParam, tvp->getBasePitch());
-	memset(history, 0, sizeof(history));
 }
 
 float Partial::getPCMSample(unsigned int position) {
@@ -194,7 +191,6 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			int intPCMPosition = (int)pcmPosition;
 			if (intPCMPosition >= len && !pcmWave->loop) {
 				// We're now past the end of a non-looping PCM waveform so it's time to die.
-				play = false;
 				deactivate();
 				break;
 			}
