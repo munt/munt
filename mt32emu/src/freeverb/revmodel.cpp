@@ -95,11 +95,13 @@ void revmodel::process(const float *inputL, const float *inputR, float *outputL,
 		filtprev2 += (filtprev1 - filtprev2) * filtval;
 		input = filtprev2;
 
+		int s = -1;
 		// Accumulate comb filters in parallel
 		for (i=0; i<numcombs; i++)
 		{
-			outL += combL[i].process(input);
-			outR += combR[i].process(input);
+			outL += s * combL[i].process(input);
+			outR += s * combR[i].process(input);
+			s = -s;
 		}
 
 		// Feed through allpasses in series
