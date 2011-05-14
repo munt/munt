@@ -131,6 +131,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	} else {
 		pcmWave = NULL;
 		wavePos = 0.0f;
+		pitch = 0;
 	}
 
 	// CONFIRMED: pulseWidthVal calculation is based on information from Mok
@@ -181,9 +182,16 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			break;
 		}
 
-		Bit16u pitch = tvp->nextPitch();
-
+		Bit16u newPitch = tvp->nextPitch();
 		float freq = synth->tables.pitchToFreq[pitch];
+
+		// In case of pitch change we need to scale wavePos correspondingly to avoid jumps
+		if (pitch != newPitch) {
+			float newFreq = synth->tables.pitchToFreq[newPitch];
+			wavePos *= freq / newFreq;
+			freq = newFreq;
+			pitch = newPitch;
+		}
 
 		if (patchCache->PCMPartial) {
 			// Render PCM waveform
@@ -228,11 +236,6 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			if (waveLen < 4.0f) {
 				waveLen = 4.0f;
 			}
-
-			// wavePos isn't supposed to be > waveLen
-			// so, correct it here if waveLen was changed
-			while (wavePos > waveLen)
-				wavePos -= waveLen;
 
 			// Init cosineLen
 			float cosineLen = 0.5f * waveLen;
@@ -359,6 +362,11 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			}
 
 			wavePos++;
+
+			// wavePos isn't supposed to be > waveLen
+			if (wavePos > waveLen) {
+				wavePos -= waveLen;
+			}
 		}
 
 		// Multiply sample with current TVA value
