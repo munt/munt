@@ -64,6 +64,7 @@ const unsigned int MAX_PRERENDER_SAMPLES = 1024;
 #include "File.h"
 #include "Tables.h"
 #include "Poly.h"
+#include "LA32Ramp.h"
 #include "TVA.h"
 #include "TVP.h"
 #include "TVF.h"

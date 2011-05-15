@@ -56,6 +56,7 @@ enum {
 class TVA {
 private:
 	const Partial * const partial;
+	LA32Ramp *ampRamp;
 	const MemParams::System * const system;
 
 	const Part *part;
@@ -69,10 +70,7 @@ private:
 	int veloAmpSubtraction;
 	int keyTimeSubtraction;
 
-	int interruptCountdown;
 	int phase;
-	Bit32u currentAmp;
-	unsigned int largeAmpInc;
 
 	// See comment at the top of tva.cpp for an explanation on the meaning of these variables.
 	Bit8u la32AmpTarget;
@@ -80,13 +78,13 @@ private:
 
 	void startRamp(Bit8u newLA32AmpTarget, Bit8u newLA32AmpIncrement, int newPhase);
 	void end(int newPhase);
-	//void setAmpIncrement(Bit8u ampIncrement);
 	void nextPhase();
 
 public:
-	TVA(const Partial *partial);
+	TVA(const Partial *partial, LA32Ramp *ampRamp);
 	void reset(const Part *part, const TimbreParam::PartialParam *partialParam, const MemParams::RhythmTemp *rhythmTemp);
 	float nextAmp();
+	void handleInterrupt();
 	void recalcSustain();
 	void startDecay();
 	void startAbort();

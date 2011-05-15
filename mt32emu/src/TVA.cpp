@@ -16,25 +16,8 @@
  */
 
 /*
-Some notes on this class:
-
-la32AmpTarget and la32AmpIncrement represent memory-mapped LA32 registers in the real devices.
-The values that we set them to correspond exactly to the values that the real control ROM sets
-(according to Mok's specifications, and assuming no bugs in our implementation).
-
-Our interpretation of these values is partly based on guesswork and sample analysis.
-Here's what we're pretty confident about:
- - The most significant bit of la32AmpIncrement indicates the direction that the LA32's current internal amp value (currentAmp in our emulation) should change in.
-   Set means downward, clear means upward.
- - The lower 7 bits of la32AmpIncrement indicate how quickly currentAmp should be changed.
- - If la32AmpIncrement is 0, no change to currentAmp is made and no interrupt is raised. [SEMI-CONFIRMED by sample analysis]
- - Otherwise, if the MSb is set:
-    - If currentAmp already corresponds to a value <= la32AmpTarget, currentAmp is set immediately to the equivalent of la32AmpTarget and an interrupt is raised.
-    - Otherwise, currentAmp is gradually reduced (at a rate determined by the lower 7 bits of la32AmpIncrement), and once it reaches the equivalent of la32AmpTarget an interrupt is raised.
- - Otherwise (the MSb is unset):
-    - If currentAmp already corresponds to a value >= la32AmpTarget, currentAmp is set immediately to the equivalent of la32AmpTarget and an interrupt is raised.
-    - Otherwise, currentAmp is gradually increased (at a rate determined by the lower 7 bits of la32AmpIncrement), and once it reaches the equivalent of la32AmpTarget an interrupt is raised.
-We're emulating what happens when the interrupt is raised in "nextPhase()".
+ * This class emulates the calculations performed by the 8095 microcontroller in order to configure the LA-32's amplitude ramp for a single partial at each stage of its TVA envelope.
+ * Unless we introduced bugs, it should be pretty much 100% accurate according to Mok's specifications.
 */
 #include <cmath>
 
@@ -43,45 +26,20 @@ We're emulating what happens when the interrupt is raised in "nextPhase()".
 
 namespace MT32Emu {
 
-// SEMI-CONFIRMED from sample analysis.
-const int TVA_AMP_TARGET_MULT = 0x40000;
-const unsigned int MAX_CURRENT_AMP = 0xFF * TVA_AMP_TARGET_MULT;
-
-// We simulate the delay in handling "target was reached" interrupts by waiting
-// this many samples before calling nextPhase().
-// FIXME: This should vary with the sample rate, but doesn't.
-// SEMI-CONFIRMED: Since this involves asynchronous activity between the LA32
-// and the 8095, a good value is hard to pin down.
-// This one matches observed behaviour on a few digital captures I had handy,
-// and should be double-checked. We may also need a more complicated delay
-// scheme eventually.
-const int INTERRUPT_TIME = 7;
-
 // CONFIRMED: Matches a table in ROM - haven't got around to coming up with a formula for it yet.
 static Bit8u biasLevelToAmpSubtractionCoeff[13] = {255, 187, 137, 100, 74, 54, 40, 29, 21, 15, 10, 5, 0};
 
-TVA::TVA(const Partial *usePartial) :
-	partial(usePartial), system(&usePartial->getSynth()->mt32ram.system) {
+TVA::TVA(const Partial *usePartial, LA32Ramp *useAmpRamp) :
+	partial(usePartial), ampRamp(useAmpRamp), system(&usePartial->getSynth()->mt32ram.system) {
 }
 
 void TVA::startRamp(Bit8u newLA32AmpTarget, Bit8u newLA32AmpIncrement, int newPhase) {
-	la32AmpIncrement = newLA32AmpIncrement;
-
-	largeAmpInc = newLA32AmpIncrement & 0x7F;
-	// CONFIRMED: From sample analysis, this appears to be very accurate.
-	// FIXME: We could use a table for this in future
-	largeAmpInc = (unsigned int)(EXP2F((largeAmpInc + 24) / 8.0f) + 0.125f);
-	if ((newLA32AmpIncrement & 0x80) != 0) {
-		// CONFIRMED: From sample analysis, descending increments are slightly faster
-		largeAmpInc++;
-	}
-
 	la32AmpTarget = newLA32AmpTarget;
+	la32AmpIncrement = newLA32AmpIncrement;
 	phase = newPhase;
-	interruptCountdown = 0;
-
+	ampRamp->startRamp(la32AmpTarget, la32AmpIncrement);
 #if MT32EMU_MONITOR_TVA >= 1
-	partial->getSynth()->printDebug("TVA,ramp,%d,%d,%d,%d,%d", newLA32AmpTarget, (newLA32AmpIncrement & 0x80) ? -1 : 1, (newLA32AmpIncrement & 0x7F), newPhase, currentAmp);
+	partial->getSynth()->printDebug("TVA,ramp,%d,%d,%d,%d", newLA32AmpTarget, (newLA32AmpIncrement & 0x80) ? -1 : 1, (newLA32AmpIncrement & 0x7F), newPhase);
 #endif
 }
 
@@ -91,58 +49,6 @@ void TVA::end(int newPhase) {
 #if MT32EMU_MONITOR_TVA >= 1
 	partial->getSynth()->printDebug("TVA,end,%d", newPhase);
 #endif
-}
-
-float TVA::nextAmp() {
-	// FIXME: This whole method is based on guesswork
-	Bit32u target = la32AmpTarget * TVA_AMP_TARGET_MULT;
-	if (interruptCountdown > 0) {
-		if (--interruptCountdown == 0) {
-			nextPhase();
-		}
-	} else if (la32AmpIncrement != 0) {
-		// CONFIRMED from sample analysis: When la32AmpIncrement is 0, the LA32 does *not* change the amp at all (and of course doesn't fire an interrupt).
-		if ((la32AmpIncrement & 0x80) != 0) {
-			// Lowering amp
-			if (largeAmpInc > currentAmp) {
-				currentAmp = target;
-				interruptCountdown = INTERRUPT_TIME;
-			} else {
-				currentAmp -= largeAmpInc;
-				if (currentAmp <= target) {
-					currentAmp = target;
-					interruptCountdown = INTERRUPT_TIME;
-				}
-			}
-		} else {
-			// Raising amp
-			if (MAX_CURRENT_AMP - currentAmp < largeAmpInc) {
-				currentAmp = target;
-				interruptCountdown = INTERRUPT_TIME;
-			} else {
-				currentAmp += largeAmpInc;
-				if (currentAmp >= target) {
-					currentAmp = target;
-					interruptCountdown = INTERRUPT_TIME;
-				}
-			}
-		}
-	}
-#if MT32EMU_MONITOR_TVA >= 2
-	partial->getSynth()->printDebug("TVA,next,%d,%d,%d", currentAmp, target, largeAmpInc);
-#endif
-	// SEMI-CONFIRMED: From sample analysis:
-	// (1) Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
-	// This gives results within +/- 2 at the output (before any DAC bitshifting)
-	// when sustaining at levels 156 - 255 with no modifiers.
-	// (2) Tested with a special square wave partial (internal capture ID tva5) at TVA envelope levels 155-255.
-	// This gives deltas between -1 and 0 compared to the real output. Note that this special partial only produces
-	// positive amps, so negative still needs to be explored, as well as lower levels.
-	// 
-	// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
-	// 
-	int cAmp = currentAmp / (TVA_AMP_TARGET_MULT / 128);
-	return EXP2F((32772 - cAmp) / -2048.0f);
 }
 
 static int multBias(Bit8u biasLevel, int bias) {
@@ -271,11 +177,11 @@ void TVA::reset(const Part *newPart, const TimbreParam::PartialParam *newPartial
 		newPhase = TVA_PHASE_BASIC; // The first target used in nextPhase() will be TVA_PHASE_ATTACK
 	}
 
-	currentAmp = 0;
+	ampRamp->reset();//currentAmp = 0;
 
 	// "Go downward as quickly as possible".
-	// Since currentAmp is 0, nextAmp() will notice that we're already at or below the target and trying to go downward,
-	// and therefore jump to the target immediately and call nextPhase().
+	// Since the current value is 0, the LA32Ramp will notice that we're already at or below the target and trying to go downward,
+	// and therefore jump to the target immediately and raise an interrupt.
 	startRamp((Bit8u)newAmpTarget, 0x80 | 127, newPhase);
 }
 
@@ -295,6 +201,10 @@ void TVA::startDecay() {
 	}
 	// The next time nextPhase() is called, it will think TVA_PHASE_RELEASE has finished and the partial will be aborted
 	startRamp(0, newAmpIncrement, TVA_PHASE_RELEASE);
+}
+
+void TVA::handleInterrupt() {
+	nextPhase();
 }
 
 void TVA::recalcSustain() {

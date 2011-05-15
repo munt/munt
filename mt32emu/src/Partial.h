@@ -61,6 +61,9 @@ private:
 
 	Poly *poly;
 
+	LA32Ramp ampRamp;
+	//LA32Ramp cutoffModifierRamp;
+
 	float *mixBuffersRingMix(float *buf1, float *buf2, unsigned long len);
 	float *mixBuffersRing(float *buf1, float *buf2, unsigned long len);
 
