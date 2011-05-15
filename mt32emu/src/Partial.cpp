@@ -35,7 +35,7 @@ static const float PAN_NUMERATOR_MASTER[] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
 static const float PAN_NUMERATOR_SLAVE[]  = {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f};
 
 Partial::Partial(Synth *useSynth, int useDebugPartialNum) :
-	synth(useSynth), debugPartialNum(useDebugPartialNum), tva(new TVA(this, &ampRamp)), tvp(new TVP(this)), tvf(new TVF(this)) {
+	synth(useSynth), debugPartialNum(useDebugPartialNum), tva(new TVA(this, &ampRamp)), tvp(new TVP(this)), tvf(new TVF(this, &cutoffModifierRamp)) {
 	ownerPart = -1;
 	poly = NULL;
 	pair = NULL;
@@ -231,6 +231,12 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		} else {
 			// Render synthesised waveform
 
+			Bit32u cutoffModifierRampVal = cutoffModifierRamp.nextValue();
+			if (cutoffModifierRamp.checkInterrupt()) {
+				tvf->handleInterrupt();
+			}
+			float cutoffModifier = cutoffModifierRampVal / 262144.0f;
+
 			// res corresponds to a value set in an LA32 register
 			Bit8u res = patchCache->srcPartial.tvf.resonance + 1;
 //			float resAmp = EXP2F(1.0f - (32 - res) / 4.0f);	// seems to be exact
@@ -240,7 +246,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			Bit8u cutoffVal = tvf->getBaseCutoff();
 			// The modifier may not be supposed to be added to the cutoff at all -
 			// it may for example need to be multiplied in some way.
-			cutoffVal += tvf->nextCutoffModifier();
+			cutoffVal += cutoffModifier;
 
 			// Wave length in samples
 			float waveLen = synth->myProp.sampleRate / freq;

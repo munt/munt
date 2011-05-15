@@ -22,10 +22,6 @@
 
 namespace MT32Emu {
 
-// FIXME: Need to confirm that this is correct.
-const unsigned int TVF_TARGET_MULT = 0x800000;
-const unsigned int MAX_CURRENT = 0xFF * TVF_TARGET_MULT;
-
 // Note that when entering nextPhase(), newPhase is set to phase + 1, and the descriptions/names below refer to
 // newPhase's value.
 enum {
@@ -94,18 +90,15 @@ static int calcBaseCutoff(const TimbreParam::PartialParam *partialParam, Bit32u 
 	return (Bit8u)baseCutoff;
 }
 
-TVF::TVF(const Partial *usePartial) :
-	partial(usePartial) {
+TVF::TVF(const Partial *usePartial, LA32Ramp *useCutoffModifierRamp) :
+	partial(usePartial), cutoffModifierRamp(useCutoffModifierRamp) {
 }
 
 void TVF::startRamp(Bit8u newTarget, Bit8u newIncrement, int newPhase) {
 	target = newTarget;
 	increment = newIncrement;
-	bigIncrement = newIncrement & 0x7F;
-	// FIXME: This is just a guess - absolutely no idea whether this is the same as for TVA::setAmpIncrement(), which it copies.
-	// FIXME: We could use a table for this in future
-	bigIncrement = (unsigned int)(EXP10F((bigIncrement - 1) / 26.0f) * 256.0f);
 	phase = newPhase;
+	cutoffModifierRamp->startRamp(newTarget, newIncrement);
 #if MT32EMU_MONITOR_TVF >= 1
 	partial->getSynth()->printDebug("TVF,ramp,%d,%d,%d,%d", newTarget, (newIncrement & 0x80) ? -1 : 1, (newIncrement & 0x7F), newPhase);
 #endif
@@ -152,7 +145,7 @@ void TVF::reset(const TimbreParam::PartialParam *newPartialParam, unsigned int b
 			newIncrement = 1;
 		}
 	}
-	current = 0;
+	cutoffModifierRamp->reset();
 	startRamp(newTarget, newIncrement, PHASE_2 - 1);
 }
 
@@ -160,39 +153,8 @@ Bit8u TVF::getBaseCutoff() const {
 	return baseCutoff;
 }
 
-float TVF::nextCutoffModifier() {
-	// FIXME: This whole method is basically a copy of TVA::nextAmp(), which may be completely inappropriate for TVF.
-	Bit32u bigTarget = target * TVF_TARGET_MULT;
-	if (increment == 0) {
-		current = bigTarget;
-	} else {
-		if ((increment & 0x80) != 0) {
-			// Lowering
-			if (bigIncrement > current) {
-				current = bigTarget;
-				nextPhase();
-			} else {
-				current -= bigIncrement;
-				if (current <= bigTarget) {
-					current = bigTarget;
-					nextPhase();
-				}
-			}
-		} else {
-			// Raising
-			if (MAX_CURRENT - current < bigIncrement) {
-				current = bigTarget;
-				nextPhase();
-			} else {
-				current += bigIncrement;
-				if (current >= bigTarget) {
-					current = bigTarget;
-					nextPhase();
-				}
-			}
-		}
-	}
-	return (float)current / TVF_TARGET_MULT;
+void TVF::handleInterrupt() {
+	nextPhase();
 }
 
 void TVF::startDecay() {
@@ -218,6 +180,7 @@ void TVF::nextPhase() {
 	case PHASE_RELEASE:
 		// FIXME: Afaict newPhase should never be PHASE_RELEASE here. And if it were, this is an odd way to handle it.
 		if (!partial->getPoly()->canSustain()) {
+			phase = newPhase; // FIXME: Correct?
 			startDecay(); // FIXME: This should actually start decay even if phase is already 6. Does that matter?
 			return;
 		}
