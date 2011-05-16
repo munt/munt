@@ -29,12 +29,14 @@ private:
 	int keyTimeSubtraction;
 	unsigned int levelMult;
 
-	unsigned int targetPhase;
 	Bit32u current;
 	Bit8u target;
 	Bit8u increment;
 	unsigned int bigIncrement;
-	void setIncrement(Bit8u ampIncrement);
+
+	unsigned int phase;
+
+	void startRamp(Bit8u newTarget, Bit8u newIncrement, int newPhase);
 	void nextPhase();
 
 public:

@@ -26,8 +26,8 @@ namespace MT32Emu {
 const unsigned int TVF_TARGET_MULT = 0x800000;
 const unsigned int MAX_CURRENT = 0xFF * TVF_TARGET_MULT;
 
-// When entering nextPhase, targetPhase is immediately incremented, and the descriptions/names below represent
-// their use after the increment.
+// Note that when entering nextPhase(), newPhase is set to phase + 1, and the descriptions/names below refer to
+// newPhase's value.
 enum {
 	// When this is the target phase, level[0] is targeted within time[0]
 	// Note that this phase is always set up in reset(), not nextPhase()
@@ -98,13 +98,17 @@ TVF::TVF(const Partial *usePartial) :
 	partial(usePartial) {
 }
 
-void TVF::setIncrement(Bit8u newIncrement) {
-	// FIXME: This is just a guess - absolutely no idea whether this is the same as for TVA::setAmpIncrement(), which it copies.
+void TVF::startRamp(Bit8u newTarget, Bit8u newIncrement, int newPhase) {
+	target = newTarget;
 	increment = newIncrement;
-
 	bigIncrement = newIncrement & 0x7F;
+	// FIXME: This is just a guess - absolutely no idea whether this is the same as for TVA::setAmpIncrement(), which it copies.
 	// FIXME: We could use a table for this in future
 	bigIncrement = (unsigned int)(EXP10F((bigIncrement - 1) / 26.0f) * 256.0f);
+	phase = newPhase;
+#if MT32EMU_MONITOR_TVF >= 1
+	partial->getSynth()->printDebug("TVF,ramp,%d,%d,%d,%d", newTarget, (newIncrement & 0x80) ? -1 : 1, (newIncrement & 0x7F), newPhase);
+#endif
 }
 
 void TVF::reset(const TimbreParam::PartialParam *newPartialParam, unsigned int basePitch) {
@@ -148,11 +152,8 @@ void TVF::reset(const TimbreParam::PartialParam *newPartialParam, unsigned int b
 			newIncrement = 1;
 		}
 	}
-	setIncrement(newIncrement);
-	target = newTarget;
-	targetPhase = PHASE_2 - 1;
-
 	current = 0;
+	startRamp(newTarget, newIncrement, PHASE_2 - 1);
 }
 
 Bit8u TVF::getBaseCutoff() const {
@@ -195,40 +196,36 @@ float TVF::nextCutoffModifier() {
 }
 
 void TVF::startDecay() {
-	if (targetPhase >= PHASE_RELEASE) {
+	if (phase >= PHASE_RELEASE) {
 		return;
 	}
-	targetPhase = PHASE_DONE - 1;
 	if (partialParam->tvf.envTime[4] == 0) {
-		setIncrement(1);
+		startRamp(0, 1, PHASE_DONE - 1);
 	} else {
-		setIncrement(-partialParam->tvf.envTime[4]);
+		startRamp(0, -partialParam->tvf.envTime[4], PHASE_DONE - 1);
 	}
-	target = 0;
 }
 
 void TVF::nextPhase() {
 	Tables *tables = &partial->getSynth()->tables;
-	targetPhase++;
+	int newPhase = phase + 1;
 
-	switch (targetPhase) {
+	switch (newPhase) {
 	case PHASE_DONE:
-		setIncrement(0);
-		target = 0;
+		startRamp(0, 0, newPhase);
 		return;
 	case PHASE_SUSTAIN:
 	case PHASE_RELEASE:
-		// FIXME: Afaict targetPhase should never be PHASE_RELEASE here. And if it were, this is an odd way to handle it.
+		// FIXME: Afaict newPhase should never be PHASE_RELEASE here. And if it were, this is an odd way to handle it.
 		if (!partial->getPoly()->canSustain()) {
 			startDecay(); // FIXME: This should actually start decay even if phase is already 6. Does that matter?
 			return;
 		}
-		setIncrement(0);
-		target = (levelMult * partialParam->tvf.envLevel[3]) >> 8;
+		startRamp((levelMult * partialParam->tvf.envLevel[3]) >> 8, 0, newPhase);
 		return;
 	}
 
-	int envPointIndex = targetPhase - 1;
+	int envPointIndex = phase;
 	// FIXME: Should the result perhaps be cast to Bit8s?
 	int envTimeSetting = (int)partialParam->tvf.envTime[envPointIndex] - keyTimeSubtraction;
 
@@ -256,8 +253,7 @@ void TVF::nextPhase() {
 	} else {
 		newIncrement = newTarget >= target ? (0x80 | 127) : 127;
 	}
-	setIncrement(newIncrement);
-	target = newTarget;
+	startRamp(newTarget, newIncrement, newPhase);
 }
 
 }
