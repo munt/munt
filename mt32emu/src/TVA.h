@@ -22,7 +22,7 @@ namespace MT32Emu {
 
 class Part;
 
-// Note that when entering nextPhase, newPhase is set to phase + 1, and the descriptions/names below refer to
+// Note that when entering nextPhase(), newPhase is set to phase + 1, and the descriptions/names below refer to
 // newPhase's value.
 enum {
 	// In this phase, the base amp (as calculated in calcBasicAmp()) is targeted with an instant time.

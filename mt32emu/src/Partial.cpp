@@ -176,7 +176,14 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 	unsigned long sampleNum;
 	for (sampleNum = 0; sampleNum < length; sampleNum++) {
 		float sample = 0;
-		Bit32u ampVal = ampRamp.nextValue();
+		Bit32u ampRampVal = ampRamp.nextValue();
+		if (ampRamp.checkInterrupt()) {
+			tva->handleInterrupt();
+		}
+		if (!tva->isPlaying()) {
+			deactivate();
+			break;
+		}
 		// SEMI-CONFIRMED: From sample analysis:
 		// (1) Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
 		// This gives results within +/- 2 at the output (before any DAC bitshifting)
@@ -186,14 +193,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		// positive amps, so negative still needs to be explored, as well as lower levels.
 		//
 		// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
-		float amp = EXP2F((32772 - ampVal / 2048) / -2048.0f);
-		if (ampRamp.checkInterrupt()) {
-			tva->handleInterrupt();
-		}
-		if (!tva->isPlaying()) {
-			deactivate();
-			break;
-		}
+		float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
 
 		Bit16u newPitch = tvp->nextPitch();
 		float freq = synth->tables.pitchToFreq[pitch];
@@ -231,7 +231,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		} else {
 			// Render synthesised waveform
 
-			// This corresponds the value set to LA-32 port
+			// res corresponds to a value set in an LA32 register
 			Bit8u res = patchCache->srcPartial.tvf.resonance + 1;
 //			float resAmp = EXP2F(1.0f - (32 - res) / 4.0f);	// seems to be exact
 			float resAmp = synth->tables.resAmpMax[res];
@@ -242,7 +242,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			// it may for example need to be multiplied in some way.
 			cutoffVal += tvf->nextCutoffModifier();
 
-			// Wave lenght in samples
+			// Wave length in samples
 			float waveLen = synth->myProp.sampleRate / freq;
 
 			// Anti-aliasing feature
