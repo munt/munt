@@ -226,8 +226,7 @@ void TVF::nextPhase() {
 	}
 
 	int envPointIndex = phase;
-	// FIXME: Should the result perhaps be cast to Bit8s?
-	int envTimeSetting = (int)partialParam->tvf.envTime[envPointIndex] - keyTimeSubtraction;
+	int envTimeSetting = partialParam->tvf.envTime[envPointIndex] - keyTimeSubtraction;
 
 	int newTarget = (levelMult * partialParam->tvf.envLevel[envPointIndex]) >> 8;
 	int newIncrement;
@@ -242,8 +241,7 @@ void TVF::nextPhase() {
 				newTarget--;
 			}
 		}
-		// FIXME: Can't newIncrement be negative or over 127 here? Casting to Bit8u to emulate...
-		newIncrement = (Bit8u)(tables->envLogarithmicTime[targetDelta < 0 ? -targetDelta : targetDelta] - envTimeSetting);
+		newIncrement = tables->envLogarithmicTime[targetDelta < 0 ? -targetDelta : targetDelta] - envTimeSetting;
 		if (newIncrement <= 0) {
 			newIncrement = 1;
 		}
