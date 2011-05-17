@@ -96,7 +96,6 @@ TVF::TVF(const Partial *usePartial, LA32Ramp *useCutoffModifierRamp) :
 
 void TVF::startRamp(Bit8u newTarget, Bit8u newIncrement, int newPhase) {
 	target = newTarget;
-	increment = newIncrement;
 	phase = newPhase;
 	cutoffModifierRamp->startRamp(newTarget, newIncrement);
 #if MT32EMU_MONITOR_TVF >= 1

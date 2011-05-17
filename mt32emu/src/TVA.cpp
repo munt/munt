@@ -33,13 +33,12 @@ TVA::TVA(const Partial *usePartial, LA32Ramp *useAmpRamp) :
 	partial(usePartial), ampRamp(useAmpRamp), system(&usePartial->getSynth()->mt32ram.system) {
 }
 
-void TVA::startRamp(Bit8u newLA32AmpTarget, Bit8u newLA32AmpIncrement, int newPhase) {
-	la32AmpTarget = newLA32AmpTarget;
-	la32AmpIncrement = newLA32AmpIncrement;
+void TVA::startRamp(Bit8u newTarget, Bit8u newIncrement, int newPhase) {
+	target = newTarget;
 	phase = newPhase;
-	ampRamp->startRamp(la32AmpTarget, la32AmpIncrement);
+	ampRamp->startRamp(newTarget, newIncrement);
 #if MT32EMU_MONITOR_TVA >= 1
-	partial->getSynth()->printDebug("TVA,ramp,%d,%d,%d,%d", newLA32AmpTarget, (newLA32AmpIncrement & 0x80) ? -1 : 1, (newLA32AmpIncrement & 0x7F), newPhase);
+	partial->getSynth()->printDebug("TVA,ramp,%d,%d,%d,%d", newTarget, (newIncrement & 0x80) ? -1 : 1, (newIncrement & 0x7F), newPhase);
 #endif
 }
 
@@ -165,12 +164,12 @@ void TVA::reset(const Part *newPart, const TimbreParam::PartialParam *newPartial
 	biasAmpSubtraction = calcBiasAmpSubtractions(partialParam, key);
 	veloAmpSubtraction = calcVeloAmpSubtraction(partialParam->tva.veloSensitivity, velocity);
 
-	int newAmpTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, newRhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
+	int newTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, newRhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
 	int newPhase;
 	if (partialParam->tva.envTime[0] == 0) {
 		// Initially go to the TVA_PHASE_ATTACK target amp, and spend the next phase going from there to the TVA_PHASE_2 target amp
 		// Note that this means that velocity never affects time for this partial.
-		newAmpTarget += partialParam->tva.envLevel[0];
+		newTarget += partialParam->tva.envLevel[0];
 		newPhase = TVA_PHASE_ATTACK; // The first target used in nextPhase() will be TVA_PHASE_2
 	} else {
 		// Initially go to the base amp determined by TVA level, part volume, etc., and spend the next phase going from there to the full TVA_PHASE_ATTACK target amp.
@@ -182,7 +181,7 @@ void TVA::reset(const Part *newPart, const TimbreParam::PartialParam *newPartial
 	// "Go downward as quickly as possible".
 	// Since the current value is 0, the LA32Ramp will notice that we're already at or below the target and trying to go downward,
 	// and therefore jump to the target immediately and raise an interrupt.
-	startRamp((Bit8u)newAmpTarget, 0x80 | 127, newPhase);
+	startRamp((Bit8u)newTarget, 0x80 | 127, newPhase);
 }
 
 void TVA::startAbort() {
@@ -193,14 +192,14 @@ void TVA::startDecay() {
 	if (phase >= TVA_PHASE_RELEASE) {
 		return;
 	}
-	Bit8u newAmpIncrement;
+	Bit8u newIncrement;
 	if (partialParam->tva.envTime[4] == 0) {
-		newAmpIncrement = 1;
+		newIncrement = 1;
 	} else {
-		newAmpIncrement = -partialParam->tva.envTime[4];
+		newIncrement = -partialParam->tva.envTime[4];
 	}
 	// The next time nextPhase() is called, it will think TVA_PHASE_RELEASE has finished and the partial will be aborted
-	startRamp(0, newAmpIncrement, TVA_PHASE_RELEASE);
+	startRamp(0, newIncrement, TVA_PHASE_RELEASE);
 }
 
 void TVA::handleInterrupt() {
@@ -217,20 +216,20 @@ void TVA::recalcSustain() {
 	}
 	// We're sustaining. Recalculate all the values
 	Tables *tables = &partial->getSynth()->tables;
-	int newAmpTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
-	newAmpTarget += partialParam->tva.envLevel[3];
-	// Since we're in TVA_PHASE_SUSTAIN at this point, we know that la32AmpTarget has been reached and an interrupt fired, so we can rely on it being the current amp.
-	int ampDelta = newAmpTarget - la32AmpTarget;
+	int newTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
+	newTarget += partialParam->tva.envLevel[3];
+	// Since we're in TVA_PHASE_SUSTAIN at this point, we know that target has been reached and an interrupt fired, so we can rely on it being the current amp.
+	int targetDelta = newTarget - target;
 
 	// Calculate an increment to get to the new amp value in a short, more or less consistent amount of time
-	Bit8u newAmpIncrement;
-	if (ampDelta >= 0) {
-		newAmpIncrement = tables->envLogarithmicTime[(Bit8u)ampDelta] - 2;
+	Bit8u newIncrement;
+	if (targetDelta >= 0) {
+		newIncrement = tables->envLogarithmicTime[(Bit8u)targetDelta] - 2;
 	} else {
-		newAmpIncrement = (tables->envLogarithmicTime[(Bit8u)-ampDelta] - 2) | 0x80;
+		newIncrement = (tables->envLogarithmicTime[(Bit8u)-targetDelta] - 2) | 0x80;
 	}
 	// Configure so that once the transition's complete and nextPhase() is called, we'll just re-enter sustain phase (or decay phase, depending on parameters at the time).
-	startRamp(newAmpTarget, newAmpIncrement, TVA_PHASE_SUSTAIN - 1);
+	startRamp(newTarget, newIncrement, TVA_PHASE_SUSTAIN - 1);
 }
 
 bool TVA::isPlaying() const {
@@ -274,12 +273,12 @@ void TVA::nextPhase() {
 		}
 	}
 
-	int newAmpTarget;
-	int newAmpIncrement;
+	int newTarget;
+	int newIncrement;
 	int envPointIndex = phase;
 
 	if (!allLevelsZeroFromNowOn) {
-		newAmpTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
+		newTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
 
 		if (newPhase == TVA_PHASE_SUSTAIN || newPhase == TVA_PHASE_RELEASE) {
 			if (partialParam->tva.envLevel[3] == 0) {
@@ -288,23 +287,23 @@ void TVA::nextPhase() {
 			}
 			if (!partial->getPoly()->canSustain()) {
 				newPhase = TVA_PHASE_RELEASE;
-				newAmpTarget = 0;
-				newAmpIncrement = -partialParam->tva.envTime[4];
-				if (newAmpIncrement == 0) {
+				newTarget = 0;
+				newIncrement = -partialParam->tva.envTime[4];
+				if (newIncrement == 0) {
 					// We can't let the increment be 0, or there would be no emulated interrupt.
 					// So we do an "upward" increment, which should set the amp to 0 extremely quickly
 					// and cause an "interrupt" to bring us back to nextPhase().
-					newAmpIncrement = 1;
+					newIncrement = 1;
 				}
 			} else {
-				newAmpTarget += partialParam->tva.envLevel[3];
-				newAmpIncrement = 0;
+				newTarget += partialParam->tva.envLevel[3];
+				newIncrement = 0;
 			}
 		} else {
-			newAmpTarget += partialParam->tva.envLevel[envPointIndex];
+			newTarget += partialParam->tva.envLevel[envPointIndex];
 		}
 	} else {
-		newAmpTarget = 0;
+		newTarget = 0;
 	}
 
 	if ((newPhase != TVA_PHASE_SUSTAIN && newPhase != TVA_PHASE_RELEASE) || allLevelsZeroFromNowOn) {
@@ -320,47 +319,47 @@ void TVA::nextPhase() {
 			envTimeSetting -= keyTimeSubtraction;
 		}
 		if (envTimeSetting > 0) {
-			int ampDelta = newAmpTarget - la32AmpTarget;
-			if (ampDelta <= 0) {
-				if (ampDelta == 0) {
-					// la32AmpTarget and newAmpTarget are the same.
+			int targetDelta = newTarget - target;
+			if (targetDelta <= 0) {
+				if (targetDelta == 0) {
+					// target and newTarget are the same.
 					// We can't have an increment of 0 or we wouldn't get an emulated interrupt.
-					// So instead make the target one less than it really should be and set ampDelta accordingly.
-					ampDelta = -1;
-					newAmpTarget--;
-					if (newAmpTarget < 0) {
-						// Oops, newAmpTarget is less than zero now, so let's do it the other way:
-						// Make newAmpTarget one more than it really should've been and set ampDelta accordingly.
+					// So instead make the target one less than it really should be and set targetDelta accordingly.
+					targetDelta = -1;
+					newTarget--;
+					if (newTarget < 0) {
+						// Oops, newTarget is less than zero now, so let's do it the other way:
+						// Make newTarget one more than it really should've been and set targetDelta accordingly.
 						// FIXME (apparent bug in real firmware):
-						// This means ampDelta will be positive just below here where it's inverted, and we'll end up using envLogarithmicTime[-1], and we'll be setting newAmpIncrement to be descending later on, etc..
-						ampDelta = 1;
-						newAmpTarget = -newAmpTarget;
+						// This means targetDelta will be positive just below here where it's inverted, and we'll end up using envLogarithmicTime[-1], and we'll be setting newIncrement to be descending later on, etc..
+						targetDelta = 1;
+						newTarget = -newTarget;
 					}
 				}
-				ampDelta = -ampDelta;
-				newAmpIncrement = tables->envLogarithmicTime[(Bit8u)ampDelta] - envTimeSetting;
-				if (newAmpIncrement <= 0) {
-					newAmpIncrement = 1;
+				targetDelta = -targetDelta;
+				newIncrement = tables->envLogarithmicTime[(Bit8u)targetDelta] - envTimeSetting;
+				if (newIncrement <= 0) {
+					newIncrement = 1;
 				}
-				newAmpIncrement = newAmpIncrement | 0x80;
+				newIncrement = newIncrement | 0x80;
 			} else {
 				// FIXME: The last 22 or so entries in this table are 128 - surely that fucks things up, since that ends up being -128 signed?
-				newAmpIncrement = tables->envLogarithmicTime[(Bit8u)ampDelta] - envTimeSetting;
-				if (newAmpIncrement <= 0) {
-					newAmpIncrement = 1;
+				newIncrement = tables->envLogarithmicTime[(Bit8u)targetDelta] - envTimeSetting;
+				if (newIncrement <= 0) {
+					newIncrement = 1;
 				}
 			}
 		} else {
-			newAmpIncrement = newAmpTarget >= la32AmpTarget ? (0x80 | 127) : 127;
+			newIncrement = newTarget >= target ? (0x80 | 127) : 127;
 		}
 
 		// FIXME: What's the point of this? It's checked or set to non-zero everywhere above
-		if (newAmpIncrement == 0) {
-			newAmpIncrement = 1;
+		if (newIncrement == 0) {
+			newIncrement = 1;
 		}
 	}
 
-	startRamp((Bit8u)newAmpTarget, (Bit8u)newAmpIncrement, newPhase);
+	startRamp((Bit8u)newTarget, (Bit8u)newIncrement, newPhase);
 }
 
 }

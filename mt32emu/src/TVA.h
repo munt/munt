@@ -70,20 +70,16 @@ private:
 	int veloAmpSubtraction;
 	int keyTimeSubtraction;
 
+	Bit8u target;
 	int phase;
 
-	// See comment at the top of tva.cpp for an explanation on the meaning of these variables.
-	Bit8u la32AmpTarget;
-	Bit8u la32AmpIncrement;
-
-	void startRamp(Bit8u newLA32AmpTarget, Bit8u newLA32AmpIncrement, int newPhase);
+	void startRamp(Bit8u newTarget, Bit8u newIncrement, int newPhase);
 	void end(int newPhase);
 	void nextPhase();
 
 public:
 	TVA(const Partial *partial, LA32Ramp *ampRamp);
 	void reset(const Part *part, const TimbreParam::PartialParam *partialParam, const MemParams::RhythmTemp *rhythmTemp);
-	float nextAmp();
 	void handleInterrupt();
 	void recalcSustain();
 	void startDecay();

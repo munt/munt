@@ -31,7 +31,6 @@ private:
 	unsigned int levelMult;
 
 	Bit8u target;
-	Bit8u increment;
 	unsigned int phase;
 
 	void startRamp(Bit8u newTarget, Bit8u newIncrement, int newPhase);
@@ -46,11 +45,6 @@ public:
 	// Barring bugs, the number returned is confirmed accurate
 	// (based on specs from Mok).
 	Bit8u getBaseCutoff() const;
-	// This function needs to be called at each sample.
-	// It will return a number between 0.0f and 255.0f.
-	// Exactly how it should be applied to the cutoff is currently unknown.
-	// *Possibly* it needs to be multiplied with the cutoff in some manner,
-	// but it may just need to be added.
 	void handleInterrupt();
 	void startDecay();
 };
