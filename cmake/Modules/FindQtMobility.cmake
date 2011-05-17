@@ -1,4 +1,5 @@
 # Stolen from pyside-mobility.
+# Changed to avoid fatally aborting if not found unless REQUIRED was specified.
 # No copyright information was present, so I've copied the notice from another file in the same project:
 
 # This file is part of PySide: Python for Qt
@@ -22,6 +23,14 @@
 # 02110-1301 USA
 
 INCLUDE(FindQt4)
+
+macro(FindQtMobility_FAIL msg)
+  if(QtMobility_REQUIRED)
+    message(FATAL_ERROR "${msg}")
+  elseif(NOT QtMobility_QUIET)
+    message(STATUS "${msg}")
+  endif()
+endmacro()
 
 set(MOBILITY_CONFIG_MKSPECS_FILE "")
 IF(EXISTS "${QT_MKSPECS_DIR}/features/mobilityconfig.prf")
@@ -72,7 +81,8 @@ if(NOT DEFINED MOBILITY_PRF_FILE)
         set(MOBILITY_PRF_FILE "${FEATURE_FILE_PREFIX}11.prf")
         set(VERSION_INFO "1.1")
     else()
-        message(FATAL_ERROR "Couldn't find any version of QtMobility.")
+        FindQtMobility_FAIL("Couldn't find any version of QtMobility.")
+	return()
     endif()
 endif()
 
@@ -144,11 +154,11 @@ ENDIF()
 
 IF(NOT QT_MOBILITY_FOUND)
     if(QT_MOBILITY_TOO_OLD)
-        MESSAGE(FATAL_ERROR "The installed QtMobility version ${QT_MOBILITY_VERSION} it too old, version ${QtMobility_FIND_VERSION} is required.")
+        FindQtMobility_FAIL("The installed QtMobility version ${QT_MOBILITY_VERSION} is too old, version ${QtMobility_FIND_VERSION} is required.")
     ELSEIF(QT_MOBILITY_TOO_NEW)
-        MESSAGE(FATAL_ERROR "The installed QtMobility version ${QT_MOBILITY_VERSION} it too new, version ${QtMobility_FIND_VERSION} is required.")
+        FindQtMobility_FAIL("The installed QtMobility version ${QT_MOBILITY_VERSION} is too new, version ${QtMobility_FIND_VERSION} is required.")
     ELSE()
-        MESSAGE(FATAL_ERROR "QtMobility not found.")
+        FindQtMobility_FAIL("QtMobility not found.")
     ENDIF()
 ELSE()
     export_component(Bearer)
