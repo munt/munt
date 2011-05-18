@@ -29,7 +29,11 @@
 #include "SynthManager.h"
 
 #include "audiodrv/PortAudioDriver.h"
+
 #include "mididrv/TestDriver.h"
+#ifdef WITH_WIN32_MIDI_DRIVER
+#include "mididrv/Win32Driver.h"
+#endif
 
 using namespace MT32Emu;
 
@@ -161,7 +165,11 @@ bool SynthManager::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, qint64
 
 void SynthManager::startMIDI() {
 	stopMIDI();
+#ifdef WITH_WIN32_MIDI_DRIVER
+	midiDriver = new Win32MidiDriver(this);
+#else
 	midiDriver = new TestMidiDriver(this);
+#endif
 }
 
 void SynthManager::stopMIDI() {

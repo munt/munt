@@ -1,34 +1,19 @@
-#ifndef WIN32DRIVER_H
-#define WIN32DRIVER_H
+#ifndef WIN32_MIDI_DRIVER_H
+#define WIN32_MIDI_DRIVER_H
 
-#include "MidiSynth.h"
-#include "MidiEventQueue.h"
+#include <windows.h>
 
-// FIXME: Hack
-typedef int HMIDIIN;
-typedef int MIDIHDR;
-typedef MIDIHDR *LPMIDIHDR;
+#include "MidiDriver.h"
 
-typedef unsigned int UINT;
-typedef int *DWORD_PTR;
-
-static const int MIM_LONGDATA = 1;
-#define CALLBACK
-
-class Win32Driver {
+class Win32MidiDriver : public MidiDriver {
 private:
-	MidiSynth *midiSynth;
-	MidiEventQueue *midiEventQueue;
+	SynthManager *synthManager;
 
-	HMIDIIN hMidiIn;
-	MIDIHDR MidiInHdr;
-	unsigned char sysexBuf[4096];
-	static void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2);
+	static LRESULT CALLBACK MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	static void MessageLoop(SynthManager *synthManager);
+
 public:
-	int init(MidiSynth *pMidiSynth, MidiEventQueue *pMidiStream, unsigned int midiDevID);
-
-	int close();
-	int start();
+	Win32MidiDriver(SynthManager *useSynthManager);
 };
 
 #endif

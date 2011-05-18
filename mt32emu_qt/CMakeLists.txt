@@ -21,8 +21,12 @@ set(mt32emu_qt_SOURCES
 
   src/mididrv/MidiDriver.cpp
   src/mididrv/TestDriver.cpp
-#  src/mididrv/Win32Driver.cpp
 )
+
+if(CMAKE_SYSTEM_NAME STREQUAL Windows)
+  add_definitions(-DWITH_WIN32_MIDI_DRIVER)
+  list(APPEND mt32emu_qt_SOURCES src/mididrv/Win32Driver.cpp)
+endif()
 
 set(mt32emu_qt_HEADERS
   src/mididrv/MidiDriver.h
