@@ -208,7 +208,7 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 	switch (uMsg) {
 	case MODM_OPEN:
 		if (AlreadyOpened) return MMSYSERR_NOERROR;
-		midiSynth.Init();
+		if (midiSynth.Init() != 0) return MMSYSERR_ERROR;
 		AlreadyOpened = true;
 		return OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
 
