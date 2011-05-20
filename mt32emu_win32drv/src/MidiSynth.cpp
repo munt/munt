@@ -348,17 +348,36 @@ MidiSynth::MidiSynth() {
 	midiSynth = this;
 }
 
+int LoadIntValue(char *key, int nDefault) {
+	return GetPrivateProfileIntA("mt32emu", key, nDefault, "mt32emu.ini");
+}
+
+DWORD LoadStringValue(char *key, char *nDefault, char *destination, DWORD nSize) {
+	return GetPrivateProfileStringA("mt32emu", key, nDefault, destination, nSize, "mt32emu.ini");
+}
+
 void MidiSynth::LoadSettings() {
-	sampleRate = 32000;
-	latency = 100;
+	sampleRate = LoadIntValue("SampleRate", 32000);
+	latency = LoadIntValue("Latency", 100);
 	len = UINT(sampleRate * latency / 4000.f);
 	ReloadSettings();
 }
 
 void MidiSynth::ReloadSettings() {
+	resetEnabled = true;
+	if (LoadIntValue("ResetEnabled", 1) == 0) {
+		resetEnabled = false;
+	}
+
 	reverbEnabled = true;
-	emuDACInputMode = DACInputMode_GENERATION2;
-	pathToROMfiles = "C:/WINDOWS/SYSTEM32/";
+	if (LoadIntValue("ReverbEnabled", 1) == 0) {
+		reverbEnabled = false;
+	}
+
+	emuDACInputMode = (DACInputMode)LoadIntValue("DACInputMode", DACInputMode_GENERATION2);
+	DWORD s = LoadStringValue("PathToROMFiles", "C:/WINDOWS/SYSTEM32/", pathToROMfiles, 254);
+	pathToROMfiles[s] = '/';
+	pathToROMfiles[s + 1] = 0;
 }
 
 void MidiSynth::ApplySettings() {
@@ -431,7 +450,11 @@ void MidiSynth::SetMasterVolume(UINT masterVolume) {
 int MidiSynth::Reset() {
 	UINT wResult;
 
-	if (!resetEnabled) return -1;
+	ReloadSettings();
+	if (!resetEnabled) {
+		ApplySettings();
+		return 0;
+	}
 
 	wResult = waveOut.Pause();
 	if (wResult) return wResult;
@@ -440,7 +463,6 @@ int MidiSynth::Reset() {
 	synth->close();
 	delete synth;
 
-	ReloadSettings();
 	synth = new Synth();
 	SynthProperties synthProp = {sampleRate, true, true, 0, 0, 0, pathToROMfiles,
 		NULL, MT32_Report, NULL, NULL, NULL};

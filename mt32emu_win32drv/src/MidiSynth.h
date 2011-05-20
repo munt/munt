@@ -26,7 +26,7 @@ private:
 	unsigned int sampleRate;
 	unsigned int len;
 	unsigned int latency;
-	char *pathToROMfiles;
+	char pathToROMfiles[256];
 	bool resetEnabled;
 	bool reverbEnabled;
 	bool reverbOverriden;
