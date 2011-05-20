@@ -293,7 +293,7 @@ DWORD LoadStringValue(char *key, char *nDefault, char *destination, DWORD nSize)
 
 void MidiSynth::LoadSettings() {
 	sampleRate = LoadIntValue("SampleRate", 32000);
-	latency = LoadIntValue("Latency", 100);
+	latency = LoadIntValue("Latency", 60);
 	len = UINT(sampleRate * latency / 4000.f);
 	ReloadSettings();
 }
@@ -369,9 +369,6 @@ int MidiSynth::Init() {
 #endif
 
 	wResult = waveOut.Init(stream, len, sampleRate);
-	if (wResult) return wResult;
-
-	wResult = midiIn.Init(midiDevID);
 	if (wResult) return wResult;
 
 	//	Start playing streams
