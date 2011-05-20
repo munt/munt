@@ -28,9 +28,12 @@ private:
 	unsigned int latency;
 	char pathToROMfiles[256];
 	bool resetEnabled;
-	bool reverbEnabled;
-	bool reverbOverriden;
 	DACInputMode emuDACInputMode;
+	bool reverbEnabled;
+	bool reverbOverridden;
+	Bit8u reverbMode;
+	Bit8u reverbTime;
+	Bit8u reverbLevel;
 
 	Bit16s *stream1;
 	Bit16s *stream2;

@@ -374,6 +374,15 @@ void MidiSynth::ReloadSettings() {
 		reverbEnabled = false;
 	}
 
+	reverbOverridden = true;
+	if (LoadIntValue("ReverbOverridden", 0) == 0) {
+		reverbOverridden = false;
+	}
+
+	reverbMode = LoadIntValue("ReverbMode", 0);
+	reverbTime = LoadIntValue("ReverbTime", 5);
+	reverbLevel = LoadIntValue("ReverbLevel", 3);
+
 	emuDACInputMode = (DACInputMode)LoadIntValue("DACInputMode", DACInputMode_GENERATION2);
 	DWORD s = LoadStringValue("PathToROMFiles", "C:/WINDOWS/SYSTEM32/", pathToROMfiles, 254);
 	pathToROMfiles[s] = '/';
@@ -383,6 +392,12 @@ void MidiSynth::ReloadSettings() {
 void MidiSynth::ApplySettings() {
 	synth->setReverbEnabled(reverbEnabled);
 	synth->setDACInputMode(emuDACInputMode);
+	if (reverbOverridden) {
+		Bit8u sysex[] = {0x10, 0x00, 0x01, reverbMode, reverbTime, reverbLevel};
+		synth->setReverbOverridden(false);
+		synth->writeSysex(16, sysex, 6);
+		synth->setReverbOverridden(true);
+	}
 }
 
 int MidiSynth::Init() {
