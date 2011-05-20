@@ -1,9 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual C++ Express 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu_win32drv", "mt32emu_win32drv_msvc7.vcproj", "{BD7491C1-986F-4D48-99E6-018AB4ACF801}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mm_win32drv", "mm_win32drv.vcproj", "{A2520089-575E-43BD-A242-EF61D3044B71}"
+	ProjectSection(ProjectDependencies) = postProject
+		{063A149D-E48C-499B-B13F-7A70C140A662} = {063A149D-E48C-499B-B13F-7A70C140A662}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu", "..\mt32emu\mt32emu_msvc7.vcproj", "{063A149D-E48C-499B-B13F-7A70C140A662}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu", "..\mt32emu\mt32emu_4windrv.vcproj", "{063A149D-E48C-499B-B13F-7A70C140A662}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +14,10 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Debug|Win32.ActiveCfg = Debug|Win32
-		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Debug|Win32.Build.0 = Debug|Win32
-		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Release|Win32.ActiveCfg = Release|Win32
-		{BD7491C1-986F-4D48-99E6-018AB4ACF801}.Release|Win32.Build.0 = Release|Win32
+		{A2520089-575E-43BD-A242-EF61D3044B71}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A2520089-575E-43BD-A242-EF61D3044B71}.Debug|Win32.Build.0 = Debug|Win32
+		{A2520089-575E-43BD-A242-EF61D3044B71}.Release|Win32.ActiveCfg = Release|Win32
+		{A2520089-575E-43BD-A242-EF61D3044B71}.Release|Win32.Build.0 = Release|Win32
 		{063A149D-E48C-499B-B13F-7A70C140A662}.Debug|Win32.ActiveCfg = Debug|Win32
 		{063A149D-E48C-499B-B13F-7A70C140A662}.Debug|Win32.Build.0 = Debug|Win32
 		{063A149D-E48C-499B-B13F-7A70C140A662}.Release|Win32.ActiveCfg = Release|Win32
