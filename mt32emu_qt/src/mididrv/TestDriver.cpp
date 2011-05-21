@@ -26,9 +26,9 @@
 
 #include <time.h>
 
-#include "../SynthManager.h"
+#include "../SynthRoute.h"
 
-static const qint64 EVENT_INTERVAL_NANOS = 8000000; // 256 samples;
+static const qint64 TEST1_EVENT_INTERVAL_NANOS = 8000000; // 256 samples;
 
 static const qint64 NANOS_PER_SECOND = 1000000000;
 
@@ -93,7 +93,7 @@ static bool sleepUntilNanos(qint64 targetNanos) {
 
 #endif
 
-TestProcessor::TestProcessor(SynthManager *useSynthManager) : synthManager(useSynthManager), stopProcessing(false) {
+TestProcessor::TestProcessor(TestMidiDriver *useTestMidiDriver) : testMidiDriver(useTestMidiDriver), stopProcessing(false) {
 }
 
 void TestProcessor::stop() {
@@ -101,24 +101,36 @@ void TestProcessor::stop() {
 }
 
 void TestProcessor::processSeqEvents() {
+	Master *master = testMidiDriver->getMaster();
+	MidiSession *session1 = master->createMidiSession(testMidiDriver, "Test 1");
+	MidiSession *session2 = master->createMidiSession(testMidiDriver, "Test 2");
 	qint64 currentNanos = getCurrentNanos();
 	qDebug() << currentNanos;
+	bool alt = false;
 	while(!stopProcessing) {
-		synthManager->pushMIDIShortMessage(0, currentNanos);
-		currentNanos += EVENT_INTERVAL_NANOS;
+		session1->getSynthRoute()->pushMIDIShortMessage(0, currentNanos);
+		// Test 2 sends an event at the same time as every second Test 1 event
+		if(alt)
+			session2->getSynthRoute()->pushMIDIShortMessage(0, currentNanos);
+		alt = !alt;
+		currentNanos += TEST1_EVENT_INTERVAL_NANOS;
 		if (!sleepUntilNanos(currentNanos)) {
 			break;
 		}
 	}
 	qDebug() << "Test processor finished";
+	master->deleteMidiSession(session1);
+	master->deleteMidiSession(session2);
 	emit finished();
 }
 
 
-TestMidiDriver::TestMidiDriver(SynthManager *useSynthManager)
-{
-	processor = NULL;
-	processor = new TestProcessor(useSynthManager);
+TestMidiDriver::TestMidiDriver(Master *useMaster) : MidiDriver(useMaster), processor(NULL) {
+	setName("Test Driver");
+}
+
+void TestMidiDriver::start() {
+	processor = new TestProcessor(this);
 	processor->moveToThread(&processorThread);
 	// Yes, seriously. The QThread object's default thread is *this* thread,
 	// We move it to the thread that it represents so that the finished()->quit() connection
@@ -131,16 +143,19 @@ TestMidiDriver::TestMidiDriver(SynthManager *useSynthManager)
 	processorThread.connect(processor, SIGNAL(finished()), SLOT(quit()));
 
 	processorThread.start();
-
-	setName("Test Driver");
 }
 
-TestMidiDriver::~TestMidiDriver() {
+void TestMidiDriver::stop() {
 	if (processor != NULL) {
 		if (processorThread.isRunning()) {
 			processor->stop();
 			processorThread.wait();
 		}
 		delete processor;
+		processor = NULL;
 	}
+}
+
+TestMidiDriver::~TestMidiDriver() {
+	stop();
 }

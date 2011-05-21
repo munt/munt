@@ -18,14 +18,16 @@
 #include "SynthWidget.h"
 #include "ui_SynthWidget.h"
 
-SynthWidget::SynthWidget(QWidget *parent) :
+SynthWidget::SynthWidget(SynthRoute *useSynthRoute, QWidget *parent) :
     QWidget(parent),
+	synthRoute(useSynthRoute),
     ui(new Ui::SynthWidget)
 {
     ui->setupUi(this);
-	ui->audioDeviceComboBox->addItems(synthManager.audioDriver->getDeviceNames());
-	connect(&synthManager, SIGNAL(stateChanged(SynthManagerState)), SLOT(handleSynthManagerState(SynthManagerState)));
-	synthManager.connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(setAudioDeviceIndex(int)));
+	ui->audioDeviceComboBox->addItems(synthRoute->audioDriver->getDeviceNames());
+	connect(synthRoute, SIGNAL(stateChanged(SynthRouteState)), SLOT(handleSynthRouteState(SynthRouteState)));
+	synthRoute->connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(setAudioDeviceIndex(int)));
+	handleSynthRouteState(synthRoute->getState());
 }
 
 SynthWidget::~SynthWidget()
@@ -33,27 +35,31 @@ SynthWidget::~SynthWidget()
     delete ui;
 }
 
-void SynthWidget::handleSynthManagerState(SynthManagerState synthManagerState) {
-	switch(synthManagerState) {
-	case SynthManagerState_OPEN:
+SynthRoute *SynthWidget::getSynthRoute() {
+	return synthRoute;
+}
+
+void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
+	switch(SynthRouteState) {
+	case SynthRouteState_OPEN:
 		ui->startButton->setEnabled(false);
 		ui->stopButton->setEnabled(true);
 		ui->audioDeviceComboBox->setEnabled(false);
 		ui->statusLabel->setText("Open");
 		break;
-	case SynthManagerState_OPENING:
+	case SynthRouteState_OPENING:
 		ui->startButton->setEnabled(false);
 		ui->stopButton->setEnabled(false);
 		ui->audioDeviceComboBox->setEnabled(false);
 		ui->statusLabel->setText("Opening");
 		break;
-	case SynthManagerState_CLOSING:
+	case SynthRouteState_CLOSING:
 		ui->startButton->setEnabled(false);
 		ui->stopButton->setEnabled(false);
 		ui->audioDeviceComboBox->setEnabled(false);
 		ui->statusLabel->setText("Closing");
 		break;
-	case SynthManagerState_CLOSED:
+	case SynthRouteState_CLOSED:
 		ui->startButton->setEnabled(true);
 		ui->stopButton->setEnabled(false);
 		ui->audioDeviceComboBox->setEnabled(true);
@@ -69,13 +75,17 @@ void SynthWidget::on_synthPropertiesButton_clicked()
 
 void SynthWidget::on_startButton_clicked()
 {
-	if (!synthManager.open()) {
+	/*
+	if (!synthRoute.open()) {
 		ui->statusLabel->setText("Open failed :(");
 	}
+	*/
 }
 
 void SynthWidget::on_stopButton_clicked()
 {
-	synthManager.close();
+	/*
+	synthRoute.close();
 	ui->statusLabel->setText("Closed");
+	*/
 }

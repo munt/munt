@@ -13,7 +13,8 @@ set(mt32emu_qt_SOURCES
   src/QSynth.cpp
   src/main.cpp
   src/MainWindow.cpp
-  src/SynthManager.cpp
+  src/Master.cpp
+  src/SynthRoute.cpp
   src/SynthPropertiesDialog.cpp
   src/SynthWidget.cpp
 
@@ -32,7 +33,8 @@ set(mt32emu_qt_HEADERS
   src/mididrv/MidiDriver.h
   src/mididrv/TestDriver.h
   src/MainWindow.h
-  src/SynthManager.h
+  src/Master.h
+  src/SynthRoute.h
   src/SynthPropertiesDialog.h
   src/SynthWidget.h
   src/QSynth.h

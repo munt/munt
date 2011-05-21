@@ -8,20 +8,23 @@ namespace Ui {
     class MainWindow;
 }
 
+class Master;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+	explicit MainWindow(Master *master, QWidget *parent = 0);
     ~MainWindow();
 
 private:
     Ui::MainWindow *ui;
-	SynthWidget synth1;
 
 private slots:
 	void on_actionAbout_triggered();
+	void handleSynthRouteAdded(SynthRoute *synthRoute);
+	void handleSynthRouteRemoved(SynthRoute *synthRoute);
 };
 
 #endif // MAINWINDOW_H

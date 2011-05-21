@@ -17,8 +17,15 @@
 #include <QtGui>
 #include <mt32emu/mt32emu.h>
 
-#include "QSynth.h"
 #include "MainWindow.h"
+#include "Master.h"
+#include "QSynth.h"
+
+#include "mididrv/TestDriver.h"
+#ifdef WITH_WIN32_MIDI_DRIVER
+#include "mididrv/Win32Driver.h"
+#endif
+
 
 using namespace MT32Emu;
 
@@ -26,8 +33,15 @@ int main(int argv, char **args)
 {
 	QApplication app(argv, args);
 	app.setApplicationName("Munt mt32emu-qt");
-	MainWindow mainWindow;
+	Master::init();
+	TestMidiDriver testMidiDriver(Master::getInstance());
+	testMidiDriver.start();
+
+	MainWindow mainWindow(master::getInstance());
 	mainWindow.show();
 	app.exec();
+
+	testMidiDriver.stop();
+	Master::deinit();
 	return 0;
 }

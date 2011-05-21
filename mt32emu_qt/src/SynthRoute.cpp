@@ -15,7 +15,7 @@
  */
 
 /**
- * SynthManager is responsible for:
+ * SynthRoute is responsible for:
  * - Managing the audio output
  *  - Initial setup
  *  - Sample rate changes
@@ -26,14 +26,9 @@
  *  - Giving Synth the correct timestamp for the first sample in render() calls
  */
 
-#include "SynthManager.h"
+#include "SynthRoute.h"
 
 #include "audiodrv/PortAudioDriver.h"
-
-#include "mididrv/TestDriver.h"
-#ifdef WITH_WIN32_MIDI_DRIVER
-#include "mididrv/Win32Driver.h"
-#endif
 
 using namespace MT32Emu;
 
@@ -48,23 +43,22 @@ static const qint64 NANOS_PER_SECOND = 1000000000;
 // for a while when first starting.
 static const qint64 EMERGENCY_RESYNC_THRESHOLD_NANOS = 500000000;
 
-SynthManager::SynthManager() : state(SynthManagerState_CLOSED), midiDriver(NULL), audioDeviceIndex(0), midiNanosOffsetValid(false), midiNanosOffset(0) {
+SynthRoute::SynthRoute() : state(SynthRouteState_CLOSED), audioDeviceIndex(0), refNanosOffsetValid(false), refNanosOffset(0) {
 	sampleRate = SAMPLE_RATE;
 
 	audioDriver = new PortAudioDriver(&qSynth, sampleRate);
 	connect(&qSynth, SIGNAL(stateChanged(SynthState)), SLOT(handleQSynthState(SynthState)));
 }
 
-SynthManager::~SynthManager() {
-	delete midiDriver;
+SynthRoute::~SynthRoute() {
 	delete audioDriver;
 }
 
-void SynthManager::setAudioDeviceIndex(int newAudioDeviceIndex) {
+void SynthRoute::setAudioDeviceIndex(int newAudioDeviceIndex) {
 	audioDeviceIndex = newAudioDeviceIndex;
 }
 
-void SynthManager::setState(SynthManagerState newState) {
+void SynthRoute::setState(SynthRouteState newState) {
 	if (state == newState) {
 		return;
 	}
@@ -72,47 +66,64 @@ void SynthManager::setState(SynthManagerState newState) {
 	emit stateChanged(newState);
 }
 
-bool SynthManager::open() {
+bool SynthRoute::open() {
 	switch (state) {
-	case SynthManagerState_OPENING:
-	case SynthManagerState_OPEN:
+	case SynthRouteState_OPENING:
+	case SynthRouteState_OPEN:
 		return true;
-	case SynthManagerState_CLOSING:
+	case SynthRouteState_CLOSING:
 		return false;
 	default:
 		break;
 	}
 
-	setState(SynthManagerState_OPENING);
+	setState(SynthRouteState_OPENING);
 	if (qSynth.open()) {
 		if (audioDriver->start(audioDeviceIndex)) {
-			startMIDI();
-			setState(SynthManagerState_OPEN);
+			setState(SynthRouteState_OPEN);
 			return true;
 		}
 	}
-	setState(SynthManagerState_CLOSED);
+	setState(SynthRouteState_CLOSED);
 	return false;
 }
 
-bool SynthManager::close() {
+bool SynthRoute::close() {
 	switch (state) {
-	case SynthManagerState_CLOSING:
-	case SynthManagerState_CLOSED:
+	case SynthRouteState_CLOSING:
+	case SynthRouteState_CLOSED:
 		return true;
-	case SynthManagerState_OPENING:
+	case SynthRouteState_OPENING:
 		return false;
 	default:
 		break;
 	}
-	setState(SynthManagerState_CLOSING);
-	stopMIDI();
+	setState(SynthRouteState_CLOSING);
 	audioDriver->close();
 	qSynth.close();
 	return true;
 }
 
-void SynthManager::handleQSynthState(SynthState synthState) {
+bool SynthRoute::isPinned() const {
+	// FIXME: Implement
+	return false;
+}
+
+SynthRouteState SynthRoute::getState() const {
+	return state;
+}
+
+void SynthRoute::addMidiSession(MidiSession *midiSession) {
+	midiSessions.append(midiSession);
+	emit midiSessionAdded(midiSession);
+}
+
+void SynthRoute::removeMidiSession(MidiSession *midiSession) {
+	midiSessions.removeOne(midiSession);
+	emit midiSessionRemoved(midiSession);
+}
+
+void SynthRoute::handleQSynthState(SynthState synthState) {
 	// Should really only stopAudio on CLOSED, and startAudio() on OPEN after init or CLOSED.
 	// For CLOSING, it should suspend, and for OPEN after CLOSING, it should resume
 	//audioOutput->suspend();
@@ -124,55 +135,40 @@ void SynthManager::handleQSynthState(SynthState synthState) {
 	case SynthState_CLOSING:
 	case SynthState_CLOSED:
 		audioDriver->close();
-		stopMIDI();
-		setState(SynthManagerState_CLOSED);
+		setState(SynthRouteState_CLOSED);
 		break;
 	}
 }
 
-SynthTimestamp SynthManager::midiNanosToAudioNanos(qint64 midiNanos) {
-	if (midiNanos == 0) {
+SynthTimestamp SynthRoute::refNanosToAudioNanos(qint64 refNanos) {
+	if (refNanos == 0) {
 		// Special value meaning "no timestamp, play immediately"
 		return 0;
 	}
-	if (!midiNanosOffsetValid) {
+	if (!refNanosOffsetValid) {
 		// FIXME: Basically assumes that the first MIDI event received is intended to play immediately.
 		SynthTimestamp currentAudioNanos = audioDriver->getPlayedAudioNanosPlusLatency();
-		midiNanosOffset = currentAudioNanos - midiNanos;
-		qDebug() << "Sync:" << currentAudioNanos << midiNanosOffset;
-		midiNanosOffsetValid = true;
+		refNanosOffset = currentAudioNanos - refNanos;
+		qDebug() << "Sync:" << currentAudioNanos << refNanosOffset;
+		refNanosOffsetValid = true;
 	} else {
 		// FIXME: Basically assumes that the first MIDI event received is intended to play immediately.
 		// Correct for clock skew.
 		// FIXME: Only emergencies are handled at the moment - need to use a proper sync algorithm.
 		SynthTimestamp currentAudioNanos = audioDriver->getPlayedAudioNanosPlusLatency();
-		qint64 newMidiNanosOffset = currentAudioNanos - midiNanos;
-		if(qAbs(newMidiNanosOffset - midiNanosOffset) > EMERGENCY_RESYNC_THRESHOLD_NANOS) {
-			qDebug() << "Emergency resync:" << currentAudioNanos << midiNanosOffset << newMidiNanosOffset;
-			midiNanosOffset = newMidiNanosOffset;
+		qint64 newRefNanosOffset = currentAudioNanos - refNanos;
+		if(qAbs(newRefNanosOffset - refNanosOffset) > EMERGENCY_RESYNC_THRESHOLD_NANOS) {
+			qDebug() << "Emergency resync:" << currentAudioNanos << refNanosOffset << newRefNanosOffset;
+			refNanosOffset = newRefNanosOffset;
 		}
 	}
-	return midiNanos + midiNanosOffset;
+	return refNanos + refNanosOffset;
 }
 
-bool SynthManager::pushMIDIShortMessage(Bit32u msg, qint64 midiNanos) {
-	return qSynth.pushMIDIShortMessage(msg, midiNanosToAudioNanos(midiNanos));
+bool SynthRoute::pushMIDIShortMessage(Bit32u msg, qint64 refNanos) {
+	return qSynth.pushMIDIShortMessage(msg, refNanosToAudioNanos(refNanos));
 }
 
-bool SynthManager::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, qint64 midiNanos) {
-	return qSynth.pushMIDISysex(sysexData, sysexLen, midiNanosToAudioNanos(midiNanos));
-}
-
-void SynthManager::startMIDI() {
-	stopMIDI();
-#ifdef WITH_WIN32_MIDI_DRIVER
-	midiDriver = new Win32MidiDriver(this);
-#else
-	midiDriver = new TestMidiDriver(this);
-#endif
-}
-
-void SynthManager::stopMIDI() {
-	delete midiDriver;
-	midiDriver = NULL;
+bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, qint64 refNanos) {
+	return qSynth.pushMIDISysex(sysexData, sysexLen, refNanosToAudioNanos(refNanos));
 }

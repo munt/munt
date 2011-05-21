@@ -18,14 +18,15 @@
 
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
+#include "Master.h"
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(Master *master, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-	QString s = "Synth 1";
-	ui->synthTabs->addTab(&synth1, s);
+	QObject::connect(Master::getInstance(), SIGNAL(synthRouteAdded(SynthRoute *)), this, SLOT(handleSynthRouteAdded(SynthRoute *)));
+	QObject::connect(Master::getInstance(), SIGNAL(synthRouteRemoved(SynthRoute *)), this, SLOT(handleSynthRouteRemoved(SynthRoute *)));
 	//QObject::connect(ui->actionAbout, SIGNAL(triggered()), this, SLOT(on_actionAbout_triggered()));
 }
 
@@ -45,4 +46,25 @@ void MainWindow::on_actionAbout_triggered()
 					   "\n"
 					   "Blah blah GPL etc."
 					   );
+}
+
+void MainWindow::handleSynthRouteAdded(SynthRoute *synthRoute) {
+	SynthWidget *synthWidget = new SynthWidget(synthRoute, this);
+	ui->synthTabs->addTab(synthWidget, "Synth");
+}
+
+void MainWindow::handleSynthRouteRemoved(SynthRoute *synthRoute) {
+	QWidget *widget;
+	for(int i = 0;;i++) {
+		widget = ui->synthTabs->widget(i);
+		if(widget == NULL) {
+			qDebug() << "Couldn't find widget for removed synth";
+			return;
+		}
+		SynthWidget *synthWidget = (SynthWidget *)widget;
+		if(synthRoute == synthWidget->getSynthRoute()) {
+			ui->synthTabs->removeTab(i);
+			return;
+		}
+	}
 }

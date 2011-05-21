@@ -4,13 +4,16 @@
 #include <QThread>
 
 #include "MidiDriver.h"
+#include "../Master.h"
 
-class SynthManager;
+class SynthRoute;
+
+class TestMidiDriver;
 
 class TestProcessor : public QObject {
 	Q_OBJECT
 public:
-	TestProcessor(SynthManager *useSynthManager);
+	TestProcessor(TestMidiDriver *useTestMidiDriver);
 
 	void stop();
 
@@ -18,7 +21,7 @@ public slots:
 	void processSeqEvents();
 
 private:
-	SynthManager *synthManager;
+	TestMidiDriver *testMidiDriver;
 	volatile bool stopProcessing;
 
 signals:
@@ -28,9 +31,10 @@ signals:
 class TestMidiDriver : public MidiDriver {
 	Q_OBJECT
 public:
-	TestMidiDriver(SynthManager *synthManager);
+	TestMidiDriver(Master *master);
 	~TestMidiDriver();
-
+	void start();
+	void stop();
 private:
 	TestProcessor *processor;
 	QThread processorThread;

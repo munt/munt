@@ -18,7 +18,8 @@
 
 #include <QtGlobal>
 
-MidiDriver::MidiDriver(): name("Unknown") {
+MidiDriver::MidiDriver(Master *useMaster): master(useMaster), name("Unknown") {
+
 }
 
 MidiDriver::~MidiDriver() {
@@ -31,4 +32,8 @@ QString MidiDriver::getName() const {
 void MidiDriver::setName(const QString &newName) {
 	name = newName;
 	emit nameChanged(name);
+}
+
+Master *MidiDriver::getMaster() {
+	return master;
 }

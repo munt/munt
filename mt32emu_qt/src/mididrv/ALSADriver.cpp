@@ -37,7 +37,7 @@
 #include <alsa/version.h>
 #include <alsa/asoundlib.h>
 
-#include "../SynthManager.h"
+#include "../SynthRoute.h"
 
 static qint64 getMonotonicClockNanos() {
 	timespec ts;
@@ -47,7 +47,7 @@ static qint64 getMonotonicClockNanos() {
 	return ts.tv_sec * (qint64)1000000000 + ts.tv_nsec;
 }
 
-ALSAProcessor::ALSAProcessor(SynthManager *useSynthManager, snd_seq_t *useSeq) : synthManager(useSynthManager), seq(useSeq) {
+ALSAProcessor::ALSAProcessor(ALSAMidiDriver *useALSAMidiDriver, snd_seq_t *useSeq) : alsaMidiDriver(useALSAMidiDriver), seq(useSeq) {
 	stopProcessing = false;
 }
 
@@ -56,6 +56,8 @@ void ALSAProcessor::stop() {
 }
 
 void ALSAProcessor::processSeqEvents() {
+	// FIXME: For now we just use a single MIDI session for all connections to our port
+	MidiSession *midiSession = NULL;
 	int pollFDCount;
 	struct pollfd *pollFDs;
 
@@ -101,7 +103,10 @@ void ALSAProcessor::processSeqEvents() {
 				qDebug() << "Status: " << status;
 				break;
 			}
-			if (processSeqEvent(seq_event)) {
+			if(midiSession == NULL) {
+				midiSession = alsaMidiDriver->getMaster()->createMidiSession(alsaMidiDriver, "Combined ALSA Session");
+			}
+			if (processSeqEvent(seq_event, midiSession->getSynthRoute())) {
 				break;
 			}
 		} while (!stopProcessing && snd_seq_event_input_pending(seq, 1));
@@ -109,10 +114,13 @@ void ALSAProcessor::processSeqEvents() {
 	free(pollFDs);
 	snd_seq_close(seq);
 	qDebug() << "ALSA MIDI processing loop finished";
+	if(midiSession != NULL) {
+		alsaMidiDriver->getMaster()->deleteMidiSession(midiSession);
+	}
 	emit finished();
 }
 
-bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event) {
+bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synthRoute) {
 	MT32Emu::Bit32u msg = 0;
 	switch(seq_event->type) {
 	case SND_SEQ_EVENT_NOTEON:
@@ -120,7 +128,7 @@ bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event) {
 		msg |= seq_event->data.note.channel;
 		msg |= seq_event->data.note.note << 8;
 		msg |= seq_event->data.note.velocity << 16;
-		synthManager->pushMIDIShortMessage(msg, getMonotonicClockNanos());
+		synthRoute->pushMIDIShortMessage(msg, getMonotonicClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_NOTEOFF:
@@ -128,7 +136,7 @@ bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event) {
 		msg |= seq_event->data.note.channel;
 		msg |= seq_event->data.note.note << 8;
 		msg |= seq_event->data.note.velocity << 16;
-		synthManager->pushMIDIShortMessage(msg, getMonotonicClockNanos());
+		synthRoute->pushMIDIShortMessage(msg, getMonotonicClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_CONTROLLER:
@@ -136,18 +144,18 @@ bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event) {
 		msg |= seq_event->data.control.channel;
 		msg |= seq_event->data.control.param << 8;
 		msg |= seq_event->data.control.value << 16;
-		synthManager->pushMIDIShortMessage(msg, getMonotonicClockNanos());
+		synthRoute->pushMIDIShortMessage(msg, getMonotonicClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_PGMCHANGE:
 		msg = 0xC0;
 		msg |= seq_event->data.control.channel;
 		msg |= seq_event->data.control.value << 8;
-		synthManager->pushMIDIShortMessage(msg, getMonotonicClockNanos());
+		synthRoute->pushMIDIShortMessage(msg, getMonotonicClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_SYSEX:
-		synthManager->pushMIDISysex((MT32Emu::Bit8u *)seq_event->data.ext.ptr, seq_event->data.ext.len, getMonotonicClockNanos());
+		synthRoute->pushMIDISysex((MT32Emu::Bit8u *)seq_event->data.ext.ptr, seq_event->data.ext.len, getMonotonicClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_PORT_SUBSCRIBED:
@@ -205,12 +213,18 @@ static int alsa_setup_midi(snd_seq_t *&seq_handle)
 	return seqPort;
 }
 
-ALSAMidiDriver::ALSAMidiDriver(SynthManager *synthManager)
-{
+ALSAMidiDriver::ALSAMidiDriver(Master *useMaster) : MidiDriver(useMaster) {
 	processor = NULL;
+}
+
+ALSAMidiDriver::~ALSAMidiDriver() {
+	stop();
+}
+
+void ALSAMidiDriver::start() {
 	snd_seq_t *snd_seq;
 	if (alsa_setup_midi(snd_seq) >= 0) {
-		processor = new ALSAProcessor(synthManager, snd_seq);
+		processor = new ALSAProcessor(this, snd_seq);
 		processor->moveToThread(&processorThread);
 		// Yes, seriously. The QThread object's default thread is *this* thread,
 		// We move it to the thread that it represents so that the finished()->quit() connection
@@ -226,12 +240,13 @@ ALSAMidiDriver::ALSAMidiDriver(SynthManager *synthManager)
 	}
 }
 
-ALSAMidiDriver::~ALSAMidiDriver() {
+void ALSAMidiDriver::stop() {
 	if (processor != NULL) {
 		if (processorThread.isRunning()) {
 			processor->stop();
 			processorThread.wait();
 		}
 		delete processor;
+		processor = NULL;
 	}
 }

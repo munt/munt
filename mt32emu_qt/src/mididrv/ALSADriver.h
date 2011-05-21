@@ -8,12 +8,14 @@
 
 #include "MidiDriver.h"
 
-class SynthManager;
+class SynthRoute;
+class ALSAMidiDriver;
+class MidiSession;
 
 class ALSAProcessor : public QObject {
 	Q_OBJECT
 public:
-	ALSAProcessor(SynthManager *useSynthManager, snd_seq_t *init_seq);
+	ALSAProcessor(ALSAMidiDriver *useALSAMidiDriver, snd_seq_t *init_seq);
 
 	void stop();
 
@@ -21,11 +23,11 @@ public slots:
 	void processSeqEvents();
 
 private:
-	SynthManager *synthManager;
+	ALSAMidiDriver *alsaMidiDriver;
 	snd_seq_t *seq;
 	volatile bool stopProcessing;
 
-	bool processSeqEvent(snd_seq_event_t *seq_event);
+	bool processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synthRoute);
 
 signals:
 	void finished();
@@ -34,8 +36,10 @@ signals:
 class ALSAMidiDriver : public MidiDriver {
 	Q_OBJECT
 public:
-	ALSAMidiDriver(SynthManager *useSynthManager);
+	ALSAMidiDriver(Master *useMaster);
 	~ALSAMidiDriver();
+	void start();
+	void stop();
 
 private:
 	ALSAProcessor *processor;
