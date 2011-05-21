@@ -430,7 +430,7 @@ int MidiSynth::Reset() {
 
 	synth = new Synth();
 	SynthProperties synthProp = {sampleRate, true, true, 0, 0, 0, pathToROMfiles,
-		NULL, MT32_Report, NULL, NULL, NULL};
+		NULL, MT32_Report, printDebug, NULL, NULL};
 	if (!synth->open(synthProp)) {
 		MessageBox(NULL, L"Can't open Synth", NULL, MB_OK | MB_ICONEXCLAMATION);
 		return 1;
