@@ -57,24 +57,32 @@ static int calcBaseCutoff(const TimbreParam::PartialParam *partialParam, Bit32u 
 	// -1, -1/2, -1/4, 0, 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8, 1, 5/4, 3/2, 2, s1, s2
 	// Note that the entry for 1/8 is rounded to 2 (from 1/8 * 21 = 2.625), which seems strangely inaccurate compared to the others.
 	static const Bit8s keyfollowMult21[] = {-21, -10, -5, 0, 2, 5, 8, 10, 13, 16, 18, 21, 26, 32, 42, 21, 21};
-	int baseCutoff = keyfollowMult21[partialParam->tvf.keyfollow] - keyfollowMult21[partialParam->wg.pitchKeyfollow]; // baseCutoff range here: -63 to 63
+	int baseCutoff = keyfollowMult21[partialParam->tvf.keyfollow] - keyfollowMult21[partialParam->wg.pitchKeyfollow];
+	// baseCutoff range now: -63 to 63
 	baseCutoff *= (int)key - 60;
+	// baseCutoff range now: -3024 to 3024
 	int biasPoint = partialParam->tvf.biasPoint;
 	if ((biasPoint & 0x40) == 0) {
-		int bias = biasPoint + 33 - key;
+		// biasPoint range here: 0 to 63
+		int bias = biasPoint + 33 - key; // bias range here: -75 to 84 
 		if (bias > 0) {
-			bias = -bias;
-			baseCutoff += bias * biasLevelToBiasMult[partialParam->tvf.biasLevel];
+			bias = -bias; // bias range here: -1 to -84
+			baseCutoff += bias * biasLevelToBiasMult[partialParam->tvf.biasLevel]; // Calculation range: -7140 to 7140
+			// baseCutoff range now: -10164 to 10164 
 		}
 	} else {
-		int bias = biasPoint - 31 - key;
+		// biasPoint range here: 64 to 127
+		int bias = biasPoint - 31 - key; // bias range here: -75 to 84
 		if (bias < 0) {
-			baseCutoff += bias * biasLevelToBiasMult[partialParam->tvf.biasLevel];
+			baseCutoff += bias * biasLevelToBiasMult[partialParam->tvf.biasLevel]; // Calculation range: −6375 to 6375
+			// baseCutoff range now: -9399 to 9399
 		}
 	}
+	// baseCutoff range now: -10164 to 10164
 	baseCutoff += ((partialParam->tvf.cutoff << 4) - 800);
+	// baseCutoff range now: -10964 to 10964
 	if (baseCutoff >= 0) {
-		// FIXME: Potentially bad if initialCutoff ends up below -2056?
+		// FIXME: Potentially bad if baseCutoff ends up below -2056?
 		int pitchDeltaThing = (basePitch >> 4) + baseCutoff - 3584;
 		if (pitchDeltaThing > 0) {
 			baseCutoff -= pitchDeltaThing;

@@ -351,6 +351,9 @@ void Part::setPan(unsigned int midiPan) {
 	//synth->printDebug("%s (%s): Set pan to %d", name, currentInstr, panpot);
 }
 
+/**
+ * Applies key shift to a MIDI key and converts it into an internal key value in the range 12-108.
+ */
 unsigned int Part::midiKeyToKey(unsigned int midiKey, const char *debugAction) {
 	int key = midiKey + patchTemp->patch.keyShift;
 	if (key < 36) {
