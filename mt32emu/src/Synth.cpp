@@ -126,9 +126,9 @@ Synth::Synth() {
 	isOpen = false;
 	reverbEnabled = true;
 	reverbOverridden = false;
-	reverbModels[0] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 1.0f, 0.5f);
-	reverbModels[1] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 0.9f, 0.5f);
-	reverbModels[2] = new FreeverbModel(0.4f, 0.939522749f, 0.38f, 1.01f, 0.05f);
+	reverbModels[0] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 0, 0.5f);
+	reverbModels[1] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 1, 0.5f);
+	reverbModels[2] = new FreeverbModel(0.4f, 0.939522749f, 0.38f, 2, 0.05f);
 	reverbModels[3] = new DelayReverb();
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
