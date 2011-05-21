@@ -220,10 +220,27 @@ static void waveOutProc(void *) {
 	}
 } waveOut;
 
+void printDebug(void *userData, const char *fmt, va_list list) {
+}
+
 int MT32_Report(void *userData, ReportType type, const void *reportData) {
 #if MT32EMU_USE_EXTINT == 1
 	midiSynth->handleReport(type, reportData);
 #endif
+	switch(type) {
+	case MT32Emu::ReportType_errorControlROM:
+		std::cout << "MT32: Couldn't find Control ROM file\n";
+		break;
+	case MT32Emu::ReportType_errorPCMROM:
+		std::cout << "MT32: Couldn't open PCM ROM file\n";
+		break;
+	case MT32Emu::ReportType_lcdMessage:
+		std::cout << "MT32: LCD-Message: " << (char *)reportData << "\n";
+		break;
+	default:
+		//LOG(LOG_ALL,LOG_NORMAL)("MT32: Report %d",type);
+		break;
+	}
 	return 0;
 }
 
@@ -350,7 +367,7 @@ int MidiSynth::Init() {
 	}
 	synth = new Synth();
 	SynthProperties synthProp = {sampleRate, true, true, 0, 0, 0, pathToROMfiles,
-		NULL, MT32_Report, NULL, NULL, NULL};
+		NULL, MT32_Report, printDebug, NULL, NULL};
 	if (!synth->open(synthProp)) {
 		MessageBox(NULL, L"Can't open Synth", NULL, MB_OK | MB_ICONEXCLAMATION);
 		return 1;
