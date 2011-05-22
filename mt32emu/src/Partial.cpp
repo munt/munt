@@ -283,7 +283,6 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			// Anti-aliasing feature
 			if (cosineLen < 2.0f) {
 				cosineLen = 2.0f;
-				resAmp = 0.0f;
 			}
 
 			// Start playing in center of first cosine segment
