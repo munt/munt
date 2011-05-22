@@ -126,9 +126,9 @@ Synth::Synth() {
 	isOpen = false;
 	reverbEnabled = true;
 	reverbOverridden = false;
-	reverbModels[0] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 1.0f, 0.5f);
-	reverbModels[1] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 0.9f, 0.5f);
-	reverbModels[2] = new FreeverbModel(0.4f, 0.939522749f, 0.38f, 1.01f, 0.05f);
+	reverbModels[0] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 0, 0.5f);
+	reverbModels[1] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 1, 0.5f);
+	reverbModels[2] = new FreeverbModel(0.4f, 0.939522749f, 0.38f, 2, 0.05f);
 	reverbModels[3] = new DelayReverb();
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
@@ -1003,10 +1003,87 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		last += 128;
 		region->write(first, off, data, len);
 		for (unsigned int i = first; i <= last; i++) {
+#if MT32EMU_MONITOR_TIMBRES >= 1
+			TimbreParam *timbre = &mt32ram.timbres[i].timbre;
 			char instrumentName[11];
-			memcpy(instrumentName, mt32ram.timbres[i].timbre.common.name, 10);
+			memcpy(instrumentName, timbre->common.name, 10);
 			instrumentName[10] = 0;
 			printDebug("WRITE-TIMBRE (%d-%d@%d..%d): %d; name=\"%s\"", first, last, off, off + len, i, instrumentName);
+#if MT32EMU_MONITOR_TIMBRES >= 2
+#define DT(x) printDebug(" " #x ": %d", timbre->x)
+			DT(common.partialStructure12);
+			DT(common.partialStructure34);
+			DT(common.partialMute);
+			DT(common.noSustain);
+
+#define DTP(x) \
+			DT(partial[x].wg.pitchCoarse); \
+			DT(partial[x].wg.pitchFine); \
+			DT(partial[x].wg.pitchKeyfollow); \
+			DT(partial[x].wg.pitchBenderEnabled); \
+			DT(partial[x].wg.waveform); \
+			DT(partial[x].wg.pcmWave); \
+			DT(partial[x].wg.pulseWidth); \
+			DT(partial[x].wg.pulseWidthVeloSensitivity); \
+			DT(partial[x].pitchEnv.depth); \
+			DT(partial[x].pitchEnv.veloSensitivity); \
+			DT(partial[x].pitchEnv.timeKeyfollow); \
+			DT(partial[x].pitchEnv.time[0]); \
+			DT(partial[x].pitchEnv.time[1]); \
+			DT(partial[x].pitchEnv.time[2]); \
+			DT(partial[x].pitchEnv.time[3]); \
+			DT(partial[x].pitchEnv.level[0]); \
+			DT(partial[x].pitchEnv.level[1]); \
+			DT(partial[x].pitchEnv.level[2]); \
+			DT(partial[x].pitchEnv.level[3]); \
+			DT(partial[x].pitchEnv.level[4]); \
+			DT(partial[x].pitchLFO.rate); \
+			DT(partial[x].pitchLFO.depth); \
+			DT(partial[x].pitchLFO.modSensitivity); \
+			DT(partial[x].tvf.cutoff); \
+			DT(partial[x].tvf.resonance); \
+			DT(partial[x].tvf.keyfollow); \
+			DT(partial[x].tvf.biasPoint); \
+			DT(partial[x].tvf.biasLevel); \
+			DT(partial[x].tvf.envDepth); \
+			DT(partial[x].tvf.envVeloSensitivity); \
+			DT(partial[x].tvf.envDepthKeyfollow); \
+			DT(partial[x].tvf.envTimeKeyfollow); \
+			DT(partial[x].tvf.envTime[0]); \
+			DT(partial[x].tvf.envTime[1]); \
+			DT(partial[x].tvf.envTime[2]); \
+			DT(partial[x].tvf.envTime[3]); \
+			DT(partial[x].tvf.envTime[4]); \
+			DT(partial[x].tvf.envLevel[0]); \
+			DT(partial[x].tvf.envLevel[1]); \
+			DT(partial[x].tvf.envLevel[2]); \
+			DT(partial[x].tvf.envLevel[3]); \
+			DT(partial[x].tva.level); \
+			DT(partial[x].tva.veloSensitivity); \
+			DT(partial[x].tva.biasPoint1); \
+			DT(partial[x].tva.biasLevel1); \
+			DT(partial[x].tva.biasPoint2); \
+			DT(partial[x].tva.biasLevel2); \
+			DT(partial[x].tva.envTimeKeyfollow); \
+			DT(partial[x].tva.envTimeVeloSensitivity); \
+			DT(partial[x].tva.envTime[0]); \
+			DT(partial[x].tva.envTime[1]); \
+			DT(partial[x].tva.envTime[2]); \
+			DT(partial[x].tva.envTime[3]); \
+			DT(partial[x].tva.envTime[4]); \
+			DT(partial[x].tva.envLevel[0]); \
+			DT(partial[x].tva.envLevel[1]); \
+			DT(partial[x].tva.envLevel[2]); \
+			DT(partial[x].tva.envLevel[3]); 
+
+			DTP(0);
+			DTP(1);
+			DTP(2);
+			DTP(3);
+#undef DTP
+#undef DT
+#endif
+#endif
 			// FIXME:KG: Not sure if the stuff below should be done (for rhythm and/or parts)...
 			// Does the real MT-32 automatically do this?
 			for (unsigned int part = 0; part < 9; part++) {

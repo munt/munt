@@ -1,9 +1,0 @@
-[Source Media Descriptions]
-1 = "MT-32 Synth Emulator Files" , TAGFILE = disk1
-
-[Installable.Drivers]
-mt32emu = 1:mt32emu.dll, "MIDI", "MT-32 Synth Emulator",,,
-
-[mt32emu]
-1:MT32_PCM.ROM
-1:MT32_CONTROL.ROM

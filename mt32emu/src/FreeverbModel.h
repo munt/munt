@@ -27,10 +27,10 @@ class FreeverbModel : public ReverbModel {
 	float scaleTuning;
 	float filtVal;
 	float wet;
-	float room;
+	Bit8u room;
 	float damp;
 public:
-	FreeverbModel(float useScaleTuning, float useFiltVal, float useWet, float useRoom, float useDamp);
+	FreeverbModel(float useScaleTuning, float useFiltVal, float useWet, Bit8u useRoom, float useDamp);
 	~FreeverbModel();
 	void open(unsigned int sampleRate);
 	void close();

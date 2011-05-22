@@ -127,6 +127,12 @@ void Poly::backupCacheToPartials(PatchCache cache[4]) {
 	}
 }
 
+/**
+ * Returns the internal key identifier.
+ * For non-rhythm, this is within the range 12 to 108.
+ * For rhythm on MT-32, this is 0 or 1 (special cases) or within the range 24 to 87.
+ * For rhythm on devices with extended PCM sounds (e.g. CM-32L), this is 0, 1 or 24 to 108
+ */
 unsigned int Poly::getKey() const {
 	return key;
 }

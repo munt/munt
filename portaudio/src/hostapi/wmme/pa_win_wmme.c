@@ -2936,7 +2936,7 @@ PA_THREAD_FUNC ProcessingThreadProc( void *pArg )
                         waveOutGetPosition( firstWaveOutDevice, &mmtime, sizeof(MMTIME) );
                         timeAfterGetPosition = PaUtil_GetTime();
 
-                        timeInfo.currentTime = timeAfterGetPosition;
+                        timeInfo.currentTime = mmtime.u.sample * stream->bufferProcessor.samplePeriod;
 
                         /* approximate time at which wave out position was measured
                             as half way between timeBeforeGetPosition and timeAfterGetPosition */
@@ -2950,10 +2950,10 @@ PA_THREAD_FUNC ProcessingThreadProc( void *pArg )
                        
                         if( playbackPosition >= writePosition ){
                             timeInfo.outputBufferDacTime =
-                                    time + ((double)( writePosition + (framesInBufferRing - playbackPosition) ) * stream->bufferProcessor.samplePeriod );
+                                    timeInfo.currentTime + ((double)( writePosition + (framesInBufferRing - playbackPosition) ) * stream->bufferProcessor.samplePeriod );
                         }else{
                             timeInfo.outputBufferDacTime =
-                                    time + ((double)( writePosition - playbackPosition ) * stream->bufferProcessor.samplePeriod );
+                                    timeInfo.currentTime + ((double)( writePosition - playbackPosition ) * stream->bufferProcessor.samplePeriod );
                         }
                     }
 
@@ -3632,9 +3632,16 @@ static PaError IsStreamActive( PaStream *s )
 
 static PaTime GetStreamTime( PaStream *s )
 {
-    (void) s; /* unused parameter */
-    
-    return PaUtil_GetTime();
+	PaWinMmeStream *stream = (PaWinMmeStream*)s;
+	if( PA_IS_OUTPUT_STREAM_(stream) ) {
+		HWAVEOUT firstWaveOutDevice = ((HWAVEOUT*)stream->output.waveHandles)[0];
+		MMTIME mmtime;
+		mmtime.wType = TIME_SAMPLES;
+		waveOutGetPosition( firstWaveOutDevice, &mmtime, sizeof(MMTIME) );
+    return mmtime.u.sample * stream->bufferProcessor.samplePeriod;
+	} else {
+		return PaUtil_GetTime();
+	}
 }
 
 

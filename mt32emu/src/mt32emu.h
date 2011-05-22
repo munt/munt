@@ -24,10 +24,19 @@
 // Shows number of partials MT-32 is playing, and on which parts
 #define MT32EMU_MONITOR_PARTIALS 0
 
-// 0: No TVA-related debug output.
-// 1: Shows changes to TVA target, increment and phase.
-// 2: Additionally shows the current amp at every sample.
+// 0: No debug output for sysex writes to the timbre areas
+// 1: Debug output with the name and location of newly-written timbres
+// 2: Complete dump of timbre parameters for newly-written timbres
+#define MT32EMU_MONITOR_TIMBRES 1
+
+// 0: No TVA/TVF-related debug output.
+// 1: Shows changes to TVA/TVF target, increment and phase.
 #define MT32EMU_MONITOR_TVA 0
+#define MT32EMU_MONITOR_TVF 0
+
+// 0: Use LUTs to speedup WG
+// 1: Use precise float math
+#define MT32EMU_ACCURATE_WG 1
 
 #define MT32EMU_USE_EXTINT 0
 

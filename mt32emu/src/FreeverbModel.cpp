@@ -22,7 +22,7 @@
 
 using namespace MT32Emu;
 
-FreeverbModel::FreeverbModel(float useScaleTuning, float useFiltVal, float useWet, float useRoom, float useDamp) {
+FreeverbModel::FreeverbModel(float useScaleTuning, float useFiltVal, float useWet, Bit8u useRoom, float useDamp) {
 	freeverb = NULL;
 	scaleTuning = useScaleTuning;
 	filtVal = useFiltVal;
@@ -61,7 +61,11 @@ void FreeverbModel::setParameters(Bit8u time, Bit8u level) {
 	freeverb->setwet((float)level / 7.0f * wet);
 
 	// wet signal decay speed
-	freeverb->setroomsize((0.5f + 0.5f * (float)time / 7.0f) * room);
+	static float roomTable[] = {
+		 0.25f,  0.37f, 0.54f, 0.71f, 0.78f, 0.86f, 0.93f, 1.00f,
+		-1.00f, -0.50f, 0.00f, 0.30f, 0.51f, 0.64f, 0.77f, 0.90f,
+		 0.50f,  0.57f, 0.70f, 0.77f, 0.85f, 0.93f, 0.96f, 1.01f};
+	freeverb->setroomsize(roomTable[8 * room + time]);
 
 	// decay speed of high frequencies in the wet signal
 	freeverb->setdamp(damp);
