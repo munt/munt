@@ -25,8 +25,8 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-	QObject::connect(Master::getInstance(), SIGNAL(synthRouteAdded(SynthRoute *)), this, SLOT(handleSynthRouteAdded(SynthRoute *)));
-	QObject::connect(Master::getInstance(), SIGNAL(synthRouteRemoved(SynthRoute *)), this, SLOT(handleSynthRouteRemoved(SynthRoute *)));
+	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *)), this, SLOT(handleSynthRouteAdded(SynthRoute *)));
+	QObject::connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), this, SLOT(handleSynthRouteRemoved(SynthRoute *)));
 	//QObject::connect(ui->actionAbout, SIGNAL(triggered()), this, SLOT(on_actionAbout_triggered()));
 }
 

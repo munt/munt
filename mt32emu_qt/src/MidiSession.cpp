@@ -14,34 +14,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QtGui>
-#include <mt32emu/mt32emu.h>
+#include "MidiSession.h"
 
-#include "MainWindow.h"
-#include "Master.h"
-#include "QSynth.h"
+MidiSession::MidiSession(MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute) : midiDriver(useMidiDriver), name(useName), synthRoute(useSynthRoute) {
+}
 
-#include "mididrv/TestDriver.h"
-#ifdef WITH_WIN32_MIDI_DRIVER
-#include "mididrv/Win32Driver.h"
-#endif
-
-
-using namespace MT32Emu;
-
-int main(int argv, char **args)
-{
-	QApplication app(argv, args);
-	app.setApplicationName("Munt mt32emu-qt");
-	Master::init();
-	TestMidiDriver testMidiDriver(Master::getInstance());
-	testMidiDriver.start();
-
-	MainWindow mainWindow(Master::getInstance());
-	mainWindow.show();
-	app.exec();
-
-	testMidiDriver.stop();
-	Master::deinit();
-	return 0;
+SynthRoute *MidiSession::getSynthRoute() {
+	return synthRoute;
 }

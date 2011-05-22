@@ -75,17 +75,13 @@ void SynthWidget::on_synthPropertiesButton_clicked()
 
 void SynthWidget::on_startButton_clicked()
 {
-	/*
-	if (!synthRoute.open()) {
+	if (!synthRoute->open()) {
 		ui->statusLabel->setText("Open failed :(");
 	}
-	*/
 }
 
 void SynthWidget::on_stopButton_clicked()
 {
-	/*
-	synthRoute.close();
+	synthRoute->close();
 	ui->statusLabel->setText("Closed");
-	*/
 }

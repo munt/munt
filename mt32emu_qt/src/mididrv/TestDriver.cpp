@@ -26,6 +26,7 @@
 
 #include <time.h>
 
+#include "../MidiSession.h"
 #include "../SynthRoute.h"
 
 static const qint64 TEST1_EVENT_INTERVAL_NANOS = 8000000; // 256 samples;

@@ -14,40 +14,38 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MIDI_EVENT_H
-#define MIDI_EVENT_H
+#ifndef MASTER_H
+#define MASTER_H
 
-#include <QtGlobal>
+#include <QObject>
 
-#include <mt32emu/mt32emu.h>
+#include "SynthRoute.h"
 
-enum MidiEventType {
-	SHORT_MESSAGE,
-	SYSEX
-};
+class MidiDriver;
+class MidiSession;
 
-typedef qint64 SynthTimestamp;
-
-class MidiEvent {
+class Master : public QObject {
+	Q_OBJECT
 private:
-	SynthTimestamp timestamp;
-	MidiEventType type;
-	MT32Emu::Bit32u msg;
-	MT32Emu::Bit32u sysexLen;
-	unsigned char *sysexData;
+	static Master *INSTANCE;
+
+	QList<SynthRoute *> synthRoutes;
+
+	Master();
 
 public:
-	MidiEvent();
-	~MidiEvent();
+	MidiSession *createMidiSession(MidiDriver *midiDriver, QString name);
+	void deleteMidiSession(MidiSession *midiSession);
 
-	SynthTimestamp getTimestamp() const;
-	MidiEventType getType() const;
-	MT32Emu::Bit32u getShortMessage() const;
-	MT32Emu::Bit32u getSysexLen() const;
-	unsigned char *getSysexData() const;
+	static Master *getInstance();
 
-	void assignShortMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newMsg);
-	void assignSysex(SynthTimestamp newTimestamp, unsigned char *newSysexData, MT32Emu::Bit32u newSysexLen);
+	// These two methods are only intended to be called at application startup/shutdown
+	static void init();
+	static void deinit();
+
+signals:
+	void synthRouteAdded(SynthRoute *route);
+	void synthRouteRemoved(SynthRoute *route);
 };
 
 #endif

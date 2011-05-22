@@ -8,12 +8,13 @@ set(mt32emu_qt_VERSION_MINOR 1)
 set(mt32emu_qt_VERSION_PATCH 0)
 
 set(mt32emu_qt_SOURCES
-  src/MidiEvent.cpp
-  src/MidiEventQueue.cpp
-  src/QSynth.cpp
   src/main.cpp
   src/MainWindow.cpp
   src/Master.cpp
+  src/MidiEvent.cpp
+  src/MidiEventQueue.cpp
+  src/MidiSession.cpp
+  src/QSynth.cpp
   src/SynthRoute.cpp
   src/SynthPropertiesDialog.cpp
   src/SynthWidget.cpp
@@ -30,20 +31,22 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
 endif()
 
 set(mt32emu_qt_HEADERS
-  src/mididrv/MidiDriver.h
-  src/mididrv/TestDriver.h
   src/MainWindow.h
   src/Master.h
-  src/SynthRoute.h
-  src/SynthPropertiesDialog.h
-  src/SynthWidget.h
+  src/MidiSession.h
   src/QSynth.h
+  src/SynthPropertiesDialog.h
+  src/SynthRoute.h
+  src/SynthWidget.h
+
+  src/mididrv/MidiDriver.h
+  src/mididrv/TestDriver.h
 )
 
 set(mt32emu_qt_FORMS
   src/MainWindow.ui
-  src/SynthWidget.ui
   src/SynthPropertiesDialog.ui
+  src/SynthWidget.ui
 )
 
 find_package(Qt4 4.6.0 REQUIRED)

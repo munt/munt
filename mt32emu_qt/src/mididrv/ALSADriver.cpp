@@ -37,6 +37,7 @@
 #include <alsa/version.h>
 #include <alsa/asoundlib.h>
 
+#include "../MidiSession.h"
 #include "../SynthRoute.h"
 
 static qint64 getMonotonicClockNanos() {

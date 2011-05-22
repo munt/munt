@@ -14,40 +14,28 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MIDI_EVENT_H
-#define MIDI_EVENT_H
+#ifndef MIDI_SESSION_H
+#define MIDI_SESSION_H
 
-#include <QtGlobal>
+#include <QObject>
 
-#include <mt32emu/mt32emu.h>
+#include "SynthRoute.h"
 
-enum MidiEventType {
-	SHORT_MESSAGE,
-	SYSEX
-};
+class MidiDriver;
 
-typedef qint64 SynthTimestamp;
-
-class MidiEvent {
+class MidiSession : public QObject {
+	Q_OBJECT
+	friend class Master;
 private:
-	SynthTimestamp timestamp;
-	MidiEventType type;
-	MT32Emu::Bit32u msg;
-	MT32Emu::Bit32u sysexLen;
-	unsigned char *sysexData;
+	MidiDriver *midiDriver;
+	QString name;
+	SynthRoute *synthRoute;
+
+	MidiSession(MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute);
 
 public:
-	MidiEvent();
-	~MidiEvent();
-
-	SynthTimestamp getTimestamp() const;
-	MidiEventType getType() const;
-	MT32Emu::Bit32u getShortMessage() const;
-	MT32Emu::Bit32u getSysexLen() const;
-	unsigned char *getSysexData() const;
-
-	void assignShortMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newMsg);
-	void assignSysex(SynthTimestamp newTimestamp, unsigned char *newSysexData, MT32Emu::Bit32u newSysexLen);
+	QString getName();
+	SynthRoute *getSynthRoute();
 };
 
 #endif
