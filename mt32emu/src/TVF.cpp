@@ -120,6 +120,9 @@ void TVF::reset(const TimbreParam::PartialParam *newPartialParam, unsigned int b
 	Tables *tables = &partial->getSynth()->tables;
 
 	baseCutoff = calcBaseCutoff(newPartialParam, basePitch, key);
+#if MT32EMU_MONITOR_TVF >= 1
+	partial->getSynth()->printDebug("TVF,base,%d", baseCutoff);
+#endif
 
 	int newLevelMult = velocity * newPartialParam->tvf.envVeloSensitivity;
 	newLevelMult >>= 6;
