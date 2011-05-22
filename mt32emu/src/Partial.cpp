@@ -240,17 +240,23 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			// res corresponds to a value set in an LA32 register
 			Bit8u res = patchCache->srcPartial.tvf.resonance + 1;
 
+			// EXP2F(1.0f - (32 - res) / 4.0f);
+			float resAmp = synth->tables.resAmpMax[res];
+
 			// The cutoffModifier may not be supposed to be directly added to the cutoff -
 			// it may for example need to be multiplied in some way.
+			// The 240 cutoffVal limit was determined via sample analysis (internal Munt capture IDs: glop3, glop4).
+			// More research is needed to be sure that this is correct, however.
 #if MT32EMU_ACCURATE_WG == 1
-			float resAmp = EXP2F(1.0f - (32 - res) / 4.0f);	// seems to be exact
 			float cutoffVal = tvf->getBaseCutoff() + cutoffModifier;
+			if (cutoffVal > 240.0f) {
+				cutoffVal = 240.0f;
+			}
 #else
-			float resAmp = synth->tables.resAmpMax[res];
 			unsigned int cutoffValTmp = tvf->getBaseCutoff() + cutoffModifier;
 			Bit8u cutoffVal;
-			if (cutoffValTmp > 255) {
-				cutoffVal = 255;
+			if (cutoffValTmp > 240) {
+				cutoffVal = 240;
 			} else {
 				cutoffVal = cutoffValTmp;
 			}
