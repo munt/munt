@@ -239,16 +239,22 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// res corresponds to a value set in an LA32 register
 			Bit8u res = patchCache->srcPartial.tvf.resonance + 1;
-#if ACCURATE_WG == 1
+
+			// The cutoffModifier may not be supposed to be directly added to the cutoff -
+			// it may for example need to be multiplied in some way.
+#if MT32EMU_ACCURATE_WG == 1
 			float resAmp = EXP2F(1.0f - (32 - res) / 4.0f);	// seems to be exact
-			float cutoffVal = tvf->getBaseCutoff();
+			float cutoffVal = tvf->getBaseCutoff() + cutoffModifier;
 #else
 			float resAmp = synth->tables.resAmpMax[res];
-			Bit8u cutoffVal = tvf->getBaseCutoff();
+			unsigned int cutoffValTmp = tvf->getBaseCutoff() + cutoffModifier;
+			Bit8u cutoffVal;
+			if (cutoffValTmp > 255) {
+				cutoffVal = 255;
+			} else {
+				cutoffVal = cutoffValTmp;
+			}
 #endif
-			// The modifier may not be supposed to be added to the cutoff at all -
-			// it may for example need to be multiplied in some way.
-			cutoffVal += cutoffModifier;
 
 			// Wave length in samples
 			float waveLen = synth->myProp.sampleRate / freq;
@@ -261,7 +267,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			// Init cosineLen
 			float cosineLen = 0.5f * waveLen;
 			if (cutoffVal > 128) {
-#if ACCURATE_WG == 1
+#if MT32EMU_ACCURATE_WG == 1
 				cosineLen *= EXP2F((cutoffVal - 128) / -16.0f); // found from sample analysis
 #else
 				cosineLen *= synth->tables.cutoffToCosineLen[cutoffVal - 128];
@@ -302,7 +308,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// Correct resAmp for cutoff in range 50..66
 			if (cutoffVal < 144) {
-#if ACCURATE_WG == 1
+#if MT32EMU_ACCURATE_WG == 1
 				resAmp *= sinf(FLOAT_PI * (cutoffVal - 128) / 32);
 #else
 				resAmp *= synth->tables.sinf10[64 * (cutoffVal - 128)];
@@ -313,7 +319,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// 1st cosine segment
 			if (relWavePos < cosineLen) {
-#if ACCURATE_WG == 1
+#if MT32EMU_ACCURATE_WG == 1
 				sample = -cosf(FLOAT_PI * relWavePos / cosineLen);
 #else
 				sample = -synth->tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) + 1024];
@@ -327,7 +333,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// 2nd cosine segment
 			if (relWavePos < (2 * cosineLen + hLen)) {
-#if ACCURATE_WG == 1
+#if MT32EMU_ACCURATE_WG == 1
 				sample = cosf(FLOAT_PI * (relWavePos - (cosineLen + hLen)) / cosineLen);
 #else
 				sample = synth->tables.sinf10[Bit32u(2048.0f * (relWavePos - (cosineLen + hLen)) / cosineLen) + 1024];
@@ -342,7 +348,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 				// Attenuate samples below cutoff 50
 				// Found by sample analysis
-#if ACCURATE_WG == 1
+#if MT32EMU_ACCURATE_WG == 1
 				sample *= EXP2F(-0.125f * (128 - cutoffVal));
 #else
 				sample *= synth->tables.cutoffToFilterAmp[cutoffVal];
@@ -362,7 +368,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				}
 
 				// Resonance sine WG
-#if ACCURATE_WG == 1
+#if MT32EMU_ACCURATE_WG == 1
 				resSample *= sinf(FLOAT_PI * relWavePos / cosineLen);
 #else
 				resSample *= synth->tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) & 4095];
@@ -387,7 +393,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				// Fading to zero while within cosine segments to avoid jumps in the wave
 				// Sample analysis suggests that this window is very close to cosine
 				if (relWavePos < 0.5f * cosineLen) {
-#if ACCURATE_WG == 1
+#if MT32EMU_ACCURATE_WG == 1
 					resAmpFade *= 0.5f * (1.0f - cosf(FLOAT_PI * relWavePos / (0.5f * cosineLen)));
 #else
 					resAmpFade *= 0.5f * (1.0f + synth->tables.sinf10[Bit32s(2048.0f * relWavePos / (0.5f * cosineLen)) + 3072]);
@@ -399,7 +405,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// sawtooth waves
 			if ((patchCache->waveform & 1) != 0) {
-#if ACCURATE_WG == 1
+#if MT32EMU_ACCURATE_WG == 1
 				sample *= cosf(FLOAT_2PI * wavePos / waveLen);
 #else
 				sample *= synth->tables.sinf10[(Bit32u(4096.0f * wavePos / waveLen) & 4095) + 1024];
