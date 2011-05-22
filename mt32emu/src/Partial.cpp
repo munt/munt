@@ -196,6 +196,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
 
 		Bit16u newPitch = tvp->nextPitch();
+
+		// EXP2F(pitch / 4096.0f - 16.0f) * 32000.0f
 		float freq = synth->tables.pitchToFreq[pitch];
 
 		// In case of pitch change we need to scale wavePos correspondingly to avoid jumps
@@ -281,8 +283,18 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			}
 
 			// Anti-aliasing feature
-			if (cosineLen < 2.0f) {
-				cosineLen = 2.0f;
+
+			// this is the pitch that corresponds to the 1/4 Nyquist frequency
+			// FIXME: this should be calculated early and depends of the sample rate
+			float maxPitch = 57344; // correct value for the sample rate = 32000 Hz
+
+			// find the cutoff value that corresponds to the maxPitch
+			float maxCutoff = 128.0f + 0.00390625f * (maxPitch - pitch);
+			if (maxCutoff < 128.0f) {
+				maxCutoff = 128.0f;
+			}
+			if (cutoffVal > maxCutoff) {
+				cutoffVal = maxCutoff;
 			}
 
 			// Start playing in center of first cosine segment
