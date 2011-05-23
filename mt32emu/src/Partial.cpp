@@ -267,11 +267,6 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			// Wave length in samples
 			float waveLen = synth->myProp.sampleRate / freq;
 
-			// Anti-aliasing feature
-			if (waveLen < 4.0f) {
-				waveLen = 4.0f;
-			}
-
 			// Init cosineLen
 			float cosineLen = 0.5f * waveLen;
 			if (cutoffVal > 128) {
@@ -280,21 +275,6 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #else
 				cosineLen *= synth->tables.cutoffToCosineLen[cutoffVal - 128];
 #endif
-			}
-
-			// Anti-aliasing feature
-
-			// this is the pitch that corresponds to the 1/4 Nyquist frequency
-			// FIXME: this should be calculated early and depends of the sample rate
-			float maxPitch = 57344; // correct value for the sample rate = 32000 Hz
-
-			// find the cutoff value that corresponds to the maxPitch
-			float maxCutoff = 128.0f + 0.00390625f * (maxPitch - pitch);
-			if (maxCutoff < 128.0f) {
-				maxCutoff = 128.0f;
-			}
-			if (cutoffVal > maxCutoff) {
-				cutoffVal = maxCutoff;
 			}
 
 			// Start playing in center of first cosine segment
