@@ -335,8 +335,22 @@ void MidiSynth::ReloadSettings() {
 	reverbTime = LoadIntValue("ReverbTime", 5);
 	reverbLevel = LoadIntValue("ReverbLevel", 3);
 
-	outputGain = LoadIntValue("OutputGain", 100);
-	reverbOutputGain = LoadIntValue("ReverbOutputGain", 100);
+	outputGain = (float)LoadIntValue("OutputGain", 100);
+	if (outputGain < 0.0f) {
+		outputGain = -outputGain;
+	}
+	if (outputGain > 1000.0f) {
+		outputGain = 1000.0f;
+	}
+
+	reverbOutputGain = (float)LoadIntValue("ReverbOutputGain", 100);
+	if (reverbOutputGain < 0.0f) {
+		reverbOutputGain = -reverbOutputGain;
+	}
+	if (reverbOutputGain > 1000.0f) {
+		reverbOutputGain = 1000.0f;
+	}
+
 	emuDACInputMode = (DACInputMode)LoadIntValue("DACInputMode", DACInputMode_GENERATION2);
 
 	DWORD s = LoadStringValue("PathToROMFiles", "C:/WINDOWS/SYSTEM32/", pathToROMfiles, 254);
