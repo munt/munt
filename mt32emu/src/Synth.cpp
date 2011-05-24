@@ -530,7 +530,7 @@ void Synth::close() {
 		parts[i] = NULL;
 	}
 
-	delete myProp.baseDir;
+	delete[] myProp.baseDir;
 	myProp.baseDir = NULL;
 
 	delete[] pcmWaves;
