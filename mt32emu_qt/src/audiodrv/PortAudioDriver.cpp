@@ -16,18 +16,17 @@
 
 #include "PortAudioDriver.h"
 
+#include "../MasterClock.h"
 #include "../QSynth.h"
 
 using namespace MT32Emu;
-
-static const qint64 NANOS_PER_SECOND = 1000000000;
 
 static const int FRAME_SIZE = 4; // Stereo, 16-bit
 static const int FRAMES_PER_CALLBACK = 4096;
 
 static bool paInitialised = false;
 
-PortAudioDriver::PortAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL) {
+PortAudioDriver::PortAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0) {
 	if (!paInitialised) {
 		PaError err = Pa_Initialize();
 		if (err != paNoError) {
@@ -50,21 +49,26 @@ SynthTimestamp PortAudioDriver::getPlayedAudioNanosPlusLatency() {
 		qDebug() << "Stream NULL at getPlayedAudioNanosPlusLatency()";
 		return 0;
 	}
-	return Pa_GetStreamTime(stream) * NANOS_PER_SECOND + latency;
+	return Pa_GetStreamTime(stream) * MasterClock::NANOS_PER_SECOND + latency;
 }
 
 int PortAudioDriver::paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) {
 	Q_UNUSED(inputBuffer);
 	Q_UNUSED(statusFlags);
 	PortAudioDriver *driver = (PortAudioDriver *)userData;
-	//qDebug() << statusFlags << timeInfo->outputBufferDacTime;
-	SynthTimestamp timestamp = (timeInfo->outputBufferDacTime) * NANOS_PER_SECOND;
-	unsigned int rendered = driver->synth->render((Bit16s *)outputBuffer, frameCount, timestamp, Pa_GetStreamInfo(driver->stream)->sampleRate);
+	double realSampleRate = Pa_GetStreamInfo(driver->stream)->sampleRate;
+	qint64 currentlyPlayingAudioNanos = timeInfo->currentTime * MasterClock::NANOS_PER_SECOND;
+	qint64 firstSampleAudioNanos = timeInfo->outputBufferDacTime * MasterClock::NANOS_PER_SECOND;
+	qint64 renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;
+	qint64 offset = driver->latency - renderOffset;
+	MasterClockNanos firstSampleMasterClockNanos = driver->clockSync.sync(currentlyPlayingAudioNanos) - offset * driver->clockSync.getSkew();
+	unsigned int rendered = driver->synth->render((Bit16s *)outputBuffer, frameCount, firstSampleMasterClockNanos, realSampleRate);
 	if (rendered < frameCount) {
 		char *out = (char *)outputBuffer;
 		// PortAudio requires that the buffer is filled no matter what
 		memset(out + rendered * FRAME_SIZE, 0, (frameCount - rendered) * FRAME_SIZE);
 	}
+	driver->sampleCount += frameCount;
 	return paContinue;
 }
 
@@ -152,6 +156,8 @@ bool PortAudioDriver::start(int deviceIndex) {
 		qDebug() << "Pa_OpenStream() returned PaError" << err;
 		return false;
 	}
+	sampleCount = 0;
+	clockSync.reset();
 	err = Pa_StartStream(stream);
 	if(err != paNoError) {
 		qDebug() << "Pa_StartStream() returned PaError" << err;
@@ -161,7 +167,7 @@ bool PortAudioDriver::start(int deviceIndex) {
 	}
 	const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
 	qDebug() << "Device Output latency (s):" << streamInfo->outputLatency;
-	latency = NANOS_PER_SECOND * streamInfo->outputLatency + (NANOS_PER_SECOND * FRAMES_PER_CALLBACK / sampleRate);
+	latency = MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency + (MasterClock::NANOS_PER_SECOND * FRAMES_PER_CALLBACK / sampleRate);
 	qDebug() << "Using latency (ns):" << latency;
 	return true;
 }

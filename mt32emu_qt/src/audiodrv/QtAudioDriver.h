@@ -2,13 +2,13 @@
 #define QT_AUDIO_DRIVER_H
 
 #include <QtCore>
-#include <QtMultimediaKit/QAudioOutput>
 #include <mt32emu/mt32emu.h>
 
 #include "AudioDriver.h"
 
 class WaveGenerator;
 class QSynth;
+class QAudioOutput;
 
 class QtAudioDriver : public AudioDriver {
 	friend class WaveGenerator;

@@ -29,6 +29,7 @@ signals:
 };
 
 class TestMidiDriver : public MidiDriver {
+	friend class TestProcessor;
 	Q_OBJECT
 public:
 	TestMidiDriver(Master *master);

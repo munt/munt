@@ -20,8 +20,12 @@
 Master *Master::INSTANCE = NULL;
 
 void Master::init() {
-	if(INSTANCE == NULL) {
+	if (INSTANCE == NULL) {
 		INSTANCE = new Master();
+		INSTANCE->moveToThread(QCoreApplication::instance()->thread());
+		qRegisterMetaType<MidiDriver *>("MidiDriver*");
+		qRegisterMetaType<MidiDriver **>("MidiSession*");
+		qRegisterMetaType<MidiDriver **>("MidiSession**");
 	}
 }
 
@@ -30,22 +34,29 @@ void Master::deinit() {
 	INSTANCE = NULL;
 }
 
-MidiSession *Master::createMidiSession(MidiDriver *midiDriver, QString name) {
+Master *Master::getInstance() {
+	return INSTANCE;
+}
+
+Master::Master() {
+}
+
+void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name) {
 	// For now, we always create a new SynthRoute for each session
 	// In future this will be configurable
-	SynthRoute *synthRoute = new SynthRoute();
-	MidiSession *midiSession = new MidiSession(midiDriver, name, synthRoute);
+	SynthRoute *synthRoute = new SynthRoute(this);
+	MidiSession *midiSession = new MidiSession(this, midiDriver, name, synthRoute);
 	synthRoute->addMidiSession(midiSession);
 	synthRoutes.append(synthRoute);
 	synthRoute->open();
+	*returnVal = midiSession;
 	emit synthRouteAdded(synthRoute);
-	return midiSession;
 }
 
-void Master::deleteMidiSession(MidiSession *midiSession) {
+void Master::reallyDeleteMidiSession(MidiSession *midiSession) {
 	SynthRoute *synthRoute = midiSession->getSynthRoute();
 	synthRoute->removeMidiSession(midiSession);
-	if(!synthRoute->isPinned()) {
+	if (!synthRoute->isPinned()) {
 		synthRoutes.removeOne(synthRoute);
 		emit synthRouteRemoved(synthRoute);
 		synthRoute->close();
@@ -54,9 +65,25 @@ void Master::deleteMidiSession(MidiSession *midiSession) {
 	delete midiSession;
 }
 
-Master *Master::getInstance() {
-	return INSTANCE;
+MidiSession *Master::createMidiSession(MidiDriver *midiDriver, QString name) {
+	MidiSession *midiSession;
+	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
+		reallyCreateMidiSession(&midiSession, midiDriver, name);
+	} else {
+		QMetaObject::invokeMethod(this, "reallyCreateMidiSession", Qt::BlockingQueuedConnection,
+								  Q_ARG(MidiSession **, &midiSession),
+								  Q_ARG(MidiDriver *, midiDriver),
+								  Q_ARG(QString, name));
+	}
+	return midiSession;
 }
 
-Master::Master() {
+void Master::deleteMidiSession(MidiSession *midiSession) {
+	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
+		reallyDeleteMidiSession(midiSession);
+	} else {
+		QMetaObject::invokeMethod(this, "reallyDeleteMidiSession", Qt::QueuedConnection,
+								  Q_ARG(MidiSession *, midiSession));
+	}
 }
+

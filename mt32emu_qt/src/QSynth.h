@@ -43,7 +43,7 @@ private:
 	void setState(SynthState newState);
 
 public:
-	QSynth();
+	QSynth(QObject *parent = NULL);
 	~QSynth();
 	bool open();
 	void close();

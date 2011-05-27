@@ -35,18 +35,15 @@ using namespace MT32Emu;
 // In samples per second.
 static const int SAMPLE_RATE = 32000;
 
-static const qint64 NANOS_PER_SECOND = 1000000000;
-
 // This value defines when the difference between our current idea of the offset between MIDI timestamps
 // and audio timestamps is so bad that we just start using the new offset immediately.
 // This can be regularly hit around stream start time by badly-behaved drivers that return bogus timestamps
 // for a while when first starting.
 static const qint64 EMERGENCY_RESYNC_THRESHOLD_NANOS = 500000000;
 
-SynthRoute::SynthRoute() : state(SynthRouteState_CLOSED), audioDeviceIndex(0), refNanosOffsetValid(false), refNanosOffset(0) {
+SynthRoute::SynthRoute(QObject *parent) : QObject(parent), state(SynthRouteState_CLOSED), qSynth(this), audioDeviceIndex(0), refNanosOffsetValid(false), refNanosOffset(0), audioDriver(NULL) {
 	sampleRate = SAMPLE_RATE;
 
-	audioDriver = new PortAudioDriver(&qSynth, sampleRate);
 	connect(&qSynth, SIGNAL(stateChanged(SynthState)), SLOT(handleQSynthState(SynthState)));
 }
 
@@ -76,7 +73,9 @@ bool SynthRoute::open() {
 	default:
 		break;
 	}
-
+	if (audioDriver == NULL) {
+		audioDriver = new PortAudioDriver(&qSynth, sampleRate);
+	}
 	setState(SynthRouteState_OPENING);
 	if (qSynth.open()) {
 		if (audioDriver->start(audioDeviceIndex)) {
@@ -133,6 +132,8 @@ void SynthRoute::handleQSynthState(SynthState synthState) {
 	case SynthState_OPEN:
 		break;
 	case SynthState_CLOSING:
+		//audioDriver->suspend();
+		break;
 	case SynthState_CLOSED:
 		audioDriver->close();
 		setState(SynthRouteState_CLOSED);
@@ -140,35 +141,10 @@ void SynthRoute::handleQSynthState(SynthState synthState) {
 	}
 }
 
-SynthTimestamp SynthRoute::refNanosToAudioNanos(qint64 refNanos) {
-	if (refNanos == 0) {
-		// Special value meaning "no timestamp, play immediately"
-		return 0;
-	}
-	if (!refNanosOffsetValid) {
-		// FIXME: Basically assumes that the first MIDI event received is intended to play immediately.
-		SynthTimestamp currentAudioNanos = audioDriver->getPlayedAudioNanosPlusLatency();
-		refNanosOffset = currentAudioNanos - refNanos;
-		qDebug() << "Sync:" << currentAudioNanos << refNanosOffset;
-		refNanosOffsetValid = true;
-	} else {
-		// FIXME: Basically assumes that the first MIDI event received is intended to play immediately.
-		// Correct for clock skew.
-		// FIXME: Only emergencies are handled at the moment - need to use a proper sync algorithm.
-		SynthTimestamp currentAudioNanos = audioDriver->getPlayedAudioNanosPlusLatency();
-		qint64 newRefNanosOffset = currentAudioNanos - refNanos;
-		if(qAbs(newRefNanosOffset - refNanosOffset) > EMERGENCY_RESYNC_THRESHOLD_NANOS) {
-			qDebug() << "Emergency resync:" << currentAudioNanos << refNanosOffset << newRefNanosOffset;
-			refNanosOffset = newRefNanosOffset;
-		}
-	}
-	return refNanos + refNanosOffset;
-}
-
 bool SynthRoute::pushMIDIShortMessage(Bit32u msg, qint64 refNanos) {
-	return qSynth.pushMIDIShortMessage(msg, refNanosToAudioNanos(refNanos));
+	return qSynth.pushMIDIShortMessage(msg, refNanos);
 }
 
 bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, qint64 refNanos) {
-	return qSynth.pushMIDISysex(sysexData, sysexLen, refNanosToAudioNanos(refNanos));
+	return qSynth.pushMIDISysex(sysexData, sysexLen, refNanos);
 }

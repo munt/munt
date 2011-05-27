@@ -39,12 +39,31 @@
     </property>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="menuMIDI">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionPlay_MIDI_file"/>
+    <addaction name="separator"/>
+    <addaction name="actionOptions"/>
+   </widget>
+   <addaction name="menuMIDI"/>
    <addaction name="menuMunt_mt32emu_qt"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionOptions">
+   <property name="text">
+    <string>Options...</string>
+   </property>
+  </action>
+  <action name="actionPlay_MIDI_file">
+   <property name="text">
+    <string>Play MIDI file...</string>
    </property>
   </action>
  </widget>

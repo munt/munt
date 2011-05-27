@@ -23,6 +23,9 @@ MidiDriver::MidiDriver(Master *useMaster): master(useMaster), name("Unknown") {
 }
 
 MidiDriver::~MidiDriver() {
+	while (!midiSessions.isEmpty()) {
+		master->deleteMidiSession(midiSessions.takeFirst());
+	}
 }
 
 QString MidiDriver::getName() const {
@@ -36,4 +39,17 @@ void MidiDriver::setName(const QString &newName) {
 
 Master *MidiDriver::getMaster() {
 	return master;
+}
+
+MidiSession *MidiDriver::createMidiSession(QString sessionName) {
+	MidiSession *midiSession = master->createMidiSession(this, sessionName);
+	if (midiSession != NULL) {
+		midiSessions.append(midiSession);
+	}
+	return midiSession;
+}
+
+void MidiDriver::deleteMidiSession(MidiSession *midiSession) {
+	midiSessions.removeOne(midiSession);
+	master->deleteMidiSession(midiSession);
 }

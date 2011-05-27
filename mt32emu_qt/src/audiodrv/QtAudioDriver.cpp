@@ -16,28 +16,38 @@
 
 #include "QtAudioDriver.h"
 
+#include <QtMultimediaKit/QAudioOutput>
+
 #include <mt32emu/mt32emu.h>
 
+#include "../ClockSync.h"
+#include "../MasterClock.h"
 #include "../QSynth.h"
 
 using namespace MT32Emu;
 
-static const qint64 NANOS_PER_SECOND = 1000000000;
-
 class WaveGenerator : public QIODevice {
 private:
+	ClockSync clockSync;
 	QSynth *synth;
 	QAudioOutput *audioOutput;
 	double sampleRate;
+	qint64 latency;
 
 public:
-	WaveGenerator(QSynth *useSynth, QAudioOutput *useAudioOutput, double sampleRate) : synth(useSynth), audioOutput(useAudioOutput), sampleRate(sampleRate) {
+	WaveGenerator(QSynth *useSynth, QAudioOutput *useAudioOutput, double sampleRate) : synth(useSynth), audioOutput(useAudioOutput), sampleRate(sampleRate), latency(0) {
 		open(QIODevice::ReadOnly);
 	}
 
+	void setLatency(qint64 newLatency) {
+		latency = newLatency;
+	}
+
 	qint64 readData(char *data, qint64 len) {
-		qint64 firstSampleNanos = audioOutput->processedUSecs() * 1000;
-		return synth->render((Bit16s *)data, (unsigned int)(len >> 2), firstSampleNanos, sampleRate) << 2;
+		qint64 firstSampleAudioNanos = audioOutput->processedUSecs() * 1000;
+		qint64 firstSampleMasterClockNanos = clockSync.sync(firstSampleAudioNanos) - latency * 20;
+
+		return synth->render((Bit16s *)data, (unsigned int)(len >> 2), firstSampleMasterClockNanos, sampleRate) << 2;
 	}
 
 	qint64 writeData(const char *data, qint64 len) {
@@ -77,7 +87,7 @@ SynthTimestamp QtAudioDriver::getPlayedAudioNanosPlusLatency() {
 	//return audioDriver->getPlayedAudioNanos();
 	qint64 nsPlayed = audioOutput->processedUSecs() * 1000;
 	qint64 bytesInBuffer = audioOutput->bufferSize() - audioOutput->bytesFree();
-	qint64 nsInBuffer = NANOS_PER_SECOND * bytesInBuffer / (4 * sampleRate);
+	qint64 nsInBuffer = MasterClock::NANOS_PER_SECOND * bytesInBuffer / (4 * sampleRate);
 	nsPlayed -= nsInBuffer;
 	return nsPlayed + latency;
 }
@@ -85,7 +95,7 @@ SynthTimestamp QtAudioDriver::getPlayedAudioNanosPlusLatency() {
 bool QtAudioDriver::start(int deviceIndex) {
 	Q_UNUSED(deviceIndex);
 	audioOutput->start(waveGenerator);
-	latency = 2 * NANOS_PER_SECOND * audioOutput->bufferSize() / (4 * sampleRate);
+	waveGenerator->setLatency(2 * MasterClock::NANOS_PER_SECOND * audioOutput->bufferSize() / (4 * sampleRate));
 	return true;
 }
 

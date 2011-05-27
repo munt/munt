@@ -9,8 +9,11 @@ set(mt32emu_qt_VERSION_PATCH 0)
 
 set(mt32emu_qt_SOURCES
   src/main.cpp
+
+  src/ClockSync.cpp
   src/MainWindow.cpp
   src/Master.cpp
+  src/MasterClock.cpp
   src/MidiEvent.cpp
   src/MidiEventQueue.cpp
   src/MidiSession.cpp

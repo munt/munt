@@ -27,19 +27,18 @@
 #include <QtGlobal>
 
 #include "QSynth.h"
+#include "MasterClock.h"
 
 using namespace MT32Emu;
 
 static const int DEFAULT_SAMPLE_RATE = 32000;
-
-static const qint64 NANOS_PER_SECOND = 1000000000;
 
 int MT32_Report(void *userData, ReportType type, const void *reportData) {
 	QSynth *qSynth = (QSynth *)userData;
 	return qSynth->handleReport(type, reportData);
 }
 
-QSynth::QSynth() : state(SynthState_CLOSED) {
+QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED) {
 	sampleRate = DEFAULT_SAMPLE_RATE;
 	reverbEnabled = true;
 	emuDACInputMode = DACInputMode_GENERATION2;
@@ -90,7 +89,7 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 		// This loop processes any events that are due before or at this sample position,
 		// and potentially reduces the renderThisPass length so that the next event can occur on time on the next pass.
 		bool closed = false;
-		qint64 nanosNow = firstSampleTimestamp + renderedLen * NANOS_PER_SECOND / actualSampleRate;
+		qint64 nanosNow = firstSampleTimestamp + renderedLen * MasterClock::NANOS_PER_SECOND / actualSampleRate;
 		for (;;) {
 			const MidiEvent *event = midiEventQueue->peekEvent();
 			if (event == NULL) {
@@ -119,7 +118,7 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 				midiEventQueue->popEvent();
 			} else {
 				qint64 nanosUntilNextEvent = event->getTimestamp() - nanosNow;
-				unsigned int samplesUntilNextEvent = qMax((qint64)1, (qint64)(nanosUntilNextEvent * actualSampleRate / NANOS_PER_SECOND));
+				unsigned int samplesUntilNextEvent = qMax((qint64)1, (qint64)(nanosUntilNextEvent * actualSampleRate / MasterClock::NANOS_PER_SECOND));
 				if (renderThisPass > samplesUntilNextEvent)
 					renderThisPass = samplesUntilNextEvent;
 				break;
@@ -153,7 +152,8 @@ bool QSynth::setROMDir(QDir newROMDir) {
 bool QSynth::openSynth() {
 	QString pathName = QDir::toNativeSeparators(romDir.absolutePath());
 	pathName += QDir::separator();
-	SynthProperties synthProp = {sampleRate, true, true, 0, 0, 0, pathName.toUtf8(), NULL, MT32_Report, NULL, NULL, NULL};
+	QByteArray pathNameBytes = pathName.toUtf8();
+	SynthProperties synthProp = {sampleRate, true, true, 0, 0, 0, pathNameBytes, NULL, MT32_Report, NULL, NULL, NULL};
 	if(synth->open(synthProp)) {
 		synth->setReverbEnabled(reverbEnabled);
 		synth->setDACInputMode(emuDACInputMode);

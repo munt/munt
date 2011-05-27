@@ -37,16 +37,9 @@
 #include <alsa/version.h>
 #include <alsa/asoundlib.h>
 
+#include "../MasterClock.h"
 #include "../MidiSession.h"
 #include "../SynthRoute.h"
-
-static qint64 getMonotonicClockNanos() {
-	timespec ts;
-	if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
-		return 0;
-	}
-	return ts.tv_sec * (qint64)1000000000 + ts.tv_nsec;
-}
 
 ALSAProcessor::ALSAProcessor(ALSAMidiDriver *useALSAMidiDriver, snd_seq_t *useSeq) : alsaMidiDriver(useALSAMidiDriver), seq(useSeq) {
 	stopProcessing = false;
@@ -129,7 +122,7 @@ bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synt
 		msg |= seq_event->data.note.channel;
 		msg |= seq_event->data.note.note << 8;
 		msg |= seq_event->data.note.velocity << 16;
-		synthRoute->pushMIDIShortMessage(msg, getMonotonicClockNanos());
+		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_NOTEOFF:
@@ -137,7 +130,7 @@ bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synt
 		msg |= seq_event->data.note.channel;
 		msg |= seq_event->data.note.note << 8;
 		msg |= seq_event->data.note.velocity << 16;
-		synthRoute->pushMIDIShortMessage(msg, getMonotonicClockNanos());
+		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_CONTROLLER:
@@ -145,18 +138,18 @@ bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synt
 		msg |= seq_event->data.control.channel;
 		msg |= seq_event->data.control.param << 8;
 		msg |= seq_event->data.control.value << 16;
-		synthRoute->pushMIDIShortMessage(msg, getMonotonicClockNanos());
+		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_PGMCHANGE:
 		msg = 0xC0;
 		msg |= seq_event->data.control.channel;
 		msg |= seq_event->data.control.value << 8;
-		synthRoute->pushMIDIShortMessage(msg, getMonotonicClockNanos());
+		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_SYSEX:
-		synthRoute->pushMIDISysex((MT32Emu::Bit8u *)seq_event->data.ext.ptr, seq_event->data.ext.len, getMonotonicClockNanos());
+		synthRoute->pushMIDISysex((MT32Emu::Bit8u *)seq_event->data.ext.ptr, seq_event->data.ext.len, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_PORT_SUBSCRIBED:

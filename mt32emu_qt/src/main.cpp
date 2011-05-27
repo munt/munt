@@ -15,10 +15,12 @@
  */
 
 #include <QtGui>
+#include <QProcessEnvironment>
 #include <mt32emu/mt32emu.h>
 
 #include "MainWindow.h"
 #include "Master.h"
+#include "MasterClock.h"
 #include "QSynth.h"
 
 #include "mididrv/TestDriver.h"
@@ -26,22 +28,23 @@
 #include "mididrv/Win32Driver.h"
 #endif
 
-
 using namespace MT32Emu;
 
 int main(int argv, char **args)
 {
 	QApplication app(argv, args);
 	app.setApplicationName("Munt mt32emu-qt");
+
+	QProcessEnvironment::systemEnvironment().insert("PA_ALSA_PLUGHW", "1");
+
+	MasterClock::init();
 	Master::init();
-	TestMidiDriver testMidiDriver(Master::getInstance());
-	testMidiDriver.start();
-
-	MainWindow mainWindow(Master::getInstance());
-	mainWindow.show();
-	app.exec();
-
-	testMidiDriver.stop();
+	{
+		MainWindow mainWindow(Master::getInstance());
+		mainWindow.show();
+		app.exec();
+	}
 	Master::deinit();
+	MasterClock::deinit();
 	return 0;
 }

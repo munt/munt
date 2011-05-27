@@ -20,19 +20,30 @@
 #include "ui_MainWindow.h"
 #include "Master.h"
 
+#include "mididrv/TestDriver.h"
+
 MainWindow::MainWindow(Master *master, QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+	ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *)), this, SLOT(handleSynthRouteAdded(SynthRoute *)));
 	QObject::connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), this, SLOT(handleSynthRouteRemoved(SynthRoute *)));
-	//QObject::connect(ui->actionAbout, SIGNAL(triggered()), this, SLOT(on_actionAbout_triggered()));
+	midiDriver = new TestMidiDriver(master);
+	midiDriver->start();
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+	delete ui;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+	if (midiDriver != NULL) {
+		midiDriver->stop();
+		midiDriver = NULL;
+	}
+	event->accept();
 }
 
 void MainWindow::on_actionAbout_triggered()
@@ -67,4 +78,14 @@ void MainWindow::handleSynthRouteRemoved(SynthRoute *synthRoute) {
 			return;
 		}
 	}
+}
+
+void MainWindow::on_actionOptions_triggered()
+{
+
+}
+
+void MainWindow::on_actionPlay_MIDI_file_triggered()
+{
+
 }

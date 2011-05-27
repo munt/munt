@@ -14,42 +14,23 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MASTER_H
-#define MASTER_H
+#ifndef MASTER_CLOCK_H
+#define MASTER_CLOCK_H
 
-#include <QObject>
+#include <QtGlobal>
 
-#include "SynthRoute.h"
+typedef qint64 MasterClockNanos;
 
-class MidiDriver;
-class MidiSession;
-
-class Master : public QObject {
-	Q_OBJECT
-private:
-	static Master *INSTANCE;
-
-	QList<SynthRoute *> synthRoutes;
-
-	Master();
-
+class MasterClock{
 public:
-	MidiSession *createMidiSession(MidiDriver *midiDriver, QString name);
-	void deleteMidiSession(MidiSession *midiSession);
-
-	static Master *getInstance();
-
-	// These two methods are only intended to be called at application startup/shutdown
+	static const qint64 NANOS_PER_SECOND = 1000000000;
+	static const qint64 NANOS_PER_MILLISECOND = 1000000;
+	static const qint64 NANOS_PER_MICROSECOND = 1000;
+	static void sleepForNanos(MasterClockNanos nanos);
+	static void sleepUntilClockNanos(MasterClockNanos clockNanos);
+	static MasterClockNanos getClockNanos();
 	static void init();
 	static void deinit();
-
-private slots:
-	void reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
-	void reallyDeleteMidiSession(MidiSession *midiSession);
-
-signals:
-	void synthRouteAdded(SynthRoute *route);
-	void synthRouteRemoved(SynthRoute *route);
 };
 
 #endif

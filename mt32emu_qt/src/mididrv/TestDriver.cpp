@@ -16,7 +16,6 @@
 
 #include "TestDriver.h"
 
-#include <cerrno>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -24,75 +23,11 @@
 
 #include <QtCore>
 
-#include <time.h>
-
+#include "../MasterClock.h"
 #include "../MidiSession.h"
 #include "../SynthRoute.h"
 
 static const qint64 TEST1_EVENT_INTERVAL_NANOS = 8000000; // 256 samples;
-
-static const qint64 NANOS_PER_SECOND = 1000000000;
-
-class QtSucks : public QThread {
-public:
-	static void usleep(int usecs) {
-		QThread::usleep(usecs);
-	}
-};
-
-#if _POSIX_C_SOURCE >= 199309L
-
-static qint64 timespecToNanos(const timespec &ts) {
-	return ts.tv_sec * (qint64)NANOS_PER_SECOND + ts.tv_nsec;
-}
-
-static void nanosToTimespec(timespec &ts, qint64 nanos) {
-	ts.tv_sec = nanos / NANOS_PER_SECOND;
-	ts.tv_nsec = nanos % NANOS_PER_SECOND;
-}
-
-static qint64 getCurrentNanos() {
-	timespec ts;
-	ts.tv_sec = 0;
-	ts.tv_nsec = 0;
-	// NOTE: I would use CLOCK_MONOTONIC_RAW, but clock_nanosleep() and clock_getres() are broken with that clock on my system.
-	// nanosleep() works with it, however.
-	if (clock_getres(CLOCK_MONOTONIC, &ts) == 0) {
-		qDebug() << "Timer resolution: " << ts.tv_sec << "s " << ts.tv_nsec << " us";
-	}
-	if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
-		qDebug() << "Monotonic clock is broken, returning 0";
-		return 0;
-	}
-	return timespecToNanos(ts);
-}
-
-static bool sleepUntilNanos(qint64 targetNanos) {
-	timespec ts;
-	nanosToTimespec(ts, targetNanos);
-	if (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL) != 0) {
-		qDebug() << errno;
-		return false;
-	}
-	return true;
-}
-
-#else
-
-static qint64 getCurrentNanos() {
-	return (qint64)clock() * NANOS_PER_SECOND / CLOCKS_PER_SEC;
-}
-
-static bool sleepUntilNanos(qint64 targetNanos) {
-	qint64 deltaMicros = (targetNanos - getCurrentNanos()) / 1000;
-	if (deltaMicros <= 0) {
-		return true;
-	}
-	QtSucks::usleep(deltaMicros);
-	return true;
-}
-
-#endif
 
 TestProcessor::TestProcessor(TestMidiDriver *useTestMidiDriver) : testMidiDriver(useTestMidiDriver), stopProcessing(false) {
 }
@@ -102,26 +37,25 @@ void TestProcessor::stop() {
 }
 
 void TestProcessor::processSeqEvents() {
-	Master *master = testMidiDriver->getMaster();
-	MidiSession *session1 = master->createMidiSession(testMidiDriver, "Test 1");
-	MidiSession *session2 = master->createMidiSession(testMidiDriver, "Test 2");
-	qint64 currentNanos = getCurrentNanos();
+	MidiSession *session1 = testMidiDriver->createMidiSession("Test 1");
+	MidiSession *session2 = NULL;//testMidiDriver->createMidiSession("Test 2");
+	qint64 currentNanos = MasterClock::getClockNanos();
 	qDebug() << currentNanos;
 	bool alt = false;
-	while(!stopProcessing) {
+	while (!stopProcessing) {
 		session1->getSynthRoute()->pushMIDIShortMessage(0, currentNanos);
 		// Test 2 sends an event at the same time as every second Test 1 event
-		if(alt)
+		if(alt && session2 != NULL)
 			session2->getSynthRoute()->pushMIDIShortMessage(0, currentNanos);
 		alt = !alt;
 		currentNanos += TEST1_EVENT_INTERVAL_NANOS;
-		if (!sleepUntilNanos(currentNanos)) {
-			break;
-		}
+		MasterClock::sleepUntilClockNanos(currentNanos);
 	}
 	qDebug() << "Test processor finished";
-	master->deleteMidiSession(session1);
-	master->deleteMidiSession(session2);
+	testMidiDriver->deleteMidiSession(session1);
+	if (session2 != NULL) {
+		testMidiDriver->deleteMidiSession(session2);
+	}
 	emit finished();
 }
 

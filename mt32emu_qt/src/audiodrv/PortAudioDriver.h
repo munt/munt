@@ -8,17 +8,20 @@
 #include <mt32emu/mt32emu.h>
 
 #include "AudioDriver.h"
+#include "../ClockSync.h"
 
 class QSynth;
 
 class PortAudioDriver : public AudioDriver {
 private:
+	ClockSync clockSync;
 	QSynth *synth;
 	unsigned int sampleRate;
 	int currentDeviceIndex;
 	PaStream *stream;
 	// The number of nanos by which to delay (MIDI) events to help ensure accurate relative timing.
 	qint64 latency;
+	qint64 sampleCount;
 
 	qint64 getPlayedAudioNanosPlusLatency();
 	static int paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData);

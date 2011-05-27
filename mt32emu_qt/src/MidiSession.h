@@ -31,7 +31,7 @@ private:
 	QString name;
 	SynthRoute *synthRoute;
 
-	MidiSession(MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute);
+	MidiSession(QObject *parent, MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute);
 
 public:
 	QString getName();

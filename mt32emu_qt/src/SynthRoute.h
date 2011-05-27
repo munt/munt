@@ -22,6 +22,8 @@ class SynthRoute : public QObject {
 private:
 	SynthRouteState state;
 
+	QSynth qSynth;
+
 	QList<MidiSession *> midiSessions;
 
 	int audioDeviceIndex;
@@ -37,9 +39,8 @@ private:
 public:
 	// FIXME: Shouldn't be public
 	AudioDriver *audioDriver;
-	QSynth qSynth;
 
-	SynthRoute();
+	SynthRoute(QObject *parent = NULL);
 	~SynthRoute();
 	bool open();
 	bool close();

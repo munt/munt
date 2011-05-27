@@ -12,8 +12,12 @@ class MidiDriver : public QObject {
 protected:
 	Master *master;
 	QString name;
+	QList<MidiSession *>midiSessions;
 
 	void setName(const QString &name);
+	MidiSession *createMidiSession(QString sessionName);
+	void deleteMidiSession(MidiSession *midiSession);
+
 public:
 	MidiDriver(Master *useMaster);
 	Master *getMaster();
