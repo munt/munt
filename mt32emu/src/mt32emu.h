@@ -51,6 +51,10 @@
 // If zero, keeps reverb buffers for all modes around all the time to avoid allocating/freeing in the critical path.
 #define MT32EMU_REDUCE_REVERB_MEMORY 1
 
+// 0: Use standard freeverb
+// 1: Use Areverb (currently not properly tuned)
+#define MT32EMU_USE_AREVERBMODEL 0
+
 namespace MT32Emu
 {
 // The higher this number, the more memory will be used, but the more samples can be processed in one run -

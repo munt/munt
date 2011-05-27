@@ -25,6 +25,7 @@
 #include "ANSIFile.h"
 #include "PartialManager.h"
 
+#include "AReverbModel.h"
 #include "DelayReverb.h"
 #include "FreeverbModel.h"
 
@@ -130,9 +131,17 @@ Synth::Synth() {
 	isOpen = false;
 	reverbEnabled = true;
 	reverbOverridden = false;
+
+#if MT32EMU_USE_AREVERBMODEL == 1
+	reverbModels[0] = new AReverbModel(&reverbMode0Settings);
+	reverbModels[1] = new AReverbModel(&reverbMode1Settings);
+	reverbModels[2] = new AReverbModel(&reverbMode2Settings);
+#else
 	reverbModels[0] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 0, 0.5f);
 	reverbModels[1] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 1, 0.5f);
 	reverbModels[2] = new FreeverbModel(0.4f, 0.939522749f, 0.38f, 2, 0.05f);
+#endif
+
 	reverbModels[3] = new DelayReverb();
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
