@@ -91,13 +91,13 @@ void Tables::init(Synth *synth) {
 	}
 
 	// found from sample analysis
-	for (int i = 0; i < 128; i++) {
-		cutoffToCosineLen[i] = EXP2F(i / -16.0f);
+	for (int i = 0; i < 1024; i++) {
+		cutoffToCosineLen[i] = EXP2F(i / -128.0f);
 	}
 
 	// found from sample analysis
-	for (int i = 0; i < 128; i++) {
-		cutoffToFilterAmp[i] = EXP2F(-0.125f * (128 - i));
+	for (int i = 0; i < 1024; i++) {
+		cutoffToFilterAmp[i] = EXP2F(-0.125f * (128.0f - i / 8.0f));
 	}
 
 	// found from sample analysis

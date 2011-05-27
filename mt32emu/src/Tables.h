@@ -49,8 +49,8 @@ public:
 
 	float pulseLenFactor[128];
 	float pitchToFreq[65536];
-	float cutoffToCosineLen[128];
-	float cutoffToFilterAmp[128];
+	float cutoffToCosineLen[1024];
+	float cutoffToFilterAmp[1024];
 	float resAmpMax[32];
 	float resAmpFadeFactor[8];
 	float sinf10[5120];

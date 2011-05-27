@@ -12,10 +12,11 @@ include(FindPkgConfig)
 
 project(libportaudio)
 
-option(WITH_ALSA "Enable support for ALSA" TRUE)
-option(WITH_JACK "Enable support for JACK" TRUE)
-option(WITH_OSS "Enable support for OSS" TRUE)
-option(WITH_ASIHPI "Enable support for ASIHPI" TRUE)
+option(libportaudio_WITH_ALSA "Enable support for ALSA in PortAudio" YES)
+option(libportaudio_WITH_JACK "Enable support for JACK in PortAudio" YES)
+option(libportaudio_WITH_OSS "Enable support for OSS in PortAudio" YES)
+option(libportaudio_WITH_ASIHPI "Enable support for ASIHPI in PortAudio" YES)
+option(libportaudio_ENABLE_DEBUG_OUTPUT "Enable debug output in PortAudio" NO)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -110,7 +111,7 @@ set(libportaudio_OS_UNIX_SOURCES
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/common)
 
-if(WITH_ALSA)
+if(libportaudio_WITH_ALSA)
   find_package(ALSA)
   if(ALSA_FOUND)
     list(APPEND libportaudio_EXT_LIBS ${ALSA_LIBRARIES})
@@ -120,7 +121,7 @@ if(WITH_ALSA)
     endif()
 endif()
 
-if(WITH_ASIHPI)
+if(libportaudio_WITH_ASIHPI)
   check_library_exists(hpi HPI_SubSysCreate "" ASIHPI_FOUND)
   if(ASIHPI_FOUND)
     add_definitions(-DPA_USE_ASIHPI=1)
@@ -128,7 +129,7 @@ if(WITH_ASIHPI)
   endif()
 endif()
 
-if(WITH_JACK)
+if(libportaudio_WITH_JACK)
   find_package(JACK)
   if(JACK_FOUND)
     list(APPEND libportaudio_EXT_LIBS ${JACK_LIBRARIES})
@@ -138,7 +139,7 @@ if(WITH_JACK)
   endif()
 endif()
 
-if(WITH_OSS)
+if(libportaudio_WITH_OSS)
   check_include_files(sys/soundcard.h linux/soundcard.h machine/soundcard.h OSS_FOUND)
   if(OSS_FOUND)
     check_library_exists(ossaudio _oss_ioctl "" LIBOSSAUDIO_FOUND)
@@ -148,6 +149,10 @@ if(WITH_OSS)
     add_definitions(-DPA_USE_OSS=1)
     list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_OSS_SOURCES})
   endif()
+endif()
+
+if(libportaudio_ENABLE_DEBUG_OUTPUT)
+  add_definitions(-DPA_ENABLE_DEBUG_OUTPUT)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)

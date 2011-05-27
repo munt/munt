@@ -123,7 +123,7 @@ struct SynthProperties {
 // function
 typedef void (*recalcStatusCallback)(int percDone);
 
-typedef void (*FloatToBit16sFunc)(Bit16s *target, const float *source, Bit32u len);
+typedef void (*FloatToBit16sFunc)(Bit16s *target, const float *source, Bit32u len, float outputGain);
 
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
 
@@ -334,6 +334,8 @@ private:
 	bool reverbOverridden;
 
 	FloatToBit16sFunc la32FloatToBit16sFunc;
+	float outputGain;
+	float reverbOutputGain;
 
 	float masterTune;
 
@@ -437,6 +439,12 @@ public:
 	void setReverbOverridden(bool reverbOverridden);
 	bool isReverbOverridden() const;
 	void setDACInputMode(DACInputMode mode);
+
+	// Sets output gain factor. Applied to all output samples and unrelated with the synth's Master volume.
+	void setOutputGain(float);
+
+	// Sets output gain factor for the reverb wet output. setOutputGain() doesn't change reverb output gain.
+	void setReverbOutputGain(float);
 
 	// Renders samples to the specified output stream.
 	// The length is in frames, not bytes (in 16-bit stereo,

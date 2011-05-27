@@ -31,6 +31,8 @@ private:
 	char pathToROMfiles[256];
 	bool resetEnabled;
 	DACInputMode emuDACInputMode;
+	float outputGain;
+	float reverbOutputGain;
 	bool reverbEnabled;
 	bool reverbOverridden;
 	Bit8u reverbMode;

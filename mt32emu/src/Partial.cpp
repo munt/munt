@@ -196,6 +196,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
 
 		Bit16u newPitch = tvp->nextPitch();
+
+		// EXP2F(pitch / 4096.0f - 16.0f) * 32000.0f
 		float freq = synth->tables.pitchToFreq[pitch];
 
 		// In case of pitch change we need to scale wavePos correspondingly to avoid jumps
@@ -247,42 +249,22 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			// it may for example need to be multiplied in some way.
 			// The 240 cutoffVal limit was determined via sample analysis (internal Munt capture IDs: glop3, glop4).
 			// More research is needed to be sure that this is correct, however.
-#if MT32EMU_ACCURATE_WG == 1
 			float cutoffVal = tvf->getBaseCutoff() + cutoffModifier;
 			if (cutoffVal > 240.0f) {
 				cutoffVal = 240.0f;
 			}
-#else
-			unsigned int cutoffValTmp = tvf->getBaseCutoff() + cutoffModifier;
-			Bit8u cutoffVal;
-			if (cutoffValTmp > 240) {
-				cutoffVal = 240;
-			} else {
-				cutoffVal = cutoffValTmp;
-			}
-#endif
 
 			// Wave length in samples
 			float waveLen = synth->myProp.sampleRate / freq;
 
-			// Anti-aliasing feature
-			if (waveLen < 4.0f) {
-				waveLen = 4.0f;
-			}
-
 			// Init cosineLen
 			float cosineLen = 0.5f * waveLen;
-			if (cutoffVal > 128) {
+			if (cutoffVal > 128.0f) {
 #if MT32EMU_ACCURATE_WG == 1
-				cosineLen *= EXP2F((cutoffVal - 128) / -16.0f); // found from sample analysis
+				cosineLen *= EXP2F((cutoffVal - 128.0f) / -16.0f); // found from sample analysis
 #else
-				cosineLen *= synth->tables.cutoffToCosineLen[cutoffVal - 128];
+				cosineLen *= synth->tables.cutoffToCosineLen[Bit32u((cutoffVal - 128.0f) * 8.0f)];
 #endif
-			}
-
-			// Anti-aliasing feature
-			if (cosineLen < 2.0f) {
-				cosineLen = 2.0f;
 			}
 
 			// Start playing in center of first cosine segment
@@ -312,11 +294,11 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			}
 
 			// Correct resAmp for cutoff in range 50..66
-			if (cutoffVal < 144) {
+			if (cutoffVal < 144.0f) {
 #if MT32EMU_ACCURATE_WG == 1
-				resAmp *= sinf(FLOAT_PI * (cutoffVal - 128) / 32);
+				resAmp *= sinf(FLOAT_PI * (cutoffVal - 128.0f) / 32.0f);
 #else
-				resAmp *= synth->tables.sinf10[64 * (cutoffVal - 128)];
+				resAmp *= synth->tables.sinf10[Bit32u(64 * (cutoffVal - 128.0f))];
 #endif
 			}
 
@@ -349,14 +331,14 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				sample = -1.f;
 			}
 
-			if (cutoffVal < 128) {
+			if (cutoffVal < 128.0f) {
 
 				// Attenuate samples below cutoff 50
 				// Found by sample analysis
 #if MT32EMU_ACCURATE_WG == 1
-				sample *= EXP2F(-0.125f * (128 - cutoffVal));
+				sample *= EXP2F(-0.125f * (128.0f - cutoffVal));
 #else
-				sample *= synth->tables.cutoffToFilterAmp[cutoffVal];
+				sample *= synth->tables.cutoffToFilterAmp[Bit32u(cutoffVal * 8.0f)];
 #endif
 			} else {
 
