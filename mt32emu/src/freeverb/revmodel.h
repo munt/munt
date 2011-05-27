@@ -45,7 +45,7 @@ private:
 
 	// LPF stuff
 	float filtval;
-	float filtprev1; 
+	float filtprev1;
 	float filtprev2;
 
 	// Comb filters
