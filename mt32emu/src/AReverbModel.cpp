@@ -53,7 +53,7 @@ float AllPassFilter::process(float in) {
 
 	// move to the next position
 	index++;
-	if (index > size) {
+	if (index >= size) {
 		index = 0;
 	}
 
@@ -74,7 +74,7 @@ float Delay::process(float in) {
 
 	// move to the next position
 	index++;
-	if (index > size) {
+	if (index >= size) {
 		index = 0;
 	}
 
@@ -165,7 +165,7 @@ void AReverbModel::process(const float *inLeft, const float *inRight, float *out
 		filterhist1 += (dry - filterhist1) * currentSettings->filtVal;
 		filterhist2 += (filterhist1 - filterhist2) * currentSettings->filtVal;
 
-		link = allpasses[0]->process(filterhist2);
+		link = allpasses[0]->process(-filterhist2);
 		link = allpasses[1]->process(link);
 		link = allpasses[2]->process(link);
 		link = delays[0]->process(link);
