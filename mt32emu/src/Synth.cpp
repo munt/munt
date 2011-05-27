@@ -76,35 +76,39 @@ static inline Bit16s clipBit16s(Bit32s a) {
 	return a;
 }
 
-static void floatToBit16s_nice(Bit16s *target, const float *source, Bit32u len) {
+static void floatToBit16s_nice(Bit16s *target, const float *source, Bit32u len, float outputGain) {
+	float gain = outputGain * 16384.0f;
 	while (len--) {
 		// Since we're not shooting for accuracy here, don't worry about the rounding mode.
-		*target = clipBit16s((Bit32s)(*source * 16384.0f));
+		*target = clipBit16s((Bit32s)(*source * gain));
 		source++;
 		target++;
 	}
 }
 
-static void floatToBit16s_pure(Bit16s *target, const float *source, Bit32u len) {
+static void floatToBit16s_pure(Bit16s *target, const float *source, Bit32u len, float outputGain) {
+	float gain = outputGain * 8192.0f;
 	while (len--) {
-		*target = clipBit16s((Bit32s)floor(*source * 8192.0f));
+		*target = clipBit16s((Bit32s)floor(*source * gain));
 		source++;
 		target++;
 	}
 }
 
-static void floatToBit16s_generation1(Bit16s *target, const float *source, Bit32u len) {
+static void floatToBit16s_generation1(Bit16s *target, const float *source, Bit32u len, float outputGain) {
+	float gain = outputGain * 8192.0f;
 	while (len--) {
-		*target = clipBit16s((Bit32s)floor(*source * 8192.0f));
+		*target = clipBit16s((Bit32s)floor(*source * gain));
 		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE);
 		source++;
 		target++;
 	}
 }
 
-static void floatToBit16s_generation2(Bit16s *target, const float *source, Bit32u len) {
+static void floatToBit16s_generation2(Bit16s *target, const float *source, Bit32u len, float outputGain) {
+	float gain = outputGain * 8192.0f;
 	while (len--) {
-		*target = clipBit16s((Bit32s)floor(*source * 8192.0f));
+		*target = clipBit16s((Bit32s)floor(*source * gain));
 		*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE) | ((*target >> 14) & 0x0001);
 		source++;
 		target++;
@@ -132,6 +136,8 @@ Synth::Synth() {
 	reverbModels[3] = new DelayReverb();
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
+	setOutputGain(1.0f);
+	setReverbOutputGain(1.0f);
 	partialManager = NULL;
 	memset(parts, 0, sizeof(parts));
 }
@@ -198,6 +204,14 @@ void Synth::setDACInputMode(DACInputMode mode) {
 		la32FloatToBit16sFunc = floatToBit16s_nice;
 		break;
 	}
+}
+
+void Synth::setOutputGain(float newOutputGain) {
+	outputGain = newOutputGain;
+}
+
+void Synth::setReverbOutputGain(float newReverbOutputGain) {
+	reverbOutputGain = newReverbOutputGain;
 }
 
 File *Synth::openFile(const char *filename, File::OpenMode mode) {
@@ -530,7 +544,7 @@ void Synth::close() {
 		parts[i] = NULL;
 	}
 
-	delete myProp.baseDir;
+	delete[] myProp.baseDir;
 	myProp.baseDir = NULL;
 
 	delete[] pcmWaves;
@@ -1339,10 +1353,10 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 			}
 		}
 		if (nonReverbLeft != NULL) {
-			la32FloatToBit16sFunc(nonReverbLeft, &tmpBufMixLeft[0], len);
+			la32FloatToBit16sFunc(nonReverbLeft, &tmpBufMixLeft[0], len, outputGain);
 		}
 		if (nonReverbRight != NULL) {
-			la32FloatToBit16sFunc(nonReverbRight, &tmpBufMixRight[0], len);
+			la32FloatToBit16sFunc(nonReverbRight, &tmpBufMixRight[0], len, outputGain);
 		}
 		clearIfNonNull(reverbDryLeft, len);
 		clearIfNonNull(reverbDryRight, len);
@@ -1358,10 +1372,10 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 			}
 		}
 		if (nonReverbLeft != NULL) {
-			la32FloatToBit16sFunc(nonReverbLeft, &tmpBufMixLeft[0], len);
+			la32FloatToBit16sFunc(nonReverbLeft, &tmpBufMixLeft[0], len, outputGain);
 		}
 		if (nonReverbRight != NULL) {
-			la32FloatToBit16sFunc(nonReverbRight, &tmpBufMixRight[0], len);
+			la32FloatToBit16sFunc(nonReverbRight, &tmpBufMixRight[0], len, outputGain);
 		}
 
 		clearFloats(&tmpBufMixLeft[0], &tmpBufMixRight[0], len);
@@ -1374,19 +1388,19 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 			}
 		}
 		if (reverbDryLeft != NULL) {
-			la32FloatToBit16sFunc(reverbDryLeft, &tmpBufMixLeft[0], len);
+			la32FloatToBit16sFunc(reverbDryLeft, &tmpBufMixLeft[0], len, outputGain);
 		}
 		if (reverbDryRight != NULL) {
-			la32FloatToBit16sFunc(reverbDryRight, &tmpBufMixRight[0], len);
+			la32FloatToBit16sFunc(reverbDryRight, &tmpBufMixRight[0], len, outputGain);
 		}
 
 		// FIXME: Note that on the real devices, reverb input and output are signed linear 16-bit (well, kinda, there's some fudging) PCM, not float.
 		reverbModel->process(&tmpBufMixLeft[0], &tmpBufMixRight[0], &tmpBufReverbOutLeft[0], &tmpBufReverbOutRight[0], len);
 		if (reverbWetLeft != NULL) {
-			floatToBit16s_pure(reverbWetLeft, &tmpBufReverbOutLeft[0], len);
+			floatToBit16s_pure(reverbWetLeft, &tmpBufReverbOutLeft[0], len, reverbOutputGain);
 		}
 		if (reverbWetRight != NULL) {
-			floatToBit16s_pure(reverbWetRight, &tmpBufReverbOutRight[0], len);
+			floatToBit16s_pure(reverbWetRight, &tmpBufReverbOutRight[0], len, reverbOutputGain);
 		}
 	}
 	partialManager->clearAlreadyOutputed();

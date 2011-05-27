@@ -47,5 +47,6 @@ float comb::getfeedback()
 
 void comb::deletebuffer()
 {
-	delete buffer;
+	delete[] buffer;
+	buffer = 0;
 }
