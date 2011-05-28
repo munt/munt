@@ -179,17 +179,18 @@ void AReverbModel::process(const float *inLeft, const float *inRight, float *out
 
 		link = allpasses[0]->process(-filterhist2);
 		link = allpasses[1]->process(link);
+
+		// this implements a comb filter cross-linked with the fourth allpass filter
+		link += combhist * decayTime;
 		link = allpasses[2]->process(link);
 		link = delays[0]->process(link);
 		outL1 = link;
 		link = delays[1]->process(link);
 		outR1 = link;
-
-		// this implements a comb filter cross-linked with the fourth allpass filter
-		link += combhist * decayTime;
 		link = allpasses[3]->process(link);
 		link = delays[2]->process(link);
 		outL2 = link;
+		link = allpasses[4]->process(link);
 		link = delays[3]->process(link);
 		outR2 = link;
 		link = delays[4]->process(link);
