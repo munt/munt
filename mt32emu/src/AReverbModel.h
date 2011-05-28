@@ -20,7 +20,7 @@
 
 namespace MT32Emu {
 
-#define numAllpasses 5
+#define numAllpasses 6
 #define numDelays 5
 
 struct AReverbSettings {
@@ -81,7 +81,7 @@ public:
 
 // Default reverb settings for modes 0-2
 
-static Bit32u reverbMode0allpasses[] = {78, 729, 994, 389, 1389};
+static Bit32u reverbMode0allpasses[] = {729, 78, 394, 994, 1250, 1889};
 static Bit32u reverbMode0delays[] = {846, 4, 1819, 778, 346};
 static float reverbMode0Times[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.9f};
 static float reverbMode0Levels[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 1.01575f};

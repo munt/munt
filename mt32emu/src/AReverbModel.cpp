@@ -185,12 +185,13 @@ void AReverbModel::process(const float *inLeft, const float *inRight, float *out
 		link = allpasses[2]->process(link);
 		link = delays[0]->process(link);
 		outL1 = link;
+		link = allpasses[3]->process(link);
 		link = delays[1]->process(link);
 		outR1 = link;
-		link = allpasses[3]->process(link);
+		link = allpasses[4]->process(link);
 		link = delays[2]->process(link);
 		outL2 = link;
-		link = allpasses[4]->process(link);
+		link = allpasses[5]->process(link);
 		link = delays[3]->process(link);
 		outR2 = link;
 		link = delays[4]->process(link);
