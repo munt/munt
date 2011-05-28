@@ -33,6 +33,9 @@ static bool quiet = false;
 static const int DEFAULT_BUFFER_SIZE = 128 * 1024;
 static const int DEFAULT_SAMPLE_RATE = 32000;
 
+// Maximum number of frames to render in each pass while waiting for reverb to become inactive.
+static const unsigned int MAX_REVERB_END_FRAMES = 8192;
+
 static const int HEADEROFFS_RIFFLEN = 4;
 static const int HEADEROFFS_SAMPLERATE = 24;
 static const int HEADEROFFS_BYTERATE = 28;
@@ -75,9 +78,9 @@ static bool writeWAVEHeader(FILE *dstFile, int sampleRate) {
 	return fwrite(waveHeader, 1, sizeof(waveHeader), dstFile) == sizeof(waveHeader);
 }
 
-static bool fillWAVESizes(FILE *dstFile, int numSamples) {
+static bool fillWAVESizes(FILE *dstFile, int numFrames) {
 	// FIXME: Check return codes, etc.
-	int dataSize = numSamples * 4;
+	int dataSize = numFrames * 4;
 	int riffSize = dataSize + 28;
 	if (fseek(dstFile, HEADEROFFS_RIFFLEN, SEEK_SET))
 		return false;
@@ -160,86 +163,105 @@ static bool playSysexFile(MT32Emu::Synth *synth, char *syxFileName) {
 	return ok;
 }
 
-/**
- * Render numSamples samples to the buffer.
- * bufferSampleSize determines the maximum number of samples to be rendered by the emulator in one pass.
- * This can have a big impact on performance (more at a time=better).
- */
-static unsigned int render(MT32Emu::Synth *synth, MT32Emu::Bit16s sampleBuffer[], unsigned int bufferSampleSize, FILE *dstFile, unsigned int numSamples, bool &waitingForNoise) {
-	unsigned int skippedSamples = 0;
-	unsigned int renderedSamples = numSamples;
-	while (numSamples > 0) {
-		unsigned int renderedSamplesThisPass = numSamples > bufferSampleSize ? bufferSampleSize : numSamples;
-		synth->render(sampleBuffer, renderedSamplesThisPass);
-		for (unsigned int i = 0; i < renderedSamplesThisPass; i++) {
-			if (waitingForNoise) {
-				if (sampleBuffer[i] == 0 && sampleBuffer[i + 1] == 0) {
-					skippedSamples++;
-					continue;
-				}
-				waitingForNoise = false;
-			}
-			fputc(sampleBuffer[i * 2] & 0xFF, dstFile);
-			fputc((sampleBuffer[i * 2] >> 8) & 0xFF, dstFile);
-			fputc(sampleBuffer[i * 2 + 1] & 0xFF, dstFile);
-			fputc((sampleBuffer[i * 2 + 1] >> 8) & 0xFF, dstFile);
+static unsigned long writeSilence(FILE *dstFile, unsigned int channelCount, bool noiseDetected, bool &waitingForNoise, unsigned long &silenceCount) {
+	int writtenFrames;
+	if (waitingForNoise) {
+		waitingForNoise = !noiseDetected;
+		writtenFrames = 0;
+	} else {
+		writtenFrames = silenceCount;
+		for (unsigned long i = 0; i < writtenFrames * sizeof(MT32Emu::Bit16s) * channelCount; i++) {
+			fputc(0, dstFile);
 		}
-		numSamples -= renderedSamplesThisPass;
 	}
-	return renderedSamples - skippedSamples;
+	silenceCount = 0;
+	return writtenFrames;
 }
 
-static unsigned int renderRaw(MT32Emu::Synth *synth, MT32Emu::Bit16s *sampleBuffer[6], unsigned int bufferSampleSize, FILE *dstFile, unsigned int numSamples, bool &waitingForNoise, int rawChannelMap[], int rawChannelCount) {
-	unsigned int skippedSamples = 0;
-	unsigned int renderedSamples = numSamples;
-	while (numSamples > 0) {
-		unsigned int renderedSamplesThisPass = numSamples > bufferSampleSize ? bufferSampleSize : numSamples;
-		synth->renderStreams(sampleBuffer[0], sampleBuffer[1], sampleBuffer[2], sampleBuffer[3], sampleBuffer[4], sampleBuffer[5], renderedSamplesThisPass);
-		for (unsigned int i = 0; i < renderedSamplesThisPass; i++) {
-			if (waitingForNoise) {
-				bool allSilent = false;
-				for (int chanMapIx = 0; chanMapIx < rawChannelCount; chanMapIx++) {
-					if (rawChannelMap[chanMapIx] >= 0 && sampleBuffer[rawChannelMap[chanMapIx]][i] != 0) {
-						break;
-					}
-					if (chanMapIx == rawChannelCount - 1) {
-						allSilent = true;
-					}
-				}
-				if (allSilent) {
-					skippedSamples++;
-					continue;
-				}
-				waitingForNoise = false;
+/**
+ * Render frameCount frames to the buffer.
+ * bufferFrameCount determines the maximum number of frames to be rendered by the emulator in one pass.
+ * This can have a big impact on performance (more at a time=better).
+ */
+static unsigned long renderStereo(MT32Emu::Synth *synth, MT32Emu::Bit16s *stereoSampleBuffer, unsigned int bufferFrameCount, FILE *dstFile, unsigned int frameCount, bool &waitingForNoise, unsigned long &silenceCount) {
+	unsigned int writtenFrames = 0;
+	while (frameCount > 0) {
+		unsigned int renderedFramesThisPass = frameCount > bufferFrameCount ? bufferFrameCount : frameCount;
+		synth->render(stereoSampleBuffer, renderedFramesThisPass);
+		for (unsigned int i = 0; i < renderedFramesThisPass; i++) {
+			bool silent = stereoSampleBuffer[i] == 0 && stereoSampleBuffer[i + 1] == 0;
+			if (silent) {
+				silenceCount++;
+				continue;
 			}
+			writtenFrames += writeSilence(dstFile, 2, true, waitingForNoise, silenceCount);
+			fputc(stereoSampleBuffer[i * 2] & 0xFF, dstFile);
+			fputc((stereoSampleBuffer[i * 2] >> 8) & 0xFF, dstFile);
+			fputc(stereoSampleBuffer[i * 2 + 1] & 0xFF, dstFile);
+			fputc((stereoSampleBuffer[i * 2 + 1] >> 8) & 0xFF, dstFile);
+			writtenFrames++;
+		}
+		frameCount -= renderedFramesThisPass;
+	}
+	return writtenFrames;
+}
+
+static unsigned long renderRaw(MT32Emu::Synth *synth, MT32Emu::Bit16s *rawSampleBuffer[6], unsigned int bufferFrameCount, FILE *dstFile, unsigned int frameCount, bool &waitingForNoise, unsigned long &silenceCount, int rawChannelMap[], int rawChannelCount) {
+	unsigned int writtenFrames = 0;
+	while (frameCount > 0) {
+		unsigned int renderedFramesThisPass = frameCount > bufferFrameCount ? bufferFrameCount : frameCount;
+		synth->renderStreams(rawSampleBuffer[0], rawSampleBuffer[1], rawSampleBuffer[2], rawSampleBuffer[3], rawSampleBuffer[4], rawSampleBuffer[5], renderedFramesThisPass);
+		for (unsigned int i = 0; i < renderedFramesThisPass; i++) {
+			bool allSilent = false;
+			for (int chanMapIx = 0; chanMapIx < rawChannelCount; chanMapIx++) {
+				if (rawChannelMap[chanMapIx] >= 0 && rawSampleBuffer[rawChannelMap[chanMapIx]][i] != 0) {
+					break;
+				}
+				if (chanMapIx == rawChannelCount - 1) {
+					allSilent = true;
+				}
+			}
+			if (allSilent) {
+				silenceCount++;
+				continue;
+			}
+			writtenFrames += writeSilence(dstFile, rawChannelCount, true, waitingForNoise, silenceCount);
 			for (int chanMapIx = 0; chanMapIx < rawChannelCount; chanMapIx++) {
 				if (rawChannelMap[chanMapIx] < 0) {
 					fputc(0, dstFile);
 					fputc(0, dstFile);
 				} else {
-					MT32Emu::Bit16s sample = sampleBuffer[rawChannelMap[chanMapIx]][i];
+					MT32Emu::Bit16s sample = rawSampleBuffer[rawChannelMap[chanMapIx]][i];
 					fputc((sample >> 8) & 0xFF, dstFile);
 					fputc(sample & 0xFF, dstFile);
 				}
 			}
+			writtenFrames++;
 		}
-		numSamples -= renderedSamplesThisPass;
+		frameCount -= renderedFramesThisPass;
 	}
-	return renderedSamples - skippedSamples;
+	return writtenFrames;
 }
 
-static unsigned long processSMF(FILE *dstFile, MT32Emu::Synth *synth, smf_t *smf, int sampleRate, unsigned int bufferSize, unsigned int endAfter, bool renderUntilInactive, bool recordInitialSilence, int rawChannelMap[], int rawChannelCount) {
-	MT32Emu::Bit16s *sampleBuffer = NULL;
-	MT32Emu::Bit16s *rawSampleBuffer[] = {NULL, NULL, NULL, NULL, NULL, NULL};
+static unsigned long render(MT32Emu::Synth *synth, MT32Emu::Bit16s *stereoSampleBuffer, MT32Emu::Bit16s *rawSampleBuffer[6], unsigned int bufferFrameCount, FILE *dstFile, unsigned int frameCount, bool &waitingForNoise, unsigned long &silenceCount, int rawChannelMap[], int rawChannelCount) {
+	if (rawChannelCount > 0) {
+		return renderRaw(synth, rawSampleBuffer, bufferFrameCount, dstFile, frameCount, waitingForNoise, silenceCount, rawChannelMap, rawChannelCount);
+	}
+	return renderStereo(synth, stereoSampleBuffer, bufferFrameCount, dstFile, frameCount, waitingForNoise, silenceCount);
+}
+
+static unsigned long processSMF(FILE *dstFile, MT32Emu::Synth *synth, smf_t *smf, int sampleRate, MT32Emu::Bit16s *stereoSampleBuffer, MT32Emu::Bit16s *rawSampleBuffer[6], unsigned int bufferSize, unsigned int endAfter, bool renderUntilInactive, bool recordInitialSilence, int rawChannelMap[], int rawChannelCount) {
 	bool waitingForNoise = !recordInitialSilence;
+	int channelCount = rawChannelCount > 0 ? rawChannelCount : 2;
 
 	int unterminatedSysexLen = 0;
 	unsigned char *unterminatedSysex = NULL;
-	unsigned long renderedSamples = 0;
-	unsigned long writtenSamples = 0;
+	unsigned long renderedFrames = 0;
+	unsigned long writtenFrames = 0;
+	unsigned long silenceCount = 0;
 	for (;;) {
 		smf_event_t *event = smf_get_next_event(smf);
-		unsigned long eventSampleIx;
+		unsigned long eventFrameIx;
 
 		if (event == NULL) {
 			break;
@@ -247,32 +269,17 @@ static unsigned long processSMF(FILE *dstFile, MT32Emu::Synth *synth, smf_t *smf
 
 		assert(event->track->track_number >= 0);
 
-		eventSampleIx = secondsToSamples(event->time_seconds, sampleRate);
-		if (eventSampleIx < renderedSamples) {
+		eventFrameIx = secondsToSamples(event->time_seconds, sampleRate);
+		if (eventFrameIx < renderedFrames) {
 			fprintf(stderr, "Event went back in time!\n");
 		} else {
-			if (eventSampleIx > endAfter) {
-				eventSampleIx = endAfter;
+			if (eventFrameIx > endAfter) {
+				eventFrameIx = endAfter;
 			}
-			unsigned int renderLength = eventSampleIx - renderedSamples;
-			if (rawChannelCount > 0) {
-				if (rawSampleBuffer[0] == NULL) {
-					rawSampleBuffer[0] = new MT32Emu::Bit16s[bufferSize];
-					rawSampleBuffer[1] = new MT32Emu::Bit16s[bufferSize];
-					rawSampleBuffer[2] = new MT32Emu::Bit16s[bufferSize];
-					rawSampleBuffer[3] = new MT32Emu::Bit16s[bufferSize];
-					rawSampleBuffer[4] = new MT32Emu::Bit16s[bufferSize];
-					rawSampleBuffer[5] = new MT32Emu::Bit16s[bufferSize];
-				}
-				writtenSamples += renderRaw(synth, rawSampleBuffer, bufferSize, dstFile, renderLength, waitingForNoise, rawChannelMap, rawChannelCount);
-			} else {
-				if (sampleBuffer == NULL) {
-					sampleBuffer = new MT32Emu::Bit16s[bufferSize * 2];
-				}
-				writtenSamples += render(synth, sampleBuffer, bufferSize, dstFile, renderLength, waitingForNoise);
-			}
-			renderedSamples += renderLength;
-			if (eventSampleIx == endAfter) {
+			unsigned int renderLength = eventFrameIx - renderedFrames;
+			writtenFrames += render(synth, stereoSampleBuffer, rawSampleBuffer, bufferSize, dstFile, renderLength, waitingForNoise, silenceCount, rawChannelMap, rawChannelCount);
+			renderedFrames += renderLength;
+			if (eventFrameIx == endAfter) {
 				break;
 			}
 		}
@@ -342,35 +349,31 @@ static unsigned long processSMF(FILE *dstFile, MT32Emu::Synth *synth, smf_t *smf
 			}
 		}
 	}
+	writtenFrames += writeSilence(dstFile, channelCount, false, waitingForNoise, silenceCount);
 	if (renderUntilInactive) {
-		// FIXME: Very inefficient, perhaps we should add a renderWhileActive() to Synth.
-		while (renderedSamples < endAfter && synth->isActive()) {
-			if (rawChannelCount > 0) {
-				if (rawSampleBuffer[0] == NULL) {
-					rawSampleBuffer[0] = new MT32Emu::Bit16s[1];
-					rawSampleBuffer[1] = new MT32Emu::Bit16s[1];
-					rawSampleBuffer[2] = new MT32Emu::Bit16s[1];
-					rawSampleBuffer[3] = new MT32Emu::Bit16s[1];
-					rawSampleBuffer[4] = new MT32Emu::Bit16s[1];
-					rawSampleBuffer[5] = new MT32Emu::Bit16s[1];
-				}
-				writtenSamples += renderRaw(synth, rawSampleBuffer, 1, dstFile, 1, waitingForNoise, rawChannelMap, rawChannelCount);
-			} else {
-				MT32Emu::Bit16s tmpBuffer[2];
-				writtenSamples += render(synth, tmpBuffer, 1, dstFile, 1, waitingForNoise);
+		while (renderedFrames < endAfter && synth->hasActivePartials()) {
+			// FIXME: Rendering one sample at a time is very inefficient, but it's important for
+			// some tests to be able to see the precise frame when partials become inactive.
+			// Perhaps we should add a renderWhilePartialsActive() to Synth
+			// or add a getter for "the minimum number of frames remaining with active partials if
+			// no further MIDI is sent". Which would make quite a function name.
+			writtenFrames += render(synth, stereoSampleBuffer, rawSampleBuffer, bufferSize, dstFile, 1, waitingForNoise, silenceCount, rawChannelMap, rawChannelCount);
+			renderedFrames++;
+		}
+		writtenFrames += writeSilence(dstFile, channelCount, false, waitingForNoise, silenceCount);
+		unsigned int reverbEndFrames = MAX_REVERB_END_FRAMES < bufferSize ? MAX_REVERB_END_FRAMES : bufferSize;
+		while (renderedFrames < endAfter && synth->isActive()) {
+			// Render a healthy number of frames while waiting for reverb to become inactive.
+			// Note that once we've detected inactivity, silent samples will not be written.
+			unsigned int renderLength = reverbEndFrames;
+			if (renderLength > (endAfter - renderedFrames)) {
+				renderLength = endAfter - renderedFrames;
 			}
-			renderedSamples++;
+			writtenFrames += render(synth, stereoSampleBuffer, rawSampleBuffer, bufferSize, dstFile, renderLength, waitingForNoise, silenceCount, rawChannelMap, rawChannelCount);
 		}
 	}
 	delete[] unterminatedSysex;
-	delete[] sampleBuffer;
-	delete[] rawSampleBuffer[0];
-	delete[] rawSampleBuffer[1];
-	delete[] rawSampleBuffer[2];
-	delete[] rawSampleBuffer[3];
-	delete[] rawSampleBuffer[4];
-	delete[] rawSampleBuffer[5];
-	return writtenSamples;
+	return writtenFrames;
 }
 
 static void printVersion(void) {
@@ -573,7 +576,27 @@ int main(int argc, char *argv[]) {
 						free(decoded);
 					}
 					assert(smf->number_of_tracks >= 1);
-					unsigned long writtenSamples = processSMF(dstFile, synth, smf, sampleRate, bufferSize, endAfter, renderUntilInactive, recordInitialSilence, rawChannelMap, rawChannelCount);
+					MT32Emu::Bit16s *stereoSampleBuffer = NULL;
+					MT32Emu::Bit16s *rawSampleBuffer[] = {NULL, NULL, NULL, NULL, NULL, NULL};
+					if (rawChannelCount > 0) {
+						rawSampleBuffer[0] = new MT32Emu::Bit16s[bufferSize];
+						rawSampleBuffer[1] = new MT32Emu::Bit16s[bufferSize];
+						rawSampleBuffer[2] = new MT32Emu::Bit16s[bufferSize];
+						rawSampleBuffer[3] = new MT32Emu::Bit16s[bufferSize];
+						rawSampleBuffer[4] = new MT32Emu::Bit16s[bufferSize];
+						rawSampleBuffer[5] = new MT32Emu::Bit16s[bufferSize];
+					} else {
+						stereoSampleBuffer = new MT32Emu::Bit16s[bufferSize * 2];
+					}
+
+					unsigned long writtenSamples = processSMF(dstFile, synth, smf, sampleRate, stereoSampleBuffer, rawSampleBuffer, bufferSize, endAfter, renderUntilInactive, recordInitialSilence, rawChannelMap, rawChannelCount);
+					delete[] stereoSampleBuffer;
+					delete[] rawSampleBuffer[0];
+					delete[] rawSampleBuffer[1];
+					delete[] rawSampleBuffer[2];
+					delete[] rawSampleBuffer[3];
+					delete[] rawSampleBuffer[4];
+					delete[] rawSampleBuffer[5];
 					if (rawChannelCount == 0 && !fillWAVESizes(dstFile, writtenSamples)) {
 						fprintf(stderr, "Error writing final sizes to WAVE header\n");
 					}
