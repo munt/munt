@@ -32,6 +32,26 @@ RingBuffer::~RingBuffer() {
 	size = 0;
 }
 
+float RingBuffer::next() {
+	index++;
+	if (index >= size) {
+		index = 0;
+	}
+	return buffer[index];
+}
+
+bool RingBuffer::isEmpty() {
+	if (buffer == NULL) return true;
+
+	float *buf = buffer;
+	float total = 0;
+	for (Bit32u i = 0; i < size; i++) {
+		total += (*buf < 0 ? -*buf : *buf);
+		buf++;
+	}
+	return ((total / size) < .0002 ? true : false);
+}
+
 void RingBuffer::mute() {
 	float *buf = buffer;
 	for (Bit32u i = 0; i < size; i++) {
@@ -51,14 +71,7 @@ float AllPassFilter::process(float in) {
 
 	float out;
 
-	// move to the next position
-	index++;
-	if (index >= size) {
-		index = 0;
-	}
-
-	// get buffer output
-	out = buffer[index];
+	out = next();
 
 	// store input - feedback / 2
 	buffer[index] = in - 0.5f * out;
@@ -72,14 +85,7 @@ float Delay::process(float in) {
 
 	float out;
 
-	// move to the next position
-	index++;
-	if (index >= size) {
-		index = 0;
-	}
-
-	// get buffer output
-	out = buffer[index];
+	out = next();
 
 	// store input
 	buffer[index] = in;
@@ -89,7 +95,6 @@ float Delay::process(float in) {
 }
 
 AReverbModel::AReverbModel(const AReverbSettings *newSettings) {
-	bActive = false;
 	currentSettings = newSettings;
 	for (Bit32u i = 0; i < numAllpasses; i++) {
 		allpasses[i] = NULL;
@@ -150,6 +155,13 @@ void AReverbModel::setParameters(Bit8u time, Bit8u level) {
 }
 
 bool AReverbModel::isActive() const {
+	bool bActive = false;
+	for (Bit32u i = 0; i < numAllpasses; i++) {
+		bActive |= !allpasses[i]->isEmpty();
+	}
+	for (Bit32u i = 0; i < numDelays; i++) {
+		bActive |= !delays[i]->isEmpty();
+	}
 	return bActive;
 }
 

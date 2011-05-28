@@ -41,6 +41,8 @@ protected:
 public:
 	RingBuffer(Bit32u size);
 	~RingBuffer();
+	float next();
+	bool isEmpty();
 	void mute();
 	float process(float in);
 };
@@ -66,7 +68,6 @@ class AReverbModel : public ReverbModel {
 	float wetLevel;
 	float filterhist1, filterhist2;
 	float combhist;
-	bool bActive;
 	void mute();
 public:
 	AReverbModel(const AReverbSettings *newSettings);
