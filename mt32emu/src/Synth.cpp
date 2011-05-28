@@ -1198,7 +1198,9 @@ void Synth::refreshSystemReserveSettings() {
 void Synth::refreshSystemChanAssign() {
 	memset(chantable, -1, sizeof(chantable));
 
-	for (unsigned int i = 0; i < 9; i++) {
+	// It seems that in case of assigning a channel to multiple parts the first assignment wins
+	// FIXME: need to be confirmed
+	for (int i = 8; i >= 0; i--) {
 		//LOG(LOG_MISC|LOG_ERROR,"Part %d set to MIDI channel %d",i,mt32ram.system.chanAssign[i]);
 		if (mt32ram.system.chanAssign[i] == 16 && parts[i] != NULL) {
 			parts[i]->allSoundOff();
