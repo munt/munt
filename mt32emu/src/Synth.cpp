@@ -25,9 +25,12 @@
 #include "ANSIFile.h"
 #include "PartialManager.h"
 
+#if MT32EMU_USE_AREVERBMODEL == 1
 #include "AReverbModel.h"
-#include "DelayReverb.h"
+#else
 #include "FreeverbModel.h"
+#endif
+#include "DelayReverb.h"
 
 namespace MT32Emu {
 
