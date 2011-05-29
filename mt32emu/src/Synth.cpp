@@ -149,7 +149,7 @@ Synth::Synth() {
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
 	setOutputGain(1.0f);
-	setReverbOutputGain(1.0f);
+	setReverbOutputGain(0.68f);
 	partialManager = NULL;
 	memset(parts, 0, sizeof(parts));
 }
