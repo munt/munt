@@ -90,7 +90,15 @@ static void floatToBit16s_nice(Bit16s *target, const float *source, Bit32u len, 
 	}
 }
 
-static void floatToBit16s_pure(Bit16s *target, const float *source, Bit32u len, float outputGain) {
+static void floatToBit16s_pure(Bit16s *target, const float *source, Bit32u len, float /*outputGain*/) {
+	while (len--) {
+		*target = clipBit16s((Bit32s)floor(*source * 8192.0f));
+		source++;
+		target++;
+	}
+}
+
+static void floatToBit16s_reverb(Bit16s *target, const float *source, Bit32u len, float outputGain) {
 	float gain = outputGain * 8192.0f;
 	while (len--) {
 		*target = clipBit16s((Bit32s)floor(*source * gain));
@@ -204,16 +212,20 @@ void Synth::setDACInputMode(DACInputMode mode) {
 	switch(mode) {
 	case DACInputMode_GENERATION1:
 		la32FloatToBit16sFunc = floatToBit16s_generation1;
+		reverbFloatToBit16sFunc = floatToBit16s_reverb;
 		break;
 	case DACInputMode_GENERATION2:
 		la32FloatToBit16sFunc = floatToBit16s_generation2;
+		reverbFloatToBit16sFunc = floatToBit16s_reverb;
 		break;
 	case DACInputMode_PURE:
 		la32FloatToBit16sFunc = floatToBit16s_pure;
+		reverbFloatToBit16sFunc = floatToBit16s_pure;
 		break;
 	case DACInputMode_NICE:
 	default:
 		la32FloatToBit16sFunc = floatToBit16s_nice;
+		reverbFloatToBit16sFunc = floatToBit16s_reverb;
 		break;
 	}
 }
@@ -1411,10 +1423,10 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 		// FIXME: Note that on the real devices, reverb input and output are signed linear 16-bit (well, kinda, there's some fudging) PCM, not float.
 		reverbModel->process(&tmpBufMixLeft[0], &tmpBufMixRight[0], &tmpBufReverbOutLeft[0], &tmpBufReverbOutRight[0], len);
 		if (reverbWetLeft != NULL) {
-			floatToBit16s_pure(reverbWetLeft, &tmpBufReverbOutLeft[0], len, reverbOutputGain);
+			reverbFloatToBit16sFunc(reverbWetLeft, &tmpBufReverbOutLeft[0], len, reverbOutputGain);
 		}
 		if (reverbWetRight != NULL) {
-			floatToBit16s_pure(reverbWetRight, &tmpBufReverbOutRight[0], len, reverbOutputGain);
+			reverbFloatToBit16sFunc(reverbWetRight, &tmpBufReverbOutRight[0], len, reverbOutputGain);
 		}
 	}
 	partialManager->clearAlreadyOutputed();
