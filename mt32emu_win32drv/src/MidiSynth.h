@@ -42,7 +42,7 @@ private:
 	Bit16s *stream[buffers];
 
 	bool pendingClose;
-	DWORD playCursor;
+	DWORD playCursor, playCursorWrap;
 
 	Synth *synth;
 
