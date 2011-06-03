@@ -131,7 +131,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	} else {
 		pcmWave = NULL;
 		wavePos = 0.0f;
-		pitch = 0;
+		lastFreq = 0.0;
 	}
 
 	// CONFIRMED: pulseWidthVal calculation is based on information from Mok
@@ -195,18 +195,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
 		float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
 
-		Bit16u newPitch = tvp->nextPitch();
-
-		// EXP2F(pitch / 4096.0f - 16.0f) * 32000.0f
+		Bit16u pitch = tvp->nextPitch();
 		float freq = synth->tables.pitchToFreq[pitch];
-
-		// In case of pitch change we need to scale wavePos correspondingly to avoid jumps
-		if (pitch != newPitch) {
-			float newFreq = synth->tables.pitchToFreq[newPitch];
-			wavePos *= freq / newFreq;
-			freq = newFreq;
-			pitch = newPitch;
-		}
 
 		if (patchCache->PCMPartial) {
 			// Render PCM waveform
@@ -232,7 +222,10 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			pcmPosition = newPCMPosition;
 		} else {
 			// Render synthesised waveform
-
+			if (freq != lastFreq) {
+				wavePos *= lastFreq / freq;
+				lastFreq = freq;
+			}
 			Bit32u cutoffModifierRampVal = cutoffModifierRamp.nextValue();
 			if (cutoffModifierRamp.checkInterrupt()) {
 				tvf->handleInterrupt();

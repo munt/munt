@@ -14,16 +14,16 @@ revmodel::revmodel(float scaletuning)
 
 	// Allocate buffers for the components
 	for (i = 0; i < numcombs; i++) {
-		bufsize = scaletuning * combtuning[i];
+		bufsize = int(scaletuning * combtuning[i]);
 		combL[i].setbuffer(new float[bufsize], bufsize);
-		bufsize += scaletuning * stereospread;
+		bufsize += int(scaletuning * stereospread);
 		combR[i].setbuffer(new float[bufsize], bufsize);
 	}
 	for (i = 0; i < numallpasses; i++) {
-		bufsize = scaletuning * allpasstuning[i];
+		bufsize = int(scaletuning * allpasstuning[i]);
 		allpassL[i].setbuffer(new float[bufsize], bufsize);
 		allpassL[i].setfeedback(0.5f);
-		bufsize += scaletuning * stereospread;
+		bufsize += int(scaletuning * stereospread);
 		allpassR[i].setbuffer(new float[bufsize], bufsize);
 		allpassR[i].setfeedback(0.5f);
 	}

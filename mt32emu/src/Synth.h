@@ -334,6 +334,7 @@ private:
 	bool reverbOverridden;
 
 	FloatToBit16sFunc la32FloatToBit16sFunc;
+	FloatToBit16sFunc reverbFloatToBit16sFunc;
 	float outputGain;
 	float reverbOutputGain;
 

@@ -25,8 +25,12 @@
 #include "ANSIFile.h"
 #include "PartialManager.h"
 
-#include "DelayReverb.h"
+#if MT32EMU_USE_AREVERBMODEL == 1
+#include "AReverbModel.h"
+#else
 #include "FreeverbModel.h"
+#endif
+#include "DelayReverb.h"
 
 namespace MT32Emu {
 
@@ -86,7 +90,15 @@ static void floatToBit16s_nice(Bit16s *target, const float *source, Bit32u len, 
 	}
 }
 
-static void floatToBit16s_pure(Bit16s *target, const float *source, Bit32u len, float outputGain) {
+static void floatToBit16s_pure(Bit16s *target, const float *source, Bit32u len, float /*outputGain*/) {
+	while (len--) {
+		*target = clipBit16s((Bit32s)floor(*source * 8192.0f));
+		source++;
+		target++;
+	}
+}
+
+static void floatToBit16s_reverb(Bit16s *target, const float *source, Bit32u len, float outputGain) {
 	float gain = outputGain * 8192.0f;
 	while (len--) {
 		*target = clipBit16s((Bit32s)floor(*source * gain));
@@ -130,14 +142,22 @@ Synth::Synth() {
 	isOpen = false;
 	reverbEnabled = true;
 	reverbOverridden = false;
+
+#if MT32EMU_USE_AREVERBMODEL == 1
+	reverbModels[0] = new AReverbModel(&reverbMode0Settings);
+	reverbModels[1] = new AReverbModel(&reverbMode1Settings);
+	reverbModels[2] = new AReverbModel(&reverbMode2Settings);
+#else
 	reverbModels[0] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 0, 0.5f);
 	reverbModels[1] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 1, 0.5f);
 	reverbModels[2] = new FreeverbModel(0.4f, 0.939522749f, 0.38f, 2, 0.05f);
+#endif
+
 	reverbModels[3] = new DelayReverb();
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
 	setOutputGain(1.0f);
-	setReverbOutputGain(1.0f);
+	setReverbOutputGain(0.68f);
 	partialManager = NULL;
 	memset(parts, 0, sizeof(parts));
 }
@@ -192,16 +212,20 @@ void Synth::setDACInputMode(DACInputMode mode) {
 	switch(mode) {
 	case DACInputMode_GENERATION1:
 		la32FloatToBit16sFunc = floatToBit16s_generation1;
+		reverbFloatToBit16sFunc = floatToBit16s_reverb;
 		break;
 	case DACInputMode_GENERATION2:
 		la32FloatToBit16sFunc = floatToBit16s_generation2;
+		reverbFloatToBit16sFunc = floatToBit16s_reverb;
 		break;
 	case DACInputMode_PURE:
 		la32FloatToBit16sFunc = floatToBit16s_pure;
+		reverbFloatToBit16sFunc = floatToBit16s_pure;
 		break;
 	case DACInputMode_NICE:
 	default:
 		la32FloatToBit16sFunc = floatToBit16s_nice;
+		reverbFloatToBit16sFunc = floatToBit16s_reverb;
 		break;
 	}
 }
@@ -1189,7 +1213,9 @@ void Synth::refreshSystemReserveSettings() {
 void Synth::refreshSystemChanAssign() {
 	memset(chantable, -1, sizeof(chantable));
 
-	for (unsigned int i = 0; i < 9; i++) {
+	// It seems that in case of assigning a channel to multiple parts the first assignment wins
+	// FIXME: need to be confirmed
+	for (int i = 8; i >= 0; i--) {
 		//LOG(LOG_MISC|LOG_ERROR,"Part %d set to MIDI channel %d",i,mt32ram.system.chanAssign[i]);
 		if (mt32ram.system.chanAssign[i] == 16 && parts[i] != NULL) {
 			parts[i]->allSoundOff();
@@ -1397,10 +1423,10 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 		// FIXME: Note that on the real devices, reverb input and output are signed linear 16-bit (well, kinda, there's some fudging) PCM, not float.
 		reverbModel->process(&tmpBufMixLeft[0], &tmpBufMixRight[0], &tmpBufReverbOutLeft[0], &tmpBufReverbOutRight[0], len);
 		if (reverbWetLeft != NULL) {
-			floatToBit16s_pure(reverbWetLeft, &tmpBufReverbOutLeft[0], len, reverbOutputGain);
+			reverbFloatToBit16sFunc(reverbWetLeft, &tmpBufReverbOutLeft[0], len, reverbOutputGain);
 		}
 		if (reverbWetRight != NULL) {
-			floatToBit16s_pure(reverbWetRight, &tmpBufReverbOutRight[0], len, reverbOutputGain);
+			reverbFloatToBit16sFunc(reverbWetRight, &tmpBufReverbOutRight[0], len, reverbOutputGain);
 		}
 	}
 	partialManager->clearAlreadyOutputed();

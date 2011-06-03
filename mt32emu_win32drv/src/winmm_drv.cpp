@@ -17,11 +17,12 @@
 
 #include "stdafx.h"
 
-#define MAX_DRIVERS 1
-#define MAX_CLIENTS 1 // Per driver
+#define MAX_DRIVERS 8
+#define MAX_CLIENTS 8 // Per driver
 
 static MT32Emu::MidiSynth midiSynth;
-static bool AlreadyOpened = false;
+static bool alreadyOpened = false;
+static HWND hwnd = NULL;
 
 int driverCount;
 
@@ -34,6 +35,7 @@ struct Driver {
 		DWORD instance;
 		DWORD flags;
 		DWORD_PTR callback;
+		DWORD synth_instance;
 	} clients[MAX_CLIENTS];
 } drivers[MAX_DRIVERS];
 
@@ -205,17 +207,36 @@ LONG CloseDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD 
 STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1, DWORD dwParam2) {
 	MIDIHDR *midiHdr;
 	Driver *driver = &drivers[uDeviceID];
+	DWORD instance;
 	switch (uMsg) {
 	case MODM_OPEN:
-		if (AlreadyOpened) return MMSYSERR_NOERROR;
-		if (midiSynth.Init() != 0) return MMSYSERR_ERROR;
-		AlreadyOpened = true;
-		return OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
+		if (alreadyOpened) return MMSYSERR_NOERROR;
+		hwnd = FindWindow(L"mt32emu_class", NULL);
+		if (hwnd == NULL) {
+			//  Synth application not found
+			if (midiSynth.Init() != 0) return MMSYSERR_ERROR;
+			alreadyOpened = true;
+			return OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
+		} else {
+			DWORD msg[258] = {0, -1, 1}; // 0, handshake indicator, version, .exe filename of calling application
+			GetModuleFileNameA(GetModuleHandle(NULL), (char *)&msg[3], 255);
+			COPYDATASTRUCT cds = {dwUser, sizeof(msg), msg};
+			instance = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
+		}
+		DWORD res;
+		res = OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
+		driver->clients[*(DWORD *)dwUser].synth_instance = instance;
+		return res;
 
 	case MODM_CLOSE:
-		if (!AlreadyOpened) return MMSYSERR_INVALPARAM;
-		midiSynth.Reset();
-		return MMSYSERR_NOERROR;
+		if (hwnd == NULL) {
+			if (!alreadyOpened) return MMSYSERR_INVALPARAM;
+			midiSynth.Reset();
+			return MMSYSERR_NOERROR;
+		} else {
+			SendMessage(hwnd, WM_APP, driver->clients[dwUser].synth_instance, NULL); // end of session message
+			return CloseDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
+		}
 
 	case MODM_PREPARE:
 		return MMSYSERR_NOTSUPPORTED;
@@ -230,7 +251,19 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 		if (driver->clients[dwUser].allocated == false) {
 			return MMSYSERR_ERROR;
 		}
-		midiSynth.PushMIDI(dwParam1);
+		if (hwnd == NULL) {
+			midiSynth.PushMIDI(dwParam1);
+		} else {
+			DWORD msg[] = {0, 0, timeGetTime(), dwParam1}; // 0, short MIDI message indicator, timestamp, data
+			COPYDATASTRUCT cds = {driver->clients[dwUser].synth_instance, sizeof(msg), msg};
+			DWORD res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
+			if (res != 1) {
+				// Synth app was terminated. Fall back to integrated synth
+				hwnd = NULL;
+				if (midiSynth.Init() != 0) return MMSYSERR_ERROR;
+				alreadyOpened = true;
+			}
+		}
 		return MMSYSERR_NOERROR;
 
 	case MODM_LONGDATA:
@@ -241,7 +274,18 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 		if ((midiHdr->dwFlags & MHDR_PREPARED) == 0) {
 			return MIDIERR_UNPREPARED;
 		}
-		midiSynth.PlaySysex((MT32Emu::Bit8u*)midiHdr->lpData, midiHdr->dwBufferLength);
+		if (hwnd == NULL) {
+			midiSynth.PlaySysex((MT32Emu::Bit8u*)midiHdr->lpData, midiHdr->dwBufferLength);
+		} else {
+			COPYDATASTRUCT cds = {driver->clients[dwUser].synth_instance, midiHdr->dwBufferLength, midiHdr->lpData};
+			DWORD res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
+			if (res != 1) {
+				// Synth app was terminated. Fall back to integrated synth
+				hwnd = NULL;
+				if (midiSynth.Init() != 0) return MMSYSERR_ERROR;
+				alreadyOpened = true;
+			}
+		}
 		midiHdr->dwFlags = MHDR_DONE;
 		midiHdr->dwFlags &= ~MHDR_INQUEUE;
 		DoCallback(uDeviceID, dwUser, MOM_DONE, dwParam1, NULL);
