@@ -189,16 +189,18 @@ static unsigned long renderStereo(MT32Emu::Synth *synth, MT32Emu::Bit16s *stereo
 		unsigned int renderedFramesThisPass = frameCount > bufferFrameCount ? bufferFrameCount : frameCount;
 		synth->render(stereoSampleBuffer, renderedFramesThisPass);
 		for (unsigned int i = 0; i < renderedFramesThisPass; i++) {
-			bool silent = stereoSampleBuffer[i] == 0 && stereoSampleBuffer[i + 1] == 0;
+			unsigned int leftIx = i * 2;
+			unsigned int rightIx = leftIx + 1;
+			bool silent = stereoSampleBuffer[leftIx] == 0 && stereoSampleBuffer[rightIx] == 0;
 			if (silent) {
 				silenceCount++;
 				continue;
 			}
 			writtenFrames += writeSilence(dstFile, 2, true, waitingForNoise, silenceCount);
-			fputc(stereoSampleBuffer[i * 2] & 0xFF, dstFile);
-			fputc((stereoSampleBuffer[i * 2] >> 8) & 0xFF, dstFile);
-			fputc(stereoSampleBuffer[i * 2 + 1] & 0xFF, dstFile);
-			fputc((stereoSampleBuffer[i * 2 + 1] >> 8) & 0xFF, dstFile);
+			fputc(stereoSampleBuffer[leftIx] & 0xFF, dstFile);
+			fputc((stereoSampleBuffer[leftIx] >> 8) & 0xFF, dstFile);
+			fputc(stereoSampleBuffer[rightIx] & 0xFF, dstFile);
+			fputc((stereoSampleBuffer[rightIx] >> 8) & 0xFF, dstFile);
 			writtenFrames++;
 		}
 		frameCount -= renderedFramesThisPass;
