@@ -44,7 +44,7 @@ private:
 	// Distance in (possibly fractional) samples from the start of the current pulse
 	float wavePos;
 
-	Bit16u pitch;
+	float lastFreq;
 
 	float myBuffer[MAX_SAMPLES_PER_RUN];
 
