@@ -17,37 +17,60 @@
 #include <QtGlobal>
 
 #include <windows.h>
+#include <process.h>
+#include <iostream>
+#include "../MasterClock.h"
 
 #include "Win32Driver.h"
 
-#define CALLBACK_FUNCTION NULL
-
 static qint64 getCurrentNanos() {
-	return (qint64)clock() * NANOS_PER_SECOND / CLOCKS_PER_SEC;
+	return (qint64)timeGetTime() * MasterClock::NANOS_PER_SECOND / CLOCKS_PER_SEC;
 }
 
 LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	// FIXME: Get synthManager from somewhere...
 	switch (uMsg) {
-	case WM_APP:
-		synthManager->pushMIDIShortMessage(lParam, getCurrentNanos());
+	case WM_APP: // closing session
+		std::cout << "Session was closed\n";
+			// reset the synth if necessary
 		return 1;
+
 	case WM_COPYDATA:
+//		std::cout << "Incoming data! wParam = " << wParam << "\n";
 		COPYDATASTRUCT *cds;
 		cds = (COPYDATASTRUCT *)lParam;
-		synthManager->pushMIDISysex((Bit8u *)cds->lpData, cds->cbData);
-		return 1;
+//		std::cout << "Instance = " << cds->dwData << ", Data length = " << cds->cbData << "\n";
+		DWORD *data;
+		data = (DWORD *)cds->lpData;
+//		std::cout << "Data = " << data[0] << ", " << data[1] << ", " << data[2] << ", " << data[3] << "\n";
+		if (data[0] == 0) {
+			if (data[1] == -1) {
+				// Process handshaking message
+				DWORD inst = (timeGetTime() & 255); // just a random value
+				std::cout << "Instance = " << inst << ", Version = " << data[2] << "\n";
+				std::cout << "Connected application = " << (char *)&data[3] << "\n";
+				return inst;
+			} else if (data[1] == 0) {
+				// Process short MIDI message
+//			std::cout << "Incoming message! msg = " << data[3] << ", timestamp = " << data[2] << "\n";
+				midiSession->getSynthRoute()->pushMIDIShortMessage(data[3], getCurrentNanos());
+				return 1;
+			}
+		} else {
+			// Process Sysex
+			midiSession->getSynthRoute()->pushMIDISysex((MT32Emu::Bit8u *)cds->lpData, cds->cbData, getCurrentNanos());
+			return 1;
+		}
 	default:
 		return DefWindowProc(hwnd, uMsg, wParam, lParam);
 	}
 }
 
-void Win32MidiDriver::MessageLoop(SynthManager *synthManager) {
+void Win32MidiDriver::MessageLoop(void *) {
 	HINSTANCE hInstance = GetModuleHandle(NULL);
-	LPCTSTR mt32emuClassName = L"mt32emu_class";
+	LPCTSTR mt32emuClassName = "mt32emu_class";
 	WNDCLASS wc;
 	wc.style = 0;
-	wc.lpfnWndProc = &MidiInWin32::MidiInProc;
+	wc.lpfnWndProc = &Win32MidiDriver::MidiInProc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
@@ -73,6 +96,9 @@ void Win32MidiDriver::MessageLoop(SynthManager *synthManager) {
 	GetMessage(&msg, hwnd, WM_QUIT, WM_QUIT);
 }
 
-Win32MidiDriver::Win32MidiDriver(SynthManager *useSynthManager) : synthManager(useSynthManager) {
-	_beginthread(&MessageLoop, 16384, synthManager);
+Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster) {
+	if(midiSession == NULL) {
+		midiSession = useMaster->createMidiSession(this, "Combined Win32msg Session");
+	}
+	_beginthread(&MessageLoop, 16384, useMaster);
 }
