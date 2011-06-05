@@ -52,7 +52,7 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 			} else if (data[1] == 0) {
 				// Process short MIDI message
 //			std::cout << "Incoming message! msg = " << data[3] << ", timestamp = " << data[2] << "\n";
-				midiSession->getSynthRoute()->pushMIDIShortMessage(data[3], getCurrentNanos());
+				midiSession->getSynthRoute()->pushMIDIShortMessage(data[3], (qint64)data[2] * MasterClock::NANOS_PER_SECOND / CLOCKS_PER_SEC);
 				return 1;
 			}
 		} else {
