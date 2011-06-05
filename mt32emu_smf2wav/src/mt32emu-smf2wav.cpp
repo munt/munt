@@ -397,6 +397,7 @@ static void printUsage(char *cmd) {
 	fprintf(stdout, " -b              Buffer size in frames (minimum: 1, default: %d)\n", DEFAULT_BUFFER_SIZE);
 	fprintf(stdout, "                 Note that actual memory usage in bytes will be * 4 for WAVE, * 12 for RAW.\n");
 	fprintf(stdout, " -d <dacmode>    LA-32 to DAC input mode (default: 0)\n");
+	fprintf(stdout, "                 Ignored if -w is used (in which case 1/PURE is always used)\n");
 	fprintf(stdout, "                 0: NICE\n");
 	fprintf(stdout, "                 1: PURE\n");
 	fprintf(stdout, "                 2: GENERATION1\n");
@@ -538,6 +539,10 @@ int main(int argc, char *argv[]) {
 		} else {
 			sprintf(dstFileName, "%s.wav", srcFileName);
 		}
+	}
+
+	if (rawChannelCount > 0) {
+		dacInputMode = MT32Emu::DACInputMode_PURE;
 	}
 
 	MT32Emu::SynthProperties synthProperties = {0};
