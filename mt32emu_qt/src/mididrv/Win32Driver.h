@@ -8,13 +8,13 @@
 
 class Win32MidiDriver : public MidiDriver {
 private:
-	static MidiSession *midiSession;
-
 	static LRESULT CALLBACK MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static void MessageLoop(void *);
 
 public:
 	Win32MidiDriver(Master *useMaster);
+	void start();
+	void stop();
 };
 
 #endif

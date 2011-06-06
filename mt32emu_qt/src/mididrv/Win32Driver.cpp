@@ -23,6 +23,10 @@
 
 #include "Win32Driver.h"
 
+static MidiSession *midiSession = NULL;
+static HWND hwnd = NULL;
+static qint64 startNanos;
+
 static qint64 getCurrentNanos() {
 	return (qint64)timeGetTime() * MasterClock::NANOS_PER_SECOND / CLOCKS_PER_SEC;
 }
@@ -51,13 +55,13 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 				return inst;
 			} else if (data[1] == 0) {
 				// Process short MIDI message
-//			std::cout << "Incoming message! msg = " << data[3] << ", timestamp = " << data[2] << "\n";
-				midiSession->getSynthRoute()->pushMIDIShortMessage(data[3], (qint64)data[2] * MasterClock::NANOS_PER_SECOND / CLOCKS_PER_SEC);
+//				std::cout << "Incoming message! msg = " << data[3] << ", timestamp = " << data[2] << "\n";
+				midiSession->getSynthRoute()->pushMIDIShortMessage(data[3], ((qint64)data[2] * MasterClock::NANOS_PER_SECOND / CLOCKS_PER_SEC) - startNanos);
 				return 1;
 			}
 		} else {
 			// Process Sysex
-			midiSession->getSynthRoute()->pushMIDISysex((MT32Emu::Bit8u *)cds->lpData, cds->cbData, getCurrentNanos());
+			midiSession->getSynthRoute()->pushMIDISysex((MT32Emu::Bit8u *)cds->lpData, cds->cbData, getCurrentNanos() - startNanos);
 			return 1;
 		}
 	default:
@@ -85,7 +89,7 @@ void Win32MidiDriver::MessageLoop(void *) {
 		qDebug() << "Error registering class\n";
 	}
 
-	HWND hwnd = CreateWindow(mt32emuClassName, mt32emuClassName, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
+	hwnd = CreateWindow(mt32emuClassName, mt32emuClassName, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
 	if (hwnd != NULL) {
 		qDebug() << "Window created\n";
 	} else {
@@ -100,5 +104,13 @@ Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster) {
 	if(midiSession == NULL) {
 		midiSession = useMaster->createMidiSession(this, "Combined Win32msg Session");
 	}
-	_beginthread(&MessageLoop, 16384, useMaster);
+}
+
+void Win32MidiDriver::start() {
+	startNanos = getCurrentNanos();
+	_beginthread(&MessageLoop, 16384, NULL);
+}
+
+void Win32MidiDriver::stop() {
+	PostMessage(hwnd, WM_QUIT, 0, 0);
 }
