@@ -31,6 +31,7 @@ endforeach(HEADER)
 
 add_library(mt32emu STATIC
   src/ANSIFile.cpp
+  src/AReverbModel.cpp
   src/DelayReverb.cpp
   src/File.cpp
   src/FreeverbModel.cpp

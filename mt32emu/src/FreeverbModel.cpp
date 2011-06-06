@@ -41,6 +41,13 @@ void FreeverbModel::open(unsigned int /*sampleRate*/) {
 	if (freeverb == NULL) {
 		freeverb = new revmodel(scaleTuning);
 	}
+	freeverb->mute();
+
+	// entrance Lowpass filter factor
+	freeverb->setfiltval(filtVal);
+
+	// decay speed of high frequencies in the wet signal
+	freeverb->setdamp(damp);
 }
 
 void FreeverbModel::close() {
@@ -53,11 +60,8 @@ void FreeverbModel::process(const float *inLeft, const float *inRight, float *ou
 }
 
 void FreeverbModel::setParameters(Bit8u time, Bit8u level) {
-	freeverb->mute();
-
-	freeverb->setfiltval(filtVal);
-
 	// wet signal level
+	// FIXME: need to implement some sort of reverb level ramping
 	freeverb->setwet((float)level / 7.0f * wet);
 
 	// wet signal decay speed
@@ -66,9 +70,6 @@ void FreeverbModel::setParameters(Bit8u time, Bit8u level) {
 		-1.00f, -0.50f, 0.00f, 0.30f, 0.51f, 0.64f, 0.77f, 0.90f,
 		 0.50f,  0.57f, 0.70f, 0.77f, 0.85f, 0.93f, 0.96f, 1.01f};
 	freeverb->setroomsize(roomTable[8 * room + time]);
-
-	// decay speed of high frequencies in the wet signal
-	freeverb->setdamp(damp);
 }
 
 bool FreeverbModel::isActive() const {

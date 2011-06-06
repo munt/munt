@@ -222,10 +222,9 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			pcmPosition = newPCMPosition;
 		} else {
 			// Render synthesised waveform
-			if (freq != lastFreq) {
-				wavePos *= lastFreq / freq;
-				lastFreq = freq;
-			}
+			wavePos *= lastFreq / freq;
+			lastFreq = freq;
+
 			Bit32u cutoffModifierRampVal = cutoffModifierRamp.nextValue();
 			if (cutoffModifierRamp.checkInterrupt()) {
 				tvf->handleInterrupt();

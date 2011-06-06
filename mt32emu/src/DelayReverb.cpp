@@ -66,6 +66,14 @@ void DelayReverb::open(unsigned int newSampleRate) {
 		buf = new float[bufSize];
 
 		recalcParameters();
+
+		// mute buffer
+		bufIx = 0;
+		if (buf != NULL) {
+			for (unsigned int i = 0; i < bufSize; i++) {
+				buf[i] = 0.0f;
+			}
+		}
 	}
 	// FIXME: IIR filter value depends on sample rate as well
 }
@@ -98,13 +106,6 @@ void DelayReverb::recalcParameters() {
 
 	// Fading speed, i.e. amplitude ratio of neighbor responses
 	fade = REVERB_FADE[level];
-
-	bufIx = 0;
-	if (buf != NULL) {
-		for (unsigned int i = 0; i < bufSize; i++) {
-			buf[i] = 0.0f;
-		}
-	}
 }
 
 void DelayReverb::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) {

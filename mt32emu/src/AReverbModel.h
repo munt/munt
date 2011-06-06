@@ -15,41 +15,37 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MT32EMU_AREVERB_MODEL_H
-#define MT32EMU_AREVERB_MODEL_H
+#ifndef MT32EMU_A_REVERB_MODEL_H
+#define MT32EMU_A_REVERB_MODEL_H
 
 namespace MT32Emu {
 
-#define numAllpasses 6
-#define numDelays 5
-
 struct AReverbSettings {
-	Bit32u *allpassSizes;
-	Bit32u *delaySizes;
-	float *decayTimes;
-	float *wetLevels;
+	const Bit32u *allpassSizes;
+	const Bit32u *delaySizes;
+	const float *decayTimes;
+	const float *wetLevels;
 	float filtVal;
 	float damp1;
 	float damp2;
 };
 
-class RingBuffer abstract {
+class RingBuffer {
 protected:
 	float *buffer;
 	Bit32u size;
 	Bit32u index;
 public:
 	RingBuffer(Bit32u size);
-	~RingBuffer();
+	virtual ~RingBuffer();
 	float next();
 	bool isEmpty();
 	void mute();
-	float process(float in);
 };
 
-class AllPassFilter : public RingBuffer {
+class AllpassFilter : public RingBuffer {
 public:
-	AllPassFilter(Bit32u size);
+	AllpassFilter(Bit32u size);
 	float process(float in);
 };
 
@@ -60,8 +56,8 @@ public:
 };
 
 class AReverbModel : public ReverbModel {
-	AllPassFilter *allpasses[numAllpasses];
-	Delay *delays[numDelays];
+	AllpassFilter **allpasses;
+	Delay **delays;
 
 	const AReverbSettings *currentSettings;
 	float decayTime;
@@ -77,30 +73,13 @@ public:
 	void setParameters(Bit8u time, Bit8u level);
 	void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples);
 	bool isActive() const;
+
+	static const AReverbSettings REVERB_MODE_0_SETTINGS;
+	static const AReverbSettings REVERB_MODE_1_SETTINGS;
+	static const AReverbSettings REVERB_MODE_2_SETTINGS;
 };
 
 // Default reverb settings for modes 0-2
-
-static Bit32u reverbMode0allpasses[] = {729, 78, 394, 994, 1250, 1889};
-static Bit32u reverbMode0delays[] = {846, 4, 1819, 778, 346};
-static float reverbMode0Times[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.9f};
-static float reverbMode0Levels[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 1.01575f};
-static AReverbSettings reverbMode0Settings = {reverbMode0allpasses, reverbMode0delays,
-			reverbMode0Times, reverbMode0Levels, 0.687770909f, 0.5f, 0.5f};
-
-static Bit32u reverbMode1allpasses[] = {176, 809, 1324, 1258};
-static Bit32u reverbMode1delays[] = {2262, 124, 974, 2516, 356};
-static float reverbMode1Times[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.95f};
-static float reverbMode1Levels[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 1.01575f};
-static AReverbSettings reverbMode1Settings = {reverbMode1allpasses, reverbMode1delays,
-			reverbMode1Times,	reverbMode1Levels, 0.712025098f, 0.375f, 0.625f};
-
-static Bit32u reverbMode2allpasses[] = {78, 729, 994, 389};
-static Bit32u reverbMode2delays[] = {846, 4, 1819, 778, 346};
-static float reverbMode2Times[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f};
-static float reverbMode2Levels[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f};
-static AReverbSettings reverbMode2Settings = {reverbMode2allpasses, reverbMode2delays,
-			reverbMode2Times,	reverbMode2Levels, 0.939522749f, 0.0f, 0.0f};
 
 }
 

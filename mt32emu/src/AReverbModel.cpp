@@ -20,6 +20,30 @@
 
 using namespace MT32Emu;
 
+// Default reverb settings for modes 0-2
+
+static const unsigned int NUM_ALLPASSES = 6;
+static const unsigned int NUM_DELAYS = 5;
+
+static const Bit32u MODE_0_ALLPASSES[] = {729, 78, 394, 994, 1250, 1889};
+static const Bit32u MODE_0_DELAYS[] = {846, 4, 1819, 778, 346};
+static const float MODE_0_TIMES[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.9f};
+static const float MODE_0_LEVELS[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 1.01575f};
+
+static const Bit32u MODE_1_ALLPASSES[] = {176, 809, 1324, 1258};
+static const Bit32u MODE_1_DELAYS[] = {2262, 124, 974, 2516, 356};
+static const float MODE_1_TIMES[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.95f};
+static const float MODE_1_LEVELS[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 1.01575f};
+
+static const Bit32u MODE_2_ALLPASSES[] = {78, 729, 994, 389};
+static const Bit32u MODE_2_DELAYS[] = {846, 4, 1819, 778, 346};
+static const float MODE_2_TIMES[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f};
+static const float MODE_2_LEVELS[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f};
+
+const AReverbSettings AReverbModel::REVERB_MODE_0_SETTINGS = {MODE_0_ALLPASSES, MODE_0_DELAYS, MODE_0_TIMES, MODE_0_LEVELS, 0.687770909f, 0.5f, 0.5f};
+const AReverbSettings AReverbModel::REVERB_MODE_1_SETTINGS = {MODE_1_ALLPASSES, MODE_1_DELAYS, MODE_1_TIMES, MODE_1_LEVELS, 0.712025098f, 0.375f, 0.625f};
+const AReverbSettings AReverbModel::REVERB_MODE_2_SETTINGS = {MODE_2_ALLPASSES, MODE_2_DELAYS, MODE_2_TIMES, MODE_2_LEVELS, 0.939522749f, 0.0f, 0.0f};
+
 RingBuffer::RingBuffer(Bit32u newsize) {
 	index = 0;
 	size = newsize;
@@ -59,13 +83,13 @@ void RingBuffer::mute() {
 	}
 }
 
-AllPassFilter::AllPassFilter(Bit32u size) : RingBuffer(size) {
+AllpassFilter::AllpassFilter(Bit32u useSize) : RingBuffer(useSize) {
 }
 
-Delay::Delay(Bit32u size) : RingBuffer(size) {
+Delay::Delay(Bit32u useSize) : RingBuffer(useSize) {
 }
 
-float AllPassFilter::process(float in) {
+float AllpassFilter::process(float in) {
 	// This model corresponds to the allpass filter implementation in the real CM-32L device
 	// found from sample analysis
 
@@ -94,14 +118,7 @@ float Delay::process(float in) {
 	return out;
 }
 
-AReverbModel::AReverbModel(const AReverbSettings *newSettings) {
-	currentSettings = newSettings;
-	for (Bit32u i = 0; i < numAllpasses; i++) {
-		allpasses[i] = NULL;
-	}
-	for (Bit32u i = 0; i < numDelays; i++) {
-		delays[i] = NULL;
-	}
+AReverbModel::AReverbModel(const AReverbSettings *useSettings) : allpasses(NULL), delays(NULL), currentSettings(useSettings) {
 }
 
 AReverbModel::~AReverbModel() {
@@ -111,35 +128,45 @@ AReverbModel::~AReverbModel() {
 void AReverbModel::open(unsigned int /*sampleRate*/) {
 	// FIXME: filter sizes must be multiplied by sample rate to 32000Hz ratio
 	// IIR filter values depend on sample rate as well
-	for (Bit32u i = 0; i < numAllpasses; i++) {
-		allpasses[i] = new AllPassFilter(currentSettings->allpassSizes[i]);
+	allpasses = new AllpassFilter*[NUM_ALLPASSES];
+	for (Bit32u i = 0; i < NUM_ALLPASSES; i++) {
+		allpasses[i] = new AllpassFilter(currentSettings->allpassSizes[i]);
 	}
-	for (Bit32u i = 0; i < numDelays; i++) {
+	delays = new Delay*[NUM_DELAYS];
+	for (Bit32u i = 0; i < NUM_DELAYS; i++) {
 		delays[i] = new Delay(currentSettings->delaySizes[i]);
 	}
 	mute();
 }
 
 void AReverbModel::close() {
-	for (Bit32u i = 0; i < numAllpasses; i++) {
-		if (allpasses[i] != NULL) {
-			delete allpasses[i];
-			allpasses[i] = NULL;
+	if (allpasses != NULL) {
+		for (Bit32u i = 0; i < NUM_ALLPASSES; i++) {
+			if (allpasses[i] != NULL) {
+				delete allpasses[i];
+				allpasses[i] = NULL;
+			}
 		}
+		delete[] allpasses;
+		allpasses = NULL;
 	}
-	for (Bit32u i = 0; i < numDelays; i++) {
-		if (delays[i] != NULL) {
-			delete delays[i];
-			delays[i] = NULL;
+	if (delays != NULL) {
+		for (Bit32u i = 0; i < NUM_DELAYS; i++) {
+			if (delays[i] != NULL) {
+				delete delays[i];
+				delays[i] = NULL;
+			}
 		}
+		delete[] delays;
+		delays = NULL;
 	}
 }
 
 void AReverbModel::mute() {
-	for (Bit32u i = 0; i < numAllpasses; i++) {
+	for (Bit32u i = 0; i < NUM_ALLPASSES; i++) {
 		allpasses[i]->mute();
 	}
-	for (Bit32u i = 0; i < numDelays; i++) {
+	for (Bit32u i = 0; i < NUM_DELAYS; i++) {
 		delays[i]->mute();
 	}
 	filterhist1 = 0;
@@ -156,10 +183,10 @@ void AReverbModel::setParameters(Bit8u time, Bit8u level) {
 
 bool AReverbModel::isActive() const {
 	bool bActive = false;
-	for (Bit32u i = 0; i < numAllpasses; i++) {
+	for (Bit32u i = 0; i < NUM_ALLPASSES; i++) {
 		bActive |= !allpasses[i]->isEmpty();
 	}
-	for (Bit32u i = 0; i < numDelays; i++) {
+	for (Bit32u i = 0; i < NUM_DELAYS; i++) {
 		bActive |= !delays[i]->isEmpty();
 	}
 	return bActive;

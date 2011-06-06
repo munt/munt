@@ -52,7 +52,7 @@ enum DACInputMode {
 	// 15 13 12 11 10 09 08 07 06 05 04 03 02 01 00 XX
 	DACInputMode_GENERATION1,
 
-	// Re-orders the LA32 output bits as in later geneerations (personally confirmed on my CM-32L - KG).
+	// Re-orders the LA32 output bits as in later generations (personally confirmed on my CM-32L - KG).
 	// Bit order at DAC (where each number represents the original LA32 output bit number):
 	// 15 13 12 11 10 09 08 07 06 05 04 03 02 01 00 14
 	DACInputMode_GENERATION2
