@@ -19,17 +19,14 @@
 #include <windows.h>
 #include <process.h>
 #include <iostream>
+#include "../ClockSync.h"
 #include "../MasterClock.h"
 
 #include "Win32Driver.h"
 
 static MidiSession *midiSession = NULL;
 static HWND hwnd = NULL;
-static qint64 startNanos;
-
-static qint64 getCurrentNanos() {
-	return (qint64)timeGetTime() * MasterClock::NANOS_PER_SECOND / CLOCKS_PER_SEC;
-}
+static ClockSync clockSync;
 
 LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
@@ -56,12 +53,12 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 			} else if (data[1] == 0) {
 				// Process short MIDI message
 //				std::cout << "Incoming message! msg = " << data[3] << ", timestamp = " << data[2] << "\n";
-				midiSession->getSynthRoute()->pushMIDIShortMessage(data[3], ((qint64)data[2] * MasterClock::NANOS_PER_SECOND / CLOCKS_PER_SEC) - startNanos);
+				midiSession->getSynthRoute()->pushMIDIShortMessage(data[3], ((qint64)data[2] * 1000));
 				return 1;
 			}
 		} else {
 			// Process Sysex
-			midiSession->getSynthRoute()->pushMIDISysex((MT32Emu::Bit8u *)cds->lpData, cds->cbData, getCurrentNanos() - startNanos);
+			midiSession->getSynthRoute()->pushMIDISysex((MT32Emu::Bit8u *)cds->lpData, cds->cbData, MasterClock::getClockNanos());
 			return 1;
 		}
 	default:
@@ -107,7 +104,7 @@ Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster) {
 }
 
 void Win32MidiDriver::start() {
-	startNanos = getCurrentNanos();
+	clockSync.reset();
 	_beginthread(&MessageLoop, 16384, NULL);
 }
 
