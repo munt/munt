@@ -70,9 +70,6 @@ void MasterClock::deinit() {
 #else
 
 #include <QThread>
-#include <QElapsedTimer>
-
-static QElapsedTimer *elapsedTimer = NULL;
 
 // This class exists solely to expose usleep() publicly.
 // Why it's protected in QThread is a bit of a mystery...
@@ -94,6 +91,27 @@ void MasterClock::sleepUntilClockNanos(MasterClockNanos clockNanos) {
 	sleepForNanos(clockNanos - getClockNanos());
 }
 
+#ifdef _WIN32
+
+#include <Windows.h>
+
+MasterClockNanos MasterClock::getClockNanos() {
+	// FIXME: Deal with wrapping
+	return (MasterClockNanos)timeGetTime() * NANOS_PER_MILLISECOND;
+}
+
+void MasterClock::init() {
+}
+
+void MasterClock::deinit() {
+}
+
+#else
+
+#include <QElapsedTimer>
+
+static QElapsedTimer *elapsedTimer = NULL;
+
 MasterClockNanos MasterClock::getClockNanos() {
 	return (MasterClockNanos)elapsedTimer->elapsed() * NANOS_PER_MILLISECOND;
 }
@@ -108,4 +126,5 @@ void MasterClock::deinit() {
 	elapsedTimer = NULL;
 }
 
+#endif
 #endif
