@@ -96,7 +96,7 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 				qDebug() << "Q" << debugSampleIx;
 				break;
 			}
-			if (event->getTimestamp() <= nanosNow) {
+			if (event->getTimestamp() < nanosNow) {
 				qDebug() << "Late message! " << event->getTimestamp() - nanosNow;
 			}
 			if (event->getTimestamp() <= nanosNow) {
