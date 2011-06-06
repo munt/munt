@@ -97,6 +97,9 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 				break;
 			}
 			if (event->getTimestamp() <= nanosNow) {
+				qDebug() << "Late message! " << event->getTimestamp() - nanosNow;
+			}
+			if (event->getTimestamp() <= nanosNow) {
 				unsigned char *sysexData = event->getSysexData();
 				synthMutex->lock();
 				if (!isOpen) {
