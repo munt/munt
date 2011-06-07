@@ -223,6 +223,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL Windows)
   set(libportaudio_OS_SOURCES
     ${libportaudio_OS_WIN_SOURCES}
   )
+  list(APPEND libportaudio_EXT_LIBS winmm)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/os/win/)
   if (MINGW)
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/hostapi/wasapi/mingw-include")
