@@ -95,12 +95,15 @@ void MasterClock::sleepUntilClockNanos(MasterClockNanos clockNanos) {
 
 #include <Windows.h>
 
+static DWORD startTime = 0;
+
 MasterClockNanos MasterClock::getClockNanos() {
 	// FIXME: Deal with wrapping
-	return (MasterClockNanos)timeGetTime() * NANOS_PER_MILLISECOND;
+	return (MasterClockNanos)(timeGetTime() - startTime) * NANOS_PER_MILLISECOND;
 }
 
 void MasterClock::init() {
+	startTime = timeGetTime();
 }
 
 void MasterClock::deinit() {
