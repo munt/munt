@@ -118,6 +118,8 @@ set(libportaudio_OS_UNIX_SOURCES
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/common)
 
+set(libportaudio_HOSTAPI_SOURCES)
+
 if(libportaudio_WITH_ALSA)
   find_package(ALSA)
   if(ALSA_FOUND)
@@ -125,7 +127,7 @@ if(libportaudio_WITH_ALSA)
     include_directories(${ALSA_INCLUDE_DIRS})
     add_definitions(-DPA_USE_ALSA=1)
     list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_ALSA_SOURCES})
-    endif()
+  endif()
 endif()
 
 if(libportaudio_WITH_ASIHPI)
