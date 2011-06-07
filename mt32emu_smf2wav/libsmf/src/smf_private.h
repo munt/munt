@@ -28,7 +28,6 @@
 #ifndef SMF_PRIVATE_H
 #define SMF_PRIVATE_H
 
-#include <stdint.h>
 #include <sys/types.h>
 
 #include "config.h"
@@ -51,16 +50,16 @@
 
 /** SMF chunk header, used only by smf_load.c and smf_save.c. */
 struct chunk_header_struct {
-	char		id[4];
-	uint32_t	length; 
+	char    id[4];
+	guint32 length; 
 } ATTRIBUTE_PACKED;
 
 /** SMF chunk, used only by smf_load.c and smf_save.c. */
 struct mthd_chunk_struct {
-	struct chunk_header_struct	mthd_header;
-	uint16_t			format;
-	uint16_t			number_of_tracks;
-	uint16_t			division;
+	struct chunk_header_struct mthd_header;
+	guint16                    format;
+	guint16                    number_of_tracks;
+	guint16                    division;
 } ATTRIBUTE_PACKED;
 
 #if (!defined __GNUC__)
