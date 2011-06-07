@@ -36,7 +36,7 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *)), this, SLOT(handleSynthRouteAdded(SynthRoute *)));
 	QObject::connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), this, SLOT(handleSynthRouteRemoved(SynthRoute *)));
 #ifdef WITH_WIN32_MIDI_DRIVER
-	midiDriver = new TestMidiDriver(master);
+	midiDriver = new Win32MidiDriver(master);
 #elif defined(WITH_ALSA_MIDI_DRIVER)
 	midiDriver = new ALSAMidiDriver(master);
 #else
