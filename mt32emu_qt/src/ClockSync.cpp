@@ -23,7 +23,8 @@
 // using the new offset immediately.
 // This can be regularly hit around stream start time by badly-behaved drivers that return bogus timestamps
 // for a while when first starting.
-static const qint64 EMERGENCY_RESYNC_THRESHOLD_NANOS = 500 * MasterClock::NANOS_PER_MILLISECOND;
+static const qint64 EMERGENCY_RESET_THRESHOLD_NANOS = 500 * MasterClock::NANOS_PER_MILLISECOND;
+static const qint64 JITTER_THRESHOLD_NANOS = 100 * MasterClock::NANOS_PER_MILLISECOND;
 
 ClockSync::ClockSync() : offsetValid(false) {
 }
@@ -52,16 +53,14 @@ MasterClockNanos ClockSync::sync(qint64 externalNanos) {
 		drift = 1.0;
 		qDebug() << "Sync:" << externalNanos << masterClockNow << offset;
 		offsetValid = true;
-	} else if (offsetNow < offset) {
+	} else if(qAbs(offsetNow - offset) > EMERGENCY_RESET_THRESHOLD_NANOS) {
+			qDebug() << "Emergency reset:" << externalNanos << masterClockNow << offset << offsetNow;
+			offsetValid = false;
+			return masterClockNow;
+	} else if ((offsetNow < offset) || ((offsetNow - offset) > JITTER_THRESHOLD_NANOS)) {
 		qDebug() << "Latency resync:" << externalNanos << masterClockNow << offset << offsetNow;
 		drift = (double)nanosFromStart / externalNanosFromStart;
 		offset = nanosFromStart - drift * externalNanosFromStart;
-	} else {
-		if(qAbs(offsetNow - offset) > EMERGENCY_RESYNC_THRESHOLD_NANOS) {
-			qDebug() << "Emergency resync:" << externalNanos << masterClockNow << offset << offsetNow;
-			drift = (double)nanosFromStart / externalNanosFromStart;
-			offset = nanosFromStart - drift * externalNanosFromStart;
-		}
 	}
 	return refNanosStart + offset + drift * externalNanosFromStart;
 }
