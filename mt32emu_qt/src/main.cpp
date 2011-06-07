@@ -24,9 +24,6 @@
 #include "QSynth.h"
 
 #include "mididrv/TestDriver.h"
-#ifdef WITH_WIN32_MIDI_DRIVER
-#include "mididrv/Win32Driver.h"
-#endif
 
 using namespace MT32Emu;
 

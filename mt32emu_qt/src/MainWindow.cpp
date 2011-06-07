@@ -20,7 +20,13 @@
 #include "ui_MainWindow.h"
 #include "Master.h"
 
+#ifdef WITH_WIN32_MIDI_DRIVER
+#include "mididrv/Win32Driver.h"
+#elif defined(WITH_ALSA_MIDI_DRIVER)
+#include "mididrv/ALSADriver.h"
+#else
 #include "mididrv/TestDriver.h"
+#endif
 
 MainWindow::MainWindow(Master *master, QWidget *parent) :
     QMainWindow(parent),
@@ -29,7 +35,13 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
     ui->setupUi(this);
 	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *)), this, SLOT(handleSynthRouteAdded(SynthRoute *)));
 	QObject::connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), this, SLOT(handleSynthRouteRemoved(SynthRoute *)));
+#ifdef WITH_WIN32_MIDI_DRIVER
 	midiDriver = new TestMidiDriver(master);
+#elif defined(WITH_ALSA_MIDI_DRIVER)
+	midiDriver = new ALSAMidiDriver(master);
+#else
+	midiDriver = new TestMidiDriver(master);
+#endif
 	midiDriver->start();
 }
 
