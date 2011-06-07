@@ -41,26 +41,28 @@ MasterClockNanos ClockSync::sync(qint64 externalNanos) {
 		// Special value meaning "no timestamp, play immediately"
 		return masterClockNow;
 	}
-	qint64 offsetNow = masterClockNow - externalNanos;
-	//double driftNow = (double)(masterClockNow - refNanosStart) / (externalNanos - externalNanosStart);
-	//qDebug() << "Sync diff" << (offsetNow - offset) << driftNow;
+	qint64 nanosFromStart = masterClockNow - refNanosStart;
+	qint64 externalNanosFromStart = externalNanos - externalNanosStart;
+	qint64 offsetNow = nanosFromStart - drift * externalNanosFromStart;
 	if (!offsetValid) {
 		refNanosStart = masterClockNow;
 		externalNanosStart = externalNanos;
-		offset = offsetNow;
+		offset = 0.0;
 		drift = 1.0;
 		qDebug() << "Sync:" << externalNanos << masterClockNow << offset;
 		offsetValid = true;
 	} else if (offsetNow < offset) {
 		qDebug() << "Latency resync:" << externalNanos << masterClockNow << offset << offsetNow;
-		offset = offsetNow;
+		drift = (double)nanosFromStart / externalNanosFromStart;
+		offset = nanosFromStart - drift * externalNanosFromStart;
 	} else {
 		if(qAbs(offsetNow - offset) > EMERGENCY_RESYNC_THRESHOLD_NANOS) {
 			qDebug() << "Emergency resync:" << externalNanos << masterClockNow << offset << offsetNow;
-			offset = offsetNow;
+			drift = (double)nanosFromStart / externalNanosFromStart;
+			offset = nanosFromStart - drift * externalNanosFromStart;
 		}
 	}
-	return externalNanos + offset;
+	return refNanosStart + offset + drift * externalNanosFromStart;
 }
 
 void ClockSync::reset() {
