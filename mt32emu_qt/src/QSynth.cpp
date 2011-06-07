@@ -96,8 +96,8 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 				qDebug() << "Q" << debugSampleIx;
 				break;
 			}
-			if (event->getTimestamp() < nanosNow) {
-				qDebug() << "Late message! " << event->getTimestamp() - nanosNow;
+			if ((nanosNow - event->getTimestamp()) > 1000000) {
+				qDebug() << "Late MIDI message for" << event->getTimestamp() - nanosNow << "nanos";
 			}
 			if (event->getTimestamp() <= nanosNow) {
 				unsigned char *sysexData = event->getSysexData();
