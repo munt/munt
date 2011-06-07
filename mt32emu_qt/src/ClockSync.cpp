@@ -47,6 +47,7 @@ MasterClockNanos ClockSync::sync(qint64 externalNanos) {
 	if (!offsetValid) {
 		refNanosStart = masterClockNow;
 		externalNanosStart = externalNanos;
+		externalNanosFromStart = 0.0;
 		offset = 0.0;
 		drift = 1.0;
 		qDebug() << "Sync:" << externalNanos << masterClockNow << offset;
