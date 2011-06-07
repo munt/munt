@@ -16,6 +16,13 @@ option(libportaudio_WITH_ALSA "Enable support for ALSA in PortAudio" YES)
 option(libportaudio_WITH_JACK "Enable support for JACK in PortAudio" YES)
 option(libportaudio_WITH_OSS "Enable support for OSS in PortAudio" YES)
 option(libportaudio_WITH_ASIHPI "Enable support for ASIHPI in PortAudio" YES)
+if (CMAKE_SYSTEM_NAME STREQUAL Windows)
+  option(libportaudio_WITH_ASIO "Enable support for ASIO in PortAudio" YES)
+  option(libportaudio_WITH_DSOUND "Enable support for DirectSound in PortAudio" YES)
+  option(libportaudio_WITH_WASAPI "Enable support for the Windows Audio Session API (WASAPI) in PortAudio" YES)
+  option(libportaudio_WITH_WDMKS "Enable support for WDM Kernel Streaming in PortAudio" YES)
+  option(libportaudio_WITH_WMME "Enable support for Windows Multimedia Extensions (MME) in PortAudio" YES)
+endif()
 option(libportaudio_ENABLE_DEBUG_OUTPUT "Enable debug output in PortAudio" NO)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -151,6 +158,36 @@ if(libportaudio_WITH_OSS)
   endif()
 endif()
 
+if(libportaudio_WITH_ASIO)
+  # FIXME: Actually check for ASIO
+  add_definitions(-DPA_USE_ASIO=1)
+  list(APPEND listportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_ASIO_SOURCES})
+endif()
+
+if(libportaudio_WITH_DSOUND)
+  # FIXME: Actually check for DirectSound
+  add_definitions(-DPA_USE_DS=1)
+  list(APPEND listportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_DSOUND_SOURCES})
+endif()
+
+if(libportaudio_WITH_WASAPI)
+  # FIXME: Actually check for WASAPI
+  add_definitions(-DPA_USE_WASAPI=1)
+  list(APPEND listportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WASAPI_SOURCES})
+endif()
+
+if(libportaudio_WITH_WDMKS)
+  # FIXME: Actually check for WDM/KS
+  add_definitions(-DPA_USE_WDMKS=1)
+  list(APPEND listportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WDMKS_SOURCES})
+endif()
+
+if(libportaudio_WITH_WMME)
+  # FIXME: Actually check for WMME
+  add_definitions(-DPA_USE_WMME=1)
+  list(APPEND listportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WMME_SOURCES})
+endif()
+
 if(libportaudio_ENABLE_DEBUG_OUTPUT)
   add_definitions(-DPA_ENABLE_DEBUG_OUTPUT)
 endif()
@@ -189,24 +226,9 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL Windows)
     ${libportaudio_OS_WIN_SOURCES}
   )
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/os/win/)
-
-  add_definitions(
-    -DPA_USE_ASIO=1
-    -DPA_USE_DS=1
-    -DPA_USE_WASAPI=1
-    -DPA_USE_WDMKS=1
-    -DPA_USE_WMME=1
-  )
   if (MINGW)
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/hostapi/wasapi/mingw-include")
   endif()
-  set(libportaudio_HOSTAPI_SOURCES
-    ${libportaudio_HOSTAPI_ASIO_SOURCES}
-    ${libportaudio_HOSTAPI_DSOUND_SOURCES}
-    ${libportaudio_HOSTAPI_WASAPI_SOURCES}
-    ${libportaudio_HOSTAPI_WDMKS_SOURCES}
-    ${libportaudio_HOSTAPI_WMME_SOURCES}
-  )
 endif()
 
 set(libportaudio_SOURCES
