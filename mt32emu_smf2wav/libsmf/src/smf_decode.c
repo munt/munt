@@ -37,7 +37,6 @@
 #include <assert.h>
 #include <math.h>
 #include <errno.h>
-#include <stdint.h>
 #include "smf.h"
 #include "smf_private.h"
 
