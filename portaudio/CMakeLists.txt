@@ -107,8 +107,6 @@ set(libportaudio_OS_WIN_SOURCES
   src/os/win/pa_win_waveformat.c
   src/os/win/pa_win_wdmks_utils.c
   src/os/win/pa_win_wdmks_utils.h
-  src/os/win/pa_x86_plain_converters.c
-  src/os/win/pa_x86_plain_converters.h
 )
 set(libportaudio_OS_UNIX_SOURCES
   src/os/unix/pa_unix_hostapis.c
