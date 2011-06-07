@@ -8,6 +8,7 @@
 class ClockSync {
 private:
 	bool offsetValid;
+	bool synced;
 	// Multiplier for externalNanos
 	double drift;
 	// Offset to be added to externalNanos to get refNanos;

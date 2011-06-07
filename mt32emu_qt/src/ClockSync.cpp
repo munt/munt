@@ -25,6 +25,7 @@
 // for a while when first starting.
 static const qint64 EMERGENCY_RESET_THRESHOLD_NANOS = 500 * MasterClock::NANOS_PER_MILLISECOND;
 static const qint64 JITTER_THRESHOLD_NANOS = 100 * MasterClock::NANOS_PER_MILLISECOND;
+static const qint64 SYNC_TIME_NANOS = 3000 * MasterClock::NANOS_PER_MILLISECOND;
 
 ClockSync::ClockSync() : offsetValid(false) {
 }
@@ -53,6 +54,11 @@ MasterClockNanos ClockSync::sync(qint64 externalNanos) {
 		drift = 1.0;
 		qDebug() << "Sync:" << externalNanos << masterClockNow << offset;
 		offsetValid = true;
+		synced = false;
+	} else if ((!synced) && (nanosFromStart > SYNC_TIME_NANOS)) {
+			// Special value meaning "sync immediately"
+			offset = JITTER_THRESHOLD_NANOS;
+			synced = true;
 	} else if(qAbs(offsetNow - offset) > EMERGENCY_RESET_THRESHOLD_NANOS) {
 			qDebug() << "Emergency reset:" << externalNanos << masterClockNow << offset << offsetNow;
 			offsetValid = false;
