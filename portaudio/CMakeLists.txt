@@ -125,7 +125,7 @@ if(libportaudio_WITH_ALSA)
     include_directories(${ALSA_INCLUDE_DIRS})
     add_definitions(-DPA_USE_ALSA=1)
     list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_ALSA_SOURCES})
-    endif()
+  endif()
 endif()
 
 if(libportaudio_WITH_ASIHPI)
@@ -161,31 +161,31 @@ endif()
 if(libportaudio_WITH_ASIO)
   # FIXME: Actually check for ASIO
   add_definitions(-DPA_USE_ASIO=1)
-  list(APPEND listportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_ASIO_SOURCES})
+  list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_ASIO_SOURCES})
 endif()
 
 if(libportaudio_WITH_DSOUND)
   # FIXME: Actually check for DirectSound
   add_definitions(-DPA_USE_DS=1)
-  list(APPEND listportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_DSOUND_SOURCES})
+  list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_DSOUND_SOURCES})
 endif()
 
 if(libportaudio_WITH_WASAPI)
   # FIXME: Actually check for WASAPI
   add_definitions(-DPA_USE_WASAPI=1)
-  list(APPEND listportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WASAPI_SOURCES})
+  list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WASAPI_SOURCES})
 endif()
 
 if(libportaudio_WITH_WDMKS)
   # FIXME: Actually check for WDM/KS
   add_definitions(-DPA_USE_WDMKS=1)
-  list(APPEND listportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WDMKS_SOURCES})
+  list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WDMKS_SOURCES})
 endif()
 
 if(libportaudio_WITH_WMME)
   # FIXME: Actually check for WMME
   add_definitions(-DPA_USE_WMME=1)
-  list(APPEND listportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WMME_SOURCES})
+  list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WMME_SOURCES})
 endif()
 
 if(libportaudio_ENABLE_DEBUG_OUTPUT)
