@@ -9,7 +9,7 @@ class ClockSync {
 private:
 	bool offsetValid;
 	// Multiplier for externalNanos
-	double skew;
+	double drift;
 	// Offset to be added to externalNanos to get refNanos;
 	qint64 offset;
 	qint64 refNanosStart;
@@ -18,7 +18,7 @@ private:
 public:
 	ClockSync();
 
-	double getSkew();
+	double getDrift();
 	MasterClockNanos sync(qint64 externalNanos);
 	void reset();
 };

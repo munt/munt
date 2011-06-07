@@ -61,7 +61,7 @@ int PortAudioDriver::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	qint64 firstSampleAudioNanos = timeInfo->outputBufferDacTime * MasterClock::NANOS_PER_SECOND;
 	qint64 renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;
 	qint64 offset = driver->latency - renderOffset;
-	MasterClockNanos firstSampleMasterClockNanos = driver->clockSync.sync(currentlyPlayingAudioNanos) - offset * driver->clockSync.getSkew();
+	MasterClockNanos firstSampleMasterClockNanos = driver->clockSync.sync(currentlyPlayingAudioNanos) - offset * driver->clockSync.getDrift();
 	unsigned int rendered = driver->synth->render((Bit16s *)outputBuffer, frameCount, firstSampleMasterClockNanos, realSampleRate);
 	if (rendered < frameCount) {
 		char *out = (char *)outputBuffer;

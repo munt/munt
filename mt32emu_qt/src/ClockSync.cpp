@@ -28,12 +28,12 @@ static const qint64 EMERGENCY_RESYNC_THRESHOLD_NANOS = 500 * MasterClock::NANOS_
 ClockSync::ClockSync() : offsetValid(false) {
 }
 
-double ClockSync::getSkew() {
-	return skew;
+double ClockSync::getDrift() {
+	return drift;
 }
 
 MasterClockNanos ClockSync::sync(qint64 externalNanos) {
-	// FIXME: Correct for clock skew.
+	// FIXME: Correct for clock drift.
 	// FIXME: Only emergencies are handled at the moment - need to use a proper sync algorithm.
 
 	MasterClockNanos masterClockNow = MasterClock::getClockNanos();
@@ -42,13 +42,13 @@ MasterClockNanos ClockSync::sync(qint64 externalNanos) {
 		return masterClockNow;
 	}
 	qint64 offsetNow = masterClockNow - externalNanos;
-	//double skewNow = (double)(masterClockNow - refNanosStart) / (externalNanos - externalNanosStart);
-	//qDebug() << "Sync diff" << (offsetNow - offset) << skewNow;
+	//double driftNow = (double)(masterClockNow - refNanosStart) / (externalNanos - externalNanosStart);
+	//qDebug() << "Sync diff" << (offsetNow - offset) << driftNow;
 	if (!offsetValid) {
 		refNanosStart = masterClockNow;
 		externalNanosStart = externalNanos;
 		offset = offsetNow;
-		skew = 1.0;
+		drift = 1.0;
 		qDebug() << "Sync:" << externalNanos << masterClockNow << offset;
 		offsetValid = true;
 	} else if (offsetNow < offset) {
