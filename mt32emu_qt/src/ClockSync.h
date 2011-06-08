@@ -8,13 +8,16 @@
 class ClockSync {
 private:
 	bool offsetValid;
+	// true after we get the drift estimation computed
 	bool synced;
-	// Multiplier for externalNanos
+	// Multiplier for externalElapsed
 	double drift;
-	// Offset to be added to externalNanos to get refNanos;
+	// Offset is the difference between the master clock and the scaled external clock
 	qint64 offset;
-	qint64 refNanosStart;
-	qint64 externalNanosStart;
+	// Start is the moment when we start time measurement
+	// (the first call to sync() after either init or reset)
+	qint64 masterStart;
+	qint64 externalStart;
 
 public:
 	ClockSync();

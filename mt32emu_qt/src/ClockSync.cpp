@@ -36,30 +36,30 @@ double ClockSync::getDrift() {
 	return drift;
 }
 
-MasterClockNanos ClockSync::sync(qint64 externalNanos) {
+MasterClockNanos ClockSync::sync(qint64 externalNow) {
 	// FIXME: Correct for clock drift.
 	// FIXME: Only emergencies are handled at the moment - need to use a proper sync algorithm.
 
-	MasterClockNanos masterClockNow = MasterClock::getClockNanos();
-	if (externalNanos == 0) {
+	MasterClockNanos masterNow = MasterClock::getClockNanos();
+	if (externalNow == 0) {
 		// Special value meaning "no timestamp, play immediately"
-		return masterClockNow;
+		return masterNow;
 	}
 	if (!offsetValid) {
-		refNanosStart = masterClockNow;
-		externalNanosStart = externalNanos;
+		masterStart = masterNow;
+		externalStart = externalNow;
 		offset = 0;
-		qDebug() << "Sync:" << externalNanos << masterClockNow << offset;
+		qDebug() << "Sync:" << externalNow << masterNow << offset;
 		offsetValid = true;
 		synced = false;
-		return masterClockNow;
+		return masterNow;
 	}
-	qint64 nanosFromStart = masterClockNow - refNanosStart;
-	qint64 externalNanosFromStart = externalNanos - externalNanosStart;
-	qint64 offsetNow = nanosFromStart - drift * externalNanosFromStart;
+	qint64 masterElapsed = masterNow - masterStart;
+	qint64 externalElapsed = externalNow - externalStart;
+	qint64 offsetNow = masterElapsed - drift * externalElapsed;
 	if (!synced) {
-		if (nanosFromStart < SYNC_TIME_NANOS) {
-			return masterClockNow - offsetNow;
+		if (masterElapsed < SYNC_TIME_NANOS) {
+			return masterNow - offsetNow;
 		} else {
 			// Special value meaning "sync immediately"
 			offset = 0;
@@ -68,16 +68,16 @@ MasterClockNanos ClockSync::sync(qint64 externalNanos) {
 		}
 	}
 	if(qAbs(offsetNow - offset) > EMERGENCY_RESET_THRESHOLD_NANOS) {
-			qDebug() << "Emergency reset:" << externalNanos << masterClockNow << offset << offsetNow;
+			qDebug() << "Emergency reset:" << externalNow << masterNow << offset << offsetNow;
 			offsetValid = false;
-			return masterClockNow;
+			return masterNow;
 	}
 	if ((offsetNow < offset) || ((offsetNow - offset) > JITTER_THRESHOLD_NANOS)) {
-		qDebug() << "Latency resync:" << externalNanos << masterClockNow << offset << offsetNow;
-		drift = (double)nanosFromStart / externalNanosFromStart;
+		qDebug() << "Latency resync:" << externalNow << masterNow << offset << offsetNow;
+		drift = (double)masterElapsed / externalElapsed;
 		offset = -LATENCY_FACTOR * JITTER_THRESHOLD_NANOS;
 	}
-	return refNanosStart + offset + drift * externalNanosFromStart;
+	return masterStart + offset + drift * externalElapsed;
 }
 
 void ClockSync::reset() {
