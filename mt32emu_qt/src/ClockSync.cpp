@@ -59,7 +59,7 @@ MasterClockNanos ClockSync::sync(qint64 externalNanos) {
 	qint64 offsetNow = nanosFromStart - drift * externalNanosFromStart;
 	if (!synced) {
 		if (nanosFromStart < SYNC_TIME_NANOS) {
-			return masterClockNow;
+			return masterClockNow - offsetNow;
 		} else {
 			// Special value meaning "sync immediately"
 			offset = 0;
