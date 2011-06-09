@@ -226,6 +226,7 @@ void RhythmPart::setProgram(unsigned int patchNum) {
 
 void Part::setProgram(unsigned int patchNum) {
 	setPatch(&synth->mt32ram.patches[patchNum]);
+	holdpedal = false;
 	allSoundOff();
 	setTimbre(&synth->mt32ram.timbres[getAbsTimbreNum()].timbre);
 	refresh();
