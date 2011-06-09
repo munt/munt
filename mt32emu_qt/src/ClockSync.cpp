@@ -23,6 +23,7 @@
 // using the new offset immediately.
 // This can be regularly hit around stream start time by badly-behaved drivers that return bogus timestamps
 // for a while when first starting.
+static const qint64 PERIODIC_RESET_NANOS = 30 * MasterClock::NANOS_PER_SECOND;
 static const qint64 EMERGENCY_RESET_THRESHOLD_NANOS = 500 * MasterClock::NANOS_PER_MILLISECOND;
 static const qint64 HIGH_JITTER_THRESHOLD_NANOS = 100 * MasterClock::NANOS_PER_MILLISECOND;
 static const qint64 LOW_JITTER_THRESHOLD_NANOS = -10 * MasterClock::NANOS_PER_MILLISECOND;
@@ -57,10 +58,19 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 	qint64 masterElapsed = masterNow - masterStart;
 	qint64 externalElapsed = externalNow - externalStart;
 	qint64 offsetNow = masterElapsed - drift * externalElapsed;
+	if (masterElapsed > PERIODIC_RESET_NANOS) {
+		qDebug() << "Periodic reset:" << externalNow << masterNow << offset << offsetNow;
+		drift = (double)masterElapsed / externalElapsed;
+		masterStart = masterNow;
+		externalStart = externalNow;
+		offset = offset - offsetNow;
+		offsetShift =	(qint64)(SHIFT_FACTOR * offset);
+		qDebug() << "Offset, shift:" << offset << offsetShift;
+	}
 	if(qAbs(offsetNow - offset) > EMERGENCY_RESET_THRESHOLD_NANOS) {
-			qDebug() << "Emergency reset:" << externalNow << masterNow << offset << offsetNow;
-			offsetValid = false;
-			return masterNow;
+		qDebug() << "Emergency reset:" << externalNow << masterNow << offset << offsetNow;
+		offsetValid = false;
+		return masterNow;
 	}
 	if (((offsetNow - offset) < LOW_JITTER_THRESHOLD_NANOS) ||
 		 ((offsetNow - offset) > HIGH_JITTER_THRESHOLD_NANOS)) {
