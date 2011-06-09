@@ -65,7 +65,8 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 		externalStart = externalNow;
 		offset = offset - offsetNow;
 		offsetShift =	(qint64)(SHIFT_FACTOR * offset);
-		qDebug() << "Offset, shift:" << offset << offsetShift;
+		qDebug() << "Periodic reset output:" << masterNow + offset;
+		return masterNow + offset;
 	}
 	if(qAbs(offsetNow - offset) > EMERGENCY_RESET_THRESHOLD_NANOS) {
 		qDebug() << "Emergency reset:" << externalNow << masterNow << offset << offsetNow;
