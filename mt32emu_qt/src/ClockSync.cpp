@@ -57,13 +57,13 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 	qint64 masterElapsed = masterNow - masterStart;
 	qint64 externalElapsed = externalNow - externalStart;
 	qint64 offsetNow = masterElapsed - drift * externalElapsed;
-	if(qAbs(offsetNow + offset) > EMERGENCY_RESET_THRESHOLD_NANOS) {
+	if(qAbs(offsetNow - offset) > EMERGENCY_RESET_THRESHOLD_NANOS) {
 			qDebug() << "Emergency reset:" << externalNow << masterNow << offset << offsetNow;
 			offsetValid = false;
 			return masterNow;
 	}
-	if (((offsetNow + offset) < LOW_JITTER_THRESHOLD_NANOS) ||
-		 ((offsetNow + offset) > HIGH_JITTER_THRESHOLD_NANOS)) {
+	if (((offsetNow - offset) < LOW_JITTER_THRESHOLD_NANOS) ||
+		 ((offsetNow - offset) > HIGH_JITTER_THRESHOLD_NANOS)) {
 		qDebug() << "Latency resync:" << externalNow << masterNow << offset << offsetNow;
 		qDebug() << "Offset, shift, masterNow, output:" << offset << offsetShift <<
 			masterNow << qint64(masterStart + offset + drift * externalElapsed);
