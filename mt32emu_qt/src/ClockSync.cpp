@@ -71,6 +71,7 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 	if(qAbs(offsetNow - offset) > EMERGENCY_RESET_THRESHOLD_NANOS) {
 		qDebug() << "Emergency reset:" << externalNow << masterNow << offset << offsetNow;
 		offsetValid = false;
+		drift = 1.0;
 		return masterNow;
 	}
 	if (((offsetNow - offset) < LOW_JITTER_THRESHOLD_NANOS) ||
