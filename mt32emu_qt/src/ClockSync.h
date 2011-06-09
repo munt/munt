@@ -8,12 +8,12 @@
 class ClockSync {
 private:
 	bool offsetValid;
-	// true after we get the drift estimation computed
-	bool synced;
 	// Multiplier for externalElapsed
 	double drift;
-	// Offset is the difference between the master clock and the scaled external clock
+	// offset is the difference between the master clock and the scaled external clock
 	qint64 offset;
+	// While resyncing, we move offset towards 0 by offsetShift steps
+	qint64 offsetShift;
 	// Start is the moment when we start time measurement
 	// (the first call to sync() after either init or reset)
 	qint64 masterStart;
