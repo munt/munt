@@ -25,7 +25,7 @@ option(libportaudio_WITH_ALSA "Enable support for ALSA in PortAudio" YES)
 option(libportaudio_WITH_JACK "Enable support for JACK in PortAudio" YES)
 option(libportaudio_WITH_OSS "Enable support for OSS in PortAudio" YES)
 option(libportaudio_WITH_ASIHPI "Enable support for ASIHPI in PortAudio" YES)
-if(CMAKE_SYSTEM_NAME STREQUAL Windows)
+if(WIN32)
   option(libportaudio_WITH_ASIO "Enable support for ASIO in PortAudio" YES)
   option(libportaudio_WITH_DSOUND "Enable support for DirectSound in PortAudio" YES)
   if(libportaudio_WITH_DSOUND)
@@ -299,7 +299,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   set(libportaudio_HOSTAPI_SOURCES
     ${libportaudio_HOSTAPI_COREAUDIO_SOURCES}
   )
-elseif(CMAKE_SYSTEM_NAME STREQUAL Windows)
+elseif(WIN32)
   list(APPEND libportaudio_PUBLIC_HEADERS
     ${libportaudio_WINDOWS_PUBLIC_HEADERS}
   )
