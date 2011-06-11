@@ -1,5 +1,5 @@
 /*
- * $Id: pa_process.c 1584 2011-02-02 18:58:17Z rossb $
+ * $Id: pa_process.c 1668 2011-05-02 17:07:11Z rossb $
  * Portable Audio I/O Library
  * streamCallback <-> host buffer processing adapter
  *
@@ -428,13 +428,13 @@ void PaUtil_ResetBufferProcessor( PaUtilBufferProcessor* bp )
 }
 
 
-unsigned long PaUtil_GetBufferProcessorInputLatency( PaUtilBufferProcessor* bp )
+unsigned long PaUtil_GetBufferProcessorInputLatencyFrames( PaUtilBufferProcessor* bp )
 {
     return bp->initialFramesInTempInputBuffer;
 }
 
 
-unsigned long PaUtil_GetBufferProcessorOutputLatency( PaUtilBufferProcessor* bp )
+unsigned long PaUtil_GetBufferProcessorOutputLatencyFrames( PaUtilBufferProcessor* bp )
 {
     return bp->initialFramesInTempOutputBuffer;
 }
