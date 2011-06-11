@@ -6,6 +6,8 @@
 # that "Only Microsoft Visual C++ build files currently supported!"
 # is invalid for this version.
 
+set(CMAKE_LEGACY_CYGWIN_WIN32 0)
+
 cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_MODULE_PATH
@@ -25,7 +27,7 @@ option(libportaudio_WITH_ALSA "Enable support for ALSA in PortAudio" YES)
 option(libportaudio_WITH_JACK "Enable support for JACK in PortAudio" YES)
 option(libportaudio_WITH_OSS "Enable support for OSS in PortAudio" YES)
 option(libportaudio_WITH_ASIHPI "Enable support for ASIHPI in PortAudio" YES)
-if(WIN32 OR CYGWIN)
+if(WIN32)
   option(libportaudio_WITH_ASIO "Enable support for ASIO in PortAudio" YES)
   option(libportaudio_WITH_DSOUND "Enable support for DirectSound in PortAudio" YES)
   if(libportaudio_WITH_DSOUND)
@@ -34,13 +36,15 @@ if(WIN32 OR CYGWIN)
   endif()
   option(libportaudio_WITH_WASAPI "Enable support for the Windows Audio Session API (WASAPI) in PortAudio" YES)
   option(libportaudio_WITH_WDMKS "Enable support for WDM Kernel Streaming in PortAudio" YES)
-  option(libportaudio_WITH_WMME "Enable support for Windows Multimedia Extensions (MME) in PortAudio" YES)
   option(libportaudio_USE_WDMKS_DEVICE_INFO "Use WDM/KS API for device info" YES)
+endif()
+if(WIN32 OR CYGWIN)
+  option(libportaudio_WITH_WMME "Enable support for Windows Multimedia Extensions (MME) in PortAudio" YES)
   mark_as_advanced(libportaudio_USE_WDMKS_DEVICE_INFO)
   option(libportaudio_UNICODE_BUILD "Enable Portaudio Unicode build" YES)
-  if(MSVC)
-    option(libportaudio_DLL_LINK_WITH_STATIC_RUNTIME "Link with static runtime libraries (minimises runtime dependencies)" YES)
-  endif()
+endif()
+if(MSVC)
+  option(libportaudio_DLL_LINK_WITH_STATIC_RUNTIME "Link with static runtime libraries (minimises runtime dependencies)" YES)
 endif()
 option(libportaudio_ENABLE_DEBUG_OUTPUT "Enable debug output in PortAudio" NO)
 option(libportaudio_BUILD_TESTS "Include test projects" NO)
