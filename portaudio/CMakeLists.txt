@@ -300,6 +300,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   )
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/os/unix/)
 
+  list(APPEND libportaudio_HOSTAPI_SOURCES CoreAudio AudioToolbox AudioUnit Carbon)
   add_definitions(
     -DPA_USE_COREAUDIO
   )
