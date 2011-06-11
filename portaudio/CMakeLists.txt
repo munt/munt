@@ -349,7 +349,10 @@ set(libportaudio_SOURCES
 
 if(libportaudio_UNICODE_BUILD)
   set(libportaudio_UNICODE_SOURCES ${libportaudio_SOURCES})
-  list(REMOVE_ITEM libportaudio_UNICODE_SOURCES ${libportaudio_ASIOSDK_SOURCES})
+
+  # The "" here is a dummy, since REMOVE_ITEM requires at least two arguments and
+  # libportaudio_ASIOSDK_SOURCES may be empty.
+  list(REMOVE_ITEM libportaudio_UNICODE_SOURCES ${libportaudio_ASIOSDK_SOURCES} "")
   set_source_files_properties(
     ${libportaudio_UNICODE_SOURCES}
     PROPERTIES
