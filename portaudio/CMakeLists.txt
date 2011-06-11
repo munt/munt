@@ -304,7 +304,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   add_definitions(
     -DPA_USE_COREAUDIO
   )
-  set(libportaudio_HOSTAPI_SOURCES
+  list(APPEND libportaudio_HOSTAPI_SOURCES
     ${libportaudio_HOSTAPI_COREAUDIO_SOURCES}
   )
 elseif(WIN32 OR CYGWIN)
