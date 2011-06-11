@@ -1,5 +1,5 @@
 /*
- * $Id: pa_win_wmme.c 1584 2011-02-02 18:58:17Z rossb $
+ * $Id: pa_win_wmme.c 1668 2011-05-02 17:07:11Z rossb $
  * pa_win_wmme.c
  * Implementation of PortAudio for Windows MultiMedia Extensions (WMME)       
  *                                                                                         
@@ -2477,10 +2477,10 @@ static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
     bufferProcessorIsInitialized = 1;
 
     stream->streamRepresentation.streamInfo.inputLatency =
-            (double)(PaUtil_GetBufferProcessorInputLatency(&stream->bufferProcessor)
+            (double)(PaUtil_GetBufferProcessorInputLatencyFrames(&stream->bufferProcessor)
                 +(framesPerHostInputBuffer * (hostInputBufferCount-1))) / sampleRate;
     stream->streamRepresentation.streamInfo.outputLatency =
-            (double)(PaUtil_GetBufferProcessorOutputLatency(&stream->bufferProcessor)
+            (double)(PaUtil_GetBufferProcessorOutputLatencyFrames(&stream->bufferProcessor)
                 +(framesPerHostOutputBuffer * (hostOutputBufferCount-1))) / sampleRate;
     stream->streamRepresentation.streamInfo.sampleRate = sampleRate;
 

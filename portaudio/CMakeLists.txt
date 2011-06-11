@@ -1,9 +1,20 @@
-# Added for Munt.
-# Note: This is a work in progress - barely tested, and only on Linux
+# For a "How-To" please refer to the Portaudio documentation at:
+# http://www.portaudio.com/trac/wiki/TutorialDir/Compile/CMake
 
-cmake_minimum_required(VERSION 2.6)
+# Note: This is modified for Munt, and differs significantly from
+# the upstream version. In particular, the note on that web page
+# that "Only Microsoft Visual C++ build files currently supported!"
+# is invalid for this version.
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/")
+set(CMAKE_LEGACY_CYGWIN_WIN32 0)
+
+cmake_minimum_required(VERSION 2.8)
+
+set(CMAKE_MODULE_PATH
+  ${CMAKE_MODULE_PATH}
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake_support"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/"
+)
 
 include(CheckIncludeFile)
 include(CheckIncludeFiles)
@@ -16,19 +27,46 @@ option(libportaudio_WITH_ALSA "Enable support for ALSA in PortAudio" YES)
 option(libportaudio_WITH_JACK "Enable support for JACK in PortAudio" YES)
 option(libportaudio_WITH_OSS "Enable support for OSS in PortAudio" YES)
 option(libportaudio_WITH_ASIHPI "Enable support for ASIHPI in PortAudio" YES)
-if (CMAKE_SYSTEM_NAME STREQUAL Windows)
+if(WIN32)
   option(libportaudio_WITH_ASIO "Enable support for ASIO in PortAudio" YES)
   option(libportaudio_WITH_DSOUND "Enable support for DirectSound in PortAudio" YES)
+  if(libportaudio_WITH_DSOUND)
+    option(libportaudio_USE_DIRECTSOUNDFULLDUPLEXCREATE "Use DirectSound full duplex create" YES)
+    mark_as_advanced(libportaudio_USE_DIRECTSOUNDFULLDUPLEXCREATE)
+  endif()
   option(libportaudio_WITH_WASAPI "Enable support for the Windows Audio Session API (WASAPI) in PortAudio" YES)
   option(libportaudio_WITH_WDMKS "Enable support for WDM Kernel Streaming in PortAudio" YES)
+  option(libportaudio_USE_WDMKS_DEVICE_INFO "Use WDM/KS API for device info" YES)
+endif()
+if(WIN32 OR CYGWIN)
   option(libportaudio_WITH_WMME "Enable support for Windows Multimedia Extensions (MME) in PortAudio" YES)
+  mark_as_advanced(libportaudio_USE_WDMKS_DEVICE_INFO)
+  option(libportaudio_UNICODE_BUILD "Enable Portaudio Unicode build" YES)
+endif()
+if(MSVC)
+  option(libportaudio_DLL_LINK_WITH_STATIC_RUNTIME "Link with static runtime libraries (minimises runtime dependencies)" YES)
 endif()
 option(libportaudio_ENABLE_DEBUG_OUTPUT "Enable debug output in PortAudio" NO)
+option(libportaudio_BUILD_TESTS "Include test projects" NO)
+mark_as_advanced(libportaudio_BUILD_TESTS)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-set(libportaudio_PUBLIC_HEADERS
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/portaudio.h
+set(libportaudio_COMMON_PUBLIC_HEADERS
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/portaudio.h"
+)
+set(libportaudio_UNIX_PUBLIC_HEADERS
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/pa_jack.h"
+)
+set(libportaudio_LINUX_PUBLIC_HEADERS
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/pa_linux_alsa.h"
+)
+set(libportaudio_DARWIN_PUBLIC_HEADERS
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/pa_mac_core.h"
+)
+set(libportaudio_WINDOWS_PUBLIC_HEADERS
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/pa_asio.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/pa_win_ds.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/pa_win_wasapi.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/pa_win_wmme.h"
 )
 
 set(libportaudio_COMMON_SOURCES
@@ -59,6 +97,7 @@ set(libportaudio_COMMON_SOURCES
   src/common/pa_types.h
   src/common/pa_util.h
 )
+source_group("common" FILES ${libportaudio_COMMON_SOURCES})
 
 set(libportaudio_HOSTAPI_ALSA_SOURCES
   src/hostapi/alsa/pa_linux_alsa.c
@@ -67,8 +106,6 @@ set(libportaudio_HOSTAPI_ASIHPI_SOURCES
   src/hostapi/asihpi/pa_linux_asihpi.c
 )
 set(libportaudio_HOSTAPI_ASIO_SOURCES
-  src/hostapi/asio/iasiothiscallresolver.cpp
-  src/hostapi/asio/iasiothiscallresolver.h
   src/hostapi/asio/pa_asio.cpp
 )
 set(libportaudio_HOSTAPI_COREAUDIO_SOURCES
@@ -101,20 +138,22 @@ set(libportaudio_HOSTAPI_WMME_SOURCES
   src/hostapi/wmme/pa_win_wmme.c
 )
 
+set(libportaudio_OS_UNIX_SOURCES
+  src/os/unix/pa_unix_hostapis.c
+  src/os/unix/pa_unix_util.c
+  src/os/unix/pa_unix_util.h
+)
 set(libportaudio_OS_WIN_SOURCES
+  src/os/win/pa_win_coinitialize.c
   src/os/win/pa_win_hostapis.c
   src/os/win/pa_win_util.c
   src/os/win/pa_win_waveformat.c
   src/os/win/pa_win_wdmks_utils.c
   src/os/win/pa_win_wdmks_utils.h
 )
-set(libportaudio_OS_UNIX_SOURCES
-  src/os/unix/pa_unix_hostapis.c
-  src/os/unix/pa_unix_util.c
-  src/os/unix/pa_unix_util.h
-)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/common)
+include_directories(include)
+include_directories(src/common)
 
 if(libportaudio_WITH_ALSA)
   find_package(ALSA)
@@ -157,32 +196,70 @@ if(libportaudio_WITH_OSS)
 endif()
 
 if(libportaudio_WITH_ASIO)
-  # FIXME: Actually check for ASIO
-  add_definitions(-DPA_USE_ASIO=1)
-  list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_ASIO_SOURCES})
+  # Try to find ASIO SDK (assumes that portaudio and asiosdk folders are side-by-side, see
+  # http://www.portaudio.com/trac/wiki/TutorialDir/Compile/WindowsASIOMSVC)
+  find_package(ASIOSDK)
+  if(ASIOSDK_FOUND)
+    include_directories(${ASIOSDK_ROOT_DIR}/common)
+    include_directories(${ASIOSDK_ROOT_DIR}/host)
+    include_directories(${ASIOSDK_ROOT_DIR}/host/pc)
+    set(libportaudio_ASIOSDK_SOURCES
+      ${ASIOSDK_ROOT_DIR}/common/asio.cpp
+      ${ASIOSDK_ROOT_DIR}/host/pc/asiolist.cpp
+      ${ASIOSDK_ROOT_DIR}/host/asiodrivers.cpp
+    )
+    source_group("hostapi\\ASIO\\ASIOSDK" FILES
+      ${libportaudio_ASIOSDK_SOURCES}
+    )
+    source_group("hostapi\\ASIO" FILES
+      ${libportaudio_HOSTAPI_ASIO_SOURCES}
+    )
+    add_definitions(-DPA_USE_ASIO=1)
+    list(APPEND libportaudio_HOSTAPI_SOURCES
+      ${libportaudio_HOSTAPI_ASIO_SOURCES}
+      ${libportaudio_ASIOSDK_SOURCES}
+    )
+  endif()
 endif()
 
 if(libportaudio_WITH_DSOUND)
-  # FIXME: Actually check for DirectSound
-  add_definitions(-DPA_USE_DS=1)
-  list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_DSOUND_SOURCES})
+  # Try to find DirectX SDK
+  find_package(DXSDK)
+  if(DXSDK_FOUND)
+    # If we use DirectSound, we need this for the library to be found (if not in VS project settings)
+    list(APPEND libportaudio_EXT_LIBS ${DXSDK_DSOUND_LIBRARY})
+    include_directories(${DXSDK_INCLUDE_DIR})
+    add_definitions(-DPA_USE_DS=1)
+    if(libportaudio_USE_DIRECTSOUNDFULLDUPLEXCREATE)
+      add_definitions(-DPAWIN_USE_DIRECTSOUNDFULLDUPLEXCREATE)
+    endif()
+    source_group("hostapi\\dsound" FILES ${libportaudio_HOSTAPI_DSOUND_SOURCES})
+    list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_DSOUND_SOURCES})
+  endif()
 endif()
 
 if(libportaudio_WITH_WASAPI)
   # FIXME: Actually check for WASAPI
+#  if(MINGW)
+#    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/hostapi/wasapi/mingw-include")
+#  endif()
   add_definitions(-DPA_USE_WASAPI=1)
+  source_group("hostapi\\wasapi" FILES ${libportaudio_HOSTAPI_WASAPI_SOURCES})
   list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WASAPI_SOURCES})
 endif()
 
 if(libportaudio_WITH_WDMKS)
-  # FIXME: Actually check for WDM/KS
+  # If we use WDM/KS we need setupapi.lib
+  list(APPEND libportaudio_EXT_LIBS setupapi)
   add_definitions(-DPA_USE_WDMKS=1)
+  source_group("hostapi\\wdmks" FILES ${PA_WDMKS_SOURCES})
   list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WDMKS_SOURCES})
 endif()
 
 if(libportaudio_WITH_WMME)
   # FIXME: Actually check for WMME
   add_definitions(-DPA_USE_WMME=1)
+  source_group("hostapi\\wmme" FILES ${libportaudio_HOSTAPI_WMME_SOURCES})
   list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WMME_SOURCES})
 endif()
 
@@ -190,24 +267,34 @@ if(libportaudio_ENABLE_DEBUG_OUTPUT)
   add_definitions(-DPA_ENABLE_DEBUG_OUTPUT)
 endif()
 
+set(libportaudio_PUBLIC_HEADERS ${libportaudio_COMMON_PUBLIC_HEADERS})
+
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+  list(APPEND libportaudio_PUBLIC_HEADERS
+    ${libportaudio_UNIX_PUBLIC_HEADERS}
+    ${libportaudio_LINUX_PUBLIC_HEADERS}
+  )
   set(libportaudio_OS_SOURCES
     ${libportaudio_OS_UNIX_SOURCES}
   )
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/os/unix)
   check_include_file("sys/soundcard.h" HAVE_SYS_SOUNDCARD_H)
-  if (HAVE_SYS_SOUNDCARD_H)
+  if(HAVE_SYS_SOUNDCARD_H)
     add_definitions(-DHAVE_SYS_SOUNDCARD_H)
   endif()
   check_include_file("linux/soundcard.h" HAVE_LINUX_SOUNDCARD_H)
-  if (HAVE_LINUX_SOUNDCARD_H)
+  if(HAVE_LINUX_SOUNDCARD_H)
     add_definitions(-DHAVE_LINUX_SOUNDCARD_H)
   endif()
   check_include_file("machine/soundcard.h" HAVE_MACHINE_SOUNDCARD_H)
-  if (HAVE_LINUX_SOUNDCARD_H)
+  if(HAVE_LINUX_SOUNDCARD_H)
     add_definitions(-DHAVE_MACHINE_SOUNDCARD_H)
   endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+  list(APPEND libportaudio_PUBLIC_HEADERS
+    ${libportaudio_UNIX_PUBLIC_HEADERS}
+    ${libportaudio_DARWIN_PUBLIC_HEADERS}
+  )
   set(libportaudio_OS_SOURCES
     ${libportaudio_OS_UNIX_SOURCES}
   )
@@ -219,16 +306,43 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   set(libportaudio_HOSTAPI_SOURCES
     ${libportaudio_HOSTAPI_COREAUDIO_SOURCES}
   )
-elseif (CMAKE_SYSTEM_NAME STREQUAL Windows)
+elseif(WIN32 OR CYGWIN)
+  list(APPEND libportaudio_PUBLIC_HEADERS
+    ${libportaudio_WINDOWS_PUBLIC_HEADERS}
+  )
   set(libportaudio_OS_SOURCES
     ${libportaudio_OS_WIN_SOURCES}
   )
+  source_group("os\\win" FILES ${libportaudio_OS_WIN_SOURCES})
+
+  if(MSVC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    if(libportaudio_DLL_LINK_WITH_STATIC_RUNTIME)
+      foreach(flag_var
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_MINSIZEREL
+        CMAKE_C_FLAGS_RELWITHDEBINFO
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_MINSIZEREL
+        CMAKE_CXX_FLAGS_RELWITHDEBINFO
+      )
+        if(${flag_var} MATCHES "/MD")
+          string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+        endif()
+      endforeach()
+    endif()
+  endif()
+  if(libportaudio_USE_WDMKS_DEVICE_INFO)
+    add_definitions(-DPAWIN_USE_WDMKS_DEVICE_INFO)
+  endif()
   list(APPEND libportaudio_EXT_LIBS winmm)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/os/win/)
-  if (MINGW)
-    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/hostapi/wasapi/mingw-include")
-  endif()
 endif()
+source_group("include" FILES ${libportaudio_PUBLIC_HEADERS})
 
 set(libportaudio_SOURCES
   ${libportaudio_HEADER}
@@ -236,6 +350,19 @@ set(libportaudio_SOURCES
   ${libportaudio_OS_SOURCES}
   ${libportaudio_HOSTAPI_SOURCES}
 )
+
+if(libportaudio_UNICODE_BUILD)
+  set(libportaudio_UNICODE_SOURCES ${libportaudio_SOURCES})
+
+  # The "" here is a dummy, since REMOVE_ITEM requires at least two arguments and
+  # libportaudio_ASIOSDK_SOURCES may be empty.
+  list(REMOVE_ITEM libportaudio_UNICODE_SOURCES ${libportaudio_ASIOSDK_SOURCES} "")
+  set_source_files_properties(
+    ${libportaudio_UNICODE_SOURCES}
+    PROPERTIES
+    COMPILE_DEFINITIONS "UNICODE;_UNICODE"
+  )
+endif()
 
 add_library(portaudio STATIC
   ${libportaudio_SOURCES}
@@ -260,3 +387,8 @@ install(
 set(PORTAUDIO_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include" PARENT_SCOPE)
 get_target_property(PORTAUDIO_LIBRARY portaudio LOCATION)
 set(PORTAUDIO_LIBRARIES "${PORTAUDIO_LIBRARY}" ${libportaudio_EXT_LIBS} PARENT_SCOPE)
+
+# Prepared for inclusion of test files
+if(libportaudio_BUILD_TESTS)
+  subdirs(test)
+endif()
