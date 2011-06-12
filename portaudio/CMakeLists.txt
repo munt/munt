@@ -27,7 +27,8 @@ option(libportaudio_WITH_ALSA "Enable support for ALSA in PortAudio" YES)
 option(libportaudio_WITH_JACK "Enable support for JACK in PortAudio" YES)
 option(libportaudio_WITH_OSS "Enable support for OSS in PortAudio" YES)
 option(libportaudio_WITH_ASIHPI "Enable support for ASIHPI in PortAudio" YES)
-if(WIN32)
+if(WIN32 AND MSVC)
+  # Currently the following only work with MSVC for some reason
   option(libportaudio_WITH_ASIO "Enable support for ASIO in PortAudio" YES)
   option(libportaudio_WITH_DSOUND "Enable support for DirectSound in PortAudio" YES)
   if(libportaudio_WITH_DSOUND)
@@ -37,14 +38,13 @@ if(WIN32)
   option(libportaudio_WITH_WASAPI "Enable support for the Windows Audio Session API (WASAPI) in PortAudio" YES)
   option(libportaudio_WITH_WDMKS "Enable support for WDM Kernel Streaming in PortAudio" YES)
   option(libportaudio_USE_WDMKS_DEVICE_INFO "Use WDM/KS API for device info" YES)
+  mark_as_advanced(libportaudio_USE_WDMKS_DEVICE_INFO)
+
+  option(libportaudio_DLL_LINK_WITH_STATIC_RUNTIME "Link with static runtime libraries (minimises runtime dependencies)" YES)
 endif()
 if(WIN32 OR CYGWIN)
   option(libportaudio_WITH_WMME "Enable support for Windows Multimedia Extensions (MME) in PortAudio" YES)
-  mark_as_advanced(libportaudio_USE_WDMKS_DEVICE_INFO)
   option(libportaudio_UNICODE_BUILD "Enable Portaudio Unicode build" YES)
-endif()
-if(MSVC)
-  option(libportaudio_DLL_LINK_WITH_STATIC_RUNTIME "Link with static runtime libraries (minimises runtime dependencies)" YES)
 endif()
 option(libportaudio_ENABLE_DEBUG_OUTPUT "Enable debug output in PortAudio" NO)
 option(libportaudio_BUILD_TESTS "Include test projects" NO)
@@ -148,6 +148,8 @@ set(libportaudio_OS_WIN_SOURCES
   src/os/win/pa_win_hostapis.c
   src/os/win/pa_win_util.c
   src/os/win/pa_win_waveformat.c
+)
+set(libportaudio_OS_WIN_WDMKS_DEVICE_INFO_SOURCES
   src/os/win/pa_win_wdmks_utils.c
   src/os/win/pa_win_wdmks_utils.h
 )
@@ -314,7 +316,6 @@ elseif(WIN32 OR CYGWIN)
   set(libportaudio_OS_SOURCES
     ${libportaudio_OS_WIN_SOURCES}
   )
-  source_group("os\\win" FILES ${libportaudio_OS_WIN_SOURCES})
 
   if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -339,7 +340,9 @@ elseif(WIN32 OR CYGWIN)
   endif()
   if(libportaudio_USE_WDMKS_DEVICE_INFO)
     add_definitions(-DPAWIN_USE_WDMKS_DEVICE_INFO)
+    list(APPEND libportaudio_OS_WIN_SOURCES ${libportaudio_OS_WIN_WDMKS_DEVICE_INFO_SOURCES})
   endif()
+  source_group("os\\win" FILES ${libportaudio_OS_WIN_SOURCES})
   list(APPEND libportaudio_EXT_LIBS winmm)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/os/win/)
 endif()
