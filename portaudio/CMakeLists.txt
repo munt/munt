@@ -252,7 +252,7 @@ if(libportaudio_WITH_WDMKS)
   # If we use WDM/KS we need setupapi.lib
   list(APPEND libportaudio_EXT_LIBS setupapi)
   add_definitions(-DPA_USE_WDMKS=1)
-  source_group("hostapi\\wdmks" FILES ${PA_WDMKS_SOURCES})
+  source_group("hostapi\\wdmks" FILES ${libportaudio_HOSTAPI_WDMKS_SOURCES})
   list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_WDMKS_SOURCES})
 endif()
 
