@@ -286,7 +286,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			}
 
 			// Correct resAmp for cutoff in range 50..66
-			if (cutoffVal < 144.0f) {
+			if ((cutoffVal >= 128.0f) && (cutoffVal < 144.0f)) {
 #if MT32EMU_ACCURATE_WG == 1
 				resAmp *= sinf(FLOAT_PI * (cutoffVal - 128.0f) / 32.0f);
 #else
