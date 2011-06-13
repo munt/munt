@@ -15,20 +15,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <cassert>
+#include <cerrno>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-#include <unistd.h>
+#include <glib.h>
+
 #include <mt32emu/mt32emu.h>
 
 #include "config.h"
 #include "smf.h"
-
-static bool quiet = false;
 
 static const int DEFAULT_BUFFER_SIZE = 128 * 1024;
 static const int DEFAULT_SAMPLE_RATE = 32000;
@@ -41,11 +40,209 @@ static const int HEADEROFFS_SAMPLERATE = 24;
 static const int HEADEROFFS_BYTERATE = 28;
 static const int HEADEROFFS_DATALEN = 40;
 
+static const MT32Emu::DACInputMode DAC_INPUT_MODES[] = {
+	MT32Emu::DACInputMode_NICE,
+	MT32Emu::DACInputMode_PURE,
+	MT32Emu::DACInputMode_GENERATION1,
+	MT32Emu::DACInputMode_GENERATION2
+};
+
+struct Options {
+	gchar **inputFilenames;
+	gchar *outputFilename;
+	gboolean force;
+	gboolean quiet;
+
+	gchar *romDir;
+	unsigned int bufferFrameCount;
+	gint sampleRate;
+
+	MT32Emu::DACInputMode dacInputMode;
+	int rawChannelMap[8];
+	int rawChannelCount;
+
+	unsigned int renderMinFrames;
+	unsigned int renderMaxFrames;
+	gint recordMaxStartSilentFrames;
+	gint recordMaxEndSilentFrames;
+	gint recordMaxLA32EndSilentFrames;
+	gboolean waitForLA32;
+	gboolean waitForReverb;
+	gboolean sendAllNotesOff;
+};
+
+struct State {
+	MT32Emu::Bit16s *stereoSampleBuffer;
+	MT32Emu::Bit16s *rawSampleBuffer[6];
+	MT32Emu::Synth *synth;
+	FILE *outputFile;
+	bool lastInputFile;
+	bool firstNoiseEncountered;
+	unsigned long unwrittenSilentFrames;
+	unsigned long renderedFrames;
+	unsigned long writtenFrames;
+};
+
+static void freeOptions(Options *options) {
+	g_strfreev(options->inputFilenames);
+	options->inputFilenames = NULL;
+	g_free(options->outputFilename);
+	options->outputFilename = NULL;
+	g_free(options->romDir);
+	options->romDir = NULL;
+}
+
+static bool parseOptions(int argc, char *argv[], Options *options) {
+	gint dacInputModeIx = 0;
+	gint bufferFrameCount = DEFAULT_BUFFER_SIZE;
+	gint renderMinFrames = 0;
+	gint renderMaxFrames = -1;
+	gchar **rawStreams = NULL;
+	gchar *deprecatedSysexFile = NULL;
+	options->inputFilenames = NULL;
+	options->outputFilename = NULL;
+	options->force = false;
+	options->quiet = false;
+
+	options->romDir = NULL;
+	options->sampleRate = DEFAULT_SAMPLE_RATE;
+
+	options->dacInputMode = DAC_INPUT_MODES[0];
+	options->rawChannelCount = 0;
+
+	options->recordMaxStartSilentFrames = 0;
+	options->recordMaxEndSilentFrames = 0;
+	options->recordMaxLA32EndSilentFrames = 0;
+	options->waitForLA32 = true;
+	options->waitForReverb = true;
+	options->sendAllNotesOff = true;
+	// FIXME: Perhaps there's a nicer way to represent long argument descriptions...
+	GOptionEntry entries[] = {
+		{"output", 'o', 0, G_OPTION_ARG_FILENAME, &options->outputFilename, "Output file (default: last source file name with \".wav\" appended)", "<filename>"},
+		{"force", 'f', 0, G_OPTION_ARG_NONE, &options->force, "Overwrite the output file if it already exists", NULL},
+		{"quiet", 'q', 0, G_OPTION_ARG_NONE, &options->quiet, "Be quiet", NULL},
+
+		{"rom-dir", 'm', 0, G_OPTION_ARG_STRING, &options->romDir, "Directory in which ROMs are stored (including trailing path separator)", "<directory>"},
+		// buffer-size determines the maximum number of frames to be rendered by the emulator in one pass.
+		// This can have a big impact on performance (Generally more at a time=better).
+		{"buffer-size", 'b', 0, G_OPTION_ARG_INT, &bufferFrameCount, "Buffer size in frames (minimum: 1)", "<frame_count>"},  // FIXME: Show default
+		{"sample-rate", 'r', 0, G_OPTION_ARG_INT, &options->sampleRate, "Sample rate in Hz (minimum: 1, default: 32000)", "<sample_rate>"},
+
+		{"dac-input-mode", 'd', 0, G_OPTION_ARG_INT, &dacInputModeIx, "LA-32 to DAC input mode (default: 0)\n"
+		 "                Ignored if -w is used (in which case 1/PURE is always used)\n"
+		 "                 0: NICE\n"
+		 "                 1: PURE\n"
+		 "                 2: GENERATION1\n"
+		 "                 3: GENERATION2", "<dac_input_mode>"},
+		{"raw-stream", 'w', 0, G_OPTION_ARG_STRING_ARRAY, &rawStreams, "Write a raw file with signed 16-bit big-endian samples instead of a WAVE file, and include the specified channel.\n"
+		 "                This option can be specified multiple times (up to eight), in which case streams will be written to the file multiplexed sample-by-sample in the order given.\n"
+		 "                Available stream IDs:\n"
+		 "                -1: Dummy stream filled with 0\n"
+		 "                 0: [LA32] Left non-reverb\n"
+		 "                 1: [LA32] Right non-reverb\n"
+		 "                 2: [LA32] Left reverb dry\n"
+		 "                 3: [LA32] Right reverb dry\n"
+		 "                 4: [Reverb] Left reverb wet\n"
+		 "                 5: [Reverb] Right reverb wet", "<stream_id>"},
+
+		{"render-min", 0, 0, G_OPTION_ARG_INT, &renderMinFrames, "Render at least this many frames (default: 0) (NYI)", "<frame_count>"},
+		{"render-max", 'e', 0, G_OPTION_ARG_INT, &renderMaxFrames, "Render at most this many frames (default: -1)", "<frame_count>|-1 (unlimited)"},
+		{"record-max-start-silence", 0, 0, G_OPTION_ARG_INT, &options->recordMaxStartSilentFrames, "Record at most this many silent frames at the start of each SMF file (default: 0)", "<frame_count>|-1 (unlimited)"},
+		{"record-max-end-silence", 0, 0, G_OPTION_ARG_INT, &options->recordMaxEndSilentFrames, "Record at most this many silent frames at the end of each SMF file (default: 0)", "<frame_count>|-1 (unlimited)"},
+		{"record-max-la32-end-silence", 0, 0, G_OPTION_ARG_INT, &options->recordMaxLA32EndSilentFrames, "Record at most this many silent frames produced by the emulated LA32 before it becomes inactive (default: 0)", "<frame_count>|-1 (unlimited)"},
+		{"no-wait-for-la32", 't', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options->waitForLA32, "Don't wait for all partials to become inactive after each SMF file has ended. Implies no-wait-for-reverb.", NULL},
+		{"no-wait-for-reverb", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options->waitForReverb, "Don't wait for reverb to finish after each SMF file has ended.", NULL},
+		{"no-send-all-notes-off", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options->sendAllNotesOff, "Don't release the hold pedal and perform all-notes-off on all parts in the emulator at the end of each SMF file.\n"
+		 "                WARNING: Sound can theoretically continue forever if not limited by other options.", NULL},
+
+		{"s", 's', 0, G_OPTION_ARG_FILENAME, &deprecatedSysexFile, "[DEPRECATED] Play this SMF or sysex file before any other. DEPRECATED: Instead just specify the file first in the file list.", "<midi_file>"},
+		{G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &options->inputFilenames, NULL, "<midi_file> [midi_file...]"},
+		{NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL}
+	};
+	GOptionContext *context = g_option_context_new("- record MIDI played through the MT-32 emulator to a file");
+	g_option_context_add_main_entries(context, entries, NULL);
+	GError *error = NULL;
+	bool parseSuccess = g_option_context_parse(context, &argc, &argv, &error);
+	if (!parseSuccess) {
+		fprintf(stderr, "Option parsing failed: %s\n", error->message);
+	}
+	if (dacInputModeIx < 0 || dacInputModeIx > 3) {
+		fprintf(stderr, "dac-input-mode must be between 0 and 3\n");
+		parseSuccess = false;
+	}
+	if (bufferFrameCount < 1) {
+		fprintf(stderr, "buffer-size must be greater than 0\n");
+		parseSuccess = false;
+	} else {
+		options->bufferFrameCount = bufferFrameCount;
+	}
+	options->renderMaxFrames = renderMaxFrames < 0 ? INT_MAX : renderMaxFrames;
+	options->renderMinFrames = renderMinFrames < 0 ? 0 : renderMinFrames;
+	if (options->renderMinFrames > options->renderMaxFrames) {
+		options->renderMinFrames = options->renderMaxFrames;
+	}
+	if (options->recordMaxStartSilentFrames < 0) {
+		options->recordMaxStartSilentFrames = INT_MAX;
+	}
+	if (options->recordMaxEndSilentFrames < 0) {
+		options->recordMaxEndSilentFrames = INT_MAX;
+	}
+	if (options->recordMaxLA32EndSilentFrames < 0) {
+		options->recordMaxLA32EndSilentFrames = INT_MAX;
+	}
+	if (rawStreams != NULL && g_strv_length(rawStreams) > 0) {
+		gchar **rawStream = rawStreams;
+		while(*rawStream != NULL) {
+			if (options->rawChannelCount == 8) {
+				fprintf(stderr, "Too many raw-stream options - maximum 8\n");
+				parseSuccess = false;
+				break;
+			}
+			options->rawChannelMap[options->rawChannelCount] = atoi(*rawStream);
+			if (options->rawChannelMap[options->rawChannelCount] < -1 || options->rawChannelMap[options->rawChannelCount] > 5) {
+				fprintf(stderr, "Invalid option raw-stream option %s - must be a number between -1 and 5 (inclusive)\n", *rawStream);
+				parseSuccess = false;
+				break;
+			}
+			options->rawChannelCount++;
+			rawStream++;
+		}
+	}
+	if (deprecatedSysexFile != NULL) {
+		guint oldLength = options->inputFilenames == NULL ? 0 : g_strv_length(options->inputFilenames);
+		gchar **newInputFilenames = g_new(gchar *, oldLength + 2);
+		newInputFilenames[0] = deprecatedSysexFile;
+		newInputFilenames[oldLength + 1] = NULL;
+		for (guint i = 0; i < oldLength; i++) {
+			newInputFilenames[i + 1] = options->inputFilenames[i];
+		}
+		g_free(options->inputFilenames);
+		options->inputFilenames = newInputFilenames;
+	}
+	if (options->inputFilenames == NULL || g_strv_length(options->inputFilenames) == 0) {
+		fprintf(stderr, "No input files specified\n");
+		parseSuccess = false;
+	}
+	g_strfreev(rawStreams);
+	if (options->rawChannelCount > 0) {
+		options->dacInputMode = MT32Emu::DACInputMode_PURE;
+	} else {
+		options->dacInputMode = DAC_INPUT_MODES[dacInputModeIx];
+	}
+	if (!parseSuccess) {
+		gchar *help = g_option_context_get_help(context, TRUE, NULL);
+		fputs(help, stderr);
+		freeOptions(options);
+	}
+	g_option_context_free(context);
+	return parseSuccess;
+}
+
 static long secondsToSamples(double seconds, int sampleRate) {
 	return seconds * sampleRate;
 }
 
-static bool writeWAVEHeader(FILE *dstFile, int sampleRate) {
+static bool writeWAVEHeader(FILE *outputFile, int sampleRate) {
 	int byteRate = sampleRate * 4;
 	// All values are little-endian
 	unsigned char waveHeader[] = {
@@ -75,192 +272,172 @@ static bool writeWAVEHeader(FILE *dstFile, int sampleRate) {
 	waveHeader[HEADEROFFS_BYTERATE + 1] = (byteRate >> 8) & 0xFF;
 	waveHeader[HEADEROFFS_BYTERATE + 2] = (byteRate >> 16) & 0xFF;
 	waveHeader[HEADEROFFS_BYTERATE + 3] = (byteRate >> 24) & 0xFF;
-	return fwrite(waveHeader, 1, sizeof(waveHeader), dstFile) == sizeof(waveHeader);
+	return fwrite(waveHeader, 1, sizeof(waveHeader), outputFile) == sizeof(waveHeader);
 }
 
-static bool fillWAVESizes(FILE *dstFile, int numFrames) {
+static bool fillWAVESizes(FILE *outputFile, int numFrames) {
 	// FIXME: Check return codes, etc.
 	int dataSize = numFrames * 4;
 	int riffSize = dataSize + 28;
-	if (fseek(dstFile, HEADEROFFS_RIFFLEN, SEEK_SET))
+	if (fseek(outputFile, HEADEROFFS_RIFFLEN, SEEK_SET))
 		return false;
-	if (fputc(riffSize & 0xFF, dstFile) == EOF)
+	if (fputc(riffSize & 0xFF, outputFile) == EOF)
 		return false;
-	if (fputc((riffSize >> 8) & 0xFF, dstFile) == EOF)
+	if (fputc((riffSize >> 8) & 0xFF, outputFile) == EOF)
 		return false;
-	if (fputc((riffSize >> 16) & 0xFF, dstFile) == EOF)
+	if (fputc((riffSize >> 16) & 0xFF, outputFile) == EOF)
 		return false;
-	if (fputc((riffSize >> 24) & 0xFF, dstFile) == EOF)
+	if (fputc((riffSize >> 24) & 0xFF, outputFile) == EOF)
 		return false;
-	if (fseek(dstFile, HEADEROFFS_DATALEN, SEEK_SET))
+	if (fseek(outputFile, HEADEROFFS_DATALEN, SEEK_SET))
 		return false;
-	if (fputc(dataSize & 0xFF, dstFile) == EOF)
+	if (fputc(dataSize & 0xFF, outputFile) == EOF)
 		return false;
-	if (fputc((dataSize >> 8) & 0xFF, dstFile) == EOF)
+	if (fputc((dataSize >> 8) & 0xFF, outputFile) == EOF)
 		return false;
-	if (fputc((dataSize >> 16) & 0xFF, dstFile) == EOF)
+	if (fputc((dataSize >> 16) & 0xFF, outputFile) == EOF)
 		return false;
-	if (fputc((dataSize >> 24) & 0xFF, dstFile) == EOF)
+	if (fputc((dataSize >> 24) & 0xFF, outputFile) == EOF)
 		return false;
 	return true;
 }
 
-static long getFileLength(FILE *file) {
-	long oldPos = ftell(file);
-	if (oldPos == -1)
-		return -1;
-	if (fseek(file, 0, SEEK_END))
-		return -1;
-	long len = ftell(file);
-	if (fseek(file, oldPos, SEEK_SET))
-		return -1;
-	return len;
+static bool loadFile(MT32Emu::Bit8u *&fileBuffer, gsize &fileBufferLength, const gchar *filename, const gchar *displayFilename) {
+	GError *err = NULL;
+	g_file_get_contents(filename, (gchar **)&fileBuffer, &fileBufferLength, &err);
+	if (err != NULL) {
+		fprintf(stderr, "Error reading file '%s': %s\n", displayFilename, err->message);
+		g_error_free(err);
+		return false;
+	}
+	return true;
 }
 
-static bool playSysexFile(MT32Emu::Synth *synth, char *syxFileName) {
-	bool ok = false;
-	MT32Emu::Bit8u *syxbuf;
-	FILE *syxFile = fopen(syxFileName, "rb");
-	if (syxFile != NULL) {
-		// FIXME: Add error checking
-		long len = getFileLength(syxFile);
-		if (len != -1) {
-			syxbuf = (MT32Emu::Bit8u*)malloc(len);
-			if (syxbuf != NULL) {
-				if (fread(syxbuf, 1, len, syxFile) == (unsigned)len) {
-					long start = -1;
-					ok = true;
-					for (long i = 0; i < len; i++) {
-						if (syxbuf[i] == 0xF0) {
-							if (start != -1) {
-								fprintf(stderr, "Started a new sysex message before the last finished - sysex file '%s' may be in an unsupported format.\n", syxFileName);
-							}
-							start = i;
-						}
-						else if (syxbuf[i] == 0xF7) {
-							if (start == -1) {
-								fprintf(stderr, "Ended a sysex message without a start byte - sysex file '%s' may be in an unsupported format.\n", syxFileName);
-							} else {
-								synth->playSysex((MT32Emu::Bit8u*)(syxbuf + start), i - start + 1);
-							}
-							start = -1;
-						}
-					}
-				} else {
-					fprintf(stderr, "Error reading %ld bytes from sysex file '%s'.\n", len, syxFileName);
-				}
-				free(syxbuf);
-			} else {
-				fprintf(stderr, "Error allocating %ld bytes for sysex file '%s'.\n", len, syxFileName);
+static bool playSysexFileBuffer(MT32Emu::Synth *synth, const gchar *displayFilename, MT32Emu::Bit8u *fileBuffer, gsize fileBufferLength) {
+	long start = -1;
+	for (gsize i = 0; i < fileBufferLength; i++) {
+		if (fileBuffer[i] == 0xF0) {
+			if (start != -1) {
+				fprintf(stderr, "Started a new sysex message before the last finished - sysex file '%s' may be in an unsupported format.\n", displayFilename);
 			}
-		} else {
-			fprintf(stderr, "Error getting length of sysex file '%s'.\n", syxFileName);
+			start = i;
 		}
-		fclose(syxFile);
-	} else {
-		fprintf(stderr, "Error opening sysex file '%s' for reading.\n", syxFileName);
-	}
-	return ok;
-}
-
-static unsigned long writeSilence(FILE *dstFile, unsigned int channelCount, bool noiseDetected, bool &waitingForNoise, unsigned long &silenceCount) {
-	int writtenFrames;
-	if (waitingForNoise) {
-		waitingForNoise = !noiseDetected;
-		writtenFrames = 0;
-	} else {
-		writtenFrames = silenceCount;
-		for (unsigned long i = 0; i < writtenFrames * sizeof(MT32Emu::Bit16s) * channelCount; i++) {
-			fputc(0, dstFile);
+		else if (fileBuffer[i] == 0xF7) {
+			if (start == -1) {
+				fprintf(stderr, "Ended a sysex message without a start byte - sysex file '%s' may be in an unsupported format.\n", displayFilename);
+			} else {
+				synth->playSysex((MT32Emu::Bit8u*)(fileBuffer + start), i - start + 1);
+			}
+			start = -1;
 		}
 	}
-	silenceCount = 0;
-	return writtenFrames;
+	return true;
 }
 
-/**
- * Render frameCount frames to the buffer.
- * bufferFrameCount determines the maximum number of frames to be rendered by the emulator in one pass.
- * This can have a big impact on performance (more at a time=better).
- */
-static unsigned long renderStereo(MT32Emu::Synth *synth, MT32Emu::Bit16s *stereoSampleBuffer, unsigned int bufferFrameCount, FILE *dstFile, unsigned int frameCount, bool &waitingForNoise, unsigned long &silenceCount) {
-	unsigned int writtenFrames = 0;
+enum Occasion {
+	NOISE_DETECTED,
+	MIDI_ENDED,
+	LA32_INACTIVE
+};
+
+static void flushSilence(Occasion occasion, const Options &options, State &state) {
+	unsigned int channelCount = options.rawChannelCount > 0 ? options.rawChannelCount : 2;
+	int writtenFrames = state.unwrittenSilentFrames;
+	switch(occasion) {
+	case NOISE_DETECTED:
+		if (!state.firstNoiseEncountered) {
+			state.firstNoiseEncountered = true;
+			writtenFrames = MIN(writtenFrames, options.recordMaxStartSilentFrames);
+		}
+		state.unwrittenSilentFrames = 0;
+		break;
+	case MIDI_ENDED:
+		writtenFrames = MIN(writtenFrames, options.recordMaxEndSilentFrames);
+		state.unwrittenSilentFrames -= writtenFrames;
+		break;
+	case LA32_INACTIVE:
+		writtenFrames = MIN(writtenFrames, options.recordMaxLA32EndSilentFrames);
+		state.unwrittenSilentFrames -= writtenFrames;
+		break;
+	}
+	for (unsigned long i = 0; i < writtenFrames * sizeof(MT32Emu::Bit16s) * channelCount; i++) {
+		fputc(0, state.outputFile);
+	}
+	state.writtenFrames += writtenFrames;
+}
+
+static void renderStereo(unsigned int frameCount, const Options &options, State &state) {
+	state.renderedFrames += frameCount;
 	while (frameCount > 0) {
-		unsigned int renderedFramesThisPass = frameCount > bufferFrameCount ? bufferFrameCount : frameCount;
-		synth->render(stereoSampleBuffer, renderedFramesThisPass);
+		unsigned int renderedFramesThisPass = MIN(frameCount, options.bufferFrameCount);
+		state.synth->render(state.stereoSampleBuffer, renderedFramesThisPass);
 		for (unsigned int i = 0; i < renderedFramesThisPass; i++) {
 			unsigned int leftIx = i * 2;
 			unsigned int rightIx = leftIx + 1;
-			bool silent = stereoSampleBuffer[leftIx] == 0 && stereoSampleBuffer[rightIx] == 0;
+			bool silent = state.stereoSampleBuffer[leftIx] == 0 && state.stereoSampleBuffer[rightIx] == 0;
 			if (silent) {
-				silenceCount++;
+				state.unwrittenSilentFrames++;
 				continue;
 			}
-			writtenFrames += writeSilence(dstFile, 2, true, waitingForNoise, silenceCount);
-			fputc(stereoSampleBuffer[leftIx] & 0xFF, dstFile);
-			fputc((stereoSampleBuffer[leftIx] >> 8) & 0xFF, dstFile);
-			fputc(stereoSampleBuffer[rightIx] & 0xFF, dstFile);
-			fputc((stereoSampleBuffer[rightIx] >> 8) & 0xFF, dstFile);
-			writtenFrames++;
+			flushSilence(NOISE_DETECTED, options, state);
+			fputc(state.stereoSampleBuffer[leftIx] & 0xFF, state.outputFile);
+			fputc((state.stereoSampleBuffer[leftIx] >> 8) & 0xFF, state.outputFile);
+			fputc(state.stereoSampleBuffer[rightIx] & 0xFF, state.outputFile);
+			fputc((state.stereoSampleBuffer[rightIx] >> 8) & 0xFF, state.outputFile);
+			state.writtenFrames++;
 		}
 		frameCount -= renderedFramesThisPass;
 	}
-	return writtenFrames;
 }
 
-static unsigned long renderRaw(MT32Emu::Synth *synth, MT32Emu::Bit16s *rawSampleBuffer[6], unsigned int bufferFrameCount, FILE *dstFile, unsigned int frameCount, bool &waitingForNoise, unsigned long &silenceCount, int rawChannelMap[], int rawChannelCount) {
-	unsigned int writtenFrames = 0;
+static void renderRaw(unsigned int frameCount, const Options &options, State &state) {
+	state.renderedFrames += frameCount;
 	while (frameCount > 0) {
-		unsigned int renderedFramesThisPass = frameCount > bufferFrameCount ? bufferFrameCount : frameCount;
-		synth->renderStreams(rawSampleBuffer[0], rawSampleBuffer[1], rawSampleBuffer[2], rawSampleBuffer[3], rawSampleBuffer[4], rawSampleBuffer[5], renderedFramesThisPass);
+		unsigned int renderedFramesThisPass = MIN(frameCount, options.bufferFrameCount);
+		state.synth->renderStreams(state.rawSampleBuffer[0], state.rawSampleBuffer[1], state.rawSampleBuffer[2], state.rawSampleBuffer[3], state.rawSampleBuffer[4], state.rawSampleBuffer[5], renderedFramesThisPass);
 		for (unsigned int i = 0; i < renderedFramesThisPass; i++) {
 			bool allSilent = false;
-			for (int chanMapIx = 0; chanMapIx < rawChannelCount; chanMapIx++) {
-				if (rawChannelMap[chanMapIx] >= 0 && rawSampleBuffer[rawChannelMap[chanMapIx]][i] != 0) {
+			for (int chanMapIx = 0; chanMapIx < options.rawChannelCount; chanMapIx++) {
+				if (options.rawChannelMap[chanMapIx] >= 0 && state.rawSampleBuffer[options.rawChannelMap[chanMapIx]][i] != 0) {
 					break;
 				}
-				if (chanMapIx == rawChannelCount - 1) {
+				if (chanMapIx == options.rawChannelCount - 1) {
 					allSilent = true;
 				}
 			}
 			if (allSilent) {
-				silenceCount++;
+				state.unwrittenSilentFrames++;
 				continue;
 			}
-			writtenFrames += writeSilence(dstFile, rawChannelCount, true, waitingForNoise, silenceCount);
-			for (int chanMapIx = 0; chanMapIx < rawChannelCount; chanMapIx++) {
-				if (rawChannelMap[chanMapIx] < 0) {
-					fputc(0, dstFile);
-					fputc(0, dstFile);
+			flushSilence(NOISE_DETECTED, options, state);
+			for (int chanMapIx = 0; chanMapIx < options.rawChannelCount; chanMapIx++) {
+				if (options.rawChannelMap[chanMapIx] < 0) {
+					fputc(0, state.outputFile);
+					fputc(0, state.outputFile);
 				} else {
-					MT32Emu::Bit16s sample = rawSampleBuffer[rawChannelMap[chanMapIx]][i];
-					fputc((sample >> 8) & 0xFF, dstFile);
-					fputc(sample & 0xFF, dstFile);
+					MT32Emu::Bit16s sample = state.rawSampleBuffer[options.rawChannelMap[chanMapIx]][i];
+					fputc((sample >> 8) & 0xFF, state.outputFile);
+					fputc(sample & 0xFF, state.outputFile);
 				}
 			}
-			writtenFrames++;
+			state.writtenFrames++;
 		}
 		frameCount -= renderedFramesThisPass;
 	}
-	return writtenFrames;
 }
 
-static unsigned long render(MT32Emu::Synth *synth, MT32Emu::Bit16s *stereoSampleBuffer, MT32Emu::Bit16s *rawSampleBuffer[6], unsigned int bufferFrameCount, FILE *dstFile, unsigned int frameCount, bool &waitingForNoise, unsigned long &silenceCount, int rawChannelMap[], int rawChannelCount) {
-	if (rawChannelCount > 0) {
-		return renderRaw(synth, rawSampleBuffer, bufferFrameCount, dstFile, frameCount, waitingForNoise, silenceCount, rawChannelMap, rawChannelCount);
+static void render(unsigned int frameCount, const Options &options, State &state) {
+	if (options.rawChannelCount > 0) {
+		renderRaw(frameCount, options, state);
+	} else {
+		renderStereo(frameCount, options, state);
 	}
-	return renderStereo(synth, stereoSampleBuffer, bufferFrameCount, dstFile, frameCount, waitingForNoise, silenceCount);
 }
 
-static unsigned long processSMF(FILE *dstFile, MT32Emu::Synth *synth, smf_t *smf, int sampleRate, MT32Emu::Bit16s *stereoSampleBuffer, MT32Emu::Bit16s *rawSampleBuffer[6], unsigned int bufferSize, unsigned int endAfter, bool renderUntilInactive, bool recordInitialSilence, int rawChannelMap[], int rawChannelCount) {
-	bool waitingForNoise = !recordInitialSilence;
-	int channelCount = rawChannelCount > 0 ? rawChannelCount : 2;
-
+static void playSMF(smf_t *smf, const Options &options, State &state) {
 	int unterminatedSysexLen = 0;
 	unsigned char *unterminatedSysex = NULL;
 	unsigned long renderedFrames = 0;
-	unsigned long writtenFrames = 0;
-	unsigned long silenceCount = 0;
 	for (;;) {
 		smf_event_t *event = smf_get_next_event(smf);
 		unsigned long eventFrameIx;
@@ -271,24 +448,24 @@ static unsigned long processSMF(FILE *dstFile, MT32Emu::Synth *synth, smf_t *smf
 
 		assert(event->track->track_number >= 0);
 
-		eventFrameIx = secondsToSamples(event->time_seconds, sampleRate);
+		eventFrameIx = secondsToSamples(event->time_seconds, options.sampleRate);
 		if (eventFrameIx < renderedFrames) {
 			fprintf(stderr, "Event went back in time!\n");
 		} else {
-			if (eventFrameIx > endAfter) {
-				eventFrameIx = endAfter;
-			}
 			unsigned int renderLength = eventFrameIx - renderedFrames;
-			writtenFrames += render(synth, stereoSampleBuffer, rawSampleBuffer, bufferSize, dstFile, renderLength, waitingForNoise, silenceCount, rawChannelMap, rawChannelCount);
+			if (state.renderedFrames + renderLength > options.renderMaxFrames) {
+				renderLength = options.renderMaxFrames - state.renderedFrames;
+			}
+			render(renderLength, options, state);
 			renderedFrames += renderLength;
-			if (eventFrameIx == endAfter) {
+			if (state.renderedFrames == options.renderMaxFrames) {
 				break;
 			}
 		}
 
 		if (smf_event_is_metadata(event)) {
 			char *decoded = smf_event_decode(event);
-			if (decoded && !quiet) {
+			if (decoded && !options.quiet) {
 				fprintf(stdout, "Metadata: %s\n", decoded);
 			}
 		} else if (smf_event_is_sysex(event) || smf_event_is_sysex_continuation(event))  {
@@ -328,7 +505,7 @@ static unsigned long processSMF(FILE *dstFile, MT32Emu::Synth *synth, smf_t *smf
 				len = unterminatedSysexLen;
 			}
 			if (!unterminated) {
-				synth->playSysex(buf, len);
+				state.synth->playSysex(buf, len);
 				if (addUnterminated) {
 					delete[] unterminatedSysex;
 					unterminatedSysex = NULL;
@@ -347,286 +524,173 @@ static unsigned long processSMF(FILE *dstFile, MT32Emu::Synth *synth, smf_t *smf
 				for (int i = 0; i < event->midi_buffer_length; i++) {
 					msg |= (event->midi_buffer[i] << (8 * i));
 				}
-				synth->playMsg(msg);
+				state.synth->playMsg(msg);
 			}
 		}
 	}
-	writtenFrames += writeSilence(dstFile, channelCount, false, waitingForNoise, silenceCount);
-	if (renderUntilInactive) {
-		while (renderedFrames < endAfter && synth->hasActivePartials()) {
+	flushSilence(MIDI_ENDED, options, state);
+	if (options.sendAllNotesOff) {
+		for (unsigned int part = 0; part < 9; part++) {
+			state.synth->playMsgOnPart(part, 0xB, 0x40, 0x00); // Release sustain pedal
+			state.synth->playMsgOnPart(part, 0xB, 0x7B, 0x00); // All notes off
+		}
+	}
+	if (state.lastInputFile && options.renderMinFrames > state.renderedFrames) {
+		render(options.renderMinFrames - state.renderedFrames, options, state);
+	}
+	if (options.waitForLA32) {
+		while (state.renderedFrames < options.renderMaxFrames && state.synth->hasActivePartials()) {
 			// FIXME: Rendering one sample at a time is very inefficient, but it's important for
 			// some tests to be able to see the precise frame when partials become inactive.
 			// Perhaps we should add a renderWhilePartialsActive() to Synth
 			// or add a getter for "the minimum number of frames remaining with active partials if
 			// no further MIDI is sent". Which would make quite a function name.
-			writtenFrames += render(synth, stereoSampleBuffer, rawSampleBuffer, bufferSize, dstFile, 1, waitingForNoise, silenceCount, rawChannelMap, rawChannelCount);
-			renderedFrames++;
+			render(1, options, state);
 		}
-		writtenFrames += writeSilence(dstFile, channelCount, false, waitingForNoise, silenceCount);
-		unsigned int reverbEndFrames = MAX_REVERB_END_FRAMES < bufferSize ? MAX_REVERB_END_FRAMES : bufferSize;
-		while (renderedFrames < endAfter && synth->isActive()) {
-			// Render a healthy number of frames while waiting for reverb to become inactive.
-			// Note that once we've detected inactivity, silent samples will not be written.
-			unsigned int renderLength = reverbEndFrames;
-			if (renderLength > (endAfter - renderedFrames)) {
-				renderLength = endAfter - renderedFrames;
+		flushSilence(LA32_INACTIVE, options, state);
+		if (options.waitForReverb) {
+			unsigned int reverbEndFrames = MIN(MAX_REVERB_END_FRAMES, options.bufferFrameCount);
+			while (state.renderedFrames < options.renderMaxFrames && state.synth->isActive()) {
+				// Render a healthy number of frames while waiting for reverb to become inactive.
+				// Note that once we've detected inactivity, silent samples will not be written.
+				unsigned int renderLength = reverbEndFrames;
+				if (state.renderedFrames + renderLength > options.renderMaxFrames) {
+					renderLength = options.renderMaxFrames - state.renderedFrames;
+				}
+				render(renderLength, options, state);
 			}
-			writtenFrames += render(synth, stereoSampleBuffer, rawSampleBuffer, bufferSize, dstFile, renderLength, waitingForNoise, silenceCount, rawChannelMap, rawChannelCount);
 		}
 	}
+	if (!state.synth->isActive()) {
+		state.unwrittenSilentFrames = 0;
+	}
 	delete[] unterminatedSysex;
-	return writtenFrames;
 }
 
-static void printVersion(void) {
-	fprintf(stdout, "%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
-}
-
-static  MT32Emu::DACInputMode DAC_INPUT_MODES[] = {
-	MT32Emu::DACInputMode_NICE,
-	MT32Emu::DACInputMode_PURE,
-	MT32Emu::DACInputMode_GENERATION1,
-	MT32Emu::DACInputMode_GENERATION2
-};
-
-static void printUsage(char *cmd) {
-	printVersion();
-	fprintf(stdout, "\nusage: %s [arguments] <SMF MIDI file>\n\n", cmd);
-	fprintf(stdout, "Arguments:\n");
-	fprintf(stdout, " -a              Record silent samples at the start of the render\n");
-	fprintf(stdout, " -b              Buffer size in frames (minimum: 1, default: %d)\n", DEFAULT_BUFFER_SIZE);
-	fprintf(stdout, "                 Note that actual memory usage in bytes will be * 4 for WAVE, * 12 for RAW.\n");
-	fprintf(stdout, " -d <dacmode>    LA-32 to DAC input mode (default: 0)\n");
-	fprintf(stdout, "                 Ignored if -w is used (in which case 1/PURE is always used)\n");
-	fprintf(stdout, "                 0: NICE\n");
-	fprintf(stdout, "                 1: PURE\n");
-	fprintf(stdout, "                 2: GENERATION1\n");
-	fprintf(stdout, "                 3: GENERATION2\n");
-	fprintf(stdout, " -e              End after rendering at most this many samples. 0=unlimited (default: 0)\n");
-	fprintf(stdout, " -f              Force overwrite of output file if already present\n");
-	fprintf(stdout, " -h              Show this help and exit\n");
-	fprintf(stdout, " -m              Directory in which ROMs are stored (including trailing path separator)\n");
-	fprintf(stdout, " -o <filename>   Output file (default: source file name with \".wav\" appended)\n");
-	fprintf(stdout, " -q              Be quiet\n");
-	fprintf(stdout, " -r <samplerate> Set the sample rate (in Hz) (default: %d)\n", DEFAULT_SAMPLE_RATE);
-	fprintf(stdout, " -s <filename>   Sysex file to play before the SMF file\n");
-	fprintf(stdout, " -t              Don't render until the synth becomes inactive - stop once the SMF has ended\n");
-	fprintf(stdout, " -w <chan>       Write a raw file with signed 16-bit big-endian samples instead of a WAVE file,\n");
-	fprintf(stdout, "                 and include the specified channel. Multiple -w options (up to eight) can be\n");
-	fprintf(stdout, "                 used, in which case channels will be written to the file multiplexed sample-\n");
-	fprintf(stdout, "                 by-sample in the order given. Available channel numbers:\n");
-	fprintf(stdout, "                 -1: Dummy channel filled with 0\n");
-	fprintf(stdout, "                  0: Left non-reverb\n");
-	fprintf(stdout, "                  1: Right non-reverb\n");
-	fprintf(stdout, "                  2: Left reverb dry\n");
-	fprintf(stdout, "                  3: Right reverb dry\n");
-	fprintf(stdout, "                  4: Left reverb wet\n");
-	fprintf(stdout, "                  5: Right reverb wet\n");
+static bool playFile(const gchar *inputFilename, const gchar *displayInputFilename, const Options &options, State &state) {
+	MT32Emu::Bit8u *fileBuffer = NULL;
+	gsize fileBufferLength = 0;
+	if (!loadFile(fileBuffer, fileBufferLength, inputFilename, displayInputFilename)) {
+		return false;
+	}
+	if (fileBuffer[0] == 0xF0) {
+		return playSysexFileBuffer(state.synth, displayInputFilename, fileBuffer, fileBufferLength);
+	}
+	smf_t *smf = smf_load_from_memory(fileBuffer, fileBufferLength);
+	if (smf != NULL) {
+		if (!options.quiet) {
+			char *decoded = smf_decode(smf);
+			fprintf(stdout, "%s.\n", decoded);
+			free(decoded);
+		}
+		assert(smf->number_of_tracks >= 1);
+		playSMF(smf, options, state);
+		smf_delete(smf);
+		return true;
+	}
+	fprintf(stderr, "Error parsing SMF file '%s'.\n", displayInputFilename);
+	return false;
 }
 
 int main(int argc, char *argv[]) {
-	bool force = false;
-	int ch;
-	int rc = 0;
-	char *syxFileName = NULL, *dstFileNameArg = NULL;
-	smf_t *smf = NULL;
-	char *cmd = argv[0];
-	unsigned int bufferSize = DEFAULT_BUFFER_SIZE;
-	unsigned int sampleRate = DEFAULT_SAMPLE_RATE;
-	unsigned int endAfter = UINT_MAX;
-	bool renderUntilInactive = true;
-	bool recordInitialSilence = false;
-	MT32Emu::DACInputMode dacInputMode = DAC_INPUT_MODES[0];
-	int rawChannelMap[8];
-	int rawChannelCount = 0;
-	char *romDir = NULL;
-	while ((ch = getopt(argc, argv, "ab:d:e:fhm:o:qr:s:tw:")) != -1) {
-		switch (ch) {
-		case 'a':
-			recordInitialSilence = true;
-			break;
-		case 'b':
-			bufferSize = atoi(optarg);
-			if (bufferSize < 1) {
-				printUsage(cmd);
-				return -1;
-			}
-			break;
-		case 'd': {
-			int dacInputModeIx = atoi(optarg);
-			if (dacInputModeIx > 3) {
-				printUsage(cmd);
-				return -1;
-			}
-			dacInputMode = DAC_INPUT_MODES[dacInputModeIx];
-			break;
-		}
-		case 'e':
-			endAfter = atoi(optarg);
-			if (endAfter == 0) {
-				endAfter = UINT_MAX;
-			}
-			break;
-		case 'f':
-			force = true;
-			break;
-		case 'm':
-			romDir = optarg;
-			break;
-		case 'o':
-			dstFileNameArg = optarg;
-			break;
-		case 'q':
-			quiet = true;
-			break;
-		case 'r':
-			sampleRate = atoi(optarg);
-			break;
-		case 's':
-			syxFileName = optarg;
-			break;
-		case 't':
-			renderUntilInactive = false;
-			break;
-		case 'w':
-			if (rawChannelCount == 8) {
-				fprintf(stderr, "Too many -w options (maximum 8)\n");
-				printUsage(cmd);
-				return -1;
-			}
-			rawChannelMap[rawChannelCount] = atoi(optarg);
-			if (rawChannelMap[rawChannelCount] < -1 || rawChannelMap[rawChannelCount] > 5) {
-				fprintf(stderr, "Invalid -w option %s\n", optarg);
-				return -1;
-			}
-			rawChannelCount++;
-			break;
-		case '?':
-		case 'h':
-		default:
-			printUsage(cmd);
-			return 0;
-		}
-	}
-
-	argc -= optind;
-	argv += optind;
-
-	if (argc != 1) {
-		fprintf(stderr, "Wrong number of non-option arguments (%d given, 1 required)\n", argc);
-		printUsage(cmd);
+	Options options;
+	if (!parseOptions(argc, argv, &options)) {
 		return -1;
 	}
-
-	char *srcFileName = argv[0];
-	if (srcFileName == NULL) {
-		fprintf(stderr, "No source file name given.\n");
-		printUsage(cmd);
-		return -1;
-	}
-
-	char *dstFileName;
-	if (dstFileNameArg != NULL) {
-		dstFileName = dstFileNameArg;
+	gchar *outputFilename;
+	gchar *displayOutputFilename;
+	if (options.outputFilename != NULL) {
+		outputFilename = options.outputFilename;
 	} else {
-		dstFileName = (char *)malloc(strlen(srcFileName) + 5);
-		if(dstFileName == NULL) {
-			fprintf(stderr, "Error allocating %lu bytes for destination filename.\n", (unsigned long)strlen(srcFileName) + 5);
+		gchar *lastInputFilename = options.inputFilenames[g_strv_length(options.inputFilenames) - 1];
+		unsigned long allocLen = strlen(lastInputFilename) + 5;
+		outputFilename = (gchar *)malloc(allocLen);
+		if(outputFilename == NULL) {
+			fprintf(stderr, "Error allocating %lu bytes for destination filename.\n", allocLen);
 			return -1;
 		}
-		if (rawChannelCount > 0) {
-			sprintf(dstFileName, "%s.raw", srcFileName);
+		if (options.rawChannelCount > 0) {
+			sprintf(outputFilename, "%s.raw", lastInputFilename);
 		} else {
-			sprintf(dstFileName, "%s.wav", srcFileName);
+			sprintf(outputFilename, "%s.wav", lastInputFilename);
 		}
 	}
-
-	if (rawChannelCount > 0) {
-		dacInputMode = MT32Emu::DACInputMode_PURE;
-	}
+	displayOutputFilename = g_filename_display_name(outputFilename);
 
 	MT32Emu::SynthProperties synthProperties = {0};
-	synthProperties.sampleRate = sampleRate;
+	synthProperties.sampleRate = options.sampleRate;
 	synthProperties.useReverb = true;
 	synthProperties.useDefaultReverb = true;
-	synthProperties.baseDir = romDir;
+	synthProperties.baseDir = options.romDir;
 	MT32Emu::Synth *synth = new MT32Emu::Synth();
 	if (synth->open(synthProperties)) {
-		synth->setDACInputMode(dacInputMode);
+		synth->setDACInputMode(options.dacInputMode);
 
-		FILE *dstFile;
-		bool dstFileExists = false;
-		if (!force) {
-			// FIXME: Lame way of checking whether the file exists
-			FILE *testDstFile;
-			if (dstFileName != NULL && (testDstFile = fopen(dstFileName, "rb")) != NULL) {
-				fclose(testDstFile);
-				dstFileExists = true;
+		FILE *outputFile;
+		bool outputFileExists = false;
+		if (!options.force) {
+			// FIXME: Lame way of avoiding overwriting an existing file
+			// (since it could theoretically be created between us testing and
+			// opening for writing)
+			if (g_file_test(outputFilename, G_FILE_TEST_EXISTS)) {
+				outputFileExists = true;
 			}
 		}
-		if (dstFileExists) {
-			fprintf(stderr, "Destination file '%s' exists.\n", dstFileName);
-			dstFile = NULL;
+		if (outputFileExists) {
+			fprintf(stderr, "Destination file '%s' exists.\n", displayOutputFilename);
+			outputFile = NULL;
 		} else {
-			dstFile = fopen(dstFileName, "wb");
+			outputFile = fopen(outputFilename, "wb");
 		}
-		if (dstFile != NULL) {
-			if (rawChannelCount > 0 || writeWAVEHeader(dstFile, sampleRate)) {
-				if (syxFileName != NULL) {
-					playSysexFile(synth, syxFileName);
-				}
-				smf = smf_load(srcFileName);
-				if (smf != NULL) {
-					if (!quiet) {
-						char *decoded = smf_decode(smf);
-						fprintf(stdout, "%s.\n", decoded);
-						free(decoded);
-					}
-					assert(smf->number_of_tracks >= 1);
-					MT32Emu::Bit16s *stereoSampleBuffer = NULL;
-					MT32Emu::Bit16s *rawSampleBuffer[] = {NULL, NULL, NULL, NULL, NULL, NULL};
-					if (rawChannelCount > 0) {
-						rawSampleBuffer[0] = new MT32Emu::Bit16s[bufferSize];
-						rawSampleBuffer[1] = new MT32Emu::Bit16s[bufferSize];
-						rawSampleBuffer[2] = new MT32Emu::Bit16s[bufferSize];
-						rawSampleBuffer[3] = new MT32Emu::Bit16s[bufferSize];
-						rawSampleBuffer[4] = new MT32Emu::Bit16s[bufferSize];
-						rawSampleBuffer[5] = new MT32Emu::Bit16s[bufferSize];
-					} else {
-						stereoSampleBuffer = new MT32Emu::Bit16s[bufferSize * 2];
-					}
-
-					unsigned long writtenSamples = processSMF(dstFile, synth, smf, sampleRate, stereoSampleBuffer, rawSampleBuffer, bufferSize, endAfter, renderUntilInactive, recordInitialSilence, rawChannelMap, rawChannelCount);
-					delete[] stereoSampleBuffer;
-					delete[] rawSampleBuffer[0];
-					delete[] rawSampleBuffer[1];
-					delete[] rawSampleBuffer[2];
-					delete[] rawSampleBuffer[3];
-					delete[] rawSampleBuffer[4];
-					delete[] rawSampleBuffer[5];
-					if (rawChannelCount == 0 && !fillWAVESizes(dstFile, writtenSamples)) {
-						fprintf(stderr, "Error writing final sizes to WAVE header\n");
-					}
-					smf_delete(smf);
+		if (outputFile != NULL) {
+			if (options.rawChannelCount > 0 || writeWAVEHeader(outputFile, options.sampleRate)) {
+				State state = {NULL, {NULL, NULL, NULL, NULL, NULL, NULL}, synth, outputFile, false, false, 0, 0, 0};
+				state.outputFile = outputFile;
+				if (options.rawChannelCount > 0) {
+					state.rawSampleBuffer[0] = new MT32Emu::Bit16s[options.bufferFrameCount];
+					state.rawSampleBuffer[1] = new MT32Emu::Bit16s[options.bufferFrameCount];
+					state.rawSampleBuffer[2] = new MT32Emu::Bit16s[options.bufferFrameCount];
+					state.rawSampleBuffer[3] = new MT32Emu::Bit16s[options.bufferFrameCount];
+					state.rawSampleBuffer[4] = new MT32Emu::Bit16s[options.bufferFrameCount];
+					state.rawSampleBuffer[5] = new MT32Emu::Bit16s[options.bufferFrameCount];
 				} else {
-					fprintf(stderr, "Error parsing SMF file '%s'.\n", srcFileName);
-					rc = -1;
+					state.stereoSampleBuffer = new MT32Emu::Bit16s[options.bufferFrameCount * 2];
+				}
+				gchar **inputFilename = options.inputFilenames;
+				while (*inputFilename != NULL) {
+					gchar *displayInputFilename = g_filename_display_name(*inputFilename);
+					state.lastInputFile = *(inputFilename + 1) == NULL; // FIXME: This should actually be true if all subsequent files are sysex
+					playFile(*inputFilename, displayInputFilename, options, state);
+					inputFilename++;
+					g_free(displayInputFilename);
+				}
+				delete[] state.stereoSampleBuffer;
+				delete[] state.rawSampleBuffer[0];
+				delete[] state.rawSampleBuffer[1];
+				delete[] state.rawSampleBuffer[2];
+				delete[] state.rawSampleBuffer[3];
+				delete[] state.rawSampleBuffer[4];
+				delete[] state.rawSampleBuffer[5];
+				if (options.rawChannelCount == 0 && !fillWAVESizes(outputFile, state.writtenFrames)) {
+					fprintf(stderr, "Error writing final sizes to WAVE header\n");
 				}
 			} else {
-				fprintf(stderr, "Error writing WAVE header to '%s'\n", dstFileName);
+				fprintf(stderr, "Error writing WAVE header to '%s'\n", displayOutputFilename);
 			}
-			fclose(dstFile);
+			fclose(outputFile);
 		} else {
-			fprintf(stderr, "Error opening file '%s' for writing.\n", dstFileName);
+			fprintf(stderr, "Error opening file '%s' for writing.\n", displayOutputFilename);
 		}
 	} else {
 		fprintf(stderr, "Error opening MT32Emu synthesizer.\n");
 	}
 	delete synth;
 
-	if(dstFileNameArg == NULL && dstFileName != NULL) {
-		free(dstFileName);
+	if(options.outputFilename == NULL && outputFilename != NULL) {
+		free(outputFilename);
 	}
-	return rc;
+	g_free(displayOutputFilename);
+	freeOptions(&options);
+	return 0;
 }
 
