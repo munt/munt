@@ -1,5 +1,5 @@
 /*
- * $Id: pa_win_wmme.c 1668 2011-05-02 17:07:11Z rossb $
+ * $Id$
  * pa_win_wmme.c
  * Implementation of PortAudio for Windows MultiMedia Extensions (WMME)       
  *                                                                                         
@@ -2916,13 +2916,14 @@ PA_THREAD_FUNC ProcessingThreadProc( void *pArg )
                 if( (PA_IS_FULL_DUPLEX_STREAM_(stream) && hostInputBufferIndex != -1 && hostOutputBufferIndex != -1) ||
                         (PA_IS_HALF_DUPLEX_STREAM_(stream) && ( hostInputBufferIndex != -1 || hostOutputBufferIndex != -1 ) ) )
                 {
-                    PaStreamCallbackTimeInfo timeInfo = {0,0,0}; /** @todo implement inputBufferAdcTime */
+                    PaStreamCallbackTimeInfo timeInfo = {0,0,0,0}; /** @todo implement inputBufferAdcTime */
 
 
                     if( PA_IS_OUTPUT_STREAM_(stream) )
                     {
                         /* set timeInfo.currentTime and calculate timeInfo.outputBufferDacTime
                             from the current wave out position */
+                        double actualSampleRate = 0;
                         MMTIME mmtime;
                         double timeBeforeGetPosition, timeAfterGetPosition;
                         double time;
@@ -2936,7 +2937,10 @@ PA_THREAD_FUNC ProcessingThreadProc( void *pArg )
                         waveOutGetPosition( firstWaveOutDevice, &mmtime, sizeof(MMTIME) );
                         timeAfterGetPosition = PaUtil_GetTime();
 
-                        timeInfo.currentTime = mmtime.u.sample * stream->bufferProcessor.samplePeriod;
+                        timeInfo.currentTime = timeAfterGetPosition;
+
+												// TODO: compute actualSampleRate using the previous currentTime and number of samples rendered
+                        timeInfo.actualSampleRate = actualSampleRate;
 
                         /* approximate time at which wave out position was measured
                             as half way between timeBeforeGetPosition and timeAfterGetPosition */
@@ -2950,10 +2954,10 @@ PA_THREAD_FUNC ProcessingThreadProc( void *pArg )
                        
                         if( playbackPosition >= writePosition ){
                             timeInfo.outputBufferDacTime =
-                                    timeInfo.currentTime + ((double)( writePosition + (framesInBufferRing - playbackPosition) ) * stream->bufferProcessor.samplePeriod );
+                                    time + ((double)( writePosition + (framesInBufferRing - playbackPosition) ) * stream->bufferProcessor.samplePeriod );
                         }else{
                             timeInfo.outputBufferDacTime =
-                                    timeInfo.currentTime + ((double)( writePosition - playbackPosition ) * stream->bufferProcessor.samplePeriod );
+                                    time + ((double)( writePosition - playbackPosition ) * stream->bufferProcessor.samplePeriod );
                         }
                     }
 
@@ -3632,16 +3636,9 @@ static PaError IsStreamActive( PaStream *s )
 
 static PaTime GetStreamTime( PaStream *s )
 {
-	PaWinMmeStream *stream = (PaWinMmeStream*)s;
-	if( PA_IS_OUTPUT_STREAM_(stream) ) {
-		HWAVEOUT firstWaveOutDevice = ((HWAVEOUT*)stream->output.waveHandles)[0];
-		MMTIME mmtime;
-		mmtime.wType = TIME_SAMPLES;
-		waveOutGetPosition( firstWaveOutDevice, &mmtime, sizeof(MMTIME) );
-    return mmtime.u.sample * stream->bufferProcessor.samplePeriod;
-	} else {
-		return PaUtil_GetTime();
-	}
+    (void) s; /* unused parameter */
+    
+    return PaUtil_GetTime();
 }
 
 

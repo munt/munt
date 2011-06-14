@@ -56,7 +56,11 @@ int PortAudioDriver::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	Q_UNUSED(inputBuffer);
 	Q_UNUSED(statusFlags);
 	PortAudioDriver *driver = (PortAudioDriver *)userData;
-	double realSampleRate = Pa_GetStreamInfo(driver->stream)->sampleRate;
+	double realSampleRate = timeInfo->actualSampleRate;
+	if (realSampleRate == 0.0) {
+		// This means PortAudio doesn't provide us the actualSampleRate estimation
+		realSampleRate = Pa_GetStreamInfo(driver->stream)->sampleRate;
+	}
 	qint64 currentlyPlayingAudioNanos = timeInfo->currentTime * MasterClock::NANOS_PER_SECOND;
 	qint64 firstSampleAudioNanos = timeInfo->outputBufferDacTime * MasterClock::NANOS_PER_SECOND;
 	qint64 renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;

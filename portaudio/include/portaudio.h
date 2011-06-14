@@ -645,6 +645,7 @@ typedef struct PaStreamCallbackTimeInfo{
     PaTime inputBufferAdcTime;
     PaTime currentTime;
     PaTime outputBufferDacTime;
+    double actualSampleRate;
 } PaStreamCallbackTimeInfo;
 
 
