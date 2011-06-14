@@ -2782,6 +2782,7 @@ PA_THREAD_FUNC ProcessingThreadProc( void *pArg )
     int done = 0;
     unsigned int channel, i;
     unsigned long framesProcessed;
+		PaTime prevCallbackTime = 0;
     
     /* prepare event array for call to WaitForMultipleObjects() */
     if( stream->input.bufferEvent )
@@ -2923,8 +2924,7 @@ PA_THREAD_FUNC ProcessingThreadProc( void *pArg )
                     {
                         /* set timeInfo.currentTime and calculate timeInfo.outputBufferDacTime
                             from the current wave out position */
-                        double actualSampleRate = 0;
-                        MMTIME mmtime;
+                        MMTIME mmtime, prevPosition;
                         double timeBeforeGetPosition, timeAfterGetPosition;
                         double time;
                         long framesInBufferRing; 		
@@ -2939,8 +2939,15 @@ PA_THREAD_FUNC ProcessingThreadProc( void *pArg )
 
                         timeInfo.currentTime = timeAfterGetPosition;
 
-												// TODO: compute actualSampleRate using the previous currentTime and number of samples rendered
-                        timeInfo.actualSampleRate = actualSampleRate;
+												if (prevCallbackTime == 0.0) {
+													// The first time, we don't know prevCallbackTime
+													timeInfo.actualSampleRate = 0;
+												} else {
+													// Compute actualSampleRate using the previous currentTime and number of samples really played
+													timeInfo.actualSampleRate = (mmtime.u.sample - prevPosition.u.sample) / (timeInfo.currentTime - prevCallbackTime);
+												}
+												prevCallbackTime = timeInfo.currentTime;
+												prevPosition.u.sample = mmtime.u.sample;
 
                         /* approximate time at which wave out position was measured
                             as half way between timeBeforeGetPosition and timeAfterGetPosition */
