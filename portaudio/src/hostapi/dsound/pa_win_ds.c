@@ -301,6 +301,8 @@ typedef struct PaWinDsStream
     HANDLE           processingThreadCompleted;
 #endif
 
+		PaTime					 prevCallbackTime;
+
 } PaWinDsStream;
 
 
@@ -2325,7 +2327,12 @@ static int TimeSlice( PaWinDsStream *stream )
         the first sample of the output buffer is heard at the DACs. */
         timeInfo.currentTime = PaUtil_GetTime();
         timeInfo.outputBufferDacTime = timeInfo.currentTime + outputLatency; // FIXME: QueryOutputSpace gets the playback position, we could use that (?)
-
+				if (stream->prevCallbackTime == 0.0) {
+					timeInfo.actualSampleRate = 0;
+				} else {
+					timeInfo.actualSampleRate = numOutFramesReady / (timeInfo.currentTime - stream->prevCallbackTime);
+				}
+				stream->prevCallbackTime = timeInfo.currentTime;
 
         PaUtil_BeginBufferProcessing( &stream->bufferProcessor, &timeInfo, stream->callbackFlags );
         stream->callbackFlags = 0;
@@ -2701,6 +2708,7 @@ static PaError StartStream( PaStream *s )
     PaWinDsStream   *stream = (PaWinDsStream*)s;
     HRESULT          hr;
         
+		stream->prevCallbackTime = 0;
     stream->callbackResult = paContinue;
     PaUtil_ResetBufferProcessor( &stream->bufferProcessor );
     
