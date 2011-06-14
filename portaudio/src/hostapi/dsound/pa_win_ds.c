@@ -2297,7 +2297,6 @@ static int TimeSlice( PaWinDsStream *stream )
             // FIXME: what happens if IDirectSoundCaptureBuffer_GetCurrentPosition fails?
 
         framesToXfer = numInFramesReady = bytesFilled / stream->bytesPerInputFrame; 
-        outputLatency = ((double)bytesFilled) * stream->secondsPerHostByte;  // FIXME: this doesn't look right. we're calculating output latency in input branch. also secondsPerHostByte is only initialized for the output stream
 
         /** @todo Check for overflow */
     }
@@ -2326,7 +2325,9 @@ static int TimeSlice( PaWinDsStream *stream )
     /* The outputBufferDacTime parameter should indicates the time at which
         the first sample of the output buffer is heard at the DACs. */
         timeInfo.currentTime = PaUtil_GetTime();
-        timeInfo.outputBufferDacTime = timeInfo.currentTime + outputLatency; // FIXME: QueryOutputSpace gets the playback position, we could use that (?)
+				// FIXME: seems like framesPerDSBuffer doesn't correspond to the latency reported
+				outputLatency = (stream->framesPerDSBuffer / 2.0 - numOutFramesReady) / stream->streamRepresentation.streamInfo.sampleRate;
+        timeInfo.outputBufferDacTime = timeInfo.currentTime + outputLatency;
 				if (stream->prevCallbackTime == 0.0) {
 					timeInfo.actualSampleRate = 0;
 				} else {
