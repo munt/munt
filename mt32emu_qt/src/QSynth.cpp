@@ -93,13 +93,13 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 		for (;;) {
 			const MidiEvent *event = midiEventQueue->peekEvent();
 			if (event == NULL) {
+				// Queue empty
 				qDebug() << "Q" << debugSampleIx;
 				break;
 			}
-			if ((nanosNow - event->getTimestamp()) > 1000000) {
-				qDebug() << "Late MIDI message for" << event->getTimestamp() - nanosNow << "nanos";
-			}
 			if (event->getTimestamp() <= nanosNow) {
+				qint64 debugEventOffset = event->getTimestamp() - nanosNow;
+				bool debugSpecialEvent = false;
 				unsigned char *sysexData = event->getSysexData();
 				synthMutex->lock();
 				if (!isOpen) {
@@ -111,13 +111,20 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 					synth->playSysex(sysexData, event->getSysexLen());
 				} else {
 					if(event->getShortMessage() == 0) {
-						qDebug() << "M" << debugSampleIx << (debugSampleIx - debugLastEventSampleIx) << (event->getTimestamp() - nanosNow);
-						debugLastEventSampleIx = debugSampleIx;
+						// This is a special event sent by the test driver
+						debugSpecialEvent = true;
 					} else {
 						synth->playMsg(event->getShortMessage());
 					}
 				}
 				synthMutex->unlock();
+				if (debugSpecialEvent) {
+					qDebug() << "M" << debugSampleIx << debugEventOffset << (debugSampleIx - debugLastEventSampleIx);
+					debugLastEventSampleIx = debugSampleIx;
+				} else if (debugEventOffset <= -1000000) {
+					// The MIDI event is playing significantly later than it was scheduled to play.
+					qDebug() << "L" << debugSampleIx << debugEventOffset;
+				}
 				midiEventQueue->popEvent();
 			} else {
 				qint64 nanosUntilNextEvent = event->getTimestamp() - nanosNow;
