@@ -20,17 +20,18 @@
 #include "ui_MainWindow.h"
 #include "Master.h"
 
+#include "mididrv/TestDriver.h"
 #ifdef WITH_WIN32_MIDI_DRIVER
 #include "mididrv/Win32Driver.h"
 #elif defined(WITH_ALSA_MIDI_DRIVER)
 #include "mididrv/ALSADriver.h"
-#else
-#include "mididrv/TestDriver.h"
 #endif
 
 MainWindow::MainWindow(Master *master, QWidget *parent) :
     QMainWindow(parent),
-	ui(new Ui::MainWindow)
+	ui(new Ui::MainWindow),
+	master(master),
+	testMidiDriver(NULL)
 {
     ui->setupUi(this);
 	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *)), this, SLOT(handleSynthRouteAdded(SynthRoute *)));
@@ -40,9 +41,11 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 #elif defined(WITH_ALSA_MIDI_DRIVER)
 	midiDriver = new ALSAMidiDriver(master);
 #else
-	midiDriver = new TestMidiDriver(master);
+	midiDriver = NULL;
 #endif
-	midiDriver->start();
+	if (midiDriver != NULL) {
+		midiDriver->start();
+	}
 }
 
 MainWindow::~MainWindow()
@@ -54,6 +57,9 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 	if (midiDriver != NULL) {
 		midiDriver->stop();
 		midiDriver = NULL;
+	}
+	if (testMidiDriver != NULL) {
+		testMidiDriver->stop();
 	}
 	event->accept();
 }
@@ -100,4 +106,19 @@ void MainWindow::on_actionOptions_triggered()
 void MainWindow::on_actionPlay_MIDI_file_triggered()
 {
 
+}
+
+void MainWindow::on_actionTest_MIDI_Driver_toggled(bool checked)
+{
+	bool running = testMidiDriver != NULL;
+	if (running != checked) {
+		if (running) {
+			testMidiDriver->stop();
+			delete testMidiDriver;
+			testMidiDriver = NULL;
+		} else {
+			testMidiDriver = new TestMidiDriver(master);
+			testMidiDriver->start();
+		}
+	}
 }

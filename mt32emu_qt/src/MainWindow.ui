@@ -43,6 +43,7 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="actionTest_MIDI_Driver"/>
     <addaction name="actionPlay_MIDI_file"/>
     <addaction name="separator"/>
     <addaction name="actionOptions"/>
@@ -64,6 +65,14 @@
   <action name="actionPlay_MIDI_file">
    <property name="text">
     <string>Play MIDI file...</string>
+   </property>
+  </action>
+  <action name="actionTest_MIDI_Driver">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Test MIDI Driver</string>
    </property>
   </action>
  </widget>

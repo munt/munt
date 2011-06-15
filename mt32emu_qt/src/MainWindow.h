@@ -26,7 +26,9 @@ protected:
 
 private:
     Ui::MainWindow *ui;
+	Master *master;
 	MidiDriver *midiDriver;
+	MidiDriver *testMidiDriver;
 
 private slots:
 	void on_actionAbout_triggered();
@@ -34,6 +36,7 @@ private slots:
 	void handleSynthRouteRemoved(SynthRoute *synthRoute);
 	void on_actionOptions_triggered();
 	void on_actionPlay_MIDI_file_triggered();
+	void on_actionTest_MIDI_Driver_toggled(bool );
 };
 
 #endif // MAINWINDOW_H
