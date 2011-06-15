@@ -1932,7 +1932,7 @@ static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
         /* App support variable framesPerBuffer */
             stream->framesPerDSBuffer = minLatencyFrames;
 
-            stream->streamRepresentation.streamInfo.outputLatency = (double)(minLatencyFrames - 1) / sampleRate;
+            stream->streamRepresentation.streamInfo.outputLatency += (double)(minLatencyFrames - 1) / sampleRate;
         }
         else
         {
@@ -1941,8 +1941,10 @@ static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
             if( numUserBuffers < 1 ) numUserBuffers = 1;
             numUserBuffers += 1; /* So we have latency worth of buffers ahead of current buffer. */
             stream->framesPerDSBuffer = framesPerBuffer * numUserBuffers;
-
-            stream->streamRepresentation.streamInfo.outputLatency = (double)(framesPerBuffer * (numUserBuffers-1)) / sampleRate;
+						
+						// Since using quadruple buffering, the correct latency is 3 /4 of framesPerDSBuffer
+						// However, BufferProcessor does add latency that wasn't estimated early (always 0)
+            stream->streamRepresentation.streamInfo.outputLatency += /* 0.75 * */ stream->framesPerDSBuffer / sampleRate;
         }
 
         {
@@ -2325,8 +2327,7 @@ static int TimeSlice( PaWinDsStream *stream )
     /* The outputBufferDacTime parameter should indicates the time at which
         the first sample of the output buffer is heard at the DACs. */
         timeInfo.currentTime = PaUtil_GetTime();
-				// FIXME: seems like framesPerDSBuffer doesn't correspond to the latency reported
-				outputLatency = (stream->framesPerDSBuffer / 2.0 - numOutFramesReady) / stream->streamRepresentation.streamInfo.sampleRate;
+				outputLatency = (stream->framesPerDSBuffer - numOutFramesReady) / stream->streamRepresentation.streamInfo.sampleRate;
         timeInfo.outputBufferDacTime = timeInfo.currentTime + outputLatency;
 				if (stream->prevCallbackTime == 0.0) {
 					timeInfo.actualSampleRate = 0;
