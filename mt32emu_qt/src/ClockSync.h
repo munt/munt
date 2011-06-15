@@ -20,7 +20,7 @@ private:
 	qint64 externalStart;
 
 public:
-	ClockSync();
+	ClockSync(double initDrift = 1.0);
 
 	double getDrift();
 	MasterClockNanos sync(qint64 externalNanos);

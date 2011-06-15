@@ -29,8 +29,7 @@ static const qint64 HIGH_JITTER_THRESHOLD_NANOS = 100 * MasterClock::NANOS_PER_M
 static const qint64 LOW_JITTER_THRESHOLD_NANOS = -10 * MasterClock::NANOS_PER_MILLISECOND;
 static const double SHIFT_FACTOR = 0.1;
 
-ClockSync::ClockSync() : offsetValid(false) {
-	drift = 1.0;	// we may store old drift values to make further syncs smarter
+ClockSync::ClockSync(double initDrift) : offsetValid(false), drift(initDrift) {
 }
 
 double ClockSync::getDrift() {
@@ -38,9 +37,6 @@ double ClockSync::getDrift() {
 }
 
 MasterClockNanos ClockSync::sync(qint64 externalNow) {
-	// FIXME: Correct for clock drift.
-	// FIXME: Only emergencies are handled at the moment - need to use a proper sync algorithm.
-
 	MasterClockNanos masterNow = MasterClock::getClockNanos();
 	if (externalNow == 0) {
 		// Special value meaning "no timestamp, play immediately"
@@ -50,7 +46,7 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 		masterStart = masterNow;
 		externalStart = externalNow;
 		offset = 0;
-		offsetShift =	0;
+		offsetShift = 0;
 		qDebug() << "Sync:" << externalNow << masterNow << offset;
 		offsetValid = true;
 		return masterNow;
@@ -64,13 +60,16 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 		masterStart = masterNow;
 		externalStart = externalNow;
 		offset = offset - offsetNow;
-		offsetShift =	(qint64)(SHIFT_FACTOR * offset);
+		offsetShift = (qint64)(SHIFT_FACTOR * offset);
 		qDebug() << "Periodic reset output:" << masterNow + offset;
 		return masterNow + offset;
 	}
 	if(qAbs(offsetNow - offset) > EMERGENCY_RESET_THRESHOLD_NANOS) {
 		qDebug() << "Emergency reset:" << externalNow << masterNow << offset << offsetNow;
-		offsetValid = false;
+		masterStart = masterNow;
+		externalStart = externalNow;
+		offset = 0;
+		offsetShift = 0;
 		drift = 1.0;
 		return masterNow;
 	}
