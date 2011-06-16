@@ -10,6 +10,7 @@ class Win32MidiDriver : public MidiDriver {
 private:
 	static LRESULT CALLBACK MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static void MessageLoop(void *);
+	static qint64 Win32MidiDriver::TimeToMasterClockNanos(DWORD time);
 
 public:
 	Win32MidiDriver(Master *useMaster);

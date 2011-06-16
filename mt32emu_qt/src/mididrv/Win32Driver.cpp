@@ -18,42 +18,46 @@
 
 #include <windows.h>
 #include <process.h>
-#include <iostream>
-#include "../ClockSync.h"
 #include "../MasterClock.h"
 
 #include "Win32Driver.h"
 
-static MidiSession *midiSession = NULL;
+static Win32MidiDriver *driver;
 static HWND hwnd = NULL;
-static ClockSync clockSync;
+static qint64 startMasterClock;
+
+qint64 Win32MidiDriver::TimeToMasterClockNanos(DWORD time) {
+	return (qint64)time * MasterClock::NANOS_PER_MILLISECOND - startMasterClock;
+}
 
 LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	MidiSession *midiSession;
 	switch (uMsg) {
 	case WM_APP: // closing session
-		std::cout << "Session was closed\n";
-			// reset the synth if necessary
+		midiSession = (MidiSession*)wParam;
+		Master::getInstance()->deleteMidiSession(midiSession);
+		qDebug() << "Session" << midiSession << "finished";
 		return 1;
 
 	case WM_COPYDATA:
-//		std::cout << "Incoming data! wParam = " << wParam << "\n";
 		COPYDATASTRUCT *cds;
 		cds = (COPYDATASTRUCT *)lParam;
-//		std::cout << "Instance = " << cds->dwData << ", Data length = " << cds->cbData << "\n";
+		midiSession = (MidiSession*)cds->dwData;
 		DWORD *data;
 		data = (DWORD *)cds->lpData;
-//		std::cout << "Data = " << data[0] << ", " << data[1] << ", " << data[2] << ", " << data[3] << "\n";
-		if (data[0] == 0) {
-			if (data[1] == -1) {
+		if (data[0] == 0) {				// special value, mark of a non-Sysex message
+			if (data[1] == -1) {		// special value, mark of a handshaking message
 				// Process handshaking message
-				DWORD inst = (timeGetTime() & 255); // just a random value
-				std::cout << "Instance = " << inst << ", Version = " << data[2] << "\n";
-				std::cout << "Connected application = " << (char *)&data[3] << "\n";
-				return inst;
-			} else if (data[1] == 0) {
+				midiSession = Master::getInstance()->createMidiSession(driver, "Combined Win32msg Session");
+				qDebug() << "Connected application" << (char *)&data[3];
+				qDebug() << "Session" << midiSession << "protocol version" << data[2];
+				if (!midiSession) {
+					qDebug() << "Failed to create new session";
+				}
+				return (DWORD)midiSession;
+			} else if (data[1] == 0) {	// special value, mark of a short MIDI message
 				// Process short MIDI message
-//				std::cout << "Incoming message! msg = " << data[3] << ", timestamp = " << data[2] << "\n";
-				midiSession->getSynthRoute()->pushMIDIShortMessage(data[3], clockSync.sync((qint64)data[2] * MasterClock::NANOS_PER_MILLISECOND));
+				midiSession->getSynthRoute()->pushMIDIShortMessage(data[3], TimeToMasterClockNanos(data[2]));
 				return 1;
 			}
 		} else {
@@ -81,30 +85,33 @@ void Win32MidiDriver::MessageLoop(void *) {
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = mt32emuClassName;
 	if (RegisterClass(&wc)) {
-		qDebug() << "Class registered\n";
+		qDebug() << "Message class registered\n";
 	} else {
-		qDebug() << "Error registering class\n";
+		qDebug() << "Error registering message class\n";
 	}
 
-	hwnd = CreateWindow(mt32emuClassName, mt32emuClassName, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
+#ifndef HWND_MESSAGE
+#define HWND_MESSAGE ((HWND)-3)
+#endif
+
+	hwnd = CreateWindow(mt32emuClassName, "mt32emu_message_window", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
 	if (hwnd != NULL) {
-		qDebug() << "Window created\n";
+		qDebug() << "Message window created\n";
 	} else {
 		DWORD err = GetLastError();
-		qDebug() << "Error creating Window " << err << "\n";
+		qDebug() << "Error creating message window " << err << "\n";
 	}
 	MSG msg;
 	GetMessage(&msg, hwnd, WM_QUIT, WM_QUIT);
 }
 
 Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster) {
-	if(midiSession == NULL) {
-		midiSession = useMaster->createMidiSession(this, "Combined Win32msg Session");
-	}
+	driver = this;
 }
 
 void Win32MidiDriver::start() {
-	clockSync.reset();
+	// Much more robust then ClockSync while we use the same timesource in MasterClock
+	startMasterClock = (qint64)timeGetTime() * MasterClock::NANOS_PER_MILLISECOND - MasterClock::getClockNanos();
 	_beginthread(&MessageLoop, 16384, NULL);
 }
 
