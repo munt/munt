@@ -20,14 +20,20 @@
 
 using namespace MT32Emu;
 
-#define	MIN_RENDER_SAMPLES 32	// render at least this number of samples
+//#define	RENDER_EVERY_MS					// provides minimum possible latency
+#define	MIN_RENDER_SAMPLES 320		// render at least this number of samples
+#define	SAFE_RENDER_SAMPLES 32		// render up to this safe point
 
 // SergM: 100 ms output latency is safe on most systems.
 // can be reduced to 35 ms (works on my system)
 // 30 ms is the absolute minimum, unavoidable KSMixer latency
-static const int FRAMES_IN_BUFFER = 3200; // FIXME: should be a variable
-static const int FRAME_SIZE = 4; // Stereo, 16-bit
-static const int latency = 1000000; // 1 ms latency for MIDI processing
+// FIXME: should be a variable
+static const int FRAMES_IN_BUFFER = 3200;
+// Stereo, 16-bit
+static const int FRAME_SIZE = 4;
+// Latency for MIDI processing
+// should be > MIN_RENDER_SAMPLES + SAFE_RENDER_SAMPLES
+static const int latency = 12 * MasterClock::NANOS_PER_MILLISECOND;
 
 WinMMAudioDriver::WinMMAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : 
 	synth(useSynth), sampleRate(useSampleRate), hWaveOut(NULL), pendingClose(false) {
@@ -62,18 +68,35 @@ void WinMMAudioDriver::processingThread(void *userData) {
 	DWORD playCursor, frameCount;
 	MMTIME mmTime;
 	WinMMAudioDriver *driver = (WinMMAudioDriver *)userData;
+	double samplePeriod = 0.9 * MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / driver->sampleRate;
 	while (!driver->pendingClose) {
 		mmTime.wType = TIME_SAMPLES;
 		waveOutGetPosition(driver->hWaveOut, &mmTime, sizeof MMTIME);
 		playCursor = mmTime.u.sample % FRAMES_IN_BUFFER;
 		if (playCursor < renderPos) {
 			frameCount = FRAMES_IN_BUFFER - renderPos;
+#ifndef RENDER_EVERY_MS
+			if (SAFE_RENDER_SAMPLES > frameCount) {
+				if (playCursor < (SAFE_RENDER_SAMPLES - frameCount)) {
+					Sleep(DWORD((SAFE_RENDER_SAMPLES - frameCount) * samplePeriod));
+				}
+			}
+#endif
 		} else {
 			frameCount = playCursor - renderPos;
+#ifdef RENDER_EVERY_MS
 			if (frameCount < MIN_RENDER_SAMPLES) {
 				Sleep(1);
 				continue;
 			}
+#else
+			if (frameCount < (SAFE_RENDER_SAMPLES + MIN_RENDER_SAMPLES)) {
+				Sleep(DWORD((SAFE_RENDER_SAMPLES + MIN_RENDER_SAMPLES - frameCount) * samplePeriod));
+				continue;
+			} else {
+				frameCount -= SAFE_RENDER_SAMPLES;
+			}
+#endif
 		}
 		unsigned int rendered = driver->synth->render(driver->buffer + (renderPos << 1), frameCount,
 			MasterClock::getClockNanos() - latency, driver->sampleRate);
@@ -168,6 +191,7 @@ void WinMMAudioDriver::close() {
 		while (pendingClose) {
 			Sleep(1);
 		}
+		qDebug() << "Processing thread stopped";
 	}
 	return;
 }
