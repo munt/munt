@@ -28,6 +28,11 @@
 
 #include "SynthRoute.h"
 
+#ifdef WIN32
+	#define USE_WINMM_AUDIO_DRIVER
+	#include "audiodrv/WinMMAudioDriver.h"
+#endif
+
 #include "audiodrv/PortAudioDriver.h"
 
 using namespace MT32Emu;
@@ -74,7 +79,11 @@ bool SynthRoute::open() {
 		break;
 	}
 	if (audioDriver == NULL) {
+#ifdef USE_WINMM_AUDIO_DRIVER
+		audioDriver = new WinMMAudioDriver(&qSynth, sampleRate);
+#else
 		audioDriver = new PortAudioDriver(&qSynth, sampleRate);
+#endif
 	}
 	setState(SynthRouteState_OPENING);
 	if (qSynth.open()) {

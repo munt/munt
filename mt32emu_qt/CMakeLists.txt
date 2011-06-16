@@ -31,6 +31,7 @@ set(mt32emu_qt_SOURCES
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
   add_definitions(-DWITH_WIN32_MIDI_DRIVER)
   list(APPEND mt32emu_qt_SOURCES src/mididrv/Win32Driver.cpp)
+  list(APPEND mt32emu_qt_SOURCES src/audiodrv/WinMMAudioDriver.cpp)
 endif()
 
 set(mt32emu_qt_HEADERS
