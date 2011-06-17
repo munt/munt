@@ -33,7 +33,7 @@ static const int FRAMES_IN_BUFFER = 3200;
 static const int FRAME_SIZE = 4;
 // Latency for MIDI processing
 // should be > MIN_RENDER_SAMPLES + SAFE_RENDER_SAMPLES
-static const int latency = 12 * MasterClock::NANOS_PER_MILLISECOND;
+static const MasterClockNanos latency = 15 * MasterClock::NANOS_PER_MILLISECOND;
 
 WinMMAudioDriver::WinMMAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : 
 	synth(useSynth), sampleRate(useSampleRate), hWaveOut(NULL), pendingClose(false) {
@@ -78,8 +78,10 @@ void WinMMAudioDriver::processingThread(void *userData) {
 		mmTime.wType = TIME_SAMPLES;
 		waveOutGetPosition(driver->hWaveOut, &mmTime, sizeof MMTIME);
 		playCursor = mmTime.u.sample % FRAMES_IN_BUFFER;
+		nanosNow = MasterClock::getClockNanos() - latency;
 		if (playCursor < renderPos) {
 			frameCount = FRAMES_IN_BUFFER - renderPos;
+			nanosNow -= MasterClock::NANOS_PER_SECOND * playCursor / driver->sampleRate;
 #ifndef RENDER_EVERY_MS
 			if (SAFE_RENDER_SAMPLES > frameCount) {
 				if (playCursor < (SAFE_RENDER_SAMPLES - frameCount)) {
@@ -103,7 +105,6 @@ void WinMMAudioDriver::processingThread(void *userData) {
 			}
 #endif
 		}
-		nanosNow = MasterClock::getClockNanos() - latency;
 		unsigned int rendered = driver->synth->render(driver->buffer + (renderPos << 1), frameCount,
 			firstSampleNanos, driver->sampleRate);
 		firstSampleNanos = nanosNow;
