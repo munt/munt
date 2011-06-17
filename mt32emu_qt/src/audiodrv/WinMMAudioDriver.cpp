@@ -21,13 +21,15 @@
 using namespace MT32Emu;
 
 #define	RENDER_EVERY_MS					// provides minimum possible latency
-#define	MIN_RENDER_SAMPLES 320		// render at least this number of samples
+#define	MIN_RENDER_SAMPLES 320	// render at least this number of samples
 
 // SergM: 100 ms output latency is safe on most systems.
 // can be reduced to 35 ms (works on my system)
 // 30 ms is the absolute minimum, unavoidable KSMixer latency
 // FIXME: should be a variable
 static const int FRAMES_IN_BUFFER = 3200;
+// 30 ms is the size of KSMixer buffer. Writing to the positions closer to the playCursor is unsafe.
+static const int SAFE_FRAMES = 30 * 32;
 // Stereo, 16-bit
 static const int FRAME_SIZE = 4;
 // Latency for MIDI processing. 15 ms is the offset of interprocess timeGetTime() difference.
@@ -96,10 +98,21 @@ void WinMMAudioDriver::processingThread(void *userData) {
 		}
 		unsigned int rendered = driver->synth->render(driver->buffer + (renderPos << 1), frameCount,
 			firstSampleNanos, driver->sampleRate);
-		// Underrun detection
+/*
+		Detection of writing to unsafe positions
+		30 ms is the size of KSMixer buffer. KSMixer pulls audio data at regular intervals (10 ms).
+		Thus, writing to the positions closer 30 ms before the playCursor is unsafe.
+		Unfortunately, there is no way to predict the safe writeCursor as with DSound.
+		Therefore, this allows detecting _possible_ underruns. This doesn't mean the underrun really happened.
+*/
+		if (((renderPos - playCursor + FRAMES_IN_BUFFER) % FRAMES_IN_BUFFER) < SAFE_FRAMES) {
+			qDebug() << "Rendering to unsafe positions! Probable underrun! Buffer size should be higher!";
+		}
+
+		// Underrun (buffer wrap) detection
 		int framesReallyPlayed = int(double(nanosNow - firstSampleNanos) / MasterClock::NANOS_PER_SECOND * driver->sampleRate);
 		if (framesReallyPlayed > FRAMES_IN_BUFFER) {
-			qDebug() << "Underrun detected! Buffer size should be higher!";
+			qDebug() << "Underrun (buffer wrap) detected! Buffer size should be higher!";
 		}
 		firstSampleNanos = nanosNow;
 		if (rendered < frameCount) { // SergM: never found this true
