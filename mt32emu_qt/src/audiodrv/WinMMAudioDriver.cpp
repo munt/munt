@@ -70,7 +70,7 @@ void WinMMAudioDriver::processingThread(void *userData) {
 #ifdef RENDER_EVERY_MS
 	DWORD samplesPerMS = driver->sampleRate * MasterClock::NANOS_PER_MILLISECOND / MasterClock::NANOS_PER_SECOND;
 #else
-	double samplePeriod = 0.9 * MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / driver->sampleRate;
+	double samplePeriod = MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / driver->sampleRate;
 #endif
 	while (!driver->pendingClose) {
 		mmTime.wType = TIME_SAMPLES;
@@ -89,13 +89,18 @@ void WinMMAudioDriver::processingThread(void *userData) {
 			}
 #else
 			if (frameCount < MIN_RENDER_SAMPLES) {
-				Sleep(DWORD((MIN_RENDER_SAMPLES - frameCount) * samplePeriod));
+				Sleep(1 + DWORD((MIN_RENDER_SAMPLES - frameCount) * samplePeriod));
 				continue;
 			}
 #endif
 		}
 		unsigned int rendered = driver->synth->render(driver->buffer + (renderPos << 1), frameCount,
 			firstSampleNanos, driver->sampleRate);
+		// Underrun detection
+		int framesReallyPlayed = int(double(nanosNow - firstSampleNanos) / MasterClock::NANOS_PER_SECOND * driver->sampleRate);
+		if (framesReallyPlayed > FRAMES_IN_BUFFER) {
+			qDebug() << "Underrun detected! Buffer size should be higher!";
+		}
 		firstSampleNanos = nanosNow;
 		if (rendered < frameCount) { // SergM: never found this true
 			char *out = (char *)driver->buffer + FRAME_SIZE * renderPos;

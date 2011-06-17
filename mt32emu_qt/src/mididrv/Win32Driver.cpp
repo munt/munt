@@ -88,9 +88,9 @@ void Win32MidiDriver::MessageLoop(void *) {
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = mt32emuClassName;
 	if (RegisterClass(&wc)) {
-		qDebug() << "Message class registered\n";
+		qDebug() << "Message class registered";
 	} else {
-		qDebug() << "Error registering message class\n";
+		qDebug() << "Error registering message class";
 	}
 
 #ifndef HWND_MESSAGE
