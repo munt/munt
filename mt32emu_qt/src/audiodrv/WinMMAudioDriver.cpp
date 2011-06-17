@@ -22,7 +22,6 @@ using namespace MT32Emu;
 
 #define	RENDER_EVERY_MS					// provides minimum possible latency
 #define	MIN_RENDER_SAMPLES 320		// render at least this number of samples
-#define	SAFE_RENDER_SAMPLES 32		// render up to this safe point
 
 // SergM: 100 ms output latency is safe on most systems.
 // can be reduced to 35 ms (works on my system)
@@ -31,8 +30,7 @@ using namespace MT32Emu;
 static const int FRAMES_IN_BUFFER = 3200;
 // Stereo, 16-bit
 static const int FRAME_SIZE = 4;
-// Latency for MIDI processing
-// should be > MIN_RENDER_SAMPLES + SAFE_RENDER_SAMPLES
+// Latency for MIDI processing. 15 ms is the offset of interprocess timeGetTime() difference.
 static const MasterClockNanos latency = 15 * MasterClock::NANOS_PER_MILLISECOND;
 
 WinMMAudioDriver::WinMMAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : 
@@ -82,13 +80,6 @@ void WinMMAudioDriver::processingThread(void *userData) {
 		if (playCursor < renderPos) {
 			frameCount = FRAMES_IN_BUFFER - renderPos;
 			nanosNow -= MasterClock::NANOS_PER_SECOND * playCursor / driver->sampleRate;
-#ifndef RENDER_EVERY_MS
-			if (SAFE_RENDER_SAMPLES > frameCount) {
-				if (playCursor < (SAFE_RENDER_SAMPLES - frameCount)) {
-					Sleep(DWORD((SAFE_RENDER_SAMPLES - frameCount) * samplePeriod));
-				}
-			}
-#endif
 		} else {
 			frameCount = playCursor - renderPos;
 #ifdef RENDER_EVERY_MS
@@ -97,11 +88,9 @@ void WinMMAudioDriver::processingThread(void *userData) {
 				continue;
 			}
 #else
-			if (frameCount < (SAFE_RENDER_SAMPLES + MIN_RENDER_SAMPLES)) {
-				Sleep(DWORD((SAFE_RENDER_SAMPLES + MIN_RENDER_SAMPLES - frameCount) * samplePeriod));
+			if (frameCount < MIN_RENDER_SAMPLES) {
+				Sleep(DWORD((MIN_RENDER_SAMPLES - frameCount) * samplePeriod));
 				continue;
-			} else {
-				frameCount -= SAFE_RENDER_SAMPLES;
 			}
 #endif
 		}
