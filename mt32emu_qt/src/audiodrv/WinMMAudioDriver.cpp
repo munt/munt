@@ -20,7 +20,7 @@
 
 using namespace MT32Emu;
 
-//#define	RENDER_EVERY_MS					// provides minimum possible latency
+#define	RENDER_EVERY_MS					// provides minimum possible latency
 #define	MIN_RENDER_SAMPLES 320		// render at least this number of samples
 #define	SAFE_RENDER_SAMPLES 32		// render up to this safe point
 
@@ -66,9 +66,14 @@ SynthTimestamp WinMMAudioDriver::getPlayedAudioNanosPlusLatency() {
 void WinMMAudioDriver::processingThread(void *userData) {
 	DWORD renderPos = 0;
 	DWORD playCursor, frameCount;
+	MasterClockNanos nanosNow, firstSampleNanos = MasterClock::getClockNanos() - latency;
 	MMTIME mmTime;
 	WinMMAudioDriver *driver = (WinMMAudioDriver *)userData;
+#ifdef RENDER_EVERY_MS
+	DWORD samplesPerMS = driver->sampleRate * MasterClock::NANOS_PER_MILLISECOND / MasterClock::NANOS_PER_SECOND;
+#else
 	double samplePeriod = 0.9 * MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / driver->sampleRate;
+#endif
 	while (!driver->pendingClose) {
 		mmTime.wType = TIME_SAMPLES;
 		waveOutGetPosition(driver->hWaveOut, &mmTime, sizeof MMTIME);
@@ -85,7 +90,7 @@ void WinMMAudioDriver::processingThread(void *userData) {
 		} else {
 			frameCount = playCursor - renderPos;
 #ifdef RENDER_EVERY_MS
-			if (frameCount < MIN_RENDER_SAMPLES) {
+			if (frameCount < samplesPerMS) {
 				Sleep(1);
 				continue;
 			}
@@ -98,8 +103,10 @@ void WinMMAudioDriver::processingThread(void *userData) {
 			}
 #endif
 		}
+		nanosNow = MasterClock::getClockNanos() - latency;
 		unsigned int rendered = driver->synth->render(driver->buffer + (renderPos << 1), frameCount,
-			MasterClock::getClockNanos() - latency, driver->sampleRate);
+			firstSampleNanos, driver->sampleRate);
+		firstSampleNanos = nanosNow;
 		if (rendered < frameCount) { // SergM: never found this true
 			char *out = (char *)driver->buffer + FRAME_SIZE * renderPos;
 			// Fill this with 0 due to the real synth fault
