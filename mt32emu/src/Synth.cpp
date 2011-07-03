@@ -160,6 +160,9 @@ Synth::Synth() {
 	setReverbOutputGain(0.68f);
 	partialManager = NULL;
 	memset(parts, 0, sizeof(parts));
+#if MT32EMU_MONITOR_PARTIALS > 0
+	renderedSampleCount = 0;
+#endif
 }
 
 Synth::~Synth() {
@@ -1430,14 +1433,14 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 		}
 	}
 	partialManager->clearAlreadyOutputed();
-#if MT32EMU_MONITOR_PARTIALS == 1
-	samplepos += len;
-	if (samplepos > myProp.SampleRate * 5) {
-		samplepos = 0;
-		int partialUsage[9];
-		partialManager->GetPerPartPartialUsage(partialUsage);
+#if MT32EMU_MONITOR_PARTIALS > 0
+	renderedSampleCount += len;
+	if (renderedSampleCount > myProp.sampleRate * 5) {
+		renderedSampleCount = 0;
+		unsigned int partialUsage[9];
+		partialManager->getPerPartPartialUsage(partialUsage);
 		printDebug("1:%02d 2:%02d 3:%02d 4:%02d 5:%02d 6:%02d 7:%02d 8:%02d", partialUsage[0], partialUsage[1], partialUsage[2], partialUsage[3], partialUsage[4], partialUsage[5], partialUsage[6], partialUsage[7]);
-		printDebug("Rhythm: %02d  TOTAL: %02d", partialUsage[8], MT32EMU_MAX_PARTIALS - partialManager->GetFreePartialCount());
+		printDebug("Rhythm: %02d  TOTAL: %02d", partialUsage[8], MT32EMU_MAX_PARTIALS - partialManager->getFreePartialCount());
 	}
 #endif
 }

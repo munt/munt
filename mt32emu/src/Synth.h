@@ -320,9 +320,9 @@ private:
 
 	Bit8s chantable[32];
 
-	#if MT32EMU_MONITOR_PARTIALS == 1
-	static Bit32s samplepos = 0;
-	#endif
+#if MT32EMU_MONITOR_PARTIALS > 0
+	Bit32u renderedSampleCount;
+#endif
 
 	Tables tables;
 

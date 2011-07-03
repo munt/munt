@@ -91,6 +91,16 @@ unsigned int PartialManager::getFreePartialCount(void) {
 	return count;
 }
 
+// This function is solely used to gather data for debug output at the moment.
+void PartialManager::getPerPartPartialUsage(unsigned int perPartPartialUsage[9]) {
+	memset(perPartPartialUsage, 0, 9 * sizeof(unsigned int));
+	for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
+		if (partialTable[i]->isActive()) {
+			perPartPartialUsage[partialTable[i]->getOwnerPart()]++;
+		}
+	}
+}
+
 // This method assumes that getFreePartials() has been called to make numReservedPartialsForPart up-to-date.
 // The rhythm part is considered part -1 for the purposes of the minPart argument (and as this suggests, is checked last, if at all).
 bool PartialManager::abortWhereReserveExceeded(PolyState polyState, int minPart) {
