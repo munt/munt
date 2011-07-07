@@ -35,7 +35,7 @@ static const float PAN_NUMERATOR_MASTER[] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
 static const float PAN_NUMERATOR_SLAVE[]  = {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f};
 
 Partial::Partial(Synth *useSynth, int useDebugPartialNum) :
-	synth(useSynth), debugPartialNum(useDebugPartialNum), tva(new TVA(this, &ampRamp)), tvp(new TVP(this)), tvf(new TVF(this, &cutoffModifierRamp)) {
+	synth(useSynth), debugPartialNum(useDebugPartialNum), sampleNum(0), tva(new TVA(this, &ampRamp)), tvp(new TVP(this)), tvf(new TVF(this, &cutoffModifierRamp)) {
 	ownerPart = -1;
 	poly = NULL;
 	pair = NULL;
@@ -45,6 +45,16 @@ Partial::~Partial() {
 	delete tva;
 	delete tvp;
 	delete tvf;
+}
+
+// Only used for debugging purposes
+int Partial::debugGetPartialNum() const {
+	return debugPartialNum;
+}
+
+// Only used for debugging purposes
+unsigned long Partial::debugGetSampleNum() const {
+	return sampleNum;
 }
 
 int Partial::getOwnerPart() const {
@@ -75,6 +85,10 @@ void Partial::deactivate() {
 			pair->pair = NULL;
 		}
 	}
+#if MT32EMU_MONITOR_PARTIALS > 2
+	synth->printDebug("[+%lu] [Partial %d] Deactivated", sampleNum, debugPartialNum);
+	synth->printPartialUsage(sampleNum);
+#endif
 }
 
 // DEPRECATED: This should probably go away eventually, it's currently only used as a kludge to protect our old assumptions that
@@ -92,7 +106,7 @@ int Partial::getKey() const {
 
 void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *usePatchCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial) {
 	if (usePoly == NULL || usePatchCache == NULL) {
-		synth->printDebug("*** Error: Starting partial for owner %d, usePoly=%s, usePatchCache=%s", ownerPart, usePoly == NULL ? "*** NULL ***" : "OK", usePatchCache == NULL ? "*** NULL ***" : "OK");
+		synth->printDebug("[Partial %d] *** Error: Starting partial for owner %d, usePoly=%s, usePatchCache=%s", debugPartialNum, ownerPart, usePoly == NULL ? "*** NULL ***" : "OK", usePatchCache == NULL ? "*** NULL ***" : "OK");
 		return;
 	}
 	patchCache = usePatchCache;
@@ -165,7 +179,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		return 0;
 	}
 	if (poly == NULL) {
-		synth->printDebug("*** ERROR: poly is NULL at Partial::generateSamples()!");
+		synth->printDebug("[Partial %d] *** ERROR: poly is NULL at Partial::generateSamples()!", debugPartialNum);
 		return 0;
 	}
 
@@ -173,7 +187,6 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 	// Generate samples
 
-	unsigned long sampleNum;
 	for (sampleNum = 0; sampleNum < length; sampleNum++) {
 		float sample = 0;
 		Bit32u ampRampVal = ampRamp.nextValue();
@@ -403,8 +416,9 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		sample *= amp;
 		*partialBuf++ = sample;
 	}
-	// At this point, sampleNum represents the number of samples rendered
-	return sampleNum;
+	unsigned long renderedSamples = sampleNum;
+	sampleNum = 0;
+	return renderedSamples;
 }
 
 float *Partial::mixBuffersRingMix(float *buf1, float *buf2, unsigned long len) {
@@ -469,7 +483,7 @@ bool Partial::produceOutput(float *leftBuf, float *rightBuf, unsigned long lengt
 		return false;
 	}
 	if (poly == NULL) {
-		synth->printDebug("*** ERROR: poly is NULL at Partial::produceOutput()!");
+		synth->printDebug("[Partial %d] *** ERROR: poly is NULL at Partial::produceOutput()!", debugPartialNum);
 		return false;
 	}
 

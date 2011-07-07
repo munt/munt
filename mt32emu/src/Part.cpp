@@ -304,7 +304,7 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 	}
 	//synth->printDebug("Res 1: %d 2: %d 3: %d 4: %d", cache[0].waveform, cache[1].waveform, cache[2].waveform, cache[3].waveform);
 
-#if MT32EMU_MONITOR_INSTRUMENTS == 1
+#if MT32EMU_MONITOR_INSTRUMENTS > 0
 	synth->printDebug("%s (%s): Recached timbre", name, currentInstr);
 	for (int i = 0; i < 4; i++) {
 		synth->printDebug(" %d: play=%s, pcm=%s (%d), wave=%d", i, cache[i].playPartial ? "YES" : "NO", cache[i].PCMPartial ? "YES" : "NO", timbre->partial[i].wg.pcmWave, timbre->partial[i].wg.waveform);
@@ -355,15 +355,15 @@ void Part::setPan(unsigned int midiPan) {
 /**
  * Applies key shift to a MIDI key and converts it into an internal key value in the range 12-108.
  */
-unsigned int Part::midiKeyToKey(unsigned int midiKey, const char *debugAction) {
+unsigned int Part::midiKeyToKey(unsigned int midiKey) {
 	int key = midiKey + patchTemp->patch.keyShift;
 	if (key < 36) {
-		synth->printDebug("%s (%s): Attempted to perform \"%s\" on invalid key %d (%d after keyshift) < 36; moving up by octaves", name, currentInstr, debugAction, midiKey, key);
+		// After keyShift is applied, key < 36, so move up by octaves
 		while (key < 36) {
 			key += 12;
 		}
 	} else if (key > 132) {
-		synth->printDebug("%s (%s): Attempted to perform \"%s\" on invalid key %d (%d after keyshift) > 132; moving down by octaves", name, currentInstr, debugAction, midiKey, key);
+		// After keyShift is applied, key > 132, so move down by octaves
 		while (key > 132) {
 			key -= 12;
 		}
@@ -396,23 +396,33 @@ void RhythmPart::noteOn(unsigned int midiKey, unsigned int velocity) {
 	int absTimbreNum = drumTimbreNum + 128;
 	TimbreParam *timbre = &synth->mt32ram.timbres[absTimbreNum].timbre;
 	memcpy(currentInstr, timbre->common.name, 10);
-#if MT32EMU_MONITOR_INSTRUMENTS == 1
-	synth->printDebug("%s (%s): starting poly (drum %d, timbre %d) - key %d (velocity %d)", name, currentInstr, drumNum, absTimbreNum, midiKey, velocity);
-#endif
 	if (drumCache[drumNum][0].dirty) {
 		cacheTimbre(drumCache[drumNum], timbre);
 	}
+#if MT32EMU_MONITOR_INSTRUMENTS > 0
+	synth->printDebug("%s (%s): Start poly (drum %d, timbre %d): midiKey %u, key %u, velo %u, mod %u, exp %u, bend %u", name, currentInstr, drumNum, absTimbreNum, midiKey, key, velocity, modulation, expression, pitchBend);
+#if MT32EMU_MONITOR_INSTRUMENTS > 1
+	// According to info from Mok, keyShift does not appear to affect anything on rhythm part on LAPC-I, but may do on MT-32 - needs investigation
+	synth->printDebug(" Patch: (timbreGroup %u), (timbreNum %u), (keyShift %u), fineTune %u, benderRange %u, assignMode %u, (reverbSwitch %u)", patchTemp->patch.timbreGroup, patchTemp->patch.timbreNum, patchTemp->patch.keyShift, patchTemp->patch.fineTune, patchTemp->patch.benderRange, patchTemp->patch.assignMode, patchTemp->patch.reverbSwitch);
+	synth->printDebug(" PatchTemp: outputLevel %u, (panpot %u)", patchTemp->outputLevel, patchTemp->panpot);
+	synth->printDebug(" RhythmTemp: timbre %u, outputLevel %u, panpot %u, reverbSwitch %u", rhythmTemp[drumNum].timbre, rhythmTemp[drumNum].outputLevel, rhythmTemp[drumNum].panpot, rhythmTemp[drumNum].reverbSwitch); 
+#endif
+#endif
 	playPoly(drumCache[drumNum], &rhythmTemp[drumNum], midiKey, key, velocity);
 }
 
 void Part::noteOn(unsigned int midiKey, unsigned int velocity) {
-	unsigned int key = midiKeyToKey(midiKey, "Note On");
-#if MT32EMU_MONITOR_INSTRUMENTS == 1
-	synth->printDebug("%s (%s): starting poly - key %d (velocity %d)", name, currentInstr, midiKey, velocity);
-#endif
+	unsigned int key = midiKeyToKey(midiKey);
 	if (patchCache[0].dirty) {
 		cacheTimbre(patchCache, timbreTemp);
 	}
+#if MT32EMU_MONITOR_INSTRUMENTS > 0
+	synth->printDebug("%s (%s): Start poly: midiKey %u, key %u, velo %u, mod %u, exp %u, bend %u", name, currentInstr, midiKey, key, velocity, modulation, expression, pitchBend);
+#if MT32EMU_MONITOR_INSTRUMENTS > 1
+	synth->printDebug(" Patch: timbreGroup %u, timbreNum %u, keyShift %u, fineTune %u, benderRange %u, assignMode %u, reverbSwitch %u", patchTemp->patch.timbreGroup, patchTemp->patch.timbreNum, patchTemp->patch.keyShift, patchTemp->patch.fineTune, patchTemp->patch.benderRange, patchTemp->patch.assignMode, patchTemp->patch.reverbSwitch);
+	synth->printDebug(" PatchTemp: outputLevel %u, panpot %u", patchTemp->outputLevel, patchTemp->panpot);
+#endif
+#endif
 	playPoly(patchCache, NULL, midiKey, key, velocity);
 }
 
@@ -471,7 +481,10 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 	}
 
 	if (!synth->partialManager->freePartials(needPartials, partNum)) {
-		synth->printDebug("%s (%s): Insufficient free partials to play key %d (velocity %d); needed=%d, free=%d", name, currentInstr, midiKey, velocity, needPartials, synth->partialManager->getFreePartialCount());
+#if MT32EMU_MONITOR_PARTIALS > 0
+		synth->printDebug("%s (%s): Insufficient free partials to play key %d (velocity %d); needed=%d, free=%d, assignMode=%d", name, currentInstr, midiKey, velocity, needPartials, synth->partialManager->getFreePartialCount(), patchTemp->patch.assignMode);
+		synth->printPartialUsage();
+#endif
 		return;
 	}
 
@@ -501,9 +514,15 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 
 	for (int x = 0; x < 4; x++) {
 		if (partials[x] != NULL) {
+#if MT32EMU_MONITOR_PARTIALS > 2
+			synth->printDebug("%s (%s): Allocated partial %d", name, currentInstr, partials[x]->debugGetPartialNum());
+#endif
 			partials[x]->startPartial(this, poly, &cache[x], rhythmTemp, partials[cache[x].structurePair]);
 		}
 	}
+#if MT32EMU_MONITOR_PARTIALS > 1
+	synth->printPartialUsage();
+#endif
 }
 
 void Part::allNotesOff() {
@@ -539,11 +558,11 @@ void RhythmPart::noteOff(unsigned int midiKey) {
 }
 
 void Part::noteOff(unsigned int midiKey) {
-	stopNote(midiKeyToKey(midiKey, "Note Off"));
+	stopNote(midiKeyToKey(midiKey));
 }
 
 void Part::stopNote(unsigned int key) {
-#if MT32EMU_MONITOR_INSTRUMENTS == 1
+#if MT32EMU_MONITOR_INSTRUMENTS > 0
 	synth->printDebug("%s (%s): stopping key %d", name, currentInstr, key);
 #endif
 

@@ -35,6 +35,9 @@ class Partial {
 private:
 	Synth *synth;
 	const int debugPartialNum; // Only used for debugging
+	// Number of the sample currently being rendered by generateSamples(), or 0 if no run is in progress
+	// This is only kept available for debugging purposes.
+	unsigned long sampleNum; 
 
 	int ownerPart; // -1 if unassigned
 	int mixType;
@@ -82,6 +85,9 @@ public:
 
 	Partial(Synth *synth, int debugPartialNum);
 	~Partial();
+
+	int debugGetPartialNum() const;
+	unsigned long debugGetSampleNum() const;
 
 	int getOwnerPart() const;
 	int getKey() const;

@@ -160,9 +160,7 @@ Synth::Synth() {
 	setReverbOutputGain(0.68f);
 	partialManager = NULL;
 	memset(parts, 0, sizeof(parts));
-#if MT32EMU_MONITOR_PARTIALS > 0
 	renderedSampleCount = 0;
-#endif
 }
 
 Synth::~Synth() {
@@ -189,6 +187,9 @@ void Synth::printDebug(const char *fmt, ...) {
 	if (myProp.printDebug != NULL) {
 		myProp.printDebug(myProp.userData, fmt, ap);
 	} else {
+#if MT32EMU_DEBUG_SAMPLESTAMPS > 0
+		printf("[%u] ", renderedSampleCount);
+#endif
 		vprintf(fmt, ap);
 		printf("\n");
 	}
@@ -437,7 +438,9 @@ bool Synth::open(SynthProperties &useProp) {
 	// This is to help detect bugs
 	memset(&mt32ram, '?', sizeof(mt32ram));
 
+#if MT32EMU_MONITOR_INIT
 	printDebug("Loading Control ROM");
+#endif
 	if (loadControlROM("CM32L_CONTROL.ROM") != LoadResult_OK) {
 		if (loadControlROM("MT32_CONTROL.ROM") != LoadResult_OK) {
 			printDebug("Init Error - Missing or invalid MT32_CONTROL.ROM");
@@ -454,7 +457,9 @@ bool Synth::open(SynthProperties &useProp) {
 	pcmROMSize = controlROMMap->pcmCount == 256 ? 512 * 1024 : 256 * 1024;
 	pcmROMData = new float[pcmROMSize];
 
+#if MT32EMU_MONITOR_INIT
 	printDebug("Loading PCM ROM");
+#endif
 	if (loadPCMROM("CM32L_PCM.ROM") != LoadResult_OK) {
 		if (loadPCMROM("MT32_PCM.ROM") != LoadResult_OK) {
 			printDebug("Init Error - Missing MT32_PCM.ROM");
@@ -463,22 +468,30 @@ bool Synth::open(SynthProperties &useProp) {
 		}
 	}
 
+#if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Timbre Bank A");
+#endif
 	if (!initTimbres(controlROMMap->timbreAMap, controlROMMap->timbreAOffset, 0x40, 0, controlROMMap->timbreACompressed)) {
 		return false;
 	}
 
+#if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Timbre Bank B");
+#endif
 	if (!initTimbres(controlROMMap->timbreBMap, controlROMMap->timbreBOffset, 0x40, 64, controlROMMap->timbreBCompressed)) {
 		return false;
 	}
 
+#if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Timbre Bank R");
+#endif
 	if (!initTimbres(controlROMMap->timbreRMap, 0, controlROMMap->timbreRCount, 192, true)) {
 		return false;
 	}
 
+#if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Timbre Bank M");
+#endif
 	// CM-64 seems to initialise all bytes in this bank to 0.
 	memset(&mt32ram.timbres[128], 0, sizeof(mt32ram.timbres[128]) * 64);
 
@@ -486,13 +499,19 @@ bool Synth::open(SynthProperties &useProp) {
 
 	pcmWaves = new PCMWaveEntry[controlROMMap->pcmCount];
 
+#if MT32EMU_MONITOR_INIT
 	printDebug("Initialising PCM List");
+#endif
 	initPCMList(controlROMMap->pcmTable, controlROMMap->pcmCount);
 
+#if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Rhythm Temp");
+#endif
 	memcpy(mt32ram.rhythmTemp, &controlROMData[controlROMMap->rhythmSettings], controlROMMap->rhythmSettingsCount * 4);
 
+#if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Patches");
+#endif
 	for (Bit8u i = 0; i < 128; i++) {
 		PatchParam *patch = &mt32ram.patches[i];
 		patch->timbreGroup = i / 64;
@@ -505,7 +524,9 @@ bool Synth::open(SynthProperties &useProp) {
 		patch->dummy = 0;
 	}
 
+#if MT32EMU_MONITOR_INIT
 	printDebug("Initialising System");
+#endif
 	// The MT-32 manual claims that "Standard pitch" is 442Hz.
 	mt32ram.system.masterTune = 0x4A; // Confirmed on CM-64
 	mt32ram.system.reverbMode = 0; // Confirmed
@@ -554,7 +575,9 @@ bool Synth::open(SynthProperties &useProp) {
 	isOpen = true;
 	isEnabled = false;
 
+#if MT32EMU_MONITOR_INIT
 	printDebug("*** Initialisation complete ***");
+#endif
 	return true;
 }
 
@@ -806,18 +829,26 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 
 	// Process channel-specific sysex by converting it to device-global
 	if (device < 0x10) {
+#if MT32EMU_MONITOR_SYSEX > 0
 		printDebug("WRITE-CHANNEL: Channel %d temp area 0x%06x", device, MT32EMU_SYSEXMEMADDR(addr));
+#endif
 		if (/*addr >= MT32EMU_MEMADDR(0x000000) && */addr < MT32EMU_MEMADDR(0x010000)) {
 			int offset;
 			if (chantable[device] == -1) {
+#if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Channel not mapped to a part... 0 offset)");
+#endif
 				offset = 0;
 			} else if (chantable[device] == 8) {
+#if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Channel mapped to rhythm... 0 offset)");
+#endif
 				offset = 0;
 			} else {
 				offset = chantable[device] * sizeof(MemParams::PatchTemp);
+#if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Setting extra offset to %d)", offset);
+#endif
 			}
 			addr += MT32EMU_MEMADDR(0x030000) + offset;
 		} else if (/*addr >= MT32EMU_MEMADDR(0x010000) && */ addr < MT32EMU_MEMADDR(0x020000)) {
@@ -825,18 +856,26 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 		} else if (/*addr >= MT32EMU_MEMADDR(0x020000) && */ addr < MT32EMU_MEMADDR(0x030000)) {
 			int offset;
 			if (chantable[device] == -1) {
+#if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Channel not mapped to a part... 0 offset)");
+#endif
 				offset = 0;
 			} else if (chantable[device] == 8) {
+#if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Channel mapped to rhythm... 0 offset)");
+#endif
 				offset = 0;
 			} else {
 				offset = chantable[device] * sizeof(TimbreParam);
+#if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Setting extra offset to %d)", offset);
+#endif
 			}
 			addr += MT32EMU_MEMADDR(0x040000) - MT32EMU_MEMADDR(0x020000) + offset;
 		} else {
+#if MT32EMU_MONITOR_SYSEX > 0
 			printDebug(" Invalid channel");
+#endif
 			return;
 		}
 	}
@@ -968,13 +1007,17 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			char timbreName[11];
 			memcpy(timbreName, mt32ram.timbres[absTimbreNum].timbre.common.name, 10);
 			timbreName[10] = 0;
+#if MT32EMU_MONITOR_SYSEX > 0
 			printDebug("WRITE-PARTPATCH (%d-%d@%d..%d): %d; timbre=%d (%s), outlevel=%d", first, last, off, off + len, i, absTimbreNum, timbreName, mt32ram.patchTemp[i].outputLevel);
+#endif
 			if (parts[i] != NULL) {
 				if (i != 8) {
 					// Note: Confirmed on CM-64 that we definitely *should* update the timbre here,
 					// but only in the case that the sysex actually writes to those values
 					if (i == first && off > 2) {
+#if MT32EMU_MONITOR_SYSEX > 0
 						printDebug(" (Not updating timbre, since those values weren't touched)");
+#endif
 					} else {
 						parts[i]->setTimbre(&mt32ram.timbres[parts[i]->getAbsTimbreNum()].timbre);
 					}
@@ -994,7 +1037,9 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			} else {
 				strcpy(timbreName, "[None]");
 			}
+#if MT32EMU_MONITOR_SYSEX > 0
 			printDebug("WRITE-RHYTHM (%d-%d@%d..%d): %d; level=%02x, panpot=%02x, reverb=%02x, timbre=%d (%s)", first, last, off, off + len, i, mt32ram.rhythmTemp[i].outputLevel, mt32ram.rhythmTemp[i].panpot, mt32ram.rhythmTemp[i].reverbSwitch, mt32ram.rhythmTemp[i].timbre, timbreName);
+#endif
 		}
 		if (parts[8] != NULL) {
 			parts[8]->refresh();
@@ -1006,7 +1051,9 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			char instrumentName[11];
 			memcpy(instrumentName, mt32ram.timbreTemp[i].common.name, 10);
 			instrumentName[10] = 0;
+#if MT32EMU_MONITOR_SYSEX > 0
 			printDebug("WRITE-PARTTIMBRE (%d-%d@%d..%d): timbre=%d (%s)", first, last, off, off + len, i, instrumentName);
+#endif
 			if (parts[i] != NULL) {
 				parts[i]->refresh();
 			}
@@ -1014,6 +1061,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		break;
 	case MR_Patches:
 		region->write(first, off, data, len);
+#if MT32EMU_MONITOR_SYSEX > 0
 		for (unsigned int i = first; i <= last; i++) {
 			PatchParam *patch = &mt32ram.patches[i];
 			int patchAbsTimbreNum = patch->timbreGroup * 64 + patch->timbreNum;
@@ -1022,21 +1070,8 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			instrumentName[10] = 0;
 			Bit8u *n = (Bit8u *)patch;
 			printDebug("WRITE-PATCH (%d-%d@%d..%d): %d; timbre=%d (%s) %02X%02X%02X%02X%02X%02X%02X%02X", first, last, off, off + len, i, patchAbsTimbreNum, instrumentName, n[0], n[1], n[2], n[3], n[4], n[5], n[6], n[7]);
-			// FIXME:KG: The below is definitely dodgy. We just guess that this is the patch that the part was using
-			// based on a timbre match (but many patches could have the same timbre!)
-			// If this refresh is really correct, we should store the patch number in use by each part.
-			/*
-			for (int part = 0; part < 8; part++) {
-				if (parts[part] != NULL) {
-					int partPatchAbsTimbreNum = mt32ram.patchSettings[part].patch.timbreGroup * 64 + mt32ram.patchSettings[part].patch.timbreNum;
-					if (parts[part]->getAbsTimbreNum() == patchAbsTimbreNum) {
-						parts[part]->setPatch(patch);
-						parts[part]->RefreshPatch();
-					}
-				}
-			}
-			*/
 		}
+#endif
 		break;
 	case MR_Timbres:
 		// Timbres
@@ -1143,7 +1178,9 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		// the same parameters as were already set, which may be wrong.
 		// On the other hand, the real thing could be resetting things even when they aren't touched
 		// by the write at all.
+#if MT32EMU_MONITOR_SYSEX > 0
 		printDebug("WRITE-SYSTEM:");
+#endif
 		if (off <= SYSTEM_MASTER_TUNE_OFF && off + len > SYSTEM_MASTER_TUNE_OFF) {
 			refreshSystemMasterTune();
 		}
@@ -1164,7 +1201,9 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		char buf[MAX_SYSEX_SIZE];
 		memcpy(&buf, &data[0], len);
 		buf[len] = 0;
+#if MT32EMU_MONITOR_SYSEX > 0
 		printDebug("WRITE-LCD: %s", buf);
+#endif
 		report(ReportType_lcdMessage, buf);
 		break;
 	case MR_Reset:
@@ -1178,13 +1217,19 @@ void Synth::refreshSystemMasterTune() {
 	// The LAPC-I documentation claims a range of 427.5Hz-452.6Hz (similar to what we have here)
 	// The MT-32 documentation claims a range of 432.1Hz-457.6Hz
 	masterTune = 440.0f * EXP2F((mt32ram.system.masterTune - 64.0f) / (128.0f * 12.0f));
+#if MT32EMU_MONITOR_SYSEX > 0
 	printDebug(" Master Tune: %f", masterTune);
+#endif
 }
 
 void Synth::refreshSystemReverbParameters() {
+#if MT32EMU_MONITOR_SYSEX > 0
 	printDebug(" Reverb: mode=%d, time=%d, level=%d", mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
+#endif
 	if (reverbOverridden && reverbModel != NULL) {
+#if MT32EMU_MONITOR_SYSEX > 0
 		printDebug(" (Reverb overridden - ignoring)");
+#endif
 		return;
 	}
 	report(ReportType_newReverbMode,  &mt32ram.system.reverbMode);
@@ -1206,11 +1251,10 @@ void Synth::refreshSystemReverbParameters() {
 
 void Synth::refreshSystemReserveSettings() {
 	Bit8u *rset = mt32ram.system.reserveSettings;
+#if MT32EMU_MONITOR_SYSEX > 0
 	printDebug(" Partial reserve: 1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
-	int pr = partialManager->setReserve(rset);
-	if (pr != 32) {
-		printDebug(" (Partial Reserve Table with less than 32 partials reserved!)");
-	}
+#endif
+	partialManager->setReserve(rset);
 }
 
 void Synth::refreshSystemChanAssign() {
@@ -1226,12 +1270,16 @@ void Synth::refreshSystemChanAssign() {
 			chantable[(int)mt32ram.system.chanAssign[i]] = (char)i;
 		}
 	}
+#if MT32EMU_MONITOR_SYSEX > 0
 	Bit8u *rset = mt32ram.system.chanAssign;
 	printDebug(" Part assign:     1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
+#endif
 }
 
 void Synth::refreshSystemMasterVol() {
+#if MT32EMU_MONITOR_SYSEX > 0
 	printDebug(" Master volume: %d", mt32ram.system.masterVol);
+#endif
 }
 
 void Synth::refreshSystem() {
@@ -1243,7 +1291,9 @@ void Synth::refreshSystem() {
 }
 
 void Synth::reset() {
+#if MT32EMU_MONITOR_SYSEX > 0
 	printDebug("RESET");
+#endif
 	report(ReportType_devReset, NULL);
 	partialManager->deactivateAll();
 	mt32ram = mt32default;
@@ -1433,16 +1483,17 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 		}
 	}
 	partialManager->clearAlreadyOutputed();
-#if MT32EMU_MONITOR_PARTIALS > 0
 	renderedSampleCount += len;
-	if (renderedSampleCount > myProp.sampleRate * 5) {
-		renderedSampleCount = 0;
-		unsigned int partialUsage[9];
-		partialManager->getPerPartPartialUsage(partialUsage);
-		printDebug("1:%02d 2:%02d 3:%02d 4:%02d 5:%02d 6:%02d 7:%02d 8:%02d", partialUsage[0], partialUsage[1], partialUsage[2], partialUsage[3], partialUsage[4], partialUsage[5], partialUsage[6], partialUsage[7]);
-		printDebug("Rhythm: %02d  TOTAL: %02d", partialUsage[8], MT32EMU_MAX_PARTIALS - partialManager->getFreePartialCount());
+}
+
+void Synth::printPartialUsage(unsigned long sampleOffset) {
+	unsigned int partialUsage[9];
+	partialManager->getPerPartPartialUsage(partialUsage);
+	if (sampleOffset > 0) {
+		printDebug("[+%lu] Partial Usage: 1:%02d 2:%02d 3:%02d 4:%02d 5:%02d 6:%02d 7:%02d 8:%02d R: %02d  TOTAL: %02d", sampleOffset, partialUsage[0], partialUsage[1], partialUsage[2], partialUsage[3], partialUsage[4], partialUsage[5], partialUsage[6], partialUsage[7], partialUsage[8], MT32EMU_MAX_PARTIALS - partialManager->getFreePartialCount());
+	} else {
+		printDebug("Partial Usage: 1:%02d 2:%02d 3:%02d 4:%02d 5:%02d 6:%02d 7:%02d 8:%02d R: %02d  TOTAL: %02d", partialUsage[0], partialUsage[1], partialUsage[2], partialUsage[3], partialUsage[4], partialUsage[5], partialUsage[6], partialUsage[7], partialUsage[8], MT32EMU_MAX_PARTIALS - partialManager->getFreePartialCount());
 	}
-#endif
 }
 
 bool Synth::hasActivePartials() const {
