@@ -56,6 +56,7 @@ int PortAudioDriver::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	Q_UNUSED(inputBuffer);
 	Q_UNUSED(statusFlags);
 	PortAudioDriver *driver = (PortAudioDriver *)userData;
+#ifdef USE_PA_TIMING
 	double realSampleRate = timeInfo->actualSampleRate;
 	if (realSampleRate == 0.0) {
 		// This means PortAudio doesn't provide us the actualSampleRate estimation
@@ -66,6 +67,11 @@ int PortAudioDriver::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	qint64 renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;
 	qint64 offset = driver->latency - renderOffset;
 	MasterClockNanos firstSampleMasterClockNanos = driver->clockSync.sync(currentlyPlayingAudioNanos) - offset * driver->clockSync.getDrift();
+#else
+	double realSampleRate = Pa_GetStreamInfo(driver->stream)->sampleRate / driver->clockSync.getDrift();
+	MasterClockNanos realSampleTime = MasterClockNanos((driver->sampleCount / Pa_GetStreamInfo(driver->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
+	MasterClockNanos firstSampleMasterClockNanos = driver->clockSync.sync(realSampleTime) - driver->latency;
+#endif
 	unsigned int rendered = driver->synth->render((Bit16s *)outputBuffer, frameCount, firstSampleMasterClockNanos, realSampleRate);
 	if (rendered < frameCount) {
 		char *out = (char *)outputBuffer;
