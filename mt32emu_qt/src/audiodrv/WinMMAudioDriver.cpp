@@ -20,8 +20,7 @@
 
 using namespace MT32Emu;
 
-#define	RENDER_EVERY_MS					// provides minimum possible latency
-#define	MIN_RENDER_SAMPLES 320	// render at least this number of samples
+#define	MIN_RENDER_MS 1	// rendering time
 
 // SergM: 100 ms output latency is safe on most systems.
 // can be reduced to 35 ms (works on my system)
@@ -69,32 +68,25 @@ void WinMMAudioDriver::processingThread(void *userData) {
 	MasterClockNanos nanosNow, firstSampleNanos = MasterClock::getClockNanos() - latency;
 	MMTIME mmTime;
 	WinMMAudioDriver *driver = (WinMMAudioDriver *)userData;
-#ifdef RENDER_EVERY_MS
-	DWORD samplesPerMS = driver->sampleRate * MasterClock::NANOS_PER_MILLISECOND / MasterClock::NANOS_PER_SECOND;
-#else
-	double samplePeriod = MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / driver->sampleRate;
-#endif
+	DWORD minSamplesToRender = MIN_RENDER_MS * driver->sampleRate * MasterClock::NANOS_PER_MILLISECOND / MasterClock::NANOS_PER_SECOND;
+	double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / driver->sampleRate;
 	while (!driver->pendingClose) {
 		mmTime.wType = TIME_SAMPLES;
 		waveOutGetPosition(driver->hWaveOut, &mmTime, sizeof MMTIME);
 		playCursor = mmTime.u.sample % FRAMES_IN_BUFFER;
 		nanosNow = MasterClock::getClockNanos() - latency;
 		if (playCursor < renderPos) {
+			// Buffer wrap, render 'till the end of buffer
 			frameCount = FRAMES_IN_BUFFER - renderPos;
+
+			// Estimate the buffer wrap time
 			nanosNow -= MasterClock::NANOS_PER_SECOND * playCursor / driver->sampleRate;
 		} else {
 			frameCount = playCursor - renderPos;
-#ifdef RENDER_EVERY_MS
-			if (frameCount < samplesPerMS) {
-				Sleep(1);
+			if (frameCount < minSamplesToRender) {
+				Sleep(1 + DWORD((minSamplesToRender - frameCount) * samplePeriod));
 				continue;
 			}
-#else
-			if (frameCount < MIN_RENDER_SAMPLES) {
-				Sleep(1 + DWORD((MIN_RENDER_SAMPLES - frameCount) * samplePeriod));
-				continue;
-			}
-#endif
 		}
 		unsigned int rendered = driver->synth->render(driver->buffer + (renderPos << 1), frameCount,
 			firstSampleNanos, driver->sampleRate);
