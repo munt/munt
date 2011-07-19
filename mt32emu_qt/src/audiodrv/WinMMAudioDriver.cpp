@@ -20,15 +20,15 @@
 
 using namespace MT32Emu;
 
-#define	MIN_RENDER_MS 1	// rendering time
+#define	MIN_RENDER_MS 10	// rendering time
 
 // SergM: 100 ms output latency is safe on most systems.
 // can be reduced to 35 ms (works on my system)
 // 30 ms is the absolute minimum, unavoidable KSMixer latency
 // FIXME: should be a variable
-static const int FRAMES_IN_BUFFER = 3200;
+static const int FRAMES_IN_BUFFER = 32 * 100;
 // 30 ms is the size of KSMixer buffer. Writing to the positions closer to the playCursor is unsafe.
-static const int SAFE_FRAMES = 30 * 32;
+static const int SAFE_FRAMES = 32 * 30;
 // Stereo, 16-bit
 static const int FRAME_SIZE = 4;
 // Latency for MIDI processing. 15 ms is the offset of interprocess timeGetTime() difference.
@@ -36,7 +36,7 @@ static const MasterClockNanos latency = 15 * MasterClock::NANOS_PER_MILLISECOND;
 
 WinMMAudioDriver::WinMMAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : 
 	synth(useSynth), sampleRate(useSampleRate), hWaveOut(NULL), pendingClose(false) {
-		buffer = new Bit16s[FRAME_SIZE * FRAMES_IN_BUFFER];
+		buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
 }
 
 WinMMAudioDriver::~WinMMAudioDriver() {

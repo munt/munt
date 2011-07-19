@@ -19,7 +19,7 @@ private:
 	bool pendingClose;
 
 	qint64 getPlayedAudioNanosPlusLatency();
-	static void WinMMAudioDriver::processingThread(void *);
+	static void processingThread(void *);
 
 public:
 	WinMMAudioDriver(QSynth *useSynth, unsigned int useSampleRate);
