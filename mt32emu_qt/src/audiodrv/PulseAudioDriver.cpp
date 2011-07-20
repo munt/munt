@@ -25,9 +25,11 @@
 using namespace MT32Emu;
 
 static const int FRAME_SIZE = 4; // Stereo, 16-bit
-static const int FRAMES_IN_BUFFER = 1024;
+static const int FRAMES_IN_BUFFER = 32 * 10;
 // Latency for MIDI processing
-static const MasterClockNanos latency = 100 * MasterClock::NANOS_PER_MILLISECOND;
+static const MasterClockNanos latency = 300 * MasterClock::NANOS_PER_MILLISECOND;
+
+#define USE_PA_TIMING
 
 PulseAudioDriver::PulseAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0), pendingClose(false) {
 	buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
@@ -55,18 +57,21 @@ void* PulseAudioDriver::processingThread(void *userData) {
 	qDebug() << "Processing thread started";
 	while (!driver->pendingClose) {
 #ifdef USE_PA_TIMING
-		double realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
+		double realSampleRate = driver->sampleRate;
 		MasterClockNanos realSampleTime = MasterClock::getClockNanos() + pa_simple_get_latency(driver->stream, &error) * MasterClock::NANOS_PER_MICROSECOND;
-		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) - latency /* MIDI latency + total stream latency*/;
+		MasterClockNanos firstSampleNanos = realSampleTime - latency; // MIDI latency + total stream latency
 #else
 		double realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
 		MasterClockNanos realSampleTime = MasterClockNanos(driver->sampleCount / (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
-		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) - latency /* MIDI latency only */;
+		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) - latency; // MIDI latency only
 #endif
 		driver->synth->render(driver->buffer, FRAMES_IN_BUFFER,
 			firstSampleNanos, realSampleRate);
 		if (pa_simple_write(driver->stream, driver->buffer, FRAMES_IN_BUFFER * FRAME_SIZE, &error) < 0) {
 			qDebug() << "pa_simple_write() failed:" << pa_strerror(error);
+			pa_simple_free(driver->stream);
+			driver->stream = NULL;
+			qDebug() << "Processing thread stopped";
 			return NULL;
 		}
 		driver->sampleCount += FRAMES_IN_BUFFER;
@@ -136,7 +141,7 @@ void PulseAudioDriver::close() {
 		}
 		qDebug() << "Processing thread stopped";
 		pa_simple_free(stream); 
- 		stream = NULL;
+		stream = NULL;
 	}
 	return;
 }
