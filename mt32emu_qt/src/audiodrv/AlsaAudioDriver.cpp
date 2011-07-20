@@ -24,10 +24,12 @@
 using namespace MT32Emu;
 
 static const unsigned int FRAME_SIZE = 4; // Stereo, 16-bit
-static const unsigned int FRAMES_IN_BUFFER = 1024;
-static const unsigned int audioLatency = 500000; // usec
+static const unsigned int FRAMES_IN_BUFFER = 320;
+static const unsigned int audioLatency = 256000; // usec
 // Latency for MIDI processing
-static const MasterClockNanos latency = 500 * MasterClock::NANOS_PER_MILLISECOND;
+static const MasterClockNanos latency = 256 * MasterClock::NANOS_PER_MILLISECOND;
+
+#define USE_ALSA_TIMING
 
 AlsaAudioDriver::AlsaAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0), pendingClose(false) {
 	buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
@@ -54,11 +56,25 @@ void* AlsaAudioDriver::processingThread(void *userData) {
 	qDebug() << "Processing thread started";
 	while (!driver->pendingClose) {
 #ifdef USE_ALSA_TIMING
-	// IMPLEMENT ME
+		snd_pcm_sframes_t delayp;
+		if ((error = snd_pcm_delay(driver->stream, &delayp)) < 0) {
+			qDebug() << "snd_pcm_delay failed:" << snd_strerror(error);
+			break;
+		}
+#if 0	// use avail() instead of delay()
+		if ((error = snd_pcm_avail(driver->stream)) < 0) {
+			qDebug() << "snd_pcm_avail failed:" << snd_strerror(error);
+			break;
+		}
+		delayp = 8192 - error;
+#endif
+		double realSampleRate = driver->sampleRate;
+		MasterClockNanos realSampleTime = MasterClock::getClockNanos() + delayp / realSampleRate * MasterClock::NANOS_PER_SECOND;
+		MasterClockNanos firstSampleNanos = realSampleTime - latency - audioLatency * MasterClock::NANOS_PER_MICROSECOND; // MIDI latency + total stream latency
 #else
 		double realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
 		MasterClockNanos realSampleTime = MasterClockNanos(driver->sampleCount / (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
-		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) - latency /* MIDI latency only */;
+		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) - latency; // MIDI latency only
 #endif
 		driver->synth->render(driver->buffer, FRAMES_IN_BUFFER,
 			firstSampleNanos, realSampleRate);
@@ -107,6 +123,8 @@ bool AlsaAudioDriver::start(int /* deviceIndex */) {
 		stream = NULL;
 		return false;
 	}
+
+	qDebug() << "snd_pcm_avail:" << snd_pcm_avail(stream);
 
 	// Start playing to fill audio buffers
 //	int initFrames = audioLatency * 1e-6 * sampleRate;
