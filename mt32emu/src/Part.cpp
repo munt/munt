@@ -221,7 +221,11 @@ unsigned int Part::getAbsTimbreNum() const {
 }
 
 void RhythmPart::setProgram(unsigned int patchNum) {
+#if MT32EMU_MONITOR_MIDI > 0
 	synth->printDebug("%s: Attempt to set program (%d) on rhythm is invalid", name, patchNum);
+#else
+	patchNum = 0; // Just to avoid unused variable warning
+#endif
 }
 
 void Part::setProgram(unsigned int patchNum) {
@@ -337,7 +341,9 @@ void Part::setExpression(unsigned int midiExpression) {
 
 void RhythmPart::setPan(unsigned int midiPan) {
 	// CONFIRMED: This does change patchTemp, but has no actual effect on playback.
+#if MT32EMU_MONITOR_MIDI > 0
 	synth->printDebug("%s: Pointlessly setting pan (%d) on rhythm part", name, midiPan);
+#endif
 	Part::setPan(midiPan);
 }
 

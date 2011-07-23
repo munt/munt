@@ -56,7 +56,7 @@ public:
 	float sinf10[5120];
 
 	Tables();
-	void init(Synth *synth);
+	void init();
 };
 
 }

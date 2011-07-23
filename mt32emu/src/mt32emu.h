@@ -30,6 +30,10 @@
 // 1: Debug output for initialisation progress
 #define MT32EMU_MONITOR_INIT 0
 
+// 0: No debug output for MIDI events
+// 1: Debug output for weird MIDI events
+#define MT32EMU_MONITOR_MIDI 0
+
 // 0: No debug output for note on/off
 // 1: Basic debug output for note on/off
 // 2: Comprehensive debug output for note on/off

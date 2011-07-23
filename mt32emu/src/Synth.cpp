@@ -423,7 +423,10 @@ bool Synth::open(SynthProperties &useProp) {
 	}
 	prerenderReadIx = prerenderWriteIx = 0;
 	myProp = useProp;
-	tables.init(this);
+#if MT32EMU_MONITOR_INIT
+	synth->printDebug("Initialising Constant Tables");
+#endif
+	tables.init();
 #if !MT32EMU_REDUCE_REVERB_MEMORY
 	for (int i = 0; i < 4; i++) {
 		reverbModels[i]->open(useProp.sampleRate);
@@ -621,7 +624,9 @@ void Synth::playMsg(Bit32u msg) {
 
 	char part = chantable[chan];
 	if (part < 0 || part > 8) {
+#if MT32EMU_MONITOR_MIDI > 0
 		printDebug("Play msg on unreg chan %d (%d): code=0x%01x, vel=%d", chan, part, code, velocity);
+#endif
 		return;
 	}
 	playMsgOnPart(part, code, note, velocity);
@@ -703,7 +708,9 @@ void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char 
 			break;
 
 		default:
+#if MT32EMU_MONITOR_MIDI > 0
 			printDebug("Unknown MIDI Control code: 0x%02x - vel 0x%02x", note, velocity);
+#endif
 			break;
 		}
 
@@ -718,7 +725,9 @@ void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char 
 		parts[part]->setBend(bend);
 		break;
 	default:
+#if MT32EMU_MONITOR_MIDI > 0
 		printDebug("Unknown Midi code: 0x%01x - %02x - %02x", code, note, velocity);
+#endif
 		break;
 	}
 
@@ -1536,16 +1545,23 @@ void MemoryRegion::read(unsigned int entry, unsigned int off, Bit8u *dst, unsign
 	// This method should never be called with out-of-bounds parameters,
 	// or on an unsupported region - seeing any of this debug output indicates a bug in the emulator
 	if (off > entrySize * entries - 1) {
+#if MT32EMU_MONITOR_SYSEX > 0
 		synth->printDebug("read[%d]: parameters start out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
+#endif
 		return;
 	}
 	if (off + len > entrySize * entries) {
+#if MT32EMU_MONITOR_SYSEX > 0
 		synth->printDebug("read[%d]: parameters end out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
+#endif
 		len = entrySize * entries - off;
 	}
 	Bit8u *src = getRealMemory();
 	if (src == NULL) {
+#if MT32EMU_MONITOR_SYSEX > 0
 		synth->printDebug("read[%d]: unreadable region: entry=%d, off=%d, len=%d", type, entry, off, len);
+#endif
+		return;
 	}
 	memcpy(dst, src + off, len);
 }
@@ -1555,16 +1571,22 @@ void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src,
 	// This method should never be called with out-of-bounds parameters,
 	// or on an unsupported region - seeing any of this debug output indicates a bug in the emulator
 	if (off > entrySize * entries - 1) {
+#if MT32EMU_MONITOR_SYSEX > 0
 		synth->printDebug("write[%d]: parameters start out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
+#endif
 		return;
 	}
 	if (off + len > entrySize * entries) {
+#if MT32EMU_MONITOR_SYSEX > 0
 		synth->printDebug("write[%d]: parameters end out of bounds: entry=%d, off=%d, len=%d", type, entry, off, len);
+#endif
 		len = entrySize * entries - off;
 	}
 	Bit8u *dest = getRealMemory();
 	if (dest == NULL) {
+#if MT32EMU_MONITOR_SYSEX > 0
 		synth->printDebug("write[%d]: unwritable region: entry=%d, off=%d, len=%d", type, entry, off, len);
+#endif
 	}
 
 	for (unsigned int i = 0; i < len; i++) {
@@ -1573,13 +1595,17 @@ void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src,
 		// maxValue == 0 means write-protected unless called from initialisation code, in which case it really means the maximum value is 0.
 		if (maxValue != 0 || init) {
 			if (desiredValue > maxValue) {
+#if MT32EMU_MONITOR_SYSEX > 0
 				synth->printDebug("write[%d]: Wanted 0x%02x at %d, but max 0x%02x", type, desiredValue, memOff, maxValue);
+#endif
 				desiredValue = maxValue;
 			}
 			dest[memOff] = desiredValue;
 		} else if (desiredValue != 0) {
+#if MT32EMU_MONITOR_SYSEX > 0
 			// Only output debug info if they wanted to write non-zero, since a lot of things cause this to spit out a lot of debug info otherwise.
 			synth->printDebug("write[%d]: Wanted 0x%02x at %d, but write-protected", type, desiredValue, memOff);
+#endif
 		}
 		memOff++;
 	}
