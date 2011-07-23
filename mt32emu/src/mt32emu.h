@@ -19,20 +19,46 @@
 #define MT32EMU_MT32EMU_H
 
 // Debugging
-// Shows the instruments played
+
+// 0: Standard debug output is not stamped with the rendered sample count
+// 1: Standard debug output is stamped with the rendered sample count
+// NOTE: The "samplestamp" corresponds to the end of the last completed rendering run.
+//       This is important to bear in mind for debug output that occurs during a run.
+#define MT32EMU_DEBUG_SAMPLESTAMPS 0
+
+// 0: No debug output for initialisation progress
+// 1: Debug output for initialisation progress
+#define MT32EMU_MONITOR_INIT 0
+
+// 0: No debug output for MIDI events
+// 1: Debug output for weird MIDI events
+#define MT32EMU_MONITOR_MIDI 0
+
+// 0: No debug output for note on/off
+// 1: Basic debug output for note on/off
+// 2: Comprehensive debug output for note on/off
 #define MT32EMU_MONITOR_INSTRUMENTS 0
-// Shows number of partials MT-32 is playing, and on which parts
+
+// 0: No debug output for partial allocations
+// 1: Show partial stats when an allocation fails
+// 2: Show partial stats with every new poly
+// 3: Show individual partial allocations/deactivations
 #define MT32EMU_MONITOR_PARTIALS 0
+
+// 0: No debug output for sysex
+// 1: Basic debug output for sysex
+#define MT32EMU_MONITOR_SYSEX 0
 
 // 0: No debug output for sysex writes to the timbre areas
 // 1: Debug output with the name and location of newly-written timbres
 // 2: Complete dump of timbre parameters for newly-written timbres
-#define MT32EMU_MONITOR_TIMBRES 1
+#define MT32EMU_MONITOR_TIMBRES 0
 
 // 0: No TVA/TVF-related debug output.
 // 1: Shows changes to TVA/TVF target, increment and phase.
 #define MT32EMU_MONITOR_TVA 0
 #define MT32EMU_MONITOR_TVF 0
+
 
 // 0: Use LUTs to speedup WG
 // 1: Use precise float math

@@ -28,15 +28,13 @@ Tables::Tables() {
 	initialised = false;
 }
 
-
-void Tables::init(Synth *synth) {
+void Tables::init() {
 	if (initialised) {
 		return;
 	}
 	initialised = true;
 
 	int lf;
-	synth->printDebug("Initialising Constant Tables");
 	for (lf = 0; lf <= 100; lf++) {
 		// CONFIRMED:KG: This matches a ROM table found by Mok
 		float fVal = (2.0f - LOG10F((float)lf + 1.0f)) * 128.0f;

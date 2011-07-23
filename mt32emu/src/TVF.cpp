@@ -107,7 +107,7 @@ void TVF::startRamp(Bit8u newTarget, Bit8u newIncrement, int newPhase) {
 	phase = newPhase;
 	cutoffModifierRamp->startRamp(newTarget, newIncrement);
 #if MT32EMU_MONITOR_TVF >= 1
-	partial->getSynth()->printDebug("TVF,ramp,%d,%d,%d,%d", newTarget, (newIncrement & 0x80) ? -1 : 1, (newIncrement & 0x7F), newPhase);
+	partial->getSynth()->printDebug("[+%lu] [Partial %d] TVF,ramp,%d,%d,%d,%d", partial->debugGetSampleNum(), partial->debugGetPartialNum(), newTarget, (newIncrement & 0x80) ? -1 : 1, (newIncrement & 0x7F), newPhase);
 #endif
 }
 
@@ -121,7 +121,7 @@ void TVF::reset(const TimbreParam::PartialParam *newPartialParam, unsigned int b
 
 	baseCutoff = calcBaseCutoff(newPartialParam, basePitch, key);
 #if MT32EMU_MONITOR_TVF >= 1
-	partial->getSynth()->printDebug("TVF,base,%d", baseCutoff);
+	partial->getSynth()->printDebug("[+%lu] [Partial %d] TVF,base,%d", partial->debugGetSampleNum(), partial->debugGetPartialNum(), baseCutoff);
 #endif
 
 	int newLevelMult = velocity * newPartialParam->tvf.envVeloSensitivity;

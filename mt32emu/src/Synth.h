@@ -320,9 +320,7 @@ private:
 
 	Bit8s chantable[32];
 
-	#if MT32EMU_MONITOR_PARTIALS == 1
-	static Bit32s samplepos = 0;
-	#endif
+	Bit32u renderedSampleCount;
 
 	Tables tables;
 
@@ -405,6 +403,8 @@ private:
 	void reset();
 
 	unsigned int getSampleRate() const;
+
+	void printPartialUsage(unsigned long sampleOffset = 0);
 protected:
 	int report(ReportType type, const void *reportData);
 	File *openFile(const char *filename, File::OpenMode mode);

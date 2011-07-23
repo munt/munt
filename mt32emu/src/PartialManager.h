@@ -38,6 +38,7 @@ public:
 	~PartialManager();
 	Partial *allocPartial(int partNum);
 	unsigned int getFreePartialCount(void);
+	void getPerPartPartialUsage(unsigned int perPartPartialUsage[9]);
 	bool freePartials(unsigned int needed, int partNum);
 	unsigned int setReserve(Bit8u *rset);
 	void deactivateAll();
