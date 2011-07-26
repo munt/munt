@@ -19,21 +19,28 @@
 #include "ClockSync.h"
 #include "MasterClock.h"
 
-// This value defines when the difference between our current idea of the offset is so bad that we just start
-// using the new offset immediately.
-// This can be regularly hit around stream start time by badly-behaved drivers that return bogus timestamps
-// for a while when first starting.
-static const qint64 PERIODIC_RESET_NANOS = 30 * MasterClock::NANOS_PER_SECOND;
-static const qint64 EMERGENCY_RESET_THRESHOLD_NANOS = 500 * MasterClock::NANOS_PER_MILLISECOND;
-static const qint64 HIGH_JITTER_THRESHOLD_NANOS = 100 * MasterClock::NANOS_PER_MILLISECOND;
-static const qint64 LOW_JITTER_THRESHOLD_NANOS = -10 * MasterClock::NANOS_PER_MILLISECOND;
-static const double SHIFT_FACTOR = 0.1;
-
 ClockSync::ClockSync(double initDrift) : offsetValid(false), drift(initDrift) {
+	periodicResetNanos = 5 * MasterClock::NANOS_PER_SECOND;
+	periodicDampFactor = 0.1;
+	emergencyResetThresholdNanos = 500 * MasterClock::NANOS_PER_MILLISECOND;
+	highJitterThresholdNanos = 100 * MasterClock::NANOS_PER_MILLISECOND;
+	lowJitterThresholdNanos = -100 * MasterClock::NANOS_PER_MILLISECOND;
+	shiftFactor = 0.1;
 }
 
 double ClockSync::getDrift() {
 	return drift;
+}
+
+void ClockSync::setParams(qint64 usePeriodicResetNanos, double usePeriodicDampFactor,
+			qint64 useEmergencyResetThresholdNanos, qint64 useHighJitterThresholdNanos,
+			qint64 useLowJitterThresholdNanos, double useShiftFactor) {
+	periodicResetNanos = usePeriodicResetNanos;
+	periodicDampFactor = usePeriodicDampFactor;
+	emergencyResetThresholdNanos = useEmergencyResetThresholdNanos;
+	highJitterThresholdNanos = useHighJitterThresholdNanos;
+	lowJitterThresholdNanos = useLowJitterThresholdNanos;
+	shiftFactor = useShiftFactor;
 }
 
 MasterClockNanos ClockSync::sync(qint64 externalNow) {
@@ -54,19 +61,19 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 	qint64 masterElapsed = masterNow - masterStart;
 	qint64 externalElapsed = externalNow - externalStart;
 	qint64 offsetNow = masterElapsed - drift * externalElapsed;
-	if (masterElapsed > PERIODIC_RESET_NANOS) {
+	if (masterElapsed > periodicResetNanos) {
 		qDebug() << "Periodic reset:" << externalNow << masterNow << offset << offsetNow;
 		masterStart = masterNow;
 		externalStart = externalNow;
 		offset -= offsetNow;
 		offsetShift = 0;	// we don't want here to shift
 		// we rather add a compensation for the offset we have now to the new drift value
-		drift = (double)masterElapsed / (externalElapsed + offset);
-		qDebug() << "Offset, new drift:" << offset << drift;
+		drift = (double)masterElapsed / (externalElapsed + offset * periodicDampFactor);
+		qDebug() << "Offset, new drift:" << 1e-6 * offset << drift;
 		qDebug() << "Periodic reset output:" << masterNow + offset;
 		return masterNow + offset;
 	}
-	if(qAbs(offsetNow - offset) > EMERGENCY_RESET_THRESHOLD_NANOS) {
+	if(qAbs(offsetNow - offset) > emergencyResetThresholdNanos) {
 		qDebug() << "Emergency reset:" << externalNow << masterNow << offset << offsetNow;
 		masterStart = masterNow;
 		externalStart = externalNow;
@@ -75,15 +82,15 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 		drift = 1.0;
 		return masterNow;
 	}
-	if (((offsetNow - offset) < LOW_JITTER_THRESHOLD_NANOS) ||
-		((offsetNow - offset) > HIGH_JITTER_THRESHOLD_NANOS)) {
+	if (((offsetNow - offset) < lowJitterThresholdNanos) ||
+		((offsetNow - offset) > highJitterThresholdNanos)) {
 		qDebug() << "Latency resync:" << externalNow << masterNow << offset << offsetNow;
 		qDebug() << "Offset, shift, masterNow, output:" << offset << offsetShift <<
 			masterNow << qint64(masterStart + offset + drift * externalElapsed);
 		drift = (double)masterElapsed / externalElapsed;
-		// start moving offset towards 0 by steps of SHIFT_FACTOR * offset
+		// start moving offset towards 0 by steps of shiftFactor * offset
 		offset -= offsetNow;
-		offsetShift = (qint64)(SHIFT_FACTOR * offset);
+		offsetShift = (qint64)(shiftFactor * offset);
 		qDebug() << "Offset, shift, new drift:" << offset << offsetShift << drift;
 	}
 	if (qAbs(offsetShift) > qAbs(offset)) {
