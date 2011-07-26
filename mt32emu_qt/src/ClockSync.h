@@ -20,7 +20,7 @@ private:
 	// Time interval for measuring the current drift
 	qint64 periodicResetNanos;
 	// The part of the external clock's offset to compensate when computing new drift
-	qint64 periodicDampFactor;
+	double periodicDampFactor;
 	// The maximum acceptable external clock's offset which can be absorbed by buffers (should be <= MIDI latency)
 	qint64 emergencyResetThresholdNanos;
 	// For offset shifting algorithm, the highest value of the external clock's offset to be shifted down to 0
