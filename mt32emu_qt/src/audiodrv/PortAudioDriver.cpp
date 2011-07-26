@@ -22,7 +22,6 @@
 using namespace MT32Emu;
 
 static const int FRAME_SIZE = 4; // Stereo, 16-bit
-static const int FRAMES_PER_CALLBACK = 4096;
 
 static bool paInitialised = false;
 
@@ -160,8 +159,14 @@ bool PortAudioDriver::start(int deviceIndex) {
 		return false;
 	}
 	*/
-	PaStreamParameters outStreamParameters = {deviceIndex, 2, paInt16, deviceInfo->defaultHighOutputLatency, NULL};
-	PaError err =  Pa_OpenStream(&stream, NULL, &outStreamParameters, sampleRate, FRAMES_PER_CALLBACK, paNoFlag, paCallback, this);
+
+	// FIXME: Set audio latency from stored preferences
+	audioLatency = 0;
+	if (!audioLatency) {
+		audioLatency = deviceInfo->defaultHighOutputLatency * MasterClock::NANOS_PER_SECOND;
+	}
+	PaStreamParameters outStreamParameters = {deviceIndex, 2, paInt16, (double)audioLatency / MasterClock::NANOS_PER_SECOND, NULL};
+	PaError err =  Pa_OpenStream(&stream, NULL, &outStreamParameters, sampleRate, paFramesPerBufferUnspecified, paNoFlag, paCallback, this);
 	if(err != paNoError) {
 		qDebug() << "Pa_OpenStream() returned PaError" << err;
 		return false;
@@ -177,7 +182,7 @@ bool PortAudioDriver::start(int deviceIndex) {
 	}
 	const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
 	qDebug() << "Device Output latency (s):" << streamInfo->outputLatency;
-	latency = MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency + (MasterClock::NANOS_PER_SECOND * FRAMES_PER_CALLBACK / sampleRate);
+	latency = 2.2 * MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency;
 	qDebug() << "Using latency (ns):" << latency;
 	return true;
 }
