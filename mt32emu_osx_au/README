@@ -1,0 +1,37 @@
+README
+------
+
+Project was created with Xcode 3.2.6. To compile audio unit simply open project file 'mt32emu_osx_au.xcodeproj' with Xcode and start build.
+
+Project need installed library from mt32emu:
+1) svn checkout http://svn.github.com/munt/munt.git
+2) cd munt.git/mt32emu
+3) cmake -D CMAKE_OSX_ARCHITECTURES="i386;x86_64" .
+4) make
+5) sudo make install
+
+Than build AU:
+6) build debug or release of mt32emu_osx_au with xcode
+7) it creates the release bundle in project folder below build/Release/ and it is called mt32emu_osx_au.component
+
+Prepare AU for playing:
+8) mt32emu_osx_au.component is an folder that is called bundle in OSX do to mt32emu_osx_au.component/Contens/Resources
+9) copy the ROM's MT32_CONTROL.ROM and MT32_PCM.ROM to the Resources folder
+10) copy the complete AU bundle to ~/Library/Audio/Plug-Ins/Components/ were other OSX programs that support AU looking for it
+
+Example of using AU with 'AU Lab' and 'DOSBox':
+11) open /Developer/Applications/Audio/AU Lab.app
+12) select 'Stero Out' on the left
+13) change 'Audio Input Device' to 'None' and press at 'Create Document'
+14) In Menu select Edit -> Add Audio Unit Instrument...
+15) change 'Instrument' to 'mt32emu_osx_au' and press 'OK'
+16) if you got error '-3' than ROM'S count not found (see 9) )
+17) in instrument window change from 'Generic View' on top right to 'Midi Editor' and select all 16 channels in 'Active Channels'
+18) save your setups with File -> Save and in future you only have to click on this file
+19) open DOSBox preference file under ~/Library/Preferences/DOSBox [actual version] Preferences and look for midi section 
+20) change the settings in midi section to look like this:
+[midi]
+mpu401=uart
+mididevice=coremidi
+midiconfig=0
+21) open DOSBox and start an DOS game that support MT32 sound or start an DOS midi player and play midi files containing MT32 informations
