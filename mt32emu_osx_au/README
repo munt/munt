@@ -26,18 +26,20 @@ Check AU with 'auval' form Xcode (just for developers)
 14) 'auval -v aumu mt32 Munt' starts a few tests with our Audio Unit and hopefully there are all PASS
 
 Example of using AU with 'AU Lab' and 'DOSBox':
-15) open /Developer/Applications/Audio/AU Lab.app
-16) select 'Stero Out' on the left
-17) change 'Audio Input Device' to 'None' and press at 'Create Document'
-18) In Menu select Edit -> Add Audio Unit Instrument...
-19) change 'Instrument' to 'mt32emu_osx_au' and press 'OK'
-20) if you got error '-3' than ROM'S count not found (see 9) )
-21) in instrument window change from 'Generic View' on top right to 'Midi Editor' and select all 16 channels in 'Active Channels'
-22) save your setups with File -> Save and in future you only have to click on this file
-23) open DOSBox preference file under ~/Library/Preferences/DOSBox [actual version] Preferences and look for midi section 
-24) change the settings in midi section to look like this:
+15) open 'Audio-MIDI-Setup' application of OSX and open here the MIDI studio window and click on the 'IAC driver'
+16) in the 'IAC driver' click on 'device is available' to activate it
+17) open /Developer/Applications/Audio/AU Lab.app
+18) select 'Stero Out' on the left
+19) change 'Audio Input Device' to 'None' and press at 'Create Document'
+20) In Menu select Edit -> Add Audio Unit Instrument...
+21) change 'Instrument' to 'mt32emu_osx_au' and press 'OK'
+22) if you got error '-3' than ROM'S count not found (see 9) )
+23) in instrument window change from 'Generic View' on top right to 'Midi Editor' and select all 16 channels in 'Active Channels'
+24) save your setups with File -> Save and in future you only have to click on this file
+25) open DOSBox preference file under ~/Library/Preferences/DOSBox [actual version] Preferences and look for midi section 
+26) change the settings in midi section to look like this:
 [midi]
 mpu401=uart
 mididevice=coremidi
 midiconfig=0
-25) open DOSBox and start an DOS game that support MT32 sound or start an DOS midi player and play midi files containing MT32 informations
+27) open DOSBox and start an DOS game that support MT32 sound or start an DOS midi player and play midi files containing MT32 informations
