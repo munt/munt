@@ -21,8 +21,8 @@
 #endif
 
 //~~~~~~~~~~~~~~  Change!!! ~~~~~~~~~~~~~~~~~~~~~//
-#define mt32emu_osx_au_COMP_SUBTYPE		'Pass'
-#define mt32emu_osx_au_COMP_MANF			'Demo'
+#define mt32emu_osx_au_COMP_SUBTYPE		'mt32'
+#define mt32emu_osx_au_COMP_MANF			'Munt'
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 #endif

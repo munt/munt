@@ -24,7 +24,7 @@
 #define COMP_MANUF		mt32emu_osx_au_COMP_MANF	
 
 #define VERSION			kmt32emu_osx_auVersion
-#define NAME			"mt32emu: mt32emu_osx_au"
+#define NAME			"munt: mt32emu_osx_au"
 #define DESCRIPTION		"mt32emu_osx_au AU"
 #define ENTRY_POINT		"mt32emu_osx_auEntry"
 
