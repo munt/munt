@@ -43,6 +43,8 @@ set(mt32emu_qt_HEADERS
   src/SynthRoute.h
   src/SynthWidget.h
 
+  src/audiodrv/AudioDriver.h
+
   src/mididrv/MidiDriver.h
   src/mididrv/TestDriver.h
 )
@@ -72,19 +74,35 @@ include_directories(${MT32EMU_INCLUDE_DIRS})
 
 find_package(ALSA)
 if(ALSA_FOUND)
-  add_definitions(-DWITH_ALSA_MIDI_DRIVER)
+  add_definitions(-DWITH_ALSA_MIDI_DRIVER -DUSE_ALSA_AUDIO_DRIVER)
   set(EXT_LIBS ${EXT_LIBS} ${ALSA_LIBRARIES})
   include_directories(${ALSA_INCLUDE_DIRS})
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/mididrv/ALSADriver.cpp
+    src/audiodrv/AlsaAudioDriver.cpp
   )
   set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
     src/mididrv/ALSADriver.h
+    src/audiodrv/AlsaAudioDriver.h
+  )
+endif()
+
+find_package(PulseAudio)
+if(PULSEAUDIO_FOUND)
+  add_definitions(-DWITH_PULSE_AUDIO_DRIVER -DUSE_PULSE_AUDIO_DRIVER)
+  set(EXT_LIBS ${EXT_LIBS} ${PULSEAUDIO_LIBRARIES})
+  include_directories(${PULSEAUDIO_INCLUDE_DIRS})
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/audiodrv/PulseAudioDriver.cpp
+  )
+  set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
+    src/audiodrv/PulseAudioDriver.h
   )
 endif()
 
 find_package(PORTAUDIO)
 if(PORTAUDIO_FOUND)
+  add_definitions(-DWITH_PORT_AUDIO_DRIVER -DUSE_PORT_AUDIO_DRIVER)
   set(EXT_LIBS ${EXT_LIBS} ${PORTAUDIO_LIBRARIES})
   include_directories(${PORTAUDIO_INCLUDE_DIRS})
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}

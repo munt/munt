@@ -17,26 +17,44 @@
 #include "audiodrv/AudioDriver.h"
 #include "SynthWidget.h"
 #include "ui_SynthWidget.h"
+#include "Master.h"
 
-SynthWidget::SynthWidget(SynthRoute *useSynthRoute, QWidget *parent) :
-    QWidget(parent),
+SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, QWidget *parent) :
+	QWidget(parent),
 	synthRoute(useSynthRoute),
-    ui(new Ui::SynthWidget)
-{
-    ui->setupUi(this);
-	ui->audioDeviceComboBox->addItems(synthRoute->audioDriver->getDeviceNames());
+	ui(new Ui::SynthWidget) {
+	ui->setupUi(this);
+	QListIterator<AudioDevice *> audioDeviceIt(master->getAudioDevices());
+	while(audioDeviceIt.hasNext()) {
+		AudioDevice *audioDevice = audioDeviceIt.next();
+		handleAudioDeviceAdded(audioDevice);
+	}
 	connect(synthRoute, SIGNAL(stateChanged(SynthRouteState)), SLOT(handleSynthRouteState(SynthRouteState)));
-	synthRoute->connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(setAudioDeviceIndex(int)));
+	connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(handleAudioDeviceIndexChanged(int)));
+	connect(master, SIGNAL(audioDeviceAdded(AudioDevice*)), SLOT(handleAudioDeviceAdded(AudioDevice*)));
+	connect(master, SIGNAL(audioDeviceRemoved(AudioDevice*)), SLOT(handleAudioDeviceRemoved(AudioDevice*)));
 	handleSynthRouteState(synthRoute->getState());
 }
 
-SynthWidget::~SynthWidget()
-{
-    delete ui;
+SynthWidget::~SynthWidget() {
+	delete ui;
 }
 
 SynthRoute *SynthWidget::getSynthRoute() {
 	return synthRoute;
+}
+
+void SynthWidget::handleAudioDeviceAdded(AudioDevice *device) {
+	ui->audioDeviceComboBox->addItem(device->driver->name + ": " + device->name, qVariantFromValue(device));
+}
+
+void SynthWidget::handleAudioDeviceRemoved(AudioDevice *device) {
+	ui->audioDeviceComboBox->removeItem(ui->audioDeviceComboBox->findData(qVariantFromValue(device)));
+}
+
+void SynthWidget::handleAudioDeviceIndexChanged(int audioDeviceIndex) {
+	AudioDevice *currentAudioDevice = ui->audioDeviceComboBox->itemData(audioDeviceIndex).value<AudioDevice *>();
+	synthRoute->setAudioDevice(currentAudioDevice);
 }
 
 void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {

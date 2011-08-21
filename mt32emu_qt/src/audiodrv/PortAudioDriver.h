@@ -11,14 +11,56 @@
 #include "../ClockSync.h"
 
 class QSynth;
+class Master;
+class PortAudioDriver;
+class PortAudioProcessor;
+class PortAudioDevice;
+class PortAudioStream;
 
 class PortAudioDriver : public AudioDriver {
 private:
-	ClockSync clockSync;
+	Master *master;
+	PortAudioProcessor *processor;
+	QThread processorThread;
+
+	void start();
+	void stop();
+
+public:
+	PortAudioDriver(Master *useMaster);
+	~PortAudioDriver();
+	Master *getMaster();
+};
+
+class PortAudioProcessor : public QObject {
+	Q_OBJECT
+public:
+	PortAudioProcessor(PortAudioDriver *master);
+
+	void stop();
+
+public slots:
+	void start();
+
+private:
+	PortAudioDriver *driver;
+	volatile bool stopProcessing;
+	QList<QString> getDeviceNames();
+
+signals:
+	void finished();
+};
+
+
+class PortAudioStream : public AudioStream {
+friend class PortAudioDevice;
+private:
+	PortAudioDevice *device;
 	QSynth *synth;
 	unsigned int sampleRate;
-	int currentDeviceIndex;
 	PaStream *stream;
+
+	ClockSync clockSync;
 	// The total latency of audio stream buffers
 	// Special value of 0 indicates PortAudio to use its own recommended latency value
 	qint64 audioLatency;
@@ -27,14 +69,25 @@ private:
 	qint64 sampleCount;
 
 	qint64 getPlayedAudioNanosPlusLatency();
+	bool start();
+	void close();
+
 	static int paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData);
 
 public:
-	PortAudioDriver(QSynth *useSynth, unsigned int useSampleRate);
-	~PortAudioDriver();
-	bool start(int deviceIndex);
-	void close();
-	QList<QString> getDeviceNames();
+	PortAudioStream(PortAudioDevice *useDevice, QSynth *useSynth, unsigned int useSampleRate);
+	~PortAudioStream();
+};
+
+class PortAudioDevice : public AudioDevice {
+friend class PortAudioProcessor;
+friend class PortAudioStream;
+private:
+	PaDeviceIndex deviceIndex;
+	PortAudioDevice(PortAudioDriver *driver, int useDeviceIndex, QString useDeviceName);
+
+public:
+	PortAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate);
 };
 
 #endif

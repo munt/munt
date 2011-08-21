@@ -10,9 +10,16 @@
 #include "AudioDriver.h"
 #include "../ClockSync.h"
 
+class Master;
 class QSynth;
 
 class AlsaAudioDriver : public AudioDriver {
+public:
+	AlsaAudioDriver(Master *useMaster);
+	~AlsaAudioDriver();
+};
+
+class AlsaAudioStream : public AudioStream {
 private:
 	ClockSync clockSync;
 	QSynth *synth;
@@ -28,9 +35,9 @@ private:
 	static void* processingThread(void *);
 
 public:
-	AlsaAudioDriver(QSynth *useSynth, unsigned int useSampleRate);
-	~AlsaAudioDriver();
-	bool start(int deviceIndex);
+	AlsaAudioStream(QSynth *useSynth, unsigned int useSampleRate);
+	~AlsaAudioStream();
+	bool start();
 	void close();
 	QList<QString> getDeviceNames();
 };

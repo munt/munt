@@ -80,18 +80,6 @@ QtAudioDriver::~QtAudioDriver() {
 	delete waveGenerator;
 }
 
-/**
- * The granularity is terrible on Windows with the tested QAudioOutput version, but decent on ALSA.
- */
-SynthTimestamp QtAudioDriver::getPlayedAudioNanosPlusLatency() {
-	//return audioDriver->getPlayedAudioNanos();
-	qint64 nsPlayed = audioOutput->processedUSecs() * 1000;
-	qint64 bytesInBuffer = audioOutput->bufferSize() - audioOutput->bytesFree();
-	qint64 nsInBuffer = MasterClock::NANOS_PER_SECOND * bytesInBuffer / (4 * sampleRate);
-	nsPlayed -= nsInBuffer;
-	return nsPlayed + latency;
-}
-
 bool QtAudioDriver::start(int deviceIndex) {
 	Q_UNUSED(deviceIndex);
 	audioOutput->start(waveGenerator);

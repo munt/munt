@@ -30,12 +30,17 @@ private:
 	static Master *INSTANCE;
 
 	QList<SynthRoute *> synthRoutes;
+	QList<AudioDevice *> audioDevices;
 
 	Master();
 
 public:
 	MidiSession *createMidiSession(MidiDriver *midiDriver, QString name);
 	void deleteMidiSession(MidiSession *midiSession);
+	void addAudioDevice(AudioDevice *audioDevice);
+	void removeAudioDevice(AudioDevice *audioDevice);
+	// May only be called from the application thread
+	const QList<AudioDevice *> getAudioDevices() const;
 
 	static Master *getInstance();
 
@@ -46,10 +51,14 @@ public:
 private slots:
 	void reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
 	void reallyDeleteMidiSession(MidiSession *midiSession);
+	void reallyAddAudioDevice(AudioDevice *audioDevice);
+	void reallyRemoveAudioDevice(AudioDevice *audioDevice);
 
 signals:
 	void synthRouteAdded(SynthRoute *route);
 	void synthRouteRemoved(SynthRoute *route);
+	void audioDeviceAdded(AudioDevice *audioDevice);
+	void audioDeviceRemoved(AudioDevice *audioDevice);
 };
 
 #endif

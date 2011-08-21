@@ -16,6 +16,7 @@
 
 #include "PortAudioDriver.h"
 
+#include "../Master.h"
 #include "../MasterClock.h"
 #include "../QSynth.h"
 
@@ -24,62 +25,6 @@ using namespace MT32Emu;
 static const int FRAME_SIZE = 4; // Stereo, 16-bit
 
 static bool paInitialised = false;
-
-PortAudioDriver::PortAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0) {
-	if (!paInitialised) {
-		PaError err = Pa_Initialize();
-		if (err != paNoError) {
-			qDebug() << "Error initialising PortAudio";
-			// FIXME: Do something drastic instead of continuing on happily
-		}
-		paInitialised = true;
-	}
-}
-
-PortAudioDriver::~PortAudioDriver() {
-	if (stream != NULL) {
-		Pa_StopStream(stream);
-		Pa_CloseStream(stream);
-	}
-}
-
-SynthTimestamp PortAudioDriver::getPlayedAudioNanosPlusLatency() {
-	if (stream == NULL) {
-		qDebug() << "Stream NULL at getPlayedAudioNanosPlusLatency()";
-		return 0;
-	}
-	return Pa_GetStreamTime(stream) * MasterClock::NANOS_PER_SECOND + latency;
-}
-
-int PortAudioDriver::paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) {
-	Q_UNUSED(inputBuffer);
-	Q_UNUSED(statusFlags);
-	PortAudioDriver *driver = (PortAudioDriver *)userData;
-#ifdef USE_PA_TIMING
-	double realSampleRate = timeInfo->actualSampleRate;
-	if (realSampleRate == 0.0) {
-		// This means PortAudio doesn't provide us the actualSampleRate estimation
-		realSampleRate = Pa_GetStreamInfo(driver->stream)->sampleRate;
-	}
-	qint64 currentlyPlayingAudioNanos = timeInfo->currentTime * MasterClock::NANOS_PER_SECOND;
-	qint64 firstSampleAudioNanos = timeInfo->outputBufferDacTime * MasterClock::NANOS_PER_SECOND;
-	qint64 renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;
-	qint64 offset = driver->latency - renderOffset;
-	MasterClockNanos firstSampleMasterClockNanos = driver->clockSync.sync(currentlyPlayingAudioNanos) - offset * driver->clockSync.getDrift();
-#else
-	double realSampleRate = Pa_GetStreamInfo(driver->stream)->sampleRate / driver->clockSync.getDrift();
-	MasterClockNanos realSampleTime = MasterClockNanos((driver->sampleCount / Pa_GetStreamInfo(driver->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
-	MasterClockNanos firstSampleMasterClockNanos = driver->clockSync.sync(realSampleTime) - driver->latency;
-#endif
-	unsigned int rendered = driver->synth->render((Bit16s *)outputBuffer, frameCount, firstSampleMasterClockNanos, realSampleRate);
-	if (rendered < frameCount) {
-		char *out = (char *)outputBuffer;
-		// PortAudio requires that the buffer is filled no matter what
-		memset(out + rendered * FRAME_SIZE, 0, (frameCount - rendered) * FRAME_SIZE);
-	}
-	driver->sampleCount += frameCount;
-	return paContinue;
-}
 
 static void dumpPortAudioDevices() {
 	PaHostApiIndex hostApiCount = Pa_GetHostApiCount();
@@ -116,7 +61,68 @@ static void dumpPortAudioDevices() {
 	}
 }
 
-QList<QString> PortAudioDriver::getDeviceNames() {
+PortAudioDriver::PortAudioDriver(Master *useMaster) : AudioDriver("portaudio", "PortAudio"), master(useMaster) {
+	start();
+}
+
+PortAudioDriver::~PortAudioDriver() {
+	stop();
+}
+
+Master *PortAudioDriver::getMaster() {
+	return master;
+}
+
+void PortAudioDriver::start() {
+	processor = new PortAudioProcessor(this);
+	processor->moveToThread(&processorThread);
+	processorThread.moveToThread(&processorThread);
+	// Start the processor once the thread has started
+	processor->connect(&processorThread, SIGNAL(started()), SLOT(start()));
+	// Stop the thread once the processor has finished
+	processorThread.connect(processor, SIGNAL(finished()), SLOT(quit()));
+	processorThread.start();
+}
+
+void PortAudioDriver::stop() {
+	if (processor != NULL) {
+		if (processorThread.isRunning()) {
+			processor->stop();
+			processorThread.wait();
+		}
+		delete processor;
+		processor = NULL;
+	}
+}
+
+PortAudioProcessor::PortAudioProcessor(PortAudioDriver *useDriver) : driver(useDriver), stopProcessing(false) {
+}
+
+void PortAudioProcessor::stop() {
+	stopProcessing = true;
+}
+
+void PortAudioProcessor::start() {
+	if (!paInitialised) {
+		PaError err = Pa_Initialize();
+		if (err != paNoError) {
+			qDebug() << "Error initialising PortAudio";
+			// FIXME: Do something drastic instead of continuing on happily
+		}
+		paInitialised = true;
+	}
+	MasterClock::sleepForNanos(10000000000);
+	QList<QString> deviceNames = getDeviceNames();
+	QListIterator<QString> deviceNameIt(deviceNames);
+	int deviceIndex = 0;
+	while(deviceNameIt.hasNext()) {
+		// FIXME: Keep track so that we can properly dispose of them later
+		driver->getMaster()->addAudioDevice(new PortAudioDevice(driver, deviceIndex++, deviceNameIt.next()));
+	}
+	emit finished();
+}
+
+QList<QString> PortAudioProcessor::getDeviceNames() {
 	dumpPortAudioDevices();
 	QList<QString> deviceNames;
 	PaDeviceIndex deviceCount = Pa_GetDeviceCount();
@@ -136,10 +142,34 @@ QList<QString> PortAudioDriver::getDeviceNames() {
 	return deviceNames;
 }
 
-bool PortAudioDriver::start(int deviceIndex) {
-	if (stream != NULL) {
-		return currentDeviceIndex == deviceIndex;
+// FIXME: The device index isn't permanent enough for the intended purpose of ID.
+// Instead a QString should be constructed that will let us find the same device later
+// (e.g. a combination hostAPI/device name/index as last resort).
+PortAudioDevice::PortAudioDevice(PortAudioDriver *driver, int useDeviceIndex, QString useDeviceName) : AudioDevice(driver, QString::number(useDeviceIndex), useDeviceName), deviceIndex(useDeviceIndex) {
+}
+
+PortAudioStream *PortAudioDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) {
+	PortAudioStream *stream = new PortAudioStream(this, synth, sampleRate);
+	if (stream->start()) {
+		return stream;
 	}
+	delete stream;
+	return NULL;
+}
+
+PortAudioStream::PortAudioStream(PortAudioDevice *useDevice, QSynth *useSynth, unsigned int useSampleRate) :
+	device(useDevice), synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0) {
+}
+
+PortAudioStream::~PortAudioStream() {
+	close();
+}
+
+bool PortAudioStream::start() {
+	if (stream != NULL) {
+		return true;
+	}
+	PaDeviceIndex deviceIndex = device->deviceIndex;
 	if (deviceIndex < 0) {
 		deviceIndex = Pa_GetDefaultOutputDevice();
 		if (deviceIndex == paNoDevice) {
@@ -187,10 +217,43 @@ bool PortAudioDriver::start(int deviceIndex) {
 	return true;
 }
 
-void PortAudioDriver::close() {
+int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) {
+	Q_UNUSED(inputBuffer);
+	Q_UNUSED(statusFlags);
+	PortAudioStream *stream = (PortAudioStream *)userData;
+#ifdef USE_PA_TIMING
+	double realSampleRate = timeInfo->actualSampleRate;
+	if (realSampleRate == 0.0) {
+		// This means PortAudio doesn't provide us the actualSampleRate estimation
+		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate;
+	}
+	qint64 currentlyPlayingAudioNanos = timeInfo->currentTime * MasterClock::NANOS_PER_SECOND;
+	qint64 firstSampleAudioNanos = timeInfo->outputBufferDacTime * MasterClock::NANOS_PER_SECOND;
+	qint64 renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;
+	qint64 offset = stream->latency - renderOffset;
+	MasterClockNanos firstSampleMasterClockNanos = stream->clockSync.sync(currentlyPlayingAudioNanos) - offset * stream->clockSync.getDrift();
+#else
+	Q_UNUSED(timeInfo);
+	double realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate / stream->clockSync.getDrift();
+	MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
+	MasterClockNanos firstSampleMasterClockNanos = stream->clockSync.sync(realSampleTime) - stream->latency;
+#endif
+	unsigned int rendered = stream->synth->render((Bit16s *)outputBuffer, frameCount, firstSampleMasterClockNanos, realSampleRate);
+	if (rendered < frameCount) {
+		char *out = (char *)outputBuffer;
+		// PortAudio requires that the buffer is filled no matter what
+		memset(out + rendered * FRAME_SIZE, 0, (frameCount - rendered) * FRAME_SIZE);
+	}
+	stream->sampleCount += frameCount;
+	return paContinue;
+}
+
+void PortAudioStream::close() {
 	if(stream == NULL)
 		return;
 	Pa_StopStream(stream);
 	Pa_CloseStream(stream);
 	stream = NULL;
 }
+
+

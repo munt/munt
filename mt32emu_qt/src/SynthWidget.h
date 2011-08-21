@@ -6,17 +6,20 @@
 #include "SynthRoute.h"
 #include "SynthPropertiesDialog.h"
 
+class Master;
+class AudioDevice;
+
 namespace Ui {
-    class SynthWidget;
+	class SynthWidget;
 }
 
 class SynthWidget : public QWidget
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-	explicit SynthWidget(SynthRoute *synthRoute, QWidget *parent = 0);
-    ~SynthWidget();
+	explicit SynthWidget(Master *master, SynthRoute *synthRoute, QWidget *parent = 0);
+	~SynthWidget();
 	SynthRoute *getSynthRoute();
 
 private:
@@ -29,6 +32,9 @@ private slots:
 	void on_synthPropertiesButton_clicked();
 	void on_stopButton_clicked();
 	void handleSynthRouteState(SynthRouteState state);
+	void handleAudioDeviceIndexChanged(int audioDeviceIndex);
+	void handleAudioDeviceAdded(AudioDevice *audioDevice);
+	void handleAudioDeviceRemoved(AudioDevice *audioDevice);
 };
 
 #endif // SYNTHWIDGET_H

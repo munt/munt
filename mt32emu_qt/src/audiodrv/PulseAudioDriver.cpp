@@ -19,6 +19,7 @@
 
 #include "PulseAudioDriver.h"
 
+#include "../Master.h"
 #include "../MasterClock.h"
 #include "../QSynth.h"
 
@@ -31,29 +32,20 @@ static const MasterClockNanos latency = 300 * MasterClock::NANOS_PER_MILLISECOND
 
 #define USE_PA_TIMING
 
-PulseAudioDriver::PulseAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0), pendingClose(false) {
+PulseAudioStream::PulseAudioStream(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0), pendingClose(false) {
 	buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
 }
 
-PulseAudioDriver::~PulseAudioDriver() {
+PulseAudioStream::~PulseAudioStream() {
 	if (stream != NULL) {
 		close();
 	}
 	delete[] buffer;
 }
 
-SynthTimestamp PulseAudioDriver::getPlayedAudioNanosPlusLatency() {
-	if (stream == NULL) {
-		qDebug() << "Stream NULL at getPlayedAudioNanosPlusLatency()";
-		return 0;
-	}
+void* PulseAudioStream::processingThread(void *userData) {
 	int error;
-	return MasterClockNanos(sampleCount / sampleRate * MasterClock::NANOS_PER_SECOND) - pa_simple_get_latency(stream, &error) * MasterClock::NANOS_PER_MICROSECOND + latency;
-}
-
-void* PulseAudioDriver::processingThread(void *userData) {
-	int error;
-	PulseAudioDriver *driver = (PulseAudioDriver *)userData;
+	PulseAudioStream *driver = (PulseAudioStream *)userData;
 	qDebug() << "Processing thread started";
 	while (!driver->pendingClose) {
 #ifdef USE_PA_TIMING
@@ -80,13 +72,7 @@ void* PulseAudioDriver::processingThread(void *userData) {
 	return NULL;
 }
 
-QList<QString> PulseAudioDriver::getDeviceNames() {
-	QList<QString> deviceNames;
-	deviceNames << "PulseAudio default device";
-	return deviceNames;
-}
-
-bool PulseAudioDriver::start(int /* deviceIndex */) {
+bool PulseAudioStream::start() {
 	int error;
 	if (buffer == NULL) {
 		return false;
@@ -128,7 +114,7 @@ bool PulseAudioDriver::start(int /* deviceIndex */) {
 	return true;
 }
 
-void PulseAudioDriver::close() {
+void PulseAudioStream::close() {
 	int error;
 	if (stream != NULL) {
 		pendingClose = true;
@@ -144,4 +130,23 @@ void PulseAudioDriver::close() {
 		stream = NULL;
 	}
 	return;
+}
+
+PulseAudioDefaultDevice::PulseAudioDefaultDevice(PulseAudioDriver *driver) : AudioDevice(driver, "default", "Default") {
+}
+
+PulseAudioStream *PulseAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) {
+	PulseAudioStream *stream = new PulseAudioStream(synth, sampleRate);
+	if (stream->start()) {
+		return stream;
+	}
+	delete stream;
+	return NULL;
+}
+
+PulseAudioDriver::PulseAudioDriver(Master *master) : AudioDriver("pulseaudio", "PulseAudio") {
+	master->addAudioDevice(new PulseAudioDefaultDevice(this));
+}
+
+PulseAudioDriver::~PulseAudioDriver() {
 }

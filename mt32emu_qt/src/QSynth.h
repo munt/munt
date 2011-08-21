@@ -38,8 +38,6 @@ private:
 	MT32Emu::Synth *synth;
 
 	bool openSynth();
-	SynthTimestamp midiNanosToAudioNanos(qint64 midiNanos);
-	SynthTimestamp getPlayedAudioNanos();
 	void setState(SynthState newState);
 
 public:

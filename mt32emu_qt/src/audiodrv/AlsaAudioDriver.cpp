@@ -31,28 +31,28 @@ static const MasterClockNanos latency = 256 * MasterClock::NANOS_PER_MILLISECOND
 
 #define USE_ALSA_TIMING
 
-AlsaAudioDriver::AlsaAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0), pendingClose(false) {
-	buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
+AlsaAudioDriver::AlsaAudioDriver(Master *master) : AudioDriver("alsa", "ALSA") {
+	Q_UNUSED(master);
+	// FIXME: Implement
 }
 
 AlsaAudioDriver::~AlsaAudioDriver() {
+}
+
+AlsaAudioStream::AlsaAudioStream(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0), pendingClose(false) {
+	buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
+}
+
+AlsaAudioStream::~AlsaAudioStream() {
 	if (stream != NULL) {
 		close();
 	}
 	delete[] buffer;
 }
 
-SynthTimestamp AlsaAudioDriver::getPlayedAudioNanosPlusLatency() {
-	if (stream == NULL) {
-		qDebug() << "Stream NULL at getPlayedAudioNanosPlusLatency()";
-		return 0;
-	}
-	return MasterClockNanos(sampleCount / sampleRate * MasterClock::NANOS_PER_SECOND);
-}
-
-void* AlsaAudioDriver::processingThread(void *userData) {
+void* AlsaAudioStream::processingThread(void *userData) {
 	int error;
-	AlsaAudioDriver *driver = (AlsaAudioDriver *)userData;
+	AlsaAudioStream *driver = (AlsaAudioStream *)userData;
 	qDebug() << "Processing thread started";
 	while (!driver->pendingClose) {
 #ifdef USE_ALSA_TIMING
@@ -92,13 +92,13 @@ void* AlsaAudioDriver::processingThread(void *userData) {
 	return NULL;
 }
 
-QList<QString> AlsaAudioDriver::getDeviceNames() {
+QList<QString> AlsaAudioStream::getDeviceNames() {
 	QList<QString> deviceNames;
 	deviceNames << "ALSA default audio device";
 	return deviceNames;
 }
 
-bool AlsaAudioDriver::start(int /* deviceIndex */) {
+bool AlsaAudioStream::start() {
 	int error;
 	if (buffer == NULL) {
 		return false;
@@ -151,7 +151,7 @@ bool AlsaAudioDriver::start(int /* deviceIndex */) {
 	return true;
 }
 
-void AlsaAudioDriver::close() {
+void AlsaAudioStream::close() {
 	int error;
 	if (stream != NULL) {
 		pendingClose = true;

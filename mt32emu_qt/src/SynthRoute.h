@@ -8,7 +8,8 @@
 #include "QSynth.h"
 
 class MidiSession;
-class AudioDriver;
+class AudioStream;
+class AudioDevice;
 
 enum SynthRouteState {
 	SynthRouteState_CLOSED,
@@ -26,20 +27,14 @@ private:
 
 	QList<MidiSession *> midiSessions;
 
-	int audioDeviceIndex;
+	AudioDevice *audioDevice;
+	AudioStream *audioStream; // NULL until a stream is created
 	unsigned int sampleRate;
-
-	bool refNanosOffsetValid;
-	// The number to add to a midiNanos value to get an audioNanos value. This will include a latency offset.
-	qint64 refNanosOffset;
 
 	SynthTimestamp refNanosToAudioNanos(qint64 refNanos);
 	void setState(SynthRouteState newState);
 
 public:
-	// FIXME: Shouldn't be public
-	AudioDriver *audioDriver;
-
 	SynthRoute(QObject *parent = NULL);
 	~SynthRoute();
 	bool open();
@@ -55,7 +50,7 @@ private slots:
 	void handleQSynthState(SynthState synthState);
 
 public slots:
-	void setAudioDeviceIndex(int newAudioDeviceIndex);
+	void setAudioDevice(AudioDevice *newAudioDevice);
 
 signals:
 	void stateChanged(SynthRouteState state);

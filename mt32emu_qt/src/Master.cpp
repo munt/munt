@@ -16,6 +16,7 @@
 
 #include "Master.h"
 #include "MidiSession.h"
+#include "audiodrv/AudioDriver.h"
 
 Master *Master::INSTANCE = NULL;
 
@@ -24,8 +25,9 @@ void Master::init() {
 		INSTANCE = new Master();
 		INSTANCE->moveToThread(QCoreApplication::instance()->thread());
 		qRegisterMetaType<MidiDriver *>("MidiDriver*");
-		qRegisterMetaType<MidiDriver **>("MidiSession*");
-		qRegisterMetaType<MidiDriver **>("MidiSession**");
+		qRegisterMetaType<MidiSession *>("MidiSession*");
+		qRegisterMetaType<MidiSession **>("MidiSession**");
+		qRegisterMetaType<AudioDevice *>("AudioDevice*");
 	}
 }
 
@@ -39,6 +41,10 @@ Master *Master::getInstance() {
 }
 
 Master::Master() {
+}
+
+const QList<AudioDevice *> Master::getAudioDevices() const {
+	return audioDevices;
 }
 
 void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name) {
@@ -65,6 +71,17 @@ void Master::reallyDeleteMidiSession(MidiSession *midiSession) {
 	delete midiSession;
 }
 
+void Master::reallyAddAudioDevice(AudioDevice *audioDevice) {
+	audioDevices.append(audioDevice);
+	emit audioDeviceAdded(audioDevice);
+}
+
+void Master::reallyRemoveAudioDevice(AudioDevice *audioDevice) {
+	audioDevices.removeOne(audioDevice);
+	emit audioDeviceRemoved(audioDevice);
+	delete audioDevice;
+}
+
 MidiSession *Master::createMidiSession(MidiDriver *midiDriver, QString name) {
 	MidiSession *midiSession;
 	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
@@ -87,3 +104,20 @@ void Master::deleteMidiSession(MidiSession *midiSession) {
 	}
 }
 
+void Master::addAudioDevice(AudioDevice *audioDevice) {
+	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
+		reallyAddAudioDevice(audioDevice);
+	} else {
+		QMetaObject::invokeMethod(this, "reallyAddAudioDevice", Qt::QueuedConnection,
+								  Q_ARG(AudioDevice *, audioDevice));
+	}
+}
+
+void Master::removeAudioDevice(AudioDevice *audioDevice) {
+	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
+		reallyRemoveAudioDevice(audioDevice);
+	} else {
+		QMetaObject::invokeMethod(this, "reallyRemoveAudioDevice", Qt::QueuedConnection,
+								  Q_ARG(AudioDevice *, audioDevice));
+	}
+}

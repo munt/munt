@@ -6,29 +6,31 @@
 #include "SynthWidget.h"
 
 #include "mididrv/MidiDriver.h"
+#include "audiodrv/AudioDriver.h"
 
 namespace Ui {
-    class MainWindow;
+	class MainWindow;
 }
 
 class Master;
 
 class MainWindow : public QMainWindow
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
 	explicit MainWindow(Master *master, QWidget *parent = 0);
-    ~MainWindow();
+	~MainWindow();
 
 protected:
 	void closeEvent(QCloseEvent *);
 
 private:
-    Ui::MainWindow *ui;
+	Ui::MainWindow *ui;
 	Master *master;
 	MidiDriver *midiDriver;
 	MidiDriver *testMidiDriver;
+	QList<AudioDriver *> audioDrivers;
 
 private slots:
 	void on_actionAbout_triggered();

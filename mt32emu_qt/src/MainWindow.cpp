@@ -27,13 +27,27 @@
 #include "mididrv/ALSADriver.h"
 #endif
 
+
+#ifdef USE_WINMM_AUDIO_DRIVER
+#include "audiodrv/WinMMAudioDriver.h"
+#endif
+#ifdef USE_ALSA_AUDIO_DRIVER
+#include "audiodrv/AlsaAudioDriver.h"
+#endif
+#ifdef USE_PULSE_AUDIO_DRIVER
+#include "audiodrv/PulseAudioDriver.h"
+#endif
+#ifdef USE_PORT_AUDIO_DRIVER
+#include "audiodrv/PortAudioDriver.h"
+#endif
+
 MainWindow::MainWindow(Master *master, QWidget *parent) :
-    QMainWindow(parent),
+	QMainWindow(parent),
 	ui(new Ui::MainWindow),
 	master(master),
 	testMidiDriver(NULL)
 {
-    ui->setupUi(this);
+	ui->setupUi(this);
 	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *)), this, SLOT(handleSynthRouteAdded(SynthRoute *)));
 	QObject::connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), this, SLOT(handleSynthRouteRemoved(SynthRoute *)));
 #ifdef WITH_WIN32_MIDI_DRIVER
@@ -46,6 +60,19 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	if (midiDriver != NULL) {
 		midiDriver->start();
 	}
+
+#ifdef USE_WINMM_AUDIO_DRIVER
+	//audioDrivers.append(new WinMMAudioDriver(master));
+#endif
+#ifdef USE_ALSA_AUDIO_DRIVER
+	//audioDrivers.append(new AlsaAudioDriver(master));
+#endif
+#ifdef USE_PULSE_AUDIO_DRIVER
+	audioDrivers.append(new PulseAudioDriver(master));
+#endif
+#ifdef USE_PORT_AUDIO_DRIVER
+	audioDrivers.append(new PortAudioDriver(master));
+#endif
 }
 
 MainWindow::~MainWindow()
@@ -60,6 +87,12 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 	}
 	if (testMidiDriver != NULL) {
 		testMidiDriver->stop();
+	}
+	QMutableListIterator<AudioDriver *> audioDriverIt(audioDrivers);
+	while(audioDriverIt.hasNext()) {
+		AudioDriver *audioDriver = audioDriverIt.next();
+		delete audioDriver;
+		audioDriverIt.remove();
 	}
 	event->accept();
 }
@@ -78,7 +111,7 @@ void MainWindow::on_actionAbout_triggered()
 }
 
 void MainWindow::handleSynthRouteAdded(SynthRoute *synthRoute) {
-	SynthWidget *synthWidget = new SynthWidget(synthRoute, this);
+	SynthWidget *synthWidget = new SynthWidget(master, synthRoute, this);
 	ui->synthTabs->addTab(synthWidget, "Synth");
 }
 
