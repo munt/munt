@@ -70,10 +70,18 @@ void WinMMAudioDriver::processingThread(void *userData) {
 	WinMMAudioDriver *driver = (WinMMAudioDriver *)userData;
 	DWORD minSamplesToRender = MIN_RENDER_MS * driver->sampleRate * MasterClock::NANOS_PER_MILLISECOND / MasterClock::NANOS_PER_SECOND;
 	double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / driver->sampleRate;
+	qint64 playPosGlobal = 0;
+	DWORD prevPlayPos = 0;
 	while (!driver->pendingClose) {
 		mmTime.wType = TIME_SAMPLES;
 		waveOutGetPosition(driver->hWaveOut, &mmTime, sizeof MMTIME);
-		playCursor = mmTime.u.sample % FRAMES_IN_BUFFER;
+
+		// Unwrap current playing position (for 16-bit stereo it wraps at 2^27 frames)
+		playPosGlobal += (mmTime.u.sample - prevPlayPos) & ((1 << 27) - 1);
+		prevPlayPos = mmTime.u.sample;
+
+		playCursor = playPosGlobal % FRAMES_IN_BUFFER;
+
 		nanosNow = MasterClock::getClockNanos() - latency;
 		if (playCursor < renderPos) {
 			// Buffer wrap, render 'till the end of buffer
