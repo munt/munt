@@ -45,11 +45,11 @@ static inline float EXPF(float x) {
 
 static inline float EXP2F(float x) {
 #ifdef __APPLE__
-    // on OSX exp2f() is 1.59 times faster than "exp() and the multiplication with FLOAT_LN_2"
-    return exp2f(x);
-#else    
+	// on OSX exp2f() is 1.59 times faster than "exp() and the multiplication with FLOAT_LN_2"
+	return exp2f(x);
+#else
 	return exp(FLOAT_LN_2 * x);
-#endif    
+#endif
 }
 
 static inline float EXP10F(float x) {
