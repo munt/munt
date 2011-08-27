@@ -37,13 +37,13 @@ public:
 	virtual void close() = 0;
 
 	// DEPRECATED: Unused
-	virtual size_t read(void *in, size_t size) {return 0;}
+	virtual size_t read(void * /*in*/, size_t) {return 0;}
 	// DEPRECATED: Unused
-	virtual bool readBit8u(Bit8u *in) {return false;}
+	virtual bool readBit8u(Bit8u * /*in*/) {return false;}
 	// DEPRECATED: Unused
-	virtual bool readBit16u(Bit16u *in) {return false;}
+	virtual bool readBit16u(Bit16u * /*in*/) {return false;}
 	// DEPRECATED: Unused
-	virtual bool readBit32u(Bit32u *in) {return false;}
+	virtual bool readBit32u(Bit32u * /*in*/) {return false;}
 	// DEPRECATED: Unused
 	virtual bool isEOF() {return false;}
 	// DEPRECATED: Unused
