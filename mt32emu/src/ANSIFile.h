@@ -39,9 +39,6 @@ public:
 
 	bool open(const char *filename, OpenMode mode);
 	void close();
-	size_t read(void *in, size_t size);
-	bool readBit8u(Bit8u *in);
-	bool isEOF();
 };
 
 }

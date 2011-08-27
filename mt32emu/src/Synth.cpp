@@ -274,10 +274,14 @@ LoadResult Synth::loadControlROM(const char *filename) {
 	if (file == NULL) {
 		return LoadResult_NotFound;
 	}
-	bool rc = (file->read(controlROMData, CONTROL_ROM_SIZE) == CONTROL_ROM_SIZE);
-
+	size_t fileSize = file->getSize();
+	if (fileSize != CONTROL_ROM_SIZE) {
+		printDebug("Control ROM file %s size mismatch: %i", filename, fileSize);
+	}
+	Bit8u *fileData = file->getData();
+	memcpy(controlROMData, fileData, CONTROL_ROM_SIZE);
 	closeFile(file);
-	if (!rc) {
+	if (fileData == NULL) {
 		return LoadResult_Unreadable;
 	}
 
@@ -298,25 +302,21 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 	if (file == NULL) {
 		return LoadResult_NotFound;
 	}
+	size_t fileSize = file->getSize();
+	if (fileSize < (2 * pcmROMSize)) {
+		printDebug("PCM ROM file is too short (expected %d, got %d)", 2 * pcmROMSize, fileSize);
+		closeFile(file);
+		return LoadResult_Invalid;
+	}
+	Bit8u *fileData = file->getData();
+	if (fileData == NULL) {
+		closeFile(file);
+		return LoadResult_Unreadable;
+	}
 	LoadResult rc = LoadResult_OK;
-	int i;
-	for (i = 0; i < pcmROMSize; i++) {
-		Bit8u s;
-		if (!file->readBit8u(&s)) {
-			if (!file->isEOF()) {
-				rc = LoadResult_Unreadable;
-			}
-			break;
-		}
-		Bit8u c;
-		if (!file->readBit8u(&c)) {
-			if (!file->isEOF()) {
-				rc = LoadResult_Unreadable;
-			} else {
-				printDebug("PCM ROM file has an odd number of bytes! Ignoring last");
-			}
-			break;
-		}
+	for (int i = 0; i < pcmROMSize; i++) {
+		Bit8u s = *(fileData++);
+		Bit8u c = *(fileData++);
 
 		int order[16] = {0, 9, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 8};
 
@@ -341,10 +341,6 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 		}
 
 		pcmROMData[i] = lin;
-	}
-	if (i != pcmROMSize) {
-		printDebug("PCM ROM file is too short (expected %d, got %d)", pcmROMSize, i);
-		rc = LoadResult_Invalid;
 	}
 	closeFile(file);
 	return rc;
