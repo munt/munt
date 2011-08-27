@@ -70,17 +70,23 @@ void WinMMAudioDriver::processingThread(void *userData) {
 	WinMMAudioDriver *driver = (WinMMAudioDriver *)userData;
 	DWORD minSamplesToRender = MIN_RENDER_MS * driver->sampleRate * MasterClock::NANOS_PER_MILLISECOND / MasterClock::NANOS_PER_SECOND;
 	double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / driver->sampleRate;
-	qint64 playPosGlobal = 0;
 	DWORD prevPlayPos = 0;
+	quint64 getPosWraps = 0;
 	while (!driver->pendingClose) {
 		mmTime.wType = TIME_SAMPLES;
 		waveOutGetPosition(driver->hWaveOut, &mmTime, sizeof MMTIME);
 
-		// Unwrap current playing position (for 16-bit stereo it wraps at 2^27 frames)
-		playPosGlobal += (mmTime.u.sample - prevPlayPos) & ((1 << 27) - 1);
+		// Deal with waveOutGetPosition() wraparound. For 16-bit stereo output, it equals 2^27,
+		// presumably caused by the internal 32-bit counter of bits played.
+		// The output of that nasty waveOutGetPosition() isn't monotonically increasing
+		// even during 2^27 samples playback, so we have to ensure the difference is big enough...
+		int delta = mmTime.u.sample - prevPlayPos;
+		if (delta < -(1 << 26)) {
+			qDebug() << "GetPos() wrap: " << delta << "\n";
+			++getPosWraps;
+		}
 		prevPlayPos = mmTime.u.sample;
-
-		playCursor = playPosGlobal % FRAMES_IN_BUFFER;
+		playCursor = (mmTime.u.sample + getPosWraps * (1 << 27)) % FRAMES_IN_BUFFER;
 
 		nanosNow = MasterClock::getClockNanos() - latency;
 		if (playCursor < renderPos) {
