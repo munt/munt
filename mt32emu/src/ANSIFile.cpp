@@ -21,7 +21,7 @@
 using namespace MT32Emu;
 using namespace std;
 
-ANSIFile::ANSIFile() {
+ANSIFile::ANSIFile() : data(NULL) {
 	ifsp = new ifstream();
 }
 
