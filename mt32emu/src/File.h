@@ -30,6 +30,10 @@ public:
 		OpenMode_write = 1
 	};
 	virtual ~File() {}
+	virtual size_t getSize() = 0;
+	virtual unsigned char *getData() = 0;
+	virtual unsigned char *getSHA1() = 0;
+
 	virtual void close() = 0;
 	virtual size_t read(void *in, size_t size) = 0;
 	virtual bool readBit8u(Bit8u *in) = 0;
