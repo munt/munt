@@ -19,20 +19,4 @@
 
 using namespace MT32Emu;
 
-bool File::readBit16u(Bit16u *in) {
-	Bit8u b[2];
-	if (read(&b[0], 2) != 2) {
-		return false;
-	}
-	*in = ((b[0] << 8) | b[1]);
-	return true;
-}
-
-bool File::readBit32u(Bit32u *in) {
-	Bit8u b[4];
-	if (read(&b[0], 4) != 4) {
-		return false;
-	}
-	*in = ((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]);
-	return true;
-}
+// Reserved for SHA1 implementation

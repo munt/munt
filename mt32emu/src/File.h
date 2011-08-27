@@ -35,12 +35,17 @@ public:
 	virtual unsigned char *getSHA1() = 0;
 
 	virtual void close() = 0;
-	virtual size_t read(void *in, size_t size) = 0;
-	virtual bool readBit8u(Bit8u *in) = 0;
-	virtual bool readBit16u(Bit16u *in);
-	virtual bool readBit32u(Bit32u *in);
-	virtual bool isEOF() = 0;
 
+	// DEPRECATED: Unused
+	virtual size_t read(void *in, size_t size) {return 0;}
+	// DEPRECATED: Unused
+	virtual bool readBit8u(Bit8u *in) {return false;}
+	// DEPRECATED: Unused
+	virtual bool readBit16u(Bit16u *in) {return false;}
+	// DEPRECATED: Unused
+	virtual bool readBit32u(Bit32u *in) {return false;}
+	// DEPRECATED: Unused
+	virtual bool isEOF() {return false;}
 	// DEPRECATED: Unused
 	virtual bool readLine(char * /*in*/, size_t /*size*/) {return false;}
 	// DEPRECATED: Only read operations need to be implemented.

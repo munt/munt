@@ -81,23 +81,3 @@ bool ANSIFile::open(const char *filename, OpenMode mode) {
 void ANSIFile::close() {
 	ifsp->close();
 }
-
-size_t ANSIFile::read(void *in, size_t size) {
-	size_t begin = ifsp->tellg();
-	ifsp->read((char *)in, size);
-	size_t end = ifsp->tellg();
-	return end - begin;
-}
-
-bool ANSIFile::readBit8u(Bit8u *in) {
-	char c = ifsp->get();
-	if (ifsp->bad()) {
-		return false;
-	}
-	*in = (Bit8u)c;
-	return true;
-}
-
-bool ANSIFile::isEOF() {
-	return ifsp->eof();
-}
