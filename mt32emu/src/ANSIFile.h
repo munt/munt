@@ -18,6 +18,8 @@
 #ifndef MT32EMU_ANSI_FILE_H
 #define MT32EMU_ANSI_FILE_H
 
+#include <fstream>
+#include <iostream>
 #include <cstdio>
 
 #include "File.h"
@@ -26,8 +28,15 @@ namespace MT32Emu {
 
 class ANSIFile: public File {
 private:
-	FILE *fp;
+	std::ifstream *ifsp;
+	unsigned char *data;
 public:
+	ANSIFile();
+	virtual ~ANSIFile();
+	virtual size_t getSize();
+	virtual unsigned char* getData();
+	virtual unsigned char *getSHA1();
+
 	bool open(const char *filename, OpenMode mode);
 	void close();
 	size_t read(void *in, size_t size);
