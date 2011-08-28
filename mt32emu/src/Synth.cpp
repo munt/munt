@@ -22,7 +22,7 @@
 
 #include "mt32emu.h"
 #include "mmath.h"
-#include "ANSIFile.h"
+#include "FileStream.h"
 #include "PartialManager.h"
 
 #if MT32EMU_USE_AREVERBMODEL == 1
@@ -252,7 +252,7 @@ File *Synth::openFile(const char *filename) {
 		strcat(&pathBuf[0], filename);
 		filename = pathBuf;
 	}
-	ANSIFile *file = new ANSIFile();
+	FileStream *file = new FileStream();
 	if (!file->open(filename)) {
 		delete file;
 		return NULL;

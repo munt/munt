@@ -15,8 +15,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MT32EMU_ANSI_FILE_H
-#define MT32EMU_ANSI_FILE_H
+#ifndef MT32EMU_FILE_STREAM_H
+#define MT32EMU_FILE_STREAM_H
 
 #include <fstream>
 #include <iostream>
@@ -26,13 +26,13 @@
 
 namespace MT32Emu {
 
-class ANSIFile: public File {
+class FileStream: public File {
 private:
 	std::ifstream *ifsp;
 	unsigned char *data;
 public:
-	ANSIFile();
-	virtual ~ANSIFile();
+	FileStream();
+	virtual ~FileStream();
 	virtual size_t getSize();
 	virtual unsigned char* getData();
 
