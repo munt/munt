@@ -30,10 +30,10 @@ foreach(HEADER ${libmt32emu_HEADERS})
 endforeach(HEADER)
 
 add_library(mt32emu STATIC
-  src/ANSIFile.cpp
   src/AReverbModel.cpp
   src/DelayReverb.cpp
   src/File.cpp
+  src/FileStream.cpp
   src/FreeverbModel.cpp
   src/LA32Ramp.cpp
   src/Part.cpp

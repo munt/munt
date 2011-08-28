@@ -16,16 +16,16 @@
  */
 
 #include "mt32emu.h"
-#include "ANSIFile.h"
+#include "FileStream.h"
 
 using namespace MT32Emu;
 using namespace std;
 
-ANSIFile::ANSIFile() : data(NULL) {
+FileStream::FileStream() : data(NULL) {
 	ifsp = new ifstream();
 }
 
-ANSIFile::~ANSIFile() {
+FileStream::~FileStream() {
 	if (ifsp) {
 		delete ifsp; // destructor closes the file itself
 	}
@@ -34,7 +34,7 @@ ANSIFile::~ANSIFile() {
 	}
 }
 
-size_t ANSIFile::getSize() {
+size_t FileStream::getSize() {
 	if (!ifsp) {
 		return 0;
 	}
@@ -45,7 +45,7 @@ size_t ANSIFile::getSize() {
 	return ifsp->tellg();
 }
 
-unsigned char* ANSIFile::getData() {
+unsigned char* FileStream::getData() {
 	if (data != NULL) {
 		return data;
 	}
@@ -71,13 +71,13 @@ unsigned char* ANSIFile::getData() {
 	return data;
 }
 
-bool ANSIFile::open(const char *filename) {
+bool FileStream::open(const char *filename) {
 	if (ifsp) {
 		ifsp->open(filename, ios_base::in | ios_base::binary);
 	}
 	return (ifsp->good());
 }
 
-void ANSIFile::close() {
+void FileStream::close() {
 	ifsp->close();
 }
