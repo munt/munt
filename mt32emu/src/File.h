@@ -24,38 +24,12 @@ namespace MT32Emu {
 
 class File {
 public:
-	enum OpenMode {
-		OpenMode_read  = 0,
-		// DEPRECATED: Only read operations are necessary.
-		OpenMode_write = 1
-	};
 	virtual ~File() {}
 	virtual size_t getSize() = 0;
 	virtual unsigned char *getData() = 0;
-	virtual unsigned char *getSHA1() = 0;
+	virtual unsigned char *getSHA1();
 
 	virtual void close() = 0;
-
-	// DEPRECATED: Unused
-	virtual size_t read(void * /*in*/, size_t) {return 0;}
-	// DEPRECATED: Unused
-	virtual bool readBit8u(Bit8u * /*in*/) {return false;}
-	// DEPRECATED: Unused
-	virtual bool readBit16u(Bit16u * /*in*/) {return false;}
-	// DEPRECATED: Unused
-	virtual bool readBit32u(Bit32u * /*in*/) {return false;}
-	// DEPRECATED: Unused
-	virtual bool isEOF() {return false;}
-	// DEPRECATED: Unused
-	virtual bool readLine(char * /*in*/, size_t /*size*/) {return false;}
-	// DEPRECATED: Only read operations need to be implemented.
-	virtual size_t write(const void * /*out*/, size_t /*size*/) {return 0;}
-	// DEPRECATED: Only read operations need to be implemented.
-	virtual bool writeBit8u(Bit8u /*out*/) {return false;}
-	// DEPRECATED: Only read operations need to be implemented.
-	virtual bool writeBit16u(Bit16u /*out*/) {return false;}
-	// DEPRECATED: Only read operations need to be implemented.
-	virtual bool writeBit32u(Bit32u /*out*/) {return false;}
 };
 
 }

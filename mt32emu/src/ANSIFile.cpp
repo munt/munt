@@ -46,32 +46,32 @@ size_t ANSIFile::getSize() {
 }
 
 unsigned char* ANSIFile::getData() {
-	if (!ifsp) {
+	if (data != NULL) {
+		return data;
+	}
+	if (ifsp == NULL) {
 		return NULL;
 	}
 	if (ifsp->bad()) {
 		return NULL;
 	}
 	size_t fileSize = getSize();
-	if (!fileSize) {
+	if (fileSize == 0) {
 		return NULL;
 	}
 	data = new unsigned char[fileSize];
-	if (data) {
-		ifsp->seekg(0);
-		ifsp->read((char *)data, fileSize);
-		if ((size_t)ifsp->tellg() != fileSize) {
-			return NULL;
-		}
+	if (data == NULL) {
+		return NULL;
+	}
+	ifsp->seekg(0);
+	ifsp->read((char *)data, fileSize);
+	if ((size_t)ifsp->tellg() != fileSize) {
+		return NULL;
 	}
 	return data;
 }
 
-unsigned char* ANSIFile::getSHA1() {
-	return NULL;
-}
-
-bool ANSIFile::open(const char *filename, OpenMode mode) {
+bool ANSIFile::open(const char *filename) {
 	if (ifsp) {
 		ifsp->open(filename, ios_base::in | ios_base::binary);
 	}

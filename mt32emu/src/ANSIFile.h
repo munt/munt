@@ -35,9 +35,8 @@ public:
 	virtual ~ANSIFile();
 	virtual size_t getSize();
 	virtual unsigned char* getData();
-	virtual unsigned char *getSHA1();
 
-	bool open(const char *filename, OpenMode mode);
+	bool open(const char *filename);
 	void close();
 };
 

@@ -242,9 +242,9 @@ void Synth::setReverbOutputGain(float newReverbOutputGain) {
 	reverbOutputGain = newReverbOutputGain;
 }
 
-File *Synth::openFile(const char *filename, File::OpenMode mode) {
+File *Synth::openFile(const char *filename) {
 	if (myProp.openFile != NULL) {
-		return myProp.openFile(myProp.userData, filename, mode);
+		return myProp.openFile(myProp.userData, filename);
 	}
 	char pathBuf[2048];
 	if (myProp.baseDir != NULL) {
@@ -253,7 +253,7 @@ File *Synth::openFile(const char *filename, File::OpenMode mode) {
 		filename = pathBuf;
 	}
 	ANSIFile *file = new ANSIFile();
-	if (!file->open(filename, mode)) {
+	if (!file->open(filename)) {
 		delete file;
 		return NULL;
 	}
@@ -270,7 +270,7 @@ void Synth::closeFile(File *file) {
 }
 
 LoadResult Synth::loadControlROM(const char *filename) {
-	File *file = openFile(filename, File::OpenMode_read); // ROM File
+	File *file = openFile(filename); // ROM File
 	if (file == NULL) {
 		return LoadResult_NotFound;
 	}
@@ -298,7 +298,7 @@ LoadResult Synth::loadControlROM(const char *filename) {
 }
 
 LoadResult Synth::loadPCMROM(const char *filename) {
-	File *file = openFile(filename, File::OpenMode_read); // ROM File
+	File *file = openFile(filename); // ROM File
 	if (file == NULL) {
 		return LoadResult_NotFound;
 	}

@@ -114,7 +114,7 @@ struct SynthProperties {
 	void (*printDebug)(void *userData, const char *fmt, va_list list);
 	// Callback for providing an implementation of File, opened and ready for use
 	// May be NULL, in which case a default implementation will be used.
-	File *(*openFile)(void *userData, const char *filename, File::OpenMode mode);
+	File *(*openFile)(void *userData, const char *filename);
 	// Callback for closing a File. May be NULL, in which case the File will automatically be close()d/deleted.
 	void (*closeFile)(void *userData, File *file);
 };
@@ -407,7 +407,7 @@ private:
 	void printPartialUsage(unsigned long sampleOffset = 0);
 protected:
 	int report(ReportType type, const void *reportData);
-	File *openFile(const char *filename, File::OpenMode mode);
+	File *openFile(const char *filename);
 	void closeFile(File *file);
 	void printDebug(const char *fmt, ...);
 
