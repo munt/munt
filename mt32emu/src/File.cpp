@@ -19,4 +19,6 @@
 
 using namespace MT32Emu;
 
-// Reserved for SHA1 implementation
+unsigned char* File::getSHA1() {
+	return NULL;
+}
