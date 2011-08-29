@@ -21,7 +21,7 @@
 using namespace MT32Emu;
 using namespace std;
 
-FileStream::FileStream() : data(NULL) {
+FileStream::FileStream() {
 	ifsp = new ifstream();
 }
 
@@ -35,6 +35,9 @@ FileStream::~FileStream() {
 }
 
 size_t FileStream::getSize() {
+	if (fileSize != 0) {
+		return fileSize;
+	}
 	if (!ifsp) {
 		return 0;
 	}
@@ -42,7 +45,8 @@ size_t FileStream::getSize() {
 		return 0;
 	}
 	ifsp->seekg(0, ios_base::end);
-	return ifsp->tellg();
+	fileSize = ifsp->tellg();
+	return fileSize;
 }
 
 unsigned char* FileStream::getData() {
@@ -55,8 +59,7 @@ unsigned char* FileStream::getData() {
 	if (ifsp->bad()) {
 		return NULL;
 	}
-	size_t fileSize = getSize();
-	if (fileSize == 0) {
+	if (getSize() == 0) {
 		return NULL;
 	}
 	data = new unsigned char[fileSize];
