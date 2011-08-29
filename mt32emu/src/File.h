@@ -23,7 +23,13 @@
 namespace MT32Emu {
 
 class File {
+private:
+	unsigned char sha1Digest [45];
+protected:
+	size_t fileSize;
+	unsigned char *data;
 public:
+	File();
 	virtual ~File() {}
 	virtual size_t getSize() = 0;
 	virtual unsigned char *getData() = 0;

@@ -48,6 +48,7 @@ add_library(mt32emu STATIC
   src/freeverb/allpass.cpp
   src/freeverb/comb.cpp
   src/freeverb/revmodel.cpp
+  src/sha1/sha1.cpp
 )
 
 install(TARGETS mt32emu
