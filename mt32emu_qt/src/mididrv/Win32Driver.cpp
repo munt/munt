@@ -46,7 +46,7 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 		DWORD *data;
 		data = (DWORD *)cds->lpData;
 		if (data[0] == 0) {				// special value, mark of a non-Sysex message
-			if (data[1] == -1) {		// special value, mark of a handshaking message
+			if (data[1] == (DWORD)-1) {		// special value, mark of a handshaking message
 				// Process handshaking message
 				midiSession = Master::getInstance()->createMidiSession(driver, "Combined Win32msg Session");
 				qDebug() << "Connected application" << (char *)&data[3];

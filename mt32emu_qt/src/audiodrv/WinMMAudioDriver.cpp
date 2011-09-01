@@ -26,11 +26,11 @@ using namespace MT32Emu;
 // can be reduced to 35 ms (works on my system)
 // 30 ms is the absolute minimum, unavoidable KSMixer latency
 // FIXME: should be a variable
-static const int FRAMES_IN_BUFFER = 32 * 100;
+static const DWORD FRAMES_IN_BUFFER = 32 * 100;
 // 30 ms is the size of KSMixer buffer. Writing to the positions closer to the playCursor is unsafe.
-static const int SAFE_FRAMES = 32 * 30;
+static const DWORD SAFE_FRAMES = 32 * 30;
 // Stereo, 16-bit
-static const int FRAME_SIZE = 4;
+static const DWORD FRAME_SIZE = 4;
 // Latency for MIDI processing. 15 ms is the offset of interprocess timeGetTime() difference.
 static const MasterClockNanos latency = 15 * MasterClock::NANOS_PER_MILLISECOND;
 
@@ -57,7 +57,7 @@ SynthTimestamp WinMMAudioDriver::getPlayedAudioNanosPlusLatency() {
 
 	// FIXME: waveOutGetPosition() wraps after 2^27 frames played (about a hour at 32000 Hz)
 	// Hopefully it'll be removed as deprecated eventually
-	waveOutGetPosition(hWaveOut, &mmTime, sizeof MMTIME);
+	waveOutGetPosition(hWaveOut, &mmTime, sizeof (MMTIME));
 	return ((double)mmTime.u.sample + FRAMES_IN_BUFFER)
 		/ sampleRate * MasterClock::NANOS_PER_SECOND;
 }
@@ -71,10 +71,10 @@ void WinMMAudioDriver::processingThread(void *userData) {
 	DWORD minSamplesToRender = MIN_RENDER_MS * driver->sampleRate * MasterClock::NANOS_PER_MILLISECOND / MasterClock::NANOS_PER_SECOND;
 	double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / driver->sampleRate;
 	DWORD prevPlayPos = 0;
-	quint64 getPosWraps = 0;
+	DWORD getPosWraps = 0;
 	while (!driver->pendingClose) {
 		mmTime.wType = TIME_SAMPLES;
-		waveOutGetPosition(driver->hWaveOut, &mmTime, sizeof MMTIME);
+		waveOutGetPosition(driver->hWaveOut, &mmTime, sizeof (MMTIME));
 
 		// Deal with waveOutGetPosition() wraparound. For 16-bit stereo output, it equals 2^27,
 		// presumably caused by the internal 32-bit counter of bits played.
@@ -86,7 +86,7 @@ void WinMMAudioDriver::processingThread(void *userData) {
 			++getPosWraps;
 		}
 		prevPlayPos = mmTime.u.sample;
-		playCursor = (mmTime.u.sample + getPosWraps * (1 << 27)) % FRAMES_IN_BUFFER;
+		playCursor = (mmTime.u.sample + (quint64)getPosWraps * (1 << 27)) % FRAMES_IN_BUFFER;
 
 		nanosNow = MasterClock::getClockNanos() - latency;
 		if (playCursor < renderPos) {
@@ -111,13 +111,13 @@ void WinMMAudioDriver::processingThread(void *userData) {
 		Unfortunately, there is no way to predict the safe writeCursor as with DSound.
 		Therefore, this allows detecting _possible_ underruns. This doesn't mean the underrun really happened.
 */
-		if (((renderPos - playCursor + FRAMES_IN_BUFFER) % FRAMES_IN_BUFFER) < SAFE_FRAMES) {
+		if (((renderPos + FRAMES_IN_BUFFER - playCursor) % FRAMES_IN_BUFFER) < SAFE_FRAMES) {
 			qDebug() << "Rendering to unsafe positions! Probable underrun! Buffer size should be higher!";
 		}
 
 		// Underrun (buffer wrap) detection
 		int framesReallyPlayed = int(double(nanosNow - firstSampleNanos) / MasterClock::NANOS_PER_SECOND * driver->sampleRate);
-		if (framesReallyPlayed > FRAMES_IN_BUFFER) {
+		if (framesReallyPlayed > (int)FRAMES_IN_BUFFER) {
 			qDebug() << "Underrun (buffer wrap) detected! Buffer size should be higher!";
 		}
 		firstSampleNanos = nanosNow;
@@ -169,8 +169,8 @@ bool WinMMAudioDriver::start(int deviceIndex) {
 		qDebug() << "Using WaveOut device:" << deviceIndex;
 	}
 
-	PCMWAVEFORMAT wFormat = {WAVE_FORMAT_PCM, /* stereo */ 2, sampleRate,
-		sampleRate * FRAME_SIZE, FRAME_SIZE, /* BitsPerSample */ 16};
+	PCMWAVEFORMAT wFormat = {{WAVE_FORMAT_PCM, /* stereo */ 2, sampleRate,
+		sampleRate * FRAME_SIZE, FRAME_SIZE}, /* BitsPerSample */ 16};
 
 	//	Open waveout device
 	if (waveOutOpen(&hWaveOut, deviceIndex, (LPWAVEFORMATEX)&wFormat, NULL,
