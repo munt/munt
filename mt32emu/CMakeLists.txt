@@ -40,6 +40,7 @@ add_library(mt32emu STATIC
   src/Partial.cpp
   src/PartialManager.cpp
   src/Poly.cpp
+  src/ROMInfo.cpp
   src/Synth.cpp
   src/Tables.cpp
   src/TVA.cpp
