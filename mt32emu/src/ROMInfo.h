@@ -33,7 +33,7 @@ public:
 	unsigned char *shortName;
 	unsigned char *description;
 	enum PairType {Full, FirstHalf, SecondHalf, Mux0, Mux1} pairType;
-	unsigned char *pairROMShortName;
+	ROMInfo *pairROMInfo;
 	void *controlROMInfo;
 
 	// Returns a ROMInfo struct by inspecting the size and the SHA1 hash
