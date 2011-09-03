@@ -53,6 +53,7 @@ const ROMInfo* ROMInfo::getROMInfo(File *file) {
 }
 
 void ROMInfo::freeROMInfo(const ROMInfo *romInfo) {
+	(void) romInfo;
 }
 
 const ROMInfo** ROMInfo::getROMInfoList(unsigned int types, unsigned int pairTypes) {
@@ -76,8 +77,8 @@ const ROMInfo** ROMInfo::getROMInfoList(unsigned int types, unsigned int pairTyp
 	return romInfoList;
 }
 
-void ROMInfo::freeROMInfoList(const ROMInfo **romInfos) {
-	delete[] romInfos;
+void ROMInfo::freeROMInfoList(const ROMInfo **romInfoList) {
+	delete[] romInfoList;
 }
 
 const ROMImage* ROMImage::makeROMImage(const File *file, const ROMInfo *romInfo) {
