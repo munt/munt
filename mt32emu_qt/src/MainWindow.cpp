@@ -1,16 +1,16 @@
 /* Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Lesser General Public License as published by
- *  the Free Software Foundation, either version 2.1 of the License, or
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public License
+ *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -28,16 +28,19 @@
 #endif
 
 
-#ifdef USE_WINMM_AUDIO_DRIVER
+#ifdef WITH_WINMM_AUDIO_DRIVER
 #include "audiodrv/WinMMAudioDriver.h"
 #endif
-#ifdef USE_ALSA_AUDIO_DRIVER
+#ifdef WITH_QT_AUDIO_DRIVER
+#include "audiodrv/QtAudioDriver.h"
+#endif
+#ifdef WITH_ALSA_AUDIO_DRIVER
 #include "audiodrv/AlsaAudioDriver.h"
 #endif
-#ifdef USE_PULSE_AUDIO_DRIVER
+#ifdef WITH_PULSE_AUDIO_DRIVER
 #include "audiodrv/PulseAudioDriver.h"
 #endif
-#ifdef USE_PORT_AUDIO_DRIVER
+#ifdef WITH_PORT_AUDIO_DRIVER
 #include "audiodrv/PortAudioDriver.h"
 #endif
 
@@ -61,16 +64,19 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 		midiDriver->start();
 	}
 
-#ifdef USE_WINMM_AUDIO_DRIVER
+#ifdef WITH_WINMM_AUDIO_DRIVER
 	//audioDrivers.append(new WinMMAudioDriver(master));
 #endif
-#ifdef USE_ALSA_AUDIO_DRIVER
-	//audioDrivers.append(new AlsaAudioDriver(master));
+#ifdef WITH_QT_AUDIO_DRIVER
+	//audioDrivers.append(new QtAudioDriver(master));
 #endif
-#ifdef USE_PULSE_AUDIO_DRIVER
+#ifdef WITH_ALSA_AUDIO_DRIVER
+	audioDrivers.append(new AlsaAudioDriver(master));
+#endif
+#ifdef WITH_PULSE_AUDIO_DRIVER
 	audioDrivers.append(new PulseAudioDriver(master));
 #endif
-#ifdef USE_PORT_AUDIO_DRIVER
+#ifdef WITH_PORT_AUDIO_DRIVER
 	audioDrivers.append(new PortAudioDriver(master));
 #endif
 }
