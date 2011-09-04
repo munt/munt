@@ -21,6 +21,7 @@
 #include <mt32emu/mt32emu.h>
 
 #include "../ClockSync.h"
+#include "../Master.h"
 #include "../MasterClock.h"
 #include "../QSynth.h"
 
@@ -57,7 +58,7 @@ public:
 	}
 };
 
-QtAudioDriver::QtAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : sampleRate(useSampleRate) {
+QtAudioStream::QtAudioStream(QSynth *useSynth, unsigned int useSampleRate) : sampleRate(useSampleRate) {
 	QAudioFormat format;
 	format.setFrequency(sampleRate);
 	format.setChannels(2);
@@ -75,18 +76,36 @@ QtAudioDriver::QtAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : sam
 	waveGenerator = new WaveGenerator(useSynth, audioOutput, sampleRate);
 }
 
-QtAudioDriver::~QtAudioDriver() {
+QtAudioStream::~QtAudioStream() {
 	delete audioOutput;
 	delete waveGenerator;
 }
 
-bool QtAudioDriver::start(int deviceIndex) {
-	Q_UNUSED(deviceIndex);
+bool QtAudioStream::start() {
 	audioOutput->start(waveGenerator);
 	waveGenerator->setLatency(2 * MasterClock::NANOS_PER_SECOND * audioOutput->bufferSize() / (4 * sampleRate));
 	return true;
 }
 
-void QtAudioDriver::close() {
+void QtAudioStream::close() {
 	audioOutput->stop();
+}
+
+QtAudioDefaultDevice::QtAudioDefaultDevice(QtAudioDriver *driver) : AudioDevice(driver, "default", "Default") {
+}
+
+QtAudioStream *QtAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) {
+	QtAudioStream *stream = new QtAudioStream(synth, sampleRate);
+	if (stream->start()) {
+		return stream;
+	}
+	delete stream;
+	return NULL;
+}
+
+QtAudioDriver::QtAudioDriver(Master *master) : AudioDriver("qtaudio", "QtAudio") {
+	master->addAudioDevice(new QtAudioDefaultDevice(this));
+}
+
+QtAudioDriver::~QtAudioDriver() {
 }

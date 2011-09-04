@@ -6,11 +6,13 @@
 
 #include "AudioDriver.h"
 
+class Master;
 class WaveGenerator;
 class QSynth;
 class QAudioOutput;
+class QtAudioDriver;
 
-class QtAudioDriver : public AudioDriver {
+class QtAudioStream : public AudioStream {
 	friend class WaveGenerator;
 private:
 	QAudioOutput *audioOutput;
@@ -24,10 +26,24 @@ private:
 	qint64 getPlayedAudioNanosPlusLatency();
 
 public:
-	QtAudioDriver(QSynth *useSynth, unsigned int useSampleRate);
-	~QtAudioDriver();
-	bool start(int deviceIndex);
+	QtAudioStream(QSynth *useSynth, unsigned int useSampleRate);
+	~QtAudioStream();
+	bool start();
 	void close();
+};
+
+class QtAudioDefaultDevice : public AudioDevice {
+	friend class QtAudioDriver;
+private:
+	QtAudioDefaultDevice(QtAudioDriver *driver);
+public:
+	QtAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate);
+};
+
+class QtAudioDriver : public AudioDriver {
+public:
+	QtAudioDriver(Master *useMaster);
+	~QtAudioDriver();
 };
 
 #endif
