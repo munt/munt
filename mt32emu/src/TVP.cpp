@@ -16,7 +16,6 @@
  */
 
 #include <cmath>
-#include <cstdlib>
 
 #include "mt32emu.h"
 
