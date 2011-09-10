@@ -7,9 +7,10 @@
 #include "AudioDriver.h"
 #include "../MasterClock.h"
 
+class Master;
 class QSynth;
 
-class WinMMAudioDriver : public AudioDriver {
+class WinMMAudioStream : public AudioStream {
 private:
 	QSynth *synth;
 	unsigned int sampleRate;
@@ -18,15 +19,27 @@ private:
 	MT32Emu::Bit16s *buffer;
 	bool pendingClose;
 
-	qint64 getPlayedAudioNanosPlusLatency();
 	static void processingThread(void *);
 
 public:
-	WinMMAudioDriver(QSynth *useSynth, unsigned int useSampleRate);
-	~WinMMAudioDriver();
+	WinMMAudioStream(QSynth *useSynth, unsigned int useSampleRate);
+	~WinMMAudioStream();
 	bool start(int deviceIndex);
 	void close();
 	QList<QString> getDeviceNames();
+};
+
+class WinMMAudioDefaultDevice : public AudioDevice {
+friend class WinMMAudioDriver;
+	WinMMAudioDefaultDevice(WinMMAudioDriver *driver);
+public:
+	WinMMAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate);
+};
+
+class WinMMAudioDriver : public AudioDriver {
+public:
+	WinMMAudioDriver(Master *useMaster);
+	~WinMMAudioDriver();
 };
 
 #endif

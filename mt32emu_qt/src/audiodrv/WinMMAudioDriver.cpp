@@ -16,6 +16,7 @@
 
 #include "WinMMAudioDriver.h"
 #include "../QSynth.h"
+#include "../Master.h"
 #include <process.h>
 
 using namespace MT32Emu;
@@ -34,40 +35,24 @@ static const DWORD FRAME_SIZE = 4;
 // Latency for MIDI processing. 15 ms is the offset of interprocess timeGetTime() difference.
 static const MasterClockNanos latency = 15 * MasterClock::NANOS_PER_MILLISECOND;
 
-WinMMAudioDriver::WinMMAudioDriver(QSynth *useSynth, unsigned int useSampleRate) : 
+WinMMAudioStream::WinMMAudioStream(QSynth *useSynth, unsigned int useSampleRate) :
 	synth(useSynth), sampleRate(useSampleRate), hWaveOut(NULL), pendingClose(false) {
 		buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
 }
 
-WinMMAudioDriver::~WinMMAudioDriver() {
+WinMMAudioStream::~WinMMAudioStream() {
 	if (hWaveOut != NULL) {
 		close();
 	}
 	delete[] buffer;
 }
 
-SynthTimestamp WinMMAudioDriver::getPlayedAudioNanosPlusLatency() {
-	if (hWaveOut == NULL) {
-		qDebug() << "hWaveOut is NULL at getPlayedAudioNanosPlusLatency()";
-		return 0;
-	}
-
-	MMTIME mmTime;
-	mmTime.wType = TIME_SAMPLES;
-
-	// FIXME: waveOutGetPosition() wraps after 2^27 frames played (about a hour at 32000 Hz)
-	// Hopefully it'll be removed as deprecated eventually
-	waveOutGetPosition(hWaveOut, &mmTime, sizeof (MMTIME));
-	return ((double)mmTime.u.sample + FRAMES_IN_BUFFER)
-		/ sampleRate * MasterClock::NANOS_PER_SECOND;
-}
-
-void WinMMAudioDriver::processingThread(void *userData) {
+void WinMMAudioStream::processingThread(void *userData) {
 	DWORD renderPos = 0;
 	DWORD playCursor, frameCount;
 	MasterClockNanos nanosNow, firstSampleNanos = MasterClock::getClockNanos() - latency;
 	MMTIME mmTime;
-	WinMMAudioDriver *driver = (WinMMAudioDriver *)userData;
+	WinMMAudioStream *driver = (WinMMAudioStream *)userData;
 	DWORD minSamplesToRender = MIN_RENDER_MS * driver->sampleRate * MasterClock::NANOS_PER_MILLISECOND / MasterClock::NANOS_PER_SECOND;
 	double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / driver->sampleRate;
 	DWORD prevPlayPos = 0;
@@ -135,7 +120,7 @@ void WinMMAudioDriver::processingThread(void *userData) {
 	return;
 }
 
-QList<QString> WinMMAudioDriver::getDeviceNames() {
+QList<QString> WinMMAudioStream::getDeviceNames() {
 	QList<QString> deviceNames;
 	UINT deviceCount = waveOutGetNumDevs();
 	if (deviceCount == 0) {
@@ -154,7 +139,7 @@ QList<QString> WinMMAudioDriver::getDeviceNames() {
 	return deviceNames;
 }
 
-bool WinMMAudioDriver::start(int deviceIndex) {
+bool WinMMAudioStream::start(int deviceIndex) {
 	if (buffer == NULL) {
 		return false;
 	}
@@ -201,7 +186,7 @@ bool WinMMAudioDriver::start(int deviceIndex) {
 	return true;
 }
 
-void WinMMAudioDriver::close() {
+void WinMMAudioStream::close() {
 	if (hWaveOut != NULL) {
 		pendingClose = true;
 		waveOutReset(hWaveOut);
@@ -215,4 +200,25 @@ void WinMMAudioDriver::close() {
 		qDebug() << "Processing thread stopped";
 	}
 	return;
+}
+
+WinMMAudioDefaultDevice::WinMMAudioDefaultDevice(WinMMAudioDriver *driver) :
+	AudioDevice(driver, "default", "Default") {
+}
+
+WinMMAudioStream *WinMMAudioDefaultDevice::startAudioStream(QSynth *synth,
+																														unsigned int sampleRate) {
+	WinMMAudioStream *stream = new WinMMAudioStream(synth, sampleRate);
+	if (stream->start(-1)) {
+		return stream;
+	}
+	delete stream;
+	return NULL;
+}
+
+WinMMAudioDriver::WinMMAudioDriver(Master *master) : AudioDriver("waveout", "WinMMAudio") {
+	master->addAudioDevice(new WinMMAudioDefaultDevice(this));
+}
+
+WinMMAudioDriver::~WinMMAudioDriver() {
 }
