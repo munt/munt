@@ -55,7 +55,6 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 					qDebug() << "Failed to create new session";
 					return 0;
 				}
-				midiSession->getSynthRoute()->setAudioDeviceIndex(-1);
 				midiSession->getSynthRoute()->open();
 				return (LRESULT)midiSession;
 			} else if (data[1] == 0) {	// special value, mark of a short MIDI message
