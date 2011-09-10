@@ -26,17 +26,20 @@ public:
 	~WinMMAudioStream();
 	bool start(int deviceIndex);
 	void close();
-	QList<QString> getDeviceNames();
 };
 
-class WinMMAudioDefaultDevice : public AudioDevice {
+class WinMMAudioDevice : public AudioDevice {
 friend class WinMMAudioDriver;
-	WinMMAudioDefaultDevice(WinMMAudioDriver *driver);
+private:
+	UINT deviceIndex;
+	WinMMAudioDevice(WinMMAudioDriver *driver, int useDeviceIndex, QString useDeviceName);
 public:
 	WinMMAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate);
 };
 
 class WinMMAudioDriver : public AudioDriver {
+private:
+	QList<QString> WinMMAudioDriver::getDeviceNames();
 public:
 	WinMMAudioDriver(Master *useMaster);
 	~WinMMAudioDriver();

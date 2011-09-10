@@ -120,25 +120,6 @@ void WinMMAudioStream::processingThread(void *userData) {
 	return;
 }
 
-QList<QString> WinMMAudioStream::getDeviceNames() {
-	QList<QString> deviceNames;
-	UINT deviceCount = waveOutGetNumDevs();
-	if (deviceCount == 0) {
-		qDebug() << "No waveOut devices found";
-		deviceCount = 0;
-	}
-	for(UINT deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
-		WAVEOUTCAPS deviceInfo;
-		if (waveOutGetDevCaps(deviceIndex, &deviceInfo, sizeof(deviceInfo)) != MMSYSERR_NOERROR) {
-			qDebug() << "waveOutGetDevCaps failed for" << deviceIndex;
-			continue;
-		}
-		qDebug() << " Device:" << deviceIndex << deviceInfo.szPname;
-		deviceNames << deviceInfo.szPname;
-	}
-	return deviceNames;
-}
-
 bool WinMMAudioStream::start(int deviceIndex) {
 	if (buffer == NULL) {
 		return false;
@@ -202,14 +183,16 @@ void WinMMAudioStream::close() {
 	return;
 }
 
-WinMMAudioDefaultDevice::WinMMAudioDefaultDevice(WinMMAudioDriver *driver) :
-	AudioDevice(driver, "default", "Default") {
+WinMMAudioDevice::WinMMAudioDevice(WinMMAudioDriver *driver, int useDeviceIndex,
+																	 QString useDeviceName) :
+	AudioDevice(driver, QString::number(useDeviceIndex), useDeviceName),
+	deviceIndex(useDeviceIndex) {
 }
 
-WinMMAudioStream *WinMMAudioDefaultDevice::startAudioStream(QSynth *synth,
-																														unsigned int sampleRate) {
+WinMMAudioStream *WinMMAudioDevice::startAudioStream(QSynth *synth,
+																										 unsigned int sampleRate) {
 	WinMMAudioStream *stream = new WinMMAudioStream(synth, sampleRate);
-	if (stream->start(-1)) {
+	if (stream->start(deviceIndex)) {
 		return stream;
 	}
 	delete stream;
@@ -217,8 +200,32 @@ WinMMAudioStream *WinMMAudioDefaultDevice::startAudioStream(QSynth *synth,
 }
 
 WinMMAudioDriver::WinMMAudioDriver(Master *master) : AudioDriver("waveout", "WinMMAudio") {
-	master->addAudioDevice(new WinMMAudioDefaultDevice(this));
+	QListIterator<QString> deviceNameIt(getDeviceNames());
+	int deviceIndex = 0;
+	while(deviceNameIt.hasNext()) {
+		master->addAudioDevice(new WinMMAudioDevice(this, deviceIndex++, deviceNameIt.next()));
+	}
 }
 
 WinMMAudioDriver::~WinMMAudioDriver() {
+}
+
+QList<QString> WinMMAudioDriver::getDeviceNames() {
+	QList<QString> deviceNames;
+	UINT deviceCount = waveOutGetNumDevs();
+	if (deviceCount == 0) {
+		qDebug() << "No waveOut devices found";
+		deviceCount = 0;
+	}
+	qDebug() << "Windows MultiMedia WaveOut devices found:";
+	for(UINT deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
+		WAVEOUTCAPS deviceInfo;
+		if (waveOutGetDevCaps(deviceIndex, &deviceInfo, sizeof(deviceInfo)) != MMSYSERR_NOERROR) {
+			qDebug() << "waveOutGetDevCaps failed for" << deviceIndex;
+			continue;
+		}
+		qDebug() << " Device:" << deviceIndex << deviceInfo.szPname;
+		deviceNames << deviceInfo.szPname;
+	}
+	return deviceNames;
 }
