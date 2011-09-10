@@ -29,7 +29,7 @@ set(mt32emu_qt_SOURCES
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
-  add_definitions(-DWITH_WIN32_MIDI_DRIVER)
+  add_definitions(-DWITH_WIN32_MIDI_DRIVER -DWITH_WINMM_AUDIO_DRIVER)
   list(APPEND mt32emu_qt_SOURCES src/mididrv/Win32Driver.cpp)
   list(APPEND mt32emu_qt_SOURCES src/audiodrv/WinMMAudioDriver.cpp)
 endif()
@@ -74,7 +74,7 @@ include_directories(${MT32EMU_INCLUDE_DIRS})
 
 find_package(ALSA)
 if(ALSA_FOUND)
-  add_definitions(-DWITH_ALSA_MIDI_DRIVER -DUSE_ALSA_AUDIO_DRIVER)
+  add_definitions(-DWITH_ALSA_MIDI_DRIVER)
   set(EXT_LIBS ${EXT_LIBS} ${ALSA_LIBRARIES})
   include_directories(${ALSA_INCLUDE_DIRS})
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
@@ -89,7 +89,7 @@ endif()
 
 find_package(PulseAudio)
 if(PULSEAUDIO_FOUND)
-  add_definitions(-DWITH_PULSE_AUDIO_DRIVER -DUSE_PULSE_AUDIO_DRIVER)
+  add_definitions(-DWITH_PULSE_AUDIO_DRIVER)
   set(EXT_LIBS ${EXT_LIBS} ${PULSEAUDIO_LIBRARIES})
   include_directories(${PULSEAUDIO_INCLUDE_DIRS})
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
@@ -102,7 +102,7 @@ endif()
 
 find_package(PORTAUDIO)
 if(PORTAUDIO_FOUND)
-  add_definitions(-DWITH_PORT_AUDIO_DRIVER -DUSE_PORT_AUDIO_DRIVER)
+  add_definitions(-DWITH_PORT_AUDIO_DRIVER)
   set(EXT_LIBS ${EXT_LIBS} ${PORTAUDIO_LIBRARIES})
   include_directories(${PORTAUDIO_INCLUDE_DIRS})
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}

@@ -24,18 +24,7 @@
  */
 
 #include "SynthRoute.h"
-
-#ifdef WIN32
-	#define USE_WINMM_AUDIO_DRIVER
-	#include "audiodrv/WinMMAudioDriver.h"
-#elif defined(USE_ALSA_AUDIO_DRIVER)
-	#include "audiodrv/AlsaAudioDriver.h"
-#elif defined(USE_PULSE_AUDIO_DRIVER)
-	#include "audiodrv/PulseAudioDriver.h"
-#else
-	#include "audiodrv/PortAudioDriver.h"
-#endif
-
+#include "audiodrv/AudioDriver.h"
 
 using namespace MT32Emu;
 

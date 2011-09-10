@@ -65,10 +65,10 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	}
 
 #ifdef WITH_WINMM_AUDIO_DRIVER
-	//audioDrivers.append(new WinMMAudioDriver(master));
+	audioDrivers.append(new WinMMAudioDriver(master));
 #endif
 #ifdef WITH_QT_AUDIO_DRIVER
-	//audioDrivers.append(new QtAudioDriver(master));
+	audioDrivers.append(new QtAudioDriver(master));
 #endif
 #ifdef WITH_ALSA_AUDIO_DRIVER
 	audioDrivers.append(new AlsaAudioDriver(master));
