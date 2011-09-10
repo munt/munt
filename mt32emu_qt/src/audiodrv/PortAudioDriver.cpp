@@ -130,6 +130,7 @@ QList<QString> PortAudioProcessor::getDeviceNames() {
 		qDebug() << "Pa_GetDeviceCount() returned error" << deviceCount;
 		deviceCount = 0;
 	}
+	qDebug() << '\n' << deviceCount << "devices added:";
 	for(PaDeviceIndex deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
 		const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(deviceIndex);
 		if (deviceInfo == NULL) {
