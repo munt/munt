@@ -1218,11 +1218,11 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 }
 
 void Synth::refreshSystemMasterTune() {
+#if MT32EMU_MONITOR_SYSEX > 0
 	//FIXME:KG: This is just an educated guess.
 	// The LAPC-I documentation claims a range of 427.5Hz-452.6Hz (similar to what we have here)
 	// The MT-32 documentation claims a range of 432.1Hz-457.6Hz
-	masterTune = 440.0f * EXP2F((mt32ram.system.masterTune - 64.0f) / (128.0f * 12.0f));
-#if MT32EMU_MONITOR_SYSEX > 0
+	float masterTune = 440.0f * EXP2F((mt32ram.system.masterTune - 64.0f) / (128.0f * 12.0f));
 	printDebug(" Master Tune: %f", masterTune);
 #endif
 }
