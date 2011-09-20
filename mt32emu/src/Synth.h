@@ -336,8 +336,6 @@ private:
 	float outputGain;
 	float reverbOutputGain;
 
-	float masterTune;
-
 	bool isOpen;
 
 	PartialManager *partialManager;
