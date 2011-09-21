@@ -83,6 +83,8 @@ extern char rom_path[];
 extern int eventpipe[];
 extern char *pcm_name;
 
+extern double gain_multiplier;
+
 int init_alsadrv();
 int process_loop(int rv);
 
