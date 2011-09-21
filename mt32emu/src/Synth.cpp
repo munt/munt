@@ -1196,7 +1196,13 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			refreshSystemReserveSettings();
 		}
 		if (off <= SYSTEM_CHAN_ASSIGN_END_OFF && off + len > SYSTEM_CHAN_ASSIGN_START_OFF) {
-			refreshSystemChanAssign();
+			int firstPart = off - SYSTEM_CHAN_ASSIGN_START_OFF;
+			if(firstPart < 0)
+				firstPart = 0;
+			int lastPart = off + len - SYSTEM_CHAN_ASSIGN_START_OFF;
+			if(lastPart > 9)
+				lastPart = 9;
+			refreshSystemChanAssign(firstPart, lastPart);
 		}
 		if (off <= SYSTEM_MASTER_VOL_OFF && off + len > SYSTEM_MASTER_VOL_OFF) {
 			refreshSystemMasterVol();
@@ -1262,19 +1268,21 @@ void Synth::refreshSystemReserveSettings() {
 	partialManager->setReserve(rset);
 }
 
-void Synth::refreshSystemChanAssign() {
+void Synth::refreshSystemChanAssign(unsigned int firstPart, unsigned int lastPart) {
 	memset(chantable, -1, sizeof(chantable));
 
-	// It seems that in case of assigning a channel to multiple parts the first assignment wins
-	// FIXME: need to be confirmed
-	for (int i = 8; i >= 0; i--) {
-		//LOG(LOG_MISC|LOG_ERROR,"Part %d set to MIDI channel %d",i,mt32ram.system.chanAssign[i]);
-		if (mt32ram.system.chanAssign[i] == 16 && parts[i] != NULL) {
+	// CONFIRMED: In the case of assigning a channel to multiple parts, the lower part wins.
+	for (unsigned int i = 0; i <= 8; i++) {
+		if (parts[i] != NULL && i >= firstPart && i <= lastPart) {
 			parts[i]->allSoundOff();
-		} else {
-			chantable[(int)mt32ram.system.chanAssign[i]] = (char)i;
+			parts[i]->resetAllControllers();
+		}
+		int chan = mt32ram.system.chanAssign[i];
+		if (chan != 16 && chantable[chan] == -1) {
+			chantable[chan] = i;
 		}
 	}
+
 #if MT32EMU_MONITOR_SYSEX > 0
 	Bit8u *rset = mt32ram.system.chanAssign;
 	printDebug(" Part assign:     1=%02d 2=%02d 3=%02d 4=%02d 5=%02d 6=%02d 7=%02d 8=%02d Rhythm=%02d", rset[0], rset[1], rset[2], rset[3], rset[4], rset[5], rset[6], rset[7], rset[8]);
@@ -1291,7 +1299,7 @@ void Synth::refreshSystem() {
 	refreshSystemMasterTune();
 	refreshSystemReverbParameters();
 	refreshSystemReserveSettings();
-	refreshSystemChanAssign();
+	refreshSystemChanAssign(0, 8);
 	refreshSystemMasterVol();
 }
 
