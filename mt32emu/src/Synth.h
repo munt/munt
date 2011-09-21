@@ -395,7 +395,7 @@ private:
 	void refreshSystemMasterTune();
 	void refreshSystemReverbParameters();
 	void refreshSystemReserveSettings();
-	void refreshSystemChanAssign();
+	void refreshSystemChanAssign(unsigned int firstPart, unsigned int lastPart);
 	void refreshSystemMasterVol();
 	void refreshSystem();
 	void reset();
