@@ -90,7 +90,8 @@ endif()
 find_package(PulseAudio)
 if(PULSEAUDIO_FOUND)
   add_definitions(-DWITH_PULSE_AUDIO_DRIVER)
-  set(EXT_LIBS ${EXT_LIBS} ${PULSEAUDIO_LIBRARIES})
+# FIXME: we need to setup a define for Pulse dynamic loading
+# set(EXT_LIBS ${EXT_LIBS} ${PULSEAUDIO_LIBRARIES})
   include_directories(${PULSEAUDIO_INCLUDE_DIRS})
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/PulseAudioDriver.cpp
