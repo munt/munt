@@ -54,6 +54,9 @@ void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDr
 	MidiSession *midiSession = new MidiSession(this, midiDriver, name, synthRoute);
 	synthRoute->addMidiSession(midiSession);
 	synthRoutes.append(synthRoute);
+
+	// FIXME: find device index using stored preferences
+	synthRoute->setAudioDevice(audioDevices.at(0));
 	synthRoute->open();
 	*returnVal = midiSession;
 	emit synthRouteAdded(synthRoute);
