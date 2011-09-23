@@ -31,7 +31,6 @@ private:
 	AudioStream *audioStream; // NULL until a stream is created
 	unsigned int sampleRate;
 
-	SynthTimestamp refNanosToAudioNanos(qint64 refNanos);
 	void setState(SynthRouteState newState);
 
 public:

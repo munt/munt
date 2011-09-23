@@ -31,12 +31,6 @@ using namespace MT32Emu;
 // In samples per second.
 static const int SAMPLE_RATE = 32000;
 
-// This value defines when the difference between our current idea of the offset between MIDI timestamps
-// and audio timestamps is so bad that we just start using the new offset immediately.
-// This can be regularly hit around stream start time by badly-behaved drivers that return bogus timestamps
-// for a while when first starting.
-static const qint64 EMERGENCY_RESYNC_THRESHOLD_NANOS = 500000000;
-
 SynthRoute::SynthRoute(QObject *parent) : QObject(parent), state(SynthRouteState_CLOSED), qSynth(this), audioDevice(NULL), audioStream(NULL) {
 	sampleRate = SAMPLE_RATE;
 
