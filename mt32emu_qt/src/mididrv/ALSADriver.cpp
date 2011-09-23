@@ -141,6 +141,35 @@ bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synt
 		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
 		break;
 
+	case SND_SEQ_EVENT_CONTROL14:
+		msg = 0xB0;
+		msg |= seq_event->data.control.channel;
+		msg |= 0x06 << 8;
+		msg |= (seq_event->data.control.value >> 7) << 16;
+		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		break;
+
+	case SND_SEQ_EVENT_NONREGPARAM:
+		msg = 0xB0;
+		msg |= seq_event->data.control.channel;
+		msg |= 0x63 << 8; // Since the real synths don't support NRPNs, it's OK to send just the MSB
+		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		break;
+
+	case SND_SEQ_EVENT_REGPARAM:
+		msg = 0xB0;
+		msg |= seq_event->data.control.channel;
+		int rpn;
+		rpn = seq_event->data.control.value;
+		msg |= 0x64 << 8;
+		msg |= (rpn & 0x7F) << 16;
+		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		msg &= 0xFF;
+		msg |= 0x65 << 8;
+		msg |= ((rpn >> 7) & 0x7F) << 16;
+		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		break;
+
 	case SND_SEQ_EVENT_PGMCHANGE:
 		msg = 0xC0;
 		msg |= seq_event->data.control.channel;
@@ -178,9 +207,6 @@ bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synt
 		return true;
 
 	case SND_SEQ_EVENT_NOTE:
-	case SND_SEQ_EVENT_CONTROL14:
-	case SND_SEQ_EVENT_NONREGPARAM:
-	case SND_SEQ_EVENT_REGPARAM:
 		// FIXME: Implement these
 		break;
 
