@@ -220,7 +220,7 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 		} else {
 			DWORD msg[258] = {0, -1, 1}; // 0, handshake indicator, version, .exe filename of calling application
 			GetModuleFileNameA(GetModuleHandle(NULL), (char *)&msg[3], 255);
-			COPYDATASTRUCT cds = {dwUser, sizeof(msg), msg};
+			COPYDATASTRUCT cds = {timeGetTime(), sizeof(msg), msg};
 			instance = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
 		}
 		DWORD res;

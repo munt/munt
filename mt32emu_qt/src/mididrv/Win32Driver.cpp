@@ -47,6 +47,8 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 		data = (DWORD *)cds->lpData;
 		if (data[0] == 0) {				// special value, mark of a non-Sysex message
 			if (data[1] == (DWORD)-1) {		// special value, mark of a handshaking message
+				// Sync the timesource in the driver with MasterClock
+				startMasterClock = (qint64)cds->dwData * MasterClock::NANOS_PER_MILLISECOND - MasterClock::getClockNanos();
 				// Process handshaking message
 				midiSession = Master::getInstance()->createMidiSession(driver, "Combined Win32msg Session");
 				qDebug() << "Connected application" << (char *)&data[3];
@@ -107,8 +109,6 @@ Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster) {
 }
 
 void Win32MidiDriver::start() {
-	// Much more robust then ClockSync while we use the same timesource in MasterClock
-	startMasterClock = (qint64)timeGetTime() * MasterClock::NANOS_PER_MILLISECOND - MasterClock::getClockNanos();
 	_beginthread(&MessageLoop, 16384, NULL);
 }
 
