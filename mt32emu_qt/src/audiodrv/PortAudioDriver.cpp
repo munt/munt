@@ -152,7 +152,10 @@ void PortAudioProcessor::start() {
 
 	while (stopProcessing == false) {
 		scanAudioDevices();
-		MasterClock::sleepForNanos(3000000000);
+		for (int i = 0; i < 10; i++) {
+			if (stopProcessing) break;
+			MasterClock::sleepForNanos(300000000);
+		}
 	}
 	emit finished();
 }
