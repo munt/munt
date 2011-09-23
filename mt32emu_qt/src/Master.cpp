@@ -29,6 +29,10 @@ void Master::init() {
 		qRegisterMetaType<MidiSession *>("MidiSession*");
 		qRegisterMetaType<MidiSession **>("MidiSession**");
 		qRegisterMetaType<AudioDevice *>("AudioDevice*");
+		qRegisterMetaType<const AudioDevice *>("const AudioDevice*");
+		qRegisterMetaType<AudioDevice **>("AudioDevice**");
+		qRegisterMetaType<QList<AudioDevice *> >("const QList<AudioDevice *>");
+		qRegisterMetaType<const AudioDriver *>("const AudioDriver*");
 	}
 }
 
@@ -94,6 +98,42 @@ void Master::reallyRemoveAudioDevice(AudioDevice *audioDevice) {
 	delete audioDevice;
 }
 
+void Master::reallyFindAudioDevice(AudioDevice **audioDeviceFound, const AudioDevice *audioDevice) {
+	QListIterator<AudioDevice *> audioDevicesIt(audioDevices);
+	while (audioDevicesIt.hasNext()) {
+		AudioDevice *currentAudioDevice = audioDevicesIt.next();
+		if ((currentAudioDevice->driver == audioDevice->driver)
+				&& (currentAudioDevice->name == audioDevice->name)) {
+			*audioDeviceFound = currentAudioDevice;
+			return;
+		}
+	}
+	*audioDeviceFound = NULL;
+}
+
+void Master::reallyRemoveStaleAudioDevices(const AudioDriver *driver, const QList<AudioDevice *> foundAudioDevices) {
+	QListIterator<AudioDevice *> audioDevicesIt(audioDevices);
+	while (audioDevicesIt.hasNext()) {
+		AudioDevice *currentAudioDevice = audioDevicesIt.next();
+		if (driver != currentAudioDevice->driver) {
+			continue;
+		}
+		bool foundDevice = false;
+		QListIterator<AudioDevice *> foundAudioDevicesIt(foundAudioDevices);
+		while (foundAudioDevicesIt.hasNext()) {
+			AudioDevice *currentFoundAudioDevice = foundAudioDevicesIt.next();
+			if ((currentAudioDevice->driver == currentFoundAudioDevice->driver)
+					&& (currentAudioDevice->name == currentFoundAudioDevice->name)) {
+				foundDevice = true;
+				break;
+			}
+		}
+		if (!foundDevice) {
+			reallyRemoveAudioDevice(currentAudioDevice);
+		}
+	}
+}
+
 MidiSession *Master::createMidiSession(MidiDriver *midiDriver, QString name) {
 	MidiSession *midiSession;
 	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
@@ -131,5 +171,27 @@ void Master::removeAudioDevice(AudioDevice *audioDevice) {
 	} else {
 		QMetaObject::invokeMethod(this, "reallyRemoveAudioDevice", Qt::QueuedConnection,
 								  Q_ARG(AudioDevice *, audioDevice));
+	}
+}
+
+AudioDevice *Master::findAudioDevice(const AudioDevice *audioDevice) {
+	AudioDevice *audioDeviceFound;
+	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
+		reallyFindAudioDevice(&audioDeviceFound, audioDevice);
+	} else {
+		QMetaObject::invokeMethod(this, "reallyFindAudioDevice", Qt::BlockingQueuedConnection,
+								  Q_ARG(AudioDevice **, &audioDeviceFound),
+								  Q_ARG(const AudioDevice *, audioDevice));
+	}
+	return audioDeviceFound;
+}
+
+void Master::removeStaleAudioDevices(const AudioDriver *driver, const QList<AudioDevice *> foundAudioDevices) {
+	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
+		reallyRemoveStaleAudioDevices(driver, foundAudioDevices);
+	} else {
+		QMetaObject::invokeMethod(this, "reallyRemoveStaleAudioDevices", Qt::BlockingQueuedConnection,
+								  Q_ARG(const AudioDriver *, driver),
+								  Q_ARG(const QList<AudioDevice *>, foundAudioDevices));
 	}
 }

@@ -45,7 +45,7 @@ public slots:
 private:
 	PortAudioDriver *driver;
 	volatile bool stopProcessing;
-	QList<QString> getDeviceNames();
+	void scanAudioDevices();
 
 signals:
 	void finished();
