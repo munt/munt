@@ -14,6 +14,7 @@ class SynthPropertiesDialog : public QDialog
 public:
 	explicit SynthPropertiesDialog(QWidget *parent = 0);
 	~SynthPropertiesDialog();
+	int getDACInputMode();
 
 private:
 	Ui::SynthPropertiesDialog *ui;

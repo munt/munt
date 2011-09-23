@@ -55,7 +55,11 @@
      <item row="0" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QLineEdit" name="romDirLineEdit"/>
+        <widget class="QLineEdit" name="romDirLineEdit">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QPushButton" name="romDirButton">

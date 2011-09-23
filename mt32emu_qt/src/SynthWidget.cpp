@@ -88,7 +88,19 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 
 void SynthWidget::on_synthPropertiesButton_clicked()
 {
-	spd.exec();
+	if (QDialog::Accepted == spd.exec()) {
+		switch (spd.getDACInputMode()) {
+		case 0:
+			synthRoute->setDACInputMode(MT32Emu::DACInputMode_NICE);
+			break;
+		case 1:
+			synthRoute->setDACInputMode(MT32Emu::DACInputMode_GENERATION1);
+			break;
+		case 2:
+			synthRoute->setDACInputMode(MT32Emu::DACInputMode_GENERATION2);
+			break;
+		}
+	}
 }
 
 void SynthWidget::on_startButton_clicked()

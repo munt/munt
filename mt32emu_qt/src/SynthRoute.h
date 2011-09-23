@@ -40,6 +40,7 @@ public:
 	bool close();
 	bool pushMIDIShortMessage(MT32Emu::Bit32u msg, qint64 midiNanos);
 	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, qint64 midiNanos);
+	void setDACInputMode(MT32Emu::DACInputMode pEmuDACInputMode);
 	void addMidiSession(MidiSession *midiSession);
 	void removeMidiSession(MidiSession *midiSession);
 	bool isPinned() const;

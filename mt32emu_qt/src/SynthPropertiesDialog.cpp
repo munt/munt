@@ -40,3 +40,7 @@ void SynthPropertiesDialog::on_romDirButton_clicked()
 	ui->romDirLineEdit->setText(s);
 	Master::getInstance()->setROMDir(s);
 }
+
+int SynthPropertiesDialog::getDACInputMode() {
+	return ui->dacEmuComboBox->currentIndex();
+}
