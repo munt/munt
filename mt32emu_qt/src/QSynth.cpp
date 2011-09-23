@@ -79,7 +79,7 @@ bool QSynth::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, SynthTimesta
 unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstSampleTimestamp, double actualSampleRate) {
 	unsigned int renderedLen = 0;
 
-	qDebug() << "P" << debugSampleIx << firstSampleTimestamp << actualSampleRate << len;
+//	qDebug() << "P" << debugSampleIx << firstSampleTimestamp << actualSampleRate << len;
 	while (renderedLen < len) {
 		unsigned int renderThisPass = len - renderedLen;
 		// This loop processes any events that are due before or at this sample position,
@@ -90,7 +90,7 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 			const MidiEvent *event = midiEventQueue->peekEvent();
 			if (event == NULL) {
 				// Queue empty
-				qDebug() << "Q" << debugSampleIx;
+//				qDebug() << "Q" << debugSampleIx;
 				break;
 			}
 			if (event->getTimestamp() <= nanosNow) {
@@ -117,9 +117,9 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 				if (debugSpecialEvent) {
 					qDebug() << "M" << debugSampleIx << debugEventOffset << (debugSampleIx - debugLastEventSampleIx);
 					debugLastEventSampleIx = debugSampleIx;
-				} else if (debugEventOffset <= -1000000) {
+				} else if (debugEventOffset < -1000000) {
 					// The MIDI event is playing significantly later than it was scheduled to play.
-					qDebug() << "L" << debugSampleIx << debugEventOffset;
+					qDebug() << "L" << debugSampleIx << 1e-6 * debugEventOffset;
 				}
 				midiEventQueue->popEvent();
 			} else {
