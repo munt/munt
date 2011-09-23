@@ -15,6 +15,7 @@ private:
 
 	QList<SynthRoute *> synthRoutes;
 	QList<AudioDevice *> audioDevices;
+	QDir romDir;
 
 	Master();
 
@@ -25,6 +26,8 @@ public:
 	void removeAudioDevice(AudioDevice *audioDevice);
 	// May only be called from the application thread
 	const QList<AudioDevice *> getAudioDevices() const;
+	void setROMDir(QDir romDir);
+	QDir getROMDir();
 
 	static Master *getInstance();
 

@@ -25,7 +25,6 @@ private:
 	unsigned int sampleRate;
 	bool reverbEnabled;
 	MT32Emu::DACInputMode emuDACInputMode;
-	QDir romDir;
 
 	QMutex *synthMutex;
 	MidiEventQueue *midiEventQueue;
@@ -53,8 +52,6 @@ public:
 	void setMasterVolume(MT32Emu::Bit8u pMasterVolume);
 	void setReverbEnabled(bool pReverbEnabled);
 	void setDACInputMode(MT32Emu::DACInputMode pEmuDACInputMode);
-	bool setROMDir(QDir romDir);
-	QDir getROMDir();
 
 	// This being public is an implementation quirk - do not call
 	int handleReport(MT32Emu::ReportType type, const void *reportData);

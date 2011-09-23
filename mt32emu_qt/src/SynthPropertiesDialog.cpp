@@ -16,6 +16,7 @@
 
 #include <QtGui>
 
+#include "Master.h"
 #include "SynthPropertiesDialog.h"
 #include "ui_SynthPropertiesDialog.h"
 
@@ -24,6 +25,8 @@ SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent) :
 		ui(new Ui::SynthPropertiesDialog)
 {
 	ui->setupUi(this);
+	QString s = Master::getInstance()->getROMDir().absolutePath();
+	ui->romDirLineEdit->setText(s);
 }
 
 SynthPropertiesDialog::~SynthPropertiesDialog()
@@ -35,4 +38,5 @@ void SynthPropertiesDialog::on_romDirButton_clicked()
 {
 	QString s = QFileDialog::getExistingDirectory(this, "Choose ROM directory", ui->romDirLineEdit->text());
 	ui->romDirLineEdit->setText(s);
+	Master::getInstance()->setROMDir(s);
 }

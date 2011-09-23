@@ -24,6 +24,7 @@ void Master::init() {
 	if (INSTANCE == NULL) {
 		INSTANCE = new Master();
 		INSTANCE->moveToThread(QCoreApplication::instance()->thread());
+		INSTANCE->romDir = "./";
 		qRegisterMetaType<MidiDriver *>("MidiDriver*");
 		qRegisterMetaType<MidiSession *>("MidiSession*");
 		qRegisterMetaType<MidiSession **>("MidiSession**");
@@ -45,6 +46,14 @@ Master::Master() {
 
 const QList<AudioDevice *> Master::getAudioDevices() const {
 	return audioDevices;
+}
+
+QDir Master::getROMDir() {
+	return romDir;
+}
+
+void Master::setROMDir(QDir newROMDir) {
+	romDir = newROMDir;
 }
 
 void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name) {

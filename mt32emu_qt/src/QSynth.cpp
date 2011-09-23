@@ -27,6 +27,7 @@
 #include <QtGlobal>
 
 #include "QSynth.h"
+#include "Master.h"
 #include "MasterClock.h"
 
 using namespace MT32Emu;
@@ -41,13 +42,8 @@ int MT32_Report(void *userData, ReportType type, const void *reportData) {
 QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED) {
 	sampleRate = DEFAULT_SAMPLE_RATE;
 	reverbEnabled = true;
-	emuDACInputMode = DACInputMode_GENERATION2;
-	// FIXME: Awful
-#ifndef __WIN32__
-	romDir = "/usr/local/share/munt/roms/";
-#endif
+	emuDACInputMode = DACInputMode_NICE;
 	isOpen = false;
-
 	synthMutex = new QMutex(QMutex::Recursive);
 	midiEventQueue = new MidiEventQueue;
 	synth = new Synth();
@@ -150,17 +146,8 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 	return renderedLen;
 }
 
-QDir QSynth::getROMDir() {
-	return romDir;
-}
-
-bool QSynth::setROMDir(QDir newROMDir) {
-	romDir = newROMDir;
-	return reset();
-}
-
 bool QSynth::openSynth() {
-	QString pathName = QDir::toNativeSeparators(romDir.absolutePath());
+	QString pathName = QDir::toNativeSeparators(Master::getInstance()->getROMDir().absolutePath());
 	pathName += QDir::separator();
 	QByteArray pathNameBytes = pathName.toUtf8();
 	SynthProperties synthProp = {sampleRate, true, true, 0, 0, 0, pathNameBytes, NULL, MT32_Report, NULL, NULL, NULL};
