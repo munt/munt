@@ -55,7 +55,6 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 					qDebug() << "Failed to create new session";
 					return 0;
 				}
-				midiSession->getSynthRoute()->open();
 				return (LRESULT)midiSession;
 			} else if (data[1] == 0) {	// special value, mark of a short MIDI message
 				// Process short MIDI message
@@ -86,9 +85,7 @@ void Win32MidiDriver::MessageLoop(void *) {
 	wc.hbrBackground = NULL;
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = mt32emuClassName;
-	if (RegisterClass(&wc)) {
-		qDebug() << "Message class registered";
-	} else {
+	if (!RegisterClass(&wc)) {
 		qDebug() << "Error registering message class";
 	}
 
@@ -97,9 +94,7 @@ void Win32MidiDriver::MessageLoop(void *) {
 #endif
 
 	hwnd = CreateWindow(mt32emuClassName, "mt32emu_message_window", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
-	if (hwnd != NULL) {
-		qDebug() << "Message window created\n";
-	} else {
+	if (hwnd == NULL) {
 		DWORD err = GetLastError();
 		qDebug() << "Error creating message window " << err << "\n";
 	}
