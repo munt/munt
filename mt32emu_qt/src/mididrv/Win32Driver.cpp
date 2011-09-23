@@ -25,17 +25,24 @@
 static Win32MidiDriver *driver;
 static HWND hwnd = NULL;
 static qint64 startMasterClock;
+static bool disableReset = true;
 
 qint64 Win32MidiDriver::TimeToMasterClockNanos(DWORD time) {
 	return (qint64)time * MasterClock::NANOS_PER_MILLISECOND - startMasterClock;
 }
 
 LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	static MidiSession *newMidiSession = NULL;
 	MidiSession *midiSession;
 	switch (uMsg) {
 	case WM_APP: // closing session
 		midiSession = (MidiSession*)wParam;
-		Master::getInstance()->deleteMidiSession(midiSession);
+		if (!disableReset) {
+			Master::getInstance()->deleteMidiSession(midiSession);
+			if (midiSession == newMidiSession) {
+				newMidiSession = NULL;
+			}
+		}
 		qDebug() << "Session" << midiSession << "finished";
 		return 1;
 
@@ -50,7 +57,10 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 				// Sync the timesource in the driver with MasterClock
 				startMasterClock = (qint64)cds->dwData * MasterClock::NANOS_PER_MILLISECOND - MasterClock::getClockNanos();
 				// Process handshaking message
-				midiSession = Master::getInstance()->createMidiSession(driver, "Combined Win32msg Session");
+				if (!newMidiSession || !disableReset) {
+					newMidiSession = Master::getInstance()->createMidiSession(driver, "Combined Win32msg Session");
+				}
+				midiSession = newMidiSession;
 				qDebug() << "Connected application" << (char *)&data[3];
 				qDebug() << "Session" << midiSession << "protocol version" << data[2];
 				if (!midiSession) {
@@ -114,4 +124,8 @@ void Win32MidiDriver::start() {
 
 void Win32MidiDriver::stop() {
 	PostMessage(hwnd, WM_QUIT, 0, 0);
+}
+
+void DisableReset(bool useDisableReset) {
+	disableReset = useDisableReset;
 }
