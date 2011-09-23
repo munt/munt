@@ -148,6 +148,16 @@ bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synt
 		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
 		break;
 
+	case SND_SEQ_EVENT_PITCHBEND:
+		msg = 0xE0;
+		msg |= seq_event->data.control.channel;
+		int bend;
+		bend = seq_event->data.control.value + 8192;
+		msg |= (bend & 0x7F) << 8;
+		msg |= ((bend >> 7) & 0x7F) << 16;
+		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		break;
+
 	case SND_SEQ_EVENT_SYSEX:
 		synthRoute->pushMIDISysex((MT32Emu::Bit8u *)seq_event->data.ext.ptr, seq_event->data.ext.len, MasterClock::getClockNanos());
 		break;
@@ -168,7 +178,6 @@ bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synt
 		return true;
 
 	case SND_SEQ_EVENT_NOTE:
-	case SND_SEQ_EVENT_PITCHBEND:
 	case SND_SEQ_EVENT_CONTROL14:
 	case SND_SEQ_EVENT_NONREGPARAM:
 	case SND_SEQ_EVENT_REGPARAM:
