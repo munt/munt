@@ -37,8 +37,10 @@ SynthPropertiesDialog::~SynthPropertiesDialog()
 void SynthPropertiesDialog::on_romDirButton_clicked()
 {
 	QString s = QFileDialog::getExistingDirectory(this, "Choose ROM directory", ui->romDirLineEdit->text());
-	ui->romDirLineEdit->setText(s);
-	Master::getInstance()->setROMDir(s);
+	if (!s.isNull()) {
+		ui->romDirLineEdit->setText(s);
+		Master::getInstance()->setROMDir(s);
+	}
 }
 
 int SynthPropertiesDialog::getDACInputMode() {
