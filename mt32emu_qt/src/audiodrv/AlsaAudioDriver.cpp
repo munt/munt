@@ -44,6 +44,7 @@ AlsaAudioStream::~AlsaAudioStream() {
 
 void* AlsaAudioStream::processingThread(void *userData) {
 	int error;
+	bool isErrorOccured = false;
 	AlsaAudioStream *driver = (AlsaAudioStream *)userData;
 	qDebug() << "ALSA audio: Processing thread started";
 	while (!driver->pendingClose) {
@@ -51,10 +52,8 @@ void* AlsaAudioStream::processingThread(void *userData) {
 		snd_pcm_sframes_t delayp;
 		if ((error = snd_pcm_delay(driver->stream, &delayp)) < 0) {
 			qDebug() << "snd_pcm_delay failed:" << snd_strerror(error);
-			qDebug() << "ALSA audio: Processing thread stopped";
-			snd_pcm_close(driver->stream);
-			driver->stream = NULL;
-			return NULL;
+			isErrorOccured = true;
+			break;
 		}
 		double realSampleRate = driver->sampleRate;
 		MasterClockNanos realSampleTime = MasterClock::getClockNanos() + delayp / realSampleRate * MasterClock::NANOS_PER_SECOND;
@@ -68,22 +67,24 @@ void* AlsaAudioStream::processingThread(void *userData) {
 			firstSampleNanos, realSampleRate);
 		if ((error = snd_pcm_writei(driver->stream, driver->buffer, FRAMES_IN_BUFFER)) < 0) {
 			qDebug() << "snd_pcm_writei failed:" << snd_strerror(error);
-			qDebug() << "ALSA audio: Processing thread stopped";
-			snd_pcm_close(driver->stream);
-			driver->stream = NULL;
-			return NULL;
+			isErrorOccured = true;
+			break;
 		}
 		if (error != (int)FRAMES_IN_BUFFER) {
 			qDebug() << "snd_pcm_writei failed. Written frames:" << error;
-			qDebug() << "ALSA audio: Processing thread stopped";
-			snd_pcm_close(driver->stream);
-			driver->stream = NULL;
-			return NULL;
+			isErrorOccured = true;
+			break;
 		}
 		driver->sampleCount += FRAMES_IN_BUFFER;
 	}
 	qDebug() << "ALSA audio: Processing thread stopped";
-	driver->pendingClose = false;
+	if (isErrorOccured) {
+		snd_pcm_close(driver->stream);
+		driver->stream = NULL;
+		driver->synth->close();
+	} else {
+		driver->pendingClose = false;
+	}
 	return NULL;
 }
 

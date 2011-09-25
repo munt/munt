@@ -60,7 +60,9 @@ void WinMMAudioStream::processingThread(void *userData) {
 	while (!stream->pendingClose) {
 		mmTime.wType = TIME_SAMPLES;
 		if (waveOutGetPosition(stream->hWaveOut, &mmTime, sizeof (MMTIME)) != MMSYSERR_NOERROR) {
+			qDebug() << "waveOutGetPosition failed, thread stopped";
 			stream->pendingClose = true;
+			stream->synth->close();
 			return;
 		}
 

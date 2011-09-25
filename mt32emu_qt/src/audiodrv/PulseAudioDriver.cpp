@@ -154,6 +154,7 @@ void* PulseAudioStream::processingThread(void *userData) {
 			_pa_simple_free(driver->stream);
 			driver->stream = NULL;
 			qDebug() << "PulseAudio: Processing thread stopped";
+			driver->synth->close();
 			return NULL;
 		}
 		driver->sampleCount += FRAMES_IN_BUFFER;

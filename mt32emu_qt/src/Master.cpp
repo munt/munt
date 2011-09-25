@@ -57,6 +57,7 @@ void Master::init() {
 		qRegisterMetaType<MidiDriver *>("MidiDriver*");
 		qRegisterMetaType<MidiSession *>("MidiSession*");
 		qRegisterMetaType<MidiSession **>("MidiSession**");
+		qRegisterMetaType<SynthState>("SynthState");
 	}
 }
 
