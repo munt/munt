@@ -61,133 +61,18 @@ static void dumpPortAudioDevices() {
 	}
 }
 
-PortAudioDriver::PortAudioDriver(Master *useMaster) : AudioDriver("portaudio", "PortAudio"), master(useMaster) {
-	start();
-}
-
-PortAudioDriver::~PortAudioDriver() {
-	stop();
-}
-
-Master *PortAudioDriver::getMaster() {
-	return master;
-}
-
-void PortAudioDriver::start() {
-	processor = new PortAudioProcessor(this);
-	processor->moveToThread(&processorThread);
-	processorThread.moveToThread(&processorThread);
-	// Start the processor once the thread has started
-	processor->connect(&processorThread, SIGNAL(started()), SLOT(start()));
-	// Stop the thread once the processor has finished
-	processorThread.connect(processor, SIGNAL(finished()), SLOT(quit()));
-	processorThread.start();
-}
-
-void PortAudioDriver::stop() {
-	if (processor != NULL) {
-		if (processorThread.isRunning()) {
-			processor->stop();
-			processorThread.wait();
-		}
-		delete processor;
-		processor = NULL;
-	}
-}
-
-PortAudioProcessor::PortAudioProcessor(PortAudioDriver *useDriver) : driver(useDriver), stopProcessing(false) {
-}
-
-void PortAudioProcessor::stop() {
-	stopProcessing = true;
-}
-
-void PortAudioProcessor::scanAudioDevices() {
-	QList<AudioDevice *> foundDevices;
-	PaDeviceIndex deviceCount = Pa_GetDeviceCount();
-	if (deviceCount < 0) {
-		qDebug() << "Pa_GetDeviceCount() returned error" << deviceCount;
-		deviceCount = 0;
-	}
-	for(int deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
-		// FIXME: Keep track so that we can properly dispose of them later
-		const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(deviceIndex);
-		if (deviceInfo == NULL) {
-			qDebug() << "Pa_GetDeviceInfo() returned NULL for" << deviceIndex;
-			continue;
-		}
-		if (deviceInfo->maxOutputChannels == 0) {
-			// Seems to be an input device
-			continue;
-		}
-		QString deviceName = "(" + QString::number(deviceInfo->hostApi) + ") " + deviceInfo->name;
-		PortAudioDevice *newAudioDevice = new PortAudioDevice(driver, deviceIndex, deviceName);
-		foundDevices.append(newAudioDevice);
-		AudioDevice *found = driver->getMaster()->findAudioDevice(newAudioDevice);
-		if (found == NULL) {
-			qDebug() << "PortAudio device added:" << deviceIndex << deviceName;
-			driver->getMaster()->addAudioDevice(newAudioDevice);
-			continue;
-		}
-		if (found->id != QString::number(deviceIndex)) {
-			qDebug() << "Changed ID of PortAudio device:" << deviceName;
-			qDebug() << "Reconnecting...";
-			driver->getMaster()->removeAudioDevice(found);
-			driver->getMaster()->addAudioDevice(newAudioDevice);
-		}
-	}
-	driver->getMaster()->removeStaleAudioDevices(driver, foundDevices);
-}
-
-void PortAudioProcessor::start() {
-	if (!paInitialised) {
-		PaError err = Pa_Initialize();
-		if (err != paNoError) {
-			qDebug() << "Error initialising PortAudio";
-			// FIXME: Do something drastic instead of continuing on happily
-		}
-		paInitialised = true;
-	}
-	dumpPortAudioDevices();
-
-	while (stopProcessing == false) {
-		scanAudioDevices();
-		for (int i = 0; i < 10; i++) {
-			if (stopProcessing) break;
-			MasterClock::sleepForNanos(300000000);
-		}
-	}
-	emit finished();
-}
-
-// FIXME: The device index isn't permanent enough for the intended purpose of ID.
-// Instead a QString should be constructed that will let us find the same device later
-// (e.g. a combination hostAPI/device name/index as last resort).
-PortAudioDevice::PortAudioDevice(PortAudioDriver *driver, int useDeviceIndex, QString useDeviceName) : AudioDevice(driver, QString::number(useDeviceIndex), useDeviceName), deviceIndex(useDeviceIndex) {
-}
-
-PortAudioStream *PortAudioDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) {
-	PortAudioStream *stream = new PortAudioStream(this, synth, sampleRate);
-	if (stream->start()) {
-		return stream;
-	}
-	delete stream;
-	return NULL;
-}
-
-PortAudioStream::PortAudioStream(PortAudioDevice *useDevice, QSynth *useSynth, unsigned int useSampleRate) :
-	device(useDevice), synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0) {
+PortAudioStream::PortAudioStream(QSynth *useSynth, unsigned int useSampleRate) :
+	synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0) {
 }
 
 PortAudioStream::~PortAudioStream() {
 	close();
 }
 
-bool PortAudioStream::start() {
+bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	if (stream != NULL) {
 		return true;
 	}
-	PaDeviceIndex deviceIndex = device->deviceIndex;
 	if (deviceIndex < 0) {
 		deviceIndex = Pa_GetDefaultOutputDevice();
 		if (deviceIndex == paNoDevice) {
@@ -274,4 +159,68 @@ void PortAudioStream::close() {
 	stream = NULL;
 }
 
+// FIXME: The device index isn't permanent enough for the intended purpose of ID.
+// Instead a QString should be constructed that will let us find the same device later
+// (e.g. a combination hostAPI/device name/index as last resort).
+PortAudioDevice::PortAudioDevice(PortAudioDriver *driver, int useDeviceIndex, QString useDeviceName) : AudioDevice(driver, QString::number(useDeviceIndex), useDeviceName), deviceIndex(useDeviceIndex) {
+}
 
+PortAudioStream *PortAudioDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) {
+	PortAudioStream *stream = new PortAudioStream(synth, sampleRate);
+	if (stream->start(deviceIndex)) {
+		return stream;
+	}
+	delete stream;
+	return NULL;
+}
+
+PortAudioDriver::PortAudioDriver(Master *useMaster) :
+	AudioDriver("portaudio", "PortAudio")
+{
+	Q_UNUSED(useMaster);
+
+	if (!paInitialised) {
+		PaError err = Pa_Initialize();
+		if (err != paNoError) {
+			qDebug() << "Error initializing PortAudio";
+			// FIXME: Do something drastic instead of continuing on happily
+		} else {
+			paInitialised = true;
+		}
+	}
+	dumpPortAudioDevices();
+}
+
+PortAudioDriver::~PortAudioDriver() {
+	if (paInitialised) {
+		if (Pa_Terminate() != paNoError) {
+			qDebug() << "Error terminating PortAudio";
+			// FIXME: Do something drastic instead of continuing on happily
+		} else {
+			paInitialised = false;
+		}
+	}
+}
+
+QList<AudioDevice *> PortAudioDriver::getDeviceList() {
+	QList<AudioDevice *> deviceList;
+	PaDeviceIndex deviceCount = Pa_GetDeviceCount();
+	if (deviceCount < 0) {
+		qDebug() << "Pa_GetDeviceCount() returned error" << deviceCount;
+		deviceCount = 0;
+	}
+	for(int deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
+		const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(deviceIndex);
+		if (deviceInfo == NULL) {
+			qDebug() << "Pa_GetDeviceInfo() returned NULL for" << deviceIndex;
+			continue;
+		}
+		if (deviceInfo->maxOutputChannels == 0) {
+			// Seems to be an input device
+			continue;
+		}
+		QString deviceName = "(" + QString::number(deviceInfo->hostApi) + ") " + deviceInfo->name;
+		deviceList.append(new PortAudioDevice(this, deviceIndex, deviceName));
+	}
+	return deviceList;
+}

@@ -15,20 +15,20 @@ private:
 	static Master *INSTANCE;
 
 	QList<SynthRoute *> synthRoutes;
+	QList<AudioDriver *> audioDrivers;
 	QList<AudioDevice *> audioDevices;
+	MidiDriver *midiDriver;
 	QDir romDir;
 
 	Master();
+	void initAudioDrivers();
+	void initMidiDrivers();
 
 public:
 	MidiSession *createMidiSession(MidiDriver *midiDriver, QString name);
 	void deleteMidiSession(MidiSession *midiSession);
-	void addAudioDevice(AudioDevice *audioDevice);
-	void removeAudioDevice(AudioDevice *audioDevice);
-	AudioDevice *findAudioDevice(const AudioDevice *audioDevice);
-	void removeStaleAudioDevices(const AudioDriver *driver, const QList<AudioDevice *> foundAudioDevices);
 	// May only be called from the application thread
-	const QList<AudioDevice *> getAudioDevices() const;
+	const QList<AudioDevice *> getAudioDevices();
 	void setROMDir(QDir romDir);
 	QDir getROMDir();
 
@@ -41,10 +41,6 @@ public:
 private slots:
 	void reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
 	void reallyDeleteMidiSession(MidiSession *midiSession);
-	void reallyAddAudioDevice(AudioDevice *audioDevice);
-	void reallyRemoveAudioDevice(AudioDevice *audioDevice);
-	void reallyFindAudioDevice(AudioDevice **audioDeviceFound, const AudioDevice *audioDevice);
-	void reallyRemoveStaleAudioDevices(const AudioDriver *driver, const QList<AudioDevice *> foundAudioDevices);
 
 signals:
 	void synthRouteAdded(SynthRoute *route);

@@ -119,7 +119,10 @@ static bool loadLibrary(bool loadNeeded) {
 	return true;
 }
 
-PulseAudioStream::PulseAudioStream(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0), pendingClose(false) {
+PulseAudioStream::PulseAudioStream(QSynth *useSynth, unsigned int useSampleRate) :
+	synth(useSynth), sampleRate(useSampleRate), stream(NULL),
+	sampleCount(0), pendingClose(false)
+{
 	buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
 }
 
@@ -233,11 +236,20 @@ PulseAudioStream *PulseAudioDefaultDevice::startAudioStream(QSynth *synth, unsig
 }
 
 PulseAudioDriver::PulseAudioDriver(Master *master) : AudioDriver("pulseaudio", "PulseAudio") {
-	if (loadLibrary(true)) {
-		master->addAudioDevice(new PulseAudioDefaultDevice(this));
-	}
+	Q_UNUSED(master);
+	isLibraryFound = loadLibrary(true);
 }
 
 PulseAudioDriver::~PulseAudioDriver() {
-	loadLibrary(false);
+	if (isLibraryFound) {
+		loadLibrary(false);
+	}
+}
+
+QList<AudioDevice *> PulseAudioDriver::getDeviceList() {
+	QList<AudioDevice *> deviceList;
+	if (isLibraryFound) {
+		deviceList.append(new PulseAudioDefaultDevice(this));
+	}
+	return deviceList;
 }

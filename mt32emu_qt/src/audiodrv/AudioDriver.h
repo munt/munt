@@ -40,6 +40,7 @@ public:
 	const QString name;
 	AudioDriver(QString useID, QString useName);
 	virtual ~AudioDriver() {};
+	virtual QList<AudioDevice *> getDeviceList() = 0;
 };
 
 #endif

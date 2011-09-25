@@ -5,14 +5,12 @@
 
 #include "SynthWidget.h"
 
-#include "mididrv/MidiDriver.h"
-#include "audiodrv/AudioDriver.h"
-
 namespace Ui {
 	class MainWindow;
 }
 
 class Master;
+class MidiDriver;
 
 class MainWindow : public QMainWindow
 {
@@ -28,9 +26,7 @@ protected:
 private:
 	Ui::MainWindow *ui;
 	Master *master;
-	MidiDriver *midiDriver;
 	MidiDriver *testMidiDriver;
-	QList<AudioDriver *> audioDrivers;
 
 private slots:
 	void on_actionAbout_triggered();

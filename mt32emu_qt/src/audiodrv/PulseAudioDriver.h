@@ -26,7 +26,6 @@ private:
 	qint64 sampleCount;
 	bool pendingClose;
 
-	qint64 getPlayedAudioNanosPlusLatency();
 	static void* processingThread(void *);
 
 public:
@@ -44,9 +43,12 @@ public:
 };
 
 class PulseAudioDriver : public AudioDriver {
+private:
+	bool isLibraryFound;
 public:
 	PulseAudioDriver(Master *useMaster);
 	~PulseAudioDriver();
+	QList<AudioDevice *> getDeviceList();
 };
 
 #endif

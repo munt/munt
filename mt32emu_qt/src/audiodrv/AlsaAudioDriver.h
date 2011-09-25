@@ -12,12 +12,7 @@
 
 class Master;
 class QSynth;
-
-class AlsaAudioDriver : public AudioDriver {
-public:
-	AlsaAudioDriver(Master *useMaster);
-	~AlsaAudioDriver();
-};
+class AlsaAudioDriver;
 
 class AlsaAudioStream : public AudioStream {
 private:
@@ -31,7 +26,6 @@ private:
 	qint64 sampleCount;
 	bool pendingClose;
 
-	qint64 getPlayedAudioNanosPlusLatency();
 	static void* processingThread(void *);
 
 public:
@@ -40,6 +34,20 @@ public:
 	bool start();
 	void close();
 	QList<QString> getDeviceNames();
+};
+
+class AlsaAudioDefaultDevice : public AudioDevice {
+friend class AlsaAudioDriver;
+	AlsaAudioDefaultDevice(AlsaAudioDriver *driver);
+public:
+	AlsaAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate);
+}; 
+
+class AlsaAudioDriver : public AudioDriver {
+public:
+	AlsaAudioDriver(Master *useMaster);
+	~AlsaAudioDriver();
+	QList<AudioDevice *> getDeviceList();
 };
 
 #endif

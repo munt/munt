@@ -74,7 +74,7 @@ include_directories(${MT32EMU_INCLUDE_DIRS})
 
 find_package(ALSA)
 if(ALSA_FOUND)
-  add_definitions(-DWITH_ALSA_MIDI_DRIVER)
+  add_definitions(-DWITH_ALSA_AUDIO_DRIVER -DWITH_ALSA_MIDI_DRIVER)
   set(EXT_LIBS ${EXT_LIBS} ${ALSA_LIBRARIES})
   include_directories(${ALSA_INCLUDE_DIRS})
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}

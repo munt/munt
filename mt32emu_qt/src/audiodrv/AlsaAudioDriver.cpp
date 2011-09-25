@@ -31,14 +31,6 @@ static const MasterClockNanos latency = 256 * MasterClock::NANOS_PER_MILLISECOND
 
 #define USE_ALSA_TIMING
 
-AlsaAudioDriver::AlsaAudioDriver(Master *master) : AudioDriver("alsa", "ALSA") {
-	Q_UNUSED(master);
-	// FIXME: Implement
-}
-
-AlsaAudioDriver::~AlsaAudioDriver() {
-}
-
 AlsaAudioStream::AlsaAudioStream(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0), pendingClose(false) {
 	buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
 }
@@ -61,13 +53,6 @@ void* AlsaAudioStream::processingThread(void *userData) {
 			qDebug() << "snd_pcm_delay failed:" << snd_strerror(error);
 			break;
 		}
-#if 0	// use avail() instead of delay()
-		if ((error = snd_pcm_avail(driver->stream)) < 0) {
-			qDebug() << "snd_pcm_avail failed:" << snd_strerror(error);
-			break;
-		}
-		delayp = 8192 - error;
-#endif
 		double realSampleRate = driver->sampleRate;
 		MasterClockNanos realSampleTime = MasterClock::getClockNanos() + delayp / realSampleRate * MasterClock::NANOS_PER_SECOND;
 		MasterClockNanos firstSampleNanos = realSampleTime - latency - audioLatency * MasterClock::NANOS_PER_MICROSECOND; // MIDI latency + total stream latency
@@ -167,4 +152,29 @@ void AlsaAudioStream::close() {
 		}
 	}
 	return;
+}
+
+AlsaAudioDefaultDevice::AlsaAudioDefaultDevice(AlsaAudioDriver *driver) : AudioDevice(driver, "default", "Default") {
+}
+
+AlsaAudioStream *AlsaAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) {
+	AlsaAudioStream *stream = new AlsaAudioStream(synth, sampleRate);
+	if (stream->start()) {
+		return stream;
+	}
+	delete stream;
+	return NULL;
+}
+
+AlsaAudioDriver::AlsaAudioDriver(Master *master) : AudioDriver("alsa", "ALSA") {
+	Q_UNUSED(master);
+}
+
+AlsaAudioDriver::~AlsaAudioDriver() {
+}
+
+QList<AudioDevice *> AlsaAudioDriver::getDeviceList() {
+	QList<AudioDevice *> deviceList;
+	deviceList.append(new AlsaAudioDefaultDevice(this));
+	return deviceList;
 }

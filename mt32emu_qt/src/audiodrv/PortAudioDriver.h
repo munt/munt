@@ -13,49 +13,9 @@
 class QSynth;
 class Master;
 class PortAudioDriver;
-class PortAudioProcessor;
-class PortAudioDevice;
-class PortAudioStream;
-
-class PortAudioDriver : public AudioDriver {
-private:
-	Master *master;
-	PortAudioProcessor *processor;
-	QThread processorThread;
-
-	void start();
-	void stop();
-
-public:
-	PortAudioDriver(Master *useMaster);
-	~PortAudioDriver();
-	Master *getMaster();
-};
-
-class PortAudioProcessor : public QObject {
-	Q_OBJECT
-public:
-	PortAudioProcessor(PortAudioDriver *master);
-
-	void stop();
-
-public slots:
-	void start();
-
-private:
-	PortAudioDriver *driver;
-	volatile bool stopProcessing;
-	void scanAudioDevices();
-
-signals:
-	void finished();
-};
-
 
 class PortAudioStream : public AudioStream {
-friend class PortAudioDevice;
 private:
-	PortAudioDevice *device;
 	QSynth *synth;
 	unsigned int sampleRate;
 	PaStream *stream;
@@ -68,26 +28,30 @@ private:
 	qint64 latency;
 	qint64 sampleCount;
 
-	qint64 getPlayedAudioNanosPlusLatency();
-	bool start();
-	void close();
-
 	static int paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData);
 
 public:
-	PortAudioStream(PortAudioDevice *useDevice, QSynth *useSynth, unsigned int useSampleRate);
+	PortAudioStream(QSynth *useSynth, unsigned int useSampleRate);
 	~PortAudioStream();
+	bool start(PaDeviceIndex deviceIndex);
+	void close();
 };
 
 class PortAudioDevice : public AudioDevice {
-friend class PortAudioProcessor;
-friend class PortAudioStream;
+friend class PortAudioDriver;
 private:
 	PaDeviceIndex deviceIndex;
 	PortAudioDevice(PortAudioDriver *driver, int useDeviceIndex, QString useDeviceName);
 
 public:
 	PortAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate);
+};
+
+class PortAudioDriver : public AudioDriver {
+public:
+	PortAudioDriver(Master *useMaster);
+	~PortAudioDriver();
+	QList<AudioDevice *> getDeviceList();
 };
 
 #endif

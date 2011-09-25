@@ -38,11 +38,10 @@ public:
 };
 
 class WinMMAudioDriver : public AudioDriver {
-private:
-	QList<QString> WinMMAudioDriver::getDeviceNames();
 public:
 	WinMMAudioDriver(Master *useMaster);
 	~WinMMAudioDriver();
+	QList<AudioDevice *> getDeviceList();
 };
 
 #endif

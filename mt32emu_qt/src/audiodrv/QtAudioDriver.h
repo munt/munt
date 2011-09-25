@@ -23,8 +23,6 @@ private:
 	// The number of nanos by which to delay (MIDI) events to help ensure accurate relative timing.
 	qint64 latency;
 
-	qint64 getPlayedAudioNanosPlusLatency();
-
 public:
 	QtAudioStream(QSynth *useSynth, unsigned int useSampleRate);
 	~QtAudioStream();
@@ -44,6 +42,7 @@ class QtAudioDriver : public AudioDriver {
 public:
 	QtAudioDriver(Master *useMaster);
 	~QtAudioDriver();
+	QList<AudioDevice *> getDeviceList();
 };
 
 #endif

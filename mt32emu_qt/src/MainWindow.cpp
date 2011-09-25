@@ -21,28 +21,6 @@
 #include "Master.h"
 
 #include "mididrv/TestDriver.h"
-#ifdef WITH_WIN32_MIDI_DRIVER
-#include "mididrv/Win32Driver.h"
-#elif defined(WITH_ALSA_MIDI_DRIVER)
-#include "mididrv/ALSADriver.h"
-#endif
-
-
-#ifdef WITH_WINMM_AUDIO_DRIVER
-#include "audiodrv/WinMMAudioDriver.h"
-#endif
-#ifdef WITH_QT_AUDIO_DRIVER
-#include "audiodrv/QtAudioDriver.h"
-#endif
-#ifdef WITH_ALSA_AUDIO_DRIVER
-#include "audiodrv/AlsaAudioDriver.h"
-#endif
-#ifdef WITH_PULSE_AUDIO_DRIVER
-#include "audiodrv/PulseAudioDriver.h"
-#endif
-#ifdef WITH_PORT_AUDIO_DRIVER
-#include "audiodrv/PortAudioDriver.h"
-#endif
 
 MainWindow::MainWindow(Master *master, QWidget *parent) :
 	QMainWindow(parent),
@@ -53,32 +31,6 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	ui->setupUi(this);
 	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *)), this, SLOT(handleSynthRouteAdded(SynthRoute *)));
 	QObject::connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), this, SLOT(handleSynthRouteRemoved(SynthRoute *)));
-#ifdef WITH_WIN32_MIDI_DRIVER
-	midiDriver = new Win32MidiDriver(master);
-#elif defined(WITH_ALSA_MIDI_DRIVER)
-	midiDriver = new ALSAMidiDriver(master);
-#else
-	midiDriver = NULL;
-#endif
-	if (midiDriver != NULL) {
-		midiDriver->start();
-	}
-
-#ifdef WITH_WINMM_AUDIO_DRIVER
-	audioDrivers.append(new WinMMAudioDriver(master));
-#endif
-#ifdef WITH_QT_AUDIO_DRIVER
-	audioDrivers.append(new QtAudioDriver(master));
-#endif
-#ifdef WITH_ALSA_AUDIO_DRIVER
-	audioDrivers.append(new AlsaAudioDriver(master));
-#endif
-#ifdef WITH_PULSE_AUDIO_DRIVER
-	audioDrivers.append(new PulseAudioDriver(master));
-#endif
-#ifdef WITH_PORT_AUDIO_DRIVER
-	audioDrivers.append(new PortAudioDriver(master));
-#endif
 }
 
 MainWindow::~MainWindow()
@@ -87,18 +39,8 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
-	if (midiDriver != NULL) {
-		midiDriver->stop();
-		midiDriver = NULL;
-	}
 	if (testMidiDriver != NULL) {
 		testMidiDriver->stop();
-	}
-	QMutableListIterator<AudioDriver *> audioDriverIt(audioDrivers);
-	while(audioDriverIt.hasNext()) {
-		AudioDriver *audioDriver = audioDriverIt.next();
-		delete audioDriver;
-		audioDriverIt.remove();
 	}
 	event->accept();
 }
