@@ -21,6 +21,9 @@ private:
 
 	QSettings *settings;
 	QDir romDir;
+	QString defaultAudioDriverId;
+	QString defaultAudioDeviceName;
+	qint64 lastAudioDeviceScan;
 
 	Master();
 	void initAudioDrivers();
@@ -32,6 +35,7 @@ public:
 	void deleteMidiSession(MidiSession *midiSession);
 	// May only be called from the application thread
 	const QList<AudioDevice *> getAudioDevices();
+	void setDefaultAudioDevice(QString driverId, QString name);
 	void setROMDir(QDir romDir);
 	QDir getROMDir();
 	QSettings *getSettings();

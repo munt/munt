@@ -15,6 +15,7 @@
  */
 
 #include "Master.h"
+#include "MasterClock.h"
 #include "MidiSession.h"
 
 #ifdef WITH_WINMM_AUDIO_DRIVER
@@ -52,10 +53,13 @@ void Master::init() {
 		INSTANCE->moveToThread(QCoreApplication::instance()->thread());
 		INSTANCE->initAudioDrivers();
 		INSTANCE->initMidiDrivers();
+		INSTANCE->lastAudioDeviceScan = -4 * MasterClock::NANOS_PER_SECOND;
 		INSTANCE->getAudioDevices();
 
 		INSTANCE->settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
 		INSTANCE->romDir = INSTANCE->settings->value("Master/romDir", "./").toString();
+		INSTANCE->defaultAudioDriverId = INSTANCE->settings->value("Master/DefaultAudioDriver").toString();
+		INSTANCE->defaultAudioDeviceName = INSTANCE->settings->value("Master/DefaultAudioDevice").toString();
 
 		qRegisterMetaType<MidiDriver *>("MidiDriver*");
 		qRegisterMetaType<MidiSession *>("MidiSession*");
@@ -114,25 +118,34 @@ Master *Master::getInstance() {
 	return INSTANCE;
 }
 
+void Master::setDefaultAudioDevice(QString driverId, QString name) {
+	defaultAudioDriverId = driverId;
+	defaultAudioDeviceName = name;
+	settings->setValue("Master/DefaultAudioDriver", driverId);
+	settings->setValue("Master/DefaultAudioDevice", name);
+}
+
 const QList<AudioDevice *> Master::getAudioDevices() {
-	audioDevices.clear();
-	QListIterator<AudioDriver *> audioDriverIt(INSTANCE->audioDrivers);
-	while(audioDriverIt.hasNext()) {
-		AudioDriver *audioDriver = audioDriverIt.next();
-		audioDevices.append(audioDriver->getDeviceList());
+	if ((MasterClock::getClockNanos() - lastAudioDeviceScan) > 3 * MasterClock::NANOS_PER_SECOND) {
+		audioDevices.clear();
+		QListIterator<AudioDriver *> audioDriverIt(INSTANCE->audioDrivers);
+		while(audioDriverIt.hasNext()) {
+			AudioDriver *audioDriver = audioDriverIt.next();
+			audioDevices.append(audioDriver->getDeviceList());
+		}
 	}
 	return audioDevices;
 }
 
 const AudioDevice *Master::findAudioDevice(QString driverId, QString name) const {
-	QListIterator<AudioDevice *> audioDeviceIt(INSTANCE->audioDevices);
+	QListIterator<AudioDevice *> audioDeviceIt(audioDevices);
 	while(audioDeviceIt.hasNext()) {
 		AudioDevice *audioDevice = audioDeviceIt.next();
 		if (driverId == audioDevice->driver->id && name == audioDevice->name) {
 			return audioDevice;
 		}
 	}
-	return NULL;
+	return audioDevices.first();
 }
 
 QSettings *Master::getSettings() {
@@ -155,20 +168,13 @@ void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDr
 	MidiSession *midiSession = new MidiSession(this, midiDriver, name, synthRoute);
 	synthRoute->addMidiSession(midiSession);
 	synthRoutes.append(synthRoute);
-	
-	// TBC: refresh audio device list if needed
-	// getAudioDevices();
-	QVariant driverId = settings->value("Master/DefaultAudioDriver");
-	QVariant deviceName = settings->value("Master/DefaultAudioDevice");
-	const AudioDevice *audioDevice;
-	if (driverId.isNull() || driverId.isNull()) {
-		audioDevice = audioDevices.at(0);
-	} else {
-		audioDevice = findAudioDevice(driverId.toString(), deviceName.toString());
+	const AudioDevice *audioDevice = NULL;
+	getAudioDevices();
+	if (!audioDevices.isEmpty()) {
+		audioDevice = findAudioDevice(defaultAudioDriverId, defaultAudioDeviceName);
+		synthRoute->setAudioDevice(audioDevice);
+		synthRoute->open();
 	}
-
-	synthRoute->setAudioDevice(audioDevice);
-	synthRoute->open();
 	*returnVal = midiSession;
 	emit synthRouteAdded(synthRoute, audioDevice);
 }

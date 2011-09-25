@@ -24,21 +24,8 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	synthRoute(useSynthRoute),
 	ui(new Ui::SynthWidget) {
 	ui->setupUi(this);
+	refreshAudioDeviceList(master, useAudioDevice);
 
-	int defaultAudioDeviceIndex = 0;
-	int audioDeviceIndex = 0;
-	QListIterator<AudioDevice *> audioDeviceIt(master->getAudioDevices());
-	while(audioDeviceIt.hasNext()) {
-		AudioDevice *audioDevice = audioDeviceIt.next();
-		handleAudioDeviceAdded(audioDevice);
-		if (useAudioDevice->driver->id == audioDevice->driver->id
-			&& useAudioDevice->name == audioDevice->name) {
-			defaultAudioDeviceIndex = audioDeviceIndex;
-		}
-		audioDeviceIndex++;
-	}
-	ui->audioDeviceComboBox->setCurrentIndex(defaultAudioDeviceIndex);
-	
 	connect(synthRoute, SIGNAL(stateChanged(SynthRouteState)), SLOT(handleSynthRouteState(SynthRouteState)));
 	connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(handleAudioDeviceIndexChanged(int)));
 	connect(master, SIGNAL(audioDeviceAdded(AudioDevice*)), SLOT(handleAudioDeviceAdded(AudioDevice*)));
@@ -54,6 +41,22 @@ SynthRoute *SynthWidget::getSynthRoute() {
 	return synthRoute;
 }
 
+void SynthWidget::refreshAudioDeviceList(Master *master, const AudioDevice *useAudioDevice) {
+	int defaultAudioDeviceIndex = 0;
+	int audioDeviceIndex = 0;
+	QListIterator<AudioDevice *> audioDeviceIt(master->getAudioDevices());
+	while(audioDeviceIt.hasNext()) {
+		AudioDevice *audioDevice = audioDeviceIt.next();
+		handleAudioDeviceAdded(audioDevice);
+		if (useAudioDevice->driver->id == audioDevice->driver->id
+			&& useAudioDevice->name == audioDevice->name) {
+			defaultAudioDeviceIndex = audioDeviceIndex;
+		}
+		audioDeviceIndex++;
+	}
+	ui->audioDeviceComboBox->setCurrentIndex(defaultAudioDeviceIndex);
+}
+
 void SynthWidget::handleAudioDeviceAdded(AudioDevice *device) {
 	ui->audioDeviceComboBox->addItem(device->driver->name + ": " + device->name, qVariantFromValue(device));
 }
@@ -65,9 +68,7 @@ void SynthWidget::handleAudioDeviceRemoved(AudioDevice *device) {
 void SynthWidget::handleAudioDeviceIndexChanged(int audioDeviceIndex) {
 	AudioDevice *currentAudioDevice = ui->audioDeviceComboBox->itemData(audioDeviceIndex).value<AudioDevice *>();
 	synthRoute->setAudioDevice(currentAudioDevice);
-	QSettings *settings = Master::getInstance()->getSettings();
-	settings->setValue("Master/DefaultAudioDriver", currentAudioDevice->driver->id);
-	settings->setValue("Master/DefaultAudioDevice", currentAudioDevice->name);
+	Master::getInstance()->setDefaultAudioDevice(currentAudioDevice->driver->id, currentAudioDevice->name);
 }
 
 void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {

@@ -27,6 +27,8 @@ private:
 	Ui::SynthWidget *ui;
 	SynthPropertiesDialog spd;
 
+	void refreshAudioDeviceList(Master *master, const AudioDevice *useAudioDevice);
+
 private slots:
 	void on_startButton_clicked();
 	void on_synthPropertiesButton_clicked();
