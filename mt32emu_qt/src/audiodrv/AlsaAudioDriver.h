@@ -33,7 +33,6 @@ public:
 	~AlsaAudioStream();
 	bool start();
 	void close();
-	QList<QString> getDeviceNames();
 };
 
 class AlsaAudioDefaultDevice : public AudioDevice {

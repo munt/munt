@@ -45,13 +45,16 @@ AlsaAudioStream::~AlsaAudioStream() {
 void* AlsaAudioStream::processingThread(void *userData) {
 	int error;
 	AlsaAudioStream *driver = (AlsaAudioStream *)userData;
-	qDebug() << "Processing thread started";
+	qDebug() << "ALSA audio: Processing thread started";
 	while (!driver->pendingClose) {
 #ifdef USE_ALSA_TIMING
 		snd_pcm_sframes_t delayp;
 		if ((error = snd_pcm_delay(driver->stream, &delayp)) < 0) {
 			qDebug() << "snd_pcm_delay failed:" << snd_strerror(error);
-			break;
+			qDebug() << "ALSA audio: Processing thread stopped";
+			snd_pcm_close(driver->stream);
+			driver->stream = NULL;
+			return NULL;
 		}
 		double realSampleRate = driver->sampleRate;
 		MasterClockNanos realSampleTime = MasterClock::getClockNanos() + delayp / realSampleRate * MasterClock::NANOS_PER_SECOND;
@@ -65,22 +68,23 @@ void* AlsaAudioStream::processingThread(void *userData) {
 			firstSampleNanos, realSampleRate);
 		if ((error = snd_pcm_writei(driver->stream, driver->buffer, FRAMES_IN_BUFFER)) < 0) {
 			qDebug() << "snd_pcm_writei failed:" << snd_strerror(error);
-			break;
+			qDebug() << "ALSA audio: Processing thread stopped";
+			snd_pcm_close(driver->stream);
+			driver->stream = NULL;
+			return NULL;
 		}
 		if (error != (int)FRAMES_IN_BUFFER) {
 			qDebug() << "snd_pcm_writei failed. Written frames:" << error;
-			break;
+			qDebug() << "ALSA audio: Processing thread stopped";
+			snd_pcm_close(driver->stream);
+			driver->stream = NULL;
+			return NULL;
 		}
 		driver->sampleCount += FRAMES_IN_BUFFER;
 	}
+	qDebug() << "ALSA audio: Processing thread stopped";
 	driver->pendingClose = false;
 	return NULL;
-}
-
-QList<QString> AlsaAudioStream::getDeviceNames() {
-	QList<QString> deviceNames;
-	deviceNames << "ALSA default audio device";
-	return deviceNames;
 }
 
 bool AlsaAudioStream::start() {
@@ -131,7 +135,7 @@ bool AlsaAudioStream::start() {
 	}
 	pthread_t threadID;
 	if((error = pthread_create(&threadID, NULL, processingThread, this))) {
-		qDebug() << "Processing Thread creation failed:" << error;
+		qDebug() << "ALSA audio: Processing Thread creation failed:" << error;
 	}
 	return true;
 }
@@ -140,11 +144,10 @@ void AlsaAudioStream::close() {
 	int error;
 	if (stream != NULL) {
 		pendingClose = true;
-		qDebug() << "Stopping processing thread...";
+		qDebug() << "ALSA audio: Stopping processing thread...";
 		while (pendingClose) {
 			sleep(1);
 		}
-		qDebug() << "Processing thread stopped";
 		error = snd_pcm_close(stream);
 		stream = NULL;
 		if (error != 0) {

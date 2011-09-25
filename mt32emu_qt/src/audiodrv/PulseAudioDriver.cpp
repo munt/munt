@@ -136,7 +136,7 @@ PulseAudioStream::~PulseAudioStream() {
 void* PulseAudioStream::processingThread(void *userData) {
 	int error;
 	PulseAudioStream *driver = (PulseAudioStream *)userData;
-	qDebug() << "Processing thread started";
+	qDebug() << "PulseAudio: Processing thread started";
 	while (!driver->pendingClose) {
 #ifdef USE_PA_TIMING
 		double realSampleRate = driver->sampleRate;
@@ -153,7 +153,7 @@ void* PulseAudioStream::processingThread(void *userData) {
 			qDebug() << "pa_simple_write() failed:" << _pa_strerror(error);
 			_pa_simple_free(driver->stream);
 			driver->stream = NULL;
-			qDebug() << "Processing thread stopped";
+			qDebug() << "PulseAudio: Processing thread stopped";
 			return NULL;
 		}
 		driver->sampleCount += FRAMES_IN_BUFFER;
@@ -200,7 +200,7 @@ bool PulseAudioStream::start() {
 	}
 	pthread_t threadID;
 	if((error = pthread_create(&threadID, NULL, processingThread, this))) {
-		qDebug() << "Processing Thread creation failed:" << error;
+		qDebug() << "PulseAudio: Processing Thread creation failed:" << error;
 	}
 	return true;
 }
@@ -212,11 +212,11 @@ void PulseAudioStream::close() {
 		if (_pa_simple_drain(stream, &error) < 0) {
 			qDebug() << "pa_simple_drain() failed:" << _pa_strerror(error);
 		}
-		qDebug() << "Stopping processing thread...";
+		qDebug() << "PulseAudio: Stopping processing thread...";
 		while (pendingClose) {
 			sleep(1);
 		}
-		qDebug() << "Processing thread stopped";
+		qDebug() << "PulseAudio: Processing thread stopped";
 		_pa_simple_free(stream); 
 		stream = NULL;
 	}
