@@ -18,6 +18,8 @@ private:
 	QList<AudioDriver *> audioDrivers;
 	QList<AudioDevice *> audioDevices;
 	MidiDriver *midiDriver;
+
+	QSettings *settings;
 	QDir romDir;
 
 	Master();
@@ -31,6 +33,7 @@ public:
 	const QList<AudioDevice *> getAudioDevices();
 	void setROMDir(QDir romDir);
 	QDir getROMDir();
+	QSettings *getSettings();
 
 	static Master *getInstance();
 

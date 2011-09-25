@@ -50,10 +50,13 @@ void Master::init() {
 	if (INSTANCE == NULL) {
 		INSTANCE = &master;
 		INSTANCE->moveToThread(QCoreApplication::instance()->thread());
-		INSTANCE->romDir = "./";
 		INSTANCE->initAudioDrivers();
 		INSTANCE->initMidiDrivers();
 		INSTANCE->getAudioDevices();
+
+		INSTANCE->settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
+		INSTANCE->romDir = INSTANCE->settings->value("Master/romDir", "./").toString();
+
 		qRegisterMetaType<MidiDriver *>("MidiDriver*");
 		qRegisterMetaType<MidiSession *>("MidiSession*");
 		qRegisterMetaType<MidiSession **>("MidiSession**");
@@ -62,6 +65,7 @@ void Master::init() {
 }
 
 void Master::deinit() {
+	delete INSTANCE->settings;
 	if (INSTANCE->midiDriver != NULL) {
 		INSTANCE->midiDriver->stop();
 		INSTANCE->midiDriver = NULL;
@@ -120,12 +124,17 @@ const QList<AudioDevice *> Master::getAudioDevices() {
 	return audioDevices;
 }
 
+QSettings *Master::getSettings() {
+	return settings;
+}
+
 QDir Master::getROMDir() {
 	return romDir;
 }
 
 void Master::setROMDir(QDir newROMDir) {
 	romDir = newROMDir;
+	settings->setValue("Master/romDir", romDir.absolutePath());
 }
 
 void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name) {
