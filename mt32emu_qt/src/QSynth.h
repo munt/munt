@@ -7,8 +7,6 @@
 
 #include "MidiEventQueue.h"
 
-class WaveGenerator;
-
 enum SynthState {
 	SynthState_CLOSED,
 	SynthState_OPEN,
@@ -17,7 +15,6 @@ enum SynthState {
 
 class QSynth : public QObject {
 	Q_OBJECT
-	friend class WaveGenerator;
 private:
 	SynthState state;
 
