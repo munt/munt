@@ -52,6 +52,7 @@ QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED) {
 QSynth::~QSynth() {
 	delete synth;
 	delete midiEventQueue;
+	delete synthMutex;
 }
 
 int QSynth::handleReport(ReportType type, const void *reportData) {
