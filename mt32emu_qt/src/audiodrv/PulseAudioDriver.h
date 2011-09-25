@@ -39,7 +39,7 @@ class PulseAudioDefaultDevice : public AudioDevice {
 friend class PulseAudioDriver;
 	PulseAudioDefaultDevice(PulseAudioDriver *driver);
 public:
-	PulseAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate);
+	PulseAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
 
 class PulseAudioDriver : public AudioDriver {

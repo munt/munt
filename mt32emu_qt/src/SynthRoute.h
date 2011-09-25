@@ -27,7 +27,7 @@ private:
 
 	QList<MidiSession *> midiSessions;
 
-	AudioDevice *audioDevice;
+	const AudioDevice *audioDevice;
 	AudioStream *audioStream; // NULL until a stream is created
 	unsigned int sampleRate;
 
@@ -50,7 +50,7 @@ private slots:
 	void handleQSynthState(SynthState synthState);
 
 public slots:
-	void setAudioDevice(AudioDevice *newAudioDevice);
+	void setAudioDevice(const AudioDevice *newAudioDevice);
 
 signals:
 	void stateChanged(SynthRouteState state);

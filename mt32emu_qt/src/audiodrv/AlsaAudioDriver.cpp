@@ -161,7 +161,7 @@ void AlsaAudioStream::close() {
 AlsaAudioDefaultDevice::AlsaAudioDefaultDevice(AlsaAudioDriver *driver) : AudioDevice(driver, "default", "Default") {
 }
 
-AlsaAudioStream *AlsaAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) {
+AlsaAudioStream *AlsaAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
 	AlsaAudioStream *stream = new AlsaAudioStream(synth, sampleRate);
 	if (stream->start()) {
 		return stream;

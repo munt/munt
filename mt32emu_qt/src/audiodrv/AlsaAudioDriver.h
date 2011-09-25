@@ -39,7 +39,7 @@ class AlsaAudioDefaultDevice : public AudioDevice {
 friend class AlsaAudioDriver;
 	AlsaAudioDefaultDevice(AlsaAudioDriver *driver);
 public:
-	AlsaAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate);
+	AlsaAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 }; 
 
 class AlsaAudioDriver : public AudioDriver {

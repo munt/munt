@@ -30,7 +30,7 @@ private:
 
 private slots:
 	void on_actionAbout_triggered();
-	void handleSynthRouteAdded(SynthRoute *synthRoute);
+	void handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice);
 	void handleSynthRouteRemoved(SynthRoute *synthRoute);
 	void on_actionOptions_triggered();
 	void on_actionPlay_MIDI_file_triggered();

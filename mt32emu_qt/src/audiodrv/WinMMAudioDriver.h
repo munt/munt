@@ -34,7 +34,7 @@ private:
 	UINT deviceIndex;
 	WinMMAudioDevice(WinMMAudioDriver *driver, int useDeviceIndex, QString useDeviceName);
 public:
-	WinMMAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate);
+	WinMMAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
 
 class WinMMAudioDriver : public AudioDriver {

@@ -165,7 +165,7 @@ void PortAudioStream::close() {
 PortAudioDevice::PortAudioDevice(PortAudioDriver *driver, int useDeviceIndex, QString useDeviceName) : AudioDevice(driver, QString::number(useDeviceIndex), useDeviceName), deviceIndex(useDeviceIndex) {
 }
 
-PortAudioStream *PortAudioDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) {
+PortAudioStream *PortAudioDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
 	PortAudioStream *stream = new PortAudioStream(synth, sampleRate);
 	if (stream->start(deviceIndex)) {
 		return stream;

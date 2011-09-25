@@ -25,6 +25,7 @@ private:
 	Master();
 	void initAudioDrivers();
 	void initMidiDrivers();
+	const AudioDevice *findAudioDevice(QString driverId, QString name) const;
 
 public:
 	MidiSession *createMidiSession(MidiDriver *midiDriver, QString name);
@@ -46,7 +47,7 @@ private slots:
 	void reallyDeleteMidiSession(MidiSession *midiSession);
 
 signals:
-	void synthRouteAdded(SynthRoute *route);
+	void synthRouteAdded(SynthRoute *route, const AudioDevice *audioDevice);
 	void synthRouteRemoved(SynthRoute *route);
 	void audioDeviceAdded(AudioDevice *audioDevice);
 	void audioDeviceRemoved(AudioDevice *audioDevice);

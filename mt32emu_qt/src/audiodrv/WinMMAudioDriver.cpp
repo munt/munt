@@ -199,7 +199,7 @@ WinMMAudioDevice::WinMMAudioDevice(WinMMAudioDriver *driver, int useDeviceIndex,
 }
 
 WinMMAudioStream *WinMMAudioDevice::startAudioStream(QSynth *synth,
-																										 unsigned int sampleRate) {
+																										 unsigned int sampleRate) const {
 	WinMMAudioStream *stream = new WinMMAudioStream(synth, sampleRate);
 	if (stream->start(deviceIndex)) {
 		return stream;

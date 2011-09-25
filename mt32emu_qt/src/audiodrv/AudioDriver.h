@@ -26,7 +26,7 @@ public:
 	const QString name;
 	AudioDevice(AudioDriver *driver, QString id, QString name);
 	virtual ~AudioDevice() {};
-	virtual AudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) = 0;
+	virtual AudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const = 0;
 };
 
 Q_DECLARE_METATYPE(AudioDevice*);

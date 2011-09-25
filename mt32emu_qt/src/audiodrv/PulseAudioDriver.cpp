@@ -227,7 +227,7 @@ void PulseAudioStream::close() {
 PulseAudioDefaultDevice::PulseAudioDefaultDevice(PulseAudioDriver *driver) : AudioDevice(driver, "default", "Default") {
 }
 
-PulseAudioStream *PulseAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) {
+PulseAudioStream *PulseAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
 	PulseAudioStream *stream = new PulseAudioStream(synth, sampleRate);
 	if (stream->start()) {
 		return stream;

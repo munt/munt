@@ -124,6 +124,17 @@ const QList<AudioDevice *> Master::getAudioDevices() {
 	return audioDevices;
 }
 
+const AudioDevice *Master::findAudioDevice(QString driverId, QString name) const {
+	QListIterator<AudioDevice *> audioDeviceIt(INSTANCE->audioDevices);
+	while(audioDeviceIt.hasNext()) {
+		AudioDevice *audioDevice = audioDeviceIt.next();
+		if (driverId == audioDevice->driver->id && name == audioDevice->name) {
+			return audioDevice;
+		}
+	}
+	return NULL;
+}
+
 QSettings *Master::getSettings() {
 	return settings;
 }
@@ -144,12 +155,22 @@ void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDr
 	MidiSession *midiSession = new MidiSession(this, midiDriver, name, synthRoute);
 	synthRoute->addMidiSession(midiSession);
 	synthRoutes.append(synthRoute);
+	
+	// TBC: refresh audio device list if needed
+	// getAudioDevices();
+	QVariant driverId = settings->value("Master/DefaultAudioDriver");
+	QVariant deviceName = settings->value("Master/DefaultAudioDevice");
+	const AudioDevice *audioDevice;
+	if (driverId.isNull() || driverId.isNull()) {
+		audioDevice = audioDevices.at(0);
+	} else {
+		audioDevice = findAudioDevice(driverId.toString(), deviceName.toString());
+	}
 
-	// FIXME: find device index using stored preferences
-	synthRoute->setAudioDevice(audioDevices.at(0));
+	synthRoute->setAudioDevice(audioDevice);
 	synthRoute->open();
 	*returnVal = midiSession;
-	emit synthRouteAdded(synthRoute);
+	emit synthRouteAdded(synthRoute, audioDevice);
 }
 
 void Master::reallyDeleteMidiSession(MidiSession *midiSession) {

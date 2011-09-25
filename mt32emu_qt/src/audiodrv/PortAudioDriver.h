@@ -44,7 +44,7 @@ private:
 	PortAudioDevice(PortAudioDriver *driver, int useDeviceIndex, QString useDeviceName);
 
 public:
-	PortAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate);
+	PortAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
 
 class PortAudioDriver : public AudioDriver {

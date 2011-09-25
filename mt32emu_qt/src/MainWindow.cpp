@@ -29,7 +29,7 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	testMidiDriver(NULL)
 {
 	ui->setupUi(this);
-	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *)), this, SLOT(handleSynthRouteAdded(SynthRoute *)));
+	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), this, SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
 	QObject::connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), this, SLOT(handleSynthRouteRemoved(SynthRoute *)));
 }
 
@@ -58,8 +58,8 @@ void MainWindow::on_actionAbout_triggered()
 					   );
 }
 
-void MainWindow::handleSynthRouteAdded(SynthRoute *synthRoute) {
-	SynthWidget *synthWidget = new SynthWidget(master, synthRoute, this);
+void MainWindow::handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice) {
+	SynthWidget *synthWidget = new SynthWidget(master, synthRoute, audioDevice, this);
 	ui->synthTabs->addTab(synthWidget, "Synth");
 }
 

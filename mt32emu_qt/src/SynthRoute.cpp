@@ -41,7 +41,7 @@ SynthRoute::~SynthRoute() {
 	delete audioStream;
 }
 
-void SynthRoute::setAudioDevice(AudioDevice *newAudioDevice) {
+void SynthRoute::setAudioDevice(const AudioDevice *newAudioDevice) {
 	audioDevice = newAudioDevice;
 	close();
 }

@@ -18,7 +18,7 @@ class SynthWidget : public QWidget
 	Q_OBJECT
 
 public:
-	explicit SynthWidget(Master *master, SynthRoute *synthRoute, QWidget *parent = 0);
+	explicit SynthWidget(Master *master, SynthRoute *synthRoute, const AudioDevice *audioDevice, QWidget *parent = 0);
 	~SynthWidget();
 	SynthRoute *getSynthRoute();
 
