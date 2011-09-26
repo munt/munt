@@ -126,7 +126,10 @@ void Master::setDefaultAudioDevice(QString driverId, QString name) {
 }
 
 const QList<AudioDevice *> Master::getAudioDevices() {
-	if ((MasterClock::getClockNanos() - lastAudioDeviceScan) > 3 * MasterClock::NANOS_PER_SECOND) {
+	MasterClockNanos nanosNow = MasterClock::getClockNanos();
+	if ((nanosNow - lastAudioDeviceScan) > 3 * MasterClock::NANOS_PER_SECOND) {
+		lastAudioDeviceScan = nanosNow;
+		qDebug() << "Scanning audio devices ...";
 		audioDevices.clear();
 		QListIterator<AudioDriver *> audioDriverIt(INSTANCE->audioDrivers);
 		while(audioDriverIt.hasNext()) {
