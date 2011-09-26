@@ -236,23 +236,16 @@ static Bit8u normalise(Bit32u &val) {
 }
 
 void TVP::setupPitchChange(int targetPitchOffset, Bit8u changeDuration) {
+	bool negativeDelta = targetPitchOffset < currentPitchOffset;
 	Bit32s pitchOffsetDelta = targetPitchOffset - currentPitchOffset;
-#ifdef EMULATE_WEIRD_TVP_BUG
-	// This was in Mok's specs and I confirmed it with him at the time, but I couldn't reproduce the effect on my CM-32L.
-	// Since it breaks at least the "Fall    MS" timbre in Space Quest 3, we'll use the sane version instead. --KG
 	if (pitchOffsetDelta > 32767 || pitchOffsetDelta < -32768) {
-		// FIXME: Weird, will end up being set to 32767 when it was < -32768. Apparently a bug in the original.
 		pitchOffsetDelta = 32767;
 	}
-#else
-	if (pitchOffsetDelta < -32768) {
-		pitchOffsetDelta = -32767;
-	} else if (pitchOffsetDelta > 32767) {
-		pitchOffsetDelta = 32767;
+	if (negativeDelta) {
+		pitchOffsetDelta = -pitchOffsetDelta;
 	}
-#endif
 	// We want to maximise the number of bits of the Bit16s "pitchOffsetChangePerBigTick" we use in order to get the best possible precision later
-	Bit32u absPitchOffsetDelta = abs((int)pitchOffsetDelta) << 16;
+	Bit32u absPitchOffsetDelta = pitchOffsetDelta << 16;
 	Bit8u normalisationShifts = normalise(absPitchOffsetDelta); // FIXME: Double-check: normalisationShifts is usually between 0 and 15 here, unless the delta is 0, in which case it's 31
 	absPitchOffsetDelta = absPitchOffsetDelta >> 1; // Make room for the sign bit
 
@@ -261,7 +254,7 @@ void TVP::setupPitchChange(int targetPitchOffset, Bit8u changeDuration) {
 	shifts = normalisationShifts + upperDuration + 2;
 	Bit16u divisor = lowerDurationToDivisor[changeDuration & 7];
 	Bit16s newPitchOffsetChangePerBigTick = ((absPitchOffsetDelta & 0xFFFF0000) / divisor) >> 1; // Result now fits within 15 bits. FIXME: Check nothing's getting sign-extended incorrectly
-	if (pitchOffsetDelta < 0) {
+	if (negativeDelta) {
 		newPitchOffsetChangePerBigTick = -newPitchOffsetChangePerBigTick;
 	}
 	pitchOffsetChangePerBigTick = newPitchOffsetChangePerBigTick;
