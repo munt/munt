@@ -1274,6 +1274,7 @@ void Synth::refreshSystemChanAssign(unsigned int firstPart, unsigned int lastPar
 	// CONFIRMED: In the case of assigning a channel to multiple parts, the lower part wins.
 	for (unsigned int i = 0; i <= 8; i++) {
 		if (parts[i] != NULL && i >= firstPart && i <= lastPart) {
+			// CONFIRMED: Decay is started for all polys, and all controllers are reset, for every part whose assignment was touched by the sysex write.
 			parts[i]->allSoundOff();
 			parts[i]->resetAllControllers();
 		}
