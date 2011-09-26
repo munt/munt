@@ -468,6 +468,9 @@ void usage(char *argv[])
 	printf("-d name      : ALSA PCM device name (default: \"default\") \n");
 
 	printf("\n");
+	printf("-g factor    : Gain multiplier (default: 1.0) \n");
+
+	printf("\n");
 	exit(1);
 }
 
@@ -524,6 +527,9 @@ int main(int argc, char *argv[])
 		    case 'd': i++; if (i == argc) usage(argv);
 			pcm_name = (char *)malloc(strlen(argv[i]) + 1);
 			strcpy(pcm_name, argv[i]);
+			break;
+		    case 'g': i++; if (i == argc) usage(argv);
+			gain_multiplier = atof(argv[i]);
 			break;
 			
 		    default:

@@ -105,6 +105,7 @@ snd_pcm_hw_params_t *pcm_hwparams;
 // char *pcm_name = "plughw:0,0";
 char *pcm_name = "default";
 
+double gain_multiplier = 1.0d;
 
 /* midi queue control variables */
 int flush_events = 0;
@@ -902,6 +903,10 @@ void reload_mt32_core(int rv)
 		report(DRV_MT32FAIL);
 		exit(1);
 	}	
+
+	mt32->setOutputGain(1.0f * gain_multiplier);
+	mt32->setReverbOutputGain(0.68f * gain_multiplier);
+
 }
 
 int process_loop(int rv) 
