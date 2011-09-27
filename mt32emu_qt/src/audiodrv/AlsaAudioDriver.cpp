@@ -24,15 +24,19 @@
 using namespace MT32Emu;
 
 static const unsigned int FRAME_SIZE = 4; // Stereo, 16-bit
-static const unsigned int FRAMES_IN_BUFFER = 320;
-static const unsigned int audioLatency = 256000; // usec
-// Latency for MIDI processing
-static const MasterClockNanos latency = 256 * MasterClock::NANOS_PER_MILLISECOND;
+static const unsigned int DEFAULT_CHUNK_MS = 10;
+static const unsigned int DEFAULT_AUDIO_LATENCY = 256;
+static const unsigned int DEFAULT_MIDI_LATENCY = 256;
 
 #define USE_ALSA_TIMING
 
-AlsaAudioStream::AlsaAudioStream(QSynth *useSynth, unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0), pendingClose(false) {
-	buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
+AlsaAudioStream::AlsaAudioStream(const AudioDevice *device, QSynth *useSynth,
+		unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate),
+		stream(NULL), sampleCount(0), pendingClose(false)
+{
+	device->driver->getAudioSettings(&bufferSize, &audioLatency, &midiLatency);
+	bufferSize *= sampleRate / 1000 /* ms per sec*/;
+	buffer = new Bit16s[2 * bufferSize];
 }
 
 AlsaAudioStream::~AlsaAudioStream() {
@@ -56,26 +60,30 @@ void* AlsaAudioStream::processingThread(void *userData) {
 			break;
 		}
 		double realSampleRate = driver->sampleRate;
-		MasterClockNanos realSampleTime = MasterClock::getClockNanos() + delayp / realSampleRate * MasterClock::NANOS_PER_SECOND;
-		MasterClockNanos firstSampleNanos = realSampleTime - latency - audioLatency * MasterClock::NANOS_PER_MICROSECOND; // MIDI latency + total stream latency
+		MasterClockNanos realSampleTime = MasterClock::getClockNanos() + delayp /
+			realSampleRate * MasterClock::NANOS_PER_SECOND;
+		MasterClockNanos firstSampleNanos = realSampleTime - (driver->midiLatency + driver->audioLatency)
+			* MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream audio latency
 #else
 		double realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
-		MasterClockNanos realSampleTime = MasterClockNanos(driver->sampleCount / (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
-		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) - latency; // MIDI latency only
+		MasterClockNanos realSampleTime = MasterClockNanos(driver->sampleCount /
+			(double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
+		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) -
+			driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
 #endif
-		driver->synth->render(driver->buffer, FRAMES_IN_BUFFER,
+		driver->synth->render(driver->buffer, driver->bufferSize,
 			firstSampleNanos, realSampleRate);
-		if ((error = snd_pcm_writei(driver->stream, driver->buffer, FRAMES_IN_BUFFER)) < 0) {
+		if ((error = snd_pcm_writei(driver->stream, driver->buffer, driver->bufferSize)) < 0) {
 			qDebug() << "snd_pcm_writei failed:" << snd_strerror(error);
 			isErrorOccured = true;
 			break;
 		}
-		if (error != (int)FRAMES_IN_BUFFER) {
+		if (error != (int)driver->bufferSize) {
 			qDebug() << "snd_pcm_writei failed. Written frames:" << error;
 			isErrorOccured = true;
 			break;
 		}
-		driver->sampleCount += FRAMES_IN_BUFFER;
+		driver->sampleCount += driver->bufferSize;
 	}
 	qDebug() << "ALSA audio: Processing thread stopped";
 	if (isErrorOccured) {
@@ -93,7 +101,7 @@ bool AlsaAudioStream::start() {
 	if (buffer == NULL) {
 		return false;
 	}
-	memset(buffer, 0, FRAME_SIZE * FRAMES_IN_BUFFER);
+	memset(buffer, 0, FRAME_SIZE * bufferSize);
 	if (stream != NULL) {
 		close();
 	}
@@ -106,8 +114,10 @@ bool AlsaAudioStream::start() {
 	}
 
 	// Set Sample format to use
-	if ((error = snd_pcm_set_params(stream, SND_PCM_FORMAT_S16_LE, SND_PCM_ACCESS_RW_INTERLEAVED,
-			/* channels */ 2, sampleRate, /* allow resampling */ 1, audioLatency)) < 0) {
+	if ((error = snd_pcm_set_params(stream, SND_PCM_FORMAT_S16_LE,
+		SND_PCM_ACCESS_RW_INTERLEAVED, /* channels */ 2, sampleRate,
+		/* allow resampling */ 1, audioLatency * 1000 /* ms to us*/)) < 0)
+	{
 		qDebug() << "snd_pcm_set_params failed:" << snd_strerror(error);
 		snd_pcm_close(stream);
 		stream = NULL;
@@ -117,22 +127,22 @@ bool AlsaAudioStream::start() {
 	qDebug() << "snd_pcm_avail:" << snd_pcm_avail(stream);
 
 	// Start playing to fill audio buffers
-//	int initFrames = audioLatency * 1e-6 * sampleRate;
+//	int initFrames = audioLatency * 1e-3 * sampleRate;
 	int initFrames = sampleRate; // 1 sec seems to be enough
 	while (initFrames > 0) {
-		if ((error = snd_pcm_writei(stream, buffer, FRAMES_IN_BUFFER)) < 0) {
+		if ((error = snd_pcm_writei(stream, buffer, bufferSize)) < 0) {
 			qDebug() << "snd_pcm_writei failed:" << snd_strerror(error);
 			snd_pcm_close(stream);
 			stream = NULL;
 			return false;
 		}
-		if (error != (int)FRAMES_IN_BUFFER) {
+		if (error != (int)bufferSize) {
 			qDebug() << "snd_pcm_writei failed. Written frames:" << error;
 			snd_pcm_close(stream);
 			stream = NULL;
 			return NULL;
 		}
-		initFrames -= FRAMES_IN_BUFFER;
+		initFrames -= bufferSize;
 	}
 	pthread_t threadID;
 	if((error = pthread_create(&threadID, NULL, processingThread, this))) {
@@ -158,11 +168,15 @@ void AlsaAudioStream::close() {
 	return;
 }
 
-AlsaAudioDefaultDevice::AlsaAudioDefaultDevice(AlsaAudioDriver *driver) : AudioDevice(driver, "default", "Default") {
+AlsaAudioDefaultDevice::AlsaAudioDefaultDevice(AlsaAudioDriver const * const driver) :
+	AudioDevice(driver, "default", "Default")
+{
 }
 
-AlsaAudioStream *AlsaAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
-	AlsaAudioStream *stream = new AlsaAudioStream(synth, sampleRate);
+AlsaAudioStream *AlsaAudioDefaultDevice::startAudioStream(QSynth *synth,
+	unsigned int sampleRate) const
+{
+	AlsaAudioStream *stream = new AlsaAudioStream(this, synth, sampleRate);
 	if (stream->start()) {
 		return stream;
 	}
@@ -172,13 +186,30 @@ AlsaAudioStream *AlsaAudioDefaultDevice::startAudioStream(QSynth *synth, unsigne
 
 AlsaAudioDriver::AlsaAudioDriver(Master *master) : AudioDriver("alsa", "ALSA") {
 	Q_UNUSED(master);
+
+	loadAudioSettings();
 }
 
 AlsaAudioDriver::~AlsaAudioDriver() {
 }
 
-QList<AudioDevice *> AlsaAudioDriver::getDeviceList() {
+QList<AudioDevice *> AlsaAudioDriver::getDeviceList() const {
 	QList<AudioDevice *> deviceList;
 	deviceList.append(new AlsaAudioDefaultDevice(this));
 	return deviceList;
+}
+
+void AlsaAudioDriver::validateAudioSettings() {
+	if (midiLatency == 0) {
+		midiLatency = DEFAULT_MIDI_LATENCY;
+	}
+	if (audioLatency == 0) {
+		audioLatency = DEFAULT_AUDIO_LATENCY;
+	}
+	if (chunkLen == 0) {
+		chunkLen = DEFAULT_CHUNK_MS;
+	}
+	if (chunkLen > audioLatency) {
+		chunkLen = audioLatency;
+	}
 }

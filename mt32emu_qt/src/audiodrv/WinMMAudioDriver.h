@@ -9,11 +9,16 @@
 
 class Master;
 class QSynth;
+class WinMMAudioDriver;
+class WinMMAudioDevice;
 
 class WinMMAudioStream : public AudioStream {
 private:
+	unsigned int minSamplesToRender;
+	unsigned int bufferSize;
+	MasterClockNanos latency;
 	QSynth *synth;
-	unsigned int sampleRate;
+	const unsigned int sampleRate;
 	HWAVEOUT hWaveOut;
 	WAVEHDR	 WaveHdr;
 	MT32Emu::Bit16s *buffer;
@@ -22,7 +27,7 @@ private:
 	static void processingThread(void *);
 
 public:
-	WinMMAudioStream(QSynth *useSynth, unsigned int useSampleRate);
+	WinMMAudioStream(const WinMMAudioDevice *device, QSynth *useSynth, unsigned int useSampleRate);
 	~WinMMAudioStream();
 	bool start(int deviceIndex);
 	void close();
@@ -32,16 +37,18 @@ class WinMMAudioDevice : public AudioDevice {
 friend class WinMMAudioDriver;
 private:
 	UINT deviceIndex;
-	WinMMAudioDevice(WinMMAudioDriver *driver, int useDeviceIndex, QString useDeviceName);
+	WinMMAudioDevice(const WinMMAudioDriver * const driver, int useDeviceIndex, QString useDeviceName);
 public:
 	WinMMAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
 
 class WinMMAudioDriver : public AudioDriver {
+private:
+	void validateAudioSettings();
 public:
 	WinMMAudioDriver(Master *useMaster);
 	~WinMMAudioDriver();
-	QList<AudioDevice *> getDeviceList();
+	QList<AudioDevice *> getDeviceList() const;
 };
 
 #endif

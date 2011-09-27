@@ -61,8 +61,12 @@ static void dumpPortAudioDevices() {
 	}
 }
 
-PortAudioStream::PortAudioStream(QSynth *useSynth, unsigned int useSampleRate) :
-	synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0) {
+PortAudioStream::PortAudioStream(const PortAudioDevice *device, QSynth *useSynth, unsigned int useSampleRate) :
+	synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0)
+{
+	unsigned int unused, msLatency;
+	device->driver->getAudioSettings(&unused, &msLatency, &unused);
+	audioLatency = msLatency * MasterClock::NANOS_PER_MILLISECOND;
 }
 
 PortAudioStream::~PortAudioStream() {
@@ -93,8 +97,6 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	}
 	*/
 
-	// FIXME: Set audio latency from stored preferences
-	audioLatency = 0;
 	if (!audioLatency) {
 		audioLatency = deviceInfo->defaultHighOutputLatency * MasterClock::NANOS_PER_SECOND;
 	}
@@ -116,7 +118,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
 	qDebug() << "Device Output latency (s):" << streamInfo->outputLatency;
 	latency = 2.2 * MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency;
-	qDebug() << "Using latency (ns):" << latency;
+	qDebug() << "Using MIDI latency (ns):" << latency;
 	return true;
 }
 
@@ -162,11 +164,11 @@ void PortAudioStream::close() {
 // FIXME: The device index isn't permanent enough for the intended purpose of ID.
 // Instead a QString should be constructed that will let us find the same device later
 // (e.g. a combination hostAPI/device name/index as last resort).
-PortAudioDevice::PortAudioDevice(PortAudioDriver *driver, int useDeviceIndex, QString useDeviceName) : AudioDevice(driver, QString::number(useDeviceIndex), useDeviceName), deviceIndex(useDeviceIndex) {
+PortAudioDevice::PortAudioDevice(const PortAudioDriver * const driver, int useDeviceIndex, QString useDeviceName) : AudioDevice(driver, QString::number(useDeviceIndex), useDeviceName), deviceIndex(useDeviceIndex) {
 }
 
 PortAudioStream *PortAudioDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
-	PortAudioStream *stream = new PortAudioStream(synth, sampleRate);
+	PortAudioStream *stream = new PortAudioStream(this, synth, sampleRate);
 	if (stream->start(deviceIndex)) {
 		return stream;
 	}
@@ -189,6 +191,7 @@ PortAudioDriver::PortAudioDriver(Master *useMaster) :
 		}
 	}
 	dumpPortAudioDevices();
+	loadAudioSettings();
 }
 
 PortAudioDriver::~PortAudioDriver() {
@@ -202,7 +205,7 @@ PortAudioDriver::~PortAudioDriver() {
 	}
 }
 
-QList<AudioDevice *> PortAudioDriver::getDeviceList() {
+QList<AudioDevice *> PortAudioDriver::getDeviceList() const {
 	QList<AudioDevice *> deviceList;
 	PaDeviceIndex deviceCount = Pa_GetDeviceCount();
 	if (deviceCount < 0) {

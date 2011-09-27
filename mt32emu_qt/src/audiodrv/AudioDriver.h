@@ -24,7 +24,7 @@ public:
 	// it will be stored and retrieved from settings.
 	const QString id;
 	const QString name;
-	AudioDevice(AudioDriver *driver, QString id, QString name);
+	AudioDevice(const AudioDriver * const driver, QString id, QString name);
 	virtual ~AudioDevice() {};
 	virtual AudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const = 0;
 };
@@ -32,6 +32,16 @@ public:
 Q_DECLARE_METATYPE(AudioDevice*);
 
 class AudioDriver {
+protected:
+	// The maximum number of milliseconds to render at once
+	unsigned int chunkLen;
+	// The total latency of audio stream buffers in milliseconds
+	unsigned int audioLatency;
+	// The number of milliseconds by which to delay MIDI events to ensure accurate relative timing
+	unsigned int midiLatency;
+
+	virtual void loadAudioSettings();
+	virtual void validateAudioSettings() = 0;
 public:
 	// id must be unique within the application and permanent -
 	// it will be stored and retrieved from settings. Preferably lowercase.
@@ -40,7 +50,9 @@ public:
 	const QString name;
 	AudioDriver(QString useID, QString useName);
 	virtual ~AudioDriver() {};
-	virtual QList<AudioDevice *> getDeviceList() = 0;
+	virtual QList<AudioDevice *> getDeviceList() const = 0;
+	virtual void getAudioSettings(unsigned int *chunkLen, unsigned int *audioLatency, unsigned int *midiLatency) const;
+	virtual void setAudioSettings(unsigned int *chunkLen, unsigned int *audioLatency, unsigned int *midiLatency);
 };
 
 #endif

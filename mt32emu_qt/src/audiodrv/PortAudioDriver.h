@@ -13,6 +13,7 @@
 class QSynth;
 class Master;
 class PortAudioDriver;
+class PortAudioDevice;
 
 class PortAudioStream : public AudioStream {
 private:
@@ -31,7 +32,7 @@ private:
 	static int paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData);
 
 public:
-	PortAudioStream(QSynth *useSynth, unsigned int useSampleRate);
+	PortAudioStream(const PortAudioDevice *device, QSynth *useSynth, unsigned int useSampleRate);
 	~PortAudioStream();
 	bool start(PaDeviceIndex deviceIndex);
 	void close();
@@ -41,17 +42,19 @@ class PortAudioDevice : public AudioDevice {
 friend class PortAudioDriver;
 private:
 	PaDeviceIndex deviceIndex;
-	PortAudioDevice(PortAudioDriver *driver, int useDeviceIndex, QString useDeviceName);
+	PortAudioDevice(const PortAudioDriver * const driver, int useDeviceIndex, QString useDeviceName);
 
 public:
 	PortAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
 
 class PortAudioDriver : public AudioDriver {
+private:
+	void validateAudioSettings() {}
 public:
 	PortAudioDriver(Master *useMaster);
 	~PortAudioDriver();
-	QList<AudioDevice *> getDeviceList();
+	QList<AudioDevice *> getDeviceList() const;
 };
 
 #endif

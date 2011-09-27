@@ -15,9 +15,42 @@
  */
 
 #include "AudioDriver.h"
+#include "../Master.h"
+#include <QSettings>
 
-AudioDevice::AudioDevice(AudioDriver *useDriver, QString useID, QString useName) : driver(useDriver), id(useID), name(useName) {
+AudioDevice::AudioDevice(const AudioDriver * const useDriver, QString useID, QString useName) : driver(useDriver), id(useID), name(useName) {
 }
 
 AudioDriver::AudioDriver(QString useID, QString useName) : id(useID), name(useName) {
+}
+
+void AudioDriver::loadAudioSettings() {
+	QSettings *settings = Master::getInstance()->getSettings();
+	chunkLen = settings->value("waveout/ChunkLen").toInt();
+	audioLatency = settings->value(id + "/AudioLatency").toInt();
+	midiLatency = settings->value(id + "/MidiLatency").toInt();
+	validateAudioSettings();
+}
+
+void AudioDriver::getAudioSettings(unsigned int *pChunkLen, unsigned int *pAudioLatency, unsigned int *pMidiLatency) const {
+	*pChunkLen = chunkLen;
+	*pAudioLatency = audioLatency;
+	*pMidiLatency = midiLatency;
+}
+
+void AudioDriver::setAudioSettings(unsigned int *pChunkLen, unsigned int *pAudioLatency, unsigned int *pMidiLatency) {
+	chunkLen = *pChunkLen;
+	audioLatency = *pAudioLatency;
+	midiLatency = *pMidiLatency;
+
+	validateAudioSettings();
+
+	*pChunkLen = chunkLen;
+	*pAudioLatency = audioLatency;
+	*pMidiLatency = midiLatency;
+
+	QSettings *settings = Master::getInstance()->getSettings();
+	settings->setValue(id + "/ChunkLen", chunkLen);
+	settings->setValue(id + "/AudioLatency", audioLatency);
+	settings->setValue(id + "/MidiLatency", midiLatency);
 }

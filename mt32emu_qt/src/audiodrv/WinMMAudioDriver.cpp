@@ -14,30 +14,39 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <process.h>
+
 #include "WinMMAudioDriver.h"
 #include "../QSynth.h"
 #include "../Master.h"
-#include <process.h>
 
 using namespace MT32Emu;
 
-#define	MIN_RENDER_MS 10	// rendering time
-
+// Looks resonable
+static const DWORD DEFAULT_CHUNK_MS = 10;
 // SergM: 100 ms output latency is safe on most systems.
 // can be reduced to 35 ms (works on my system)
 // 30 ms is the absolute minimum, unavoidable KSMixer latency
-// FIXME: should be a variable
-static const DWORD FRAMES_IN_BUFFER = 32 * 100;
+static const DWORD DEFAULT_AUDIO_LATENCY = 100;
 // 30 ms is the size of KSMixer buffer. Writing to the positions closer to the playCursor is unsafe.
-static const DWORD SAFE_FRAMES = 32 * 30;
+static const DWORD SAFE_MS = 30;
+static const DWORD SAFE_FRAMES = 32 * SAFE_MS;
 // Stereo, 16-bit
 static const DWORD FRAME_SIZE = 4;
 // Latency for MIDI processing. 15 ms is the offset of interprocess timeGetTime() difference.
-static const MasterClockNanos latency = 15 * MasterClock::NANOS_PER_MILLISECOND;
+static const DWORD DEFAULT_MIDI_LATENCY = 15;
 
-WinMMAudioStream::WinMMAudioStream(QSynth *useSynth, unsigned int useSampleRate) :
-	synth(useSynth), sampleRate(useSampleRate), hWaveOut(NULL), pendingClose(false) {
-		buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
+WinMMAudioStream::WinMMAudioStream(const WinMMAudioDevice *device, QSynth *useSynth,
+	unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate),
+	hWaveOut(NULL), pendingClose(false)
+{
+	unsigned int midiLatency;
+
+	device->driver->getAudioSettings(&minSamplesToRender, &bufferSize, &midiLatency);
+	minSamplesToRender *= sampleRate / 1000 /* ms per sec*/;
+	bufferSize *= sampleRate / 1000 /* ms per sec*/;
+	buffer = new Bit16s[2 * bufferSize];
+	latency = midiLatency * MasterClock::NANOS_PER_MILLISECOND;
 }
 
 WinMMAudioStream::~WinMMAudioStream() {
@@ -50,10 +59,9 @@ WinMMAudioStream::~WinMMAudioStream() {
 void WinMMAudioStream::processingThread(void *userData) {
 	DWORD renderPos = 0;
 	DWORD playCursor, frameCount;
-	MasterClockNanos nanosNow, firstSampleNanos = MasterClock::getClockNanos() - latency;
 	MMTIME mmTime;
 	WinMMAudioStream *stream = (WinMMAudioStream *)userData;
-	DWORD minSamplesToRender = MIN_RENDER_MS * stream->sampleRate * MasterClock::NANOS_PER_MILLISECOND / MasterClock::NANOS_PER_SECOND;
+	MasterClockNanos nanosNow, firstSampleNanos = MasterClock::getClockNanos() - stream->latency;
 	double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / stream->sampleRate;
 	DWORD prevPlayPos = 0;
 	DWORD getPosWraps = 0;
@@ -76,19 +84,19 @@ void WinMMAudioStream::processingThread(void *userData) {
 			++getPosWraps;
 		}
 		prevPlayPos = mmTime.u.sample;
-		playCursor = (mmTime.u.sample + (quint64)getPosWraps * (1 << 27)) % FRAMES_IN_BUFFER;
+		playCursor = (mmTime.u.sample + (quint64)getPosWraps * (1 << 27)) % stream->bufferSize;
 
-		nanosNow = MasterClock::getClockNanos() - latency;
+		nanosNow = MasterClock::getClockNanos() - stream->latency;
 		if (playCursor < renderPos) {
 			// Buffer wrap, render 'till the end of buffer
-			frameCount = FRAMES_IN_BUFFER - renderPos;
+			frameCount = stream->bufferSize - renderPos;
 
 			// Estimate the buffer wrap time
 			nanosNow -= MasterClock::NANOS_PER_SECOND * playCursor / stream->sampleRate;
 		} else {
 			frameCount = playCursor - renderPos;
-			if (frameCount < minSamplesToRender) {
-				Sleep(1 + DWORD((minSamplesToRender - frameCount) * samplePeriod));
+			if (frameCount < stream->minSamplesToRender) {
+				Sleep(1 + DWORD((stream->minSamplesToRender - frameCount) * samplePeriod));
 				continue;
 			}
 		}
@@ -101,13 +109,13 @@ void WinMMAudioStream::processingThread(void *userData) {
 		Unfortunately, there is no way to predict the safe writeCursor as with DSound.
 		Therefore, this allows detecting _possible_ underruns. This doesn't mean the underrun really happened.
 */
-		if (((renderPos + FRAMES_IN_BUFFER - playCursor) % FRAMES_IN_BUFFER) < SAFE_FRAMES) {
+		if (((renderPos + stream->bufferSize - playCursor) % stream->bufferSize) < SAFE_FRAMES) {
 			qDebug() << "Rendering to unsafe positions! Probable underrun! Buffer size should be higher!";
 		}
 
 		// Underrun (buffer wrap) detection
 		int framesReallyPlayed = int(double(nanosNow - firstSampleNanos) / MasterClock::NANOS_PER_SECOND * stream->sampleRate);
-		if (framesReallyPlayed > (int)FRAMES_IN_BUFFER) {
+		if (framesReallyPlayed > (int)stream->bufferSize) {
 			qDebug() << "Underrun (buffer wrap) detected! Buffer size should be higher!";
 		}
 		firstSampleNanos = nanosNow;
@@ -117,8 +125,8 @@ void WinMMAudioStream::processingThread(void *userData) {
 			memset(out + rendered * FRAME_SIZE, 0, (frameCount - rendered) * FRAME_SIZE);
 		}
 		renderPos += frameCount;
-		if (renderPos >= FRAMES_IN_BUFFER) {
-			renderPos -= FRAMES_IN_BUFFER;
+		if (renderPos >= stream->bufferSize) {
+			renderPos -= stream->bufferSize;
 		}
 	}
 	stream->pendingClose = false;
@@ -129,7 +137,7 @@ bool WinMMAudioStream::start(int deviceIndex) {
 	if (buffer == NULL) {
 		return false;
 	}
-	memset(buffer, 0, FRAME_SIZE * FRAMES_IN_BUFFER);
+	memset(buffer, 0, FRAME_SIZE * bufferSize);
 	if (hWaveOut != NULL) {
 		close();
 	}
@@ -151,7 +159,7 @@ bool WinMMAudioStream::start(int deviceIndex) {
 	}
 
 	//	Prepare header
-	WaveHdr.dwBufferLength = FRAME_SIZE * FRAMES_IN_BUFFER;
+	WaveHdr.dwBufferLength = FRAME_SIZE * bufferSize;
 	WaveHdr.lpData = (LPSTR)buffer;
 	WaveHdr.dwFlags = WHDR_BEGINLOOP | WHDR_ENDLOOP;
 	WaveHdr.dwLoops = -1;
@@ -192,7 +200,7 @@ void WinMMAudioStream::close() {
 	return;
 }
 
-WinMMAudioDevice::WinMMAudioDevice(WinMMAudioDriver *driver, int useDeviceIndex,
+WinMMAudioDevice::WinMMAudioDevice(const WinMMAudioDriver * const driver, int useDeviceIndex,
 																	 QString useDeviceName) :
 	AudioDevice(driver, QString::number(useDeviceIndex), useDeviceName),
 	deviceIndex(useDeviceIndex) {
@@ -200,7 +208,7 @@ WinMMAudioDevice::WinMMAudioDevice(WinMMAudioDriver *driver, int useDeviceIndex,
 
 WinMMAudioStream *WinMMAudioDevice::startAudioStream(QSynth *synth,
 																										 unsigned int sampleRate) const {
-	WinMMAudioStream *stream = new WinMMAudioStream(synth, sampleRate);
+	WinMMAudioStream *stream = new WinMMAudioStream(this, synth, sampleRate);
 	if (stream->start(deviceIndex)) {
 		return stream;
 	}
@@ -209,12 +217,15 @@ WinMMAudioStream *WinMMAudioDevice::startAudioStream(QSynth *synth,
 }
 
 WinMMAudioDriver::WinMMAudioDriver(Master *master) : AudioDriver("waveout", "WinMMAudio") {
+	Q_UNUSED(master);
+
+	loadAudioSettings();
 }
 
 WinMMAudioDriver::~WinMMAudioDriver() {
 }
 
-QList<AudioDevice *> WinMMAudioDriver::getDeviceList() {
+QList<AudioDevice *> WinMMAudioDriver::getDeviceList() const {
 	QList<AudioDevice *> deviceList;
 	UINT deviceCount = waveOutGetNumDevs();
 	for(UINT deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
@@ -226,4 +237,22 @@ QList<AudioDevice *> WinMMAudioDriver::getDeviceList() {
 		deviceList.append(new WinMMAudioDevice(this, deviceIndex, deviceInfo.szPname));
 	}
 	return deviceList;
+}
+
+void WinMMAudioDriver::validateAudioSettings() {
+	if (midiLatency == 0) {
+		midiLatency = DEFAULT_MIDI_LATENCY;
+	}
+	if (audioLatency == 0) {
+		audioLatency = DEFAULT_AUDIO_LATENCY;
+	}
+	if (chunkLen == 0) {
+		chunkLen = DEFAULT_CHUNK_MS;
+	}
+	if (audioLatency <= SAFE_MS) {
+		audioLatency = SAFE_MS + 1;
+	}
+	if (chunkLen > (audioLatency - SAFE_MS)) {
+		chunkLen = audioLatency - SAFE_MS;
+	}
 }

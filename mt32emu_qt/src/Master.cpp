@@ -51,15 +51,15 @@ void Master::init() {
 	if (INSTANCE == NULL) {
 		INSTANCE = &master;
 		INSTANCE->moveToThread(QCoreApplication::instance()->thread());
-		INSTANCE->initAudioDrivers();
-		INSTANCE->initMidiDrivers();
-		INSTANCE->lastAudioDeviceScan = -4 * MasterClock::NANOS_PER_SECOND;
-		INSTANCE->getAudioDevices();
-
 		INSTANCE->settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
 		INSTANCE->romDir = INSTANCE->settings->value("Master/romDir", "./").toString();
 		INSTANCE->defaultAudioDriverId = INSTANCE->settings->value("Master/DefaultAudioDriver").toString();
 		INSTANCE->defaultAudioDeviceName = INSTANCE->settings->value("Master/DefaultAudioDevice").toString();
+
+		INSTANCE->initAudioDrivers();
+		INSTANCE->initMidiDrivers();
+		INSTANCE->lastAudioDeviceScan = -4 * MasterClock::NANOS_PER_SECOND;
+		INSTANCE->getAudioDevices();
 
 		qRegisterMetaType<MidiDriver *>("MidiDriver*");
 		qRegisterMetaType<MidiSession *>("MidiSession*");

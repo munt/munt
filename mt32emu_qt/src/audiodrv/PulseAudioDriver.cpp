@@ -31,9 +31,8 @@ using namespace MT32Emu;
 #define USE_DYNAMIC_LOADING
 
 static const int FRAME_SIZE = 4; // Stereo, 16-bit
-static const int FRAMES_IN_BUFFER = 32 * 10;
-// Latency for MIDI processing
-static const MasterClockNanos latency = 300 * MasterClock::NANOS_PER_MILLISECOND;
+static const unsigned int DEFAULT_CHUNK_MS = 10;
+static const unsigned int DEFAULT_MIDI_LATENCY = 300;
 
 static const char PA_LIB_NAME[] = "libpulse-simple.so"; // PulseAudio library filename
 
@@ -119,11 +118,14 @@ static bool loadLibrary(bool loadNeeded) {
 	return true;
 }
 
-PulseAudioStream::PulseAudioStream(QSynth *useSynth, unsigned int useSampleRate) :
-	synth(useSynth), sampleRate(useSampleRate), stream(NULL),
+PulseAudioStream::PulseAudioStream(const AudioDevice *device, QSynth *useSynth,
+	unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL),
 	sampleCount(0), pendingClose(false)
 {
-	buffer = new Bit16s[2 * FRAMES_IN_BUFFER];
+	unsigned int unused;
+	device->driver->getAudioSettings(&bufferSize, &unused, &midiLatency);
+	bufferSize *= sampleRate / 1000 /* ms per sec*/;
+	buffer = new Bit16s[2 * bufferSize];
 }
 
 PulseAudioStream::~PulseAudioStream() {
@@ -141,15 +143,15 @@ void* PulseAudioStream::processingThread(void *userData) {
 #ifdef USE_PA_TIMING
 		double realSampleRate = driver->sampleRate;
 		MasterClockNanos realSampleTime = MasterClock::getClockNanos() + _pa_simple_get_latency(driver->stream, &error) * MasterClock::NANOS_PER_MICROSECOND;
-		MasterClockNanos firstSampleNanos = realSampleTime - latency; // MIDI latency + total stream latency
+		MasterClockNanos firstSampleNanos = realSampleTime - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream latency
 #else
 		double realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
 		MasterClockNanos realSampleTime = MasterClockNanos(driver->sampleCount / (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
-		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) - latency; // MIDI latency only
+		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
 #endif
-		driver->synth->render(driver->buffer, FRAMES_IN_BUFFER,
+		driver->synth->render(driver->buffer, driver->bufferSize,
 			firstSampleNanos, realSampleRate);
-		if (_pa_simple_write(driver->stream, driver->buffer, FRAMES_IN_BUFFER * FRAME_SIZE, &error) < 0) {
+		if (_pa_simple_write(driver->stream, driver->buffer, driver->bufferSize * FRAME_SIZE, &error) < 0) {
 			qDebug() << "pa_simple_write() failed:" << _pa_strerror(error);
 			_pa_simple_free(driver->stream);
 			driver->stream = NULL;
@@ -157,7 +159,7 @@ void* PulseAudioStream::processingThread(void *userData) {
 			driver->synth->close();
 			return NULL;
 		}
-		driver->sampleCount += FRAMES_IN_BUFFER;
+		driver->sampleCount += driver->bufferSize;
 	}
 	driver->pendingClose = false;
 	return NULL;
@@ -168,7 +170,7 @@ bool PulseAudioStream::start() {
 	if (buffer == NULL) {
 		return false;
 	}
-	memset(buffer, 0, FRAME_SIZE * FRAMES_IN_BUFFER);
+	memset(buffer, 0, FRAME_SIZE * bufferSize);
 	if (stream != NULL) {
 		close();
 	}
@@ -191,13 +193,13 @@ bool PulseAudioStream::start() {
 	// Start playing 1 sec to fill PulseAudio buffers
 	int initFrames = sampleRate;
 	while (initFrames > 0) {
-		if (_pa_simple_write(stream, buffer, FRAME_SIZE * FRAMES_IN_BUFFER, &error) < 0) {
+		if (_pa_simple_write(stream, buffer, FRAME_SIZE * bufferSize, &error) < 0) {
 			qDebug() << "pa_simple_write() failed:" << _pa_strerror(error);
 			_pa_simple_free(stream); 
 			stream = NULL;
 			return false;
 		}
-		initFrames -= FRAMES_IN_BUFFER;
+		initFrames -= bufferSize;
 	}
 	pthread_t threadID;
 	if((error = pthread_create(&threadID, NULL, processingThread, this))) {
@@ -224,11 +226,11 @@ void PulseAudioStream::close() {
 	return;
 }
 
-PulseAudioDefaultDevice::PulseAudioDefaultDevice(PulseAudioDriver *driver) : AudioDevice(driver, "default", "Default") {
+PulseAudioDefaultDevice::PulseAudioDefaultDevice(PulseAudioDriver const * const driver) : AudioDevice(driver, "default", "Default") {
 }
 
 PulseAudioStream *PulseAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
-	PulseAudioStream *stream = new PulseAudioStream(synth, sampleRate);
+	PulseAudioStream *stream = new PulseAudioStream(this, synth, sampleRate);
 	if (stream->start()) {
 		return stream;
 	}
@@ -238,7 +240,9 @@ PulseAudioStream *PulseAudioDefaultDevice::startAudioStream(QSynth *synth, unsig
 
 PulseAudioDriver::PulseAudioDriver(Master *master) : AudioDriver("pulseaudio", "PulseAudio") {
 	Q_UNUSED(master);
+
 	isLibraryFound = loadLibrary(true);
+	loadAudioSettings();
 }
 
 PulseAudioDriver::~PulseAudioDriver() {
@@ -247,10 +251,19 @@ PulseAudioDriver::~PulseAudioDriver() {
 	}
 }
 
-QList<AudioDevice *> PulseAudioDriver::getDeviceList() {
+QList<AudioDevice *> PulseAudioDriver::getDeviceList() const {
 	QList<AudioDevice *> deviceList;
 	if (isLibraryFound) {
 		deviceList.append(new PulseAudioDefaultDevice(this));
 	}
 	return deviceList;
+}
+
+void PulseAudioDriver::validateAudioSettings() {
+	if (midiLatency == 0) {
+		midiLatency = DEFAULT_MIDI_LATENCY;
+	}
+	if (chunkLen == 0) {
+		chunkLen = DEFAULT_CHUNK_MS;
+	}
 }

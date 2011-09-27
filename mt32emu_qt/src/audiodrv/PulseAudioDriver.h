@@ -16,20 +16,20 @@ class PulseAudioDriver;
 
 class PulseAudioStream : public AudioStream {
 private:
+	unsigned int bufferSize;
+	unsigned int midiLatency;
 	ClockSync clockSync;
 	QSynth *synth;
 	unsigned int sampleRate;
-	int currentDeviceIndex;
 	MT32Emu::Bit16s *buffer;
 	pa_simple *stream;
-	// The number of nanos by which to delay (MIDI) events to help ensure accurate relative timing.
 	qint64 sampleCount;
 	bool pendingClose;
 
 	static void* processingThread(void *);
 
 public:
-	PulseAudioStream(QSynth *useSynth, unsigned int useSampleRate);
+	PulseAudioStream(const AudioDevice *device, QSynth *useSynth, unsigned int useSampleRate);
 	~PulseAudioStream();
 	bool start();
 	void close();
@@ -37,7 +37,7 @@ public:
 
 class PulseAudioDefaultDevice : public AudioDevice {
 friend class PulseAudioDriver;
-	PulseAudioDefaultDevice(PulseAudioDriver *driver);
+	PulseAudioDefaultDevice(PulseAudioDriver const * const driver);
 public:
 	PulseAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
@@ -45,10 +45,11 @@ public:
 class PulseAudioDriver : public AudioDriver {
 private:
 	bool isLibraryFound;
+	void validateAudioSettings();
 public:
 	PulseAudioDriver(Master *useMaster);
 	~PulseAudioDriver();
-	QList<AudioDevice *> getDeviceList();
+	QList<AudioDevice *> getDeviceList() const;
 };
 
 #endif
