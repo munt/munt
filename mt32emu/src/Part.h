@@ -106,6 +106,8 @@ public:
 
 	// These are rather specialised, and should probably only be used by PartialManager
 	bool abortFirstPoly(PolyState polyState);
+	// Abort the first poly in PolyState_HELD, or if none exists, the first active poly in any state.
+	bool abortFirstPolyPreferHeld();
 	bool abortFirstPoly();
 };
 

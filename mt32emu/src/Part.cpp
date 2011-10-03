@@ -466,6 +466,13 @@ bool Part::abortFirstPoly(PolyState polyState) {
 	return false;
 }
 
+bool Part::abortFirstPolyPreferHeld() {
+	if (abortFirstPoly(POLY_Held)) {
+		return true;
+	}
+	return abortFirstPoly();
+}
+
 bool Part::abortFirstPoly() {
 	if (activePolys.empty()) {
 		return false;
@@ -475,15 +482,16 @@ bool Part::abortFirstPoly() {
 }
 
 void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhythmTemp, unsigned int midiKey, unsigned int key, unsigned int velocity) {
-	if ((patchTemp->patch.assignMode & 2) == 0) {
-		// Single-assign mode
-		abortFirstPoly(key);
-	}
-
+	// CONFIRMED: Even in single-assign mode, we don't abort playing polys if the timbre to play is completely muted.
 	unsigned int needPartials = cache[0].partialCount;
 	if (needPartials == 0) {
 		synth->printDebug("%s (%s): Completely muted instrument", name, currentInstr);
 		return;
+	}
+
+	if ((patchTemp->patch.assignMode & 2) == 0) {
+		// Single-assign mode
+		abortFirstPoly(key);
 	}
 
 	if (!synth->partialManager->freePartials(needPartials, partNum)) {
