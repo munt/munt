@@ -420,7 +420,7 @@ bool Synth::open(SynthProperties &useProp) {
 	prerenderReadIx = prerenderWriteIx = 0;
 	myProp = useProp;
 #if MT32EMU_MONITOR_INIT
-	synth->printDebug("Initialising Constant Tables");
+	printDebug("Initialising Constant Tables");
 #endif
 	tables.init();
 #if !MT32EMU_REDUCE_REVERB_MEMORY

@@ -30,7 +30,8 @@ private:
 	Partial *partialTable[MT32EMU_MAX_PARTIALS];
 	Bit8u numReservedPartialsForPart[9];
 
-	bool abortWhereReserveExceeded(PolyState polyState, int minPart);
+	bool abortFirstReleasingPolyWhereReserveExceeded(int minPart);
+	bool abortFirstPolyPreferHeldWhereReserveExceeded(int minPart);
 
 public:
 
