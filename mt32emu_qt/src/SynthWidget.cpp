@@ -48,7 +48,8 @@ void SynthWidget::refreshAudioDeviceList(Master *master, const AudioDevice *useA
 	while(audioDeviceIt.hasNext()) {
 		AudioDevice *audioDevice = audioDeviceIt.next();
 		handleAudioDeviceAdded(audioDevice);
-		if (useAudioDevice->driver->id == audioDevice->driver->id
+		if (useAudioDevice != NULL
+			&& useAudioDevice->driver->id == audioDevice->driver->id
 			&& useAudioDevice->name == audioDevice->name) {
 			defaultAudioDeviceIndex = audioDeviceIndex;
 		}
@@ -77,8 +78,10 @@ void SynthWidget::handleAudioDeviceRemoved(AudioDevice *device) {
 
 void SynthWidget::handleAudioDeviceIndexChanged(int audioDeviceIndex) {
 	AudioDevice *currentAudioDevice = ui->audioDeviceComboBox->itemData(audioDeviceIndex).value<AudioDevice *>();
-	synthRoute->setAudioDevice(currentAudioDevice);
-	Master::getInstance()->setDefaultAudioDevice(currentAudioDevice->driver->id, currentAudioDevice->name);
+	if (currentAudioDevice != NULL) {
+		synthRoute->setAudioDevice(currentAudioDevice);
+		Master::getInstance()->setDefaultAudioDevice(currentAudioDevice->driver->id, currentAudioDevice->name);
+	}
 }
 
 void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
