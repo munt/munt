@@ -22,7 +22,7 @@ private:
 	HWAVEOUT hWaveOut;
 	WAVEHDR	 WaveHdr;
 	MT32Emu::Bit16s *buffer;
-	bool pendingClose;
+	bool volatile pendingClose;
 
 	static void processingThread(void *);
 
