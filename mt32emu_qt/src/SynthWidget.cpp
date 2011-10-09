@@ -25,6 +25,9 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	ui(new Ui::SynthWidget) {
 	ui->setupUi(this);
 	refreshAudioDeviceList(master, useAudioDevice);
+	if (ui->audioDeviceComboBox->count() != 0) {
+		ui->audioProperties->setEnabled (true);
+	}
 
 	connect(synthRoute, SIGNAL(stateChanged(SynthRouteState)), SLOT(handleSynthRouteState(SynthRouteState)));
 	connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(handleAudioDeviceIndexChanged(int)));
@@ -65,6 +68,11 @@ void SynthWidget::on_refreshButton_clicked() {
 		ui->audioDeviceComboBox->removeItem(--i);
 	}
 	refreshAudioDeviceList(Master::getInstance(), currentDevice);
+	if (ui->audioDeviceComboBox->count() != 0) {
+		ui->audioProperties->setEnabled (true);
+	} else {
+		ui->audioProperties->setEnabled (false);
+	}
 	connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(handleAudioDeviceIndexChanged(int)));
 }
 
