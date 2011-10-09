@@ -57,6 +57,16 @@ void SynthWidget::refreshAudioDeviceList(Master *master, const AudioDevice *useA
 	ui->audioDeviceComboBox->setCurrentIndex(defaultAudioDeviceIndex);
 }
 
+void SynthWidget::on_refreshButton_clicked() {
+	disconnect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(handleAudioDeviceIndexChanged(int)));
+	AudioDevice *currentDevice = qVariantValue<AudioDevice *> (ui->audioDeviceComboBox->itemData(ui->audioDeviceComboBox->currentIndex()));
+	for (int i = ui->audioDeviceComboBox->count(); i > 0;) {
+		ui->audioDeviceComboBox->removeItem(--i);
+	}
+	refreshAudioDeviceList(Master::getInstance(), currentDevice);
+	connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(handleAudioDeviceIndexChanged(int)));
+}
+
 void SynthWidget::handleAudioDeviceAdded(AudioDevice *device) {
 	ui->audioDeviceComboBox->addItem(device->driver->name + ": " + device->name, qVariantFromValue(device));
 }

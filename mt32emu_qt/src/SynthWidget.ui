@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>575</width>
+    <width>612</width>
     <height>260</height>
    </rect>
   </property>
@@ -118,27 +118,68 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="QFrame" name="frame_2">
+         <widget class="QFrame" name="frame_3">
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
           </property>
           <property name="frameShadow">
            <enum>QFrame::Raised</enum>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_6">
-           <item>
-            <layout class="QFormLayout" name="formLayout">
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_5">
-               <property name="text">
-                <string>Device:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QComboBox" name="audioDeviceComboBox"/>
-             </item>
-            </layout>
+          <layout class="QFormLayout" name="formLayout">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <item row="0" column="0" colspan="2">
+            <widget class="QFrame" name="frame_2">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <layout class="QHBoxLayout" name="horizontalLayout_5">
+                <item>
+                 <widget class="QLabel" name="label_5">
+                  <property name="text">
+                   <string>Device:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="audioDeviceComboBox"/>
+                </item>
+                <item>
+                 <widget class="QToolButton" name="refreshButton">
+                  <property name="toolTip">
+                   <string>Refresh device list</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="Pic.qrc">
+                    <normaloff>:/Pic/Refresh.bmp</normaloff>:/Pic/Refresh.bmp</iconset>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -194,6 +235,20 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <tabstops>
+  <tabstop>midiListView</tabstop>
+  <tabstop>midiProperties</tabstop>
+  <tabstop>midiAdd</tabstop>
+  <tabstop>midiRemove</tabstop>
+  <tabstop>synthPropertiesButton</tabstop>
+  <tabstop>audioDeviceComboBox</tabstop>
+  <tabstop>refreshButton</tabstop>
+  <tabstop>audioProperties</tabstop>
+  <tabstop>startButton</tabstop>
+  <tabstop>stopButton</tabstop>
+ </tabstops>
+ <resources>
+  <include location="Pic.qrc"/>
+ </resources>
  <connections/>
 </ui>

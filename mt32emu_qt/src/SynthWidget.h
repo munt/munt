@@ -33,6 +33,7 @@ private slots:
 	void on_startButton_clicked();
 	void on_synthPropertiesButton_clicked();
 	void on_stopButton_clicked();
+	void on_refreshButton_clicked();
 	void handleSynthRouteState(SynthRouteState state);
 	void handleAudioDeviceIndexChanged(int audioDeviceIndex);
 	void handleAudioDeviceAdded(AudioDevice *audioDevice);
