@@ -171,8 +171,8 @@
                    <string>Refresh device list</string>
                   </property>
                   <property name="icon">
-                   <iconset resource="Pic.qrc">
-                    <normaloff>:/Pic/Refresh.bmp</normaloff>:/Pic/Refresh.bmp</iconset>
+                   <iconset resource="images.qrc">
+                    <normaloff>:/images/Refresh.bmp</normaloff>:/images/Refresh.bmp</iconset>
                   </property>
                  </widget>
                 </item>
@@ -248,7 +248,7 @@
   <tabstop>stopButton</tabstop>
  </tabstops>
  <resources>
-  <include location="Pic.qrc"/>
+  <include location="images.qrc"/>
  </resources>
  <connections/>
 </ui>

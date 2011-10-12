@@ -37,6 +37,12 @@ int main(int argv, char **args)
 	MasterClock::init();
 	Master::init();
 	{
+		if (QSystemTrayIcon::isSystemTrayAvailable()) {
+			QSystemTrayIcon *trayIcon = new QSystemTrayIcon(QIcon(":/images/TrayIcon.bmp"));
+			trayIcon->setToolTip("Munt: MT-32 Emulator");
+			trayIcon->show();
+			Master::getInstance()->setTrayIcon(trayIcon);
+		}
 		MainWindow mainWindow(Master::getInstance());
 		mainWindow.show();
 		app.exec();

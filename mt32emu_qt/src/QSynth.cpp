@@ -56,8 +56,22 @@ QSynth::~QSynth() {
 }
 
 int QSynth::handleReport(ReportType type, const void *reportData) {
-	Q_UNUSED(type);
-	Q_UNUSED(reportData);
+	Master *master = Master::getInstance();
+
+	switch(type) {
+	case MT32Emu::ReportType_errorControlROM:
+		master->showBalloon("Error", "Couldn't find Control ROM file");
+		break;
+	case MT32Emu::ReportType_errorPCMROM:
+		master->showBalloon("Error", "Couldn't open PCM ROM file");
+		break;
+	case MT32Emu::ReportType_lcdMessage:
+		master->showBalloon("LCD-Message:", (const char *)reportData);
+		break;
+	default:
+		qDebug() << "Report:" << type;
+		break;
+	}
 	return 0;
 }
 

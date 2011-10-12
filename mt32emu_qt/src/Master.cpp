@@ -14,6 +14,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QSystemTrayIcon>
+
 #include "Master.h"
 #include "MasterClock.h"
 #include "MidiSession.h"
@@ -53,6 +55,7 @@ void Master::init() {
 		INSTANCE->moveToThread(QCoreApplication::instance()->thread());
 		INSTANCE->settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
 		INSTANCE->romDir = INSTANCE->settings->value("Master/romDir", "./").toString();
+		INSTANCE->trayIcon = NULL;
 		INSTANCE->defaultAudioDriverId = INSTANCE->settings->value("Master/DefaultAudioDriver").toString();
 		INSTANCE->defaultAudioDeviceName = INSTANCE->settings->value("Master/DefaultAudioDevice").toString();
 
@@ -69,6 +72,8 @@ void Master::init() {
 }
 
 void Master::deinit() {
+	if (INSTANCE->trayIcon != NULL)
+		delete INSTANCE->trayIcon;
 	delete INSTANCE->settings;
 	if (INSTANCE->midiDriver != NULL) {
 		INSTANCE->midiDriver->stop();
@@ -162,6 +167,18 @@ QDir Master::getROMDir() {
 void Master::setROMDir(QDir newROMDir) {
 	romDir = newROMDir;
 	settings->setValue("Master/romDir", romDir.absolutePath());
+}
+
+QSystemTrayIcon *Master::getTrayIcon() {
+	return trayIcon;
+}
+
+void Master::setTrayIcon(QSystemTrayIcon *trayIcon) {
+	INSTANCE->trayIcon = trayIcon;
+}
+
+void Master::showBalloon(const QString &title, const QString &text) {
+	trayIcon->showMessage(title, text);
 }
 
 void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name) {

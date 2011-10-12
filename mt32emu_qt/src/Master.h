@@ -8,6 +8,7 @@
 class AudioDriver;
 class MidiDriver;
 class MidiSession;
+class QSystemTrayIcon;
 
 class Master : public QObject {
 	Q_OBJECT
@@ -21,6 +22,7 @@ private:
 
 	QSettings *settings;
 	QDir romDir;
+	QSystemTrayIcon *trayIcon;
 	QString defaultAudioDriverId;
 	QString defaultAudioDeviceName;
 	qint64 lastAudioDeviceScan;
@@ -37,8 +39,11 @@ public:
 	const QList<AudioDevice *> getAudioDevices();
 	void setDefaultAudioDevice(QString driverId, QString name);
 	void setROMDir(QDir romDir);
+	void setTrayIcon(QSystemTrayIcon *trayIcon);
 	QDir getROMDir();
+	QSystemTrayIcon *getTrayIcon();
 	QSettings *getSettings();
+	void showBalloon(const QString &title, const QString &text);
 
 	static Master *getInstance();
 
