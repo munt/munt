@@ -165,7 +165,7 @@ bool QSynth::openSynth() {
 	QString pathName = QDir::toNativeSeparators(Master::getInstance()->getROMDir().absolutePath());
 	pathName += QDir::separator();
 	QByteArray pathNameBytes = pathName.toUtf8();
-	SynthProperties synthProp = {sampleRate, true, true, 0, 0, 0, pathNameBytes, NULL, MT32_Report, NULL, NULL, NULL};
+	SynthProperties synthProp = {sampleRate, true, true, 0, 0, 0, pathNameBytes, this, MT32_Report, NULL, NULL, NULL};
 	if(synth->open(synthProp)) {
 		synth->setReverbEnabled(reverbEnabled);
 		synth->setDACInputMode(emuDACInputMode);
