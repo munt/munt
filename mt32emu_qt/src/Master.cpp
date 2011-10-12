@@ -177,7 +177,7 @@ void Master::setTrayIcon(QSystemTrayIcon *trayIcon) {
 	INSTANCE->trayIcon = trayIcon;
 }
 
-void Master::showBalloon(const QString &title, const QString &text) {
+void Master::reallyShowBalloon(const QString &title, const QString &text) {
 	trayIcon->showMessage(title, text);
 }
 
@@ -230,5 +230,15 @@ void Master::deleteMidiSession(MidiSession *midiSession) {
 	} else {
 		QMetaObject::invokeMethod(this, "reallyDeleteMidiSession", Qt::QueuedConnection,
 								  Q_ARG(MidiSession *, midiSession));
+	}
+}
+
+void Master::showBalloon(const QString &title, const QString &text) {
+	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
+		reallyShowBalloon(title, text);
+	} else {
+		QMetaObject::invokeMethod(this, "reallyShowBalloon", Qt::QueuedConnection,
+								  Q_ARG(const QString &, title),
+								  Q_ARG(const QString &, text));
 	}
 }

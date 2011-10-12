@@ -54,6 +54,7 @@ public:
 private slots:
 	void reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
 	void reallyDeleteMidiSession(MidiSession *midiSession);
+	void reallyShowBalloon(const QString &title, const QString &text);
 
 signals:
 	void synthRouteAdded(SynthRoute *route, const AudioDevice *audioDevice);
