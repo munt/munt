@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QSystemTrayIcon>
 
 #include "SynthWidget.h"
 
@@ -35,6 +36,7 @@ private slots:
 	void on_actionOptions_triggered();
 	void on_actionPlay_MIDI_file_triggered();
 	void on_actionTest_MIDI_Driver_toggled(bool );
+	void handleTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 };
 
 #endif // MAINWINDOW_H

@@ -31,6 +31,7 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	ui->setupUi(this);
 	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), this, SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
 	QObject::connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), this, SLOT(handleSynthRouteRemoved(SynthRoute *)));
+	connect(master->getTrayIcon(), SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(handleTrayIconActivated(QSystemTrayIcon::ActivationReason)));
 }
 
 MainWindow::~MainWindow()
@@ -101,5 +102,19 @@ void MainWindow::on_actionTest_MIDI_Driver_toggled(bool checked)
 			testMidiDriver = new TestMidiDriver(master);
 			testMidiDriver->start();
 		}
+	}
+}
+
+void MainWindow::handleTrayIconActivated(QSystemTrayIcon::ActivationReason reason) {
+	switch (reason) {
+	case QSystemTrayIcon::Context:
+		// Fall-through until implemented
+	case QSystemTrayIcon::DoubleClick:
+		// Fall-through until implemented
+	case QSystemTrayIcon::Trigger:
+		// Fall-through untill implemented
+	default:
+		setVisible(!isVisible());
+		break;
 	}
 }
