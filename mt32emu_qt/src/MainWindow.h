@@ -28,6 +28,7 @@ private:
 	Ui::MainWindow *ui;
 	Master *master;
 	MidiDriver *testMidiDriver;
+	void trayIconContextMenu();
 
 private slots:
 	void on_actionAbout_triggered();
