@@ -31,7 +31,8 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	ui->setupUi(this);
 	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), this, SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
 	QObject::connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), this, SLOT(handleSynthRouteRemoved(SynthRoute *)));
-	connect(master->getTrayIcon(), SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(handleTrayIconActivated(QSystemTrayIcon::ActivationReason)));
+	if (master->getTrayIcon() != NULL)
+		connect(master->getTrayIcon(), SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(handleTrayIconActivated(QSystemTrayIcon::ActivationReason)));
 }
 
 MainWindow::~MainWindow()
