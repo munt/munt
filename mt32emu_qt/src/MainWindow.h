@@ -37,6 +37,7 @@ private slots:
 	void on_actionOptions_triggered();
 	void on_actionPlay_MIDI_file_triggered();
 	void on_actionTest_MIDI_Driver_toggled(bool );
+	void showHideMainWindow();
 	void handleTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 };
 

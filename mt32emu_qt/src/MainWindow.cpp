@@ -110,8 +110,15 @@ void MainWindow::on_actionTest_MIDI_Driver_toggled(bool checked)
 
 void MainWindow::trayIconContextMenu() {
 	QMenu *menu = new QMenu(this);
+	QFont bold;
+	bold.setBold(true);
+	menu->addAction("Show/Hide", this, SLOT(showHideMainWindow()))->setFont(bold);
 	menu->addAction("Exit", this, SLOT(close()));
 	master->getTrayIcon()->setContextMenu(menu);
+}
+
+void MainWindow::showHideMainWindow() {
+	setVisible(!isVisible());
 }
 
 void MainWindow::handleTrayIconActivated(QSystemTrayIcon::ActivationReason reason) {
@@ -123,7 +130,7 @@ void MainWindow::handleTrayIconActivated(QSystemTrayIcon::ActivationReason reaso
 	case QSystemTrayIcon::Trigger:
 		// Fall-through untill implemented
 	default:
-		setVisible(!isVisible());
+		showHideMainWindow();
 		break;
 	}
 }
