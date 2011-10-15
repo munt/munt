@@ -20,6 +20,7 @@ set(mt32emu_qt_SOURCES
   src/QSynth.cpp
   src/SynthRoute.cpp
   src/SynthPropertiesDialog.cpp
+  src/AudioPropertiesDialog.cpp
   src/SynthWidget.cpp
 
   src/audiodrv/AudioDriver.cpp
@@ -44,6 +45,7 @@ set(mt32emu_qt_HEADERS
   src/MidiSession.h
   src/QSynth.h
   src/SynthPropertiesDialog.h
+  src/AudioPropertiesDialog.h
   src/SynthRoute.h
   src/SynthWidget.h
 
@@ -55,6 +57,7 @@ set(mt32emu_qt_HEADERS
 
 set(mt32emu_qt_FORMS
   src/MainWindow.ui
+  src/AudioPropertiesDialog.ui
   src/SynthPropertiesDialog.ui
   src/SynthWidget.ui
 )
