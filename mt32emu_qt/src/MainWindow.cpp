@@ -113,8 +113,17 @@ void MainWindow::trayIconContextMenu() {
 	QFont bold;
 	bold.setBold(true);
 	menu->addAction("Show/Hide", this, SLOT(showHideMainWindow()))->setFont(bold);
+	QAction *a = menu->addAction("Start iconized", this, SLOT(toggleStartIconized()));
+	a->setCheckable(true);
+	a->setChecked(master->getSettings()->value("Master/startIconized", "1").toBool());
 	menu->addAction("Exit", this, SLOT(close()));
 	master->getTrayIcon()->setContextMenu(menu);
+}
+
+void MainWindow::toggleStartIconized() {
+	QSettings *s = master->getSettings();
+	bool b = !s->value("Master/startIconized", "1").toBool();
+	s->setValue("Master/startIconized", QString().setNum(b));
 }
 
 void MainWindow::showHideMainWindow() {
