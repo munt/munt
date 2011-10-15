@@ -26,7 +26,7 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	ui->setupUi(this);
 	refreshAudioDeviceList(master, useAudioDevice);
 	if (ui->audioDeviceComboBox->count() != 0) {
-		ui->audioProperties->setEnabled (true);
+		ui->audioPropertiesButton->setEnabled (true);
 	}
 
 	connect(synthRoute, SIGNAL(stateChanged(SynthRouteState)), SLOT(handleSynthRouteState(SynthRouteState)));
@@ -69,9 +69,9 @@ void SynthWidget::on_refreshButton_clicked() {
 	}
 	refreshAudioDeviceList(Master::getInstance(), currentDevice);
 	if (ui->audioDeviceComboBox->count() != 0) {
-		ui->audioProperties->setEnabled (true);
+		ui->audioPropertiesButton->setEnabled (true);
 	} else {
-		ui->audioProperties->setEnabled (false);
+		ui->audioPropertiesButton->setEnabled (false);
 	}
 	connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(handleAudioDeviceIndexChanged(int)));
 }
@@ -118,6 +118,21 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 		ui->audioDeviceComboBox->setEnabled(true);
 		ui->statusLabel->setText("Closed");
 		break;
+	}
+}
+
+void SynthWidget::on_audioPropertiesButton_clicked()
+{
+	unsigned int chunkLen;
+	unsigned int audioLatency;
+	unsigned int midiLatency;
+
+	AudioDevice *device = ui->audioDeviceComboBox->itemData(ui->audioDeviceComboBox->currentIndex()).value<AudioDevice *>();
+	device->driver->getAudioSettings(&chunkLen, &audioLatency, &midiLatency);
+	apd.setData(chunkLen, audioLatency, midiLatency);
+	if (QDialog::Accepted == apd.exec()) {
+		apd.getData(chunkLen, audioLatency, midiLatency);
+		const_cast<AudioDriver *> (device->driver)->setAudioSettings(&chunkLen, &audioLatency, &midiLatency);
 	}
 }
 

@@ -185,7 +185,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="audioProperties">
+         <widget class="QPushButton" name="audioPropertiesButton">
           <property name="enabled">
            <bool>false</bool>
           </property>
@@ -243,7 +243,7 @@
   <tabstop>synthPropertiesButton</tabstop>
   <tabstop>audioDeviceComboBox</tabstop>
   <tabstop>refreshButton</tabstop>
-  <tabstop>audioProperties</tabstop>
+  <tabstop>audioPropertiesButton</tabstop>
   <tabstop>startButton</tabstop>
   <tabstop>stopButton</tabstop>
  </tabstops>
