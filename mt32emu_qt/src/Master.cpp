@@ -79,10 +79,19 @@ void Master::deinit() {
 		INSTANCE->midiDriver->stop();
 		INSTANCE->midiDriver = NULL;
 	}
+	QMutableListIterator<SynthRoute *> synthRouteIt(INSTANCE->synthRoutes);
+	while(synthRouteIt.hasNext()) {
+		delete synthRouteIt.next();
+		synthRouteIt.remove();
+	}
+	QMutableListIterator<AudioDevice *> audioDeviceIt(INSTANCE->audioDevices);
+	while(audioDeviceIt.hasNext()) {
+		delete audioDeviceIt.next();
+		audioDeviceIt.remove();
+	}
 	QMutableListIterator<AudioDriver *> audioDriverIt(INSTANCE->audioDrivers);
 	while(audioDriverIt.hasNext()) {
-		AudioDriver *audioDriver = audioDriverIt.next();
-		delete audioDriver;
+		delete audioDriverIt.next();
 		audioDriverIt.remove();
 	}
 	INSTANCE = NULL;
