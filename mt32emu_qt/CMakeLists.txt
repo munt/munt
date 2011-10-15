@@ -28,6 +28,10 @@ set(mt32emu_qt_SOURCES
   src/mididrv/TestDriver.cpp
 )
 
+set(mt32emu_qt_RESOURCES
+  src/images.qrc
+)
+
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
   add_definitions(-DWITH_WIN32_MIDI_DRIVER -DWITH_WINMM_AUDIO_DRIVER)
   list(APPEND mt32emu_qt_SOURCES src/mididrv/Win32Driver.cpp)
@@ -118,6 +122,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor -ansi)
 endif()
 
+QT4_ADD_RESOURCES(mt32emu_qt_RC ${mt32emu_qt_RESOURCES})
 qt4_wrap_cpp(mt32emu_qt_HEADERS_MOC ${mt32emu_qt_HEADERS})
 qt4_wrap_ui(mt32emu_qt_FORMS_HEADERS ${mt32emu_qt_FORMS})
 
@@ -127,6 +132,7 @@ add_executable(mt32emu-qt
   ${mt32emu_qt_HEADERS_MOC}
   ${mt32emu_qt_FORMS_HEADERS}
   ${mt32emu_qt_SOURCES}
+  ${mt32emu_qt_RC}
 )
 
 target_link_libraries(mt32emu-qt

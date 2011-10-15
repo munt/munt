@@ -1,6 +1,6 @@
 <RCC>
-  <qresource prefix="images">
-    <file>Refresh.bmp</file>
-    <file>TrayIcon.bmp</file>
+  <qresource>
+    <file>images/Refresh.bmp</file>
+    <file>images/TrayIcon.bmp</file>
   </qresource>
 </RCC>
