@@ -18,8 +18,8 @@
 
 #include <windows.h>
 #include <process.h>
-#include "../MasterClock.h"
 
+#include "../MasterClock.h"
 #include "Win32Driver.h"
 
 static Win32MidiDriver *driver;
@@ -58,9 +58,10 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 				startMasterClock = (qint64)cds->dwData * MasterClock::NANOS_PER_MILLISECOND - MasterClock::getClockNanos();
 				// Process handshaking message
 				if (!newMidiSession || !disableReset) {
-					newMidiSession = Master::getInstance()->createMidiSession(driver, "Combined Win32msg Session");
+					newMidiSession = driver->master->createMidiSession(driver, "Combined Win32msg Session");
 				}
 				midiSession = newMidiSession;
+				driver->master->showBalloon("Connected application:", (const char *)&data[3]);
 				qDebug() << "Connected application" << (char *)&data[3];
 				qDebug() << "Session" << midiSession << "protocol version" << data[2];
 				if (!midiSession) {
@@ -115,6 +116,7 @@ void Win32MidiDriver::MessageLoop(void *) {
 }
 
 Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster) {
+	master = useMaster;
 	driver = this;
 }
 
