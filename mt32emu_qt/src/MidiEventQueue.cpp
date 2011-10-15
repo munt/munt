@@ -46,7 +46,7 @@ bool MidiEventQueue::pushEvent(SynthTimestamp timestamp, Bit32u msg, Bit8u *syse
 		endPos = newEndPos;
 	}
 	mutex.unlock();
-	return true;
+	return result;
 }
 
 const MidiEvent *MidiEventQueue::popEvent() {
