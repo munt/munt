@@ -28,9 +28,6 @@
 
 using namespace MT32Emu;
 
-// In samples per second.
-static const int SAMPLE_RATE = 32000;
-
 SynthRoute::SynthRoute(QObject *parent) : QObject(parent), state(SynthRouteState_CLOSED), qSynth(this), audioDevice(NULL), audioStream(NULL) {
 	sampleRate = SAMPLE_RATE;
 

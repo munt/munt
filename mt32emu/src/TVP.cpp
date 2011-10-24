@@ -47,7 +47,7 @@ static Bit16u keyToPitchTable[] = {
 
 TVP::TVP(const Partial *usePartial) :
 	partial(usePartial), system(&usePartial->getSynth()->mt32ram.system) {
-	unsigned int sampleRate = usePartial->getSynth()->myProp.sampleRate;
+	unsigned int sampleRate = usePartial->getSynth()->getSampleRate();
 	// We want to do processing 4000 times per second. FIXME: This is pretty arbitrary.
 	maxCounter = sampleRate / 4000;
 	// The timer runs at 500kHz. We only need to bother updating it every maxCounter samples, before we do processing.

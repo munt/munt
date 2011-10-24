@@ -32,8 +32,6 @@
 
 using namespace MT32Emu;
 
-static const int DEFAULT_SAMPLE_RATE = 32000;
-
 int MT32_Report(void *userData, ReportType type, const void *reportData) {
 	QSynth *qSynth = (QSynth *)userData;
 	return qSynth->handleReport(type, reportData);

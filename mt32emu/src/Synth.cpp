@@ -168,6 +168,10 @@ Synth::~Synth() {
 	for (int i = 0; i < 4; i++) {
 		delete reverbModels[i];
 	}
+unsigned int Synth::getSampleRate() const {
+	return SAMPLE_RATE;
+}
+
 }
 
 int Synth::report(ReportType type, const void *data) {
@@ -177,8 +181,6 @@ int Synth::report(ReportType type, const void *data) {
 	return 0;
 }
 
-unsigned int Synth::getSampleRate() const {
-	return myProp.sampleRate;
 }
 
 void Synth::printDebug(const char *fmt, ...) {

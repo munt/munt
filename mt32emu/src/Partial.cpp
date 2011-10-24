@@ -221,7 +221,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				break;
 			}
 			Bit32u pcmAddr = pcmWave->addr;
-			float positionDelta = freq * 2048.0f / synth->myProp.sampleRate;
+			float positionDelta = freq * 2048.0f / synth->getSampleRate();
 
 			// Linear interpolation
 			float firstSample = synth->pcmROMData[pcmAddr + intPCMPosition];
@@ -260,7 +260,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			}
 
 			// Wave length in samples
-			float waveLen = synth->myProp.sampleRate / freq;
+			float waveLen = synth->getSampleRate() / freq;
 
 			// Init cosineLen
 			float cosineLen = 0.5f * waveLen;

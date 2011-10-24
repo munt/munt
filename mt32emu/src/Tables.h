@@ -20,6 +20,9 @@
 
 namespace MT32Emu {
 
+// Sample rate to use in mixing
+const unsigned int SAMPLE_RATE = 32000;
+
 const int MIDDLEC = 60;
 
 class Synth;
