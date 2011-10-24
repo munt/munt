@@ -56,17 +56,20 @@ public:
 class ROMImage {
 private:
 	File *file;
-	ROMInfo *romInfo;
+	const ROMInfo *romInfo;
 
 public:
 
 	// Creates a ROMImage object given a ROMInfo and a File. Keeps a reference
 	// to the File and ROMInfo given, which must be freed separately by the user
 	// after the ROMImage is freed
-	static const ROMImage* makeROMImage(const File *file, const ROMInfo *romInfo);
+	static const ROMImage* makeROMImage(File *file);
 
 	// Must only be done after all Synths using the ROMImage are deleted
 	static void freeROMImage(const ROMImage *romImage);
+
+	File *getFile() const;
+	const ROMInfo *getROMInfo() const;
 };
 
 }
