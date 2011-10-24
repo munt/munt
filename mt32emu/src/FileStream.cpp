@@ -69,6 +69,8 @@ unsigned char* FileStream::getData() {
 	ifsp->seekg(0);
 	ifsp->read((char *)data, fileSize);
 	if ((size_t)ifsp->tellg() != fileSize) {
+		delete[] data;
+		data = NULL;
 		return NULL;
 	}
 	return data;
