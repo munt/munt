@@ -388,9 +388,8 @@ private:
 public:
 	static Bit8u calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum);
 
-	Synth();
-	// Sets callbacks for reporting various errors, information and debug messages
-	Synth(ReportHandler *useReportHandler);
+	// Optionally sets callbacks for reporting various errors, information and debug messages
+	Synth(ReportHandler *useReportHandler = NULL);
 	~Synth();
 
 	// Used to initialise the MT-32. Must be called before any other function.

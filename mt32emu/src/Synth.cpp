@@ -137,10 +137,6 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 	return checksum;
 }
 
-Synth::Synth() {
-	Synth(NULL);
-}
-
 Synth::Synth(ReportHandler *useReportHandler) {
 	isOpen = false;
 	reverbEnabled = true;
