@@ -228,7 +228,7 @@ bool QSynth::reset() {
 	synthMutex->lock();
 	synth->close();
 	delete synth;
-	synth = new Synth();
+	synth = new Synth(reportHandler);
 	if (!openSynth()) {
 		// We're now in a partially-open state - better to properly close.
 		close();
