@@ -162,7 +162,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	GOptionContext *context = g_option_context_new("- record MIDI played through the MT-32 emulator to a file");
 	g_option_context_add_main_entries(context, entries, NULL);
 	GError *error = NULL;
-	bool parseSuccess = g_option_context_parse(context, &argc, &argv, &error);
+	bool parseSuccess = g_option_context_parse(context, &argc, &argv, &error) != 0;
 	if (!parseSuccess) {
 		fprintf(stderr, "Option parsing failed: %s\n", error->message);
 	}
@@ -239,7 +239,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 }
 
 static long secondsToSamples(double seconds, int sampleRate) {
-	return seconds * sampleRate;
+	return (long)seconds * sampleRate;
 }
 
 static bool writeWAVEHeader(FILE *outputFile, int sampleRate) {
@@ -469,9 +469,9 @@ static void playSMF(smf_t *smf, const Options &options, State &state) {
 				fprintf(stdout, "Metadata: %s\n", decoded);
 			}
 		} else if (smf_event_is_sysex(event) || smf_event_is_sysex_continuation(event))  {
-			bool unterminated = smf_event_is_unterminated_sysex(event);
+			bool unterminated = smf_event_is_unterminated_sysex(event) != 0;
 			bool addUnterminated = unterminated;
-			bool continuation = smf_event_is_sysex_continuation(event);
+			bool continuation = smf_event_is_sysex_continuation(event) != 0;
 			unsigned char *buf;
 			int len;
 			if (continuation) {
