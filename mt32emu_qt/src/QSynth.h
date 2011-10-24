@@ -13,6 +13,11 @@ enum SynthState {
 	SynthState_CLOSING
 };
 
+class QReportHandler : public MT32Emu::ReportHandler {
+public:
+	void showLCDMessage(const char *message);
+};
+
 class QSynth : public QObject {
 	Q_OBJECT
 private:
@@ -32,6 +37,7 @@ private:
 	quint64 debugLastEventSampleIx;
 
 	MT32Emu::Synth *synth;
+	QReportHandler *reportHandler;
 
 	bool openSynth();
 	void setState(SynthState newState);

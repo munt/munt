@@ -617,13 +617,34 @@ int main(int argc, char *argv[]) {
 	}
 	displayOutputFilename = g_filename_display_name(outputFilename);
 
-	MT32Emu::SynthProperties synthProperties = {0};
-	synthProperties.sampleRate = options.sampleRate;
-	synthProperties.useReverb = true;
-	synthProperties.useDefaultReverb = true;
-	synthProperties.baseDir = options.romDir;
+	gchar *baseDir = options.romDir;
+	gchar pathName[2048];
+	MT32Emu::FileStream controlROMFile;
+	MT32Emu::FileStream pcmROMFile;
+	g_strlcpy(pathName, baseDir, 2048);
+	g_strlcat(pathName, "CM32L_CONTROL.ROM", 2048);
+	if (!controlROMFile.open(pathName)) {
+		g_strlcpy(pathName, baseDir, 2048);
+		g_strlcat(pathName, "MT32_CONTROL.ROM", 2048);
+		if (!controlROMFile.open(pathName)) {
+			fprintf(stderr, "Control ROM not found.\n");
+			return 1;
+		}
+	}
+	g_strlcpy(pathName, baseDir, 2048);
+	g_strlcat(pathName, "CM32L_PCM.ROM", 2048);
+	if (!pcmROMFile.open(pathName)) {
+		g_strlcpy(pathName, baseDir, 2048);
+		g_strlcat(pathName, "MT32_PCM.ROM", 2048);
+		if (!pcmROMFile.open(pathName)) {
+			fprintf(stderr, "PCM ROM not found.\n");
+			return 1;
+		}
+	}
+	const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
+	const MT32Emu::ROMImage *pcmROMImage = MT32Emu::ROMImage::makeROMImage(&pcmROMFile);
 	MT32Emu::Synth *synth = new MT32Emu::Synth();
-	if (synth->open(synthProperties)) {
+	if (synth->open(*controlROMImage, *pcmROMImage)) {
 		synth->setDACInputMode(options.dacInputMode);
 
 		FILE *outputFile;

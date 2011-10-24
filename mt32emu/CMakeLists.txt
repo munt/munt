@@ -7,11 +7,13 @@ set(libmt32emu_VERSION_PATCH 3)
 # Only headers that need to be installed should be listed here:
 set(libmt32emu_HEADERS
   src/File.h
+  src/FileStream.h
   src/mt32emu.h
   src/LA32Ramp.h
   src/Part.h
   src/Partial.h
   src/Poly.h
+  src/ROMInfo.h
   src/Structures.h
   src/Synth.h
   src/Tables.h

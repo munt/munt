@@ -101,6 +101,7 @@ const unsigned int MAX_PRERENDER_SAMPLES = 1024;
 
 #include "Structures.h"
 #include "File.h"
+#include "FileStream.h"
 #include "Tables.h"
 #include "Poly.h"
 #include "LA32Ramp.h"
@@ -109,6 +110,7 @@ const unsigned int MAX_PRERENDER_SAMPLES = 1024;
 #include "TVF.h"
 #include "Partial.h"
 #include "Part.h"
+#include "ROMInfo.h"
 #include "Synth.h"
 
 #endif

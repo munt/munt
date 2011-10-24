@@ -32,45 +32,26 @@
 
 using namespace MT32Emu;
 
-int MT32_Report(void *userData, ReportType type, const void *reportData) {
-	QSynth *qSynth = (QSynth *)userData;
-	return qSynth->handleReport(type, reportData);
+void QReportHandler::showLCDMessage(const char *message) {
+	Master::getInstance()->showBalloon("LCD-Message:", message);
 }
 
 QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED) {
-	sampleRate = DEFAULT_SAMPLE_RATE;
+	sampleRate = SAMPLE_RATE;
 	reverbEnabled = true;
 	emuDACInputMode = DACInputMode_NICE;
 	isOpen = false;
 	synthMutex = new QMutex(QMutex::Recursive);
 	midiEventQueue = new MidiEventQueue;
-	synth = new Synth();
+	reportHandler = new QReportHandler;
+	synth = new Synth(reportHandler);
 }
 
 QSynth::~QSynth() {
 	delete synth;
+	delete reportHandler;
 	delete midiEventQueue;
 	delete synthMutex;
-}
-
-int QSynth::handleReport(ReportType type, const void *reportData) {
-	Master *master = Master::getInstance();
-
-	switch(type) {
-	case MT32Emu::ReportType_errorControlROM:
-		master->showBalloon("Error", "Couldn't find Control ROM file");
-		break;
-	case MT32Emu::ReportType_errorPCMROM:
-		master->showBalloon("Error", "Couldn't open PCM ROM file");
-		break;
-	case MT32Emu::ReportType_lcdMessage:
-		master->showBalloon("LCD-Message:", (const char *)reportData);
-		break;
-	default:
-		qDebug() << "Report:" << type;
-		break;
-	}
-	return 0;
 }
 
 bool QSynth::pushMIDIShortMessage(Bit32u msg, SynthTimestamp timestamp) {
@@ -162,9 +143,27 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 bool QSynth::openSynth() {
 	QString pathName = QDir::toNativeSeparators(Master::getInstance()->getROMDir().absolutePath());
 	pathName += QDir::separator();
-	QByteArray pathNameBytes = pathName.toUtf8();
-	SynthProperties synthProp = {sampleRate, true, true, 0, 0, 0, pathNameBytes, this, MT32_Report, NULL, NULL, NULL};
-	if(synth->open(synthProp)) {
+	MT32Emu::FileStream controlROMFile;
+	MT32Emu::FileStream pcmROMFile;
+	QByteArray pathNameBytes = (pathName + "CM32L_CONTROL.ROM").toUtf8();
+	if (!controlROMFile.open(pathNameBytes)) {
+		pathNameBytes = (pathName + "MT32_CONTROL.ROM").toUtf8();
+		if (!controlROMFile.open(pathNameBytes)) {
+			fprintf(stderr, "Control ROM not found.\n");
+			return 1;
+		}
+	}
+	pathNameBytes = (pathName + "CM32L_PCM.ROM").toUtf8();
+	if (!pcmROMFile.open(pathNameBytes)) {
+		pathNameBytes = (pathName + "MT32_PCM.ROM").toUtf8();
+		if (!pcmROMFile.open(pathNameBytes)) {
+			fprintf(stderr, "PCM ROM not found.\n");
+			return 1;
+		}
+	}
+	const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
+	const MT32Emu::ROMImage *pcmROMImage = MT32Emu::ROMImage::makeROMImage(&pcmROMFile);
+	if(synth->open(*controlROMImage, *pcmROMImage)) {
 		synth->setReverbEnabled(reverbEnabled);
 		synth->setDACInputMode(emuDACInputMode);
 		return true;
