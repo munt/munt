@@ -619,7 +619,7 @@ int main(int argc, char *argv[]) {
 
 	gchar *baseDir = options.romDir;
 	if (baseDir == NULL)
-		baseDir = "";
+		baseDir = (gchar *)"";
 	gchar pathName[2048];
 	MT32Emu::FileStream controlROMFile;
 	MT32Emu::FileStream pcmROMFile;

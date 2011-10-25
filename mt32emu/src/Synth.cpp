@@ -180,10 +180,6 @@ Synth::~Synth() {
 	}
 }
 
-unsigned int Synth::getSampleRate() const {
-	return SAMPLE_RATE;
-}
-
 void ReportHandler::showLCDMessage(const char *data) {
 	printf("WRITE-LCD: %s", data);
 	printf("\n");

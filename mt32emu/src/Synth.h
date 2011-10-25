@@ -249,6 +249,8 @@ public:
 
 class ReportHandler {
 public:
+	virtual ~ReportHandler() {}
+
 	// Callback for debug messages, in vprintf() format
 	virtual void printDebug(const char *fmt, va_list list);
 
@@ -378,7 +380,7 @@ private:
 	void refreshSystem();
 	void reset();
 
-	inline unsigned int getSampleRate() const;
+	inline unsigned int getSampleRate() const {return SAMPLE_RATE;}
 
 	void printPartialUsage(unsigned long sampleOffset = 0);
 
