@@ -258,10 +258,10 @@ public:
 	virtual void showLCDMessage(const char *message);
 	virtual void onDeviceReset() {}
 	virtual void onDeviceReconfig() {}
-	virtual void onNewReverbMode(Bit8u mode) {}
-	virtual void onNewReverbTime(Bit8u time) {}
-	virtual void onNewReverbLevel(Bit8u level) {}
-	virtual void reportUnspecified(ReportType type, const void *reportData) {}
+	virtual void onNewReverbMode(Bit8u /* mode */) {}
+	virtual void onNewReverbTime(Bit8u /* time */) {}
+	virtual void onNewReverbLevel(Bit8u /* level */) {}
+	virtual void reportUnspecified(ReportType /* type */, const void * /* reportData */) {}
 };
 
 class Synth {

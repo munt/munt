@@ -239,7 +239,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 }
 
 static long secondsToSamples(double seconds, int sampleRate) {
-	return (long)seconds * sampleRate;
+	return long(seconds * sampleRate);
 }
 
 static bool writeWAVEHeader(FILE *outputFile, int sampleRate) {
@@ -530,7 +530,7 @@ static void playSMF(smf_t *smf, const Options &options, State &state) {
 	}
 	flushSilence(MIDI_ENDED, options, state);
 	if (options.sendAllNotesOff) {
-		for (unsigned int part = 0; part < 9; part++) {
+		for (unsigned char part = 0; part < 9; part++) {
 			state.synth->playMsgOnPart(part, 0xB, 0x40, 0x00); // Release sustain pedal
 			state.synth->playMsgOnPart(part, 0xB, 0x7B, 0x00); // All notes off
 		}
