@@ -9,7 +9,6 @@ class AudioDriver;
 class MidiDriver;
 class MidiSession;
 class QSystemTrayIcon;
-class MT32Emu::ROMImage;
 
 class Master : public QObject {
 	Q_OBJECT

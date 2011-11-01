@@ -23,8 +23,8 @@
 
 SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent) :
 		QDialog(parent),
-		rsd(this),
-		ui(new Ui::SynthPropertiesDialog)
+		ui(new Ui::SynthPropertiesDialog),
+		rsd(this)
 {
 	ui->setupUi(this);
 	QString s = Master::getInstance()->getROMDir().absolutePath();

@@ -31,9 +31,9 @@ static const int ROM_TYPE_COLUMN = 4;
 ROMSelectionDialog::ROMSelectionDialog(QWidget *parent) :
 		QDialog(parent),
 		ui(new Ui::ROMSelectionDialog),
-		master(*Master::getInstance()),
 		controlROMGroup(this),
-		pcmROMGroup(this)
+		pcmROMGroup(this),
+		master(*Master::getInstance())
 {
 	ui->setupUi(this);
 
@@ -153,6 +153,8 @@ void ROMSelectionDialog::refreshROMInfos() {
 }
 
 void ROMSelectionDialog::on_fileFilterCombo_currentIndexChanged(int index) {
+Q_UNUSED(index);
+
 	refreshROMInfos();
 }
 
