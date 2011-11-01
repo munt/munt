@@ -50,52 +50,59 @@ Master::Master() {
 void Master::init() {
 	static Master master;
 
-	if (INSTANCE == NULL) {
-		INSTANCE = &master;
-		INSTANCE->moveToThread(QCoreApplication::instance()->thread());
-		INSTANCE->settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
-		INSTANCE->romDir = INSTANCE->settings->value("Master/romDir", "./").toString();
-		INSTANCE->controlROMFileName = INSTANCE->settings->value("Master/ControlROM", NULL).toString();
-		INSTANCE->pcmROMFileName = INSTANCE->settings->value("Master/PCMROM", NULL).toString();
-		INSTANCE->trayIcon = NULL;
-		INSTANCE->defaultAudioDriverId = INSTANCE->settings->value("Master/DefaultAudioDriver").toString();
-		INSTANCE->defaultAudioDeviceName = INSTANCE->settings->value("Master/DefaultAudioDevice").toString();
+	if (INSTANCE != NULL) return;
+	INSTANCE = &master;
+	INSTANCE->moveToThread(QCoreApplication::instance()->thread());
+	INSTANCE->settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
+	INSTANCE->romDir = INSTANCE->settings->value("Master/romDir", "./").toString();
+	INSTANCE->controlROMFileName = INSTANCE->settings->value("Master/ControlROM").toString();
+	INSTANCE->pcmROMFileName = INSTANCE->settings->value("Master/PCMROM").toString();
+	INSTANCE->makeROMImages();
 
-		INSTANCE->initAudioDrivers();
-		INSTANCE->initMidiDrivers();
-		INSTANCE->lastAudioDeviceScan = -4 * MasterClock::NANOS_PER_SECOND;
-		INSTANCE->getAudioDevices();
+	INSTANCE->trayIcon = NULL;
+	INSTANCE->defaultAudioDriverId = INSTANCE->settings->value("Master/DefaultAudioDriver").toString();
+	INSTANCE->defaultAudioDeviceName = INSTANCE->settings->value("Master/DefaultAudioDevice").toString();
 
-		qRegisterMetaType<MidiDriver *>("MidiDriver*");
-		qRegisterMetaType<MidiSession *>("MidiSession*");
-		qRegisterMetaType<MidiSession **>("MidiSession**");
-		qRegisterMetaType<SynthState>("SynthState");
-	}
+	INSTANCE->initAudioDrivers();
+	INSTANCE->initMidiDrivers();
+	INSTANCE->lastAudioDeviceScan = -4 * MasterClock::NANOS_PER_SECOND;
+	INSTANCE->getAudioDevices();
+
+	qRegisterMetaType<MidiDriver *>("MidiDriver*");
+	qRegisterMetaType<MidiSession *>("MidiSession*");
+	qRegisterMetaType<MidiSession **>("MidiSession**");
+	qRegisterMetaType<SynthState>("SynthState");
 }
 
 void Master::deinit() {
-	if (INSTANCE->trayIcon != NULL)
-		delete INSTANCE->trayIcon;
+	if (INSTANCE->trayIcon != NULL) delete INSTANCE->trayIcon;
 	delete INSTANCE->settings;
+
 	if (INSTANCE->midiDriver != NULL) {
 		INSTANCE->midiDriver->stop();
 		INSTANCE->midiDriver = NULL;
 	}
+
 	QMutableListIterator<SynthRoute *> synthRouteIt(INSTANCE->synthRoutes);
 	while(synthRouteIt.hasNext()) {
 		delete synthRouteIt.next();
 		synthRouteIt.remove();
 	}
+
 	QMutableListIterator<AudioDevice *> audioDeviceIt(INSTANCE->audioDevices);
 	while(audioDeviceIt.hasNext()) {
 		delete audioDeviceIt.next();
 		audioDeviceIt.remove();
 	}
+
 	QMutableListIterator<AudioDriver *> audioDriverIt(INSTANCE->audioDrivers);
 	while(audioDriverIt.hasNext()) {
 		delete audioDriverIt.next();
 		audioDriverIt.remove();
 	}
+
+	INSTANCE->freeROMImages();
+
 	INSTANCE = NULL;
 }
 
@@ -190,6 +197,36 @@ void Master::setROMFileNames(QString useControlROMFileName, QString usePCMROMFil
 	pcmROMFileName = usePCMROMFileName;
 	settings->setValue("Master/ControlROM", useControlROMFileName);
 	settings->setValue("Master/PCMROM", usePCMROMFileName);
+	makeROMImages();
+}
+
+void Master::getROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage) {
+	controlROMImage = this->controlROMImage;
+	pcmROMImage = this->pcmROMImage;
+}
+
+const QString Master::getROMPathName(QString romFileName) const {
+	QString pathName = QDir::toNativeSeparators(romDir.absolutePath());
+	return pathName + QDir::separator() + romFileName;
+}
+
+void Master::makeROMImages() {
+	MT32Emu::FileStream *file;
+
+	freeROMImages();
+
+	file = new MT32Emu::FileStream();
+	if (file->open(getROMPathName(controlROMFileName).toUtf8())) controlROMImage = MT32Emu::ROMImage::makeROMImage(file);
+
+	file = new MT32Emu::FileStream();
+	if (file->open(getROMPathName(pcmROMFileName).toUtf8())) pcmROMImage = MT32Emu::ROMImage::makeROMImage(file);
+}
+
+void Master::freeROMImages() {
+	if (controlROMImage != NULL) MT32Emu::ROMImage::freeROMImage(controlROMImage);
+	if (pcmROMImage != NULL) MT32Emu::ROMImage::freeROMImage(pcmROMImage);
+	controlROMImage = NULL;
+	pcmROMImage = NULL;
 }
 
 QSystemTrayIcon *Master::getTrayIcon() {

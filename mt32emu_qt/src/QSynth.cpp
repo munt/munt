@@ -25,6 +25,7 @@
 #include <cstdio>
 
 #include <QtGlobal>
+#include <QMessageBox>
 
 #include "QSynth.h"
 #include "Master.h"
@@ -34,6 +35,14 @@ using namespace MT32Emu;
 
 void QReportHandler::showLCDMessage(const char *message) {
 	Master::getInstance()->showBalloon("LCD-Message:", message);
+}
+
+void QReportHandler::onErrorControlROM() {
+	QMessageBox::critical(NULL, "Cannot open Synth", "Control ROM file cannot be opened.");
+}
+
+void QReportHandler::onErrorPCMROM() {
+	QMessageBox::critical(NULL, "Cannot open Synth", "PCM ROM file cannot be opened.");
 }
 
 QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED) {
@@ -141,28 +150,9 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 }
 
 bool QSynth::openSynth() {
-	QString pathName = QDir::toNativeSeparators(Master::getInstance()->getROMDir().absolutePath());
-	pathName += QDir::separator();
-	MT32Emu::FileStream controlROMFile;
-	MT32Emu::FileStream pcmROMFile;
-	QByteArray pathNameBytes = (pathName + "CM32L_CONTROL.ROM").toUtf8();
-	if (!controlROMFile.open(pathNameBytes)) {
-		pathNameBytes = (pathName + "MT32_CONTROL.ROM").toUtf8();
-		if (!controlROMFile.open(pathNameBytes)) {
-			fprintf(stderr, "Control ROM not found.\n");
-			return 1;
-		}
-	}
-	pathNameBytes = (pathName + "CM32L_PCM.ROM").toUtf8();
-	if (!pcmROMFile.open(pathNameBytes)) {
-		pathNameBytes = (pathName + "MT32_PCM.ROM").toUtf8();
-		if (!pcmROMFile.open(pathNameBytes)) {
-			fprintf(stderr, "PCM ROM not found.\n");
-			return 1;
-		}
-	}
-	const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
-	const MT32Emu::ROMImage *pcmROMImage = MT32Emu::ROMImage::makeROMImage(&pcmROMFile);
+	const MT32Emu::ROMImage *controlROMImage = NULL;
+	const MT32Emu::ROMImage *pcmROMImage = NULL;
+	Master::getInstance()->getROMImages(controlROMImage, pcmROMImage);
 	if(synth->open(*controlROMImage, *pcmROMImage)) {
 		synth->setReverbEnabled(reverbEnabled);
 		synth->setDACInputMode(emuDACInputMode);

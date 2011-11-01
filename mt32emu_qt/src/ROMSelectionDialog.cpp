@@ -66,11 +66,20 @@ void ROMSelectionDialog::loadROMInfos(QString s) {
 	}
 }
 
+void ROMSelectionDialog::clearButtonGroup(QButtonGroup &group) {
+	QListIterator<QAbstractButton *> it = QListIterator<QAbstractButton *>(group.buttons());
+	for (;it.hasNext();) {
+		group.removeButton(it.next());
+	}
+}
+
 void ROMSelectionDialog::refreshROMInfos() {
 	QString controlROMFileName;
 	QString pcmROMFileName;
 	master.getROMFileNames(controlROMFileName, pcmROMFileName);
 
+	clearButtonGroup(controlROMGroup);
+	clearButtonGroup(pcmROMGroup);
 	controlROMRow = -1;
 	pcmROMRow = -1;
 

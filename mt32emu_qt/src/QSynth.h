@@ -16,6 +16,8 @@ enum SynthState {
 class QReportHandler : public MT32Emu::ReportHandler {
 public:
 	void showLCDMessage(const char *message);
+	void onErrorControlROM();
+	void onErrorPCMROM();
 };
 
 class QSynth : public QObject {

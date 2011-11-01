@@ -32,6 +32,7 @@ private:
 	int pcmROMRow;
 
 	const QString fileFilterToString(const QStringList fileFilter) const;
+	void clearButtonGroup(QButtonGroup &group);
 	void refreshROMInfos();
 
 private slots:
