@@ -9,6 +9,7 @@
 
 class Master;
 class AudioDevice;
+class QListWidgetItem;
 
 namespace Ui {
 	class SynthWidget;
@@ -30,6 +31,7 @@ private:
 	AudioPropertiesDialog apd;
 
 	void refreshAudioDeviceList(Master *master, const AudioDevice *useAudioDevice);
+	int findMIDISession(MidiSession *midiSession);
 
 private slots:
 	void on_startButton_clicked();

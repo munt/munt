@@ -50,9 +50,10 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 				// Sync the timesource in the driver with MasterClock
 				startMasterClock = (qint64)cds->dwData * MasterClock::NANOS_PER_MILLISECOND - MasterClock::getClockNanos();
 				// Process handshaking message
-				midiSession = driver->master->createMidiSession(driver, (const char *)&data[3]);
-				driver->master->showBalloon("Connected application:", (const char *)&data[3]);
-				qDebug() << "Connected application" << (char *)&data[3];
+				QString appName = QFileInfo(QString((const char *)&data[3])).fileName();
+				midiSession = driver->master->createMidiSession(driver, appName);
+				driver->master->showBalloon("Connected application:", appName);
+				qDebug() << "Connected application" << appName;
 				qDebug() << "Session" << midiSession << "protocol version" << data[2];
 				if (!midiSession) {
 					qDebug() << "Failed to create new session";

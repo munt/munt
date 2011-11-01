@@ -23,7 +23,7 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QListView" name="midiListView"/>
+         <widget class="QListWidget" name="midiList"/>
         </item>
         <item>
          <widget class="QPushButton" name="midiProperties">
@@ -243,7 +243,6 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>midiListView</tabstop>
   <tabstop>midiProperties</tabstop>
   <tabstop>midiAdd</tabstop>
   <tabstop>midiRemove</tabstop>

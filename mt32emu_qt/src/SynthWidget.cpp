@@ -18,6 +18,7 @@
 #include "SynthWidget.h"
 #include "ui_SynthWidget.h"
 #include "Master.h"
+#include "MidiSession.h"
 
 SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioDevice *useAudioDevice, QWidget *parent) :
 	QWidget(parent),
@@ -187,8 +188,22 @@ void SynthWidget::on_pinCheckBox_stateChanged(int state)
 	} else if (state == Qt::Unchecked) Master::getInstance()->setPinned(NULL);
 }
 
+int SynthWidget::findMIDISession(MidiSession *midiSession) {
+	for (int i = 0; i < ui->midiList->count(); i++) {
+		QListWidgetItem *item = ui->midiList->item(i);
+		if (item->data(Qt::UserRole) == QVariant::fromValue((QObject *)midiSession)) return i;
+	}
+	return -1;
+}
+
 void SynthWidget::handleMIDISessionAdded(MidiSession *midiSession) {
+	QListWidgetItem *item = new QListWidgetItem(midiSession->getName(), ui->midiList);
+	item->setData(Qt::UserRole, QVariant::fromValue((QObject *)midiSession));
+	ui->midiList->addItem(item);;
 }
 
 void SynthWidget::handleMIDISessionRemoved(MidiSession *midiSession) {
+	int c = ui->midiList->count();
+	delete ui->midiList->takeItem(findMIDISession(midiSession));
+	c = ui->midiList->count();
 }
