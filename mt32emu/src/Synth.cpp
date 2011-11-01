@@ -278,6 +278,7 @@ void Synth::setReverbOutputGain(float newReverbOutputGain) {
 }
 
 bool Synth::loadControlROM(const ROMImage &controlROMImage) {
+	if (&controlROMImage == NULL) return false;
 	File *file = controlROMImage.getFile();
 	const ROMInfo *controlROMInfo = controlROMImage.getROMInfo();
 	if ((controlROMInfo == NULL)
@@ -306,6 +307,7 @@ bool Synth::loadControlROM(const ROMImage &controlROMImage) {
 }
 
 bool Synth::loadPCMROM(const ROMImage &pcmROMImage) {
+	if (&pcmROMImage == NULL) return false;
 	File *file = pcmROMImage.getFile();
 	const ROMInfo *pcmROMInfo = pcmROMImage.getROMInfo();
 	if ((pcmROMInfo == NULL)
