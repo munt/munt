@@ -22,7 +22,10 @@
 SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioDevice *useAudioDevice, QWidget *parent) :
 	QWidget(parent),
 	synthRoute(useSynthRoute),
-	ui(new Ui::SynthWidget) {
+	spd(parent),
+	apd(parent),
+	ui(new Ui::SynthWidget)
+{
 	ui->setupUi(this);
 	refreshAudioDeviceList(master, useAudioDevice);
 	if (ui->audioDeviceComboBox->count() != 0) {

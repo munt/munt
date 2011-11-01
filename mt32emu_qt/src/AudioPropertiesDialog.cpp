@@ -31,11 +31,6 @@ AudioPropertiesDialog::~AudioPropertiesDialog()
 	delete ui;
 }
 
-void AudioPropertiesDialog::on_buttonBox_accepted()
-{
-//	setAudioSettings
-}
-
 void AudioPropertiesDialog::getData(unsigned int &chunkLen, unsigned int &audioLatency, unsigned int &midiLatency) {
 	chunkLen = ui->chunkLen->text().toInt();
 	audioLatency = ui->audioLatency->text().toInt();

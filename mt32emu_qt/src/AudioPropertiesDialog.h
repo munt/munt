@@ -19,9 +19,6 @@ public:
 
 private:
 	Ui::AudioPropertiesDialog *ui;
-
-private slots:
-	void on_buttonBox_accepted();
 };
 
 #endif // AUDIO_PROPERTIES_DIALOG_H
