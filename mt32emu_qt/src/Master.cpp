@@ -55,6 +55,8 @@ void Master::init() {
 		INSTANCE->moveToThread(QCoreApplication::instance()->thread());
 		INSTANCE->settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
 		INSTANCE->romDir = INSTANCE->settings->value("Master/romDir", "./").toString();
+		INSTANCE->controlROMFileName = INSTANCE->settings->value("Master/ControlROM", NULL).toString();
+		INSTANCE->pcmROMFileName = INSTANCE->settings->value("Master/PCMROM", NULL).toString();
 		INSTANCE->trayIcon = NULL;
 		INSTANCE->defaultAudioDriverId = INSTANCE->settings->value("Master/DefaultAudioDriver").toString();
 		INSTANCE->defaultAudioDeviceName = INSTANCE->settings->value("Master/DefaultAudioDevice").toString();
@@ -176,6 +178,18 @@ QDir Master::getROMDir() {
 void Master::setROMDir(QDir newROMDir) {
 	romDir = newROMDir;
 	settings->setValue("Master/romDir", romDir.absolutePath());
+}
+
+void Master::getROMFileNames(QString &controlROMFileName, QString &pcmROMFileName) {
+	controlROMFileName = this->controlROMFileName;
+	pcmROMFileName = this->pcmROMFileName;
+}
+
+void Master::setROMFileNames(QString useControlROMFileName, QString usePCMROMFileName) {
+	controlROMFileName = useControlROMFileName;
+	pcmROMFileName = usePCMROMFileName;
+	settings->setValue("Master/ControlROM", useControlROMFileName);
+	settings->setValue("Master/PCMROM", usePCMROMFileName);
 }
 
 QSystemTrayIcon *Master::getTrayIcon() {

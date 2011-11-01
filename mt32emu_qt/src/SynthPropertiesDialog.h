@@ -3,6 +3,8 @@
 
 #include <QDialog>
 
+#include "ROMSelectionDialog.h"
+
 namespace Ui {
 	class SynthPropertiesDialog;
 }
@@ -18,6 +20,7 @@ public:
 
 private:
 	Ui::SynthPropertiesDialog *ui;
+	ROMSelectionDialog rsd;
 
 private slots:
 	void on_romDirButton_clicked();

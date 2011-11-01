@@ -18,10 +18,12 @@
 
 #include "Master.h"
 #include "SynthPropertiesDialog.h"
+#include "ROMSelectionDialog.h"
 #include "ui_SynthPropertiesDialog.h"
 
 SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent) :
 		QDialog(parent),
+		rsd(this),
 		ui(new Ui::SynthPropertiesDialog)
 {
 	ui->setupUi(this);
@@ -37,10 +39,9 @@ SynthPropertiesDialog::~SynthPropertiesDialog()
 void SynthPropertiesDialog::on_romDirButton_clicked()
 {
 	QString s = QFileDialog::getExistingDirectory(this, "Choose ROM directory", ui->romDirLineEdit->text());
-	if (!s.isNull()) {
-		ui->romDirLineEdit->setText(s);
-		Master::getInstance()->setROMDir(s);
-	}
+	if (s.isNull()) return;
+	rsd.loadROMInfos(s);
+	if (QDialog::Accepted == rsd.exec()) ui->romDirLineEdit->setText(s);
 }
 
 int SynthPropertiesDialog::getDACInputMode() {

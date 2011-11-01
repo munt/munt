@@ -9,6 +9,7 @@ class AudioDriver;
 class MidiDriver;
 class MidiSession;
 class QSystemTrayIcon;
+class MT32Emu::ROMImage;
 
 class Master : public QObject {
 	Q_OBJECT
@@ -22,6 +23,10 @@ private:
 
 	QSettings *settings;
 	QDir romDir;
+	QString controlROMFileName;
+	QString pcmROMFileName;
+	const MT32Emu::ROMImage *controlROMImage;
+	const MT32Emu::ROMImage *pcmROMImage;
 	QSystemTrayIcon *trayIcon;
 	QString defaultAudioDriverId;
 	QString defaultAudioDeviceName;
@@ -39,8 +44,11 @@ public:
 	const QList<AudioDevice *> getAudioDevices();
 	void setDefaultAudioDevice(QString driverId, QString name);
 	void setROMDir(QDir romDir);
+	void setROMFileNames(QString useControlROMFileName, QString usePCMROMFileName);
 	void setTrayIcon(QSystemTrayIcon *trayIcon);
 	QDir getROMDir();
+	void getROMFileNames(QString &controlROMFileName, QString &pcmROMFileName);
+	void getROMImages(const MT32Emu::ROMImage &controlROMImage, const MT32Emu::ROMImage &pcmROMImage);
 	QSystemTrayIcon *getTrayIcon();
 	QSettings *getSettings();
 	void showBalloon(const QString &title, const QString &text);
