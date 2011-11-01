@@ -40,6 +40,7 @@ private slots:
 	void showHideMainWindow();
 	void toggleStartIconized();
 	void handleTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
+	void toggleShowConsole();
 };
 
 #endif // MAINWINDOW_H
