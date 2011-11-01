@@ -95,6 +95,13 @@
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="pinCheckBox">
+          <property name="text">
+           <string>Pin Synth</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="synthPropertiesButton">
           <property name="text">
            <string>Properties</string>

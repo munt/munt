@@ -32,10 +32,15 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 		ui->audioPropertiesButton->setEnabled (true);
 	}
 
+	ui->pinCheckBox->setChecked(master->isPinned(synthRoute));
+
 	connect(synthRoute, SIGNAL(stateChanged(SynthRouteState)), SLOT(handleSynthRouteState(SynthRouteState)));
+	connect(synthRoute, SIGNAL(midiSessionAdded(MidiSession *)), SLOT(handleMIDISessionAdded(MidiSession *)));
+	connect(synthRoute, SIGNAL(midiSessionRemoved(MidiSession *)), SLOT(handleMIDISessionRemoved(MidiSession *)));
 	connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(handleAudioDeviceIndexChanged(int)));
 	connect(master, SIGNAL(audioDeviceAdded(AudioDevice*)), SLOT(handleAudioDeviceAdded(AudioDevice*)));
 	connect(master, SIGNAL(audioDeviceRemoved(AudioDevice*)), SLOT(handleAudioDeviceRemoved(AudioDevice*)));
+	connect(parent, SIGNAL(synthRoutePinned()), SLOT(handleSynthRoutePinned()));
 	handleSynthRouteState(synthRoute->getState());
 }
 
@@ -167,4 +172,23 @@ void SynthWidget::on_stopButton_clicked()
 {
 	synthRoute->close();
 	ui->statusLabel->setText("Closed");
+}
+
+void SynthWidget::handleSynthRoutePinned() {
+	ui->pinCheckBox->setChecked(false);
+}
+
+void SynthWidget::on_pinCheckBox_stateChanged(int state)
+{
+	if (state == Qt::Checked) {
+		emit synthRoutePinned();
+		ui->pinCheckBox->setChecked(true);
+		Master::getInstance()->setPinned(synthRoute);
+	} else if (state == Qt::Unchecked) Master::getInstance()->setPinned(NULL);
+}
+
+void SynthWidget::handleMIDISessionAdded(MidiSession *midiSession) {
+}
+
+void SynthWidget::handleMIDISessionRemoved(MidiSession *midiSession) {
 }

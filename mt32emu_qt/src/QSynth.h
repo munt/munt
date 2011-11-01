@@ -25,8 +25,6 @@ class QSynth : public QObject {
 private:
 	SynthState state;
 
-	// In samples per second.
-	unsigned int sampleRate;
 	bool reverbEnabled;
 	MT32Emu::DACInputMode emuDACInputMode;
 

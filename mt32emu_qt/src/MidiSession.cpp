@@ -22,3 +22,7 @@ MidiSession::MidiSession(QObject *parent, MidiDriver *useMidiDriver, QString use
 SynthRoute *MidiSession::getSynthRoute() {
 	return synthRoute;
 }
+
+QString MidiSession::getName() {
+	return name;
+}

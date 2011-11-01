@@ -67,6 +67,7 @@ void Master::init() {
 	INSTANCE->initMidiDrivers();
 	INSTANCE->lastAudioDeviceScan = -4 * MasterClock::NANOS_PER_SECOND;
 	INSTANCE->getAudioDevices();
+	INSTANCE->pinnedSynthRoute = NULL;
 
 	qRegisterMetaType<MidiDriver *>("MidiDriver*");
 	qRegisterMetaType<MidiSession *>("MidiSession*");
@@ -174,7 +175,7 @@ const AudioDevice *Master::findAudioDevice(QString driverId, QString name) const
 	return audioDevices.first();
 }
 
-QSettings *Master::getSettings() {
+QSettings *Master::getSettings() const {
 	return settings;
 }
 
@@ -229,7 +230,15 @@ void Master::freeROMImages() {
 	pcmROMImage = NULL;
 }
 
-QSystemTrayIcon *Master::getTrayIcon() {
+bool Master::isPinned(const SynthRoute *synthRoute) const {
+	return synthRoute == pinnedSynthRoute;
+}
+
+void Master::setPinned(SynthRoute *synthRoute) {
+	pinnedSynthRoute = synthRoute;
+}
+
+QSystemTrayIcon *Master::getTrayIcon() const {
 	return trayIcon;
 }
 
@@ -242,27 +251,28 @@ void Master::reallyShowBalloon(const QString &title, const QString &text) {
 }
 
 void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name) {
-	// For now, we always create a new SynthRoute for each session
-	// In future this will be configurable
-	SynthRoute *synthRoute = new SynthRoute(this);
+	SynthRoute *synthRoute = pinnedSynthRoute;
+	if (synthRoute == NULL) {
+		synthRoute = new SynthRoute(this);
+		const AudioDevice *audioDevice = NULL;
+		getAudioDevices();
+		if (!audioDevices.isEmpty()) {
+			audioDevice = findAudioDevice(defaultAudioDriverId, defaultAudioDeviceName);
+			synthRoute->setAudioDevice(audioDevice);
+			synthRoute->open();
+			synthRoutes.append(synthRoute);
+			emit synthRouteAdded(synthRoute, audioDevice);
+		}
+	}
 	MidiSession *midiSession = new MidiSession(this, midiDriver, name, synthRoute);
 	synthRoute->addMidiSession(midiSession);
-	synthRoutes.append(synthRoute);
-	const AudioDevice *audioDevice = NULL;
-	getAudioDevices();
-	if (!audioDevices.isEmpty()) {
-		audioDevice = findAudioDevice(defaultAudioDriverId, defaultAudioDeviceName);
-		synthRoute->setAudioDevice(audioDevice);
-		synthRoute->open();
-	}
 	*returnVal = midiSession;
-	emit synthRouteAdded(synthRoute, audioDevice);
 }
 
 void Master::reallyDeleteMidiSession(MidiSession *midiSession) {
 	SynthRoute *synthRoute = midiSession->getSynthRoute();
 	synthRoute->removeMidiSession(midiSession);
-	if (!synthRoute->isPinned()) {
+	if (synthRoute != pinnedSynthRoute) {
 		synthRoutes.removeOne(synthRoute);
 		emit synthRouteRemoved(synthRoute);
 		synthRoute->close();

@@ -46,7 +46,6 @@ void QReportHandler::onErrorPCMROM() {
 }
 
 QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED) {
-	sampleRate = SAMPLE_RATE;
 	reverbEnabled = true;
 	emuDACInputMode = DACInputMode_NICE;
 	isOpen = false;

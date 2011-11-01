@@ -16,7 +16,6 @@ public:
 	Win32MidiDriver(Master *useMaster);
 	void start();
 	void stop();
-	void DisableReset(bool useDisableReset);
 };
 
 #endif

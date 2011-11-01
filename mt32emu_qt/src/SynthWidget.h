@@ -37,10 +37,17 @@ private slots:
 	void on_audioPropertiesButton_clicked();
 	void on_stopButton_clicked();
 	void on_refreshButton_clicked();
+	void on_pinCheckBox_stateChanged(int state);
 	void handleSynthRouteState(SynthRouteState state);
+	void handleSynthRoutePinned();
 	void handleAudioDeviceIndexChanged(int audioDeviceIndex);
 	void handleAudioDeviceAdded(AudioDevice *audioDevice);
 	void handleAudioDeviceRemoved(AudioDevice *audioDevice);
+	void handleMIDISessionAdded(MidiSession *midiSession);
+	void handleMIDISessionRemoved(MidiSession *midiSession);
+
+signals:
+	void synthRoutePinned();
 };
 
 #endif // SYNTHWIDGET_H

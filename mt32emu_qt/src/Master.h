@@ -19,6 +19,7 @@ private:
 	QList<AudioDriver *> audioDrivers;
 	QList<AudioDevice *> audioDevices;
 	MidiDriver *midiDriver;
+	SynthRoute *pinnedSynthRoute;
 
 	QSettings *settings;
 	QDir romDir;
@@ -51,9 +52,11 @@ public:
 	QDir getROMDir();
 	void getROMFileNames(QString &controlROMFileName, QString &pcmROMFileName);
 	void getROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage);
-	QSystemTrayIcon *getTrayIcon();
-	QSettings *getSettings();
+	QSystemTrayIcon *getTrayIcon() const;
+	QSettings *getSettings() const;
 	void showBalloon(const QString &title, const QString &text);
+	bool isPinned(const SynthRoute *synthRoute) const;
+	void setPinned(SynthRoute *synthRoute);
 
 	static Master *getInstance();
 

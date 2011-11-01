@@ -28,9 +28,13 @@
 
 using namespace MT32Emu;
 
-SynthRoute::SynthRoute(QObject *parent) : QObject(parent), state(SynthRouteState_CLOSED), qSynth(this), audioDevice(NULL), audioStream(NULL) {
-	sampleRate = SAMPLE_RATE;
-
+SynthRoute::SynthRoute(QObject *parent) :
+	QObject(parent),
+	state(SynthRouteState_CLOSED),
+	qSynth(this),
+	audioDevice(NULL),
+	audioStream(NULL)
+{
 	connect(&qSynth, SIGNAL(stateChanged(SynthState)), SLOT(handleQSynthState(SynthState)));
 }
 
@@ -64,7 +68,7 @@ bool SynthRoute::open() {
 	setState(SynthRouteState_OPENING);
 	if (audioDevice != NULL) {
 		if (qSynth.open()) {
-			audioStream = audioDevice->startAudioStream(&qSynth, sampleRate);
+			audioStream = audioDevice->startAudioStream(&qSynth, SAMPLE_RATE);
 			if (audioStream != NULL) {
 				setState(SynthRouteState_OPEN);
 				return true;
@@ -96,11 +100,6 @@ bool SynthRoute::close() {
 	audioStream = NULL;
 	qSynth.close();
 	return true;
-}
-
-bool SynthRoute::isPinned() const {
-	// FIXME: Implement
-	return false;
 }
 
 SynthRouteState SynthRoute::getState() const {

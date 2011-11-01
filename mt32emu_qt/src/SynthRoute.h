@@ -29,7 +29,6 @@ private:
 
 	const AudioDevice *audioDevice;
 	AudioStream *audioStream; // NULL until a stream is created
-	unsigned int sampleRate;
 
 	void setState(SynthRouteState newState);
 
@@ -43,14 +42,11 @@ public:
 	void setDACInputMode(MT32Emu::DACInputMode pEmuDACInputMode);
 	void addMidiSession(MidiSession *midiSession);
 	void removeMidiSession(MidiSession *midiSession);
-	bool isPinned() const;
 	SynthRouteState getState() const;
+	void setAudioDevice(const AudioDevice *newAudioDevice);
 
 private slots:
 	void handleQSynthState(SynthState synthState);
-
-public slots:
-	void setAudioDevice(const AudioDevice *newAudioDevice);
 
 signals:
 	void stateChanged(SynthRouteState state);

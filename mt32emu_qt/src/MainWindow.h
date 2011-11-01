@@ -41,6 +41,10 @@ private slots:
 	void toggleStartIconized();
 	void handleTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 	void toggleShowConsole();
+	void handleSynthRoutePinned();
+
+signals:
+	void synthRoutePinned();
 };
 
 #endif // MAINWINDOW_H
