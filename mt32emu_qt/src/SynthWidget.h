@@ -40,11 +40,9 @@ private slots:
 	void on_stopButton_clicked();
 	void on_refreshButton_clicked();
 	void on_pinCheckBox_stateChanged(int state);
+	void on_audioDeviceComboBox_currentIndexChanged(int audioDeviceIndex);
 	void handleSynthRouteState(SynthRouteState state);
 	void handleSynthRoutePinned();
-	void handleAudioDeviceIndexChanged(int audioDeviceIndex);
-	void handleAudioDeviceAdded(AudioDevice *audioDevice);
-	void handleAudioDeviceRemoved(AudioDevice *audioDevice);
 	void handleMIDISessionAdded(MidiSession *midiSession);
 	void handleMIDISessionRemoved(MidiSession *midiSession);
 };

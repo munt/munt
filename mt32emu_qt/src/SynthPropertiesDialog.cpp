@@ -21,10 +21,11 @@
 #include "ROMSelectionDialog.h"
 #include "ui_SynthPropertiesDialog.h"
 
-SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent) :
-		QDialog(parent),
-		ui(new Ui::SynthPropertiesDialog),
-		rsd(this)
+SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent, SynthRoute *useSynthRoute) :
+	QDialog(parent),
+	ui(new Ui::SynthPropertiesDialog),
+	synthRoute(useSynthRoute),
+	rsd(this)
 {
 	ui->setupUi(this);
 	QString s = Master::getInstance()->getROMDir().absolutePath();
@@ -44,6 +45,17 @@ void SynthPropertiesDialog::on_romDirButton_clicked()
 	if (QDialog::Accepted == rsd.exec()) ui->romDirLineEdit->setText(s);
 }
 
-int SynthPropertiesDialog::getDACInputMode() {
-	return ui->dacEmuComboBox->currentIndex();
+void SynthPropertiesDialog::on_dacEmuComboBox_currentIndexChanged(int index) {
+	switch (index) {
+	case 0:
+		synthRoute->setDACInputMode(MT32Emu::DACInputMode_NICE);
+		break;
+	case 1:
+		synthRoute->setDACInputMode(MT32Emu::DACInputMode_GENERATION1);
+		break;
+	case 2:
+		synthRoute->setDACInputMode(MT32Emu::DACInputMode_GENERATION2);
+		break;
+	}
+}
 }

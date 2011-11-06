@@ -75,8 +75,6 @@ signals:
 	void synthRouteAdded(SynthRoute *route, const AudioDevice *audioDevice);
 	void synthRouteRemoved(SynthRoute *route);
 	void synthRoutePinned();
-	void audioDeviceAdded(AudioDevice *audioDevice);
-	void audioDeviceRemoved(AudioDevice *audioDevice);
 };
 
 #endif

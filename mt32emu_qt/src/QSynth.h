@@ -25,9 +25,6 @@ class QSynth : public QObject {
 private:
 	SynthState state;
 
-	bool reverbEnabled;
-	MT32Emu::DACInputMode emuDACInputMode;
-
 	QMutex *synthMutex;
 	MidiEventQueue *midiEventQueue;
 
@@ -52,9 +49,12 @@ public:
 	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, SynthTimestamp timestamp);
 	unsigned int render(MT32Emu::Bit16s *buf, unsigned int len, SynthTimestamp firstSampleTimestamp, double actualSampleRate);
 
-	void setMasterVolume(MT32Emu::Bit8u pMasterVolume);
-	void setReverbEnabled(bool pReverbEnabled);
-	void setDACInputMode(MT32Emu::DACInputMode pEmuDACInputMode);
+	void setMasterVolume(unsigned int masterVolume);
+	void setOutputGain(float outputGain);
+	void setReverbOutputGain(float reverbOutputGain);
+	void setReverbEnabled(bool reverbEnabled);
+	void setReverbSettings(unsigned int reverbMode, unsigned int reverbTime, unsigned int reverbLevel);
+	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 
 signals:
 	void stateChanged(SynthState state);

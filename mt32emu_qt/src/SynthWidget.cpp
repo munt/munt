@@ -24,23 +24,16 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	QWidget(parent),
 	synthRoute(useSynthRoute),
 	ui(new Ui::SynthWidget),
-	spd(parent),
+	spd(parent, useSynthRoute),
 	apd(parent)
 {
 	ui->setupUi(this);
 	refreshAudioDeviceList(master, useAudioDevice);
-	if (ui->audioDeviceComboBox->count() != 0) {
-		ui->audioPropertiesButton->setEnabled (true);
-	}
-
 	ui->pinCheckBox->setChecked(master->isPinned(synthRoute));
 
 	connect(synthRoute, SIGNAL(stateChanged(SynthRouteState)), SLOT(handleSynthRouteState(SynthRouteState)));
 	connect(synthRoute, SIGNAL(midiSessionAdded(MidiSession *)), SLOT(handleMIDISessionAdded(MidiSession *)));
 	connect(synthRoute, SIGNAL(midiSessionRemoved(MidiSession *)), SLOT(handleMIDISessionRemoved(MidiSession *)));
-	connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(handleAudioDeviceIndexChanged(int)));
-	connect(master, SIGNAL(audioDeviceAdded(AudioDevice*)), SLOT(handleAudioDeviceAdded(AudioDevice*)));
-	connect(master, SIGNAL(audioDeviceRemoved(AudioDevice*)), SLOT(handleAudioDeviceRemoved(AudioDevice*)));
 	connect(parent, SIGNAL(synthRoutePinned()), SLOT(handleSynthRoutePinned()));
 	handleSynthRouteState(synthRoute->getState());
 }
@@ -54,46 +47,27 @@ SynthRoute *SynthWidget::getSynthRoute() {
 }
 
 void SynthWidget::refreshAudioDeviceList(Master *master, const AudioDevice *useAudioDevice) {
-	int defaultAudioDeviceIndex = 0;
+	disconnect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_audioDeviceComboBox_currentIndexChanged(int)));
+	ui->audioDeviceComboBox->clear();
 	int audioDeviceIndex = 0;
 	QListIterator<AudioDevice *> audioDeviceIt(master->getAudioDevices());
 	while(audioDeviceIt.hasNext()) {
 		AudioDevice *audioDevice = audioDeviceIt.next();
-		handleAudioDeviceAdded(audioDevice);
-		if (useAudioDevice != NULL
-			&& useAudioDevice->driver->id == audioDevice->driver->id
-			&& useAudioDevice->name == audioDevice->name) {
-			defaultAudioDeviceIndex = audioDeviceIndex;
-		}
+		ui->audioDeviceComboBox->addItem(audioDevice->driver->name + ": " + audioDevice->name, qVariantFromValue(audioDevice));
+		if (useAudioDevice != NULL && useAudioDevice->driver->id == audioDevice->driver->id
+				&& useAudioDevice->name == audioDevice->name) ui->audioDeviceComboBox->setCurrentIndex(audioDeviceIndex);
 		audioDeviceIndex++;
 	}
-	ui->audioDeviceComboBox->setCurrentIndex(defaultAudioDeviceIndex);
+	ui->audioPropertiesButton->setEnabled(ui->audioDeviceComboBox->count() != 0);
+	connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(on_audioDeviceComboBox_currentIndexChanged(int)));
 }
 
 void SynthWidget::on_refreshButton_clicked() {
-	disconnect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(handleAudioDeviceIndexChanged(int)));
 	AudioDevice *currentDevice = qVariantValue<AudioDevice *> (ui->audioDeviceComboBox->itemData(ui->audioDeviceComboBox->currentIndex()));
-	for (int i = ui->audioDeviceComboBox->count(); i > 0;) {
-		ui->audioDeviceComboBox->removeItem(--i);
-	}
 	refreshAudioDeviceList(Master::getInstance(), currentDevice);
-	if (ui->audioDeviceComboBox->count() != 0) {
-		ui->audioPropertiesButton->setEnabled (true);
-	} else {
-		ui->audioPropertiesButton->setEnabled (false);
-	}
-	connect(ui->audioDeviceComboBox, SIGNAL(currentIndexChanged(int)), SLOT(handleAudioDeviceIndexChanged(int)));
 }
 
-void SynthWidget::handleAudioDeviceAdded(AudioDevice *device) {
-	ui->audioDeviceComboBox->addItem(device->driver->name + ": " + device->name, qVariantFromValue(device));
-}
-
-void SynthWidget::handleAudioDeviceRemoved(AudioDevice *device) {
-	ui->audioDeviceComboBox->removeItem(ui->audioDeviceComboBox->findData(qVariantFromValue(device)));
-}
-
-void SynthWidget::handleAudioDeviceIndexChanged(int audioDeviceIndex) {
+void SynthWidget::on_audioDeviceComboBox_currentIndexChanged(int audioDeviceIndex) {
 	AudioDevice *currentAudioDevice = ui->audioDeviceComboBox->itemData(audioDeviceIndex).value<AudioDevice *>();
 	if (currentAudioDevice != NULL) {
 		synthRoute->setAudioDevice(currentAudioDevice);
@@ -147,19 +121,7 @@ void SynthWidget::on_audioPropertiesButton_clicked()
 
 void SynthWidget::on_synthPropertiesButton_clicked()
 {
-	if (QDialog::Accepted == spd.exec()) {
-		switch (spd.getDACInputMode()) {
-		case 0:
-			synthRoute->setDACInputMode(MT32Emu::DACInputMode_NICE);
-			break;
-		case 1:
-			synthRoute->setDACInputMode(MT32Emu::DACInputMode_GENERATION1);
-			break;
-		case 2:
-			synthRoute->setDACInputMode(MT32Emu::DACInputMode_GENERATION2);
-			break;
-		}
-	}
+	spd.exec();
 }
 
 void SynthWidget::on_startButton_clicked()

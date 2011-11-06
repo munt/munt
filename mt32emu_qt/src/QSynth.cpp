@@ -46,8 +46,6 @@ void QReportHandler::onErrorPCMROM() {
 }
 
 QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED) {
-	reverbEnabled = true;
-	emuDACInputMode = DACInputMode_NICE;
 	isOpen = false;
 	synthMutex = new QMutex(QMutex::Recursive);
 	midiEventQueue = new MidiEventQueue;
@@ -152,12 +150,7 @@ bool QSynth::openSynth() {
 	const MT32Emu::ROMImage *controlROMImage = NULL;
 	const MT32Emu::ROMImage *pcmROMImage = NULL;
 	Master::getInstance()->getROMImages(controlROMImage, pcmROMImage);
-	if(synth->open(*controlROMImage, *pcmROMImage)) {
-		synth->setReverbEnabled(reverbEnabled);
-		synth->setDACInputMode(emuDACInputMode);
-		return true;
-	}
-	return false;
+	return synth->open(*controlROMImage, *pcmROMImage);
 }
 
 bool QSynth::open() {
@@ -175,7 +168,7 @@ bool QSynth::open() {
 	return false;
 }
 
-void QSynth::setMasterVolume(Bit8u masterVolume) {
+void QSynth::setMasterVolume(unsigned int masterVolume) {
 	if (!isOpen) {
 		return;
 	}
@@ -187,8 +180,7 @@ void QSynth::setMasterVolume(Bit8u masterVolume) {
 	synthMutex->unlock();
 }
 
-void QSynth::setReverbEnabled(bool newReverbEnabled) {
-	reverbEnabled = newReverbEnabled;
+void QSynth::setReverbEnabled(bool reverbEnabled) {
 	if (!isOpen) {
 		return;
 	}
@@ -198,8 +190,7 @@ void QSynth::setReverbEnabled(bool newReverbEnabled) {
 	synthMutex->unlock();
 }
 
-void QSynth::setDACInputMode(DACInputMode newEmuDACInputMode) {
-	emuDACInputMode = newEmuDACInputMode;
+void QSynth::setDACInputMode(DACInputMode emuDACInputMode) {
 	if (!isOpen) {
 		return;
 	}

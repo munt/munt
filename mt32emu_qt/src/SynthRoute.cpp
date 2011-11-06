@@ -144,6 +144,6 @@ bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, qint64 r
 	return qSynth.pushMIDISysex(sysexData, sysexLen, refNanos);
 }
 
-void SynthRoute::setDACInputMode(DACInputMode pEmuDACInputMode) {
-	qSynth.setDACInputMode(pEmuDACInputMode);
+void SynthRoute::setDACInputMode(DACInputMode emuDACInputMode) {
+	qSynth.setDACInputMode(emuDACInputMode);
 }
