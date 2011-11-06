@@ -235,7 +235,31 @@ bool Master::isPinned(const SynthRoute *synthRoute) const {
 }
 
 void Master::setPinned(SynthRoute *synthRoute) {
+	if (pinnedSynthRoute == synthRoute) return;
 	pinnedSynthRoute = synthRoute;
+	emit synthRoutePinned();
+}
+
+void Master::startPinnedSynthRoute() {
+	if (settings->value("Master/startPinnedSynthRoute", "0").toBool())
+		setPinned(startSynthRoute());
+}
+
+SynthRoute *Master::startSynthRoute() {
+	SynthRoute *synthRoute = pinnedSynthRoute;
+	if (synthRoute == NULL) {
+		synthRoute = new SynthRoute(this);
+		const AudioDevice *audioDevice = NULL;
+		getAudioDevices();
+		if (!audioDevices.isEmpty()) {
+			audioDevice = findAudioDevice(defaultAudioDriverId, defaultAudioDeviceName);
+			synthRoute->setAudioDevice(audioDevice);
+			synthRoute->open();
+			synthRoutes.append(synthRoute);
+			emit synthRouteAdded(synthRoute, audioDevice);
+		}
+	}
+	return synthRoute;
 }
 
 QSystemTrayIcon *Master::getTrayIcon() const {
@@ -251,19 +275,7 @@ void Master::reallyShowBalloon(const QString &title, const QString &text) {
 }
 
 void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name) {
-	SynthRoute *synthRoute = pinnedSynthRoute;
-	if (synthRoute == NULL) {
-		synthRoute = new SynthRoute(this);
-		const AudioDevice *audioDevice = NULL;
-		getAudioDevices();
-		if (!audioDevices.isEmpty()) {
-			audioDevice = findAudioDevice(defaultAudioDriverId, defaultAudioDeviceName);
-			synthRoute->setAudioDevice(audioDevice);
-			synthRoute->open();
-			synthRoutes.append(synthRoute);
-			emit synthRouteAdded(synthRoute, audioDevice);
-		}
-	}
+	SynthRoute *synthRoute = startSynthRoute();
 	MidiSession *midiSession = new MidiSession(this, midiDriver, name, synthRoute);
 	synthRoute->addMidiSession(midiSession);
 	*returnVal = midiSession;

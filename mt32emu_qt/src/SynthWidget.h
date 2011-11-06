@@ -47,9 +47,6 @@ private slots:
 	void handleAudioDeviceRemoved(AudioDevice *audioDevice);
 	void handleMIDISessionAdded(MidiSession *midiSession);
 	void handleMIDISessionRemoved(MidiSession *midiSession);
-
-signals:
-	void synthRoutePinned();
 };
 
 #endif // SYNTHWIDGET_H

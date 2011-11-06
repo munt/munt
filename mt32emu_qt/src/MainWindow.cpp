@@ -33,8 +33,9 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	testMidiDriver(NULL)
 {
 	ui->setupUi(this);
-	QObject::connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
-	QObject::connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), SLOT(handleSynthRouteRemoved(SynthRoute *)));
+	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
+	connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), SLOT(handleSynthRouteRemoved(SynthRoute *)));
+	connect(master, SIGNAL(synthRoutePinned()), SLOT(handleSynthRoutePinned()));
 	if (master->getTrayIcon() != NULL) {
 		connect(master->getTrayIcon(), SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(handleTrayIconActivated(QSystemTrayIcon::ActivationReason)));
 		trayIconContextMenu();
@@ -73,7 +74,6 @@ void MainWindow::on_actionAbout_triggered()
 void MainWindow::handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice) {
 	SynthWidget *synthWidget = new SynthWidget(master, synthRoute, audioDevice, this);
 	ui->synthTabs->addTab(synthWidget, "Synth");
-	connect(synthWidget, SIGNAL(synthRoutePinned()), SLOT(handleSynthRoutePinned()));
 }
 
 void MainWindow::handleSynthRoutePinned() {

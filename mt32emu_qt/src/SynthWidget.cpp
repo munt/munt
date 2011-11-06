@@ -176,16 +176,19 @@ void SynthWidget::on_stopButton_clicked()
 }
 
 void SynthWidget::handleSynthRoutePinned() {
-	ui->pinCheckBox->setChecked(false);
+	ui->pinCheckBox->setChecked(Master::getInstance()->isPinned(synthRoute));
 }
 
 void SynthWidget::on_pinCheckBox_stateChanged(int state)
 {
+	Master *master = Master::getInstance();
 	if (state == Qt::Checked) {
-		emit synthRoutePinned();
-		ui->pinCheckBox->setChecked(true);
-		Master::getInstance()->setPinned(synthRoute);
-	} else if (state == Qt::Unchecked) Master::getInstance()->setPinned(NULL);
+		master->setPinned(synthRoute);
+		master->getSettings()->setValue("Master/startPinnedSynthRoute", "1");
+	} else if (state == Qt::Unchecked && master->isPinned(synthRoute)){
+		master->setPinned(NULL);
+		master->getSettings()->setValue("Master/startPinnedSynthRoute", "0");
+	}
 }
 
 int SynthWidget::findMIDISession(MidiSession *midiSession) {

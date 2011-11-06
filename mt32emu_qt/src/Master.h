@@ -39,6 +39,7 @@ private:
 	const QString getROMPathName(QString romFileName) const;
 	void makeROMImages();
 	void freeROMImages();
+	SynthRoute *startSynthRoute();
 
 public:
 	MidiSession *createMidiSession(MidiDriver *midiDriver, QString name);
@@ -57,6 +58,7 @@ public:
 	void showBalloon(const QString &title, const QString &text);
 	bool isPinned(const SynthRoute *synthRoute) const;
 	void setPinned(SynthRoute *synthRoute);
+	void startPinnedSynthRoute();
 
 	static Master *getInstance();
 
@@ -72,6 +74,7 @@ private slots:
 signals:
 	void synthRouteAdded(SynthRoute *route, const AudioDevice *audioDevice);
 	void synthRouteRemoved(SynthRoute *route);
+	void synthRoutePinned();
 	void audioDeviceAdded(AudioDevice *audioDevice);
 	void audioDeviceRemoved(AudioDevice *audioDevice);
 };
