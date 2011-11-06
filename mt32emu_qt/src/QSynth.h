@@ -13,15 +13,27 @@ enum SynthState {
 	SynthState_CLOSING
 };
 
-class QReportHandler : public MT32Emu::ReportHandler {
+class QReportHandler : public QObject, public MT32Emu::ReportHandler {
+	Q_OBJECT
+
 public:
+	QReportHandler(QObject *parent = NULL);
 	void showLCDMessage(const char *message);
 	void onErrorControlROM();
 	void onErrorPCMROM();
+	void onNewReverbMode(MT32Emu::Bit8u mode);
+	void onNewReverbTime(MT32Emu::Bit8u time);
+	void onNewReverbLevel(MT32Emu::Bit8u level);
+
+signals:
+	void reverbModeChanged(int);
+	void reverbTimeChanged(int);
+	void reverbLevelChanged(int);
 };
 
 class QSynth : public QObject {
 	Q_OBJECT
+
 private:
 	SynthState state;
 

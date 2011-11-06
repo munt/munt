@@ -33,6 +33,9 @@ private slots:
 	void on_outputGainSlider_valueChanged(int value);
 	void on_reverbOutputGainSlider_valueChanged(int value);
 	void updateReverbSettings();
+	void handleReverbModeChanged(int mode);
+	void handleReverbTimeChanged(int time);
+	void handleReverbLevelChanged(int level);
 };
 
 #endif // SYNTHPROPERTIESDIALOG_H

@@ -33,6 +33,11 @@ SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent, SynthRoute *useSyn
 	connect(ui->reverbModeComboBox, SIGNAL(currentIndexChanged(int)), SLOT(updateReverbSettings()));
 	connect(ui->reverbTimeSlider, SIGNAL(valueChanged(int)), SLOT(updateReverbSettings()));
 	connect(ui->reverbLevelSlider, SIGNAL(valueChanged(int)), SLOT(updateReverbSettings()));
+
+	QReportHandler *handler = synthRoute->findChild<QSynth *>()->findChild<QReportHandler *>();
+	connect(handler, SIGNAL(reverbModeChanged(int)), SLOT(handleReverbModeChanged(int)));
+	connect(handler, SIGNAL(reverbTimeChanged(int)), SLOT(handleReverbTimeChanged(int)));
+	connect(handler, SIGNAL(reverbLevelChanged(int)), SLOT(handleReverbLevelChanged(int)));
 }
 
 SynthPropertiesDialog::~SynthPropertiesDialog()
@@ -114,21 +119,37 @@ void SynthPropertiesDialog::on_reverbOutputGainSlider_valueChanged(int value) {
 }
 
 void SynthPropertiesDialog::updateReverbSettings() {
+	if (ui->reverbCheckBox->checkState() == Qt::PartiallyChecked) return;
 	synthRoute->setReverbSettings(ui->reverbModeComboBox->currentIndex(),
 		ui->reverbTimeSlider->value(),
 		ui->reverbLevelSlider->value());
 }
 
+void SynthPropertiesDialog::handleReverbModeChanged(int mode) {
+	ui->reverbModeComboBox->setCurrentIndex(mode);
+}
+
+void SynthPropertiesDialog::handleReverbTimeChanged(int time) {
+	ui->reverbTimeSlider->setValue(time);
+}
+
+void SynthPropertiesDialog::handleReverbLevelChanged(int level) {
+	ui->reverbLevelSlider->setValue(level);
+}
+
 void SynthPropertiesDialog::resetSynth() {
+	int reverbMode = ui->reverbModeComboBox->currentIndex();
+	int reverbTime = ui->reverbTimeSlider->value();
+	int reverbLevel = ui->reverbLevelSlider->value();
 	synthRoute->reset();
 	on_dacEmuComboBox_currentIndexChanged(ui->dacEmuComboBox->currentIndex());
 	Qt::CheckState reverbState = ui->reverbCheckBox->checkState();
 	on_reverbCheckBox_stateChanged(reverbState);
-	if (reverbState == Qt::PartiallyChecked) {
-		ui->reverbModeComboBox->setCurrentIndex(0);
-		ui->reverbTimeSlider->setValue(5);
-		ui->reverbLevelSlider->setValue(3);
-	} else updateReverbSettings();
+	if (reverbState != Qt::PartiallyChecked) {
+		ui->reverbModeComboBox->setCurrentIndex(reverbMode);
+		ui->reverbTimeSlider->setValue(reverbTime);
+		ui->reverbLevelSlider->setValue(reverbLevel);
+	}
 	on_outputGainSlider_valueChanged(ui->outputGainSlider->value());
 	on_reverbOutputGainSlider_valueChanged(ui->reverbOutputGainSlider->value());
 }
@@ -137,10 +158,11 @@ void SynthPropertiesDialog::restoreDefaults() {
 	QString s = Master::getInstance()->getROMDir().absolutePath();
 	ui->romDirLineEdit->setText(s);
 	ui->dacEmuComboBox->setCurrentIndex(0);
-	ui->reverbCheckBox->setCheckState(Qt::PartiallyChecked);
+	ui->reverbCheckBox->setCheckState(Qt::Checked);
 	ui->reverbModeComboBox->setCurrentIndex(0);
 	ui->reverbTimeSlider->setValue(5);
 	ui->reverbLevelSlider->setValue(3);
+	ui->reverbCheckBox->setCheckState(Qt::PartiallyChecked);
 	ui->outputGainSlider->setValue(100);
 	ui->reverbOutputGainSlider->setValue(100);
 }

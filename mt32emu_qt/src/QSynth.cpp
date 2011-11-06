@@ -33,6 +33,10 @@
 
 using namespace MT32Emu;
 
+QReportHandler::QReportHandler(QObject *parent) : QObject(parent)
+{
+}
+
 void QReportHandler::showLCDMessage(const char *message) {
 	Master::getInstance()->showBalloon("LCD-Message:", message);
 }
@@ -45,11 +49,23 @@ void QReportHandler::onErrorPCMROM() {
 	QMessageBox::critical(NULL, "Cannot open Synth", "PCM ROM file cannot be opened.");
 }
 
+void QReportHandler::onNewReverbMode(Bit8u mode) {
+	emit reverbModeChanged(mode);
+}
+
+void QReportHandler::onNewReverbTime(Bit8u time) {
+	emit reverbTimeChanged(time);
+}
+
+void QReportHandler::onNewReverbLevel(Bit8u level) {
+	emit reverbLevelChanged(level);
+}
+
 QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED) {
 	isOpen = false;
 	synthMutex = new QMutex(QMutex::Recursive);
 	midiEventQueue = new MidiEventQueue;
-	reportHandler = new QReportHandler;
+	reportHandler = new QReportHandler(this);
 	synth = new Synth(reportHandler);
 }
 
