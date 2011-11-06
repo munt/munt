@@ -164,7 +164,5 @@ void SynthWidget::handleMIDISessionAdded(MidiSession *midiSession) {
 }
 
 void SynthWidget::handleMIDISessionRemoved(MidiSession *midiSession) {
-	int c = ui->midiList->count();
 	delete ui->midiList->takeItem(findMIDISession(midiSession));
-	c = ui->midiList->count();
 }
