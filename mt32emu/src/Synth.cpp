@@ -185,37 +185,6 @@ void ReportHandler::showLCDMessage(const char *data) {
 	printf("\n");
 }
 
-void Synth::report(ReportType type, const void *data) {
-	switch (type) {
-	case ReportType_errorControlROM:
-		reportHandler->onErrorControlROM();
-		break;
-	case ReportType_errorPCMROM:
-		reportHandler->onErrorPCMROM();
-		break;
-	case ReportType_lcdMessage:
-		reportHandler->showLCDMessage((const char *)data);
-		break;
-	case ReportType_devReset:
-		reportHandler->onDeviceReset();
-		break;
-	case ReportType_devReconfig:
-		reportHandler->onDeviceReconfig();
-		break;
-	case ReportType_newReverbMode:
-		reportHandler->onNewReverbMode(*(Bit8u *)data);
-		break;
-	case ReportType_newReverbTime:
-		reportHandler->onNewReverbTime(*(Bit8u *)data);
-		break;
-	case ReportType_newReverbLevel:
-		reportHandler->onNewReverbLevel(*(Bit8u *)data);
-		break;
-	default:
-		reportHandler->reportUnspecified(type, data);
-	}
-}
-
 void ReportHandler::printDebug(const char *fmt, va_list list) {
 		vprintf(fmt, list);
 		printf("\n");
@@ -447,7 +416,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage) {
 #endif
 	if (!loadControlROM(controlROMImage)) {
 		printDebug("Init Error - Missing or invalid Control ROM image");
-		report(ReportType_errorControlROM, NULL);
+		reportHandler->onErrorControlROM();
 		return false;
 	}
 
@@ -464,7 +433,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage) {
 #endif
 	if (!loadPCMROM(pcmROMImage)) {
 		printDebug("Init Error - Missing PCM ROM image");
-		report(ReportType_errorPCMROM, NULL);
+		reportHandler->onErrorPCMROM();
 		return false;
 	}
 
@@ -1175,7 +1144,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 	case MR_System:
 		region->write(0, off, data, len);
 
-		report(ReportType_devReconfig, NULL);
+		reportHandler->onDeviceReconfig();
 		// FIXME: We haven't properly confirmed any of this behaviour
 		// In particular, we tend to reset things such as reverb even if the write contained
 		// the same parameters as were already set, which may be wrong.
@@ -1213,7 +1182,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 #if MT32EMU_MONITOR_SYSEX > 0
 		printDebug("WRITE-LCD: %s", buf);
 #endif
-		report(ReportType_lcdMessage, buf);
+		reportHandler->showLCDMessage(buf);
 		break;
 	case MR_Reset:
 		reset();
@@ -1241,9 +1210,9 @@ void Synth::refreshSystemReverbParameters() {
 #endif
 		return;
 	}
-	report(ReportType_newReverbMode,  &mt32ram.system.reverbMode);
-	report(ReportType_newReverbTime,  &mt32ram.system.reverbTime);
-	report(ReportType_newReverbLevel, &mt32ram.system.reverbLevel);
+	reportHandler->onNewReverbMode(mt32ram.system.reverbMode);
+	reportHandler->onNewReverbTime(mt32ram.system.reverbTime);
+	reportHandler->onNewReverbLevel(mt32ram.system.reverbLevel);
 
 	ReverbModel *newReverbModel = reverbModels[mt32ram.system.reverbMode];
 #if MT32EMU_REDUCE_REVERB_MEMORY
@@ -1306,7 +1275,7 @@ void Synth::reset() {
 #if MT32EMU_MONITOR_SYSEX > 0
 	printDebug("RESET");
 #endif
-	report(ReportType_devReset, NULL);
+	reportHandler->onDeviceReset();
 	partialManager->deactivateAll();
 	mt32ram = mt32default;
 	for (int i = 0; i < 9; i++) {

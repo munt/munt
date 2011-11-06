@@ -59,30 +59,6 @@ enum DACInputMode {
 	DACInputMode_GENERATION2
 };
 
-enum ReportType {
-	// Errors
-	ReportType_errorControlROM = 1,
-	ReportType_errorPCMROM,
-	ReportType_errorSampleRate,
-
-	// Progress
-	ReportType_progressInit,
-
-	// HW spec
-	ReportType_availableSSE,
-	ReportType_available3DNow,
-	ReportType_usingSSE,
-	ReportType_using3DNow,
-
-	// General info
-	ReportType_lcdMessage,
-	ReportType_devReset,
-	ReportType_devReconfig,
-	ReportType_newReverbMode,
-	ReportType_newReverbTime,
-	ReportType_newReverbLevel
-};
-
 typedef void (*FloatToBit16sFunc)(Bit16s *target, const float *source, Bit32u len, float outputGain);
 
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
@@ -263,7 +239,6 @@ public:
 	virtual void onNewReverbMode(Bit8u /* mode */) {}
 	virtual void onNewReverbTime(Bit8u /* time */) {}
 	virtual void onNewReverbLevel(Bit8u /* level */) {}
-	virtual void reportUnspecified(ReportType /* type */, const void * /* reportData */) {}
 };
 
 class Synth {
@@ -384,7 +359,6 @@ private:
 
 	void printPartialUsage(unsigned long sampleOffset = 0);
 
-	void report(ReportType type, const void *reportData);
 	void printDebug(const char *fmt, ...);
 
 public:

@@ -56,9 +56,6 @@ public:
 	void setReverbEnabled(bool pReverbEnabled);
 	void setDACInputMode(MT32Emu::DACInputMode pEmuDACInputMode);
 
-	// This being public is an implementation quirk - do not call
-	int handleReport(MT32Emu::ReportType type, const void *reportData);
-
 signals:
 	void stateChanged(SynthState state);
 };
