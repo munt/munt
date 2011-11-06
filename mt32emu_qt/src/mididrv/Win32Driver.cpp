@@ -35,8 +35,8 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 	switch (uMsg) {
 	case WM_APP: // closing session
 		midiSession = (MidiSession*)wParam;
-		Master::getInstance()->deleteMidiSession(midiSession);
 		qDebug() << "Session" << midiSession << "finished";
+		Master::getInstance()->deleteMidiSession(midiSession);
 		return 1;
 
 	case WM_COPYDATA:
