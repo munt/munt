@@ -35,7 +35,6 @@ private:
 
 private slots:
 	void on_startButton_clicked();
-	void on_synthPropertiesButton_clicked();
 	void on_audioPropertiesButton_clicked();
 	void on_stopButton_clicked();
 	void on_refreshButton_clicked();

@@ -102,6 +102,10 @@ bool SynthRoute::close() {
 	return true;
 }
 
+bool SynthRoute::reset() {
+	return qSynth.reset();
+}
+
 SynthRouteState SynthRoute::getState() const {
 	return state;
 }
@@ -142,6 +146,30 @@ bool SynthRoute::pushMIDIShortMessage(Bit32u msg, qint64 refNanos) {
 
 bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, qint64 refNanos) {
 	return qSynth.pushMIDISysex(sysexData, sysexLen, refNanos);
+}
+
+void SynthRoute::setMasterVolume(int masterVolume) {
+	qSynth.setMasterVolume(masterVolume);
+}
+
+void SynthRoute::setOutputGain(float outputGain) {
+	qSynth.setOutputGain(outputGain);
+}
+
+void SynthRoute::setReverbOutputGain(float reverbOutputGain) {
+	qSynth.setReverbOutputGain(reverbOutputGain);
+}
+
+void SynthRoute::setReverbEnabled(bool reverbEnabled) {
+	qSynth.setReverbEnabled(reverbEnabled);
+}
+
+void SynthRoute::setReverbOverridden(bool reverbOverridden) {
+	qSynth.setReverbOverridden(reverbOverridden);
+}
+
+void SynthRoute::setReverbSettings(int reverbMode, int reverbTime, int reverbLevel) {
+	qSynth.setReverbSettings(reverbMode, reverbTime, reverbLevel);
 }
 
 void SynthRoute::setDACInputMode(DACInputMode emuDACInputMode) {

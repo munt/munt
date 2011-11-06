@@ -35,6 +35,7 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	connect(synthRoute, SIGNAL(midiSessionAdded(MidiSession *)), SLOT(handleMIDISessionAdded(MidiSession *)));
 	connect(synthRoute, SIGNAL(midiSessionRemoved(MidiSession *)), SLOT(handleMIDISessionRemoved(MidiSession *)));
 	connect(parent, SIGNAL(synthRoutePinned()), SLOT(handleSynthRoutePinned()));
+	connect(ui->synthPropertiesButton, SIGNAL(clicked()), &spd, SLOT(exec()));
 	handleSynthRouteState(synthRoute->getState());
 }
 
@@ -117,11 +118,6 @@ void SynthWidget::on_audioPropertiesButton_clicked()
 		apd.getData(chunkLen, audioLatency, midiLatency);
 		const_cast<AudioDriver *> (device->driver)->setAudioSettings(&chunkLen, &audioLatency, &midiLatency);
 	}
-}
-
-void SynthWidget::on_synthPropertiesButton_clicked()
-{
-	spd.exec();
 }
 
 void SynthWidget::on_startButton_clicked()

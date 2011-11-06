@@ -168,15 +168,34 @@ bool QSynth::open() {
 	return false;
 }
 
-void QSynth::setMasterVolume(unsigned int masterVolume) {
+void QSynth::setMasterVolume(int masterVolume) {
 	if (!isOpen) {
 		return;
 	}
-	Bit8u sysex[] = {0x10, 0x00, 0x16, 0x01};
-	sysex[3] = masterVolume;
+	Bit8u sysex[] = {0x10, 0x00, 0x16, masterVolume};
 
 	synthMutex->lock();
 	synth->writeSysex(16, sysex, 4);
+	synthMutex->unlock();
+}
+
+void QSynth::setOutputGain(float outputGain) {
+	if (!isOpen) {
+		return;
+	}
+
+	synthMutex->lock();
+	synth->setOutputGain(outputGain);
+	synthMutex->unlock();
+}
+
+void QSynth::setReverbOutputGain(float reverbOutputGain) {
+	if (!isOpen) {
+		return;
+	}
+
+	synthMutex->lock();
+	synth->setReverbOutputGain(/* Dry / wet gain ratio */ 0.68f * reverbOutputGain);
 	synthMutex->unlock();
 }
 
@@ -187,6 +206,29 @@ void QSynth::setReverbEnabled(bool reverbEnabled) {
 
 	synthMutex->lock();
 	synth->setReverbEnabled(reverbEnabled);
+	synthMutex->unlock();
+}
+
+void QSynth::setReverbOverridden(bool reverbOverridden) {
+	if (!isOpen) {
+		return;
+	}
+
+	synthMutex->lock();
+	synth->setReverbOverridden(reverbOverridden);
+	synthMutex->unlock();
+}
+
+void QSynth::setReverbSettings(int reverbMode, int reverbTime, int reverbLevel) {
+	if (!isOpen) {
+		return;
+	}
+	Bit8u sysex[] = {0x10, 0x00, 0x01, reverbMode, reverbTime, reverbLevel};
+
+	synthMutex->lock();
+	synth->setReverbOverridden(false);
+	synth->writeSysex(16, sysex, 6);
+	synth->setReverbOverridden(true);
 	synthMutex->unlock();
 }
 

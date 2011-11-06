@@ -37,9 +37,18 @@ public:
 	~SynthRoute();
 	bool open();
 	bool close();
+	bool reset();
+
 	bool pushMIDIShortMessage(MT32Emu::Bit32u msg, qint64 midiNanos);
 	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, qint64 midiNanos);
+	void setMasterVolume(int masterVolume);
+	void setOutputGain(float outputGain);
+	void setReverbOutputGain(float reverbOutputGain);
+	void setReverbEnabled(bool reverbEnabled);
+	void setReverbOverridden(bool reverbOverridden);
+	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
+
 	void addMidiSession(MidiSession *midiSession);
 	void removeMidiSession(MidiSession *midiSession);
 	SynthRouteState getState() const;
