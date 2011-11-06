@@ -34,7 +34,7 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	connect(synthRoute, SIGNAL(stateChanged(SynthRouteState)), SLOT(handleSynthRouteState(SynthRouteState)));
 	connect(synthRoute, SIGNAL(midiSessionAdded(MidiSession *)), SLOT(handleMIDISessionAdded(MidiSession *)));
 	connect(synthRoute, SIGNAL(midiSessionRemoved(MidiSession *)), SLOT(handleMIDISessionRemoved(MidiSession *)));
-	connect(parent, SIGNAL(synthRoutePinned()), SLOT(handleSynthRoutePinned()));
+	connect(master, SIGNAL(synthRoutePinned()), SLOT(handleSynthRoutePinned()));
 	connect(ui->synthPropertiesButton, SIGNAL(clicked()), &spd, SLOT(exec()));
 	handleSynthRouteState(synthRoute->getState());
 }
