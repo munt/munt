@@ -81,6 +81,8 @@ void SynthPropertiesDialog::on_buttonBox_clicked(QAbstractButton *button) {
 		case QDialogButtonBox::RestoreDefaults:
 			restoreDefaults();
 			break;
+		default:
+			break;
 	}
 }
 

@@ -236,6 +236,7 @@ bool Master::isPinned(const SynthRoute *synthRoute) const {
 
 void Master::setPinned(SynthRoute *synthRoute) {
 	if (pinnedSynthRoute == synthRoute) return;
+	settings->setValue("Master/startPinnedSynthRoute", QString().setNum(synthRoute != NULL));
 	pinnedSynthRoute = synthRoute;
 	emit synthRoutePinned();
 }
@@ -284,13 +285,12 @@ void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDr
 void Master::reallyDeleteMidiSession(MidiSession *midiSession) {
 	SynthRoute *synthRoute = midiSession->getSynthRoute();
 	synthRoute->removeMidiSession(midiSession);
-	if (synthRoute != pinnedSynthRoute) {
-		synthRoutes.removeOne(synthRoute);
-		emit synthRouteRemoved(synthRoute);
-		synthRoute->close();
-		delete synthRoute;
-	}
 	delete midiSession;
+	if (synthRoute == pinnedSynthRoute || synthRoute->hasMIDISessions()) return;
+	synthRoutes.removeOne(synthRoute);
+	emit synthRouteRemoved(synthRoute);
+	synthRoute->close();
+	delete synthRoute;
 }
 
 MidiSession *Master::createMidiSession(MidiDriver *midiDriver, QString name) {

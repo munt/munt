@@ -51,6 +51,7 @@ public:
 
 	void addMidiSession(MidiSession *midiSession);
 	void removeMidiSession(MidiSession *midiSession);
+	bool hasMIDISessions() const;
 	SynthRouteState getState() const;
 	void setAudioDevice(const AudioDevice *newAudioDevice);
 

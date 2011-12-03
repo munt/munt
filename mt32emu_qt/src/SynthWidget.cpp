@@ -142,10 +142,8 @@ void SynthWidget::on_pinCheckBox_stateChanged(int state)
 	Master *master = Master::getInstance();
 	if (state == Qt::Checked) {
 		master->setPinned(synthRoute);
-		master->getSettings()->setValue("Master/startPinnedSynthRoute", "1");
-	} else if (state == Qt::Unchecked && master->isPinned(synthRoute)){
+	} else if (state == Qt::Unchecked && master->isPinned(synthRoute)) {
 		master->setPinned(NULL);
-		master->getSettings()->setValue("Master/startPinnedSynthRoute", "0");
 	}
 }
 
@@ -160,7 +158,7 @@ int SynthWidget::findMIDISession(MidiSession *midiSession) {
 void SynthWidget::handleMIDISessionAdded(MidiSession *midiSession) {
 	QListWidgetItem *item = new QListWidgetItem(midiSession->getName(), ui->midiList);
 	item->setData(Qt::UserRole, QVariant::fromValue((QObject *)midiSession));
-	ui->midiList->addItem(item);;
+	ui->midiList->addItem(item);
 }
 
 void SynthWidget::handleMIDISessionRemoved(MidiSession *midiSession) {

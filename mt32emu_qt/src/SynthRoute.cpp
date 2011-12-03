@@ -120,6 +120,10 @@ void SynthRoute::removeMidiSession(MidiSession *midiSession) {
 	emit midiSessionRemoved(midiSession);
 }
 
+bool SynthRoute::hasMIDISessions() const {
+	return !midiSessions.isEmpty();
+}
+
 void SynthRoute::handleQSynthState(SynthState synthState) {
 	// Should really only stopAudio on CLOSED, and startAudio() on OPEN after init or CLOSED.
 	// For CLOSING, it should suspend, and for OPEN after CLOSING, it should resume

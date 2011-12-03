@@ -35,6 +35,7 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	ui->setupUi(this);
 	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
 	connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), SLOT(handleSynthRouteRemoved(SynthRoute *)));
+	connect(master, SIGNAL(synthRoutePinned()), SLOT(refreshTabNames()));
 	if (master->getTrayIcon() != NULL) {
 		connect(master->getTrayIcon(), SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(handleTrayIconActivated(QSystemTrayIcon::ActivationReason)));
 		trayIconContextMenu();
@@ -70,14 +71,27 @@ void MainWindow::on_actionAbout_triggered()
 					   );
 }
 
+void MainWindow::refreshTabNames()
+{
+	QWidget *widget;
+	QString tabName;
+	for(int i = 0;; i++) {
+		widget = ui->synthTabs->widget(i);
+		if (widget == NULL) return;
+		tabName.sprintf("Synth &%i", i + 1);
+		if (master->isPinned(((SynthWidget *)widget)->getSynthRoute())) tabName = tabName + " *";
+		ui->synthTabs->setTabText(i, tabName);
+	}
+}
+
 void MainWindow::handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice) {
 	SynthWidget *synthWidget = new SynthWidget(master, synthRoute, audioDevice, this);
-	ui->synthTabs->addTab(synthWidget, "Synth");
+	ui->synthTabs->addTab(synthWidget, QString().sprintf("Synth &%i", ui->synthTabs->count() + 1));
 }
 
 void MainWindow::handleSynthRouteRemoved(SynthRoute *synthRoute) {
 	QWidget *widget;
-	for(int i = 0;;i++) {
+	for(int i = 0;; i++) {
 		widget = ui->synthTabs->widget(i);
 		if(widget == NULL) {
 			qDebug() << "Couldn't find widget for removed synth";
@@ -86,6 +100,8 @@ void MainWindow::handleSynthRouteRemoved(SynthRoute *synthRoute) {
 		SynthWidget *synthWidget = (SynthWidget *)widget;
 		if(synthRoute == synthWidget->getSynthRoute()) {
 			ui->synthTabs->removeTab(i);
+			delete synthWidget;
+			refreshTabNames();
 			return;
 		}
 	}
@@ -162,7 +178,7 @@ void MainWindow::handleTrayIconActivated(QSystemTrayIcon::ActivationReason reaso
 	case QSystemTrayIcon::DoubleClick:
 		// Fall-through until implemented
 	case QSystemTrayIcon::Trigger:
-		// Fall-through untill implemented
+		// Fall-through until implemented
 	default:
 		showHideMainWindow();
 		break;
