@@ -1,5 +1,7 @@
 <RCC>
   <qresource>
+    <file>images/LCDOn.gif</file>
+    <file>images/FrontPanel.gif</file>
     <file>images/Refresh.bmp</file>
     <file>images/TrayIcon.bmp</file>
   </qresource>

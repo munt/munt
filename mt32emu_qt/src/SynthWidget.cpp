@@ -25,9 +25,11 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	synthRoute(useSynthRoute),
 	ui(new Ui::SynthWidget),
 	spd(parent, useSynthRoute),
-	apd(parent)
+	apd(parent),
+	frontPanel(parent, useSynthRoute)
 {
 	ui->setupUi(this);
+	frontPanel.show();
 	refreshAudioDeviceList(master, useAudioDevice);
 	ui->pinCheckBox->setChecked(master->isPinned(synthRoute));
 

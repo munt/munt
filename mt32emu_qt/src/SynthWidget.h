@@ -6,6 +6,7 @@
 #include "SynthRoute.h"
 #include "SynthPropertiesDialog.h"
 #include "AudioPropertiesDialog.h"
+#include "FrontPanel.h"
 
 class Master;
 class AudioDevice;
@@ -29,6 +30,7 @@ private:
 	Ui::SynthWidget *ui;
 	SynthPropertiesDialog spd;
 	AudioPropertiesDialog apd;
+	FrontPanel frontPanel;
 
 	void refreshAudioDeviceList(Master *master, const AudioDevice *useAudioDevice);
 	int findMIDISession(MidiSession *midiSession);
