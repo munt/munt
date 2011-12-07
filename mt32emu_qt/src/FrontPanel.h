@@ -26,6 +26,7 @@ private:
 	QByteArray lcdText;
 	bool drawMaskedChars, maskedChar[20];
 	unsigned int volume;
+	bool isMIDILightOn;
 
 	void setDefaultLCDText();
 };

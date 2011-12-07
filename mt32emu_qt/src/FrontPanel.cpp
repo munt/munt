@@ -26,7 +26,8 @@ FrontPanel::FrontPanel(QWidget *parent, SynthRoute *useSynthRoute) :
 		ui(new Ui::FrontPanel),
 		synthRoute(useSynthRoute),
 		drawMaskedChars(true),
-		volume(100)
+		volume(100),
+		isMIDILightOn(false)
 {
 	ui->setupUi(this);
 	for (int i = 0; i < 20; i++) {
@@ -118,4 +119,7 @@ void FrontPanel::paintEvent(QPaintEvent *)
 	knobPainter.translate(-25, -25);
 	knobPainter.drawPixmap(0, 0, volumeKnob);
 	painter.drawPixmap(706, 48, rotatedKnob);
+
+	QColor midiLightColor = isMIDILightOn ? Qt::green : QColor(41, 42, 51);
+	painter.fillRect(293, 72, 10, 2, midiLightColor);
 }
