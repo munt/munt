@@ -29,15 +29,20 @@ FrontPanel::FrontPanel(QWidget *parent, SynthRoute *useSynthRoute) :
 		volume(100)
 {
 	ui->setupUi(this);
-	strncpy(lcdText, "1 2 3 4 5 R |vol:100", 20);
 	for (int i = 0; i < 20; i++) {
 		maskedChar[i] = false;
 	}
+	setDefaultLCDText();
 }
 
 FrontPanel::~FrontPanel()
 {
 	delete ui;
+}
+
+void FrontPanel::setDefaultLCDText()
+{
+	lcdText = QString().sprintf("1 2 3 4 5 R |vol:%3d", volume).toAscii();
 }
 
 void FrontPanel::paintEvent(QPaintEvent *)
@@ -55,15 +60,14 @@ void FrontPanel::paintEvent(QPaintEvent *)
 	QColor bgColor(98, 127, 0);
 	QColor fgColor(232, 254, 0);
 
-	int xat, xstart, yat, len;
+	int xat, xstart, yat;
 	xstart = 0;
 	yat = 0;
-	len = strlen(lcdText);
 
 	for (int i = 0; i < 20; i++) {
 		unsigned char c;
 		c = 0x20;
-		if (i < len) {
+		if (i < lcdText.size()) {
 			c = lcdText[i];
 		}
 

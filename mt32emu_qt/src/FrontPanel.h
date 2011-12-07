@@ -23,9 +23,11 @@ protected:
 private:
 	Ui::FrontPanel *ui;
 	SynthRoute *synthRoute;
-	char lcdText[21];
+	QByteArray lcdText;
 	bool drawMaskedChars, maskedChar[20];
 	unsigned int volume;
+
+	void setDefaultLCDText();
 };
 
 #endif // FRONT_PANEL_H
