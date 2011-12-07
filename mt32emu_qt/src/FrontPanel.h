@@ -25,6 +25,7 @@ private:
 	SynthRoute *synthRoute;
 	char lcdText[21];
 	bool drawMaskedChars, maskedChar[20];
+	unsigned int volume;
 };
 
 #endif // FRONT_PANEL_H

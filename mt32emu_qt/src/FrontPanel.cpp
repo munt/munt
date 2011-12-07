@@ -25,7 +25,8 @@ FrontPanel::FrontPanel(QWidget *parent, SynthRoute *useSynthRoute) :
 		QDialog(parent),
 		ui(new Ui::FrontPanel),
 		synthRoute(useSynthRoute),
-		drawMaskedChars(true)
+		drawMaskedChars(true),
+		volume(100)
 {
 	ui->setupUi(this);
 	strncpy(lcdText, "1 2 3 4 5 R |vol:100", 20);
@@ -104,4 +105,13 @@ void FrontPanel::paintEvent(QPaintEvent *)
 	//painter.drawPixmap(QRect(76 + 7, 58 + 7, 680, 57), drawBuffer);	// huge non-scaled
 	//painter.drawPixmap(QRect(76 + 7, 58 + 7, 171, 15), drawBuffer);	// nearest neighbor
 	painter.drawImage(76 + 7, 58 + 7, drawBuffer.toImage().scaled(171, 15, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)); // bilinear filter
+
+	QPixmap volumeKnob(":images/VolumeKnob.png");
+	QPixmap rotatedKnob(volumeKnob);
+	QPainter knobPainter(&rotatedKnob);
+	knobPainter.translate(25, 25);
+	knobPainter.rotate(3 * volume);
+	knobPainter.translate(-25, -25);
+	knobPainter.drawPixmap(0, 0, volumeKnob);
+	painter.drawPixmap(706, 48, rotatedKnob);
 }
