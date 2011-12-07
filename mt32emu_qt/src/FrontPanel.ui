@@ -36,22 +36,6 @@
 	background-image: url(:/images/FrontPanel.gif);
 }</string>
   </property>
-  <widget class="QLabel" name="lcdOn">
-   <property name="geometry">
-    <rect>
-     <x>76</x>
-     <y>58</y>
-     <width>187</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-   <property name="pixmap">
-    <pixmap resource="images.qrc">:/images/LCDOn.gif</pixmap>
-   </property>
-  </widget>
  </widget>
  <resources>
   <include location="images.qrc"/>
