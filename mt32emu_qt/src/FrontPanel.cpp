@@ -68,8 +68,8 @@ void FrontPanel::paintEvent(QPaintEvent *)
 		}
 
 		// Don't render characters we don't have mapped
-		if(c < 0x20) c = 0x20;
-		if(c > 0x7f) c = 0x20;
+		if (c < 0x20) c = 0x20;
+		if (c > 0x7f) c = 0x20;
 
 		c -= 0x20;
 
