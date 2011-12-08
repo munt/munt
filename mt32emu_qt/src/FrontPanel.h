@@ -18,7 +18,7 @@ public:
 	~FrontPanel();
 
 protected:
-	void FrontPanel::paintEvent(QPaintEvent *);
+	void paintEvent(QPaintEvent *);
 
 private:
 	Ui::FrontPanel *ui;
