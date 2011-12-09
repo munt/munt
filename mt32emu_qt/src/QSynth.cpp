@@ -151,8 +151,10 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 			break;
 		}
 		synthMutex->lock();
-		if (!isOpen)
+		if (!isOpen) {
+			synthMutex->unlock();
 			break;
+		}
 		synth->render(buf, renderThisPass);
 		synthMutex->unlock();
 		renderedLen += renderThisPass;
@@ -264,13 +266,15 @@ bool QSynth::reset() {
 	setState(SynthState_CLOSING);
 
 	synthMutex->lock();
-	synth->close();
 	delete synth;
 	synth = new Synth(reportHandler);
 	if (!openSynth()) {
 		// We're now in a partially-open state - better to properly close.
-		close();
+		delete synth;
+		synth = new Synth(reportHandler);
+		isOpen = false;
 		synthMutex->unlock();
+		setState(SynthState_CLOSED);
 		return false;
 	}
 	synthMutex->unlock();
