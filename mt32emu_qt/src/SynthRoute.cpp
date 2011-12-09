@@ -103,7 +103,14 @@ bool SynthRoute::close() {
 }
 
 bool SynthRoute::reset() {
-	return qSynth.reset();
+	if (state == SynthRouteState_CLOSED)
+		return true;
+	setState(SynthRouteState_CLOSING);
+	if (qSynth.reset()) {
+		setState(SynthRouteState_OPEN);
+		return true;
+	}
+	return false;
 }
 
 SynthRouteState SynthRoute::getState() const {

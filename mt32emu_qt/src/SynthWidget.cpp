@@ -19,17 +19,23 @@
 #include "ui_SynthWidget.h"
 #include "Master.h"
 #include "MidiSession.h"
+#include "font_6x8.h"
 
 SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioDevice *useAudioDevice, QWidget *parent) :
 	QWidget(parent),
 	synthRoute(useSynthRoute),
 	ui(new Ui::SynthWidget),
 	spd(parent, useSynthRoute),
-	apd(parent),
-	frontPanel(parent, useSynthRoute)
+	apd(parent)
 {
 	ui->setupUi(this);
-	frontPanel.show();
+
+	setEmuModeText();
+
+	lcdWidget = new LCDWidget(synthRoute, ui->frame);
+	lcdWidget->setObjectName("lcdWidget");
+	ui->verticalLayout_5->addWidget(lcdWidget);
+
 	refreshAudioDeviceList(master, useAudioDevice);
 	ui->pinCheckBox->setChecked(master->isPinned(synthRoute));
 
@@ -42,6 +48,7 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 }
 
 SynthWidget::~SynthWidget() {
+	delete lcdWidget;
 	delete ui;
 }
 
@@ -85,6 +92,7 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 		ui->stopButton->setEnabled(true);
 		ui->audioDeviceComboBox->setEnabled(false);
 		ui->statusLabel->setText("Open");
+		setEmuModeText();
 		break;
 	case SynthRouteState_OPENING:
 		ui->startButton->setEnabled(false);
@@ -165,4 +173,91 @@ void SynthWidget::handleMIDISessionAdded(MidiSession *midiSession) {
 
 void SynthWidget::handleMIDISessionRemoved(MidiSession *midiSession) {
 	delete ui->midiList->takeItem(findMIDISession(midiSession));
+}
+
+void SynthWidget::setEmuModeText() {
+	QString emuMode;
+	const MT32Emu::ROMImage *controlROMImage = NULL;
+	const MT32Emu::ROMImage *pcmROMImage = NULL;
+	Master::getInstance()->getROMImages(controlROMImage, pcmROMImage);
+	if (strncmp((char *)controlROMImage->getROMInfo()->shortName, "mt32", 4) == 0) emuMode = "MT-32";
+	else if (strncmp((char *)controlROMImage->getROMInfo()->shortName, "cm32", 4) == 0) emuMode = "CM-32L";
+	else emuMode = "Unknown";
+	ui->synthEmuModeLabel->setText(emuMode + " Emulation Mode");
+}
+
+LCDWidget::LCDWidget(SynthRoute *useSynthRoute, QWidget *parent) :
+	QWidget(parent),
+	synthRoute(useSynthRoute),
+	offBackground(":/images/LCDOff.gif"),
+	onBackground(":/images/LCDOn.gif"),
+	drawMaskedChars(true)
+{
+	setMinimumSize(254, 40);
+	for (int i = 0; i < 20; i++) maskedChar[i] = false;
+	setLCDText();
+}
+
+void LCDWidget::setLCDText(QString useText, int volume)
+{
+	QString text;
+	if (useText.isEmpty()) {
+		lcdText = QString().sprintf("1 2 3 4 5 R |vol:%3d", volume).toAscii();
+	} else {
+		lcdText = useText.toAscii();
+	}
+}
+
+void LCDWidget::paintEvent(QPaintEvent *)
+{
+	QPainter lcdPainter(this);
+	if (synthRoute->getState() != SynthRouteState_OPEN) {
+		lcdPainter.drawPixmap(0, 0, offBackground);
+		return;
+	}
+	lcdPainter.drawPixmap(0, 0, onBackground);
+	lcdPainter.translate(7, 9);
+
+	QColor bgColor(98, 127, 0);
+	QColor fgColor(232, 254, 0);
+
+	int xat, xstart, yat;
+	xstart = 0;
+	yat = 0;
+
+	for (int i = 0; i < 20; i++) {
+		unsigned char c;
+		c = 0x20;
+		if (i < lcdText.size()) {
+			c = lcdText[i];
+		}
+
+		// Don't render characters we don't have mapped
+		if (c < 0x20) c = 0x20;
+		if (c > 0x7f) c = 0x20;
+
+		c -= 0x20;
+
+		yat = 1;
+		for (int t = 0; t < 8; t++) {
+			xat = xstart;
+			unsigned char fval;
+			if (maskedChar[i] && (t != 7) && drawMaskedChars) {
+				fval = 0x1f;
+			} else {
+				fval = Font_6x8[c][t];
+			}
+			for (int m = 4; m >= 0; --m) {
+				if ((fval >> m) & 1) {
+					lcdPainter.fillRect(xat, yat, 2, 2, fgColor);
+				} else {
+					lcdPainter.fillRect(xat, yat, 2, 2, bgColor);
+				}
+				xat += 2;
+			}
+			yat += 2;
+			if (t == 6) yat += 2;
+		}
+		xstart += 12;
+	}
 }

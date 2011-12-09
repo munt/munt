@@ -1,12 +1,11 @@
 #ifndef SYNTHWIDGET_H
 #define SYNTHWIDGET_H
 
-#include <QWidget>
+#include <QtGui>
 
 #include "SynthRoute.h"
 #include "SynthPropertiesDialog.h"
 #include "AudioPropertiesDialog.h"
-#include "FrontPanel.h"
 
 class Master;
 class AudioDevice;
@@ -16,24 +15,45 @@ namespace Ui {
 	class SynthWidget;
 }
 
+class LCDWidget : public QWidget
+{
+	Q_OBJECT
+
+public:
+	explicit LCDWidget(SynthRoute *useSynthRoute, QWidget *parent = 0);
+
+protected:
+	void paintEvent(QPaintEvent *);
+
+private:
+	SynthRoute *synthRoute;
+	QPixmap offBackground;
+	QPixmap onBackground;
+	QByteArray lcdText;
+	bool drawMaskedChars, maskedChar[20];
+
+	void setLCDText(QString text = "", int volume = 100);
+};
+
 class SynthWidget : public QWidget
 {
 	Q_OBJECT
 
 public:
-	explicit SynthWidget(Master *master, SynthRoute *synthRoute, const AudioDevice *audioDevice, QWidget *parent = 0);
+	explicit SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioDevice *audioDevice, QWidget *parent = 0);
 	~SynthWidget();
 	SynthRoute *getSynthRoute();
 
 private:
 	SynthRoute *synthRoute;
 	Ui::SynthWidget *ui;
+	LCDWidget *lcdWidget;
 	SynthPropertiesDialog spd;
 	AudioPropertiesDialog apd;
-	FrontPanel frontPanel;
 
 	void refreshAudioDeviceList(Master *master, const AudioDevice *useAudioDevice);
 	int findMIDISession(MidiSession *midiSession);
+	void setEmuModeText();
 
 private slots:
 	void on_startButton_clicked();
