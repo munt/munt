@@ -55,8 +55,8 @@ void Master::init() {
 	INSTANCE->moveToThread(QCoreApplication::instance()->thread());
 	INSTANCE->settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
 	INSTANCE->romDir = INSTANCE->settings->value("Master/romDir", "./").toString();
-	INSTANCE->controlROMFileName = INSTANCE->settings->value("Master/ControlROM").toString();
-	INSTANCE->pcmROMFileName = INSTANCE->settings->value("Master/PCMROM").toString();
+	INSTANCE->controlROMFileName = INSTANCE->settings->value("Master/ControlROM", "MT32_CONTROL.ROM").toString();
+	INSTANCE->pcmROMFileName = INSTANCE->settings->value("Master/PCMROM", "MT32_PCM.ROM").toString();
 	INSTANCE->makeROMImages();
 
 	INSTANCE->trayIcon = NULL;
