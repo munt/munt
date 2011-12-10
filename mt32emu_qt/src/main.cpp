@@ -45,8 +45,7 @@ int main(int argv, char **args)
 			master->setTrayIcon(trayIcon);
 		}
 		MainWindow mainWindow(master);
-		if (master->getTrayIcon() == NULL || !master->getSettings()->value("Master/startIconized", "1").toBool())
-			mainWindow.show();
+		if (master->getTrayIcon() == NULL || !master->getSettings()->value("Master/startIconized", "0").toBool()) mainWindow.show();
 		master->startPinnedSynthRoute();
 		app.exec();
 	}
