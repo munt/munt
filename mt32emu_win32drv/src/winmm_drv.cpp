@@ -213,7 +213,7 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 	case MODM_OPEN:
 		if (hwnd == NULL) {
 			hwnd = FindWindow(L"mt32emu_class", NULL);
-			if (hwnd != NULL) {
+			if (hwnd != NULL && synthOpened) {
 				midiSynth.Close();
 				synthOpened = false;
 			}
