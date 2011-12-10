@@ -21,7 +21,8 @@
 #define MAX_CLIENTS 8 // Per driver
 
 static MT32Emu::MidiSynth midiSynth;
-static bool alreadyOpened = false;
+static bool driverOpened = false;
+static bool synthOpened = false;
 static HWND hwnd = NULL;
 
 int driverCount;
@@ -210,12 +211,20 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 	DWORD instance;
 	switch (uMsg) {
 	case MODM_OPEN:
-		if (alreadyOpened) return MMSYSERR_NOERROR;
-		hwnd = FindWindow(L"mt32emu_class", NULL);
+		if (hwnd == NULL) {
+			hwnd = FindWindow(L"mt32emu_class", NULL);
+			if (hwnd != NULL) {
+				midiSynth.Close();
+				synthOpened = false;
+			}
+		}
 		if (hwnd == NULL) {
 			//  Synth application not found
+			if (synthOpened) return MMSYSERR_NOERROR;
 			if (midiSynth.Init() != 0) return MMSYSERR_ERROR;
-			alreadyOpened = true;
+			synthOpened = true;
+			if (driverOpened) return MMSYSERR_NOERROR;
+			driverOpened = true;
 			return OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
 		} else {
 			DWORD msg[258] = {0, -1, 1}; // 0, handshake indicator, version, .exe filename of calling application
@@ -230,7 +239,7 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 
 	case MODM_CLOSE:
 		if (hwnd == NULL) {
-			if (!alreadyOpened) return MMSYSERR_INVALPARAM;
+			if (!synthOpened) return MMSYSERR_INVALPARAM;
 			midiSynth.Reset();
 			return MMSYSERR_NOERROR;
 		} else {
@@ -261,7 +270,7 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 				// Synth app was terminated. Fall back to integrated synth
 				hwnd = NULL;
 				if (midiSynth.Init() != 0) return MMSYSERR_ERROR;
-				alreadyOpened = true;
+				synthOpened = true;
 			}
 		}
 		return MMSYSERR_NOERROR;
@@ -283,7 +292,7 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 				// Synth app was terminated. Fall back to integrated synth
 				hwnd = NULL;
 				if (midiSynth.Init() != 0) return MMSYSERR_ERROR;
-				alreadyOpened = true;
+				synthOpened = true;
 			}
 		}
 		midiHdr->dwFlags = MHDR_DONE;
