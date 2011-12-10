@@ -196,14 +196,14 @@ LCDWidget::LCDWidget(SynthRoute *useSynthRoute, QWidget *parent) :
 	masterVolume(100)
 {
 	setMinimumSize(254, 40);
-	for (int i = 0; i < 20; i++) maskedChar[i] = false;
-	setLCDText();
+	handlePartStateReset();
 
 	QSynth *qsynth = synthRoute->findChild<QSynth *>();
 	QReportHandler *handler = qsynth->findChild<QReportHandler *>();
 	connect(handler, SIGNAL(lcdMessageDisplayed(const QString)), SLOT(setLCDText(const QString)));
 	connect(handler, SIGNAL(masterVolumeChanged(int)), SLOT(handleMasterVolumeChanged(int)));
 	connect(handler, SIGNAL(partStateChanged(int, bool)), SLOT(handlePartStateChanged(int, bool)));
+	connect(qsynth, SIGNAL(partStateReset()), SLOT(handlePartStateReset()));
 }
 
 void LCDWidget::setLCDText(const QString useText)
@@ -232,6 +232,12 @@ void LCDWidget::handlePartStateChanged(int partNum, bool isActive) {
 	}
 	maskedChar[partNum << 1] = isActive;
 	setLCDText("");
+}
+
+void LCDWidget::handlePartStateReset()
+{
+	for (int i = 0; i < 20; i++) maskedChar[i] = false;
+	setLCDText();
 }
 
 void LCDWidget::paintEvent(QPaintEvent *)

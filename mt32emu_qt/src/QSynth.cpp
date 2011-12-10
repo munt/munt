@@ -302,6 +302,7 @@ void QSynth::setState(SynthState newState) {
 	}
 	state = newState;
 	emit stateChanged(newState);
+	emit partStateReset();
 }
 
 void QSynth::close() {
