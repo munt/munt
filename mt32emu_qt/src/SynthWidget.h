@@ -31,9 +31,10 @@ private:
 	QPixmap onBackground;
 	QByteArray lcdText;
 	bool drawMaskedChars, maskedChar[20];
+	int masterVolume;
 
 private slots:
-	void setLCDText(const QString text = "", int volume = 100);
+	void setLCDText(const QString text = "");
 	void handleMasterVolumeChanged(int volume);
 	void handlePartStateChanged(int, bool);
 };

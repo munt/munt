@@ -191,7 +191,8 @@ LCDWidget::LCDWidget(SynthRoute *useSynthRoute, QWidget *parent) :
 	synthRoute(useSynthRoute),
 	offBackground(":/images/LCDOff.gif"),
 	onBackground(":/images/LCDOn.gif"),
-	drawMaskedChars(true)
+	drawMaskedChars(true),
+	masterVolume(100)
 {
 	setMinimumSize(254, 40);
 	for (int i = 0; i < 20; i++) maskedChar[i] = false;
@@ -204,11 +205,11 @@ LCDWidget::LCDWidget(SynthRoute *useSynthRoute, QWidget *parent) :
 	connect(handler, SIGNAL(partStateChanged(int, bool)), SLOT(handlePartStateChanged(int, bool)));
 }
 
-void LCDWidget::setLCDText(const QString useText, int volume)
+void LCDWidget::setLCDText(const QString useText)
 {
 	QString text;
 	if (useText.isEmpty()) {
-		lcdText = QString().sprintf("1 2 3 4 5 R |vol:%3d", volume).toAscii();
+		lcdText = QString().sprintf("1 2 3 4 5 R |vol:%3d", masterVolume).toAscii();
 		drawMaskedChars = true;
 	} else {
 		lcdText = useText.toAscii();
@@ -218,7 +219,8 @@ void LCDWidget::setLCDText(const QString useText, int volume)
 }
 
 void LCDWidget::handleMasterVolumeChanged(int volume) {
-	setLCDText("", volume);
+	masterVolume = volume;
+	setLCDText("");
 }
 
 void LCDWidget::handlePartStateChanged(int partNum, bool isActive) {
