@@ -126,7 +126,7 @@ int main() {
 	strncat(oldName, "/SYSTEM32/mt32emu.old", MAX_PATH);
 	DeleteFileA(oldName);
 	MoveFileA(pathName, oldName);
-	CopyFileA("mt32emu.dll", pathName, TRUE);
+	CopyFileA("mt32emu.dll", pathName, FALSE);
 	RegisterDriver();
 	return 0;
 }
