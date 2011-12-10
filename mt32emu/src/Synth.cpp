@@ -190,8 +190,8 @@ void ReportHandler::printDebug(const char *fmt, va_list list) {
 		printf("\n");
 }
 
-void Synth::partStateChanged(int partNum, bool isActive) {
-	reportHandler->onPartStateChanged(partNum, isActive);
+void Synth::partStateChanged(int partNum, bool isPartActive) {
+	reportHandler->onPartStateChanged(partNum, isPartActive);
 }
 
 void Synth::printDebug(const char *fmt, ...) {

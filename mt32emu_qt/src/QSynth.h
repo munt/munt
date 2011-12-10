@@ -39,7 +39,7 @@ signals:
 class QSynth : public QObject {
 	Q_OBJECT
 
-friend QReportHandler;
+friend class QReportHandler;
 
 private:
 	SynthState state;

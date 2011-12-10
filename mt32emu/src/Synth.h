@@ -224,7 +224,7 @@ public:
 };
 
 class ReportHandler {
-friend Synth;
+friend class Synth;
 
 public:
 	virtual ~ReportHandler() {}
@@ -243,7 +243,7 @@ protected:
 	virtual void onNewReverbMode(Bit8u /* mode */) {}
 	virtual void onNewReverbTime(Bit8u /* time */) {}
 	virtual void onNewReverbLevel(Bit8u /* level */) {}
-	virtual void onPartStateChanged(int partNum, bool isActive) {}
+	virtual void onPartStateChanged(int /* partNum */, bool /* isActive */) {}
 };
 
 class Synth {
