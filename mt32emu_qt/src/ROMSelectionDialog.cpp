@@ -106,7 +106,7 @@ void ROMSelectionDialog::refreshROMInfos() {
 			romType = QString("Control");
 			romGroup = &controlROMGroup;
 			if (controlROMRow == -1) controlROMRow = row;
-	  } else if (romInfo.type == ROMInfo::Reverb) romType = QString("Reverb");
+		} else if (romInfo.type == ROMInfo::Reverb) romType = QString("Reverb");
 		else continue;
 
 		if (master.getROMDir() == romDir) {
