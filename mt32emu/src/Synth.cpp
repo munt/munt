@@ -190,6 +190,10 @@ void ReportHandler::printDebug(const char *fmt, va_list list) {
 		printf("\n");
 }
 
+void Synth::partStateChanged(int partNum, bool isActive) {
+	reportHandler->onPartStateChanged(partNum, isActive);
+}
+
 void Synth::printDebug(const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);

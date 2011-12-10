@@ -224,8 +224,12 @@ public:
 };
 
 class ReportHandler {
+friend Synth;
+
 public:
 	virtual ~ReportHandler() {}
+
+protected:
 
 	// Callback for debug messages, in vprintf() format
 	virtual void printDebug(const char *fmt, va_list list);
@@ -239,6 +243,7 @@ public:
 	virtual void onNewReverbMode(Bit8u /* mode */) {}
 	virtual void onNewReverbTime(Bit8u /* time */) {}
 	virtual void onNewReverbLevel(Bit8u /* level */) {}
+	virtual void onPartStateChanged(int partNum, bool isActive) {}
 };
 
 class Synth {
@@ -359,6 +364,7 @@ private:
 
 	void printPartialUsage(unsigned long sampleOffset = 0);
 
+	void partStateChanged(int, bool);
 	void printDebug(const char *fmt, ...);
 
 public:

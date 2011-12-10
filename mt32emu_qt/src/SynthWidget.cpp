@@ -201,6 +201,7 @@ LCDWidget::LCDWidget(SynthRoute *useSynthRoute, QWidget *parent) :
 	QReportHandler *handler = qsynth->findChild<QReportHandler *>();
 	connect(handler, SIGNAL(lcdMessageDisplayed(const QString)), SLOT(setLCDText(const QString)));
 	connect(handler, SIGNAL(masterVolumeChanged(int)), SLOT(handleMasterVolumeChanged(int)));
+	connect(handler, SIGNAL(partStateChanged(int, bool)), SLOT(handlePartStateChanged(int, bool)));
 }
 
 void LCDWidget::setLCDText(const QString useText, int volume)
@@ -208,14 +209,26 @@ void LCDWidget::setLCDText(const QString useText, int volume)
 	QString text;
 	if (useText.isEmpty()) {
 		lcdText = QString().sprintf("1 2 3 4 5 R |vol:%3d", volume).toAscii();
+		drawMaskedChars = true;
 	} else {
 		lcdText = useText.toAscii();
+		drawMaskedChars = false;
 	}
 	update();
 }
 
 void LCDWidget::handleMasterVolumeChanged(int volume) {
 	setLCDText("", volume);
+}
+
+void LCDWidget::handlePartStateChanged(int partNum, bool isActive) {
+	if (partNum == 8) {
+		partNum = 5; // mapping for the rhythm channel
+	} else if (partNum > 4) {
+		return;
+	}
+	maskedChar[partNum << 1] = isActive;
+	setLCDText("");
 }
 
 void LCDWidget::paintEvent(QPaintEvent *)

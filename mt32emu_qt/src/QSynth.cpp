@@ -70,6 +70,10 @@ void QReportHandler::onNewReverbLevel(Bit8u level) {
 	emit reverbLevelChanged(level);
 }
 
+void QReportHandler::onPartStateChanged(int partNum, bool isActive) {
+	emit partStateChanged(partNum, isActive);
+}
+
 QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED) {
 	isOpen = false;
 	synthMutex = new QMutex(QMutex::Recursive);

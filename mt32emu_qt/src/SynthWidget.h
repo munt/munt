@@ -35,6 +35,7 @@ private:
 private slots:
 	void setLCDText(const QString text = "", int volume = 100);
 	void handleMasterVolumeChanged(int volume);
+	void handlePartStateChanged(int, bool);
 };
 
 class SynthWidget : public QWidget

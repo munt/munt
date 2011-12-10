@@ -25,6 +25,7 @@ public:
 	void onNewReverbMode(MT32Emu::Bit8u mode);
 	void onNewReverbTime(MT32Emu::Bit8u time);
 	void onNewReverbLevel(MT32Emu::Bit8u level);
+	void onPartStateChanged(int partNum, bool isActive);
 
 signals:
 	void lcdMessageDisplayed(const QString);
@@ -32,6 +33,7 @@ signals:
 	void reverbModeChanged(int);
 	void reverbTimeChanged(int);
 	void reverbLevelChanged(int);
+	void partStateChanged(int, bool);
 };
 
 class QSynth : public QObject {
