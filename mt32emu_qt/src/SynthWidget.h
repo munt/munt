@@ -32,7 +32,9 @@ private:
 	QByteArray lcdText;
 	bool drawMaskedChars, maskedChar[20];
 
-	void setLCDText(QString text = "", int volume = 100);
+private slots:
+	void setLCDText(const QString text = "", int volume = 100);
+	void handleMasterVolumeChanged(int volume);
 };
 
 class SynthWidget : public QWidget

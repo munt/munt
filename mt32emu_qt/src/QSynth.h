@@ -21,11 +21,14 @@ public:
 	void showLCDMessage(const char *message);
 	void onErrorControlROM();
 	void onErrorPCMROM();
+	void onDeviceReconfig();
 	void onNewReverbMode(MT32Emu::Bit8u mode);
 	void onNewReverbTime(MT32Emu::Bit8u time);
 	void onNewReverbLevel(MT32Emu::Bit8u level);
 
 signals:
+	void lcdMessageDisplayed(const QString);
+	void masterVolumeChanged(int);
 	void reverbModeChanged(int);
 	void reverbTimeChanged(int);
 	void reverbLevelChanged(int);
@@ -33,6 +36,8 @@ signals:
 
 class QSynth : public QObject {
 	Q_OBJECT
+
+friend QReportHandler;
 
 private:
 	SynthState state;

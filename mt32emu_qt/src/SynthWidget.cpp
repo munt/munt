@@ -196,9 +196,14 @@ LCDWidget::LCDWidget(SynthRoute *useSynthRoute, QWidget *parent) :
 	setMinimumSize(254, 40);
 	for (int i = 0; i < 20; i++) maskedChar[i] = false;
 	setLCDText();
+
+	QSynth *qsynth = synthRoute->findChild<QSynth *>();
+	QReportHandler *handler = qsynth->findChild<QReportHandler *>();
+	connect(handler, SIGNAL(lcdMessageDisplayed(const QString)), SLOT(setLCDText(const QString)));
+	connect(handler, SIGNAL(masterVolumeChanged(int)), SLOT(handleMasterVolumeChanged(int)));
 }
 
-void LCDWidget::setLCDText(QString useText, int volume)
+void LCDWidget::setLCDText(const QString useText, int volume)
 {
 	QString text;
 	if (useText.isEmpty()) {
@@ -206,6 +211,11 @@ void LCDWidget::setLCDText(QString useText, int volume)
 	} else {
 		lcdText = useText.toAscii();
 	}
+	update();
+}
+
+void LCDWidget::handleMasterVolumeChanged(int volume) {
+	setLCDText("", volume);
 }
 
 void LCDWidget::paintEvent(QPaintEvent *)

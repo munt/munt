@@ -39,6 +39,7 @@ QReportHandler::QReportHandler(QObject *parent) : QObject(parent)
 
 void QReportHandler::showLCDMessage(const char *message) {
 	Master::getInstance()->showBalloon("LCD-Message:", message);
+	emit lcdMessageDisplayed(message);
 }
 
 void QReportHandler::onErrorControlROM() {
@@ -47,6 +48,14 @@ void QReportHandler::onErrorControlROM() {
 
 void QReportHandler::onErrorPCMROM() {
 	QMessageBox::critical(NULL, "Cannot open Synth", "PCM ROM file cannot be opened.");
+}
+
+void QReportHandler::onDeviceReconfig() {
+	QSynth *qsynth = (QSynth *)parent();
+	Bit8u currentMasterVolume = 0;
+	qsynth->synth->readMemory(0x40016, 1, &currentMasterVolume);
+	int masterVolume = currentMasterVolume;
+	emit masterVolumeChanged(masterVolume);
 }
 
 void QReportHandler::onNewReverbMode(Bit8u mode) {
