@@ -64,9 +64,10 @@ static void dumpPortAudioDevices() {
 PortAudioStream::PortAudioStream(const PortAudioDevice *device, QSynth *useSynth, unsigned int useSampleRate) :
 	synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0)
 {
-	unsigned int unused, msLatency;
-	device->driver->getAudioSettings(&unused, &msLatency, &unused);
+	unsigned int unused, msLatency, midiLatency;
+	device->driver->getAudioSettings(&unused, &msLatency, &midiLatency);
 	audioLatency = msLatency * MasterClock::NANOS_PER_MILLISECOND;
+	latency = midiLatency * MasterClock::NANOS_PER_MILLISECOND;
 }
 
 PortAudioStream::~PortAudioStream() {
@@ -117,7 +118,9 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	}
 	const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
 	qDebug() << "Device Output latency (s):" << streamInfo->outputLatency;
-	latency = 2.2 * MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency;
+	if (!latency) {
+		latency = 2.2 * MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency;
+	}
 	qDebug() << "Using MIDI latency (ns):" << latency;
 	return true;
 }

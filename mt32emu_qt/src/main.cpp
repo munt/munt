@@ -47,6 +47,7 @@ int main(int argv, char **args)
 		MainWindow mainWindow(master);
 		if (master->getTrayIcon() == NULL || !master->getSettings()->value("Master/startIconized", "0").toBool()) mainWindow.show();
 		master->startPinnedSynthRoute();
+		master->startMidiProcessing();
 		app.exec();
 	}
 	Master::deinit();

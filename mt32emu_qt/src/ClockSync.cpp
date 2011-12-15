@@ -62,15 +62,13 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 	qint64 externalElapsed = externalNow - externalStart;
 	qint64 offsetNow = masterElapsed - drift * externalElapsed;
 	if (masterElapsed > periodicResetNanos) {
-		qDebug() << "Periodic reset:" << externalNow << masterNow << offset << offsetNow;
 		masterStart = masterNow;
 		externalStart = externalNow;
 		offset -= offsetNow;
 		offsetShift = 0;	// we don't want here to shift
 		// we rather add a compensation for the offset we have now to the new drift value
 		drift = (double)masterElapsed / (externalElapsed + offset * periodicDampFactor);
-		qDebug() << "Offset, new drift:" << 1e-6 * offset << drift;
-		qDebug() << "Periodic reset output:" << masterNow + offset;
+		qDebug() << "Periodic reset. Offset, new drift:" << 1e-6 * offset << drift;
 		return masterNow + offset;
 	}
 	if(qAbs(offsetNow - offset) > emergencyResetThresholdNanos) {
@@ -84,26 +82,18 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 	}
 	if (((offsetNow - offset) < lowJitterThresholdNanos) ||
 		((offsetNow - offset) > highJitterThresholdNanos)) {
-		qDebug() << "Latency resync:" << externalNow << masterNow << offset << offsetNow;
-		qDebug() << "Offset, shift, masterNow, output:" << offset << offsetShift <<
-			masterNow << qint64(masterStart + offset + drift * externalElapsed);
+//		qDebug() << "Latency resync:" << externalNow << masterNow << offset << offsetNow;
 		drift = (double)masterElapsed / externalElapsed;
 		// start moving offset towards 0 by steps of shiftFactor * offset
 		offset -= offsetNow;
 		offsetShift = (qint64)(shiftFactor * offset);
-		qDebug() << "Offset, shift, new drift:" << offset << offsetShift << drift;
 	}
 	if (qAbs(offsetShift) > qAbs(offset)) {
 		// resync's done
-		qDebug() << "Latency resync's done";
 		offset = 0;
 		offsetShift = 0;
-		qDebug() << "Offset, shift, masterNow, output:" << offset << offsetShift <<
-			masterNow << qint64(masterStart + offset + drift * externalElapsed);
 	}
 	offset -= offsetShift;
-	if (offsetShift) qDebug() << "Offset, shift, masterNow, output:" << offset << offsetShift <<
-		masterNow << qint64(masterStart + offset + drift * externalElapsed);
 	return masterStart + offset + drift * externalElapsed;
 }
 

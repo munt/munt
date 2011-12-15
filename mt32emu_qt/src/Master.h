@@ -59,6 +59,7 @@ public:
 	bool isPinned(const SynthRoute *synthRoute) const;
 	void setPinned(SynthRoute *synthRoute);
 	void startPinnedSynthRoute();
+	void startMidiProcessing();
 
 	static Master *getInstance();
 

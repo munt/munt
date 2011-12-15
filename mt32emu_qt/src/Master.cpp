@@ -40,6 +40,8 @@
 #include "mididrv/Win32Driver.h"
 #elif defined(WITH_ALSA_MIDI_DRIVER)
 #include "mididrv/ALSADriver.h"
+#elif defined(WITH_COREMIDI_DRIVER)
+#include "mididrv/CoreMidiDriver.h"
 #endif
 
 Master *Master::INSTANCE = NULL;
@@ -130,9 +132,14 @@ void Master::initMidiDrivers() {
 	midiDriver = new Win32MidiDriver(this);
 #elif defined(WITH_ALSA_MIDI_DRIVER)
 	midiDriver = new ALSAMidiDriver(this);
+#elif defined(WITH_COREMIDI_DRIVER)
+	midiDriver = new CoreMidiDriver(this);
 #else
 	midiDriver = NULL;
 #endif
+}
+
+void Master::startMidiProcessing() {
 	if (midiDriver != NULL) {
 		midiDriver->start();
 	}
