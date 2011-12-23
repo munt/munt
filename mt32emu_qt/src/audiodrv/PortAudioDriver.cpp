@@ -119,7 +119,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
 	qDebug() << "Device Output latency (s):" << streamInfo->outputLatency;
 	if (!latency) {
-		latency = 2.2 * MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency;
+		latency = 1.5 * MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency;
 	}
 	qDebug() << "Using MIDI latency (ns):" << latency;
 	return true;
@@ -129,17 +129,20 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	Q_UNUSED(inputBuffer);
 	Q_UNUSED(statusFlags);
 	PortAudioStream *stream = (PortAudioStream *)userData;
-#ifdef USE_PA_TIMING
+
+	// Define this variable if PortAudio doesn't provide correct timing information.
+	// As for V19, this should be used for OSS (still not implemented, though OSS allows _really_ low latencies) and for PulseAudio + ALSA setup.
+#ifndef COMPUTE_OUTPUT_DAC_TIME
 	double realSampleRate = timeInfo->actualSampleRate;
 	if (realSampleRate == 0.0) {
 		// This means PortAudio doesn't provide us the actualSampleRate estimation
 		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate;
 	}
-	qint64 currentlyPlayingAudioNanos = timeInfo->currentTime * MasterClock::NANOS_PER_SECOND;
+	qint64 currentlyPlayingAudioNanos = Pa_GetStreamTime(stream->stream) * MasterClock::NANOS_PER_SECOND;
 	qint64 firstSampleAudioNanos = timeInfo->outputBufferDacTime * MasterClock::NANOS_PER_SECOND;
 	qint64 renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;
 	qint64 offset = stream->latency - renderOffset;
-	MasterClockNanos firstSampleMasterClockNanos = stream->clockSync.sync(currentlyPlayingAudioNanos) - offset * stream->clockSync.getDrift();
+	MasterClockNanos firstSampleMasterClockNanos = MasterClock::getClockNanos() - offset;
 #else
 	Q_UNUSED(timeInfo);
 	double realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate / stream->clockSync.getDrift();
