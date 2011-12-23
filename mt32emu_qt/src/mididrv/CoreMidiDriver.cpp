@@ -19,29 +19,6 @@
 #include "../MasterClock.h"
 #include "CoreMidiDriver.h"
 
-Byte MidiMessageLength[256] = {
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,  // 0x00
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,  // 0x10
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,  // 0x20
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,  // 0x30
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,  // 0x40
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,  // 0x50
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,  // 0x60
-    0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,  // 0x70
-
-    3,3,3,3, 3,3,3,3, 3,3,3,3, 3,3,3,3,  // 0x80
-    3,3,3,3, 3,3,3,3, 3,3,3,3, 3,3,3,3,  // 0x90
-    3,3,3,3, 3,3,3,3, 3,3,3,3, 3,3,3,3,  // 0xa0
-    3,3,3,3, 3,3,3,3, 3,3,3,3, 3,3,3,3,  // 0xb0
-
-    2,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2,  // 0xc0
-    2,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2,  // 0xd0
-
-    3,3,3,3, 3,3,3,3, 3,3,3,3, 3,3,3,3,  // 0xe0
-
-    0,2,3,2, 0,0,1,0, 1,0,1,1, 1,0,1,0   // 0xf0
-};
-
 void readProc(const MIDIPacketList *packetList, void *readProcRefCon, void *srcConnRefCon) {
 Q_UNUSED(srcConnRefCon)
 
@@ -61,15 +38,12 @@ Q_UNUSED(srcConnRefCon)
                 synthRoute->pushMIDISysex((unsigned char *)b, packetLen, MasterClock::getClockNanos());
                 break;
             }
-            Byte midiLen = MidiMessageLength[*b];
             UInt32 message = 0;
-            if (packetLen < midiLen) {
-                qDebug() << "Incoming message length:" << midiLen << "Packet length:" << packetLen;
-                break;
-            }
             message = *((UInt32 *)b);
             synthRoute->pushMIDIShortMessage(message, MasterClock::getClockNanos());
-            packetLen -= midiLen;
+            while (--packetLen > 0) {
+                if (*(++b) & 0x80) break;
+            }
         }
         packet = MIDIPacketNext(packet);
         numPackets--;
