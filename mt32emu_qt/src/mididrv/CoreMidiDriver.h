@@ -8,17 +8,17 @@
 
 class CoreMidiDriver : public MidiDriver {
 private:
-    MIDIClientRef client;
-    MIDIEndpointRef outDest;
+	MIDIClientRef client;
+	MIDIEndpointRef outDest;
 
-    static void midiNotifyProc(MIDINotification const *message, void *refCon);
-    void createDestination();
+	static void midiNotifyProc(MIDINotification const *message, void *refCon);
+	void createDestination();
 
 public:
 	CoreMidiDriver(Master *useMaster);
 	void start();
 	void stop();
-    ~CoreMidiDriver() {}
+	~CoreMidiDriver() {}
 };
 
 #endif
