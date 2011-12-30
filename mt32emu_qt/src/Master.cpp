@@ -42,6 +42,8 @@
 #include "mididrv/ALSADriver.h"
 #elif defined(WITH_COREMIDI_DRIVER)
 #include "mididrv/CoreMidiDriver.h"
+#else
+#include "mididrv/OSSMidiPortDriver.h"
 #endif
 
 Master *Master::INSTANCE = NULL;
@@ -135,7 +137,7 @@ void Master::initMidiDrivers() {
 #elif defined(WITH_COREMIDI_DRIVER)
 	midiDriver = new CoreMidiDriver(this);
 #else
-	midiDriver = NULL;
+	midiDriver = new OSSMidiPortDriver(this);
 #endif
 }
 
