@@ -51,20 +51,12 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 			}
 			continue;
 		}
-		if (useOSSMidiPort) {
-			if (buffer[0] == 240) {
-				if (buffer[len - 1] != 247) {
-					qDebug() << "Fragmented sysex, len:" << len;
-					break;
-				}
-				synthRoute->pushMIDISysex(buffer, len, MasterClock::getClockNanos());
-				continue;
-			}
-			synthRoute->pushMIDIShortMessage(*((unsigned int *)buffer), MasterClock::getClockNanos());
-		} else {
-			int messageLength = 0;
+		unsigned char *msg = buffer;
+		int messageLength = len;
+		if (!useOSSMidiPort) {
+			messageLength = 0;
 			unsigned char *buf = buffer;
-			unsigned char *msg = messageBuffer;
+			msg = messageBuffer;
 			while (len >= 4) {
 				len -= 4;
 				if (*buf != SEQ_MIDIPUTC) {
@@ -75,15 +67,33 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 				buf += 3;
 				messageLength++;
 			}
-			if (messageBuffer[0] == 240) {
-				if (messageBuffer[messageLength - 1] != 247) {
-					qDebug() << "Fragmented sysex, len:" << messageLength;
-					break;
-				}
-				synthRoute->pushMIDISysex(messageBuffer, messageLength, MasterClock::getClockNanos());
+			msg = messageBuffer;
+		}
+		if ((*msg & 0x80) == 0) qDebug() << "Desync in midi stream";
+		while (messageLength > 0) {
+			if ((*msg & 0x80) == 0) {
+				msg++;
+				messageLength--;
 				continue;
 			}
-			synthRoute->pushMIDIShortMessage(*((unsigned int *)messageBuffer), MasterClock::getClockNanos());
+			if (*msg == 0xF0) {
+				int i;
+				for (i = 1; i < messageLength && msg[i] != 0xF7; i++) {
+					;
+				}
+				if (msg[i] != 0xF7) {
+					qDebug() << "Fragmented sysex, len:" << messageLength;
+					messageLength = 0;
+					continue;
+				}
+				int sysexLength = ++i;
+				synthRoute->pushMIDISysex(msg, sysexLength, MasterClock::getClockNanos());
+				messageLength -= sysexLength;
+				continue;
+			}
+			synthRoute->pushMIDIShortMessage(*((unsigned int *)msg), MasterClock::getClockNanos());
+			msg++;
+			messageLength--;
 		}
 	}
 	driver->pendingClose = !driver->pendingClose;
