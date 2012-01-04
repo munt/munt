@@ -22,14 +22,17 @@
 #include "../MasterClock.h"
 #include "OSSMidiPortDriver.h"
 
-static bool useOSSMidiPort = false;
-static char midiPortName[] = "/dev/midi";
+static char defaultMidiPortName[] = "/dev/midi";
+static char sequencerName[] = "/dev/sequencer";
 
 void* OSSMidiPortDriver::processingThread(void *userData) {
 	static const int BUFFER_SIZE = 1024;
+	static const int SYSEX_BUFFER_SIZE = 1024;
 	static const int SEQ_MIDIPUTC = 5;
-	unsigned char messageBuffer[BUFFER_SIZE];
 	unsigned char buffer[4 * BUFFER_SIZE];
+	unsigned char messageBuffer[BUFFER_SIZE];
+	unsigned char sysexBuffer[SYSEX_BUFFER_SIZE];
+	int sysexLength = 0;
 
 	OSSMidiPortDriver *driver = (OSSMidiPortDriver *)userData;
 	SynthRoute *synthRoute = driver->midiSession->getSynthRoute();
@@ -39,21 +42,17 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 		int len = read(driver->fd, buffer, BUFFER_SIZE);
 		if (len <= 0) {
 			if (len == 0) {
-				qDebug() << "OSSMidiPortDriver: Closed MIDI port:" << midiPortName << "Reopening ...";
+				qDebug() << "OSSMidiPortDriver: Closed MIDI port:" << driver->midiPortName << "Reopening ...";
 			} else {
-				qDebug() << "OSSMidiPortDriver: Error reading from MIDI port:" << midiPortName << ", errno:" << errno << "Reopening ...";
+				qDebug() << "OSSMidiPortDriver: Error reading from MIDI port:" << driver->midiPortName << ", errno:" << errno << "Reopening ...";
 				close(driver->fd);
 			}
-			driver->fd = open(midiPortName, O_RDONLY);
-			if (driver->fd == -1) {
-				qDebug() << "OSSMidiPortDriver: Can't open MIDI port provided:" << midiPortName << ", errno:" << errno;
-				break;
-			}
-			continue;
+			if (driver->openPort()) continue;
+			break;
 		}
 		unsigned char *msg = buffer;
 		int messageLength = len;
-		if (!useOSSMidiPort) {
+		if (!driver->useOSSMidiPort) {
 			messageLength = 0;
 			unsigned char *buf = buffer;
 			msg = messageBuffer;
@@ -69,26 +68,36 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 			}
 			msg = messageBuffer;
 		}
-		if ((*msg & 0x80) == 0) qDebug() << "Desync in midi stream";
+		if ((*msg & 0x80) == 0 && sysexLength == 0) qDebug() << "OSSMidiPortDriver: Desync in midi stream";
 		while (messageLength > 0) {
-			if ((*msg & 0x80) == 0) {
-				msg++;
-				messageLength--;
-				continue;
-			}
-			if (*msg == 0xF0) {
-				int i;
-				for (i = 1; i < messageLength && msg[i] != 0xF7; i++) {
-					;
-				}
-				if (msg[i] != 0xF7) {
-					qDebug() << "Fragmented sysex, len:" << messageLength;
-					messageLength = 0;
+			// Seek for status byte
+			if (sysexLength == 0) {
+				if ((*msg & 0x80) == 0) {
+					msg++;
+					messageLength--;
 					continue;
 				}
-				int sysexLength = ++i;
-				synthRoute->pushMIDISysex(msg, sysexLength, MasterClock::getClockNanos());
-				messageLength -= sysexLength;
+				if (*msg == 0xF0) {
+					sysexBuffer[sysexLength++] = *(msg++);
+					messageLength--;
+				}
+			}
+			if (sysexLength != 0) {
+				while ((messageLength > 0) && ((*msg & 0x80) == 0) && sysexLength < SYSEX_BUFFER_SIZE) {
+					sysexBuffer[sysexLength++] = *(msg++);
+					messageLength--;
+				}
+				if (messageLength == 0) continue;
+				if (sysexLength > SYSEX_BUFFER_SIZE - 1) qDebug() << "OSSMidiPortDriver: Sysex buffer overrun";
+				if (*msg != 0xF7) {
+					qDebug() << "OSSMidiPortDriver: Desync in sysex, ending:" << *msg;
+					sysexLength = 0;
+					continue;
+				}
+				sysexBuffer[sysexLength++] = *(msg++);
+				messageLength--;
+				synthRoute->pushMIDISysex(sysexBuffer, sysexLength, MasterClock::getClockNanos());
+				sysexLength = 0;
 				continue;
 			}
 			synthRoute->pushMIDIShortMessage(*((unsigned int *)msg), MasterClock::getClockNanos());
@@ -108,12 +117,25 @@ OSSMidiPortDriver::OSSMidiPortDriver(Master *useMaster) : MidiDriver(useMaster) 
 	qDebug() << "OSS MIDI Port Driver started";
 }
 
-void OSSMidiPortDriver::start() {
+bool OSSMidiPortDriver::openPort() {
+	useOSSMidiPort = true;
+	midiPortName = defaultMidiPortName;
 	fd = open(midiPortName, O_RDONLY);
 	if (fd == -1) {
-		qDebug() << "OSSMidiPortDriver: Can't open MIDI port provided:" << midiPortName << ", errno:" << errno;
-		return;
+		qDebug() << "OSSMidiPortDriver: Can't open MIDI port provided:" << midiPortName << ", errno:" << errno << "Falling back to OSS3 /dev/sequencer";
+		useOSSMidiPort = false;
+		midiPortName = sequencerName;
+		fd = open(midiPortName, O_RDONLY);
+		if (fd == -1) {
+			qDebug() << "OSSMidiPortDriver: Can't open" << midiPortName << "either. Driver stopped.";
+			return false;
+		}
 	}
+	return true;
+}
+
+void OSSMidiPortDriver::start() {
+	if (!openPort()) return;
 	midiSession = createMidiSession("Combined OSS MIDI session");
 	pendingClose = false;
 	pthread_t threadID;
