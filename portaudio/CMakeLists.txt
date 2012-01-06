@@ -186,14 +186,32 @@ if(libportaudio_WITH_JACK)
 endif()
 
 if(libportaudio_WITH_OSS)
-  check_include_files(sys/soundcard.h linux/soundcard.h machine/soundcard.h OSS_FOUND)
-  if(OSS_FOUND)
+  check_include_files(sys/soundcard.h SYS_SOUNDCARD_FOUND)
+  check_include_files(linux/soundcard.h LINUX_SOUNDCARD_FOUND)
+  check_include_files(machine/soundcard.h MACHINE_SOUNDCARD_FOUND)
+  if(SYS_SOUNDCARD_FOUND)
+    add_definitions(-DHAVE_SYS_SOUNDCARD_H)
+  endif()
+  if(LINUX_SOUNDCARD_FOUND)
+    add_definitions(-DHAVE_LINUX_SOUNDCARD_H)
+  endif()
+  if(MACHINE_SOUNDCARD_FOUND)
+    add_definitions(-DHAVE_MACHINE_SOUNDCARD_H)
+  endif()
+  if(SYS_SOUNDCARD_FOUND OR LINUX_SOUNDCARD_FOUND OR MACHINE_SOUNDCARD_FOUND)
     check_library_exists(ossaudio _oss_ioctl "" LIBOSSAUDIO_FOUND)
     if(LIBOSSAUDIO_FOUND)
       list(APPEND libportaudio_EXT_LIBS ossaudio) # FIXME
     endif()
     add_definitions(-DPA_USE_OSS=1)
     list(APPEND libportaudio_HOSTAPI_SOURCES ${libportaudio_HOSTAPI_OSS_SOURCES})
+    list(APPEND libportaudio_PUBLIC_HEADERS
+      ${libportaudio_UNIX_PUBLIC_HEADERS}
+    )
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/os/unix)
+    set(libportaudio_OS_SOURCES
+      ${libportaudio_OS_UNIX_SOURCES}
+    )
   endif()
 endif()
 
@@ -280,18 +298,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ${libportaudio_OS_UNIX_SOURCES}
   )
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/os/unix)
-  check_include_file("sys/soundcard.h" HAVE_SYS_SOUNDCARD_H)
-  if(HAVE_SYS_SOUNDCARD_H)
-    add_definitions(-DHAVE_SYS_SOUNDCARD_H)
-  endif()
-  check_include_file("linux/soundcard.h" HAVE_LINUX_SOUNDCARD_H)
-  if(HAVE_LINUX_SOUNDCARD_H)
-    add_definitions(-DHAVE_LINUX_SOUNDCARD_H)
-  endif()
-  check_include_file("machine/soundcard.h" HAVE_MACHINE_SOUNDCARD_H)
-  if(HAVE_LINUX_SOUNDCARD_H)
-    add_definitions(-DHAVE_MACHINE_SOUNDCARD_H)
-  endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   list(APPEND libportaudio_PUBLIC_HEADERS
     ${libportaudio_UNIX_PUBLIC_HEADERS}
