@@ -139,7 +139,7 @@ void MainWindow::trayIconContextMenu() {
 	menu->addAction("Show/Hide", this, SLOT(showHideMainWindow()))->setFont(bold);
 	QAction *a = menu->addAction("Start iconized", this, SLOT(toggleStartIconized()));
 	a->setCheckable(true);
-	a->setChecked(master->getSettings()->value("Master/startIconized", "1").toBool());
+	a->setChecked(master->getSettings()->value("Master/startIconized", "0").toBool());
 #ifdef _WINDOWS
 	a = menu->addAction("Show console", this, SLOT(toggleShowConsole()));
 	a->setCheckable(true);
@@ -163,7 +163,7 @@ void MainWindow::toggleShowConsole() {
 
 void MainWindow::toggleStartIconized() {
 	QSettings *s = master->getSettings();
-	bool b = !s->value("Master/startIconized", "1").toBool();
+	bool b = !s->value("Master/startIconized", "0").toBool();
 	s->setValue("Master/startIconized", QString().setNum(b));
 }
 
