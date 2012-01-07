@@ -382,16 +382,6 @@ target_link_libraries(portaudio
   ${libportaudio_EXT_LIBS}
 )
 
-install(
-  TARGETS portaudio 
-  ARCHIVE DESTINATION lib
-)
-install(
-  FILES
-  ${libportaudio_PUBLIC_HEADERS}
-  DESTINATION include
-)
-
 # Locations are exported for the benefit of a higher-level CMakeLists.txt.
 # These lines are irrelevant if compiling stand-alone.
 set(PORTAUDIO_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include" PARENT_SCOPE)
