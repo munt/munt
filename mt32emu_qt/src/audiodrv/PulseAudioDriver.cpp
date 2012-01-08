@@ -38,19 +38,19 @@ static const char PA_LIB_NAME[] = "libpulse-simple.so"; // PulseAudio library fi
 
 #ifdef USE_DYNAMIC_LOADING
 // Pointers for PulseAudio simple functions
-	static const __typeof__ (pa_simple_new) *_pa_simple_new = NULL;
-	static const __typeof__ (pa_simple_free) *_pa_simple_free = NULL;
-	static const __typeof__ (pa_simple_write) *_pa_simple_write = NULL;
-	static const __typeof__ (pa_simple_drain) *_pa_simple_drain = NULL;
-	static const __typeof__ (pa_simple_get_latency) *_pa_simple_get_latency = NULL;
-	static const __typeof__ (pa_strerror) *_pa_strerror = NULL;
+	static __typeof__ (pa_simple_new) *_pa_simple_new = NULL;
+	static __typeof__ (pa_simple_free) *_pa_simple_free = NULL;
+	static __typeof__ (pa_simple_write) *_pa_simple_write = NULL;
+	static __typeof__ (pa_simple_drain) *_pa_simple_drain = NULL;
+	static __typeof__ (pa_simple_get_latency) *_pa_simple_get_latency = NULL;
+	static __typeof__ (pa_strerror) *_pa_strerror = NULL;
 #else
-	static const __typeof__ (pa_simple_new) *_pa_simple_new = pa_simple_new;
-	static const __typeof__ (pa_simple_free) *_pa_simple_free = pa_simple_free;
-	static const __typeof__ (pa_simple_write) *_pa_simple_write = pa_simple_write;
-	static const __typeof__ (pa_simple_drain) *_pa_simple_drain = pa_simple_drain;
-	static const __typeof__ (pa_simple_get_latency) *_pa_simple_get_latency = pa_simple_get_latency;
-	static const __typeof__ (pa_strerror) *_pa_strerror = pa_strerror;
+	static __typeof__ (pa_simple_new) *_pa_simple_new = pa_simple_new;
+	static __typeof__ (pa_simple_free) *_pa_simple_free = pa_simple_free;
+	static __typeof__ (pa_simple_write) *_pa_simple_write = pa_simple_write;
+	static __typeof__ (pa_simple_drain) *_pa_simple_drain = pa_simple_drain;
+	static __typeof__ (pa_simple_get_latency) *_pa_simple_get_latency = pa_simple_get_latency;
+	static __typeof__ (pa_strerror) *_pa_strerror = pa_strerror;
 #endif
 
 static bool loadLibrary(bool loadNeeded) {
