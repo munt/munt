@@ -42,7 +42,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   add_definitions(-DWITH_COREMIDI_DRIVER -DWITH_COREAUDIO_DRIVER)
   list(APPEND mt32emu_qt_SOURCES src/mididrv/CoreMidiDriver.cpp)
   set(CMAKE_EXE_LINKER_FLAGS "-framework CoreMIDI")
-else(CMAKE_SYSTEM_NAME STREQUAL Windows)
+else()
   list(APPEND mt32emu_qt_SOURCES src/mididrv/OSSMidiPortDriver.cpp)
 endif()
 
