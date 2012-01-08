@@ -33,16 +33,18 @@ public:
 class QtAudioDefaultDevice : public AudioDevice {
 	friend class QtAudioDriver;
 private:
-	QtAudioDefaultDevice(QtAudioDriver *driver);
+	QtAudioDefaultDevice(const QtAudioDriver *driver);
 public:
-	QtAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate);
+	QtAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
 
 class QtAudioDriver : public AudioDriver {
+private:
+	void validateAudioSettings() {}
 public:
 	QtAudioDriver(Master *useMaster);
 	~QtAudioDriver();
-	QList<AudioDevice *> getDeviceList();
+	QList<AudioDevice *> getDeviceList() const;
 };
 
 #endif

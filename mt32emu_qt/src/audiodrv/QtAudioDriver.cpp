@@ -91,10 +91,10 @@ void QtAudioStream::close() {
 	audioOutput->stop();
 }
 
-QtAudioDefaultDevice::QtAudioDefaultDevice(QtAudioDriver *driver) : AudioDevice(driver, "default", "Default") {
+QtAudioDefaultDevice::QtAudioDefaultDevice(const QtAudioDriver *driver) : AudioDevice(driver, "default", "Default") {
 }
 
-QtAudioStream *QtAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) {
+QtAudioStream *QtAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
 	QtAudioStream *stream = new QtAudioStream(synth, sampleRate);
 	if (stream->start()) {
 		return stream;
@@ -103,9 +103,16 @@ QtAudioStream *QtAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned in
 	return NULL;
 }
 
-QtAudioDriver::QtAudioDriver(Master *master) : AudioDriver("qtaudio", "QtAudio") {
-	master->addAudioDevice(new QtAudioDefaultDevice(this));
+QtAudioDriver::QtAudioDriver(Master *useMaster) : AudioDriver("qtaudio", "QtAudio") {
+	Q_UNUSED(useMaster);
+	loadAudioSettings();
 }
 
 QtAudioDriver::~QtAudioDriver() {
+}
+
+QList<AudioDevice *> QtAudioDriver::getDeviceList() const {
+	QList<AudioDevice *> deviceList;
+	deviceList.append(new QtAudioDefaultDevice(this));
+	return deviceList;
 }
