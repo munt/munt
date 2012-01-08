@@ -179,9 +179,9 @@ bool PulseAudioStream::start() {
 
 	// The Sample format to use
 	static const pa_sample_spec ss = {
-			format : PA_SAMPLE_S16LE,
-			rate : sampleRate,
-			channels : 2
+			PA_SAMPLE_S16LE, // format
+			sampleRate,
+			2 // channels
 	};
 
 	// Create a new playback stream
