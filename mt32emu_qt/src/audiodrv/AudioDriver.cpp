@@ -26,7 +26,7 @@ AudioDriver::AudioDriver(QString useID, QString useName) : id(useID), name(useNa
 
 void AudioDriver::loadAudioSettings() {
 	QSettings *settings = Master::getInstance()->getSettings();
-	chunkLen = settings->value("waveout/ChunkLen").toInt();
+	chunkLen = settings->value(id + "/ChunkLen").toInt();
 	audioLatency = settings->value(id + "/AudioLatency").toInt();
 	midiLatency = settings->value(id + "/MidiLatency").toInt();
 	validateAudioSettings();

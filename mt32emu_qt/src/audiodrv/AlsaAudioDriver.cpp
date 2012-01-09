@@ -140,7 +140,7 @@ bool AlsaAudioStream::start() {
 			qDebug() << "snd_pcm_writei failed. Written frames:" << error;
 			snd_pcm_close(stream);
 			stream = NULL;
-			return NULL;
+			return false;
 		}
 		initFrames -= bufferSize;
 	}

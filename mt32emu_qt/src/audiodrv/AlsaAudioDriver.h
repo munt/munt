@@ -41,7 +41,7 @@ friend class AlsaAudioDriver;
 	AlsaAudioDefaultDevice(AlsaAudioDriver const * const driver);
 public:
 	AlsaAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
-}; 
+};
 
 class AlsaAudioDriver : public AudioDriver {
 private:
