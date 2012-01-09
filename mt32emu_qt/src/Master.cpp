@@ -32,6 +32,9 @@
 #ifdef WITH_PULSE_AUDIO_DRIVER
 #include "audiodrv/PulseAudioDriver.h"
 #endif
+#ifdef WITH_OSS_AUDIO_DRIVER
+#include "audiodrv/OSSAudioDriver.h"
+#endif
 #ifdef WITH_PORT_AUDIO_DRIVER
 #include "audiodrv/PortAudioDriver.h"
 #endif
@@ -123,6 +126,9 @@ void Master::initAudioDrivers() {
 #endif
 #ifdef WITH_PULSE_AUDIO_DRIVER
 	audioDrivers.append(new PulseAudioDriver(this));
+#endif
+#ifdef WITH_OSS_AUDIO_DRIVER
+	audioDrivers.append(new OSSAudioDriver(this));
 #endif
 #ifdef WITH_PORT_AUDIO_DRIVER
 	audioDrivers.append(new PortAudioDriver(this));

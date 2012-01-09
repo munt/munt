@@ -118,6 +118,17 @@ if(PULSEAUDIO_FOUND)
   )
 endif()
 
+check_include_files(sys/soundcard.h SYS_SOUNDCARD_FOUND)
+if(SYS_SOUNDCARD_FOUND)
+  add_definitions(-DWITH_OSS_AUDIO_DRIVER)
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/audiodrv/OSSAudioDriver.cpp
+  )
+  set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
+    src/audiodrv/OSSAudioDriver.h
+  )
+endif()
+
 find_package(PORTAUDIO)
 if(PORTAUDIO_FOUND)
   add_definitions(-DWITH_PORT_AUDIO_DRIVER)
