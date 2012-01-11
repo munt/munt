@@ -17,12 +17,12 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 #include <pthread.h>
 #include <sys/soundcard.h>
 
 #include "OSSAudioDriver.h"
 
-#include "../MasterClock.h"
 #include "../QSynth.h"
 
 using namespace MT32Emu;
@@ -36,7 +36,7 @@ static const char deviceName[] = "/dev/dsp";
 
 OSSAudioStream::OSSAudioStream(const AudioDevice *device, QSynth *useSynth,
 		unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate),
-		stream(0), sampleCount(0), pendingClose(false)
+		buffer(NULL), stream(0), sampleCount(0), pendingClose(false)
 {
 	device->driver->getAudioSettings(&bufferSize, &audioLatency, &midiLatency);
 	bufferSize *= sampleRate / 1000 /* ms per sec*/;
@@ -55,6 +55,7 @@ void* OSSAudioStream::processingThread(void *userData) {
 	OSSAudioStream *driver = (OSSAudioStream *)userData;
 	qDebug() << "OSS audio: Processing thread started";
 	while (!driver->pendingClose) {
+#ifdef USE_OSS_TIMING
 		int delay = 0;
 		if (ioctl (driver->stream, SNDCTL_DSP_GETODELAY, &delay) == -1) {
 			qDebug() << "SNDCTL_DSP_GETODELAY failed:" << errno;
@@ -66,7 +67,15 @@ void* OSSAudioStream::processingThread(void *userData) {
 		 + (double)delay / (FRAME_SIZE * driver->sampleRate) * MasterClock::NANOS_PER_SECOND;
 		MasterClockNanos firstSampleNanos = realSampleTime - (driver->midiLatency + driver->audioLatency)
 			* MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream audio latency
-		driver->synth->render(driver->buffer, driver->bufferSize, firstSampleNanos, driver->sampleRate);
+		double realSampleRate = driver->sampleRate;
+#else
+		double realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
+		MasterClockNanos realSampleTime = MasterClockNanos(driver->sampleCount /
+			(double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
+		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) -
+			driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
+#endif
+		driver->synth->render(driver->buffer, driver->bufferSize, firstSampleNanos, realSampleRate);
 		if ((error = write(driver->stream, driver->buffer, FRAME_SIZE * driver->bufferSize)) != (int)(FRAME_SIZE * driver->bufferSize)) {
 			if (error == -1) {
 				qDebug() << "OSS audio: write failed:" << errno;

@@ -6,7 +6,7 @@
 #include <mt32emu/mt32emu.h>
 
 #include "AudioDriver.h"
-#include "../MasterClock.h"
+#include "../ClockSync.h"
 
 class Master;
 class QSynth;
@@ -17,6 +17,7 @@ private:
 	unsigned int bufferSize;
 	unsigned int audioLatency;
 	unsigned int midiLatency;
+	ClockSync clockSync;
 	QSynth *synth;
 	unsigned int sampleRate;
 	MT32Emu::Bit16s *buffer;
