@@ -32,7 +32,8 @@ using namespace MT32Emu;
 
 static const int FRAME_SIZE = 4; // Stereo, 16-bit
 static const unsigned int DEFAULT_CHUNK_MS = 10;
-static const unsigned int DEFAULT_MIDI_LATENCY = 300;
+static const unsigned int DEFAULT_AUDIO_LATENCY = 30;
+static const unsigned int DEFAULT_MIDI_LATENCY = 90;
 
 static const char PA_LIB_NAME[] = "libpulse-simple.so"; // PulseAudio library filename
 
@@ -122,8 +123,7 @@ PulseAudioStream::PulseAudioStream(const AudioDevice *device, QSynth *useSynth,
 	unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL),
 	sampleCount(0), pendingClose(false)
 {
-	unsigned int unused;
-	device->driver->getAudioSettings(&bufferSize, &unused, &midiLatency);
+	device->driver->getAudioSettings(&bufferSize, &audioLatency, &midiLatency);
 	bufferSize *= sampleRate / 1000 /* ms per sec*/;
 	buffer = new Bit16s[2 * bufferSize];
 }
@@ -184,8 +184,18 @@ bool PulseAudioStream::start() {
 			2 // channels
 	};
 
+	// Configuring desired audio latency
+	qDebug() << "Using audio latency:" << audioLatency;
+	static const pa_buffer_attr ba = {
+		-1, // uint32_t maxlength;
+		audioLatency * FRAME_SIZE * sampleRate / 1000, // uint32_t tlength;
+		-1, // uint32_t prebuf;
+		-1, // uint32_t minreq;
+		-1 // uint32_t fragsize;
+	};
+
 	// Create a new playback stream
-	if (!(stream = _pa_simple_new(NULL, "mt32emu-qt", PA_STREAM_PLAYBACK, NULL, "playback", &ss, NULL, NULL, &error))) {
+	if (!(stream = _pa_simple_new(NULL, "mt32emu-qt", PA_STREAM_PLAYBACK, NULL, "playback", &ss, NULL, &ba, &error))) {
 		qDebug() << "pa_simple_new() failed:" << _pa_strerror(error);
 		return false;
 	}
@@ -262,6 +272,9 @@ QList<AudioDevice *> PulseAudioDriver::getDeviceList() const {
 void PulseAudioDriver::validateAudioSettings() {
 	if (midiLatency == 0) {
 		midiLatency = DEFAULT_MIDI_LATENCY;
+	}
+	if (audioLatency == 0) {
+		audioLatency = DEFAULT_AUDIO_LATENCY;
 	}
 	if (chunkLen == 0) {
 		chunkLen = DEFAULT_CHUNK_MS;

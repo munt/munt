@@ -17,6 +17,7 @@ class PulseAudioDriver;
 class PulseAudioStream : public AudioStream {
 private:
 	unsigned int bufferSize;
+	unsigned int audioLatency;
 	unsigned int midiLatency;
 	ClockSync clockSync;
 	QSynth *synth;
