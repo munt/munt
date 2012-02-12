@@ -18,8 +18,10 @@
 #include "mt32emu.h"
 #include "FileStream.h"
 
-using namespace MT32Emu;
-using namespace std;
+namespace MT32Emu {
+
+using std::ifstream;
+using std::ios_base;
 
 FileStream::FileStream() {
 	ifsp = new ifstream();
@@ -83,4 +85,6 @@ bool FileStream::open(const char *filename) {
 
 void FileStream::close() {
 	ifsp->close();
+}
+
 }
