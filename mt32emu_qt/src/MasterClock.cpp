@@ -14,15 +14,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cerrno>
-#include <time.h>
-
 #include <QtGlobal>
 #include <QDebug>
 
 #include "MasterClock.h"
 
 #if _POSIX_C_SOURCE >= 199309L
+
+#include <cerrno>
+#include <time.h>
 
 static qint64 timespecToNanos(const timespec &ts) {
 	return ts.tv_sec * (qint64)MasterClock::NANOS_PER_SECOND + ts.tv_nsec;
@@ -91,7 +91,7 @@ void MasterClock::sleepUntilClockNanos(MasterClockNanos clockNanos) {
 	sleepForNanos(clockNanos - getClockNanos());
 }
 
-#ifdef _WIN32
+#ifdef WITH_WINMMTIMER
 
 #include <Windows.h>
 

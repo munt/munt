@@ -16,7 +16,10 @@
 
 #include <QtGui>
 
-#ifdef _WINDOWS
+#ifdef WITH_WINCONSOLE
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0500
+#endif
 #include <windows.h>
 #endif
 
@@ -40,7 +43,7 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 		connect(master->getTrayIcon(), SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(handleTrayIconActivated(QSystemTrayIcon::ActivationReason)));
 		trayIconContextMenu();
 	}
-#ifdef _WINDOWS
+#ifdef WITH_WINCONSOLE
 	if (!master->getSettings()->value("Master/showConsole", "0").toBool())
 		ShowWindow(GetConsoleWindow(), SW_HIDE);
 #endif
@@ -140,7 +143,7 @@ void MainWindow::trayIconContextMenu() {
 	QAction *a = menu->addAction("Start iconized", this, SLOT(toggleStartIconized()));
 	a->setCheckable(true);
 	a->setChecked(master->getSettings()->value("Master/startIconized", "0").toBool());
-#ifdef _WINDOWS
+#ifdef WITH_WINCONSOLE
 	a = menu->addAction("Show console", this, SLOT(toggleShowConsole()));
 	a->setCheckable(true);
 	a->setChecked(master->getSettings()->value("Master/showConsole", "0").toBool());
@@ -150,7 +153,7 @@ void MainWindow::trayIconContextMenu() {
 }
 
 void MainWindow::toggleShowConsole() {
-#ifdef _WINDOWS
+#ifdef WITH_WINCONSOLE
 	QSettings *s = master->getSettings();
 	bool b = !s->value("Master/showConsole", "0").toBool();
 	s->setValue("Master/showConsole", QString().setNum(b));
