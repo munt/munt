@@ -22,7 +22,7 @@
 #include "mt32emu.h"
 #include "mmath.h"
 
-using namespace MT32Emu;
+namespace MT32Emu {
 
 Tables::Tables() {
 	initialised = false;
@@ -116,4 +116,6 @@ void Tables::init() {
 	for (int i = 0; i < 5120; i++) {
 		sinf10[i] = sin(FLOAT_PI * i / 2048.0f);
 	}
+}
+
 }

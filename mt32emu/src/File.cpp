@@ -19,7 +19,7 @@
 #include "mt32emu.h"
 #include "sha1/sha1.h"
 
-using namespace MT32Emu;
+namespace MT32Emu {
 
 static void SHA1DigestToString(char *strDigest, const unsigned int intDigest [])
 {
@@ -54,4 +54,6 @@ unsigned char* File::getSHA1() {
 	}
 	SHA1DigestToString((char *) sha1Digest, fileDigest);
 	return sha1Digest;
+}
+
 }
