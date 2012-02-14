@@ -22,7 +22,7 @@
 #include "mt32emu.h"
 #include "mmath.h"
 
-using namespace MT32Emu;
+namespace MT32Emu {
 
 #ifdef INACCURATE_SMOOTH_PAN
 // Mok wanted an option for smoother panning, and we love Mok.
@@ -554,4 +554,6 @@ void Partial::startDecayAll() {
 	tva->startDecay();
 	tvp->startDecay();
 	tvf->startDecay();
+}
+
 }
