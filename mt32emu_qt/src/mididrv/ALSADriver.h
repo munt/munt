@@ -26,8 +26,12 @@ private:
 	ALSAMidiDriver *alsaMidiDriver;
 	snd_seq_t *seq;
 	volatile bool stopProcessing;
+	QList<unsigned int> clients;
 
 	bool processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synthRoute);
+	unsigned int getSourceAddr(snd_seq_event_t *seq_event);
+	QString getClientName(unsigned int clientAddr);
+	MidiSession *findMidiSessionForClient(unsigned int clientAddr);
 
 signals:
 	void finished();
@@ -35,6 +39,7 @@ signals:
 
 class ALSAMidiDriver : public MidiDriver {
 	Q_OBJECT
+	friend class ALSAProcessor;
 public:
 	ALSAMidiDriver(Master *useMaster);
 	~ALSAMidiDriver();
@@ -47,5 +52,3 @@ private:
 };
 
 #endif
-
-

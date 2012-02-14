@@ -50,8 +50,6 @@ void ALSAProcessor::stop() {
 }
 
 void ALSAProcessor::processSeqEvents() {
-	// FIXME: For now we just use a single MIDI session for all connections to our port
-	MidiSession *midiSession = NULL;
 	int pollFDCount;
 	struct pollfd *pollFDs;
 
@@ -97,8 +95,15 @@ void ALSAProcessor::processSeqEvents() {
 				qDebug() << "Status: " << status;
 				break;
 			}
-			if(midiSession == NULL) {
-				midiSession = alsaMidiDriver->getMaster()->createMidiSession(alsaMidiDriver, "Combined ALSA Session");
+			unsigned int clientAddr = getSourceAddr(seq_event);
+			MidiSession *midiSession = findMidiSessionForClient(clientAddr);
+			if (midiSession == NULL) {
+				midiSession = alsaMidiDriver->createMidiSession(getClientName(clientAddr));
+				if (midiSession == NULL) {
+					qDebug() << "Can't create new Midi Session. Exiting...";
+					break;
+				}
+				clients.append(clientAddr);
 			}
 			if (processSeqEvent(seq_event, midiSession->getSynthRoute())) {
 				break;
@@ -108,10 +113,38 @@ void ALSAProcessor::processSeqEvents() {
 	free(pollFDs);
 	snd_seq_close(seq);
 	qDebug() << "ALSA MIDI processing loop finished";
-	if(midiSession != NULL) {
-		alsaMidiDriver->getMaster()->deleteMidiSession(midiSession);
+
+	QMutableListIterator<MidiSession *> midiSessionIt(alsaMidiDriver->midiSessions);
+	while(midiSessionIt.hasNext()) {
+		MidiSession *midiSession = midiSessionIt.next();
+		if (midiSession != NULL) {
+			alsaMidiDriver->deleteMidiSession(midiSession);
+		}
 	}
+	clients.clear();
 	emit finished();
+}
+
+unsigned int ALSAProcessor::getSourceAddr(snd_seq_event_t *seq_event) {
+	snd_seq_addr addr;
+	if (seq_event->type == SND_SEQ_EVENT_PORT_SUBSCRIBED || seq_event->type == SND_SEQ_EVENT_PORT_UNSUBSCRIBED)
+		addr = seq_event->data.connect.sender;
+	else
+		addr = seq_event->source;
+	return (addr.client << 8) | addr.port;
+}
+
+QString ALSAProcessor::getClientName(unsigned int clientAddr) {
+	snd_seq_client_info_t *info;
+	snd_seq_client_info_alloca(&info);
+	if (snd_seq_get_any_client_info(seq, clientAddr >> 8, info) != 0) return "Unknown ALSA session";
+	return snd_seq_client_info_get_name(info);
+}
+
+MidiSession * ALSAProcessor::findMidiSessionForClient(unsigned int clientAddr) {
+	int i = clients.indexOf(clientAddr);
+	if (i == -1) return NULL;
+	return alsaMidiDriver->midiSessions.at(i);
 }
 
 bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synthRoute) {
@@ -192,8 +225,15 @@ bool ALSAProcessor::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synt
 		break;
 
 	case SND_SEQ_EVENT_PORT_SUBSCRIBED:
+		// no-op
+		break;
 	case SND_SEQ_EVENT_PORT_UNSUBSCRIBED:
-		// FIXME: Would be nice to have subscribers shown in the GUI
+		unsigned int clientAddr;
+		clientAddr = getSourceAddr(seq_event);
+		MidiSession *midiSession;
+		midiSession = findMidiSessionForClient(clientAddr);
+		if (midiSession != NULL) alsaMidiDriver->deleteMidiSession(midiSession);
+		clients.removeAll(clientAddr);
 		break;
 
 	case SND_SEQ_EVENT_CLIENT_START:
