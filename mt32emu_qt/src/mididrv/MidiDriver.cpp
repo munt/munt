@@ -19,12 +19,14 @@
 #include <QtGlobal>
 
 MidiDriver::MidiDriver(Master *useMaster): master(useMaster), name("Unknown") {
-
+	connect(this, SIGNAL(midiSessionInitiated(MidiSession **, MidiDriver *, QString)), master, SLOT(createMidiSession(MidiSession **, MidiDriver *, QString)), Qt::BlockingQueuedConnection);
+	connect(this, SIGNAL(midiSessionDeleted(MidiSession *)), master, SLOT(deleteMidiSession(MidiSession *)));
+	connect(this, SIGNAL(balloonMessageAppeared(const QString &, const QString &)), master, SLOT(showBalloon(const QString &, const QString &)));
 }
 
 MidiDriver::~MidiDriver() {
 	while (!midiSessions.isEmpty()) {
-		master->deleteMidiSession(midiSessions.takeFirst());
+		emit deleteMidiSession(midiSessions.takeFirst());
 	}
 }
 
@@ -42,7 +44,8 @@ Master *MidiDriver::getMaster() {
 }
 
 MidiSession *MidiDriver::createMidiSession(QString sessionName) {
-	MidiSession *midiSession = master->createMidiSession(this, sessionName);
+	MidiSession *midiSession = NULL;
+	emit midiSessionInitiated(&midiSession, this, sessionName);
 	if (midiSession != NULL) {
 		midiSessions.append(midiSession);
 	}
@@ -51,5 +54,9 @@ MidiSession *MidiDriver::createMidiSession(QString sessionName) {
 
 void MidiDriver::deleteMidiSession(MidiSession *midiSession) {
 	midiSessions.removeOne(midiSession);
-	master->deleteMidiSession(midiSession);
+	emit midiSessionDeleted(midiSession);
+}
+
+void MidiDriver::showBalloon(const QString &title, const QString &text) {
+	emit balloonMessageAppeared(title, text);
 }

@@ -36,7 +36,7 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 	case WM_APP: // closing session
 		midiSession = (MidiSession*)wParam;
 		qDebug() << "Session" << midiSession << "finished";
-		Master::getInstance()->deleteMidiSession(midiSession);
+		driver->deleteMidiSession(midiSession);
 		return 1;
 
 	case WM_COPYDATA:
@@ -51,8 +51,8 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 				startMasterClock = (qint64)cds->dwData * MasterClock::NANOS_PER_MILLISECOND - MasterClock::getClockNanos();
 				// Process handshaking message
 				QString appName = QFileInfo(QString((const char *)&data[3])).fileName();
-				midiSession = driver->master->createMidiSession(driver, appName);
-				driver->master->showBalloon("Connected application:", appName);
+				midiSession = driver->createMidiSession(appName);
+				driver->showBalloon("Connected application:", appName);
 				qDebug() << "Connected application" << appName;
 				qDebug() << "Session" << midiSession << "protocol version" << data[2];
 				if (!midiSession) {

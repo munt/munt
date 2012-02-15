@@ -42,8 +42,6 @@ private:
 	SynthRoute *startSynthRoute();
 
 public:
-	MidiSession *createMidiSession(MidiDriver *midiDriver, QString name);
-	void deleteMidiSession(MidiSession *midiSession);
 	// May only be called from the application thread
 	const QList<AudioDevice *> getAudioDevices();
 	void setDefaultAudioDevice(QString driverId, QString name);
@@ -55,7 +53,6 @@ public:
 	void getROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage);
 	QSystemTrayIcon *getTrayIcon() const;
 	QSettings *getSettings() const;
-	void showBalloon(const QString &title, const QString &text);
 	bool isPinned(const SynthRoute *synthRoute) const;
 	void setPinned(SynthRoute *synthRoute);
 	void startPinnedSynthRoute();
@@ -68,9 +65,9 @@ public:
 	static void deinit();
 
 private slots:
-	void reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
-	void reallyDeleteMidiSession(MidiSession *midiSession);
-	void reallyShowBalloon(const QString &title, const QString &text);
+	void createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
+	void deleteMidiSession(MidiSession *midiSession);
+	void showBalloon(const QString &title, const QString &text);
 
 signals:
 	void synthRouteAdded(SynthRoute *route, const AudioDevice *audioDevice);

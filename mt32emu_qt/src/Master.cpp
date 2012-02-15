@@ -286,18 +286,18 @@ void Master::setTrayIcon(QSystemTrayIcon *trayIcon) {
 	INSTANCE->trayIcon = trayIcon;
 }
 
-void Master::reallyShowBalloon(const QString &title, const QString &text) {
+void Master::showBalloon(const QString &title, const QString &text) {
 	trayIcon->showMessage(title, text);
 }
 
-void Master::reallyCreateMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name) {
+void Master::createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name) {
 	SynthRoute *synthRoute = startSynthRoute();
 	MidiSession *midiSession = new MidiSession(this, midiDriver, name, synthRoute);
 	synthRoute->addMidiSession(midiSession);
 	*returnVal = midiSession;
 }
 
-void Master::reallyDeleteMidiSession(MidiSession *midiSession) {
+void Master::deleteMidiSession(MidiSession *midiSession) {
 	SynthRoute *synthRoute = midiSession->getSynthRoute();
 	synthRoute->removeMidiSession(midiSession);
 	delete midiSession;
@@ -306,36 +306,4 @@ void Master::reallyDeleteMidiSession(MidiSession *midiSession) {
 	emit synthRouteRemoved(synthRoute);
 	synthRoute->close();
 	delete synthRoute;
-}
-
-MidiSession *Master::createMidiSession(MidiDriver *midiDriver, QString name) {
-	MidiSession *midiSession;
-	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
-		reallyCreateMidiSession(&midiSession, midiDriver, name);
-	} else {
-		QMetaObject::invokeMethod(this, "reallyCreateMidiSession", Qt::BlockingQueuedConnection,
-								  Q_ARG(MidiSession **, &midiSession),
-								  Q_ARG(MidiDriver *, midiDriver),
-								  Q_ARG(QString, name));
-	}
-	return midiSession;
-}
-
-void Master::deleteMidiSession(MidiSession *midiSession) {
-	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
-		reallyDeleteMidiSession(midiSession);
-	} else {
-		QMetaObject::invokeMethod(this, "reallyDeleteMidiSession", Qt::QueuedConnection,
-								  Q_ARG(MidiSession *, midiSession));
-	}
-}
-
-void Master::showBalloon(const QString &title, const QString &text) {
-	if (QThread::currentThread() == QCoreApplication::instance()->thread()) {
-		reallyShowBalloon(title, text);
-	} else {
-		QMetaObject::invokeMethod(this, "reallyShowBalloon", Qt::QueuedConnection,
-								  Q_ARG(const QString &, title),
-								  Q_ARG(const QString &, text));
-	}
 }

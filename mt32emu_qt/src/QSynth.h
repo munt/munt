@@ -28,6 +28,7 @@ public:
 	void onPartStateChanged(int partNum, bool isActive);
 
 signals:
+	void balloonMessageAppeared(const QString &title, const QString &text);
 	void lcdMessageDisplayed(const QString);
 	void masterVolumeChanged(int);
 	void reverbModeChanged(int);

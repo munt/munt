@@ -35,10 +35,11 @@ using namespace MT32Emu;
 
 QReportHandler::QReportHandler(QObject *parent) : QObject(parent)
 {
+	connect(this, SIGNAL(balloonMessageAppeared(const QString &, const QString &)), Master::getInstance(), SLOT(showBalloon(const QString &, const QString &)));
 }
 
 void QReportHandler::showLCDMessage(const char *message) {
-	Master::getInstance()->showBalloon("LCD-Message:", message);
+	emit balloonMessageAppeared("LCD-Message:", message);
 	emit lcdMessageDisplayed(message);
 }
 

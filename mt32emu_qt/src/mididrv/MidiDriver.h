@@ -17,6 +17,7 @@ protected:
 	void setName(const QString &name);
 	MidiSession *createMidiSession(QString sessionName);
 	void deleteMidiSession(MidiSession *midiSession);
+	void showBalloon(const QString &title, const QString &text);
 
 public:
 	MidiDriver(Master *useMaster);
@@ -28,6 +29,9 @@ public:
 
 signals:
 	void nameChanged(const QString &name);
+	void midiSessionInitiated(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
+	void midiSessionDeleted(MidiSession *midiSession);
+	void balloonMessageAppeared(const QString &title, const QString &text);
 };
 
 #endif
