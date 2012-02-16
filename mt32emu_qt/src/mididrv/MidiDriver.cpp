@@ -18,8 +18,8 @@
 
 #include <QtGlobal>
 
-MidiDriver::MidiDriver(Master *useMaster): master(useMaster), name("Unknown") {
-	connect(this, SIGNAL(midiSessionInitiated(MidiSession **, MidiDriver *, QString)), master, SLOT(createMidiSession(MidiSession **, MidiDriver *, QString)), Qt::BlockingQueuedConnection);
+MidiDriver::MidiDriver(Master *useMaster, Qt::ConnectionType masterConnectionType): master(useMaster), name("Unknown") {
+	connect(this, SIGNAL(midiSessionInitiated(MidiSession **, MidiDriver *, QString)), master, SLOT(createMidiSession(MidiSession **, MidiDriver *, QString)), masterConnectionType);
 	connect(this, SIGNAL(midiSessionDeleted(MidiSession *)), master, SLOT(deleteMidiSession(MidiSession *)));
 	connect(this, SIGNAL(balloonMessageAppeared(const QString &, const QString &)), master, SLOT(showBalloon(const QString &, const QString &)));
 }

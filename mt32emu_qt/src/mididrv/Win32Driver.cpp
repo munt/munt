@@ -106,7 +106,7 @@ void Win32MidiDriver::MessageLoop(void *) {
 	GetMessage(&msg, hwnd, WM_QUIT, WM_QUIT);
 }
 
-Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster) {
+Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster, Qt::BlockingQueuedConnection) {
 	master = useMaster;
 	driver = this;
 	name = "Win32_MIDI";

@@ -98,12 +98,15 @@ void ALSAProcessor::processSeqEvents() {
 			unsigned int clientAddr = getSourceAddr(seq_event);
 			MidiSession *midiSession = findMidiSessionForClient(clientAddr);
 			if (midiSession == NULL) {
-				midiSession = alsaMidiDriver->createMidiSession(getClientName(clientAddr));
+				QString appName = getClientName(clientAddr);
+				midiSession = alsaMidiDriver->createMidiSession(appName);
 				if (midiSession == NULL) {
 					qDebug() << "Can't create new Midi Session. Exiting...";
 					break;
 				}
 				clients.append(clientAddr);
+				alsaMidiDriver->showBalloon("Connected application:", appName);
+				qDebug() << "Connected application" << appName;
 			}
 			if (processSeqEvent(seq_event, midiSession->getSynthRoute())) {
 				break;
@@ -282,7 +285,7 @@ static int alsa_setup_midi(snd_seq_t *&seq_handle)
 	return seqPort;
 }
 
-ALSAMidiDriver::ALSAMidiDriver(Master *useMaster) : MidiDriver(useMaster) {
+ALSAMidiDriver::ALSAMidiDriver(Master *useMaster) : MidiDriver(useMaster, Qt::BlockingQueuedConnection) {
 	processor = NULL;
 }
 
