@@ -274,20 +274,17 @@ bool Win32MidiIn::close() {
 
 	wResult = midiInReset(hMidiIn);
 	if (wResult != MMSYSERR_NOERROR) {
-		QMessageBox::critical(NULL, "Win32MidiIn Error", "Failed to reset MIDI input port");
-		return false;
+		qDebug() << "Win32MidiIn: Failed to reset MIDI input port";
 	}
 
 	wResult = midiInUnprepareHeader(hMidiIn, &MidiInHdr, sizeof(MIDIHDR));
 	if (wResult != MMSYSERR_NOERROR) {
-		QMessageBox::critical(NULL, "Win32MidiIn Error", "Failed to unprepare MIDI header");
-		return false;
+		qDebug() << "Win32MidiIn: Failed to unprepare MIDI header";
 	}
 
 	wResult = midiInClose(hMidiIn);
 	if (wResult != MMSYSERR_NOERROR) {
-		QMessageBox::critical(NULL, "Win32MidiIn Error", "Failed to close MIDI input port");
-		return false;
+		qDebug() << "Win32MidiIn: Failed to close MIDI input port";
 	}
 
 	return true;
@@ -300,7 +297,5 @@ UINT Win32MidiIn::getID() {
 }
 
 Win32MidiIn::~Win32MidiIn() {
-	if (!close()) {
-		exit(-1);
-	}
+	close();
 }
