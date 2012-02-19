@@ -39,6 +39,9 @@
          <layout class="QHBoxLayout" name="horizontalLayout_3">
           <item>
            <widget class="QPushButton" name="midiAdd">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>+</string>
             </property>

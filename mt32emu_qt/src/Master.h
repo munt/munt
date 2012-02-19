@@ -9,6 +9,7 @@ class AudioDriver;
 class MidiDriver;
 class MidiSession;
 class QSystemTrayIcon;
+class MidiPropertiesDialog;
 
 class Master : public QObject {
 	Q_OBJECT
@@ -57,6 +58,12 @@ public:
 	void setPinned(SynthRoute *synthRoute);
 	void startPinnedSynthRoute();
 	void startMidiProcessing();
+	bool canCreateMidiPort();
+	bool canDeleteMidiPort(MidiSession *midiSession);
+	bool canSetMidiPortProperties(MidiSession *midiSession);
+	void createMidiPort(MidiPropertiesDialog *mpd, SynthRoute *synthRoute);
+	void deleteMidiPort(MidiSession *midiSession);
+	void setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
 
 	static Master *getInstance();
 

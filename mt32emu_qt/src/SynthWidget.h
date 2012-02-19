@@ -6,6 +6,7 @@
 #include "SynthRoute.h"
 #include "SynthPropertiesDialog.h"
 #include "AudioPropertiesDialog.h"
+#include "MidiPropertiesDialog.h"
 
 class Master;
 class AudioDevice;
@@ -55,9 +56,11 @@ private:
 	LCDWidget *lcdWidget;
 	SynthPropertiesDialog spd;
 	AudioPropertiesDialog apd;
+	MidiPropertiesDialog mpd;
 
 	void refreshAudioDeviceList(Master *master, const AudioDevice *useAudioDevice);
 	int findMIDISession(MidiSession *midiSession);
+	MidiSession *getSelectedMIDISession();
 	void setEmuModeText();
 
 private slots:
@@ -67,10 +70,15 @@ private slots:
 	void on_refreshButton_clicked();
 	void on_pinCheckBox_stateChanged(int state);
 	void on_audioDeviceComboBox_currentIndexChanged(int audioDeviceIndex);
+	void on_midiList_itemSelectionChanged();
+	void on_midiAdd_clicked();
+	void on_midiRemove_clicked();
+	void on_midiProperties_clicked();
 	void handleSynthRouteState(SynthRouteState state);
 	void handleSynthRoutePinned();
 	void handleMIDISessionAdded(MidiSession *midiSession);
 	void handleMIDISessionRemoved(MidiSession *midiSession);
+	void handleMIDISessionNameChanged(MidiSession *midiSession);
 };
 
 #endif // SYNTHWIDGET_H

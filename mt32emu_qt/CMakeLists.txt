@@ -21,6 +21,7 @@ set(mt32emu_qt_SOURCES
   src/SynthRoute.cpp
   src/SynthPropertiesDialog.cpp
   src/AudioPropertiesDialog.cpp
+  src/MidiPropertiesDialog.cpp
   src/ROMSelectionDialog.cpp
   src/SynthWidget.cpp
 
@@ -53,6 +54,7 @@ set(mt32emu_qt_HEADERS
   src/QSynth.h
   src/SynthPropertiesDialog.h
   src/AudioPropertiesDialog.h
+  src/MidiPropertiesDialog.h
   src/ROMSelectionDialog.h
   src/SynthRoute.h
   src/SynthWidget.h
@@ -66,6 +68,7 @@ set(mt32emu_qt_HEADERS
 set(mt32emu_qt_FORMS
   src/MainWindow.ui
   src/AudioPropertiesDialog.ui
+  src/MidiPropertiesDialog.ui
   src/SynthPropertiesDialog.ui
   src/ROMSelectionDialog.ui
   src/SynthWidget.ui

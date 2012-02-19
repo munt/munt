@@ -34,11 +34,6 @@ QString MidiDriver::getName() const {
 	 return name;
 }
 
-void MidiDriver::setName(const QString &newName) {
-	name = newName;
-	emit nameChanged(name);
-}
-
 Master *MidiDriver::getMaster() {
 	return master;
 }
@@ -59,4 +54,28 @@ void MidiDriver::deleteMidiSession(MidiSession *midiSession) {
 
 void MidiDriver::showBalloon(const QString &title, const QString &text) {
 	emit balloonMessageAppeared(title, text);
+}
+
+bool MidiDriver::canCreatePort() {
+	return false;
+}
+
+bool MidiDriver::canDeletePort(MidiSession *midiSession) {
+	return false;
+}
+
+bool MidiDriver::canSetPortProperties(MidiSession *midiSession) {
+	return false;
+}
+
+bool MidiDriver::createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
+	return false;
+}
+
+bool MidiDriver::setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
+	return false;
+}
+
+QString MidiDriver::getNewPortName(MidiPropertiesDialog *mpd) {
+	return "";
 }

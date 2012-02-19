@@ -307,3 +307,35 @@ void Master::deleteMidiSession(MidiSession *midiSession) {
 	synthRoute->close();
 	delete synthRoute;
 }
+
+bool Master::canCreateMidiPort() {
+	return midiDriver->canCreatePort();
+}
+
+bool Master::canDeleteMidiPort(MidiSession *midiSession) {
+	return midiDriver->canDeletePort(midiSession);
+}
+
+bool Master::canSetMidiPortProperties(MidiSession *midiSession) {
+	return midiDriver->canSetPortProperties(midiSession);
+}
+
+void Master::createMidiPort(MidiPropertiesDialog *mpd, SynthRoute *synthRoute) {
+	QString portName = midiDriver->getNewPortName(mpd);
+	if (portName.isEmpty()) return;
+	MidiSession *midiSession = new MidiSession(this, midiDriver, portName, synthRoute);
+	if (midiDriver->createPort(mpd, midiSession)) {
+		synthRoute->addMidiSession(midiSession);
+	} else {
+		delete midiSession;
+	}
+}
+
+void Master::deleteMidiPort(MidiSession *midiSession) {
+	midiDriver->deletePort(midiSession);
+	deleteMidiSession(midiSession);
+}
+
+void Master::setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
+	midiDriver->setPortProperties(mpd, midiSession);
+}

@@ -51,6 +51,7 @@ public:
 
 	void addMidiSession(MidiSession *midiSession);
 	void removeMidiSession(MidiSession *midiSession);
+	void setMidiSessionName(MidiSession *midiSession, QString name);
 	bool hasMIDISessions() const;
 	SynthRouteState getState() const;
 	void setAudioDevice(const AudioDevice *newAudioDevice);
@@ -62,6 +63,7 @@ signals:
 	void stateChanged(SynthRouteState state);
 	void midiSessionAdded(MidiSession *midiSession);
 	void midiSessionRemoved(MidiSession *midiSession);
+	void midiSessionNameChanged(MidiSession *midiSession);
 };
 
 #endif

@@ -24,6 +24,7 @@
  */
 
 #include "SynthRoute.h"
+#include "MidiSession.h"
 #include "audiodrv/AudioDriver.h"
 
 using namespace MT32Emu;
@@ -125,6 +126,11 @@ void SynthRoute::addMidiSession(MidiSession *midiSession) {
 void SynthRoute::removeMidiSession(MidiSession *midiSession) {
 	midiSessions.removeOne(midiSession);
 	emit midiSessionRemoved(midiSession);
+}
+
+void SynthRoute::setMidiSessionName(MidiSession *midiSession, QString name) {
+	midiSession->setName(name);
+	emit midiSessionNameChanged(midiSession);
 }
 
 bool SynthRoute::hasMIDISessions() const {

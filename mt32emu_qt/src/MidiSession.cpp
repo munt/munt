@@ -26,3 +26,7 @@ SynthRoute *MidiSession::getSynthRoute() {
 QString MidiSession::getName() {
 	return name;
 }
+
+void MidiSession::setName(const QString &newName) {
+	name = newName;
+}

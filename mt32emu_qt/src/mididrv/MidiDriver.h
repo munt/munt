@@ -6,6 +6,7 @@
 #include "../Master.h"
 
 class SynthRoute;
+class MidiPropertiesDialog;
 
 class MidiDriver : public QObject {
 	Q_OBJECT
@@ -14,7 +15,6 @@ protected:
 	QString name;
 	QList<MidiSession *>midiSessions;
 
-	void setName(const QString &name);
 	MidiSession *createMidiSession(QString sessionName);
 	void deleteMidiSession(MidiSession *midiSession);
 	void showBalloon(const QString &title, const QString &text);
@@ -26,9 +26,15 @@ public:
 	virtual QString getName() const;
 	virtual void start() = 0;
 	virtual void stop() = 0;
+	virtual bool canCreatePort();
+	virtual bool canDeletePort(MidiSession *midiSession);
+	virtual bool canSetPortProperties(MidiSession *midiSession);
+	virtual bool createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession);
+	virtual void deletePort(MidiSession *midiSession) {}
+	virtual bool setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
+	virtual QString getNewPortName(MidiPropertiesDialog *mpd);
 
 signals:
-	void nameChanged(const QString &name);
 	void midiSessionInitiated(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
 	void midiSessionDeleted(MidiSession *midiSession);
 	void balloonMessageAppeared(const QString &title, const QString &text);

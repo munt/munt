@@ -26,7 +26,8 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	synthRoute(useSynthRoute),
 	ui(new Ui::SynthWidget),
 	spd(parent, useSynthRoute),
-	apd(parent)
+	apd(parent),
+	mpd(parent)
 {
 	ui->setupUi(this);
 
@@ -39,9 +40,12 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	refreshAudioDeviceList(master, useAudioDevice);
 	ui->pinCheckBox->setChecked(master->isPinned(synthRoute));
 
+	ui->midiAdd->setEnabled(master->canCreateMidiPort());
+
 	connect(synthRoute, SIGNAL(stateChanged(SynthRouteState)), SLOT(handleSynthRouteState(SynthRouteState)));
 	connect(synthRoute, SIGNAL(midiSessionAdded(MidiSession *)), SLOT(handleMIDISessionAdded(MidiSession *)));
 	connect(synthRoute, SIGNAL(midiSessionRemoved(MidiSession *)), SLOT(handleMIDISessionRemoved(MidiSession *)));
+	connect(synthRoute, SIGNAL(midiSessionNameChanged(MidiSession *)), SLOT(handleMIDISessionNameChanged(MidiSession *)));
 	connect(master, SIGNAL(synthRoutePinned()), SLOT(handleSynthRoutePinned()));
 	connect(ui->synthPropertiesButton, SIGNAL(clicked()), &spd, SLOT(exec()));
 	handleSynthRouteState(synthRoute->getState());
@@ -173,6 +177,42 @@ void SynthWidget::handleMIDISessionAdded(MidiSession *midiSession) {
 
 void SynthWidget::handleMIDISessionRemoved(MidiSession *midiSession) {
 	delete ui->midiList->takeItem(findMIDISession(midiSession));
+}
+
+void SynthWidget::handleMIDISessionNameChanged(MidiSession *midiSession) {
+	QListWidgetItem *item = ui->midiList->item(findMIDISession(midiSession));
+	item->setText(midiSession->getName());
+}
+
+MidiSession *SynthWidget::getSelectedMIDISession() {
+	QListWidgetItem *item = ui->midiList->currentItem();
+	return (item == NULL) ? NULL : (MidiSession *)item->data(Qt::UserRole).value<QObject *>();
+}
+
+void SynthWidget::on_midiList_itemSelectionChanged() {
+	Master *master = Master::getInstance();
+	MidiSession *midiSession = getSelectedMIDISession();
+	if (midiSession != NULL) {
+		ui->midiRemove->setEnabled(master->canDeleteMidiPort(midiSession));
+		ui->midiProperties->setEnabled(master->canSetMidiPortProperties(midiSession));
+	} else {
+		ui->midiRemove->setEnabled(false);
+		ui->midiProperties->setEnabled(false);
+	}
+}
+
+void SynthWidget::on_midiAdd_clicked() {
+	Master::getInstance()->createMidiPort(&mpd, synthRoute);
+	ui->midiAdd->setEnabled(Master::getInstance()->canCreateMidiPort());
+}
+
+void SynthWidget::on_midiRemove_clicked() {
+	Master::getInstance()->deleteMidiPort(getSelectedMIDISession());
+	ui->midiAdd->setEnabled(Master::getInstance()->canCreateMidiPort());
+}
+
+void SynthWidget::on_midiProperties_clicked() {
+	Master::getInstance()->setMidiPortProperties(&mpd, getSelectedMIDISession());
 }
 
 void SynthWidget::setEmuModeText() {

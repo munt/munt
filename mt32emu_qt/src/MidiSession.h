@@ -19,6 +19,7 @@ private:
 
 public:
 	QString getName();
+	void setName(const QString &newName);
 	SynthRoute *getSynthRoute();
 };
 

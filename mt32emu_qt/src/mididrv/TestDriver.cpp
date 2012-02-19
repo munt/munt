@@ -61,7 +61,7 @@ void TestProcessor::processSeqEvents() {
 
 
 TestMidiDriver::TestMidiDriver(Master *useMaster) : MidiDriver(useMaster), processor(NULL) {
-	setName("Test Driver");
+	name = "Test Driver";
 }
 
 void TestMidiDriver::start() {
