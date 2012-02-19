@@ -172,7 +172,7 @@ void Win32MidiDriver::deletePort(MidiSession *midiSession) {
 }
 
 bool Win32MidiDriver::setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
-	UINT id = -1;
+	int id = -1;
 	Win32MidiIn *midiInPort = NULL;
 	if (midiSession != NULL) {
 		int portIx = midiInSessions.indexOf(midiSession);
@@ -220,6 +220,8 @@ void Win32MidiDriver::enumPorts(QList<QString> &midiInPortNames) {
 }
 
 void CALLBACK Win32MidiIn::MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
+	Q_UNUSED(dwParam2);
+
 	SynthRoute *synthRoute = (SynthRoute *)dwInstance;
 
 	LPMIDIHDR pMIDIhdr = (LPMIDIHDR)dwParam1;

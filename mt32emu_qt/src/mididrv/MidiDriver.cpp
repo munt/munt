@@ -60,22 +60,22 @@ bool MidiDriver::canCreatePort() {
 	return false;
 }
 
-bool MidiDriver::canDeletePort(MidiSession *midiSession) {
+bool MidiDriver::canDeletePort(MidiSession *) {
 	return false;
 }
 
-bool MidiDriver::canSetPortProperties(MidiSession *midiSession) {
+bool MidiDriver::canSetPortProperties(MidiSession *) {
 	return false;
 }
 
-bool MidiDriver::createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
+bool MidiDriver::createPort(MidiPropertiesDialog *, MidiSession *) {
 	return false;
 }
 
-bool MidiDriver::setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
+bool MidiDriver::setPortProperties(MidiPropertiesDialog *, MidiSession *) {
 	return false;
 }
 
-QString MidiDriver::getNewPortName(MidiPropertiesDialog *mpd) {
+QString MidiDriver::getNewPortName(MidiPropertiesDialog *) {
 	return "";
 }

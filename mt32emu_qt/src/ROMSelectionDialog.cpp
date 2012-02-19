@@ -98,16 +98,24 @@ void ROMSelectionDialog::refreshROMInfos() {
 
 		QButtonGroup *romGroup;
 		QString romType;
-		if (romInfo.type == ROMInfo::PCM) {
-			romType = QString("PCM");
-			romGroup = &pcmROMGroup;
-			if (pcmROMRow == -1) pcmROMRow = row;
-		} else if (romInfo.type == ROMInfo::Control) {
-			romType = QString("Control");
-			romGroup = &controlROMGroup;
-			if (controlROMRow == -1) controlROMRow = row;
-		} else if (romInfo.type == ROMInfo::Reverb) romType = QString("Reverb");
-		else continue;
+		switch (romInfo.type) {
+			case ROMInfo::PCM:
+				romType = QString("PCM");
+				romGroup = &pcmROMGroup;
+				if (pcmROMRow == -1) pcmROMRow = row;
+				break;
+			case ROMInfo::Control:
+				romType = QString("Control");
+				romGroup = &controlROMGroup;
+				if (controlROMRow == -1) controlROMRow = row;
+				break;
+			case ROMInfo::Reverb:
+				romType = QString("Reverb");
+				romGroup = NULL;
+				break;
+			default:
+				continue;
+		}
 
 		if (master.getROMDir() == romDir) {
 			if (fileName == controlROMFileName) controlROMRow = row;

@@ -30,7 +30,7 @@ public:
 	virtual bool canDeletePort(MidiSession *midiSession);
 	virtual bool canSetPortProperties(MidiSession *midiSession);
 	virtual bool createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession);
-	virtual void deletePort(MidiSession *midiSession) {}
+	virtual void deletePort(MidiSession *) {}
 	virtual bool setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
 	virtual QString getNewPortName(MidiPropertiesDialog *mpd);
 
