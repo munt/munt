@@ -60,7 +60,7 @@ void TestProcessor::processSeqEvents() {
 }
 
 
-TestMidiDriver::TestMidiDriver(Master *useMaster) : MidiDriver(useMaster), processor(NULL) {
+TestMidiDriver::TestMidiDriver(Master *useMaster) : MidiDriver(useMaster, Qt::BlockingQueuedConnection), processor(NULL) {
 	name = "Test Driver";
 }
 
