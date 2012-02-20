@@ -12,7 +12,6 @@ private:
 		volatile bool pendingClose;
 	};
 
-	static bool openPort();
 	static void *processingThread(void *userData);
 
 	QList<OSSMidiPortData *> sessions;
