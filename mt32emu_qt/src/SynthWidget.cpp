@@ -207,8 +207,10 @@ void SynthWidget::on_midiAdd_clicked() {
 }
 
 void SynthWidget::on_midiRemove_clicked() {
+	Ui::SynthWidget *cui = ui;
 	Master::getInstance()->deleteMidiPort(getSelectedMIDISession());
-	ui->midiAdd->setEnabled(Master::getInstance()->canCreateMidiPort());
+	// Check if we're not deleted yet
+	if (cui == ui) ui->midiAdd->setEnabled(Master::getInstance()->canCreateMidiPort());
 }
 
 void SynthWidget::on_midiProperties_clicked() {

@@ -323,11 +323,12 @@ bool Master::canSetMidiPortProperties(MidiSession *midiSession) {
 void Master::createMidiPort(MidiPropertiesDialog *mpd, SynthRoute *synthRoute) {
 	QString portName = midiDriver->getNewPortName(mpd);
 	if (portName.isEmpty()) return;
+	if (synthRoute == NULL) synthRoute = startSynthRoute();
 	MidiSession *midiSession = new MidiSession(this, midiDriver, portName, synthRoute);
 	if (midiDriver->createPort(mpd, midiSession)) {
 		synthRoute->addMidiSession(midiSession);
 	} else {
-		delete midiSession;
+		deleteMidiSession(midiSession);
 	}
 }
 

@@ -17,13 +17,16 @@
 #include <QtGlobal>
 #include <pthread.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <errno.h>
 
 #include "../MasterClock.h"
 #include "OSSMidiPortDriver.h"
 
-static char defaultMidiPortName[] = "/dev/midi";
-static char sequencerName[] = "/dev/sequencer";
+static const QString defaultMidiPortName = "/dev/midi";
+static const QString sequencerName = "/dev/sequencer";
+
+static OSSMidiPortDriver *driver;
 
 void* OSSMidiPortDriver::processingThread(void *userData) {
 	static const int BUFFER_SIZE = 1024;
@@ -33,26 +36,47 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 	unsigned char messageBuffer[BUFFER_SIZE];
 	unsigned char sysexBuffer[SYSEX_BUFFER_SIZE];
 	int sysexLength = 0;
+	int fd = -1;
+	pollfd pfd;
 
-	OSSMidiPortDriver *driver = (OSSMidiPortDriver *)userData;
-	SynthRoute *synthRoute = driver->midiSession->getSynthRoute();
-	qDebug() << "OSSMidiPortDriver: Processing thread started";
+	OSSMidiPortData *data = (OSSMidiPortData *)userData;
+	MidiSession *midiSession = driver->createMidiSession(data->midiPortName);
+	SynthRoute *synthRoute = midiSession->getSynthRoute();
+	qDebug() << "OSSMidiPortDriver: Processing thread started. Port: " << data->midiPortName;
 
-	while (!driver->pendingClose) {
-		int len = read(driver->fd, buffer, BUFFER_SIZE);
+	while (!data->pendingClose) {
+		if (fd == -1) {
+			fd = open(data->midiPortName.toAscii().constData(), O_RDONLY | O_NONBLOCK);
+			if (fd == -1) {
+				qDebug() << "OSSMidiPortDriver: Can't open MIDI port provided:" << data->midiPortName << ", errno:" << errno;
+				break;
+			}
+		}
+		pfd.fd = fd;
+		pfd.events = POLLIN;
+		pfd.revents = 0;
+		int pollRes = poll(&pfd, 1, 100);
+		if (pollRes < 0) {
+			qDebug() << "OSSMidiPortDriver: Poll() returned error:" << data->midiPortName << "Reopening ...";
+			close(fd);
+			fd = -1;
+			continue;
+		}
+		if (pollRes == 0) continue;
+		int len = read(fd, buffer, BUFFER_SIZE);
 		if (len <= 0) {
 			if (len == 0) {
-				qDebug() << "OSSMidiPortDriver: Closed MIDI port:" << driver->midiPortName << "Reopening ...";
+				qDebug() << "OSSMidiPortDriver: Closed MIDI port:" << data->midiPortName << "Reopening ...";
 			} else {
-				qDebug() << "OSSMidiPortDriver: Error reading from MIDI port:" << driver->midiPortName << ", errno:" << errno << "Reopening ...";
-				close(driver->fd);
+				qDebug() << "OSSMidiPortDriver: Error reading from MIDI port:" << data->midiPortName << ", errno:" << errno << "Reopening ...";
+				close(fd);
 			}
-			if (driver->openPort()) continue;
-			break;
+			fd = -1;
+			continue;
 		}
 		unsigned char *msg = buffer;
 		int messageLength = len;
-		if (!driver->useOSSMidiPort) {
+		if (data->sequencerMode) {
 			messageLength = 0;
 			unsigned char *buf = buffer;
 			msg = messageBuffer;
@@ -105,56 +129,54 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 			messageLength--;
 		}
 	}
-	driver->pendingClose = !driver->pendingClose;
-	qDebug() << "OSSMidiPortDriver: Processing thread stopped";
+	driver->deleteMidiSession(midiSession);
+	data->pendingClose = !data->pendingClose;
+	qDebug() << "OSSMidiPortDriver: Processing thread stopped. Port: " << data->midiPortName;
 	return NULL;
 }
 
 OSSMidiPortDriver::OSSMidiPortDriver(Master *useMaster) : MidiDriver(useMaster) {
 	master = useMaster;
 	name = "OSSMidiPort";
-	midiSession = NULL;
+	driver = this;
 	qDebug() << "OSS MIDI Port Driver started";
 }
 
-bool OSSMidiPortDriver::openPort() {
-	useOSSMidiPort = true;
-	midiPortName = defaultMidiPortName;
-	fd = open(midiPortName, O_RDONLY);
-	if (fd == -1) {
-		qDebug() << "OSSMidiPortDriver: Can't open MIDI port provided:" << midiPortName << ", errno:" << errno << "Falling back to OSS3 /dev/sequencer";
-		useOSSMidiPort = false;
-		midiPortName = sequencerName;
-		fd = open(midiPortName, O_RDONLY);
-		if (fd == -1) {
-			qDebug() << "OSSMidiPortDriver: Can't open" << midiPortName << "either. Driver stopped.";
-			return false;
-		}
-	}
-	return true;
-}
-
 void OSSMidiPortDriver::start() {
-	if (!openPort()) return;
-	midiSession = createMidiSession("Combined OSS MIDI session");
-	pendingClose = false;
-	pthread_t threadID;
-	int error = pthread_create(&threadID, NULL, processingThread, this);
-	if (error) {
-		qDebug() << "OSSMidiPortDriver: Processing Thread creation failed:" << error;
-	}
+	startSession(defaultMidiPortName, false);
+	startSession(sequencerName, true);
 }
 
 void OSSMidiPortDriver::stop() {
-	if (midiSession == NULL) return;
-	if (!pendingClose) {
-		pendingClose = true;
-		qDebug() << "OSSMidiPortDriver: Stopping processing thread...";
-		while (pendingClose) {
+	for (int i = sessions.size() - 1; i >= 0; i--) {
+		stopSession(sessions[i]);
+	}
+	qDebug() << "OSS MIDI Port Driver stopped";
+}
+
+void OSSMidiPortDriver::startSession(const QString midiPortName, bool sequencerMode) {
+	OSSMidiPortData *data = new OSSMidiPortData;
+	data->midiPortName = midiPortName;
+	data->sequencerMode = sequencerMode;
+	data->pendingClose = false;
+	pthread_t threadID;
+	int error = pthread_create(&threadID, NULL, processingThread, data);
+	if (error) {
+		qDebug() << "OSSMidiPortDriver: Processing Thread creation failed:" << error;
+		delete data;
+		return;
+	}
+	sessions.append(data);
+}
+
+void OSSMidiPortDriver::stopSession(OSSMidiPortData *data) {
+	if (!data->pendingClose) {
+		data->pendingClose = true;
+		qDebug() << "OSSMidiPortDriver: Stopping processing thread for Port: " << data->midiPortName << "...";
+		while (data->pendingClose) {
 			sleep(1);
 		}
 	}
-	qDebug() << "OSSMidiPortDriver: Stopped";
-	deleteMidiSession(midiSession);
-	midiSession = NULL;
+	sessions.removeOne(data);
+	delete data;
 }

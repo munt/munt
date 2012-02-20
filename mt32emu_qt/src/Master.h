@@ -61,7 +61,7 @@ public:
 	bool canCreateMidiPort();
 	bool canDeleteMidiPort(MidiSession *midiSession);
 	bool canSetMidiPortProperties(MidiSession *midiSession);
-	void createMidiPort(MidiPropertiesDialog *mpd, SynthRoute *synthRoute);
+	void createMidiPort(MidiPropertiesDialog *mpd, SynthRoute *synthRoute = NULL);
 	void deleteMidiPort(MidiSession *midiSession);
 	void setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
 

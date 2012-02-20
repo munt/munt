@@ -39,7 +39,9 @@ QReportHandler::QReportHandler(QObject *parent) : QObject(parent)
 }
 
 void QReportHandler::showLCDMessage(const char *message) {
-	emit balloonMessageAppeared("LCD-Message:", message);
+	if (Master::getInstance()->getSettings()->value("Master/showLCDBalloons", "1").toBool()) {
+		emit balloonMessageAppeared("LCD-Message:", message);
+	}
 	emit lcdMessageDisplayed(message);
 }
 

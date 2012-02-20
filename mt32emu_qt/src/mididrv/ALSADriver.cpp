@@ -40,6 +40,8 @@
 #include "../MasterClock.h"
 #include "../MidiSession.h"
 #include "../SynthRoute.h"
+#include "../MidiPropertiesDialog.h"
+
 
 ALSAProcessor::ALSAProcessor(ALSAMidiDriver *useALSAMidiDriver, snd_seq_t *useSeq) : alsaMidiDriver(useALSAMidiDriver), seq(useSeq) {
 	stopProcessing = false;
@@ -141,7 +143,7 @@ QString ALSAProcessor::getClientName(unsigned int clientAddr) {
 	snd_seq_client_info_t *info;
 	snd_seq_client_info_alloca(&info);
 	if (snd_seq_get_any_client_info(seq, clientAddr >> 8, info) != 0) return "Unknown ALSA session";
-	return snd_seq_client_info_get_name(info);
+	return QString().setNum(clientAddr >> 8) + ":" + QString().setNum(clientAddr & 0xFF) + " " + snd_seq_client_info_get_name(info);
 }
 
 MidiSession * ALSAProcessor::findMidiSessionForClient(unsigned int clientAddr) {
@@ -285,7 +287,7 @@ static int alsa_setup_midi(snd_seq_t *&seq_handle)
 	return seqPort;
 }
 
-ALSAMidiDriver::ALSAMidiDriver(Master *useMaster) : MidiDriver(useMaster, Qt::BlockingQueuedConnection) {
+ALSAMidiDriver::ALSAMidiDriver(Master *useMaster) : MidiDriver(useMaster) {
 	processor = NULL;
 }
 
@@ -294,7 +296,6 @@ ALSAMidiDriver::~ALSAMidiDriver() {
 }
 
 void ALSAMidiDriver::start() {
-	snd_seq_t *snd_seq;
 	if (alsa_setup_midi(snd_seq) >= 0) {
 		processor = new ALSAProcessor(this, snd_seq);
 		processor->moveToThread(&processorThread);
@@ -321,4 +322,16 @@ void ALSAMidiDriver::stop() {
 		delete processor;
 		processor = NULL;
 	}
+}
+
+bool ALSAMidiDriver::canSetPortProperties(MidiSession *) {
+	return true;
+}
+
+bool ALSAMidiDriver::setPortProperties(MidiPropertiesDialog *mpd, MidiSession *) {
+	mpd->setMidiPortListEnabled(false);
+	mpd->setMidiPortNameEditorEnabled(false);
+	mpd->setMidiPortName(QString().setNum(snd_seq_client_id(snd_seq)));
+	mpd->exec();
+	return false;
 }

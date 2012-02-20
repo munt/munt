@@ -47,12 +47,22 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="actionNew_MIDI_port"/>
     <addaction name="actionTest_MIDI_Driver"/>
     <addaction name="actionPlay_MIDI_file"/>
+   </widget>
+   <widget class="QMenu" name="menuOptions">
+    <property name="title">
+     <string>Options</string>
+    </property>
+    <addaction name="actionStart_iconized"/>
+    <addaction name="actionShow_LCD_balloons"/>
+    <addaction name="actionShow_connection_balloons"/>
     <addaction name="separator"/>
-    <addaction name="actionOptions"/>
+    <addaction name="actionROM_Configuration"/>
    </widget>
    <addaction name="menuMIDI"/>
+   <addaction name="menuOptions"/>
    <addaction name="menuMunt_mt32emu_qt"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -67,6 +77,9 @@
    </property>
   </action>
   <action name="actionPlay_MIDI_file">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Play MIDI file...</string>
    </property>
@@ -77,6 +90,40 @@
    </property>
    <property name="text">
     <string>Test MIDI Driver</string>
+   </property>
+  </action>
+  <action name="actionNew_MIDI_port">
+   <property name="text">
+    <string>New MIDI port...</string>
+   </property>
+  </action>
+  <action name="actionStart_iconized">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Start iconized</string>
+   </property>
+  </action>
+  <action name="actionShow_LCD_balloons">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show LCD balloons</string>
+   </property>
+  </action>
+  <action name="actionShow_connection_balloons">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show connection balloons</string>
+   </property>
+  </action>
+  <action name="actionROM_Configuration">
+   <property name="text">
+    <string>ROM Configuration...</string>
    </property>
   </action>
  </widget>

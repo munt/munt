@@ -20,7 +20,7 @@ protected:
 	void showBalloon(const QString &title, const QString &text);
 
 public:
-	MidiDriver(Master *useMaster, Qt::ConnectionType masterConnectionType = Qt::DirectConnection);
+	MidiDriver(Master *useMaster);
 	Master *getMaster();
 	virtual ~MidiDriver();
 	virtual QString getName() const;

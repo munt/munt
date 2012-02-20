@@ -6,14 +6,19 @@
 
 class OSSMidiPortDriver : public MidiDriver {
 private:
-	MidiSession *midiSession;
-	int fd;
-	volatile bool pendingClose;
-	bool useOSSMidiPort;
-	char *midiPortName;
+	struct OSSMidiPortData {
+		QString midiPortName;
+		bool sequencerMode;
+		volatile bool pendingClose;
+	};
 
-	bool openPort();
-	static void* processingThread(void *userData);
+	static bool openPort();
+	static void *processingThread(void *userData);
+
+	QList<OSSMidiPortData *> sessions;
+
+	void startSession(const QString midiPortName, bool sequencerMode);
+	void stopSession(OSSMidiPortData *data);
 
 public:
 	OSSMidiPortDriver(Master *useMaster);

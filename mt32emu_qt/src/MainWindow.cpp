@@ -110,18 +110,16 @@ void MainWindow::handleSynthRouteRemoved(SynthRoute *synthRoute) {
 	}
 }
 
-void MainWindow::on_actionOptions_triggered()
-{
-
+void MainWindow::on_menuMIDI_aboutToShow() {
+	ui->actionNew_MIDI_port->setEnabled(master->canCreateMidiPort());
 }
 
-void MainWindow::on_actionPlay_MIDI_file_triggered()
-{
-
+void MainWindow::on_actionNew_MIDI_port_triggered() {
+	MidiPropertiesDialog mpd(this);
+	master->createMidiPort(&mpd);
 }
 
-void MainWindow::on_actionTest_MIDI_Driver_toggled(bool checked)
-{
+void MainWindow::on_actionTest_MIDI_Driver_toggled(bool checked) {
 	bool running = testMidiDriver != NULL;
 	if (running != checked) {
 		if (running) {
@@ -135,16 +133,45 @@ void MainWindow::on_actionTest_MIDI_Driver_toggled(bool checked)
 	}
 }
 
+void MainWindow::on_actionPlay_MIDI_file_triggered() {
+	// 2b implemented...
+}
+
+void MainWindow::on_menuOptions_aboutToShow() {
+	ui->actionStart_iconized->setChecked(master->getSettings()->value("Master/startIconized", "0").toBool());
+	ui->actionShow_LCD_balloons->setChecked(master->getSettings()->value("Master/showLCDBalloons", "1").toBool());
+	ui->actionShow_connection_balloons->setChecked(master->getSettings()->value("Master/showConnectionBalloons", "1").toBool());
+}
+
+void MainWindow::on_actionStart_iconized_toggled(bool checked) {
+	master->getSettings()->setValue("Master/startIconized", QString().setNum(checked));
+}
+
+void MainWindow::on_actionShow_LCD_balloons_toggled(bool checked) {
+	master->getSettings()->setValue("Master/showLCDBalloons", QString().setNum(checked));
+}
+
+void MainWindow::on_actionShow_connection_balloons_toggled(bool checked) {
+	master->getSettings()->setValue("Master/showConnectionBalloons", QString().setNum(checked));
+}
+
+void MainWindow::on_actionROM_Configuration_triggered() {
+	ROMSelectionDialog rsd;
+	QString s = QFileDialog::getExistingDirectory(this, "Choose ROM directory", master->getROMDir().absolutePath());
+	if (s.isNull()) return;
+	rsd.loadROMInfos(s);
+	rsd.exec();
+}
+
 void MainWindow::trayIconContextMenu() {
 	QMenu *menu = new QMenu(this);
 	QFont bold;
 	bold.setBold(true);
 	menu->addAction("Show/Hide", this, SLOT(showHideMainWindow()))->setFont(bold);
-	QAction *a = menu->addAction("Start iconized", this, SLOT(toggleStartIconized()));
-	a->setCheckable(true);
-	a->setChecked(master->getSettings()->value("Master/startIconized", "0").toBool());
+	menu->addAction(ui->actionStart_iconized);
+	ui->actionStart_iconized->setChecked(master->getSettings()->value("Master/startIconized", "0").toBool());
 #ifdef WITH_WINCONSOLE
-	a = menu->addAction("Show console", this, SLOT(toggleShowConsole()));
+	QAction *a = menu->addAction("Show console", this, SLOT(toggleShowConsole()));
 	a->setCheckable(true);
 	a->setChecked(master->getSettings()->value("Master/showConsole", "0").toBool());
 #endif
@@ -157,17 +184,8 @@ void MainWindow::toggleShowConsole() {
 	QSettings *s = master->getSettings();
 	bool b = !s->value("Master/showConsole", "0").toBool();
 	s->setValue("Master/showConsole", QString().setNum(b));
-	if (b)
-		ShowWindow(GetConsoleWindow(), SW_NORMAL);
-	else
-		ShowWindow(GetConsoleWindow(), SW_HIDE);
+	ShowWindow(GetConsoleWindow(), b ? SW_NORMAL : SW_HIDE);
 #endif
-}
-
-void MainWindow::toggleStartIconized() {
-	QSettings *s = master->getSettings();
-	bool b = !s->value("Master/startIconized", "0").toBool();
-	s->setValue("Master/startIconized", QString().setNum(b));
 }
 
 void MainWindow::showHideMainWindow() {

@@ -21,19 +21,18 @@
 #include <process.h>
 
 #include "Win32Driver.h"
-#include "../MasterClock.h"
 
 #include "../MidiPropertiesDialog.h"
 
 static Win32MidiDriver *driver;
 static HWND hwnd = NULL;
-static qint64 startMasterClock;
+static MasterClockNanos startMasterClock;
 
-qint64 Win32MidiDriver::TimeToMasterClockNanos(DWORD time) {
-	return (qint64)time * MasterClock::NANOS_PER_MILLISECOND - startMasterClock;
+MasterClockNanos Win32MidiDriver::timeToMasterClockNanos(MasterClockNanos time) {
+	return time - startMasterClock;
 }
 
-LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	MidiSession *midiSession;
 	switch (uMsg) {
 	case WM_APP: // closing session
@@ -55,9 +54,10 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 		if (data[0] == 0) {				// special value, mark of a non-Sysex message
 			if (data[1] == (DWORD)-1) {		// special value, mark of a handshaking message
 				// Sync the timesource in the driver with MasterClock
-				startMasterClock = (qint64)cds->dwData * MasterClock::NANOS_PER_MILLISECOND - MasterClock::getClockNanos();
+				LARGE_INTEGER t = {{data[3], data[4]}};
+				startMasterClock = t.QuadPart - MasterClock::getClockNanos();
 				// Process handshaking message
-				QString appName = QFileInfo(QString((const char *)&data[3])).fileName();
+				QString appName = QFileInfo(QString((const char *)&data[5])).fileName();
 				midiSession = driver->createMidiSession(appName);
 				driver->showBalloon("Connected application:", appName);
 				qDebug() << "Win32MidiDriver: Connected application" << appName;
@@ -73,7 +73,9 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 					qDebug() << "Win32MidiDriver: Invalid midiSession handle supplied";
 					return 0;
 				}
-				midiSession->getSynthRoute()->pushMIDIShortMessage(data[3], TimeToMasterClockNanos(data[2]));
+				LARGE_INTEGER t = {{data[2], data[3]}};
+//				qDebug() << "D" << 1e-6 * (MasterClock::getClockNanos() - timeToMasterClockNanos(t.QuadPart));
+				midiSession->getSynthRoute()->pushMIDIShortMessage(data[4], timeToMasterClockNanos(t.QuadPart));
 				return 1;
 			}
 		} else {
@@ -90,12 +92,12 @@ LRESULT CALLBACK Win32MidiDriver::MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 	}
 }
 
-void Win32MidiDriver::MessageLoop(void *) {
+void Win32MidiDriver::messageLoop(void *) {
 	HINSTANCE hInstance = GetModuleHandle(NULL);
 	LPCTSTR mt32emuClassName = "mt32emu_class";
 	WNDCLASS wc;
 	wc.style = 0;
-	wc.lpfnWndProc = &Win32MidiDriver::MidiInProc;
+	wc.lpfnWndProc = &Win32MidiDriver::midiInProc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
@@ -121,24 +123,24 @@ void Win32MidiDriver::MessageLoop(void *) {
 	GetMessage(&msg, hwnd, WM_QUIT, WM_QUIT);
 }
 
-Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster, Qt::BlockingQueuedConnection) {
+Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster) {
 	master = useMaster;
 	driver = this;
 	name = "Win32_MIDI";
 }
 
 void Win32MidiDriver::start() {
-	_beginthread(&MessageLoop, 16384, NULL);
+	_beginthread(&messageLoop, 16384, NULL);
 }
 
 void Win32MidiDriver::stop() {
 	PostMessage(hwnd, WM_QUIT, 0, 0);
 	for (int i = 0; i < midiInPorts.size(); i++) {
 		delete midiInPorts[i];
-	}
-	for (int i = 0; i < midiInSessions.size(); i++) {
 		deleteMidiSession(midiInSessions[i]);
 	}
+	midiInPorts.clear();
+	midiInSessions.clear();
 }
 
 bool Win32MidiDriver::canCreatePort() {
@@ -219,7 +221,7 @@ void Win32MidiDriver::enumPorts(QList<QString> &midiInPortNames) {
 	}
 }
 
-void CALLBACK Win32MidiIn::MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
+void CALLBACK Win32MidiIn::midiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
 	Q_UNUSED(dwParam2);
 
 	SynthRoute *synthRoute = (SynthRoute *)dwInstance;
@@ -246,7 +248,7 @@ bool Win32MidiIn::open(SynthRoute *synthRoute, unsigned int midiDevID) {
 	int wResult;
 
 	//	Init midiIn port
-	wResult = midiInOpen(&hMidiIn, midiDevID, (DWORD_PTR)MidiInProc, (DWORD_PTR)synthRoute, CALLBACK_FUNCTION);
+	wResult = midiInOpen(&hMidiIn, midiDevID, (DWORD_PTR)midiInProc, (DWORD_PTR)synthRoute, CALLBACK_FUNCTION);
 	if (wResult != MMSYSERR_NOERROR) {
 		QMessageBox::critical(NULL, "Win32MidiIn Error", "Failed to open MIDI input port");
 		return false;

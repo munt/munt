@@ -51,6 +51,10 @@ Q_UNUSED(srcConnRefCon)
 }
 
 void CoreMidiDriver::midiNotifyProc(MIDINotification const *message, void *refCon) {
+	if (message->messageID == kMIDIMsgObjectAdded) {
+		driver->createDestination();
+		return;
+	}
 	if (message->messageID != kMIDIMsgObjectRemoved) return;
 	MIDIObjectAddRemoveNotification *removeMessage = (MIDIObjectAddRemoveNotification *)message;
 	CoreMidiDriver *driver = (CoreMidiDriver *)refCon;
@@ -72,11 +76,10 @@ CoreMidiDriver::CoreMidiDriver(Master *useMaster) : MidiDriver(useMaster) {
 
 void CoreMidiDriver::start() {
 	MIDIClientCreate(CFSTR("Mt32Emu"), midiNotifyProc, this, &client);
-	createDestination();
 }
 
 void CoreMidiDriver::createDestination() {
-	MidiSession *midiSession = createMidiSession("Combined CoreMIDI session");
+	MidiSession *midiSession = createMidiSession("CoreMIDI session #" + QString().setNum(MIDIGetNumberOfDestinations()));
 	MIDIDestinationCreate(client, CFSTR("Mt32EmuPort"), readProc, midiSession, &outDest);
 	qDebug() << "CoreMIDI Destination created";
 	qDebug() << "Number of Destinations:" << MIDIGetNumberOfDestinations();

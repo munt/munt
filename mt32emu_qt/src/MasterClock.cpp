@@ -95,18 +95,60 @@ void MasterClock::sleepUntilClockNanos(MasterClockNanos clockNanos) {
 
 #include <Windows.h>
 
-static DWORD startTime = 0;
+static bool hrTimerAvailable;
+
+static LARGE_INTEGER freq = {{0, 0}};
+static double mult;
+
+static LARGE_INTEGER startTime = {{0, 0}};
+static LARGE_INTEGER counter = {{0, 0}};
+
+static DWORD mmTimerResolution = 0;
 
 MasterClockNanos MasterClock::getClockNanos() {
-	// FIXME: Deal with wrapping
-	return (MasterClockNanos)(timeGetTime() - startTime) * NANOS_PER_MILLISECOND;
+	if (hrTimerAvailable) {
+		QueryPerformanceCounter(&counter);
+		return (MasterClockNanos)((counter.QuadPart - startTime.QuadPart) * mult);
+	} else {
+		DWORD currentTime = timeGetTime();
+		if (currentTime < counter.LowPart) counter.HighPart++;
+		counter.LowPart = currentTime;
+		return (MasterClockNanos)(counter.QuadPart - startTime.QuadPart) * NANOS_PER_MILLISECOND;
+	}
 }
 
 void MasterClock::init() {
-	startTime = timeGetTime();
+	TIMECAPS tc;
+	if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR) {
+		qDebug() << "Unable to get multimedia timer capabilities.";
+		qDebug() << "Trying to set 1 ms multimedia timer resolution.";
+		mmTimerResolution = 1;
+	} else {
+		qDebug() << "Found minimum supported multimedia timer resolution:" << tc.wPeriodMin << "ms.";
+		qDebug() << "Setting multimedia timer resolution to" << tc.wPeriodMin << "ms.";
+		mmTimerResolution = tc.wPeriodMin;
+	}
+	if (timeBeginPeriod(mmTimerResolution) != TIMERR_NOERROR) {
+		qDebug() << "Unable to set multimedia timer resolution. Using defaults.";;
+		mmTimerResolution = 0;
+	}
+	if (QueryPerformanceFrequency(&freq)) {
+		hrTimerAvailable = true;
+		qDebug() << "High resolution timer initialized. Frequency:" << freq.QuadPart * 1e-9 << "GHz";
+		mult = (double)NANOS_PER_SECOND / freq.QuadPart;
+		QueryPerformanceCounter(&startTime);
+	} else {
+		hrTimerAvailable = false;
+		qDebug() << "High resolution timer unavailable on the system. Falling back to multimedia timer.";
+		startTime.QuadPart = timeGetTime();
+	}
 }
 
 void MasterClock::deinit() {
+	if (mmTimerResolution != 0) {
+		qDebug() << "Restoring default multimedia timer resolution.";;
+		timeEndPeriod(mmTimerResolution);
+	}
 }
 
 #else

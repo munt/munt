@@ -4,6 +4,7 @@
 #include <windows.h>
 
 #include "MidiDriver.h"
+#include "../MasterClock.h"
 #include "../MidiSession.h"
 
 class Win32MidiIn {
@@ -12,7 +13,7 @@ private:
 	MIDIHDR MidiInHdr;
 	BYTE sysexbuf[4096];
 
-	static void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2);
+	static void CALLBACK midiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2);
 
 public:
 	~Win32MidiIn();
@@ -23,9 +24,9 @@ public:
 
 class Win32MidiDriver : public MidiDriver {
 private:
-	static LRESULT CALLBACK MidiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	static void MessageLoop(void *);
-	static qint64 TimeToMasterClockNanos(DWORD time);
+	static LRESULT CALLBACK midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	static void messageLoop(void *);
+	static MasterClockNanos timeToMasterClockNanos(MasterClockNanos time);
 	static void enumPorts(QList<QString> &midiInPortNames);
 
 	QList<Win32MidiIn *> midiInPorts;

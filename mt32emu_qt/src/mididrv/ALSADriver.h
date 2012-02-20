@@ -45,8 +45,11 @@ public:
 	~ALSAMidiDriver();
 	void start();
 	void stop();
+	bool canSetPortProperties(MidiSession *);
+	bool setPortProperties(MidiPropertiesDialog *mpd, MidiSession *);
 
 private:
+	snd_seq_t *snd_seq;
 	ALSAProcessor *processor;
 	QThread processorThread;
 };
