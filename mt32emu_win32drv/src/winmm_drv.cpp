@@ -20,12 +20,38 @@
 #define MAX_DRIVERS 8
 #define MAX_CLIENTS 8 // Per driver
 
+static bool hrTimerAvailable;
+static double mult;
+static LARGE_INTEGER counter;
+static LARGE_INTEGER nanoCounter = {0L};
+
+void initNanoTimer() {
+	LARGE_INTEGER freq = {0L};
+	if (QueryPerformanceFrequency(&freq)) {
+		hrTimerAvailable = true;
+		mult = 1E9 / freq.QuadPart;
+	} else {
+		hrTimerAvailable = false;
+	}
+}
+
+void updateNanoCounter() {
+	if (hrTimerAvailable) {
+		QueryPerformanceCounter(&counter);
+		nanoCounter.QuadPart = (long long)(counter.QuadPart * mult);
+	} else {
+		DWORD currentTime = timeGetTime();
+		if (currentTime < counter.LowPart) counter.HighPart++;
+		counter.LowPart = currentTime;
+		nanoCounter.QuadPart = counter.QuadPart * 1000000;
+	}
+}
+
 static MT32Emu::MidiSynth midiSynth;
 static bool driverOpened = false;
 static bool synthOpened = false;
 static HWND hwnd = NULL;
-
-int driverCount;
+static int driverCount;
 
 struct Driver {
 	bool open;
@@ -62,6 +88,7 @@ STDAPI_(LONG) DriverProc(DWORD dwDriverID, HDRVR hdrvr, WORD wMessage, DWORD dwP
 				}
 			}
 		}
+		initNanoTimer();
 		drivers[driverNum].open = true;
 		drivers[driverNum].clientCount = 0;
 		drivers[driverNum].hdrvr = hdrvr;
@@ -227,9 +254,10 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 			driverOpened = true;
 			return OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
 		} else {
-			DWORD msg[258] = {0, -1, 1}; // 0, handshake indicator, version, .exe filename of calling application
-			GetModuleFileNameA(GetModuleHandle(NULL), (char *)&msg[3], 255);
-			COPYDATASTRUCT cds = {timeGetTime(), sizeof(msg), msg};
+			updateNanoCounter();
+			DWORD msg[260] = {0, -1, 1, nanoCounter.LowPart, nanoCounter.HighPart}; // 0, handshake indicator, version, timestamp, .exe filename of calling application
+			GetModuleFileNameA(GetModuleHandle(NULL), (char *)&msg[5], 255);
+			COPYDATASTRUCT cds = {0, sizeof(msg), msg};
 			instance = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
 		}
 		DWORD res;
@@ -257,13 +285,14 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 		return modGetCaps((PVOID)dwParam1, dwParam2);
 
 	case MODM_DATA:
+		updateNanoCounter();
 		if (driver->clients[dwUser].allocated == false) {
 			return MMSYSERR_ERROR;
 		}
 		if (hwnd == NULL) {
 			midiSynth.PushMIDI(dwParam1);
 		} else {
-			DWORD msg[] = {0, 0, timeGetTime(), dwParam1}; // 0, short MIDI message indicator, timestamp, data
+			DWORD msg[] = {0, 0, nanoCounter.LowPart, nanoCounter.HighPart, dwParam1}; // 0, short MIDI message indicator, timestamp, data
 			COPYDATASTRUCT cds = {driver->clients[dwUser].synth_instance, sizeof(msg), msg};
 			DWORD res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
 			if (res != 1) {
