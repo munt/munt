@@ -174,10 +174,12 @@ void SynthWidget::handleMIDISessionAdded(MidiSession *midiSession) {
 	QListWidgetItem *item = new QListWidgetItem(midiSession->getName(), ui->midiList);
 	item->setData(Qt::UserRole, QVariant::fromValue((QObject *)midiSession));
 	ui->midiList->addItem(item);
+	ui->midiAdd->setEnabled(Master::getInstance()->canCreateMidiPort());
 }
 
 void SynthWidget::handleMIDISessionRemoved(MidiSession *midiSession) {
 	delete ui->midiList->takeItem(findMIDISession(midiSession));
+	ui->midiAdd->setEnabled(Master::getInstance()->canCreateMidiPort());
 }
 
 void SynthWidget::handleMIDISessionNameChanged(MidiSession *midiSession) {
@@ -204,14 +206,10 @@ void SynthWidget::on_midiList_itemSelectionChanged() {
 
 void SynthWidget::on_midiAdd_clicked() {
 	Master::getInstance()->createMidiPort(&mpd, synthRoute);
-	ui->midiAdd->setEnabled(Master::getInstance()->canCreateMidiPort());
 }
 
 void SynthWidget::on_midiRemove_clicked() {
-	Ui::SynthWidget *cui = ui;
 	Master::getInstance()->deleteMidiPort(getSelectedMIDISession());
-	// Check if we're not deleted yet
-	if (cui == ui) ui->midiAdd->setEnabled(Master::getInstance()->canCreateMidiPort());
 }
 
 void SynthWidget::on_midiProperties_clicked() {
