@@ -7,23 +7,32 @@
 class OSSMidiPortDriver : public MidiDriver {
 private:
 	struct OSSMidiPortData {
+		MidiSession *midiSession;
 		QString midiPortName;
 		bool sequencerMode;
 		volatile bool pendingClose;
 	};
 
 	static void *processingThread(void *userData);
+	static void enumPorts(QList<QString> &midiPortNames);
 
 	QList<OSSMidiPortData *> sessions;
 
-	void startSession(const QString midiPortName, bool sequencerMode);
+	bool startSession(MidiSession *midiSession, const QString midiPortName, bool sequencerMode);
 	void stopSession(OSSMidiPortData *data);
 
 public:
 	OSSMidiPortDriver(Master *useMaster);
+	~OSSMidiPortDriver() {}
 	void start();
 	void stop();
-	~OSSMidiPortDriver() {}
+	virtual bool canCreatePort();
+	virtual bool canDeletePort(MidiSession *midiSession);
+	virtual bool canSetPortProperties(MidiSession *midiSession);
+	virtual bool createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession);
+	virtual void deletePort(MidiSession *);
+	virtual bool setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
+	virtual QString getNewPortName(MidiPropertiesDialog *mpd);
 };
 
 #endif

@@ -20,11 +20,13 @@
 #include <poll.h>
 #include <errno.h>
 
-#include "../MasterClock.h"
 #include "OSSMidiPortDriver.h"
+#include "../MasterClock.h"
+#include "../MidiPropertiesDialog.h"
 
-static const QString defaultMidiPortName = "/dev/midi";
-static const QString sequencerName = "/dev/sequencer";
+static const QString devDirName = "/dev/";
+static const QString defaultMidiPortName = "midi";
+static const QString sequencerName = "sequencer";
 
 static OSSMidiPortDriver *driver;
 
@@ -40,8 +42,8 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 	pollfd pfd;
 
 	OSSMidiPortData *data = (OSSMidiPortData *)userData;
-	MidiSession *midiSession = driver->createMidiSession(data->midiPortName);
-	SynthRoute *synthRoute = midiSession->getSynthRoute();
+	if (data->midiSession == NULL) data->midiSession = driver->createMidiSession(data->midiPortName);
+	SynthRoute *synthRoute = data->midiSession->getSynthRoute();
 	qDebug() << "OSSMidiPortDriver: Processing thread started. Port: " << data->midiPortName;
 
 	while (!data->pendingClose) {
@@ -129,9 +131,10 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 			messageLength--;
 		}
 	}
-	driver->deleteMidiSession(midiSession);
-	data->pendingClose = !data->pendingClose;
 	qDebug() << "OSSMidiPortDriver: Processing thread stopped. Port: " << data->midiPortName;
+	if (!data->pendingClose) driver->deleteMidiSession(data->midiSession);
+	driver->sessions.removeOne(data);
+	delete data;
 	return NULL;
 }
 
@@ -143,40 +146,123 @@ OSSMidiPortDriver::OSSMidiPortDriver(Master *useMaster) : MidiDriver(useMaster) 
 }
 
 void OSSMidiPortDriver::start() {
-	startSession(defaultMidiPortName, false);
-	startSession(sequencerName, true);
+	QList<QString> midiInPortNames;
+	OSSMidiPortDriver::enumPorts(midiInPortNames);
+
+	if (midiInPortNames.indexOf(sequencerName) >= 0) startSession(NULL, sequencerName, true);
+	for (int i = 0; i < midiInPortNames.size(); i++) {
+		if (midiInPortNames[i].left(4) == defaultMidiPortName) {
+			startSession(NULL, midiInPortNames[i], false);
+			break;
+		}
+	}
 }
 
 void OSSMidiPortDriver::stop() {
 	for (int i = sessions.size() - 1; i >= 0; i--) {
+		MidiSession *midiSession = sessions[i]->midiSession;
 		stopSession(sessions[i]);
+		deleteMidiSession(midiSession);
 	}
+	midiSessions.clear();
 	qDebug() << "OSS MIDI Port Driver stopped";
 }
 
-void OSSMidiPortDriver::startSession(const QString midiPortName, bool sequencerMode) {
+bool OSSMidiPortDriver::startSession(MidiSession *midiSession, const QString midiPortName, bool sequencerMode) {
 	OSSMidiPortData *data = new OSSMidiPortData;
-	data->midiPortName = midiPortName;
+	data->midiSession = midiSession;
+	if (midiPortName.contains("/")) {
+		data->midiPortName = midiPortName;
+	} else {
+		data->midiPortName = devDirName + midiPortName;
+	}
 	data->sequencerMode = sequencerMode;
 	data->pendingClose = false;
 	pthread_t threadID;
 	int error = pthread_create(&threadID, NULL, processingThread, data);
-	if (error) {
+	if (error != 0) {
 		qDebug() << "OSSMidiPortDriver: Processing Thread creation failed:" << error;
 		delete data;
-		return;
+		return false;
 	}
 	sessions.append(data);
+	return true;
 }
 
 void OSSMidiPortDriver::stopSession(OSSMidiPortData *data) {
-	if (!data->pendingClose) {
-		data->pendingClose = true;
-		qDebug() << "OSSMidiPortDriver: Stopping processing thread for Port: " << data->midiPortName << "...";
-		while (data->pendingClose) {
-			sleep(1);
+	data->pendingClose = true;
+	qDebug() << "OSSMidiPortDriver: Stopping processing thread for Port: " << data->midiPortName << "...";
+	while (sessions.indexOf(data) >= 0) {
+		sleep(1);
+	}
+}
+
+bool OSSMidiPortDriver::canCreatePort() {
+	return true;
+}
+
+bool OSSMidiPortDriver::canDeletePort(MidiSession *midiSession) {
+	for (int i = 0; i < sessions.size(); i++) {
+		if (sessions[i]->midiSession == midiSession) {
+			if (sessions[i]->sequencerMode) return false;
+			return true;
 		}
 	}
-	sessions.removeOne(data);
-	delete data;
+	return false;
+}
+
+bool OSSMidiPortDriver::canSetPortProperties(MidiSession *midiSession) {
+	return canDeletePort(midiSession);
+}
+
+bool OSSMidiPortDriver::createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
+	if (startSession(midiSession, mpd->getMidiPortName(), false)) {
+		if (midiSession != NULL) midiSessions.append(midiSession);
+		return true;
+	}
+	return false;
+}
+
+void OSSMidiPortDriver::deletePort(MidiSession *midiSession) {
+	for (int i = 0; i < sessions.size(); i++) {
+		if (sessions[i]->midiSession == midiSession) {
+			stopSession(sessions[i]);
+			break;
+		}
+	}
+}
+
+bool OSSMidiPortDriver::setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
+	int sessionIx = -1;
+	QString midiPortName = "";
+	if (midiSession != NULL) {
+		for (int i = 0; i < sessions.size(); i++) {
+			if (sessions[i]->midiSession == midiSession) {
+				sessionIx = i;
+				midiPortName = sessions[i]->midiPortName;
+				break;
+			}
+		}
+	}
+	QList<QString> midiInPortNames;
+	OSSMidiPortDriver::enumPorts(midiInPortNames);
+	midiInPortNames.removeOne(sequencerName);
+	mpd->setMidiList(midiInPortNames, -1);
+	mpd->setMidiPortName(midiPortName);
+	if (mpd->exec() != QDialog::Accepted) return false;
+	if (sessionIx == -1 || midiPortName == mpd->getMidiPortName()) return true;
+	stopSession(sessions[sessionIx]);
+	midiSession->getSynthRoute()->setMidiSessionName(midiSession, mpd->getMidiPortName());
+	return startSession(midiSession, mpd->getMidiPortName(), false);
+}
+
+QString OSSMidiPortDriver::getNewPortName(MidiPropertiesDialog *mpd) {
+	if (setPortProperties(mpd, NULL)) {
+		return mpd->getMidiPortName();
+	}
+	return "";
+}
+
+void OSSMidiPortDriver::enumPorts(QList<QString> &midiPortNames) {
+	midiPortNames.append(QDir(devDirName).entryList(QStringList() << defaultMidiPortName << defaultMidiPortName + "??" << sequencerName, QDir::System));
 }
