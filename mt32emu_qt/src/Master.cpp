@@ -88,6 +88,7 @@ void Master::deinit() {
 
 	if (INSTANCE->midiDriver != NULL) {
 		INSTANCE->midiDriver->stop();
+		delete INSTANCE->midiDriver;
 		INSTANCE->midiDriver = NULL;
 	}
 

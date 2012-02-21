@@ -26,7 +26,7 @@ MidiDriver::MidiDriver(Master *useMaster): master(useMaster), name("Unknown") {
 
 MidiDriver::~MidiDriver() {
 	while (!midiSessions.isEmpty()) {
-		emit deleteMidiSession(midiSessions.takeFirst());
+		emit midiSessionDeleted(midiSessions.takeFirst());
 	}
 }
 
