@@ -162,9 +162,8 @@ void OSSMidiPortDriver::stop() {
 	for (int i = sessions.size() - 1; i >= 0; i--) {
 		MidiSession *midiSession = sessions[i]->midiSession;
 		stopSession(sessions[i]);
-		deleteMidiSession(midiSession);
+		if (midiSession != NULL) deleteMidiSession(midiSession);
 	}
-	midiSessions.clear();
 	qDebug() << "OSS MIDI Port Driver stopped";
 }
 
@@ -227,6 +226,7 @@ void OSSMidiPortDriver::deletePort(MidiSession *midiSession) {
 	for (int i = 0; i < sessions.size(); i++) {
 		if (sessions[i]->midiSession == midiSession) {
 			stopSession(sessions[i]);
+			midiSessions.removeOne(midiSession);
 			break;
 		}
 	}
