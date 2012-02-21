@@ -14,8 +14,8 @@ class AudioPropertiesDialog : public QDialog
 public:
 	explicit AudioPropertiesDialog(QWidget *parent = 0);
 	~AudioPropertiesDialog();
-	void getData(unsigned int &chunkLen, unsigned int &audioLatency, unsigned int &midiLatency);
-	void setData(unsigned int chunkLen, unsigned int audioLatency, unsigned int midiLatency);
+	void getData(unsigned int &chunkLen, unsigned int &audioLatency, unsigned int &midiLatency, bool &advancedTiming);
+	void setData(unsigned int chunkLen, unsigned int audioLatency, unsigned int midiLatency, bool advancedTiming);
 
 private:
 	Ui::AudioPropertiesDialog *ui;

@@ -124,13 +124,14 @@ void SynthWidget::on_audioPropertiesButton_clicked()
 	unsigned int chunkLen;
 	unsigned int audioLatency;
 	unsigned int midiLatency;
+	bool advancedTiming;
 
 	AudioDevice *device = ui->audioDeviceComboBox->itemData(ui->audioDeviceComboBox->currentIndex()).value<AudioDevice *>();
-	device->driver->getAudioSettings(&chunkLen, &audioLatency, &midiLatency);
-	apd.setData(chunkLen, audioLatency, midiLatency);
+	device->driver->getAudioSettings(&chunkLen, &audioLatency, &midiLatency, &advancedTiming);
+	apd.setData(chunkLen, audioLatency, midiLatency, advancedTiming);
 	if (QDialog::Accepted == apd.exec()) {
-		apd.getData(chunkLen, audioLatency, midiLatency);
-		const_cast<AudioDriver *> (device->driver)->setAudioSettings(&chunkLen, &audioLatency, &midiLatency);
+		apd.getData(chunkLen, audioLatency, midiLatency, advancedTiming);
+		const_cast<AudioDriver *> (device->driver)->setAudioSettings(&chunkLen, &audioLatency, &midiLatency, &advancedTiming);
 	}
 }
 

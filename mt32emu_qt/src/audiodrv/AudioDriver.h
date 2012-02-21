@@ -39,9 +39,13 @@ protected:
 	unsigned int audioLatency;
 	// The number of milliseconds by which to delay MIDI events to ensure accurate relative timing
 	unsigned int midiLatency;
+	// true - use advanced timing functions provided by audio API
+	// false - instead, compute average actual sample rate using clockSync
+	bool advancedTiming;
 
 	virtual void loadAudioSettings();
 	virtual void validateAudioSettings() = 0;
+
 public:
 	// id must be unique within the application and permanent -
 	// it will be stored and retrieved from settings. Preferably lowercase.
@@ -51,8 +55,8 @@ public:
 	AudioDriver(QString useID, QString useName);
 	virtual ~AudioDriver() {};
 	virtual QList<AudioDevice *> getDeviceList() const = 0;
-	virtual void getAudioSettings(unsigned int *chunkLen, unsigned int *audioLatency, unsigned int *midiLatency) const;
-	virtual void setAudioSettings(unsigned int *chunkLen, unsigned int *audioLatency, unsigned int *midiLatency);
+	virtual void getAudioSettings(unsigned int *chunkLen, unsigned int *audioLatency, unsigned int *midiLatency, bool *advancedTiming) const;
+	virtual void setAudioSettings(unsigned int *chunkLen, unsigned int *audioLatency, unsigned int *midiLatency, bool *advancedTiming);
 };
 
 #endif

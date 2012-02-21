@@ -60,6 +60,13 @@
     </layout>
    </item>
    <item>
+    <widget class="QCheckBox" name="advancedTiming">
+     <property name="text">
+      <string>Use advanced timing</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

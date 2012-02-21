@@ -41,8 +41,9 @@ WinMMAudioStream::WinMMAudioStream(const WinMMAudioDevice *device, QSynth *useSy
 	hWaveOut(NULL), pendingClose(false)
 {
 	unsigned int midiLatency;
+	bool unused;
 
-	device->driver->getAudioSettings(&minSamplesToRender, &bufferSize, &midiLatency);
+	device->driver->getAudioSettings(&minSamplesToRender, &bufferSize, &midiLatency, &unused);
 	minSamplesToRender *= sampleRate / 1000 /* ms per sec*/;
 	bufferSize *= sampleRate / 1000 /* ms per sec*/;
 	buffer = new Bit16s[2 * bufferSize];
@@ -255,4 +256,5 @@ void WinMMAudioDriver::validateAudioSettings() {
 	if (chunkLen > (audioLatency - SAFE_MS)) {
 		chunkLen = audioLatency - SAFE_MS;
 	}
+	advancedTiming = true;
 }

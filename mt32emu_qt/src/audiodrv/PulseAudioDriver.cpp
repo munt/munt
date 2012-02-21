@@ -27,7 +27,6 @@
 
 using namespace MT32Emu;
 
-#define USE_PA_TIMING
 #define USE_DYNAMIC_LOADING
 
 static const int FRAME_SIZE = 4; // Stereo, 16-bit
@@ -123,7 +122,7 @@ PulseAudioStream::PulseAudioStream(const AudioDevice *device, QSynth *useSynth,
 	unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL),
 	sampleCount(0), pendingClose(false)
 {
-	device->driver->getAudioSettings(&bufferSize, &audioLatency, &midiLatency);
+	device->driver->getAudioSettings(&bufferSize, &audioLatency, &midiLatency, &useAdvancedTiming);
 	bufferSize *= sampleRate / 1000 /* ms per sec*/;
 	buffer = new Bit16s[2 * bufferSize];
 }
@@ -140,15 +139,18 @@ void* PulseAudioStream::processingThread(void *userData) {
 	PulseAudioStream *driver = (PulseAudioStream *)userData;
 	qDebug() << "PulseAudio: Processing thread started";
 	while (!driver->pendingClose) {
-#ifdef USE_PA_TIMING
-		double realSampleRate = driver->sampleRate;
-		MasterClockNanos realSampleTime = MasterClock::getClockNanos() + _pa_simple_get_latency(driver->stream, &error) * MasterClock::NANOS_PER_MICROSECOND;
-		MasterClockNanos firstSampleNanos = realSampleTime - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream latency
-#else
-		double realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
-		MasterClockNanos realSampleTime = MasterClockNanos(driver->sampleCount / (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
-		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
-#endif
+		double realSampleRate;
+		MasterClockNanos realSampleTime;
+		MasterClockNanos firstSampleNanos;
+		if (driver->useAdvancedTiming) {
+			realSampleRate = driver->sampleRate;
+			realSampleTime = MasterClock::getClockNanos() + _pa_simple_get_latency(driver->stream, &error) * MasterClock::NANOS_PER_MICROSECOND;
+			firstSampleNanos = realSampleTime - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream latency
+		} else {
+			realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
+			realSampleTime = MasterClockNanos(driver->sampleCount / (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
+			firstSampleNanos = driver->clockSync.sync(realSampleTime) - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
+		}
 		driver->synth->render(driver->buffer, driver->bufferSize,
 			firstSampleNanos, realSampleRate);
 		if (_pa_simple_write(driver->stream, driver->buffer, driver->bufferSize * FRAME_SIZE, &error) < 0) {

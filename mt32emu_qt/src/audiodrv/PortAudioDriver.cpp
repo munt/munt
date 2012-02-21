@@ -65,7 +65,7 @@ PortAudioStream::PortAudioStream(const PortAudioDevice *device, QSynth *useSynth
 	synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0)
 {
 	unsigned int unused, msLatency, midiLatency;
-	device->driver->getAudioSettings(&unused, &msLatency, &midiLatency);
+	device->driver->getAudioSettings(&unused, &msLatency, &midiLatency, &useAdvancedTiming);
 	audioLatency = msLatency * MasterClock::NANOS_PER_MILLISECOND;
 	latency = midiLatency * MasterClock::NANOS_PER_MILLISECOND;
 }
@@ -129,26 +129,26 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	Q_UNUSED(inputBuffer);
 	Q_UNUSED(statusFlags);
 	PortAudioStream *stream = (PortAudioStream *)userData;
-
-	// Define this variable if PortAudio doesn't provide correct timing information.
+	double realSampleRate;
+	MasterClockNanos firstSampleMasterClockNanos;
+	// Set this variable to false if PortAudio doesn't provide correct timing information.
 	// As for V19, this should be used for OSS (still not implemented, though OSS allows _really_ low latencies) and for PulseAudio + ALSA setup.
-#ifndef COMPUTE_OUTPUT_DAC_TIME
-	double realSampleRate = timeInfo->actualSampleRate;
-	if (realSampleRate == 0.0) {
-		// This means PortAudio doesn't provide us the actualSampleRate estimation
-		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate;
+	if (stream->useAdvancedTiming) {
+		realSampleRate = timeInfo->actualSampleRate;
+		if (realSampleRate == 0.0) {
+			// This means PortAudio doesn't provide us the actualSampleRate estimation
+			realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate;
+		}
+		MasterClockNanos currentlyPlayingAudioNanos = Pa_GetStreamTime(stream->stream) * MasterClock::NANOS_PER_SECOND;
+		MasterClockNanos firstSampleAudioNanos = timeInfo->outputBufferDacTime * MasterClock::NANOS_PER_SECOND;
+		MasterClockNanos renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;
+		MasterClockNanos offset = stream->latency - renderOffset;
+		firstSampleMasterClockNanos = MasterClock::getClockNanos() - offset;
+	} else {
+		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate / stream->clockSync.getDrift();
+		MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
+		firstSampleMasterClockNanos = stream->clockSync.sync(realSampleTime) - stream->latency;
 	}
-	qint64 currentlyPlayingAudioNanos = Pa_GetStreamTime(stream->stream) * MasterClock::NANOS_PER_SECOND;
-	qint64 firstSampleAudioNanos = timeInfo->outputBufferDacTime * MasterClock::NANOS_PER_SECOND;
-	qint64 renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;
-	qint64 offset = stream->latency - renderOffset;
-	MasterClockNanos firstSampleMasterClockNanos = MasterClock::getClockNanos() - offset;
-#else
-	Q_UNUSED(timeInfo);
-	double realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate / stream->clockSync.getDrift();
-	MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
-	MasterClockNanos firstSampleMasterClockNanos = stream->clockSync.sync(realSampleTime) - stream->latency;
-#endif
 	unsigned int rendered = stream->synth->render((Bit16s *)outputBuffer, frameCount, firstSampleMasterClockNanos, realSampleRate);
 	if (rendered < frameCount) {
 		char *out = (char *)outputBuffer;

@@ -28,13 +28,11 @@ static const unsigned int DEFAULT_CHUNK_MS = 10;
 static const unsigned int DEFAULT_AUDIO_LATENCY = 256;
 static const unsigned int DEFAULT_MIDI_LATENCY = 256;
 
-#define USE_ALSA_TIMING
-
 AlsaAudioStream::AlsaAudioStream(const AudioDevice *device, QSynth *useSynth,
 		unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate),
 		stream(NULL), sampleCount(0), pendingClose(false)
 {
-	device->driver->getAudioSettings(&bufferSize, &audioLatency, &midiLatency);
+	device->driver->getAudioSettings(&bufferSize, &audioLatency, &midiLatency, &useAdvancedTiming);
 	bufferSize *= sampleRate / 1000 /* ms per sec*/;
 	buffer = new Bit16s[2 * bufferSize];
 }
@@ -52,25 +50,28 @@ void* AlsaAudioStream::processingThread(void *userData) {
 	AlsaAudioStream *driver = (AlsaAudioStream *)userData;
 	qDebug() << "ALSA audio: Processing thread started";
 	while (!driver->pendingClose) {
-#ifdef USE_ALSA_TIMING
-		snd_pcm_sframes_t delayp;
-		if ((error = snd_pcm_delay(driver->stream, &delayp)) < 0) {
-			qDebug() << "snd_pcm_delay failed:" << snd_strerror(error);
-			isErrorOccured = true;
-			break;
+		double realSampleRate;
+		MasterClockNanos realSampleTime;
+		MasterClockNanos firstSampleNanos;
+		if (driver->useAdvancedTiming) {
+			snd_pcm_sframes_t delayp;
+			if ((error = snd_pcm_delay(driver->stream, &delayp)) < 0) {
+				qDebug() << "snd_pcm_delay failed:" << snd_strerror(error);
+				isErrorOccured = true;
+				break;
+			}
+			realSampleRate = driver->sampleRate;
+			realSampleTime = MasterClock::getClockNanos() + delayp /
+				realSampleRate * MasterClock::NANOS_PER_SECOND;
+			firstSampleNanos = realSampleTime - (driver->midiLatency + driver->audioLatency)
+				* MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream audio latency
+		} else {
+			realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
+			realSampleTime = MasterClockNanos(driver->sampleCount /
+				(double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
+			firstSampleNanos = driver->clockSync.sync(realSampleTime) -
+				driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
 		}
-		double realSampleRate = driver->sampleRate;
-		MasterClockNanos realSampleTime = MasterClock::getClockNanos() + delayp /
-			realSampleRate * MasterClock::NANOS_PER_SECOND;
-		MasterClockNanos firstSampleNanos = realSampleTime - (driver->midiLatency + driver->audioLatency)
-			* MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream audio latency
-#else
-		double realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
-		MasterClockNanos realSampleTime = MasterClockNanos(driver->sampleCount /
-			(double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
-		MasterClockNanos firstSampleNanos = driver->clockSync.sync(realSampleTime) -
-			driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
-#endif
 		driver->synth->render(driver->buffer, driver->bufferSize,
 			firstSampleNanos, realSampleRate);
 		if ((error = snd_pcm_writei(driver->stream, driver->buffer, driver->bufferSize)) < 0) {

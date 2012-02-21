@@ -26,6 +26,7 @@ private:
 	pa_simple *stream;
 	qint64 sampleCount;
 	bool pendingClose;
+	bool useAdvancedTiming;
 
 	static void* processingThread(void *);
 

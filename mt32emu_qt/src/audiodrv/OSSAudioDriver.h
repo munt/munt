@@ -24,6 +24,7 @@ private:
 	int stream;
 	qint64 sampleCount;
 	bool pendingClose;
+	bool useAdvancedTiming;
 
 	static void* processingThread(void *);
 

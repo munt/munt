@@ -26,6 +26,7 @@ private:
 	snd_pcm_t *stream;
 	qint64 sampleCount;
 	bool pendingClose;
+	bool useAdvancedTiming;
 
 	static void* processingThread(void *);
 

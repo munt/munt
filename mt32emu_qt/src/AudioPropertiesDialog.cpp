@@ -31,14 +31,16 @@ AudioPropertiesDialog::~AudioPropertiesDialog()
 	delete ui;
 }
 
-void AudioPropertiesDialog::getData(unsigned int &chunkLen, unsigned int &audioLatency, unsigned int &midiLatency) {
+void AudioPropertiesDialog::getData(unsigned int &chunkLen, unsigned int &audioLatency, unsigned int &midiLatency, bool &advancedTiming) {
 	chunkLen = ui->chunkLen->text().toInt();
 	audioLatency = ui->audioLatency->text().toInt();
 	midiLatency = ui->midiLatency->text().toInt();
+	advancedTiming = ui->advancedTiming->isChecked();
 }
 
-void AudioPropertiesDialog::setData(unsigned int chunkLen, unsigned int audioLatency, unsigned int midiLatency) {
+void AudioPropertiesDialog::setData(unsigned int chunkLen, unsigned int audioLatency, unsigned int midiLatency, bool advancedTiming) {
 	ui->chunkLen->setText(QString().setNum(chunkLen));
 	ui->audioLatency->setText(QString().setNum(audioLatency));
 	ui->midiLatency->setText(QString().setNum(midiLatency));
+	ui->advancedTiming->setChecked(advancedTiming);
 }

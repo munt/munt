@@ -29,28 +29,33 @@ void AudioDriver::loadAudioSettings() {
 	chunkLen = settings->value(id + "/ChunkLen").toInt();
 	audioLatency = settings->value(id + "/AudioLatency").toInt();
 	midiLatency = settings->value(id + "/MidiLatency").toInt();
+	advancedTiming = settings->value(id + "/AdvancedTiming").toBool();
 	validateAudioSettings();
 }
 
-void AudioDriver::getAudioSettings(unsigned int *pChunkLen, unsigned int *pAudioLatency, unsigned int *pMidiLatency) const {
+void AudioDriver::getAudioSettings(unsigned int *pChunkLen, unsigned int *pAudioLatency, unsigned int *pMidiLatency, bool *pAdvancedTiming) const {
 	*pChunkLen = chunkLen;
 	*pAudioLatency = audioLatency;
 	*pMidiLatency = midiLatency;
+	*pAdvancedTiming = advancedTiming;
 }
 
-void AudioDriver::setAudioSettings(unsigned int *pChunkLen, unsigned int *pAudioLatency, unsigned int *pMidiLatency) {
+void AudioDriver::setAudioSettings(unsigned int *pChunkLen, unsigned int *pAudioLatency, unsigned int *pMidiLatency, bool *pAdvancedTiming) {
 	chunkLen = *pChunkLen;
 	audioLatency = *pAudioLatency;
 	midiLatency = *pMidiLatency;
+	advancedTiming = *pAdvancedTiming;
 
 	validateAudioSettings();
 
 	*pChunkLen = chunkLen;
 	*pAudioLatency = audioLatency;
 	*pMidiLatency = midiLatency;
+	*pAdvancedTiming = advancedTiming;
 
 	QSettings *settings = Master::getInstance()->getSettings();
 	settings->setValue(id + "/ChunkLen", chunkLen);
 	settings->setValue(id + "/AudioLatency", audioLatency);
 	settings->setValue(id + "/MidiLatency", midiLatency);
+	settings->setValue(id + "/AdvancedTiming", advancedTiming);
 }
