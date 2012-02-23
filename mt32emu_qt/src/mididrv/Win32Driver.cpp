@@ -148,7 +148,7 @@ bool Win32MidiDriver::canCreatePort() {
 }
 
 bool Win32MidiDriver::canDeletePort(MidiSession *midiSession) {
-	return midiInSessions.indexOf(midiSession) >= 0;
+	return midiInSessions.indexOf(midiSession) >= 0 || midiSessions.indexOf(midiSession) >= 0;
 }
 
 bool Win32MidiDriver::canSetPortProperties(MidiSession *midiSession) {
@@ -168,7 +168,10 @@ bool Win32MidiDriver::createPort(MidiPropertiesDialog *mpd, MidiSession *midiSes
 
 void Win32MidiDriver::deletePort(MidiSession *midiSession) {
 	int portIx = midiInSessions.indexOf(midiSession);
-	if (portIx < 0) return;
+	if (portIx < 0) {
+		midiSessions.removeOne(midiSession);
+		return;
+	}
 	delete midiInPorts.takeAt(portIx);
 	midiInSessions.removeAt(portIx);
 }
