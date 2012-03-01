@@ -68,7 +68,7 @@ public:
 			firstSampleMasterClockNanos = clockSync.sync(firstSampleAudioNanos) - midiLatency;
 			samplesCount += len >> 2;
 		}
-		return synth->render((Bit16s *)data, (unsigned int)(len >> 2), firstSampleMasterClockNanos, sampleRate) << 2;
+		return synth->render((Bit16s *)data, (unsigned int)(len >> 2), firstSampleMasterClockNanos, sampleRate / clockSync.getDrift()) << 2;
 	}
 
 	qint64 writeData(const char *data, qint64 len) {
