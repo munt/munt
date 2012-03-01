@@ -5,6 +5,7 @@
 #include <mt32emu/mt32emu.h>
 
 #include "AudioDriver.h"
+#include "../MasterClock.h"
 
 class Master;
 class WaveGenerator;
@@ -21,10 +22,12 @@ private:
 	unsigned int sampleRate;
 
 	// The number of nanos by which to delay (MIDI) events to help ensure accurate relative timing.
-	qint64 latency;
+	unsigned int midiLatency;
+	unsigned int audioLatency;
+	bool advancedTiming;
 
 public:
-	QtAudioStream(QSynth *useSynth, unsigned int useSampleRate);
+	QtAudioStream(const AudioDevice *device, QSynth *useSynth, unsigned int useSampleRate);
 	~QtAudioStream();
 	bool start();
 	void close();
@@ -40,7 +43,7 @@ public:
 
 class QtAudioDriver : public AudioDriver {
 private:
-	void validateAudioSettings() {}
+	void validateAudioSettings();
 public:
 	QtAudioDriver(Master *useMaster);
 	~QtAudioDriver();
