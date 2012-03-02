@@ -54,7 +54,7 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 		externalStart = externalNow;
 		offset = 0;
 		offsetShift = 0;
-		qDebug() << "Sync:" << externalNow << masterNow << offset;
+		qDebug() << "ClockSync: init:" << externalNow << masterNow << offset;
 		offsetValid = true;
 		return masterNow;
 	}
@@ -68,11 +68,11 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 		offsetShift = 0;	// we don't want here to shift
 		// we rather add a compensation for the offset we have now to the new drift value
 		drift = (double)masterElapsed / (externalElapsed + offset * periodicDampFactor);
-		qDebug() << "Periodic reset. Offset, new drift:" << 1e-6 * offset << drift;
+		qDebug() << "ClockSync: offset:" << 1e-6 * offset << "drift:" << drift;
 		return masterNow + offset;
 	}
 	if(qAbs(offsetNow - offset) > emergencyResetThresholdNanos) {
-		qDebug() << "Emergency reset:" << externalNow << masterNow << offset << offsetNow;
+		qDebug() << "ClockSync: emergency reset:" << externalNow << masterNow << offset << offsetNow;
 		masterStart = masterNow;
 		externalStart = externalNow;
 		offset = 0;
@@ -82,7 +82,7 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 	}
 	if (((offsetNow - offset) < lowJitterThresholdNanos) ||
 		((offsetNow - offset) > highJitterThresholdNanos)) {
-//		qDebug() << "Latency resync:" << externalNow << masterNow << offset << offsetNow;
+		qDebug() << "ClockSync: Latency resync offset diff:" << 1e-6 * (offsetNow - offset) << "drift:" << drift;
 		drift = (double)masterElapsed / externalElapsed;
 		// start moving offset towards 0 by steps of shiftFactor * offset
 		offset -= offsetNow;
