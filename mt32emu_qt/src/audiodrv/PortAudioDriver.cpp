@@ -64,10 +64,10 @@ static void dumpPortAudioDevices() {
 PortAudioStream::PortAudioStream(const PortAudioDevice *device, QSynth *useSynth, unsigned int useSampleRate) :
 	synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0)
 {
-	unsigned int unused, msLatency, midiLatency;
-	device->driver->getAudioSettings(&unused, &msLatency, &midiLatency, &useAdvancedTiming);
+	unsigned int unused, msLatency, msMidiLatency;
+	device->driver->getAudioSettings(&unused, &msLatency, &msMidiLatency, &useAdvancedTiming);
 	audioLatency = msLatency * MasterClock::NANOS_PER_MILLISECOND;
-	latency = midiLatency * MasterClock::NANOS_PER_MILLISECOND;
+	midiLatency = msMidiLatency * MasterClock::NANOS_PER_MILLISECOND;
 }
 
 PortAudioStream::~PortAudioStream() {
@@ -81,7 +81,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	if (deviceIndex < 0) {
 		deviceIndex = Pa_GetDefaultOutputDevice();
 		if (deviceIndex == paNoDevice) {
-			qDebug() << "No default output device found";
+			qDebug() << "PortAudio: no default output device found";
 			return false;
 		}
 	}
@@ -90,7 +90,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		qDebug() << "Pa_GetDeviceInfo() returned NULL for" << deviceIndex;
 		return false;
 	}
-	qDebug() << "Using PortAudio device:" << deviceIndex << deviceInfo->name;
+	qDebug() << "PortAudio: using audio device:" << deviceIndex << deviceInfo->name;
 	/*
 	if (deviceInfo->maxOutputChannels < 2) {
 		qDebug() << "Device does not support stereo; maxOutputChannels =" << deviceInfo->maxOutputChannels;
@@ -117,11 +117,11 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		return false;
 	}
 	const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
-	qDebug() << "Device Output latency (s):" << streamInfo->outputLatency;
-	if (!latency) {
-		latency = 1.5 * MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency;
+	qDebug() << "PortAudio: audio latency (s):" << streamInfo->outputLatency;
+	if (!midiLatency) {
+		midiLatency = MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency / 2;
 	}
-	qDebug() << "Using MIDI latency (ns):" << latency;
+	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatency / MasterClock::NANOS_PER_SECOND;
 	return true;
 }
 
@@ -142,12 +142,12 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 		MasterClockNanos currentlyPlayingAudioNanos = Pa_GetStreamTime(stream->stream) * MasterClock::NANOS_PER_SECOND;
 		MasterClockNanos firstSampleAudioNanos = timeInfo->outputBufferDacTime * MasterClock::NANOS_PER_SECOND;
 		MasterClockNanos renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;
-		MasterClockNanos offset = stream->latency - renderOffset;
-		firstSampleMasterClockNanos = MasterClock::getClockNanos() - offset;
+		MasterClockNanos offset = stream->audioLatency - renderOffset;
+		firstSampleMasterClockNanos = MasterClock::getClockNanos() - offset - stream->midiLatency ;
 	} else {
 		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate / stream->clockSync.getDrift();
 		MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
-		firstSampleMasterClockNanos = stream->clockSync.sync(realSampleTime) - stream->latency;
+		firstSampleMasterClockNanos = stream->clockSync.sync(realSampleTime) - stream->midiLatency;
 	}
 	unsigned int rendered = stream->synth->render((Bit16s *)outputBuffer, frameCount, firstSampleMasterClockNanos, realSampleRate);
 	if (rendered < frameCount) {

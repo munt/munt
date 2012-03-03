@@ -25,8 +25,8 @@ private:
 	// The total latency of audio stream buffers
 	// Special value of 0 indicates PortAudio to use its own recommended latency value
 	qint64 audioLatency;
-	// The number of nanos by which to delay (MIDI) events to help ensure accurate relative timing.
-	qint64 latency;
+	// The number of nanos by which to delay MIDI events to help ensure accurate relative timing.
+	qint64 midiLatency;
 	qint64 sampleCount;
 	bool useAdvancedTiming;
 
