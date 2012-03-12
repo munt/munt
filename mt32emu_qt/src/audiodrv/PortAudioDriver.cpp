@@ -117,6 +117,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		return false;
 	}
 	const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
+	audioLatency = streamInfo->outputLatency * MasterClock::NANOS_PER_SECOND;
 	qDebug() << "PortAudio: audio latency (s):" << streamInfo->outputLatency;
 	if (!midiLatency) {
 		midiLatency = MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency / 2;
