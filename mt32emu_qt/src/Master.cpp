@@ -39,6 +39,8 @@
 #include "audiodrv/QtAudioDriver.h"
 #endif
 
+#include "audiodrv/AudioFileWriter.h"
+
 #ifdef WITH_WIN32_MIDI_DRIVER
 #include "mididrv/Win32Driver.h"
 #elif defined(WITH_ALSA_MIDI_DRIVER)
@@ -134,6 +136,7 @@ void Master::initAudioDrivers() {
 #ifdef WITH_QT_AUDIO_DRIVER
 	audioDrivers.append(new QtAudioDriver(this));
 #endif
+	audioDrivers.append(new AudioFileWriterDriver(this));
 }
 
 void Master::initMidiDrivers() {

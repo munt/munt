@@ -26,6 +26,7 @@ set(mt32emu_qt_SOURCES
   src/SynthWidget.cpp
 
   src/audiodrv/AudioDriver.cpp
+  src/audiodrv/AudioFileWriter.cpp
 
   src/mididrv/MidiDriver.cpp
   src/mididrv/TestDriver.cpp
