@@ -99,15 +99,15 @@ public:
 			}
 		}
 		if (waveMode) {
-			char *charBuffer = (char *)buffer;
+			unsigned char *charBuffer = (unsigned char *)buffer;
 			memcpy(charBuffer, WAVE_HEADER, 44);
-			unsigned int fileSize = (unsigned int)file.size();
-			*((unsigned int *)(charBuffer + 4)) = fileSize - 8;
-			*((unsigned int *)(charBuffer + 40)) = fileSize - 44;
-			*((unsigned int *)(charBuffer + 24)) = sampleRate;
-			*((unsigned int *)(charBuffer + 28)) = sampleRate * FRAME_SIZE;
+			unsigned long fileSize = (unsigned long)file.size();
+			qToLittleEndian(fileSize - 8, charBuffer + 4);
+			qToLittleEndian(fileSize - 44, charBuffer + 40);
+			qToLittleEndian(sampleRate, charBuffer + 24);
+			qToLittleEndian(sampleRate * FRAME_SIZE, charBuffer + 28);
 			file.seek(0);
-			file.write(charBuffer, 44);
+			file.write((char *)charBuffer, 44);
 		}
 		file.close();
 	}
