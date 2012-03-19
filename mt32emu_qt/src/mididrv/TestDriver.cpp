@@ -16,27 +16,27 @@
 
 #include "TestDriver.h"
 
-#include <cmath>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
 #include <QtCore>
 
 #include "../MasterClock.h"
 #include "../MidiSession.h"
-#include "../SynthRoute.h"
 
 static const qint64 TEST1_EVENT_INTERVAL_NANOS = 8000000; // 256 samples;
 
 TestProcessor::TestProcessor(TestMidiDriver *useTestMidiDriver) : testMidiDriver(useTestMidiDriver), stopProcessing(false) {
 }
 
-void TestProcessor::stop() {
-	stopProcessing = true;
+void TestProcessor::start() {
+	stopProcessing = false;
+	QThread::start();
 }
 
-void TestProcessor::processSeqEvents() {
+void TestProcessor::stop() {
+	stopProcessing = true;
+	wait();
+}
+
+void TestProcessor::run() {
 	MidiSession *session1 = testMidiDriver->createMidiSession("Test 1");
 	MidiSession *session2 = NULL;//testMidiDriver->createMidiSession("Test 2");
 	qint64 currentNanos = MasterClock::getClockNanos();
@@ -56,39 +56,19 @@ void TestProcessor::processSeqEvents() {
 	if (session2 != NULL) {
 		testMidiDriver->deleteMidiSession(session2);
 	}
-	emit finished();
 }
 
 
-TestMidiDriver::TestMidiDriver(Master *useMaster) : MidiDriver(useMaster), processor(NULL) {
+TestMidiDriver::TestMidiDriver(Master *useMaster) : MidiDriver(useMaster), processor(this) {
 	name = "Test Driver";
 }
 
 void TestMidiDriver::start() {
-	processor = new TestProcessor(this);
-	processor->moveToThread(&processorThread);
-	// Yes, seriously. The QThread object's default thread is *this* thread,
-	// We move it to the thread that it represents so that the finished()->quit() connection
-	// will happen asynchronously and avoid a deadlock in the destructor.
-	processorThread.moveToThread(&processorThread);
-
-	// Start the processor once the thread has started
-	processor->connect(&processorThread, SIGNAL(started()), SLOT(processSeqEvents()));
-	// Stop the thread once the processor has finished
-	processorThread.connect(processor, SIGNAL(finished()), SLOT(quit()));
-
-	processorThread.start();
+	processor.start();
 }
 
 void TestMidiDriver::stop() {
-	if (processor != NULL) {
-		if (processorThread.isRunning()) {
-			processor->stop();
-			processorThread.wait();
-		}
-		delete processor;
-		processor = NULL;
-	}
+	processor.stop();
 }
 
 TestMidiDriver::~TestMidiDriver() {

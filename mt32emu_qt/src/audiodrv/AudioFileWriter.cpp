@@ -66,6 +66,11 @@ public:
 		fileName = useFileName;
 	}
 
+	void start() {
+		pendingClose = false;
+		QThread::start();
+	}
+
 	void run() {
 		if (fileName == NULL || fileName.isEmpty()) return;
 		QFile file(fileName);

@@ -56,7 +56,7 @@ static void dumpPortAudioDevices() {
 			}
 			if (deviceInfo->hostApi != hostApiIndex)
 				continue;
-			qDebug() << " Device:" << deviceIndex << deviceInfo->name;
+			qDebug() << " Device:" << deviceIndex << QString().fromLocal8Bit(deviceInfo->name);
 		}
 	}
 }
@@ -90,7 +90,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		qDebug() << "Pa_GetDeviceInfo() returned NULL for" << deviceIndex;
 		return false;
 	}
-	qDebug() << "PortAudio: using audio device:" << deviceIndex << deviceInfo->name;
+	qDebug() << "PortAudio: using audio device:" << deviceIndex << QString().fromLocal8Bit(deviceInfo->name);
 	/*
 	if (deviceInfo->maxOutputChannels < 2) {
 		qDebug() << "Device does not support stereo; maxOutputChannels =" << deviceInfo->maxOutputChannels;
@@ -229,7 +229,7 @@ QList<AudioDevice *> PortAudioDriver::getDeviceList() const {
 			// Seems to be an input device
 			continue;
 		}
-		QString deviceName = "(" + QString::number(deviceInfo->hostApi) + ") " + deviceInfo->name;
+		QString deviceName = "(" + QString::number(deviceInfo->hostApi) + ") " + QString().fromLocal8Bit(deviceInfo->name);
 		deviceList.append(new PortAudioDevice(this, deviceIndex, deviceName));
 	}
 	return deviceList;

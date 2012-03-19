@@ -6,39 +6,33 @@
 #include "MidiDriver.h"
 #include "../Master.h"
 
-class SynthRoute;
-
 class TestMidiDriver;
 
-class TestProcessor : public QObject {
+class TestProcessor : public QThread {
 	Q_OBJECT
 public:
 	TestProcessor(TestMidiDriver *useTestMidiDriver);
-
+	void start();
 	void stop();
 
-public slots:
-	void processSeqEvents();
+protected:
+	void run();
 
 private:
 	TestMidiDriver *testMidiDriver;
 	volatile bool stopProcessing;
-
-signals:
-	void finished();
 };
 
 class TestMidiDriver : public MidiDriver {
-	friend class TestProcessor;
 	Q_OBJECT
+	friend class TestProcessor;
 public:
 	TestMidiDriver(Master *master);
 	~TestMidiDriver();
 	void start();
 	void stop();
 private:
-	TestProcessor *processor;
-	QThread processorThread;
+	TestProcessor processor;
 };
 
 #endif
