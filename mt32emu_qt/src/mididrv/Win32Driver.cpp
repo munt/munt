@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -219,7 +219,7 @@ void Win32MidiDriver::enumPorts(QList<QString> &midiInPortNames) {
 		if (midiInGetDevCaps(i, &mic, sizeof(MIDIINCAPS)) != MMSYSERR_NOERROR) {
 			midiInPortNames.append("");
 		} else {
-			midiInPortNames.append("MidiIn" + QString().setNum(i) + ": " + mic.szPname);
+			midiInPortNames.append("MidiIn" + QString().setNum(i) + ": " + QString().fromLocal8Bit(mic.szPname));
 		}
 	}
 }

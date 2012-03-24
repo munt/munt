@@ -28,12 +28,14 @@
 #include "Master.h"
 
 #include "mididrv/TestDriver.h"
+#include "mididrv/SMFDriver.h"
 
 MainWindow::MainWindow(Master *master, QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow),
 	master(master),
-	testMidiDriver(NULL)
+	testMidiDriver(NULL),
+	smfDriver(NULL)
 {
 	ui->setupUi(this);
 	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
@@ -134,7 +136,13 @@ void MainWindow::on_actionTest_MIDI_Driver_toggled(bool checked) {
 }
 
 void MainWindow::on_actionPlay_MIDI_file_triggered() {
-	// 2b implemented...
+	if (smfDriver != NULL) {
+		delete smfDriver;
+		smfDriver = NULL;
+	} else {
+		smfDriver = new SMFDriver(master);
+		smfDriver->start();
+	}
 }
 
 void MainWindow::on_menuOptions_aboutToShow() {

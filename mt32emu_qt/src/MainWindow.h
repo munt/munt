@@ -28,6 +28,8 @@ private:
 	Ui::MainWindow *ui;
 	Master *master;
 	MidiDriver *testMidiDriver;
+	MidiDriver *smfDriver;
+
 	void trayIconContextMenu();
 
 private slots:

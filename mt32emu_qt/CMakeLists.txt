@@ -16,6 +16,7 @@ set(mt32emu_qt_SOURCES
   src/MasterClock.cpp
   src/MidiEvent.cpp
   src/MidiEventQueue.cpp
+  src/MidiParser.cpp
   src/MidiSession.cpp
   src/QSynth.cpp
   src/SynthRoute.cpp
@@ -30,6 +31,7 @@ set(mt32emu_qt_SOURCES
 
   src/mididrv/MidiDriver.cpp
   src/mididrv/TestDriver.cpp
+  src/mididrv/SMFDriver.cpp
 )
 
 set(mt32emu_qt_RESOURCES
@@ -64,6 +66,7 @@ set(mt32emu_qt_HEADERS
 
   src/mididrv/MidiDriver.h
   src/mididrv/TestDriver.h
+  src/mididrv/SMFDriver.h
 )
 
 set(mt32emu_qt_FORMS

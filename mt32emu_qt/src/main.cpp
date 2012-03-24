@@ -14,16 +14,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QtGui>
-#include <QProcessEnvironment>
-#include <mt32emu/mt32emu.h>
-
 #include "MainWindow.h"
 #include "Master.h"
 #include "MasterClock.h"
-#include "QSynth.h"
-
-#include "mididrv/TestDriver.h"
 
 using namespace MT32Emu;
 
