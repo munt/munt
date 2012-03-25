@@ -22,8 +22,6 @@
  * All other functions may only be called by a single thread.
  */
 
-#include <cstdio>
-
 #include <QtGlobal>
 #include <QMessageBox>
 

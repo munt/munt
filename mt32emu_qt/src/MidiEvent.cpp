@@ -16,6 +16,8 @@
 
 #include "MidiEvent.h"
 
+#include <cstring>
+
 using namespace MT32Emu;
 
 MidiEvent::MidiEvent() {
