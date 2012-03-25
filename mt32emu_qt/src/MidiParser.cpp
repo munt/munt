@@ -70,11 +70,9 @@ bool MidiParser::parseTrack() {
 	// Parsing actual MIDI events
 	unsigned int runningStatus = 0;
 	uchar *data = (uchar *)trackData;
-	SynthTimestamp time = 0;
 	uchar sysexBuffer[MAX_SYSEX_LENGTH];
 	while(data < (uchar *)trackData + trackLen) {
-		MidiEvent midiEvent;
-		time = parseVarLenInt(data);
+		SynthTimestamp time = parseVarLenInt(data);
 		quint32 message = 0;
 		if (*data & 0x80) {
 			// It's normal status byte
@@ -82,17 +80,17 @@ bool MidiParser::parseTrack() {
 				// It's a special event
 				if (*data == 0xF0) {
 					// It's a sysex event
-					sysexBuffer[0] = *data;
-					data++;
+					sysexBuffer[0] = *(data++);
 					quint32 sysexLength = parseVarLenInt(data);
 					if (MAX_SYSEX_LENGTH <= sysexLength) {
 						qDebug() << "MidiParser: too long sysex encountered:" << sysexLength;
+						data += sysexLength;
+						continue;
 					}
-					for (uint i = 1; i <= sysexLength; i++) {
-						sysexBuffer[i] = *(data++);
-					}
-					midiEvent.assignSysex(time, data, sysexLength);
-					midiEventList.append(midiEvent);
+					memcpy(&sysexBuffer[1], data, sysexLength);
+					data += sysexLength;
+					midiEventList.append(MidiEvent());
+					midiEventList.last().assignSysex(time, sysexBuffer, sysexLength + 1);
 				} else if (*data == 0xF7) {
 					qDebug() << "MidiParser: Fragmented sysex, unsupported";
 					data++;
@@ -102,7 +100,7 @@ bool MidiParser::parseTrack() {
 					data++;
 					if (*data == 0x2F) {
 						qDebug() << "MidiParser: End-of-track Meta-event";
-						return true;
+						break;
 					}
 					qDebug() << "MidiParser: Meta-event, unsupported";
 					data++;
@@ -140,10 +138,13 @@ bool MidiParser::parseTrack() {
 				data += 2;
 			}
 		}
-		midiEvent.assignShortMessage(time, message);
-		midiEventList.append(midiEvent);
+		midiEventList.append(MidiEvent());
+		midiEventList.last().assignShortMessage(time, message);
 	}
-	qDebug() << "MidiParser: End-of-file discovered before End-of-track Meta-event";
+	if (*data != 0x2F) {
+		qDebug() << "MidiParser: End-of-file discovered before End-of-track Meta-event";
+	}
+	delete trackData;
 	return true;
 }
 

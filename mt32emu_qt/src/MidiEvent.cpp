@@ -25,6 +25,20 @@ MidiEvent::MidiEvent() {
 	sysexData = NULL;
 };
 
+MidiEvent::MidiEvent(const MidiEvent &copyOf) {
+	timestamp = copyOf.timestamp;
+	type = copyOf.type;
+	msg = copyOf.msg;
+	if (type == SYSEX && copyOf.sysexData != NULL) {
+		sysexLen = copyOf.sysexLen;
+		sysexData = new uchar[sysexLen];
+		memcpy(sysexData, copyOf.sysexData, sysexLen);
+	} else {
+		sysexLen = 0;
+		sysexData = NULL;
+	}
+};
+
 MidiEvent::~MidiEvent() {
 	if (sysexData != 0) {
 		delete[] sysexData;
@@ -60,15 +74,13 @@ void MidiEvent::assignShortMessage(SynthTimestamp newTimestamp, Bit32u newMsg) {
 	sysexData = NULL;
 }
 
-/**
- * The newSysexData array is *not* copied, and after calling this function should be considered to be owned by this MidiEvent.
- * It will be delete[]d by the MidiEvent when reassigned or itself deleted.
- */
 void MidiEvent::assignSysex(SynthTimestamp newTimestamp, unsigned char *newSysexData, Bit32u newSysexLen) {
 	timestamp = newTimestamp;
 	type = SYSEX;
 	msg = 0;
 	sysexLen = newSysexLen;
 	delete[] sysexData;
-	sysexData = newSysexData;
+	Bit8u *copy = new Bit8u[newSysexLen];
+	memcpy(copy, newSysexData, newSysexLen);
+	sysexData = copy;
 }

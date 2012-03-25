@@ -22,6 +22,7 @@ private:
 
 public:
 	MidiEvent();
+	MidiEvent(const MidiEvent &copyOf);
 	~MidiEvent();
 
 	SynthTimestamp getTimestamp() const;

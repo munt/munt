@@ -97,13 +97,7 @@ bool QSynth::pushMIDIShortMessage(Bit32u msg, SynthTimestamp timestamp) {
 }
 
 bool QSynth::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, SynthTimestamp timestamp) {
-	Bit8u *copy = new Bit8u[sysexLen];
-	memcpy(copy, sysexData, sysexLen);
-	bool result = midiEventQueue->pushEvent(timestamp, 0, copy, sysexLen);
-	if (!result) {
-		delete[] copy;
-	}
-	return result;
+	return midiEventQueue->pushEvent(timestamp, 0, sysexData, sysexLen);
 }
 
 // Note that the actualSampleRate given here only affects the timing of MIDI messages.
