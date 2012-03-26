@@ -8,7 +8,7 @@
 class MidiParser {
 private:
 	QFile file;
-	QList<MidiEvent> midiEventList;
+	QVector<MidiEvent> midiEventList;
 
 	unsigned int format;
 	unsigned int numberOfTracks;
@@ -16,15 +16,16 @@ private:
 
 	bool readFile(char *data, qint64 len);
 	bool parseHeader();
-	bool parseTrack();
+	bool parseTrack(QVector<MidiEvent> &midiEventList);
 	quint32 parseVarLenInt(uchar * &data);
+	void mergeMidiEventLists(QVector<QVector<MidiEvent>> &tracks);
 
 public:
 	MidiParser(QString fileName);
 	~MidiParser();
 	bool parse();
 	int getDivision();
-	QList<MidiEvent> getMIDIEventList();
+	QVector<MidiEvent> getMIDIEvents();
 };
 
 #endif

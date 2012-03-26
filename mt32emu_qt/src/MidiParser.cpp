@@ -48,9 +48,9 @@ bool MidiParser::parseHeader() {
 	return true;
 }
 
-bool MidiParser::parseTrack() {
+bool MidiParser::parseTrack(QVector<MidiEvent> &midiEventList) {
 	char header[8];
-	for(;;) {
+	forever {
 		if (!readFile(header, 8)) return false;
 		if (memcmp(header, trackID, 4) == 0) {
 			break;
@@ -66,6 +66,10 @@ bool MidiParser::parseTrack() {
 	quint32 trackLen = qFromBigEndian<quint32>((uchar *)&header[4]);
 	char *trackData = new char[trackLen];
 	if (!readFile(trackData, trackLen)) return false;
+
+	// Reserve memory for MIDI events, approx. 3 bytes per event
+	midiEventList.reserve(trackLen / 3);
+	qDebug() << "MidiParser: Memory reservation" << trackLen / 3;
 
 	// Parsing actual MIDI events
 	unsigned int runningStatus = 0;
@@ -89,7 +93,7 @@ bool MidiParser::parseTrack() {
 					}
 					memcpy(&sysexBuffer[1], data, sysexLength);
 					data += sysexLength;
-					midiEventList.append(MidiEvent());
+					midiEventList.resize(midiEventList.size() + 1);
 					midiEventList.last().assignSysex(time, sysexBuffer, sysexLength + 1);
 				} else if (*data == 0xF7) {
 					qDebug() << "MidiParser: Fragmented sysex, unsupported";
@@ -102,13 +106,12 @@ bool MidiParser::parseTrack() {
 						qDebug() << "MidiParser: End-of-track Meta-event";
 						break;
 					}
-					qDebug() << "MidiParser: Meta-event, unsupported";
+					qDebug() << "MidiParser: Meta-event code" << *data << "unsupported";
 					data++;
 					quint32 len = parseVarLenInt(data);
 					data += len;
 				} else {
-					qDebug() << "MidiParser: Unsupported event";
-					data++;
+					qDebug() << "MidiParser: Unsupported event" << *(data++);
 				}
 				continue;
 			} else if ((*data & 0xE0) == 0xC0) {
@@ -138,13 +141,14 @@ bool MidiParser::parseTrack() {
 				data += 2;
 			}
 		}
-		midiEventList.append(MidiEvent());
+		midiEventList.resize(midiEventList.size() + 1);
 		midiEventList.last().assignShortMessage(time, message);
 	}
 	if (*data != 0x2F) {
 		qDebug() << "MidiParser: End-of-file discovered before End-of-track Meta-event";
 	}
 	delete trackData;
+	qDebug() << "MidiParser: Parsed" << midiEventList.count() << "MIDI events";
 	return true;
 }
 
@@ -159,16 +163,100 @@ quint32 MidiParser::parseVarLenInt(uchar * &data) {
 	return value;
 }
 
+void MidiParser::mergeMidiEventLists(QVector<QVector<MidiEvent>> &trackList) {
+	int totalEventCount = 0;
+
+	// Remove empty tracks & allocate memory exactly needed
+	for (int i = trackList.count() - 1; i >=0; i--) {
+		int eventCount = trackList.at(i).count();
+		if (eventCount == 0) {
+			trackList.remove(i);
+		} else {
+			totalEventCount += eventCount;
+		}
+	}
+	midiEventList.reserve(totalEventCount);
+	qDebug() << "MidiParser: Expected" << totalEventCount << "events";
+
+	// Append events from all the tracks to the output list in sequence
+	QVarLengthArray<int> currentIx(trackList.count());	            // The index of the event to be added next
+	QVarLengthArray<SynthTimestamp> currentTime(trackList.count()); // The time in MIDI ticks of the event to be added next
+	for (int i = 0; i < trackList.count(); i++) {
+		currentIx[i] = 0;
+		currentTime[i] = trackList.at(i).at(0).getTimestamp();
+	}
+	SynthTimestamp lastEventTime = 0;
+	forever {
+		int trackIx = -1;
+		SynthTimestamp nextEventTime = 0x10000000;
+
+		// Find lowest track index with earliest event
+		for (int i = 0; i < trackList.count(); i++) {
+			if (trackList.at(i).count() <= currentIx[i]) continue;
+			if (currentTime[i] < nextEventTime) {
+				nextEventTime = currentTime[i];
+				trackIx = i;
+			}
+		}
+		if (trackIx == -1) break;
+		const MidiEvent *e = &trackList.at(trackIx).at(currentIx[trackIx]);
+		forever {
+			midiEventList.append(*e);
+			midiEventList.last().setTimestamp(nextEventTime - lastEventTime);
+			lastEventTime = nextEventTime;
+			if (trackList.at(trackIx).count() <= ++currentIx[trackIx]) break;
+			e = &trackList.at(trackIx).at(currentIx[trackIx]);
+			SynthTimestamp nextDeltaTime = e->getTimestamp();
+			if (nextDeltaTime != 0) {
+				currentTime[trackIx] += nextDeltaTime;
+				break;
+			}
+		}
+	}
+	qDebug() << "MidiParser: Actually" << midiEventList.count() << "events";
+}
+
 bool MidiParser::parse() {
 	if (!parseHeader()) return false;
-	if (!parseTrack()) return false;
-	return true;
+	midiEventList.clear();
+	qDebug() << "MidiParser: MIDI file format" << format;
+	switch(format) {
+		case 0:
+			if (numberOfTracks != 1) {
+				qDebug() << "MidiParser: MIDI file format error: MIDI files format 0 must have 1 MIDI track, not" << numberOfTracks;
+				return false;
+			}
+			return parseTrack(midiEventList);
+		case 1:
+			if (numberOfTracks > 0) {
+				QVector<QVector<MidiEvent>> trackList(numberOfTracks);
+				for (uint i = 0; i < numberOfTracks; i++) {
+					qDebug() << "MidiParser: Parsing & merging MIDI track" << i + 1;
+					if (!parseTrack(trackList[i])) return false;
+				}
+				mergeMidiEventLists(trackList);
+				return true;
+			}
+			qDebug() << "MidiParser: MIDI file format error: MIDI files format 1 must have at least 1 MIDI track";
+			return false;
+		case 2:
+			for (uint i = 0; i < numberOfTracks; i++) {
+				qDebug() << "MidiParser: Parsing & appending MIDI track" << i + 1;
+				QVector<MidiEvent> list;
+				if (!parseTrack(list)) return false;
+				midiEventList += list;
+			}
+			return true;
+		default:
+			qDebug() << "MidiParser: MIDI file format error: unknown MIDI file format" << format;
+			return false;
+	}
 }
 
 int MidiParser::getDivision() {
 	return division;
 }
 
-QList<MidiEvent> MidiParser::getMIDIEventList() {
+QVector<MidiEvent> MidiParser::getMIDIEvents() {
 	return midiEventList;
 }

@@ -18,6 +18,7 @@
 
 #include <QtCore>
 #include <QFileDialog>
+#include <QMessageBox>
 
 #include "../MasterClock.h"
 #include "../MidiSession.h"
@@ -43,6 +44,7 @@ void SMFProcessor::run() {
 	MidiParser parser(fileName);
 	if (!parser.parse()) {
 		qDebug() << "SMFDriver: Error parsing MIDI file:" << fileName;
+		QMessageBox::critical(NULL, "Error", "Error encountered while loading MIDI file");
 		return;
 	}
 	int division = parser.getDivision();
@@ -57,11 +59,11 @@ void SMFProcessor::run() {
 		// PPQN
 		midiTick = (60 * MasterClock::NANOS_PER_SECOND) / (division * bpm);
 	}
-	QList<MidiEvent> midiEventList = parser.getMIDIEventList();
+	QVector<MidiEvent> midiEvents = parser.getMIDIEvents();
 	MasterClockNanos currentNanos = MasterClock::getClockNanos();
-	for (int i = 0; i < midiEventList.count(); i++) {
+	for (int i = 0; i < midiEvents.count(); i++) {
 		if (stopProcessing) break;
-		MidiEvent e = midiEventList.at(i);
+		const MidiEvent &e = midiEvents.at(i);
 		currentNanos += e.getTimestamp() * midiTick;
 		if (e.getType() == SHORT_MESSAGE) {
 			synthRoute->pushMIDIShortMessage(e.getShortMessage(), currentNanos);

@@ -67,6 +67,10 @@ Bit32u MidiEvent::getSysexLen() const {
 	return sysexLen;
 }
 
+void MidiEvent::setTimestamp(SynthTimestamp newTimestamp) {
+	timestamp = newTimestamp;
+}
+
 void MidiEvent::assignShortMessage(SynthTimestamp newTimestamp, Bit32u newMsg) {
 	timestamp = newTimestamp;
 	type = SHORT_MESSAGE;
