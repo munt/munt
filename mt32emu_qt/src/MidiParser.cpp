@@ -20,13 +20,6 @@ static const char headerID[] = "MThd\x00\x00\x00\x06";
 static const char trackID[] = "MTrk";
 static const uint MAX_SYSEX_LENGTH = 1024;
 
-MidiParser::MidiParser(QString fileName) : file(fileName) {
-	file.open(QIODevice::ReadOnly);
-}
-
-MidiParser::~MidiParser() {
-}
-
 bool MidiParser::readFile(char *data, qint64 len) {
 	qint64 readLen = file.read(data, len);
 	if (readLen == len) return true;
@@ -37,6 +30,10 @@ bool MidiParser::readFile(char *data, qint64 len) {
 bool MidiParser::parseHeader() {
 	char header[8];
 	if (!readFile(header, 8)) return false;
+	if ((uchar)header[0] == 0xF0) {
+		format = 0xF0;
+		return true;
+	}
 	if (memcmp(header, headerID, 8) != 0) {
 		qDebug() << "MidiParser: Wrong MIDI header";
 		return false;
@@ -65,7 +62,10 @@ bool MidiParser::parseTrack(QVector<MidiEvent> &midiEventList) {
 	}
 	quint32 trackLen = qFromBigEndian<quint32>((uchar *)&header[4]);
 	char *trackData = new char[trackLen];
-	if (!readFile(trackData, trackLen)) return false;
+	if (!readFile(trackData, trackLen)) {
+		delete trackData;
+		return false;
+	}
 
 	// Reserve memory for MIDI events, approx. 3 bytes per event
 	midiEventList.reserve(trackLen / 3);
@@ -185,7 +185,7 @@ void MidiParser::mergeMidiEventLists(QVector<QVector<MidiEvent>> &trackList) {
 		currentIx[i] = 0;
 		currentTime[i] = trackList.at(i).at(0).getTimestamp();
 	}
-	SynthTimestamp lastEventTime = 0;
+	SynthTimestamp lastEventTime = 0; // Timestamp of the last added event
 	forever {
 		int trackIx = -1;
 		SynthTimestamp nextEventTime = 0x10000000;
@@ -216,9 +216,38 @@ void MidiParser::mergeMidiEventLists(QVector<QVector<MidiEvent>> &trackList) {
 	qDebug() << "MidiParser: Actually" << midiEventList.count() << "events";
 }
 
-bool MidiParser::parse() {
-	if (!parseHeader()) return false;
+bool MidiParser::parseSysex() {
+	qint64 fileSize = file.size();
+	file.seek(0);
+	char *fileData = new char[fileSize];
+	if (!readFile(fileData, fileSize)) {
+		delete fileData;
+		return false;
+	}
+	int sysexBeginIx = -1;
+	uchar *data = (uchar *)fileData;
+	for (int i = 0; i < fileSize; i++) {
+		if (data[i] == 0xF0) {
+			sysexBeginIx = i;
+		}
+		if (sysexBeginIx != -1 && data[i] == 0xF7) {
+			midiEventList.resize(midiEventList.size() + 1);
+			int sysexLen = i - sysexBeginIx + 1;
+			midiEventList.last().assignSysex(0, &data[sysexBeginIx], sysexLen);
+			sysexBeginIx = -1;
+		}
+	}
+	qDebug() << "MidiParser: Loaded sysex events:" << midiEventList.count();
+	delete fileData;
+	return true;
+}
+
+bool MidiParser::parse(QString fileName) {
+	file.setFileName(fileName);
+	file.open(QIODevice::ReadOnly);
 	midiEventList.clear();
+	if (!parseHeader()) return false;
+	if (format == 0xF0) return parseSysex();
 	qDebug() << "MidiParser: MIDI file format" << format;
 	switch(format) {
 		case 0:

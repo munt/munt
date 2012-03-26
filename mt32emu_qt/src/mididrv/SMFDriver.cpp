@@ -22,7 +22,6 @@
 
 #include "../MasterClock.h"
 #include "../MidiSession.h"
-#include "../MidiParser.h"
 
 SMFProcessor::SMFProcessor(SMFDriver *useSMFDriver) : driver(useSMFDriver), stopProcessing(false) {
 }
@@ -30,6 +29,11 @@ SMFProcessor::SMFProcessor(SMFDriver *useSMFDriver) : driver(useSMFDriver), stop
 void SMFProcessor::start(QString useFileName) {
 	stopProcessing = false;
 	fileName = useFileName;
+	if (!parser.parse(fileName)) {
+		qDebug() << "SMFDriver: Error parsing MIDI file:" << fileName;
+		QMessageBox::critical(NULL, "Error", "Error encountered while loading MIDI file");
+		return;
+	}
 	QThread::start();
 }
 
@@ -41,12 +45,6 @@ void SMFProcessor::stop() {
 void SMFProcessor::run() {
 	MidiSession *session = driver->createMidiSession(QFileInfo(fileName).fileName());
 	SynthRoute *synthRoute = session->getSynthRoute();
-	MidiParser parser(fileName);
-	if (!parser.parse()) {
-		qDebug() << "SMFDriver: Error parsing MIDI file:" << fileName;
-		QMessageBox::critical(NULL, "Error", "Error encountered while loading MIDI file");
-		return;
-	}
 	int division = parser.getDivision();
 	uint bpm = 120;
 	MasterClockNanos midiTick;
@@ -81,7 +79,7 @@ SMFDriver::SMFDriver(Master *useMaster) : MidiDriver(useMaster), processor(this)
 }
 
 void SMFDriver::start() {
-	QString fileName = QFileDialog::getOpenFileName(NULL, NULL, NULL, "*.mid *.smf;;*.mid;;*.smf;;*.*");
+	QString fileName = QFileDialog::getOpenFileName(NULL, NULL, NULL, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
 	if (!fileName.isEmpty()) {
 		processor.start(fileName);
 	}

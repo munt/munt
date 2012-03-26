@@ -19,11 +19,10 @@ private:
 	bool parseTrack(QVector<MidiEvent> &midiEventList);
 	quint32 parseVarLenInt(uchar * &data);
 	void mergeMidiEventLists(QVector<QVector<MidiEvent>> &tracks);
+	bool parseSysex();
 
 public:
-	MidiParser(QString fileName);
-	~MidiParser();
-	bool parse();
+	bool parse(QString fileName);
 	int getDivision();
 	QVector<MidiEvent> getMIDIEvents();
 };

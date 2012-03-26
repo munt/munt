@@ -5,6 +5,7 @@
 
 #include "MidiDriver.h"
 #include "../Master.h"
+#include "../MidiParser.h"
 
 class SMFDriver;
 
@@ -19,6 +20,7 @@ protected:
 	void run();
 
 private:
+	MidiParser parser;
 	SMFDriver *driver;
 	volatile bool stopProcessing;
 	QString fileName;
