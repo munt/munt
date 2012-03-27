@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -235,7 +235,7 @@ QList<AudioDevice *> WinMMAudioDriver::getDeviceList() const {
 			qDebug() << "waveOutGetDevCaps failed for" << deviceIndex;
 			continue;
 		}
-		deviceList.append(new WinMMAudioDevice(this, deviceIndex, deviceInfo.szPname));
+		deviceList.append(new WinMMAudioDevice(this, deviceIndex, QString().fromLocal8Bit(deviceInfo.szPname)));
 	}
 	return deviceList;
 }
