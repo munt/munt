@@ -20,8 +20,10 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
-#include "../MasterClock.h"
 #include "../MidiSession.h"
+
+static const MasterClockNanos MAX_SLEEP_TIME = 200 * MasterClock::NANOS_PER_MILLISECOND;
+static const int DEFAULT_TEMPO = 60000000 / 120 /* bpm */;
 
 SMFProcessor::SMFProcessor(SMFDriver *useSMFDriver) : driver(useSMFDriver), stopProcessing(false) {
 }
@@ -42,12 +44,8 @@ void SMFProcessor::stop() {
 	wait();
 }
 
-void SMFProcessor::run() {
-	MidiSession *session = driver->createMidiSession(QFileInfo(fileName).fileName());
-	SynthRoute *synthRoute = session->getSynthRoute();
+void SMFProcessor::setTempo(uint newTempo) {
 	int division = parser.getDivision();
-	uint bpm = 120;
-	MasterClockNanos midiTick;
 	if (division & 0x8000) {
 		// SMPTE timebase
 		uint framesPerSecond = -division >> 8;
@@ -55,20 +53,36 @@ void SMFProcessor::run() {
 		midiTick = MasterClock::NANOS_PER_SECOND / (framesPerSecond * subframesPerFrame);
 	} else {
 		// PPQN
-		midiTick = (60 * MasterClock::NANOS_PER_SECOND) / (division * bpm);
+		midiTick = newTempo * MasterClock::NANOS_PER_MICROSECOND / division;
 	}
+}
+
+void SMFProcessor::run() {
+	MidiSession *session = driver->createMidiSession(QFileInfo(fileName).fileName());
+	SynthRoute *synthRoute = session->getSynthRoute();
 	QVector<MidiEvent> midiEvents = parser.getMIDIEvents();
+	setTempo(DEFAULT_TEMPO);
 	MasterClockNanos currentNanos = MasterClock::getClockNanos();
 	for (int i = 0; i < midiEvents.count(); i++) {
-		if (stopProcessing) break;
 		const MidiEvent &e = midiEvents.at(i);
 		currentNanos += e.getTimestamp() * midiTick;
-		if (e.getType() == SHORT_MESSAGE) {
-			synthRoute->pushMIDIShortMessage(e.getShortMessage(), currentNanos);
-		} else {
-			synthRoute->pushMIDISysex(e.getSysexData(), e.getSysexLen(), currentNanos);
+		while (!stopProcessing) {
+			MasterClockNanos delay = currentNanos - MasterClock::getClockNanos();
+			if (delay < MasterClock::NANOS_PER_MILLISECOND) break;
+			MasterClock::sleepForNanos((delay < MAX_SLEEP_TIME ? delay : MAX_SLEEP_TIME) - MasterClock::NANOS_PER_MILLISECOND);
 		}
-		MasterClock::sleepUntilClockNanos(currentNanos);
+		if (stopProcessing) break;
+		switch (e.getType()) {
+			case SHORT_MESSAGE:
+				synthRoute->pushMIDIShortMessage(e.getShortMessage(), currentNanos);
+				break;
+			case SYSEX:
+				synthRoute->pushMIDISysex(e.getSysexData(), e.getSysexLen(), currentNanos);
+				break;
+			case SET_TEMPO:
+				setTempo(e.getShortMessage());
+				break;
+		}
 	}
 	qDebug() << "SMFDriver: processor thread stopped";
 	driver->deleteMidiSession(session);
@@ -79,7 +93,9 @@ SMFDriver::SMFDriver(Master *useMaster) : MidiDriver(useMaster), processor(this)
 }
 
 void SMFDriver::start() {
-	QString fileName = QFileDialog::getOpenFileName(NULL, NULL, NULL, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
+	static QString currentDir = NULL;
+	QString fileName = QFileDialog::getOpenFileName(NULL, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
+	currentDir = QDir(fileName).absolutePath();
 	if (!fileName.isEmpty()) {
 		processor.start(fileName);
 	}

@@ -90,3 +90,12 @@ void MidiEvent::assignSysex(SynthTimestamp newTimestamp, unsigned char *newSysex
 	memcpy(copy, newSysexData, newSysexLen);
 	sysexData = copy;
 }
+
+void MidiEvent::assignSetTempoMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newTempo) {
+	timestamp = newTimestamp;
+	type = SET_TEMPO;
+	msg = newTempo;
+	sysexLen = 0;
+	delete[] sysexData;
+	sysexData = NULL;
+}

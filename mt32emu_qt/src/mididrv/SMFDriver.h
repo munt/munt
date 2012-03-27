@@ -6,6 +6,7 @@
 #include "MidiDriver.h"
 #include "../Master.h"
 #include "../MidiParser.h"
+#include "../MasterClock.h"
 
 class SMFDriver;
 
@@ -15,6 +16,7 @@ public:
 	SMFProcessor(SMFDriver *useSMFDriver);
 	void start(QString fileName);
 	void stop();
+	void setTempo(uint newTempo);
 
 protected:
 	void run();
@@ -24,6 +26,7 @@ private:
 	SMFDriver *driver;
 	volatile bool stopProcessing;
 	QString fileName;
+	MasterClockNanos midiTick;
 };
 
 class SMFDriver : public MidiDriver {

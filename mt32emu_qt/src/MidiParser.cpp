@@ -100,15 +100,20 @@ bool MidiParser::parseTrack(QVector<MidiEvent> &midiEventList) {
 					data++;
 					quint32 len = parseVarLenInt(data);
 					data += len;
-				} else if (*data == 0xFF) {
-					data++;
-					if (*data == 0x2F) {
+				} else if (*(data++) == 0xFF) {
+					uint metaType = *(data++);
+					quint32 len = parseVarLenInt(data);
+					if (metaType == 0x2F) {
 						qDebug() << "MidiParser: End-of-track Meta-event";
 						break;
+					} else if (metaType == 0x51) {
+						uint newTempo = qFromBigEndian<quint32>(data) >> 8;
+						midiEventList.resize(midiEventList.size() + 1);
+						midiEventList.last().assignSetTempoMessage(time, newTempo);
+						qDebug() << "MidiParser: Meta-event: Set tempo:" << newTempo;
+					} else {
+						qDebug() << "MidiParser: Meta-event code" << *data << "unsupported";
 					}
-					qDebug() << "MidiParser: Meta-event code" << *data << "unsupported";
-					data++;
-					quint32 len = parseVarLenInt(data);
 					data += len;
 				} else {
 					qDebug() << "MidiParser: Unsupported event" << *(data++);
@@ -144,7 +149,7 @@ bool MidiParser::parseTrack(QVector<MidiEvent> &midiEventList) {
 		midiEventList.resize(midiEventList.size() + 1);
 		midiEventList.last().assignShortMessage(time, message);
 	}
-	if (*data != 0x2F) {
+	if (*(data - 2) != 0x2F) {
 		qDebug() << "MidiParser: End-of-file discovered before End-of-track Meta-event";
 	}
 	delete trackData;

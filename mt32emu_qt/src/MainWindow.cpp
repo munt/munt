@@ -58,7 +58,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::closeEvent(QCloseEvent *event) {
 	if (testMidiDriver != NULL) {
-		testMidiDriver->stop();
+		delete testMidiDriver;
+		testMidiDriver = NULL;
+	}
+	if (smfDriver != NULL) {
+		delete smfDriver;
+		smfDriver = NULL;
 	}
 	event->accept();
 }

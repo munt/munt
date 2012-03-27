@@ -7,7 +7,8 @@
 
 enum MidiEventType {
 	SHORT_MESSAGE,
-	SYSEX
+	SYSEX,
+	SET_TEMPO
 };
 
 typedef qint64 SynthTimestamp;
@@ -34,6 +35,7 @@ public:
 	void setTimestamp(SynthTimestamp newTimestamp);
 	void assignShortMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newMsg);
 	void assignSysex(SynthTimestamp newTimestamp, unsigned char *newSysexData, MT32Emu::Bit32u newSysexLen);
+	void assignSetTempoMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newTempo);
 };
 
 #endif
