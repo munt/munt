@@ -22,6 +22,7 @@ private:
 	quint32 parseVarLenInt(uchar * &data);
 	void mergeMidiEventLists(QVector< QVector<MidiEvent> > &tracks);
 	bool parseSysex();
+	bool doParse();
 
 public:
 	bool parse(QString fileName);

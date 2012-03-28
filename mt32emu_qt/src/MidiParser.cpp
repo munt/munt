@@ -106,6 +106,7 @@ bool MidiParser::parseTrack(QVector<MidiEvent> &midiEventList) {
 					quint32 len = parseVarLenInt(data);
 					if (metaType == 0x2F) {
 						qDebug() << "MidiParser: End-of-track Meta-event";
+						runningStatus = 0x2F;
 						break;
 					} else if (metaType == 0x51) {
 						uint newTempo = qFromBigEndian<quint32>(data) >> 8;
@@ -150,8 +151,8 @@ bool MidiParser::parseTrack(QVector<MidiEvent> &midiEventList) {
 		midiEventList.resize(midiEventList.size() + 1);
 		midiEventList.last().assignShortMessage(time, message);
 	}
-	if (*(data - 2) != 0x2F) {
-		qDebug() << "MidiParser: End-of-file discovered before End-of-track Meta-event";
+	if (runningStatus != 0x2F) {
+		qDebug() << "MidiParser: End-of-track Meta-event isn't the last event, file is probably corrupted.";
 	}
 	delete trackData;
 	qDebug() << "MidiParser: Parsed" << midiEventList.count() << "MIDI events";
@@ -248,10 +249,7 @@ bool MidiParser::parseSysex() {
 	return true;
 }
 
-bool MidiParser::parse(QString fileName) {
-	file.setFileName(fileName);
-	file.open(QIODevice::ReadOnly);
-	midiEventList.clear();
+bool MidiParser::doParse() {
 	if (!parseHeader()) return false;
 	if (format == 0xF0) return parseSysex();
 	qDebug() << "MidiParser: MIDI file format" << format;
@@ -286,6 +284,15 @@ bool MidiParser::parse(QString fileName) {
 			qDebug() << "MidiParser: MIDI file format error: unknown MIDI file format" << format;
 			return false;
 	}
+}
+
+bool MidiParser::parse(QString fileName) {
+	file.setFileName(fileName);
+	file.open(QIODevice::ReadOnly);
+	midiEventList.clear();
+	bool parseResult = doParse();
+	file.close();
+	return parseResult;
 }
 
 int MidiParser::getDivision() {
