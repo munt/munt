@@ -35,6 +35,7 @@ void SMFProcessor::start(QString useFileName) {
 		QMessageBox::critical(NULL, "Error", "Error encountered while loading MIDI file");
 		return;
 	}
+	parser.addAllNotesOff();
 	QThread::start();
 }
 

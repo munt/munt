@@ -28,6 +28,7 @@ public:
 	int getDivision();
 	QVector<MidiEvent> getMIDIEvents();
 	SynthTimestamp getMidiTick(uint tempo = DEFAULT_TEMPO);
+	void addAllNotesOff();
 };
 
 #endif

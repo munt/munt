@@ -75,6 +75,7 @@ void AudioFileWriter::convertMIDIFile(QString useOutFileName, QString useMIDIFil
 		QMessageBox::critical(NULL, "Error", "Error encountered while loading MIDI file");
 		return;
 	}
+	parser->addAllNotesOff();
 	QThread::start();
 }
 
@@ -158,8 +159,9 @@ void AudioFileWriter::run() {
 				midiEventIx++;
 			}
 			if (midiEvents.count() <= midiEventIx) {
+				if (!synth->isActive()) break;
 				frameCount += bufferSize;
-				stopProcessing = true;
+				qDebug() << "AudioFileWriter: Rendering after the end of MIDI file, time:" << (double)midiNanos / MasterClock::NANOS_PER_SECOND;
 			}
 		}
 		while (frameCount > 0) {

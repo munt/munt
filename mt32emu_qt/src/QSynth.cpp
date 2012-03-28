@@ -267,6 +267,10 @@ void QSynth::setDACInputMode(DACInputMode emuDACInputMode) {
 	synthMutex->unlock();
 }
 
+bool QSynth::isActive() {
+	return synth->isActive();
+}
+
 bool QSynth::reset() {
 	if (!isOpen)
 		return true;

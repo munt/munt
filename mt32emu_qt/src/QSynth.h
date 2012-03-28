@@ -76,6 +76,7 @@ public:
 	void setReverbOverridden(bool reverbOverridden);
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
+	bool isActive();
 
 signals:
 	void stateChanged(SynthState state);

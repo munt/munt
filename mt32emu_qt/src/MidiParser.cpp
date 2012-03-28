@@ -307,3 +307,12 @@ SynthTimestamp MidiParser::getMidiTick(uint tempo) {
 		return tempo * MasterClock::NANOS_PER_MICROSECOND / division;
 	}
 }
+
+void MidiParser::addAllNotesOff() {
+	MidiEvent allNotesOffEvent;
+	for (int i = 0; i < 16; i++) {
+		quint32 msg = (0xB0 | i) | 0x7F00;
+		allNotesOffEvent.assignShortMessage(0, msg);
+		midiEventList.append(allNotesOffEvent);
+	}
+}
