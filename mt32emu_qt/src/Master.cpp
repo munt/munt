@@ -39,7 +39,7 @@
 #include "audiodrv/QtAudioDriver.h"
 #endif
 
-#include "audiodrv/AudioFileWriter.h"
+#include "audiodrv/AudioFileWriterDriver.h"
 
 #ifdef WITH_WIN32_MIDI_DRIVER
 #include "mididrv/Win32Driver.h"

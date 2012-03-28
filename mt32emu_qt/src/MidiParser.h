@@ -20,7 +20,7 @@ private:
 	bool parseHeader();
 	bool parseTrack(QVector<MidiEvent> &midiEventList);
 	quint32 parseVarLenInt(uchar * &data);
-	void mergeMidiEventLists(QVector<QVector<MidiEvent>> &tracks);
+	void mergeMidiEventLists(QVector< QVector<MidiEvent> > &tracks);
 	bool parseSysex();
 
 public:

@@ -169,7 +169,7 @@ quint32 MidiParser::parseVarLenInt(uchar * &data) {
 	return value;
 }
 
-void MidiParser::mergeMidiEventLists(QVector<QVector<MidiEvent>> &trackList) {
+void MidiParser::mergeMidiEventLists(QVector< QVector<MidiEvent> > &trackList) {
 	int totalEventCount = 0;
 
 	// Remove empty tracks & allocate memory exactly needed
@@ -264,7 +264,7 @@ bool MidiParser::parse(QString fileName) {
 			return parseTrack(midiEventList);
 		case 1:
 			if (numberOfTracks > 0) {
-				QVector<QVector<MidiEvent>> trackList(numberOfTracks);
+				QVector< QVector<MidiEvent> > trackList(numberOfTracks);
 				for (uint i = 0; i < numberOfTracks; i++) {
 					qDebug() << "MidiParser: Parsing & merging MIDI track" << i + 1;
 					if (!parseTrack(trackList[i])) return false;

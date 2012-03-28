@@ -120,6 +120,7 @@ void AudioFileWriter::run() {
 		midiNanos = 0;
 		midiEventIx = 0;
 	}
+	qDebug() << "AudioFileWriter: Rendering started";
 	while (!stopProcessing) {
 		unsigned int frameCount;
 		if (realtimeMode) {
@@ -150,6 +151,7 @@ void AudioFileWriter::run() {
 			if (midiEvents.count() <= midiEventIx) {
 				frameCount = (uint)(sampleRate * (midiNanos - firstSampleNanos) / MasterClock::NANOS_PER_SECOND);
 				if (frameCount <= bufferSize) {
+					frameCount += bufferSize;
 					stopProcessing = true;
 				} else {
 					frameCount = bufferSize;
@@ -175,7 +177,7 @@ void AudioFileWriter::run() {
 			}
 			firstSampleNanos += MasterClock::NANOS_PER_SECOND * framesRendered / sampleRate;
 			frameCount -= framesRendered;
-			qDebug() << "AudioFileWriter: Rendering time:" << (double)firstSampleNanos / MasterClock::NANOS_PER_SECOND;
+			if (!realtimeMode) qDebug() << "AudioFileWriter: Rendering time:" << (double)firstSampleNanos / MasterClock::NANOS_PER_SECOND;
 		}
 	}
 	qDebug() << "AudioFileWriter: Rendering finished";
