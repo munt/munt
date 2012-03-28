@@ -7,6 +7,8 @@
 
 class MidiParser {
 private:
+	static const int DEFAULT_TEMPO = 60000000 / 120;
+
 	QFile file;
 	QVector<MidiEvent> midiEventList;
 
@@ -25,6 +27,7 @@ public:
 	bool parse(QString fileName);
 	int getDivision();
 	QVector<MidiEvent> getMIDIEvents();
+	SynthTimestamp getMidiTick(uint tempo = DEFAULT_TEMPO);
 };
 
 #endif

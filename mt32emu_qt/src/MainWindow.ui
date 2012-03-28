@@ -49,7 +49,9 @@
     </property>
     <addaction name="actionNew_MIDI_port"/>
     <addaction name="actionTest_MIDI_Driver"/>
+    <addaction name="separator"/>
     <addaction name="actionPlay_MIDI_file"/>
+    <addaction name="actionConvert_MIDI_to_Wave"/>
    </widget>
    <widget class="QMenu" name="menuOptions">
     <property name="title">
@@ -124,6 +126,11 @@
   <action name="actionROM_Configuration">
    <property name="text">
     <string>ROM Configuration...</string>
+   </property>
+  </action>
+  <action name="actionConvert_MIDI_to_Wave">
+   <property name="text">
+    <string>Convert MIDI to Wave...</string>
    </property>
   </action>
  </widget>

@@ -12,6 +12,7 @@ namespace Ui {
 
 class Master;
 class MidiDriver;
+class AudioFileWriter;
 
 class MainWindow : public QMainWindow
 {
@@ -29,6 +30,7 @@ private:
 	Master *master;
 	MidiDriver *testMidiDriver;
 	MidiDriver *smfDriver;
+	AudioFileWriter *audioFileWriter;
 
 	void trayIconContextMenu();
 
@@ -38,8 +40,9 @@ private slots:
 	void handleSynthRouteRemoved(SynthRoute *synthRoute);
 	void on_menuMIDI_aboutToShow();
 	void on_actionNew_MIDI_port_triggered();
+	void on_actionTest_MIDI_Driver_toggled(bool checked);
 	void on_actionPlay_MIDI_file_triggered();
-	void on_actionTest_MIDI_Driver_toggled(bool );
+	void on_actionConvert_MIDI_to_Wave_triggered();
 	void on_menuOptions_aboutToShow();
 	void on_actionStart_iconized_toggled(bool checked);
 	void on_actionShow_LCD_balloons_toggled(bool checked);

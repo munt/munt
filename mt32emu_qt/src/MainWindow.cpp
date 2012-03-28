@@ -27,6 +27,7 @@
 #include "ui_MainWindow.h"
 #include "Master.h"
 
+#include "AudioFileWriter.h"
 #include "mididrv/TestDriver.h"
 #include "mididrv/SMFDriver.h"
 
@@ -35,7 +36,8 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	ui(new Ui::MainWindow),
 	master(master),
 	testMidiDriver(NULL),
-	smfDriver(NULL)
+	smfDriver(NULL),
+	audioFileWriter(NULL)
 {
 	ui->setupUi(this);
 	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
@@ -64,6 +66,10 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 	if (smfDriver != NULL) {
 		delete smfDriver;
 		smfDriver = NULL;
+	}
+	if (audioFileWriter != NULL) {
+		delete audioFileWriter;
+		audioFileWriter = NULL;
 	}
 	event->accept();
 }
@@ -147,6 +153,24 @@ void MainWindow::on_actionPlay_MIDI_file_triggered() {
 	} else {
 		smfDriver = new SMFDriver(master);
 		smfDriver->start();
+	}
+}
+
+void MainWindow::on_actionConvert_MIDI_to_Wave_triggered() {
+	static QString currentMidiDir = NULL;
+	static QString currentAudioDir = NULL;
+	if (audioFileWriter != NULL) {
+		delete audioFileWriter;
+		audioFileWriter = NULL;
+	} else {
+		QString midiFileName = QFileDialog::getOpenFileName(NULL, NULL, currentMidiDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
+		if (midiFileName.isEmpty()) return;
+		currentMidiDir = QDir(midiFileName).absolutePath();
+		QString audioFileName = QFileDialog::getSaveFileName(NULL, NULL, currentAudioDir, "*.wav *.raw;;*.wav;;*.raw;;*.*");
+		if (audioFileName.isEmpty()) return;
+		currentAudioDir = QDir(audioFileName).absolutePath();
+		audioFileWriter = new AudioFileWriter();
+		audioFileWriter->convertMIDIFile(audioFileName, midiFileName);
 	}
 }
 

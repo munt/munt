@@ -1,23 +1,26 @@
-#ifndef AUDIO_FILE_WRITER_H
-#define AUDIO_FILE_WRITER_H
+#ifndef AUDIO_FILE_WRITER_DRIVER_H
+#define AUDIO_FILE_WRITER_DRIVER_H
 
 #include <QtCore>
 #include <mt32emu/mt32emu.h>
 #include "AudioDriver.h"
+#include "../AudioFileWriter.h"
 
 class Master;
 class QSynth;
-class AudioFileWriter;
 class AudioFileWriterDriver;
 class AudioFileWriterDevice;
 
 class AudioFileWriterStream : public AudioStream {
 private:
-	AudioFileWriter *writer;
+	AudioFileWriter writer;
+	QSynth *synth;
+	unsigned int sampleRate;
+	unsigned int bufferSize;
+	MasterClockNanos latency;
 
 public:
 	AudioFileWriterStream(const AudioFileWriterDevice *device, QSynth *useSynth, unsigned int useSampleRate);
-	~AudioFileWriterStream();
 	bool start();
 	void close();
 };

@@ -15,6 +15,7 @@
  */
 
 #include "MidiParser.h"
+#include "MasterClock.h"
 
 static const char headerID[] = "MThd\x00\x00\x00\x06";
 static const char trackID[] = "MTrk";
@@ -293,4 +294,16 @@ int MidiParser::getDivision() {
 
 QVector<MidiEvent> MidiParser::getMIDIEvents() {
 	return midiEventList;
+}
+
+SynthTimestamp MidiParser::getMidiTick(uint tempo) {
+	if (division & 0x8000) {
+		// SMPTE timebase
+		uint framesPerSecond = -division >> 8;
+		uint subframesPerFrame = division & 0xFF;
+		return MasterClock::NANOS_PER_SECOND / (framesPerSecond * subframesPerFrame);
+	} else {
+		// PPQN
+		return tempo * MasterClock::NANOS_PER_MICROSECOND / division;
+	}
 }

@@ -23,9 +23,8 @@
 #include "../MidiSession.h"
 
 static const MasterClockNanos MAX_SLEEP_TIME = 200 * MasterClock::NANOS_PER_MILLISECOND;
-static const int DEFAULT_TEMPO = 60000000 / 120 /* bpm */;
 
-SMFProcessor::SMFProcessor(SMFDriver *useSMFDriver) : driver(useSMFDriver), stopProcessing(false) {
+SMFProcessor::SMFProcessor(SMFDriver *useSMFDriver) : driver(useSMFDriver) {
 }
 
 void SMFProcessor::start(QString useFileName) {
@@ -45,23 +44,14 @@ void SMFProcessor::stop() {
 }
 
 void SMFProcessor::setTempo(uint newTempo) {
-	int division = parser.getDivision();
-	if (division & 0x8000) {
-		// SMPTE timebase
-		uint framesPerSecond = -division >> 8;
-		uint subframesPerFrame = division & 0xFF;
-		midiTick = MasterClock::NANOS_PER_SECOND / (framesPerSecond * subframesPerFrame);
-	} else {
-		// PPQN
-		midiTick = newTempo * MasterClock::NANOS_PER_MICROSECOND / division;
-	}
+	midiTick = parser.getMidiTick(newTempo);
 }
 
 void SMFProcessor::run() {
 	MidiSession *session = driver->createMidiSession(QFileInfo(fileName).fileName());
 	SynthRoute *synthRoute = session->getSynthRoute();
 	QVector<MidiEvent> midiEvents = parser.getMIDIEvents();
-	setTempo(DEFAULT_TEMPO);
+	midiTick = parser.getMidiTick();
 	MasterClockNanos currentNanos = MasterClock::getClockNanos();
 	for (int i = 0; i < midiEvents.count(); i++) {
 		const MidiEvent &e = midiEvents.at(i);
@@ -69,7 +59,7 @@ void SMFProcessor::run() {
 		while (!stopProcessing) {
 			MasterClockNanos delay = currentNanos - MasterClock::getClockNanos();
 			if (delay < MasterClock::NANOS_PER_MILLISECOND) break;
-			MasterClock::sleepForNanos((delay < MAX_SLEEP_TIME ? delay : MAX_SLEEP_TIME) - MasterClock::NANOS_PER_MILLISECOND);
+			usleep(((delay < MAX_SLEEP_TIME ? delay : MAX_SLEEP_TIME) - MasterClock::NANOS_PER_MILLISECOND) / MasterClock::NANOS_PER_MICROSECOND);
 		}
 		if (stopProcessing) break;
 		switch (e.getType()) {

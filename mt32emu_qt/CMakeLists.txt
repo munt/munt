@@ -10,6 +10,7 @@ set(mt32emu_qt_VERSION_PATCH 0)
 set(mt32emu_qt_SOURCES
   src/main.cpp
 
+  src/AudioFileWriter.cpp
   src/ClockSync.cpp
   src/MainWindow.cpp
   src/Master.cpp
@@ -27,7 +28,7 @@ set(mt32emu_qt_SOURCES
   src/SynthWidget.cpp
 
   src/audiodrv/AudioDriver.cpp
-  src/audiodrv/AudioFileWriter.cpp
+  src/audiodrv/AudioFileWriterDriver.cpp
 
   src/mididrv/MidiDriver.cpp
   src/mididrv/TestDriver.cpp
