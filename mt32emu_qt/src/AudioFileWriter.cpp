@@ -133,31 +133,33 @@ void AudioFileWriter::run() {
 			while (midiEventIx < midiEvents.count()) {
 				const MidiEvent &e = midiEvents.at(midiEventIx);
 				bool eventPushed = true;
-				midiNanos += e.getTimestamp() * midiTick;
+				MasterClockNanos nextEventNanos = midiNanos + e.getTimestamp() * midiTick;
+				frameCount = (uint)(sampleRate * (nextEventNanos - firstSampleNanos) / MasterClock::NANOS_PER_SECOND);
+				if (bufferSize < frameCount) {
+					frameCount = bufferSize;
+					break;
+				}
 				switch (e.getType()) {
 					case SHORT_MESSAGE:
-						eventPushed = synth->pushMIDIShortMessage(e.getShortMessage(), midiNanos);
+						eventPushed = synth->pushMIDIShortMessage(e.getShortMessage(), nextEventNanos);
 						break;
 					case SYSEX:
-						eventPushed = synth->pushMIDISysex(e.getSysexData(), e.getSysexLen(), midiNanos);
+						eventPushed = synth->pushMIDISysex(e.getSysexData(), e.getSysexLen(), nextEventNanos);
 						break;
 					case SET_TEMPO:
 						midiTick = parser->getMidiTick(e.getShortMessage());
 						break;
 				}
-				if (!eventPushed) break;
+				if (!eventPushed) {
+					qDebug() << "AudioFileWriter: MIDI buffer overflow, midiNanos:" << midiNanos;
+					break;
+				}
+				midiNanos = nextEventNanos;
 				midiEventIx++;
 			}
 			if (midiEvents.count() <= midiEventIx) {
-				frameCount = (uint)(sampleRate * (midiNanos - firstSampleNanos) / MasterClock::NANOS_PER_SECOND);
-				if (frameCount <= bufferSize) {
-					frameCount += bufferSize;
-					stopProcessing = true;
-				} else {
-					frameCount = bufferSize;
-				}
-			} else {
-				frameCount = bufferSize;
+				frameCount += bufferSize;
+				stopProcessing = true;
 			}
 		}
 		while (frameCount > 0) {
