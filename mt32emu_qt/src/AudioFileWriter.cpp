@@ -104,6 +104,7 @@ void AudioFileWriter::run() {
 	if (outFileName.endsWith(".wav")) waveMode = true;
 	if (!file.open(QIODevice::WriteOnly)) {
 		qDebug() << "AudioFileWriter: Can't open file for writing:" << outFileName;
+		synth->close();
 		return;
 	}
 	if (waveMode) file.seek(44);
@@ -188,7 +189,7 @@ void AudioFileWriter::run() {
 	if (waveMode) {
 		unsigned char *charBuffer = (unsigned char *)buffer;
 		memcpy(charBuffer, WAVE_HEADER, 44);
-		unsigned long fileSize = (unsigned long)file.size();
+		quint32 fileSize = (quint32)file.size();
 		qToLittleEndian(fileSize - 8, charBuffer + 4);
 		qToLittleEndian(fileSize - 44, charBuffer + 40);
 		qToLittleEndian(sampleRate, charBuffer + 24);
@@ -197,4 +198,5 @@ void AudioFileWriter::run() {
 		file.write((char *)charBuffer, 44);
 	}
 	file.close();
+	synth->close();
 }
