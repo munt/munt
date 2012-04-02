@@ -33,6 +33,8 @@ bool MidiParser::parseHeader() {
 	if (!readFile(header, 8)) return false;
 	if ((uchar)header[0] == 0xF0) {
 		format = 0xF0;
+		numberOfTracks = 1;
+		division = 500;
 		return true;
 	}
 	if (memcmp(header, headerID, 8) != 0) {
