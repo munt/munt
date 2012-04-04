@@ -123,6 +123,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		midiLatency = MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency / 2;
 	}
 	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatency / MasterClock::NANOS_PER_SECOND;
+	prevFrameCount = 0;
 	return true;
 }
 
@@ -135,16 +136,19 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	// Set this variable to false if PortAudio doesn't provide correct timing information.
 	// As for V19, this should be used for OSS (still not implemented, though OSS allows _really_ low latencies) and for PulseAudio + ALSA setup.
 	if (stream->useAdvancedTiming) {
-		realSampleRate = timeInfo->actualSampleRate;
-		if (realSampleRate == 0.0) {
-			// This means PortAudio doesn't provide us the actualSampleRate estimation
-			realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate;
-		}
 		MasterClockNanos currentlyPlayingAudioNanos = Pa_GetStreamTime(stream->stream) * MasterClock::NANOS_PER_SECOND;
 		MasterClockNanos firstSampleAudioNanos = timeInfo->outputBufferDacTime * MasterClock::NANOS_PER_SECOND;
 		MasterClockNanos renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;
 		MasterClockNanos offset = stream->audioLatency - renderOffset;
-		firstSampleMasterClockNanos = MasterClock::getClockNanos() - offset - stream->midiLatency ;
+		firstSampleMasterClockNanos = MasterClock::getClockNanos() - offset - stream->midiLatency;
+		realSampleRate = timeInfo->actualSampleRate;
+		if (realSampleRate == 0.0) {
+			// This means PortAudio doesn't provide for the actualSampleRate estimation
+			realSampleRate = (stream->prevFrameCount == 0) ? Pa_GetStreamInfo(stream->stream)->sampleRate :
+				MasterClock::NANOS_PER_SECOND * stream->prevFrameCount / (firstSampleMasterClockNanos - stream->prevFirstSampleMasterClockNanos);
+			stream->prevFrameCount = frameCount;
+			stream->prevFirstSampleMasterClockNanos = firstSampleMasterClockNanos;
+		}
 	} else {
 		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate / stream->clockSync.getDrift();
 		MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);

@@ -101,8 +101,8 @@ void WinMMAudioStream::processingThread(void *userData) {
 				continue;
 			}
 		}
-		unsigned int rendered = stream->synth->render(stream->buffer + (renderPos << 1), frameCount,
-			firstSampleNanos, stream->sampleRate);
+		double actualSampleRate = MasterClock::NANOS_PER_SECOND * frameCount / (nanosNow - firstSampleNanos);
+		unsigned int rendered = stream->synth->render(stream->buffer + (renderPos << 1), frameCount, firstSampleNanos, actualSampleRate);
 /*
 		Detection of writing to unsafe positions
 		30 ms is the size of KSMixer buffer. KSMixer pulls audio data at regular intervals (10 ms).
