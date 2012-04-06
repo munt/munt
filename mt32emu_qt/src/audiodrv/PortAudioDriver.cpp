@@ -123,7 +123,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		midiLatency = MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency / 2;
 	}
 	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatency / MasterClock::NANOS_PER_SECOND;
-	prevFrameCount = 0;
+	lastSampleMasterClockNanos = MasterClock::getClockNanos() - audioLatency - midiLatency;
 	return true;
 }
 
@@ -136,19 +136,14 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	// Set this variable to false if PortAudio doesn't provide correct timing information.
 	// As for V19, this should be used for OSS (still not implemented, though OSS allows _really_ low latencies) and for PulseAudio + ALSA setup.
 	if (stream->useAdvancedTiming) {
-		MasterClockNanos currentlyPlayingAudioNanos = Pa_GetStreamTime(stream->stream) * MasterClock::NANOS_PER_SECOND;
-		MasterClockNanos firstSampleAudioNanos = timeInfo->outputBufferDacTime * MasterClock::NANOS_PER_SECOND;
-		MasterClockNanos renderOffset = firstSampleAudioNanos - currentlyPlayingAudioNanos;
-		MasterClockNanos offset = stream->audioLatency - renderOffset;
-		firstSampleMasterClockNanos = MasterClock::getClockNanos() - offset - stream->midiLatency;
-		realSampleRate = timeInfo->actualSampleRate;
-		if (realSampleRate == 0.0) {
-			// This means PortAudio doesn't provide for the actualSampleRate estimation
-			realSampleRate = (stream->prevFrameCount == 0) ? Pa_GetStreamInfo(stream->stream)->sampleRate :
-				MasterClock::NANOS_PER_SECOND * stream->prevFrameCount / (firstSampleMasterClockNanos - stream->prevFirstSampleMasterClockNanos);
-			stream->prevFrameCount = frameCount;
-			stream->prevFirstSampleMasterClockNanos = firstSampleMasterClockNanos;
-		}
+		MasterClockNanos nanosInAudioBuffer = MasterClockNanos(MasterClock::NANOS_PER_SECOND * (timeInfo->outputBufferDacTime - Pa_GetStreamTime(stream->stream)));
+		MasterClockNanos newFirstSampleMasterClockNanos = MasterClock::getClockNanos() + nanosInAudioBuffer - stream->audioLatency - stream->midiLatency;
+		// Ensure rendering time function has no breaks
+		firstSampleMasterClockNanos = stream->lastSampleMasterClockNanos;
+		// Estimate last sample rendering time using noinal sample rate
+		stream->lastSampleMasterClockNanos = newFirstSampleMasterClockNanos + MasterClockNanos(MasterClock::NANOS_PER_SECOND * frameCount / Pa_GetStreamInfo(stream->stream)->sampleRate);
+		// Compute actual sample rate so that the actual rendering time interval ends exactly in lastSampleMasterClockNanos point
+		realSampleRate = MasterClock::NANOS_PER_SECOND * frameCount / (stream->lastSampleMasterClockNanos - firstSampleMasterClockNanos);
 	} else {
 		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate / stream->clockSync.getDrift();
 		MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);

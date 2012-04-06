@@ -28,8 +28,7 @@ private:
 	// The number of nanos by which to delay MIDI events to help ensure accurate relative timing.
 	qint64 midiLatency;
 	qint64 sampleCount;
-	quint32 prevFrameCount;
-	MasterClockNanos prevFirstSampleMasterClockNanos;
+	MasterClockNanos lastSampleMasterClockNanos;
 	bool useAdvancedTiming;
 
 	static int paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData);
