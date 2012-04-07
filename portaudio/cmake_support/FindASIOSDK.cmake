@@ -7,6 +7,11 @@
 #  ASIOSDK_ROOT_DIR - path to the ASIO SDK base directory
 #  ASIOSDK_INCLUDE_DIR - the ASIO SDK include directory
 
+if(WIN32)
+else(WIN32)
+  message(FATAL_ERROR "FindASIOSDK.cmake: Unsupported platform ${CMAKE_SYSTEM_NAME}" )
+endif(WIN32)
+
 file(GLOB results "${CMAKE_CURRENT_SOURCE_DIR}/../as*")
 foreach(f ${results})
   if(IS_DIRECTORY ${f})

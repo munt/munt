@@ -1,5 +1,5 @@
 /** @file pa_devs.c
-	@ingroup test_src
+	@ingroup examples_src
     @brief List available devices, including device information.
 	@author Phil Burk http://www.softsynth.com
 
@@ -7,7 +7,7 @@
         ASIO support.
 */
 /*
- * $Id: pa_devs.c 1606 2011-02-17 15:56:04Z rob_bielik $
+ * $Id: pa_devs.c 1752 2011-09-08 03:21:55Z philburk $
  *
  * This program uses the PortAudio Portable Audio Library.
  * For more information see: http://www.portaudio.com
@@ -94,6 +94,7 @@ static void PrintSupportedStandardSampleRates(
     else
         printf( "\n" );
 }
+
 /*******************************************************************/
 int main(void);
 int main(void)
@@ -161,10 +162,10 @@ int main(void)
         printf( "Max inputs = %d", deviceInfo->maxInputChannels  );
         printf( ", Max outputs = %d\n", deviceInfo->maxOutputChannels  );
 
-        printf( "Default low input latency   = %8.3f\n", deviceInfo->defaultLowInputLatency  );
-        printf( "Default low output latency  = %8.3f\n", deviceInfo->defaultLowOutputLatency  );
-        printf( "Default high input latency  = %8.3f\n", deviceInfo->defaultHighInputLatency  );
-        printf( "Default high output latency = %8.3f\n", deviceInfo->defaultHighOutputLatency  );
+        printf( "Default low input latency   = %8.4f\n", deviceInfo->defaultLowInputLatency  );
+        printf( "Default low output latency  = %8.4f\n", deviceInfo->defaultLowOutputLatency  );
+        printf( "Default high input latency  = %8.4f\n", deviceInfo->defaultHighInputLatency  );
+        printf( "Default high output latency = %8.4f\n", deviceInfo->defaultHighOutputLatency  );
 
 #ifdef WIN32
 #if PA_USE_ASIO

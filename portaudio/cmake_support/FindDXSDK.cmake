@@ -11,6 +11,11 @@
 #  DXSDK_DSOUND_LIBRARY - Path to dsound.lib
 #
 
+if(WIN32)
+else(WIN32)
+  message(FATAL_ERROR "FindDXSDK.cmake: Unsupported platform ${CMAKE_SYSTEM_NAME}" )
+endif(WIN32)
+
 find_path(DXSDK_ROOT_DIR
   include/dxsdkver.h
   HINTS

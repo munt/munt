@@ -91,7 +91,8 @@ typedef struct TestParameters_s
 	int                maxFrames;
 	double             baseFrequency;
 	double             amplitude;
-	int                flags;
+    PaStreamFlags      streamFlags;  // paClipOff, etc
+	int                flags;        // PAQA_FLAG_TWO_STREAMS, PAQA_FLAG_USE_BLOCKING_IO
 } TestParameters;
 
 typedef struct LoopbackContext_s
@@ -101,16 +102,24 @@ typedef struct LoopbackContext_s
 	// Record each channel individually.
 	PaQaRecording      recordings[MAX_NUM_RECORDINGS];
 	
+	// Reported by the stream after it's opened
+	PaTime             streamInfoInputLatency;
+	PaTime             streamInfoOutputLatency;
+
 	// Measured at runtime.
-	int                callbackCount; // incremented for each callback
-	int                inputBufferCount; // incremented if input buffer not NULL
+	volatile int       callbackCount; // incremented for each callback
+	volatile int       inputBufferCount; // incremented if input buffer not NULL
 	int                inputUnderflowCount;
 	int                inputOverflowCount;
 	
-	int                outputBufferCount; // incremented if output buffer not NULL
+	volatile int       outputBufferCount; // incremented if output buffer not NULL
 	int                outputOverflowCount;
 	int                outputUnderflowCount;
 	
+    // Measure whether input or output is lagging behind.
+    volatile int       minInputOutputDelta;
+    volatile int       maxInputOutputDelta;
+    
 	int                minFramesPerBuffer;
 	int                maxFramesPerBuffer;
 	int                primingCount;
@@ -235,8 +244,32 @@ static int RecordAndPlaySinesCallback( const void *inputBuffer, void *outputBuff
 		}
 		
 	}
-
+    
+    // Measure whether the input or output are lagging behind.
+    // Don't measure lag at end.
+    if( !loopbackContext->done )
+    {        
+        int inputOutputDelta = loopbackContext->inputBufferCount - loopbackContext->outputBufferCount;
+        if( loopbackContext->maxInputOutputDelta < inputOutputDelta )
+        {
+            loopbackContext->maxInputOutputDelta = inputOutputDelta;
+        }
+        if( loopbackContext->minInputOutputDelta > inputOutputDelta )
+        {
+            loopbackContext->minInputOutputDelta = inputOutputDelta;
+        }
+    }
+    
 	return loopbackContext->done ? paComplete : paContinue;
+}
+
+static void CopyStreamInfoToLoopbackContext( LoopbackContext *loopbackContext, PaStream *inputStream, PaStream *outputStream )
+{
+	const PaStreamInfo *inputStreamInfo = Pa_GetStreamInfo( inputStream );
+	const PaStreamInfo *outputStreamInfo = Pa_GetStreamInfo( outputStream );
+
+	loopbackContext->streamInfoInputLatency = inputStreamInfo ? inputStreamInfo->inputLatency : -1;
+	loopbackContext->streamInfoOutputLatency = outputStreamInfo ? outputStreamInfo->outputLatency : -1;
 }
 
 /*******************************************************************/
@@ -264,6 +297,8 @@ int PaQa_RunLoopbackFullDuplex( LoopbackContext *loopbackContext )
 					loopbackContext );
 	if( err != paNoError ) goto error;
 	
+	CopyStreamInfoToLoopbackContext( loopbackContext, stream, stream );
+
 	err = Pa_StartStream( stream );
 	if( err != paNoError ) goto error;
 		
@@ -335,7 +370,7 @@ int PaQa_RunLoopbackHalfDuplex( LoopbackContext *loopbackContext )
 						NULL,
 						test->sampleRate,
 						test->framesPerBuffer,
-						paClipOff, /* we won't output out of range samples so don't bother clipping them */
+						test->streamFlags,
 						RecordAndPlaySinesCallback,
 						loopbackContext );
 	if( err != paNoError ) goto error;
@@ -345,11 +380,13 @@ int PaQa_RunLoopbackHalfDuplex( LoopbackContext *loopbackContext )
 						&test->outputParameters,
 						test->sampleRate,
 						test->framesPerBuffer,
-						paClipOff, /* we won't output out of range samples so don't bother clipping them */
+						test->streamFlags,
 						RecordAndPlaySinesCallback,
 						loopbackContext );
 	if( err != paNoError ) goto error;
-			
+
+	CopyStreamInfoToLoopbackContext( loopbackContext, inStream, outStream );
+
 	err = Pa_StartStream( inStream );
 	if( err != paNoError ) goto error;
 	
@@ -404,7 +441,7 @@ int PaQa_RunInputOnly( LoopbackContext *loopbackContext )
 						RecordAndPlaySinesCallback,
 						loopbackContext );
 	if( err != paNoError ) goto error;
-	
+
 	err = Pa_StartStream( inStream );
 	if( err != paNoError ) goto error;
 	
@@ -535,6 +572,8 @@ int PaQa_RunLoopbackHalfDuplexBlockingIO( LoopbackContext *loopbackContext )
 						NULL );
 	if( err != paNoError ) goto error2;
 	
+	CopyStreamInfoToLoopbackContext( loopbackContext, inStream, outStream );
+
 	err = Pa_StartStream( outStream );
 	if( err != paNoError ) goto error3;
 	
@@ -596,6 +635,8 @@ int PaQa_RunLoopbackFullDuplexBlockingIO( LoopbackContext *loopbackContext )
 						NULL );
 	if( err != paNoError ) goto error1;
 		
+	CopyStreamInfoToLoopbackContext( loopbackContext, stream, stream );
+
 	err = Pa_StartStream( stream );
 	if( err != paNoError ) goto error2;
 	
@@ -780,7 +821,13 @@ static int PaQa_SingleLoopBackTest( UserOptions *userOptions, TestParameters *te
 	
 	err = PaQa_RunLoopback( &loopbackContext );
 	QA_ASSERT_TRUE("loopback did not run", (loopbackContext.callbackCount > 1) );
-	
+
+	printf( "%7.2f %7.2f %7.2f | ",
+		   loopbackContext.streamInfoInputLatency * 1000.0,
+		   loopbackContext.streamInfoOutputLatency * 1000.0,
+		   (loopbackContext.streamInfoInputLatency + loopbackContext.streamInfoOutputLatency) * 1000.0
+		   );
+
 	printf( "%4d/%4d/%4d, %4d/%4d/%4d | ",
 		   loopbackContext.inputOverflowCount,
 		   loopbackContext.inputUnderflowCount,
@@ -843,8 +890,9 @@ static int PaQa_SingleLoopBackTest( UserOptions *userOptions, TestParameters *te
 	{
 		printf( "OK" );
 	}
-		
+    
 	printf( "\n" );
+    
 				
 	PaQa_TeardownLoopbackContext( &loopbackContext );
 	if( numBadChannels > 0 )
@@ -872,16 +920,19 @@ static void PaQa_SetDefaultTestParameters( TestParameters *testParamsPtr, PaDevi
 	testParamsPtr->framesPerBuffer = DEFAULT_FRAMES_PER_BUFFER;
 	testParamsPtr->baseFrequency = 200.0;
 	testParamsPtr->flags = PAQA_FLAG_TWO_STREAMS;
+    testParamsPtr->streamFlags = paClipOff; /* we won't output out of range samples so don't bother clipping them */
 	
 	testParamsPtr->inputParameters.device = inputDevice;
 	testParamsPtr->inputParameters.sampleFormat = paFloat32;
 	testParamsPtr->inputParameters.channelCount = testParamsPtr->samplesPerFrame;
-	testParamsPtr->inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputDevice )->defaultHighInputLatency;
+	testParamsPtr->inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputDevice )->defaultLowInputLatency;
+	//testParamsPtr->inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputDevice )->defaultHighInputLatency;
 	
 	testParamsPtr->outputParameters.device = outputDevice;
 	testParamsPtr->outputParameters.sampleFormat = paFloat32;
 	testParamsPtr->outputParameters.channelCount = testParamsPtr->samplesPerFrame;
-	testParamsPtr->outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputDevice )->defaultHighOutputLatency;
+	testParamsPtr->outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputDevice )->defaultLowOutputLatency;
+	//testParamsPtr->outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputDevice )->defaultHighOutputLatency;
 }
 
 /*******************************************************************/
@@ -957,8 +1008,9 @@ static int PaQa_AnalyzeLoopbackConnection( UserOptions *userOptions, PaDeviceInd
 		testParams.flags = flagSettings[iFlags];
 		printf( "\n************ Mode = %s ************\n",
 			   (( testParams.flags & 1 ) ? s_FlagOnNames[0] : s_FlagOffNames[0]) );
-		printf("|-   requested  -|- measured ------------------------------\n");
-		printf("|-sRate-|-fr/buf-|- over/under/calls for in, out -|- frm/buf -|-latency-|- channel results -\n");
+
+		printf("|-   requested  -|-  stream info latency  -|- measured ------------------------------\n");
+		printf("|-sRate-|-fr/buf-|- in    - out   - total -|- over/under/calls for in, out -|- frm/buf -|-latency-|- channel results -\n");
 
 		// Loop though various sample rates.
 		if( userOptions->sampleRate < 0 )
@@ -1008,18 +1060,27 @@ static int PaQa_AnalyzeLoopbackConnection( UserOptions *userOptions, PaDeviceInd
 	}
 			
 	printf("\nTest Sample Formats using Half Duplex IO -----\n" );
-	testParams.flags = PAQA_FLAG_TWO_STREAMS;
-	
-	for( iFormat=0; iFormat<numSampleFormats; iFormat++ )
-	{	
-        int numBadChannels;
-		PaSampleFormat format = sampleFormats[ iFormat ];
-		testParams.inputParameters.sampleFormat = format;
-		testParams.outputParameters.sampleFormat = format;
-		printf("Sample format = %d = %s\n", (int) format, sampleFormatNames[iFormat] );
-		numBadChannels = PaQa_SingleLoopBackTest( userOptions, &testParams );
-		totalBadChannels += numBadChannels;			
-	}
+    
+	PaQa_SetDefaultTestParameters( &testParams, inputDevice, outputDevice );
+	testParams.flags = PAQA_FLAG_TWO_STREAMS;	
+    for( iFlags= 0; iFlags<4; iFlags++ )
+    {
+        // Cycle through combinations of flags.
+        testParams.streamFlags = 0;
+        if( iFlags & 1 ) testParams.streamFlags |= paClipOff;
+        if( iFlags & 2 ) testParams.streamFlags |= paDitherOff;
+        
+        for( iFormat=0; iFormat<numSampleFormats; iFormat++ )
+        {	
+            int numBadChannels;
+            PaSampleFormat format = sampleFormats[ iFormat ];
+            testParams.inputParameters.sampleFormat = format;
+            testParams.outputParameters.sampleFormat = format;
+            printf("Sample format = %d = %s, PaStreamFlags = 0x%02X\n", (int) format, sampleFormatNames[iFormat], (unsigned int) testParams.streamFlags );
+            numBadChannels = PaQa_SingleLoopBackTest( userOptions, &testParams );
+            totalBadChannels += numBadChannels;			
+        }
+    }
 	printf( "\n" );
 	printf( "****************************************\n");
 	
@@ -1129,7 +1190,7 @@ int PaQa_CheckForLoopBack( UserOptions *userOptions, PaDeviceIndex inputDevice, 
 	PaQa_OverrideTestParameters( &testParams, userOptions );
 	
 	testParams.maxFrames = (int) (LOOPBACK_DETECTION_DURATION_SECONDS * testParams.sampleRate);	
-	minAmplitude = testParams.amplitude / 2.0;
+	minAmplitude = testParams.amplitude / 4.0;
 	
 	// Check to see if the selected formats are supported.
 	if( Pa_IsFormatSupported( &testParams.inputParameters, NULL, testParams.sampleRate ) != paFormatIsSupported )

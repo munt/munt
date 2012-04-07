@@ -1,13 +1,14 @@
-/** @file pa_fuzz.c
-	@ingroup test_src
-    @brief Distort input like a fuzz box.
-	@author Phil Burk  http://www.softsynth.com
+/** @file paex_sine.c
+	@ingroup examples_src
+	@brief Play a sine wave for several seconds.
+	@author Ross Bencina <rossb@audiomulch.com>
+    @author Phil Burk <philburk@softsynth.com>
 */
 /*
- * $Id: pa_fuzz.c 1368 2008-03-01 00:38:27Z rossb $
+ * $Id: paex_sine.c 1752 2011-09-08 03:21:55Z philburk $
  *
  * This program uses the PortAudio Portable Audio Library.
- * For more information see: http://www.portaudio.com
+ * For more information see: http://www.portaudio.com/
  * Copyright (c) 1999-2000 Ross Bencina and Phil Burk
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -40,106 +41,90 @@
  * requested that these non-binding requests be included along with the 
  * license above.
  */
-
 #include <stdio.h>
 #include <math.h>
 #include "portaudio.h"
-/*
-** Note that many of the older ISA sound cards on PCs do NOT support
-** full duplex audio (simultaneous record and playback).
-** And some only support full duplex at lower sample rates.
-*/
-#define SAMPLE_RATE         (44100)
-#define PA_SAMPLE_TYPE      paFloat32
-#define FRAMES_PER_BUFFER   (64)
 
-typedef float SAMPLE;
+#define NUM_SECONDS   (5)
+#define SAMPLE_RATE   (44100)
+#define FRAMES_PER_BUFFER  (64)
 
-float CubicAmplifier( float input );
-static int fuzzCallback( const void *inputBuffer, void *outputBuffer,
-                         unsigned long framesPerBuffer,
-                         const PaStreamCallbackTimeInfo* timeInfo,
-                         PaStreamCallbackFlags statusFlags,
-                         void *userData );
+#ifndef M_PI
+#define M_PI  (3.14159265)
+#endif
 
-/* Non-linear amplifier with soft distortion curve. */
-float CubicAmplifier( float input )
+#define TABLE_SIZE   (200)
+typedef struct
 {
-    float output, temp;
-    if( input < 0.0 )
-    {
-        temp = input + 1.0f;
-        output = (temp * temp * temp) - 1.0f;
-    }
-    else
-    {
-        temp = input - 1.0f;
-        output = (temp * temp * temp) + 1.0f;
-    }
-
-    return output;
+    float sine[TABLE_SIZE];
+    int left_phase;
+    int right_phase;
+    char message[20];
 }
-#define FUZZ(x) CubicAmplifier(CubicAmplifier(CubicAmplifier(CubicAmplifier(x))))
+paTestData;
 
-static int gNumNoInputs = 0;
 /* This routine will be called by the PortAudio engine when audio is needed.
-** It may be called at interrupt level on some machines so don't do anything
+** It may called at interrupt level on some machines so don't do anything
 ** that could mess up the system like calling malloc() or free().
 */
-static int fuzzCallback( const void *inputBuffer, void *outputBuffer,
-                         unsigned long framesPerBuffer,
-                         const PaStreamCallbackTimeInfo* timeInfo,
-                         PaStreamCallbackFlags statusFlags,
-                         void *userData )
+static int patestCallback( const void *inputBuffer, void *outputBuffer,
+                            unsigned long framesPerBuffer,
+                            const PaStreamCallbackTimeInfo* timeInfo,
+                            PaStreamCallbackFlags statusFlags,
+                            void *userData )
 {
-    SAMPLE *out = (SAMPLE*)outputBuffer;
-    const SAMPLE *in = (const SAMPLE*)inputBuffer;
-    unsigned int i;
+    paTestData *data = (paTestData*)userData;
+    float *out = (float*)outputBuffer;
+    unsigned long i;
+
     (void) timeInfo; /* Prevent unused variable warnings. */
     (void) statusFlags;
-    (void) userData;
-
-    if( inputBuffer == NULL )
+    (void) inputBuffer;
+    
+    for( i=0; i<framesPerBuffer; i++ )
     {
-        for( i=0; i<framesPerBuffer; i++ )
-        {
-            *out++ = 0;  /* left - silent */
-            *out++ = 0;  /* right - silent */
-        }
-        gNumNoInputs += 1;
-    }
-    else
-    {
-        for( i=0; i<framesPerBuffer; i++ )
-        {
-            *out++ = FUZZ(*in++);  /* left - distorted */
-            *out++ = *in++;          /* right - clean */
-        }
+        *out++ = data->sine[data->left_phase];  /* left */
+        *out++ = data->sine[data->right_phase];  /* right */
+        data->left_phase += 1;
+        if( data->left_phase >= TABLE_SIZE ) data->left_phase -= TABLE_SIZE;
+        data->right_phase += 3; /* higher pitch so we can distinguish left and right. */
+        if( data->right_phase >= TABLE_SIZE ) data->right_phase -= TABLE_SIZE;
     }
     
     return paContinue;
+}
+
+/*
+ * This routine is called by portaudio when playback is done.
+ */
+static void StreamFinished( void* userData )
+{
+   paTestData *data = (paTestData *) userData;
+   printf( "Stream Completed: %s\n", data->message );
 }
 
 /*******************************************************************/
 int main(void);
 int main(void)
 {
-    PaStreamParameters inputParameters, outputParameters;
+    PaStreamParameters outputParameters;
     PaStream *stream;
     PaError err;
+    paTestData data;
+    int i;
 
+    
+    printf("PortAudio Test: output sine wave. SR = %d, BufSize = %d\n", SAMPLE_RATE, FRAMES_PER_BUFFER);
+    
+    /* initialise sinusoidal wavetable */
+    for( i=0; i<TABLE_SIZE; i++ )
+    {
+        data.sine[i] = (float) sin( ((double)i/(double)TABLE_SIZE) * M_PI * 2. );
+    }
+    data.left_phase = data.right_phase = 0;
+    
     err = Pa_Initialize();
     if( err != paNoError ) goto error;
-
-    inputParameters.device = Pa_GetDefaultInputDevice(); /* default input device */
-    if (inputParameters.device == paNoDevice) {
-      fprintf(stderr,"Error: No default input device.\n");
-      goto error;
-    }
-    inputParameters.channelCount = 2;       /* stereo input */
-    inputParameters.sampleFormat = PA_SAMPLE_TYPE;
-    inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultLowInputLatency;
-    inputParameters.hostApiSpecificStreamInfo = NULL;
 
     outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
     if (outputParameters.device == paNoDevice) {
@@ -147,37 +132,45 @@ int main(void)
       goto error;
     }
     outputParameters.channelCount = 2;       /* stereo output */
-    outputParameters.sampleFormat = PA_SAMPLE_TYPE;
+    outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
     outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
     outputParameters.hostApiSpecificStreamInfo = NULL;
 
     err = Pa_OpenStream(
               &stream,
-              &inputParameters,
+              NULL, /* no input */
               &outputParameters,
               SAMPLE_RATE,
               FRAMES_PER_BUFFER,
-              0, /* paClipOff, */  /* we won't output out of range samples so don't bother clipping them */
-              fuzzCallback,
-              NULL );
+              paClipOff,      /* we won't output out of range samples so don't bother clipping them */
+              patestCallback,
+              &data );
+    if( err != paNoError ) goto error;
+
+    sprintf( data.message, "No Message" );
+    err = Pa_SetStreamFinishedCallback( stream, &StreamFinished );
     if( err != paNoError ) goto error;
 
     err = Pa_StartStream( stream );
     if( err != paNoError ) goto error;
 
-    printf("Hit ENTER to stop program.\n");
-    getchar();
+    printf("Play for %d seconds.\n", NUM_SECONDS );
+    Pa_Sleep( NUM_SECONDS * 1000 );
+
+    err = Pa_StopStream( stream );
+    if( err != paNoError ) goto error;
+
     err = Pa_CloseStream( stream );
     if( err != paNoError ) goto error;
 
-    printf("Finished. gNumNoInputs = %d\n", gNumNoInputs );
     Pa_Terminate();
-    return 0;
-
+    printf("Test finished.\n");
+    
+    return err;
 error:
     Pa_Terminate();
     fprintf( stderr, "An error occured while using the portaudio stream\n" );
     fprintf( stderr, "Error number: %d\n", err );
     fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
-    return -1;
+    return err;
 }

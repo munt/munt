@@ -1,12 +1,12 @@
 /** @file paqa_errs.c
-	@ingroup test_src
+	@ingroup qa_src
 	@brief Self Testing Quality Assurance app for PortAudio
 	Do lots of bad things to test error reporting.
 	@author Phil Burk  http://www.softsynth.com
     Pieter Suurmond adapted to V19 API.
 */
 /*
- * $Id: paqa_errs.c 1368 2008-03-01 00:38:27Z rossb $
+ * $Id: paqa_errs.c 1756 2011-09-08 06:09:29Z philburk $
  *
  * This program uses the PortAudio Portable Audio Library.
  * For more information see: http://www.portaudio.com
@@ -342,7 +342,8 @@ static int TestBadOpens( void )
 static int TestBadActions( void )
 {
     PaStream*           stream = NULL;
-    PaError             result;
+    const PaDeviceInfo* deviceInfo = NULL;
+    PaError             result = 0;
     PaQaData            myData;
     PaStreamParameters  opp;
     const PaDeviceInfo* info = NULL;
@@ -365,7 +366,9 @@ static int TestBadActions( void )
                                          SAMPLE_RATE, FRAMES_PER_BUFFER,
                                          paClipOff, QaCallback, &myData )) == paNoError));
     }
-
+ 
+    HOPEFOR(((deviceInfo = Pa_GetDeviceInfo(paNoDevice))    == NULL));
+    HOPEFOR(((deviceInfo = Pa_GetDeviceInfo(87654))    == NULL));
     HOPEFOR(((result = Pa_StartStream(NULL))    == paBadStreamPtr));
     HOPEFOR(((result = Pa_StopStream(NULL))     == paBadStreamPtr));
     HOPEFOR(((result = Pa_IsStreamStopped(NULL)) == paBadStreamPtr));

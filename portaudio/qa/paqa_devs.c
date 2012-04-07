@@ -1,5 +1,5 @@
 /** @file paqa_devs.c
-	@ingroup test_src
+	@ingroup qa_src
     @brief Self Testing Quality Assurance app for PortAudio
  	Try to open each device and run through all the
  	possible configurations. This test does not verify
@@ -14,7 +14,7 @@
     as in test pa_devs.c.
 */
 /*
- * $Id: paqa_devs.c 1609 2011-02-27 00:06:07Z philburk $
+ * $Id: paqa_devs.c 1756 2011-09-08 06:09:29Z philburk $
  *
  * This program uses the PortAudio Portable Audio Library.
  * For more information see: http://www.portaudio.com
@@ -122,7 +122,7 @@ static int QaCallback( const void *inputBuffer, void *outputBuffer,
     PaQaData *data = (PaQaData *) userData;
     (void) inputBuffer;
 
-    /* Play simle sawtooth wave. */
+    /* Play simple sawtooth wave. */
     if( data->mode == MODE_OUTPUT )
     {
         phase = data->sawPhase;
@@ -157,6 +157,7 @@ static int QaCallback( const void *inputBuffer, void *outputBuffer,
                 }
             }
             break;
+                
         case paInt16:
             {
                 short *out =  (short *) outputBuffer;
@@ -213,7 +214,7 @@ int main(void)
 error:
     Pa_Terminate();
     printf("QA Report: %d passed, %d failed.\n", gNumPassed, gNumFailed );
-    return 0;
+    return (gNumFailed > 0) ? 1 : 0;
 }
 
 /*******************************************************************
@@ -237,7 +238,9 @@ static void TestDevices( int mode )
         
         for( jc=1; jc<=maxChannels; jc++ )
         {
-            printf("Name         = %s\n", pdi->name );
+            printf("\n========================================================================\n");
+            printf("            Device = %s\n", pdi->name );
+            printf("========================================================================\n");
             /* Try each standard sample rate. */
             for( i=0; standardSampleRates[i] > 0; i++ )
             {
@@ -266,9 +269,10 @@ static int TestAdvance( int mode, PaDeviceIndex deviceID, double sampleRate,
     PaError result = paNoError;
     PaQaData myData;
     #define FRAMES_PER_BUFFER  (64)
+    const int kNumSeconds = 100;
     
     /* Setup data for synthesis thread. */
-    myData.framesLeft = (unsigned long) (sampleRate * 100); /* 100 seconds */
+    myData.framesLeft = (unsigned long) (sampleRate * kNumSeconds);
     myData.numChannels = numChannels;
     myData.mode = mode;
     myData.format = format;
@@ -297,8 +301,11 @@ static int TestAdvance( int mode, PaDeviceIndex deviceID, double sampleRate,
         ipp = &inputParameters;
     }
     else
-        ipp = NULL;
-    if( mode == MODE_OUTPUT )           /* Pa_GetDeviceInfo(paNoDevice) COREDUMPS!!! */
+    {
+	   ipp = NULL;
+	}
+	
+    if( mode == MODE_OUTPUT )
     {
         outputParameters.device       = deviceID;
         outputParameters.channelCount = numChannels;
@@ -308,8 +315,10 @@ static int TestAdvance( int mode, PaDeviceIndex deviceID, double sampleRate,
         opp = &outputParameters;
     }
     else
-        opp = NULL;
-
+    {
+		opp = NULL;
+	}
+	
     if(paFormatIsSupported == Pa_IsFormatSupported( ipp, opp, sampleRate ))
     {
         printf("------ TestAdvance: %s, device = %d, rate = %g, numChannels = %d, format = %lu -------\n",
@@ -341,7 +350,7 @@ static int TestAdvance( int mode, PaDeviceIndex deviceID, double sampleRate,
             oldStamp = Pa_GetStreamTime(stream);
             Pa_Sleep(msec);
             newStamp = Pa_GetStreamTime(stream);
-            printf("oldStamp = %g,newStamp = %g\n", oldStamp, newStamp ); /**/
+            printf("oldStamp = %g, newStamp = %g\n", oldStamp, newStamp ); /**/
             EXPECT( (oldStamp < newStamp) );
             /* Check to make sure callback is decrementing framesLeft. */
             oldFrames = myData.framesLeft;
@@ -352,7 +361,8 @@ static int TestAdvance( int mode, PaDeviceIndex deviceID, double sampleRate,
             stream = NULL;
         }
     }
+    return 0;
 error:
     if( stream != NULL ) Pa_CloseStream( stream );
-    return result;
+    return -1;
 }

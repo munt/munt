@@ -1,5 +1,5 @@
-/** @file patest_pink.c
-	@ingroup test_src
+/** @file paex_pink.c
+	@ingroup examples_src
 	@brief Generate Pink Noise using Gardner method.
 
 	Optimization suggested by James McCartney uses a tree
@@ -17,7 +17,7 @@
 	@author Phil Burk  http://www.softsynth.com
 */
 /*
- * $Id: patest_pink.c 1368 2008-03-01 00:38:27Z rossb $
+ * $Id: paex_pink.c 1752 2011-09-08 03:21:55Z philburk $
  *
  * This program uses the PortAudio Portable Audio Library.
  * For more information see: http://www.portaudio.com

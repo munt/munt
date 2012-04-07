@@ -1,10 +1,10 @@
-/** @file patest_record.c
-	@ingroup test_src
+/** @file paex_record.c
+	@ingroup examples_src
 	@brief Record input into an array; Save array to a file; Playback recorded data.
 	@author Phil Burk  http://www.softsynth.com
 */
 /*
- * $Id: patest_record.c 1609 2011-02-27 00:06:07Z philburk $
+ * $Id: paex_record.c 1752 2011-09-08 03:21:55Z philburk $
  *
  * This program uses the PortAudio Portable Audio Library.
  * For more information see: http://www.portaudio.com
