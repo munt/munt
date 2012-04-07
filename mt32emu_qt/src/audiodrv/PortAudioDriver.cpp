@@ -140,10 +140,20 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 		MasterClockNanos newFirstSampleMasterClockNanos = MasterClock::getClockNanos() + nanosInAudioBuffer - stream->audioLatency - stream->midiLatency;
 		// Ensure rendering time function has no breaks
 		firstSampleMasterClockNanos = stream->lastSampleMasterClockNanos;
-		// Estimate last sample rendering time using noinal sample rate
-		stream->lastSampleMasterClockNanos = newFirstSampleMasterClockNanos + MasterClockNanos(MasterClock::NANOS_PER_SECOND * frameCount / Pa_GetStreamInfo(stream->stream)->sampleRate);
+		// Estimate last sample rendering time using nominal sample rate
+		MasterClockNanos nominalNanosToRender = MasterClockNanos(MasterClock::NANOS_PER_SECOND * frameCount / Pa_GetStreamInfo(stream->stream)->sampleRate);
+		// Ensure outputBufferDacTime estimation doesn't go too far from expected, assume real sample rate differs from nominal one no more than 10%
+		MasterClockNanos nanosToRender = newFirstSampleMasterClockNanos + nominalNanosToRender - firstSampleMasterClockNanos;
+		double relativeError = (double)nanosToRender / nominalNanosToRender;
+		if (relativeError < 0.9) {
+			nanosToRender = 0.9 * nominalNanosToRender;
+		}
+		if (relativeError > 1.1) {
+			nanosToRender = 1.1 * nominalNanosToRender;
+		}
 		// Compute actual sample rate so that the actual rendering time interval ends exactly in lastSampleMasterClockNanos point
-		realSampleRate = MasterClock::NANOS_PER_SECOND * frameCount / (stream->lastSampleMasterClockNanos - firstSampleMasterClockNanos);
+		realSampleRate = MasterClock::NANOS_PER_SECOND * frameCount / nanosToRender;
+		stream->lastSampleMasterClockNanos = firstSampleMasterClockNanos + nanosToRender;
 	} else {
 		MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
 		firstSampleMasterClockNanos = stream->clockSync.sync(realSampleTime) - stream->midiLatency;
