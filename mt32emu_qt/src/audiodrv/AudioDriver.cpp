@@ -24,6 +24,28 @@ AudioDevice::AudioDevice(const AudioDriver * const useDriver, QString useID, QSt
 AudioDriver::AudioDriver(QString useID, QString useName) : id(useID), name(useName) {
 }
 
+double AudioStream::estimateActualSampleRate(const double sampleRate, MasterClockNanos &firstSampleMasterClockNanos, MasterClockNanos &lastSampleMasterClockNanos, const MasterClockNanos audioLatency, const quint32 frameCount) {
+	MasterClockNanos newFirstSampleMasterClockNanos = firstSampleMasterClockNanos;
+	// Ensure rendering time function has no breaks while no x-runs happen
+	if (qAbs(firstSampleMasterClockNanos - lastSampleMasterClockNanos) < audioLatency) {
+		firstSampleMasterClockNanos = lastSampleMasterClockNanos;
+	}
+	// Estimate rendering time using nominal sample rate
+	MasterClockNanos nominalNanosToRender = MasterClockNanos(MasterClock::NANOS_PER_SECOND * frameCount / sampleRate);
+	// Ensure outputBufferDacTime estimation doesn't go too far from expected, assume real sample rate differs from nominal one no more than 10%
+	MasterClockNanos nanosToRender = (newFirstSampleMasterClockNanos + nominalNanosToRender) - firstSampleMasterClockNanos;
+	double relativeError = (double)nanosToRender / nominalNanosToRender;
+	if (relativeError < 0.9) {
+		nanosToRender = 0.9 * nominalNanosToRender;
+	}
+	if (relativeError > 1.1) {
+		nanosToRender = 1.1 * nominalNanosToRender;
+	}
+	lastSampleMasterClockNanos = firstSampleMasterClockNanos + nanosToRender;
+	// Compute actual sample rate so that the actual rendering time interval ends exactly in lastSampleMasterClockNanos point
+	return MasterClock::NANOS_PER_SECOND * (double)frameCount / (double)nanosToRender;
+}
+
 void AudioDriver::loadAudioSettings() {
 	QSettings *settings = Master::getInstance()->getSettings();
 	chunkLen = settings->value(id + "/ChunkLen").toInt();

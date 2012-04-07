@@ -7,10 +7,15 @@
 #include <QString>
 #include <QMetaType>
 
+#include "../MasterClock.h"
+
 class AudioDriver;
 class QSynth;
 
 class AudioStream {
+protected:
+	static double estimateActualSampleRate(const double sampleRate, MasterClockNanos &firstSampleMasterClockNanos, MasterClockNanos &lastSampleMasterClockNanos, const MasterClockNanos audioLatency, const quint32 frameCount);
+
 public:
 	//virtual void suspend() = 0;
 	//virtual void unsuspend() = 0;

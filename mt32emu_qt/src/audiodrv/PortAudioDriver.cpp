@@ -17,7 +17,6 @@
 #include "PortAudioDriver.h"
 
 #include "../Master.h"
-#include "../MasterClock.h"
 #include "../QSynth.h"
 
 using namespace MT32Emu;
@@ -137,27 +136,8 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	// As for V19, this should be used for OSS (still not implemented, though OSS allows _really_ low latencies) and for PulseAudio + ALSA setup.
 	if (stream->useAdvancedTiming) {
 		MasterClockNanos nanosInAudioBuffer = MasterClockNanos(MasterClock::NANOS_PER_SECOND * (timeInfo->outputBufferDacTime - Pa_GetStreamTime(stream->stream)));
-		MasterClockNanos newFirstSampleMasterClockNanos = MasterClock::getClockNanos() + nanosInAudioBuffer - stream->audioLatency - stream->midiLatency;
-		// Ensure rendering time function has no breaks while no x-runs happen
-		firstSampleMasterClockNanos = stream->lastSampleMasterClockNanos;
-		if (qAbs(firstSampleMasterClockNanos - newFirstSampleMasterClockNanos) > stream->audioLatency) {
-			qDebug() << "outputBufferDacTime is too far, underrun?";
-			firstSampleMasterClockNanos = newFirstSampleMasterClockNanos;
-		}
-		// Estimate last sample rendering time using nominal sample rate
-		MasterClockNanos nominalNanosToRender = MasterClockNanos(MasterClock::NANOS_PER_SECOND * frameCount / Pa_GetStreamInfo(stream->stream)->sampleRate);
-		// Ensure outputBufferDacTime estimation doesn't go too far from expected, assume real sample rate differs from nominal one no more than 10%
-		MasterClockNanos nanosToRender = newFirstSampleMasterClockNanos + nominalNanosToRender - firstSampleMasterClockNanos;
-		double relativeError = (double)nanosToRender / nominalNanosToRender;
-		if (relativeError < 0.9) {
-			nanosToRender = 0.9 * nominalNanosToRender;
-		}
-		if (relativeError > 1.1) {
-			nanosToRender = 1.1 * nominalNanosToRender;
-		}
-		// Compute actual sample rate so that the actual rendering time interval ends exactly in lastSampleMasterClockNanos point
-		realSampleRate = MasterClock::NANOS_PER_SECOND * frameCount / nanosToRender;
-		stream->lastSampleMasterClockNanos = firstSampleMasterClockNanos + nanosToRender;
+		firstSampleMasterClockNanos = MasterClock::getClockNanos() + nanosInAudioBuffer - stream->audioLatency - stream->midiLatency;
+		realSampleRate = AudioStream::estimateActualSampleRate(Pa_GetStreamInfo(stream->stream)->sampleRate, firstSampleMasterClockNanos, stream->lastSampleMasterClockNanos, stream->audioLatency, (quint32)frameCount);
 	} else {
 		MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
 		firstSampleMasterClockNanos = stream->clockSync.sync(realSampleTime) - stream->midiLatency;
