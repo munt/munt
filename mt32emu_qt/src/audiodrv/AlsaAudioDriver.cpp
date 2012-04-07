@@ -66,11 +66,11 @@ void* AlsaAudioStream::processingThread(void *userData) {
 			firstSampleNanos = realSampleTime - (driver->midiLatency + driver->audioLatency)
 				* MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream audio latency
 		} else {
-			realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
 			realSampleTime = MasterClockNanos(driver->sampleCount /
 				(double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
 			firstSampleNanos = driver->clockSync.sync(realSampleTime) -
 				driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
+			realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
 		}
 		driver->synth->render(driver->buffer, driver->bufferSize,
 			firstSampleNanos, realSampleRate);

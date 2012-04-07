@@ -145,9 +145,9 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 		// Compute actual sample rate so that the actual rendering time interval ends exactly in lastSampleMasterClockNanos point
 		realSampleRate = MasterClock::NANOS_PER_SECOND * frameCount / (stream->lastSampleMasterClockNanos - firstSampleMasterClockNanos);
 	} else {
-		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate / stream->clockSync.getDrift();
 		MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
 		firstSampleMasterClockNanos = stream->clockSync.sync(realSampleTime) - stream->midiLatency;
+		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate / stream->clockSync.getDrift();
 	}
 	unsigned int rendered = stream->synth->render((Bit16s *)outputBuffer, frameCount, firstSampleMasterClockNanos, realSampleRate);
 	if (rendered < frameCount) {

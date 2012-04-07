@@ -147,9 +147,9 @@ void* PulseAudioStream::processingThread(void *userData) {
 			realSampleTime = MasterClock::getClockNanos() + _pa_simple_get_latency(driver->stream, &error) * MasterClock::NANOS_PER_MICROSECOND;
 			firstSampleNanos = realSampleTime - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream latency
 		} else {
-			realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
 			realSampleTime = MasterClockNanos(driver->sampleCount / (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
 			firstSampleNanos = driver->clockSync.sync(realSampleTime) - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
+			realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
 		}
 		driver->synth->render(driver->buffer, driver->bufferSize,
 			firstSampleNanos, realSampleRate);
