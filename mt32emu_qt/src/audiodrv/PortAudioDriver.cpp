@@ -138,8 +138,12 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	if (stream->useAdvancedTiming) {
 		MasterClockNanos nanosInAudioBuffer = MasterClockNanos(MasterClock::NANOS_PER_SECOND * (timeInfo->outputBufferDacTime - Pa_GetStreamTime(stream->stream)));
 		MasterClockNanos newFirstSampleMasterClockNanos = MasterClock::getClockNanos() + nanosInAudioBuffer - stream->audioLatency - stream->midiLatency;
-		// Ensure rendering time function has no breaks
+		// Ensure rendering time function has no breaks while no x-runs happen
 		firstSampleMasterClockNanos = stream->lastSampleMasterClockNanos;
+		if (qAbs(firstSampleMasterClockNanos - newFirstSampleMasterClockNanos) > stream->audioLatency) {
+			qDebug() << "outputBufferDacTime is too far, underrun?";
+			firstSampleMasterClockNanos = newFirstSampleMasterClockNanos;
+		}
 		// Estimate last sample rendering time using nominal sample rate
 		MasterClockNanos nominalNanosToRender = MasterClockNanos(MasterClock::NANOS_PER_SECOND * frameCount / Pa_GetStreamInfo(stream->stream)->sampleRate);
 		// Ensure outputBufferDacTime estimation doesn't go too far from expected, assume real sample rate differs from nominal one no more than 10%
