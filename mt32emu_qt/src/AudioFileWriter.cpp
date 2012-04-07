@@ -130,6 +130,8 @@ void AudioFileWriter::run() {
 			if (frameCount < bufferSize) {
 				usleep(1000000 * (bufferSize - frameCount) / sampleRate);
 				continue;
+			} else {
+				frameCount = bufferSize;
 			}
 		} else {
 			while (midiEventIx < midiEvents.count()) {
