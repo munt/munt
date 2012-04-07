@@ -134,7 +134,7 @@ void MasterClock::init() {
 	}
 	if (QueryPerformanceFrequency(&freq)) {
 		hrTimerAvailable = true;
-		qDebug() << "High resolution timer initialized. Frequency:" << freq.QuadPart * 1e-9 << "GHz";
+		qDebug() << "High resolution timer initialized. Frequency:" << freq.QuadPart * 1e-6 << "MHz";
 		mult = (double)NANOS_PER_SECOND / freq.QuadPart;
 		QueryPerformanceCounter(&startTime);
 	} else {
