@@ -48,6 +48,7 @@ void* AlsaAudioStream::processingThread(void *userData) {
 	int error;
 	bool isErrorOccured = false;
 	AlsaAudioStream *driver = (AlsaAudioStream *)userData;
+	MasterClockNanos lastSampleNanos = MasterClock::getClockNanos() - (driver->audioLatency + driver->midiLatency) * MasterClock::NANOS_PER_MILLISECOND;
 	qDebug() << "ALSA audio: Processing thread started";
 	while (!driver->pendingClose) {
 		double realSampleRate;
@@ -60,11 +61,11 @@ void* AlsaAudioStream::processingThread(void *userData) {
 				isErrorOccured = true;
 				break;
 			}
-			realSampleRate = driver->sampleRate;
-			realSampleTime = MasterClock::getClockNanos() + delayp /
-				realSampleRate * MasterClock::NANOS_PER_SECOND;
+			realSampleTime = MasterClock::getClockNanos() + delayp / driver->sampleRate * MasterClock::NANOS_PER_SECOND;
 			firstSampleNanos = realSampleTime - (driver->midiLatency + driver->audioLatency)
 				* MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream audio latency
+			realSampleRate = AudioStream::estimateActualSampleRate(driver->sampleRate, firstSampleNanos, lastSampleNanos,
+				driver->audioLatency * MasterClock::NANOS_PER_MILLISECOND, driver->bufferSize);
 		} else {
 			realSampleTime = MasterClockNanos(driver->sampleCount /
 				(double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
@@ -72,8 +73,7 @@ void* AlsaAudioStream::processingThread(void *userData) {
 				driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
 			realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
 		}
-		driver->synth->render(driver->buffer, driver->bufferSize,
-			firstSampleNanos, realSampleRate);
+		driver->synth->render(driver->buffer, driver->bufferSize, firstSampleNanos, realSampleRate);
 		if ((error = snd_pcm_writei(driver->stream, driver->buffer, driver->bufferSize)) < 0) {
 			qDebug() << "snd_pcm_writei failed:" << snd_strerror(error);
 			isErrorOccured = true;

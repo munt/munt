@@ -137,6 +137,7 @@ PulseAudioStream::~PulseAudioStream() {
 void* PulseAudioStream::processingThread(void *userData) {
 	int error;
 	PulseAudioStream *driver = (PulseAudioStream *)userData;
+	MasterClockNanos lastSampleNanos = MasterClock::getClockNanos() - (driver->audioLatency + driver->midiLatency) * MasterClock::NANOS_PER_MILLISECOND;
 	qDebug() << "PulseAudio: Processing thread started";
 	while (!driver->pendingClose) {
 		double realSampleRate;
@@ -145,7 +146,9 @@ void* PulseAudioStream::processingThread(void *userData) {
 		if (driver->useAdvancedTiming) {
 			realSampleRate = driver->sampleRate;
 			realSampleTime = MasterClock::getClockNanos() + _pa_simple_get_latency(driver->stream, &error) * MasterClock::NANOS_PER_MICROSECOND;
-			firstSampleNanos = realSampleTime - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream latency
+			firstSampleNanos = realSampleTime - (driver->audioLatency + driver->midiLatency) * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream latency
+			realSampleRate = AudioStream::estimateActualSampleRate(driver->sampleRate, firstSampleNanos, lastSampleNanos,
+				driver->audioLatency * MasterClock::NANOS_PER_MILLISECOND, driver->bufferSize);
 		} else {
 			realSampleTime = MasterClockNanos(driver->sampleCount / (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
 			firstSampleNanos = driver->clockSync.sync(realSampleTime) - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only

@@ -37,38 +37,43 @@ private:
 	QAudioOutput *audioOutput;
 	double sampleRate;
 	qint64 samplesCount;
-	MasterClockNanos latency;
+	MasterClockNanos audioLatency;
 	MasterClockNanos midiLatency;
+	MasterClockNanos lastSampleMasterClockNanos;
 	bool advancedTiming;
 
 public:
-	WaveGenerator(QSynth *useSynth, QAudioOutput *useAudioOutput, double sampleRate, bool useAdvancedTiming) : synth(useSynth), audioOutput(useAudioOutput), sampleRate(sampleRate), samplesCount(0), latency(0), midiLatency(0), advancedTiming(useAdvancedTiming) {
+	WaveGenerator(QSynth *useSynth, QAudioOutput *useAudioOutput, double sampleRate, bool useAdvancedTiming) : synth(useSynth), audioOutput(useAudioOutput), sampleRate(sampleRate), samplesCount(0), audioLatency(0), midiLatency(0), advancedTiming(useAdvancedTiming) {
 		open(QIODevice::ReadOnly | QIODevice::Unbuffered);
 	}
 
 	void setLatency(MasterClockNanos useMIDILatency) {
-		latency = MasterClock::NANOS_PER_SECOND * audioOutput->bufferSize() / (4 * sampleRate);
+		audioLatency = MasterClock::NANOS_PER_SECOND * audioOutput->bufferSize() / (4 * sampleRate);
 		MasterClockNanos chunkSize = MasterClock::NANOS_PER_SECOND * audioOutput->periodSize() / (4 * sampleRate);
-		qDebug() << "QAudioDriver: Latency set to:" << (double)latency / MasterClock::NANOS_PER_SECOND << "sec." << "Chunk size:" << (double)chunkSize / MasterClock::NANOS_PER_SECOND;
+		qDebug() << "QAudioDriver: Latency set to:" << (double)audioLatency / MasterClock::NANOS_PER_SECOND << "sec." << "Chunk size:" << (double)chunkSize / MasterClock::NANOS_PER_SECOND;
 		if (useMIDILatency == 0)
 			midiLatency = 2 * chunkSize;
 		else
 			midiLatency = useMIDILatency;
 		qDebug() << "QAudioDriver: MIDI latency set to:" << (double)midiLatency / MasterClock::NANOS_PER_SECOND << "sec";
+		lastSampleMasterClockNanos = MasterClock::getClockNanos() - audioLatency - midiLatency;
 	}
 
 	qint64 readData(char *data, qint64 len) {
 		MasterClockNanos firstSampleMasterClockNanos;
+		double realSampleRate;
+		unsigned int framesToRender = (unsigned int)(len >> 2);
 		if (advancedTiming) {
 			MasterClockNanos nanosInBuffer = MasterClock::NANOS_PER_SECOND * (audioOutput->bufferSize() - audioOutput->bytesFree()) / (4 * sampleRate);
-			MasterClockNanos firstSampleAudioNanos = MasterClock::NANOS_PER_MICROSECOND * audioOutput->processedUSecs() - nanosInBuffer;
-			firstSampleMasterClockNanos = clockSync.sync(firstSampleAudioNanos) - midiLatency;
+			firstSampleMasterClockNanos = MasterClock::getClockNanos() + nanosInBuffer - audioLatency - midiLatency;
+			realSampleRate = AudioStream::estimateActualSampleRate(sampleRate, firstSampleMasterClockNanos, lastSampleMasterClockNanos, audioLatency, framesToRender);
 		} else {
 			MasterClockNanos firstSampleAudioNanos = MasterClock::NANOS_PER_SECOND * samplesCount / sampleRate;
 			firstSampleMasterClockNanos = clockSync.sync(firstSampleAudioNanos) - midiLatency;
+			realSampleRate = sampleRate / clockSync.getDrift();
 			samplesCount += len >> 2;
 		}
-		return synth->render((Bit16s *)data, (unsigned int)(len >> 2), firstSampleMasterClockNanos, sampleRate / clockSync.getDrift()) << 2;
+		return synth->render((Bit16s *)data, framesToRender, firstSampleMasterClockNanos, realSampleRate) << 2;
 	}
 
 	qint64 writeData(const char *data, qint64 len) {

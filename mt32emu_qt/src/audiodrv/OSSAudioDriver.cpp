@@ -53,6 +53,7 @@ void* OSSAudioStream::processingThread(void *userData) {
 	int error;
 	bool isErrorOccured = false;
 	OSSAudioStream *driver = (OSSAudioStream *)userData;
+	MasterClockNanos lastSampleNanos = MasterClock::getClockNanos() - (driver->audioLatency + driver->midiLatency) * MasterClock::NANOS_PER_MILLISECOND;
 	qDebug() << "OSS audio: Processing thread started";
 	while (!driver->pendingClose) {
 		double realSampleRate;
@@ -65,17 +66,14 @@ void* OSSAudioStream::processingThread(void *userData) {
 				isErrorOccured = true;
 				break;
 			}
-			// qDebug() << "Delay:" << delay;
-			realSampleRate = driver->sampleRate;
-			realSampleTime = MasterClock::getClockNanos()
-				+ delay / (FRAME_SIZE * realSampleRate) * MasterClock::NANOS_PER_SECOND;
+			realSampleTime = MasterClock::getClockNanos() + delay / (FRAME_SIZE * driver->sampleRate) * MasterClock::NANOS_PER_SECOND;
 			firstSampleNanos = realSampleTime - (driver->midiLatency + driver->audioLatency)
 				* MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream audio latency
+			realSampleRate = AudioStream::estimateActualSampleRate(driver->sampleRate, firstSampleNanos, lastSampleNanos,
+				driver->audioLatency * MasterClock::NANOS_PER_MILLISECOND, driver->bufferSize);
 		} else {
-			realSampleTime = MasterClockNanos(driver->sampleCount
-				/ (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
-			firstSampleNanos = driver->clockSync.sync(realSampleTime)
-				- driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
+			realSampleTime = MasterClockNanos(driver->sampleCount / (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
+			firstSampleNanos = driver->clockSync.sync(realSampleTime) - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
 			realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
 		}
 		driver->synth->render(driver->buffer, driver->bufferSize, firstSampleNanos, realSampleRate);
