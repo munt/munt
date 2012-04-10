@@ -66,7 +66,7 @@ void* OSSAudioStream::processingThread(void *userData) {
 				isErrorOccured = true;
 				break;
 			}
-			realSampleTime = MasterClock::getClockNanos() + delay / (FRAME_SIZE * driver->sampleRate) * MasterClock::NANOS_PER_SECOND;
+			realSampleTime = MasterClock::getClockNanos() + MasterClock::NANOS_PER_SECOND * delay / (FRAME_SIZE * driver->sampleRate);
 			firstSampleNanos = realSampleTime - (driver->midiLatency + driver->audioLatency)
 				* MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream audio latency
 			realSampleRate = AudioStream::estimateActualSampleRate(driver->sampleRate, firstSampleNanos, lastSampleNanos,
