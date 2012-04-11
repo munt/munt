@@ -93,6 +93,7 @@ MasterClockNanos ClockSync::sync(qint64 externalNow) {
 		offset = 0;
 		offsetShift = 0;
 		drift = 1.0;
+		return masterNow;
 	}
 	offset -= offsetShift;
 	if (offsetShift != 0) {
