@@ -116,10 +116,12 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		return false;
 	}
 	const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
-	audioLatency = streamInfo->outputLatency * MasterClock::NANOS_PER_SECOND;
-	qDebug() << "PortAudio: audio latency (s):" << streamInfo->outputLatency;
+	if (streamInfo->outputLatency != 0) { // Quick fix for Mac
+		audioLatency = streamInfo->outputLatency * MasterClock::NANOS_PER_SECOND;
+	}
+	qDebug() << "PortAudio: audio latency (s):" << (double)audioLatency / MasterClock::NANOS_PER_SECOND;
 	if (!midiLatency) {
-		midiLatency = MasterClock::NANOS_PER_SECOND * streamInfo->outputLatency / 2;
+		midiLatency = audioLatency / 2;
 	}
 	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatency / MasterClock::NANOS_PER_SECOND;
 	lastSampleMasterClockNanos = MasterClock::getClockNanos() - audioLatency - midiLatency;
