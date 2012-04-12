@@ -124,6 +124,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		midiLatency = audioLatency / 2;
 	}
 	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatency / MasterClock::NANOS_PER_SECOND;
+	clockSync.setThresholds(audioLatency, audioLatency, -midiLatency);
 	lastSampleMasterClockNanos = MasterClock::getClockNanos() - audioLatency - midiLatency;
 	return true;
 }

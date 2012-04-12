@@ -56,6 +56,7 @@ public:
 		else
 			midiLatency = useMIDILatency;
 		qDebug() << "QAudioDriver: MIDI latency set to:" << (double)midiLatency / MasterClock::NANOS_PER_SECOND << "sec";
+		clockSync.setThresholds(audioLatency, audioLatency, -midiLatency);
 		lastSampleMasterClockNanos = MasterClock::getClockNanos() - audioLatency - midiLatency;
 	}
 
