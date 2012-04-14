@@ -139,7 +139,9 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 				}
 				synthMutex->unlock();
 				if (debugSpecialEvent) {
-					qDebug() << "M" << debugSampleIx << debugEventOffset << (debugSampleIx - debugLastEventSampleIx);
+					quint64 delta = (debugSampleIx - debugLastEventSampleIx);
+					if (delta < 254 || 259 < delta || debugEventOffset < -1000000)
+						qDebug() << "M" << debugSampleIx << debugEventOffset << delta;
 					debugLastEventSampleIx = debugSampleIx;
 				} else if (debugEventOffset < -1000000) {
 					// The MIDI event is playing significantly later than it was scheduled to play.
