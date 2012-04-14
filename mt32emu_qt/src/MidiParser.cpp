@@ -242,7 +242,7 @@ bool MidiParser::parseSysex() {
 		if (sysexBeginIx != -1 && data[i] == 0xF7) {
 			midiEventList.resize(midiEventList.size() + 1);
 			int sysexLen = i - sysexBeginIx + 1;
-			midiEventList.last().assignSysex(0, &data[sysexBeginIx], sysexLen);
+			midiEventList.last().assignSysex(1, &data[sysexBeginIx], sysexLen);
 			sysexBeginIx = -1;
 		}
 	}
