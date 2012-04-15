@@ -227,6 +227,7 @@ void MainWindow::toggleShowConsole() {
 
 void MainWindow::showHideMainWindow() {
 	setVisible(!isVisible());
+	if (isVisible()) activateWindow();
 }
 
 void MainWindow::handleTrayIconActivated(QSystemTrayIcon::ActivationReason reason) {
