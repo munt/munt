@@ -449,18 +449,14 @@ static void playSMF(smf_t *smf, const Options &options, State &state) {
 		assert(event->track->track_number >= 0);
 
 		eventFrameIx = secondsToSamples(event->time_seconds, options.sampleRate);
-		if (eventFrameIx < renderedFrames) {
-			fprintf(stderr, "Event went back in time!\n");
-		} else {
-			unsigned int renderLength = eventFrameIx - renderedFrames;
-			if (state.renderedFrames + renderLength > options.renderMaxFrames) {
-				renderLength = options.renderMaxFrames - state.renderedFrames;
-			}
-			render(renderLength, options, state);
-			renderedFrames += renderLength;
-			if (state.renderedFrames == options.renderMaxFrames) {
-				break;
-			}
+		unsigned int renderLength = (eventFrameIx > renderedFrames) ? eventFrameIx - renderedFrames : 1;
+		if (state.renderedFrames + renderLength > options.renderMaxFrames) {
+			renderLength = options.renderMaxFrames - state.renderedFrames;
+		}
+		render(renderLength, options, state);
+		renderedFrames += renderLength;
+		if (state.renderedFrames == options.renderMaxFrames) {
+			break;
 		}
 
 		if (smf_event_is_metadata(event)) {
