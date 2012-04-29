@@ -13,6 +13,7 @@ namespace Ui {
 class Master;
 class MidiDriver;
 class AudioFileWriter;
+class MidiPlayerDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -29,8 +30,8 @@ private:
 	Ui::MainWindow *ui;
 	Master *master;
 	MidiDriver *testMidiDriver;
-	MidiDriver *smfDriver;
 	AudioFileWriter *audioFileWriter;
+	MidiPlayerDialog *midiPlayerDialog;
 
 	void trayIconContextMenu();
 

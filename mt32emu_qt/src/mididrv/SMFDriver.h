@@ -12,6 +12,7 @@ class SMFDriver;
 
 class SMFProcessor : public QThread {
 	Q_OBJECT
+
 public:
 	SMFProcessor(SMFDriver *useSMFDriver);
 	void start(QString fileName);
@@ -27,20 +28,27 @@ private:
 	volatile bool stopProcessing;
 	QString fileName;
 	MasterClockNanos midiTick;
+
+	static void sendAllNotesOff(SynthRoute *synthRoute);
 };
 
 class SMFDriver : public MidiDriver {
 	Q_OBJECT
 	friend class SMFProcessor;
+
 public:
 	SMFDriver(Master *master);
 	~SMFDriver();
 	void start();
+	void start(QString fileName);
 	void stop();
+
 private:
 	SMFProcessor processor;
+
+signals:
+	void playbackFinished();
+	void playbackTimeChanged(quint64 currentNanos, quint32 totalSeconds);
 };
 
 #endif
-
-

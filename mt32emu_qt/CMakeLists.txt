@@ -26,6 +26,7 @@ set(mt32emu_qt_SOURCES
   src/MidiPropertiesDialog.cpp
   src/ROMSelectionDialog.cpp
   src/SynthWidget.cpp
+  src/MidiPlayerDialog.cpp
 
   src/audiodrv/AudioDriver.cpp
   src/audiodrv/AudioFileWriterDriver.cpp
@@ -62,6 +63,7 @@ set(mt32emu_qt_HEADERS
   src/ROMSelectionDialog.h
   src/SynthRoute.h
   src/SynthWidget.h
+  src/MidiPlayerDialog.h
 
   src/audiodrv/AudioDriver.h
 
@@ -77,6 +79,7 @@ set(mt32emu_qt_FORMS
   src/SynthPropertiesDialog.ui
   src/ROMSelectionDialog.ui
   src/SynthWidget.ui
+  src/MidiPlayerDialog.ui
 )
 
 find_package(Qt4 4.6.0 REQUIRED)

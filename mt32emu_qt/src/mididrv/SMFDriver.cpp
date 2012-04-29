@@ -24,6 +24,13 @@
 
 static const MasterClockNanos MAX_SLEEP_TIME = 200 * MasterClock::NANOS_PER_MILLISECOND;
 
+void SMFProcessor::sendAllNotesOff(SynthRoute *synthRoute) {
+	for (int i = 0; i < 16; i++) {
+		quint32 msg = (0xB0 | i) | 0x7F00;
+		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+	}
+}
+
 SMFProcessor::SMFProcessor(SMFDriver *useSMFDriver) : driver(useSMFDriver) {
 }
 
@@ -33,9 +40,9 @@ void SMFProcessor::start(QString useFileName) {
 	if (!parser.parse(fileName)) {
 		qDebug() << "SMFDriver: Error parsing MIDI file:" << fileName;
 		QMessageBox::critical(NULL, "Error", "Error encountered while loading MIDI file");
+		emit driver->playbackFinished();
 		return;
 	}
-	parser.addAllNotesOff();
 	QThread::start();
 }
 
@@ -53,11 +60,23 @@ void SMFProcessor::run() {
 	SynthRoute *synthRoute = session->getSynthRoute();
 	QVector<MidiEvent> midiEvents = parser.getMIDIEvents();
 	midiTick = parser.getMidiTick();
-	MasterClockNanos currentNanos = MasterClock::getClockNanos();
+	MasterClockNanos totalNanos = 0;
+	{
+		MasterClockNanos tick = midiTick;
+		for (int i = 0; i < midiEvents.count(); i++) {
+			const MidiEvent &e = midiEvents.at(i);
+			totalNanos += e.getTimestamp() * tick;
+			if (e.getType() == SET_TEMPO) tick = parser.getMidiTick(e.getShortMessage());
+		}
+	}
+	quint32 totalSeconds = quint32(totalNanos / MasterClock::NANOS_PER_SECOND);
+	MasterClockNanos startNanos = MasterClock::getClockNanos();
+	MasterClockNanos currentNanos = startNanos;
 	for (int i = 0; i < midiEvents.count(); i++) {
 		const MidiEvent &e = midiEvents.at(i);
 		currentNanos += e.getTimestamp() * midiTick;
 		while (!stopProcessing) {
+			emit driver->playbackTimeChanged(MasterClock::getClockNanos() - startNanos, totalSeconds);
 			MasterClockNanos delay = currentNanos - MasterClock::getClockNanos();
 			if (delay < MasterClock::NANOS_PER_MILLISECOND) break;
 			usleep(((delay < MAX_SLEEP_TIME ? delay : MAX_SLEEP_TIME) - MasterClock::NANOS_PER_MILLISECOND) / MasterClock::NANOS_PER_MICROSECOND);
@@ -75,8 +94,11 @@ void SMFProcessor::run() {
 				break;
 		}
 	}
+	SMFProcessor::sendAllNotesOff(synthRoute);
+	emit driver->playbackTimeChanged(0, 0);
 	qDebug() << "SMFDriver: processor thread stopped";
 	driver->deleteMidiSession(session);
+	if (!stopProcessing) emit driver->playbackFinished();
 }
 
 SMFDriver::SMFDriver(Master *useMaster) : MidiDriver(useMaster), processor(this) {
@@ -87,6 +109,12 @@ void SMFDriver::start() {
 	static QString currentDir = NULL;
 	QString fileName = QFileDialog::getOpenFileName(NULL, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
 	currentDir = QDir(fileName).absolutePath();
+	if (!fileName.isEmpty()) {
+		processor.start(fileName);
+	}
+}
+
+void SMFDriver::start(QString fileName) {
 	if (!fileName.isEmpty()) {
 		processor.start(fileName);
 	}

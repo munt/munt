@@ -29,15 +29,15 @@
 
 #include "AudioFileWriter.h"
 #include "mididrv/TestDriver.h"
-#include "mididrv/SMFDriver.h"
+#include "MidiPlayerDialog.h"
 
 MainWindow::MainWindow(Master *master, QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow),
 	master(master),
 	testMidiDriver(NULL),
-	smfDriver(NULL),
-	audioFileWriter(NULL)
+	audioFileWriter(NULL),
+	midiPlayerDialog(NULL)
 {
 	ui->setupUi(this);
 	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
@@ -63,13 +63,13 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 		delete testMidiDriver;
 		testMidiDriver = NULL;
 	}
-	if (smfDriver != NULL) {
-		delete smfDriver;
-		smfDriver = NULL;
-	}
 	if (audioFileWriter != NULL) {
 		delete audioFileWriter;
 		audioFileWriter = NULL;
+	}
+	if (midiPlayerDialog != NULL) {
+		delete midiPlayerDialog;
+		midiPlayerDialog = NULL;
 	}
 	event->accept();
 }
@@ -147,13 +147,11 @@ void MainWindow::on_actionTest_MIDI_Driver_toggled(bool checked) {
 }
 
 void MainWindow::on_actionPlay_MIDI_file_triggered() {
-	if (smfDriver != NULL) {
-		delete smfDriver;
-		smfDriver = NULL;
-	} else {
-		smfDriver = new SMFDriver(master);
-		smfDriver->start();
+	if (midiPlayerDialog == NULL) {
+		midiPlayerDialog = new MidiPlayerDialog(master, this);
 	}
+	midiPlayerDialog->setVisible(true);
+	midiPlayerDialog->activateWindow();
 }
 
 void MainWindow::on_actionConvert_MIDI_to_Wave_triggered() {
