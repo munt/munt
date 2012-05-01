@@ -17,7 +17,7 @@ public:
 	SMFProcessor(SMFDriver *useSMFDriver);
 	void start(QString fileName);
 	void stop();
-	void setTempo(uint newTempo);
+	void setBPM(quint32 newBPM);
 
 protected:
 	void run();
@@ -26,10 +26,12 @@ private:
 	MidiParser parser;
 	SMFDriver *driver;
 	volatile bool stopProcessing;
+	volatile MasterClockNanos midiTick;
+	bool bpmUpdated;
 	QString fileName;
-	MasterClockNanos midiTick;
 
 	static void sendAllNotesOff(SynthRoute *synthRoute);
+	quint32 estimateRemainingTime(QVector<MidiEvent> &midiEvents, int currentEventIx);
 };
 
 class SMFDriver : public MidiDriver {
@@ -42,13 +44,18 @@ public:
 	void start();
 	void start(QString fileName);
 	void stop();
+	void setBPM(quint32 newBPM);
+	void setFastForwardingFactor(uint useFastForwardingFactor);
+	void jump(int newPosition);
 
 private:
 	SMFProcessor processor;
+	volatile uint fastForwardingFactor;
 
 signals:
 	void playbackFinished();
 	void playbackTimeChanged(quint64 currentNanos, quint32 totalSeconds);
+	void tempoUpdated(quint32 newTempo);
 };
 
 #endif

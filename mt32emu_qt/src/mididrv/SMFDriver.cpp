@@ -23,6 +23,7 @@
 #include "../MidiSession.h"
 
 static const MasterClockNanos MAX_SLEEP_TIME = 200 * MasterClock::NANOS_PER_MILLISECOND;
+static const quint32 MICROSECONDS_PER_MINUTE = 60000000;
 
 void SMFProcessor::sendAllNotesOff(SynthRoute *synthRoute) {
 	for (int i = 0; i < 16; i++) {
@@ -51,8 +52,9 @@ void SMFProcessor::stop() {
 	wait();
 }
 
-void SMFProcessor::setTempo(uint newTempo) {
-	midiTick = parser.getMidiTick(newTempo);
+void SMFProcessor::setBPM(quint32 newBPM) {
+	midiTick = parser.getMidiTick(MICROSECONDS_PER_MINUTE / newBPM);
+	bpmUpdated = true;
 }
 
 void SMFProcessor::run() {
@@ -60,24 +62,26 @@ void SMFProcessor::run() {
 	SynthRoute *synthRoute = session->getSynthRoute();
 	QVector<MidiEvent> midiEvents = parser.getMIDIEvents();
 	midiTick = parser.getMidiTick();
-	MasterClockNanos totalNanos = 0;
-	{
-		MasterClockNanos tick = midiTick;
-		for (int i = 0; i < midiEvents.count(); i++) {
-			const MidiEvent &e = midiEvents.at(i);
-			totalNanos += e.getTimestamp() * tick;
-			if (e.getType() == SET_TEMPO) tick = parser.getMidiTick(e.getShortMessage());
-		}
-	}
-	quint32 totalSeconds = quint32(totalNanos / MasterClock::NANOS_PER_SECOND);
+	quint32 totalSeconds = estimateRemainingTime(midiEvents, 0);
 	MasterClockNanos startNanos = MasterClock::getClockNanos();
 	MasterClockNanos currentNanos = startNanos;
+	bpmUpdated = false;
 	for (int i = 0; i < midiEvents.count(); i++) {
 		const MidiEvent &e = midiEvents.at(i);
 		currentNanos += e.getTimestamp() * midiTick;
 		while (!stopProcessing) {
+			if (bpmUpdated) {
+				bpmUpdated = false;
+				totalSeconds = (currentNanos - startNanos) / MasterClock::NANOS_PER_SECOND + estimateRemainingTime(midiEvents, i + 1);
+			}
 			emit driver->playbackTimeChanged(MasterClock::getClockNanos() - startNanos, totalSeconds);
 			MasterClockNanos delay = currentNanos - MasterClock::getClockNanos();
+			if (driver->fastForwardingFactor > 1) {
+				MasterClockNanos timeShift = delay - (delay / driver->fastForwardingFactor);
+				delay -= timeShift;
+				currentNanos -= timeShift;
+				startNanos -= timeShift;
+			}
 			if (delay < MasterClock::NANOS_PER_MILLISECOND) break;
 			usleep(((delay < MAX_SLEEP_TIME ? delay : MAX_SLEEP_TIME) - MasterClock::NANOS_PER_MILLISECOND) / MasterClock::NANOS_PER_MICROSECOND);
 		}
@@ -90,7 +94,9 @@ void SMFProcessor::run() {
 				synthRoute->pushMIDISysex(e.getSysexData(), e.getSysexLen(), currentNanos);
 				break;
 			case SET_TEMPO:
-				setTempo(e.getShortMessage());
+				uint tempo = e.getShortMessage();
+				midiTick = parser.getMidiTick(tempo);
+				emit driver->tempoUpdated(MICROSECONDS_PER_MINUTE / tempo);
 				break;
 		}
 	}
@@ -99,6 +105,17 @@ void SMFProcessor::run() {
 	qDebug() << "SMFDriver: processor thread stopped";
 	driver->deleteMidiSession(session);
 	if (!stopProcessing) emit driver->playbackFinished();
+}
+
+quint32 SMFProcessor::estimateRemainingTime(QVector<MidiEvent> &midiEvents, int currentEventIx) {
+	MasterClockNanos tick = midiTick;
+	MasterClockNanos totalNanos = 0;
+	for (int i = currentEventIx; i < midiEvents.count(); i++) {
+		const MidiEvent &e = midiEvents.at(i);
+		totalNanos += e.getTimestamp() * tick;
+		if (e.getType() == SET_TEMPO) tick = parser.getMidiTick(e.getShortMessage());
+	}
+	return quint32(totalNanos / MasterClock::NANOS_PER_SECOND);
 }
 
 SMFDriver::SMFDriver(Master *useMaster) : MidiDriver(useMaster), processor(this) {
@@ -115,6 +132,7 @@ void SMFDriver::start() {
 }
 
 void SMFDriver::start(QString fileName) {
+	fastForwardingFactor = 0;
 	if (!fileName.isEmpty()) {
 		processor.start(fileName);
 	}
@@ -122,6 +140,17 @@ void SMFDriver::start(QString fileName) {
 
 void SMFDriver::stop() {
 	processor.stop();
+}
+
+void SMFDriver::setBPM(quint32 newBPM) {
+	processor.setBPM(newBPM);
+}
+
+void SMFDriver::setFastForwardingFactor(uint useFastForwardingFactor) {
+	fastForwardingFactor = useFastForwardingFactor;
+}
+
+void SMFDriver::jump(int newPosition) {
 }
 
 SMFDriver::~SMFDriver() {
