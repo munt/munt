@@ -37,7 +37,11 @@ SMFProcessor::SMFProcessor(SMFDriver *useSMFDriver) : driver(useSMFDriver) {
 }
 
 void SMFProcessor::start(QString useFileName) {
+	stop();
 	stopProcessing = false;
+	bpmUpdated = false;
+	driver->seekPosition = -1;
+	driver->fastForwardingFactor = 0;
 	fileName = useFileName;
 	if (!parser.parse(fileName)) {
 		qDebug() << "SMFDriver: Error parsing MIDI file:" << fileName;
@@ -66,7 +70,6 @@ void SMFProcessor::run() {
 	quint32 totalSeconds = estimateRemainingTime(midiEvents, 0);
 	MasterClockNanos startNanos = MasterClock::getClockNanos();
 	MasterClockNanos currentNanos = startNanos;
-	bpmUpdated = false;
 	for (int i = 0; i < midiEvents.count(); i++) {
 		const MidiEvent &e = midiEvents.at(i);
 		currentNanos += e.getTimestamp() * midiTick;
@@ -174,8 +177,6 @@ void SMFDriver::start() {
 }
 
 void SMFDriver::start(QString fileName) {
-	fastForwardingFactor = 0;
-	seekPosition = -1;
 	if (!fileName.isEmpty()) {
 		processor.start(fileName);
 	}
