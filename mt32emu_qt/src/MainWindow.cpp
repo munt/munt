@@ -72,6 +72,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 		midiPlayerDialog = NULL;
 	}
 	event->accept();
+	master->shutDown();
 }
 
 void MainWindow::on_actionAbout_triggered()

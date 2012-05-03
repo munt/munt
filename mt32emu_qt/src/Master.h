@@ -16,6 +16,7 @@ class Master : public QObject {
 private:
 	static Master *INSTANCE;
 
+	bool running;
 	QList<SynthRoute *> synthRoutes;
 	QList<AudioDriver *> audioDrivers;
 	QList<AudioDevice *> audioDevices;
@@ -64,6 +65,8 @@ public:
 	void createMidiPort(MidiPropertiesDialog *mpd, SynthRoute *synthRoute = NULL);
 	void deleteMidiPort(MidiSession *midiSession);
 	void setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
+	bool isRunning();
+	void shutDown();
 
 	static Master *getInstance();
 

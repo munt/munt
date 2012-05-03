@@ -16,7 +16,6 @@
 
 #include "MainWindow.h"
 #include "Master.h"
-#include "MasterClock.h"
 
 using namespace MT32Emu;
 
@@ -27,23 +26,21 @@ int main(int argv, char **args)
 
 	QProcessEnvironment::systemEnvironment().insert("PA_ALSA_PLUGHW", "1");
 
-	MasterClock::init();
 	Master::init();
 	Master *master = Master::getInstance();
-	{
-		if (QSystemTrayIcon::isSystemTrayAvailable()) {
-			QSystemTrayIcon *trayIcon = new QSystemTrayIcon(QIcon(":/images/note.gif"));
-			trayIcon->setToolTip("Munt: MT-32 Emulator");
-			trayIcon->show();
-			master->setTrayIcon(trayIcon);
-		}
-		MainWindow mainWindow(master);
-		if (master->getTrayIcon() == NULL || !master->getSettings()->value("Master/startIconized", "0").toBool()) mainWindow.show();
-		master->startPinnedSynthRoute();
-		master->startMidiProcessing();
+	if (QSystemTrayIcon::isSystemTrayAvailable()) {
+		QSystemTrayIcon *trayIcon = new QSystemTrayIcon(QIcon(":/images/note.gif"));
+		trayIcon->setToolTip("Munt: MT-32 Emulator");
+		trayIcon->show();
+		master->setTrayIcon(trayIcon);
+	}
+	MainWindow mainWindow(master);
+	if (master->getTrayIcon() == NULL || !master->getSettings()->value("Master/startIconized", "0").toBool()) mainWindow.show();
+	master->startPinnedSynthRoute();
+	master->startMidiProcessing();
+	while (master->isRunning()) {
 		app.exec();
 	}
 	Master::deinit();
-	MasterClock::deinit();
 	return 0;
 }
