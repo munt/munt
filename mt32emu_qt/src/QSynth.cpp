@@ -197,6 +197,7 @@ bool QSynth::open() {
 		debugLastEventSampleIx = 0;
 		isOpen = true;
 		setState(SynthState_OPEN);
+		reportHandler->onDeviceReconfig();
 		return true;
 	}
 	return false;
@@ -298,6 +299,7 @@ bool QSynth::reset() {
 		return false;
 	}
 	synthMutex->unlock();
+	reportHandler->onDeviceReconfig();
 
 	setState(SynthState_OPEN);
 	return true;
