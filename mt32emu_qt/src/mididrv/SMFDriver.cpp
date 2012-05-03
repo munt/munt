@@ -23,6 +23,7 @@
 #include "../MidiSession.h"
 
 static const MasterClockNanos MAX_SLEEP_TIME = 200 * MasterClock::NANOS_PER_MILLISECOND;
+static const MasterClockNanos SAMPLE_PERIOD = MasterClock::NANOS_PER_SECOND / 32000;
 static const quint32 MICROSECONDS_PER_MINUTE = 60000000;
 
 void SMFProcessor::sendAllNotesOff(SynthRoute *synthRoute) {
@@ -74,6 +75,21 @@ void SMFProcessor::run() {
 				bpmUpdated = false;
 				totalSeconds = (currentNanos - startNanos) / MasterClock::NANOS_PER_SECOND + estimateRemainingTime(midiEvents, i + 1);
 			}
+			if (driver->seekPosition > -1) {
+				SMFProcessor::sendAllNotesOff(synthRoute);
+				MasterClockNanos seekNanos = totalSeconds * driver->seekPosition * MasterClock::NANOS_PER_MILLISECOND;
+				MasterClockNanos eventNanos = currentNanos - e.getTimestamp() * midiTick - startNanos;
+				if (seekNanos < eventNanos) {
+					i = 0;
+					eventNanos = 0;
+					midiTick = parser.getMidiTick();
+				}
+				i = seek(synthRoute, midiEvents, i, seekNanos, eventNanos);
+				currentNanos = MasterClock::getClockNanos();
+				startNanos = currentNanos - seekNanos;
+				driver->seekPosition = -1;
+				continue;
+			}
 			emit driver->playbackTimeChanged(MasterClock::getClockNanos() - startNanos, totalSeconds);
 			MasterClockNanos delay = currentNanos - MasterClock::getClockNanos();
 			if (driver->fastForwardingFactor > 1) {
@@ -118,6 +134,32 @@ quint32 SMFProcessor::estimateRemainingTime(QVector<MidiEvent> &midiEvents, int 
 	return quint32(totalNanos / MasterClock::NANOS_PER_SECOND);
 }
 
+int SMFProcessor::seek(SynthRoute *synthRoute, QVector<MidiEvent> &midiEvents, int currentEventIx, MasterClockNanos seekNanos, MasterClockNanos currentEventNanos) {
+	MasterClockNanos nanosNow = MasterClock::getClockNanos();
+	while (!stopProcessing && currentEventNanos < seekNanos) {
+		const MidiEvent &e = midiEvents.at(currentEventIx);
+		switch (e.getType()) {
+			case SHORT_MESSAGE: {
+					quint32 msg = e.getShortMessage();
+					if ((msg & 0xE0) != 0x80) synthRoute->pushMIDIShortMessage(msg, nanosNow);
+					break;
+				}
+			case SYSEX:
+				synthRoute->pushMIDISysex(e.getSysexData(), e.getSysexLen(), nanosNow);
+				break;
+			case SET_TEMPO:
+				uint tempo = e.getShortMessage();
+				midiTick = parser.getMidiTick(tempo);
+				emit driver->tempoUpdated(MICROSECONDS_PER_MINUTE / tempo);
+				break;
+		}
+		currentEventIx++;
+		currentEventNanos += e.getTimestamp() * midiTick;
+		nanosNow += SAMPLE_PERIOD;
+	}
+	return currentEventIx;
+}
+
 SMFDriver::SMFDriver(Master *useMaster) : MidiDriver(useMaster), processor(this) {
 	name = "Standard MIDI File Driver";
 }
@@ -133,6 +175,7 @@ void SMFDriver::start() {
 
 void SMFDriver::start(QString fileName) {
 	fastForwardingFactor = 0;
+	seekPosition = -1;
 	if (!fileName.isEmpty()) {
 		processor.start(fileName);
 	}
@@ -151,6 +194,7 @@ void SMFDriver::setFastForwardingFactor(uint useFastForwardingFactor) {
 }
 
 void SMFDriver::jump(int newPosition) {
+	seekPosition = newPosition;
 }
 
 SMFDriver::~SMFDriver() {

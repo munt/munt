@@ -105,12 +105,16 @@ void MidiPlayerDialog::on_moveDownButton_clicked() {
 }
 
 void MidiPlayerDialog::on_playButton_clicked() {
+	int initialPosition = 0;
 	if (rowPlaying != -1) {
 		smfDriver.stop();
+	} else {
+		initialPosition = ui->positionSlider->sliderPosition();
 	}
 	rowPlaying = ui->playList->currentRow();
 	advancePlayList = (rowPlaying == -1);
 	handlePlaybackFinished();
+	if (initialPosition != 0) smfDriver.jump(initialPosition);
 }
 
 void MidiPlayerDialog::on_stopButton_clicked() {
@@ -165,7 +169,9 @@ void MidiPlayerDialog::handlePlaybackTimeChanged(quint64 currentNanos, quint32 t
 	QChar z = QChar('0');
 	QString pos = QString("%1:%2 / %3:%4").arg(currentSeconds / 60, 2, 10, z).arg(currentSeconds % 60, 2, 10, z).arg(totalSeconds / 60, 2, 10, z).arg(totalSeconds % 60, 2, 10, z);
 	ui->positionLabel->setText(pos);
-	ui->positionSlider->setSliderPosition((totalSeconds != 0) ? currentNanos / MasterClock::NANOS_PER_MILLISECOND / totalSeconds : 0);
+	if (!ui->positionSlider->isSliderDown()) {
+		ui->positionSlider->setSliderPosition((totalSeconds != 0) ? currentNanos / MasterClock::NANOS_PER_MILLISECOND / totalSeconds : 0);
+	}
 }
 
 void MidiPlayerDialog::handleTempoSet(quint32 tempo) {
