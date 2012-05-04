@@ -23,7 +23,6 @@ static const quint32 DEFAULT_BPM = 120;
 MidiPlayerDialog::MidiPlayerDialog(Master *master, QWidget *parent) : QDialog(parent), ui(new Ui::MidiPlayerDialog), smfDriver(master), advancePlayList(false), rowPlaying(-1) {
 	ui->setupUi(this);
 	ui->playButton->setEnabled(false);
-	ui->positionSlider->setTracking(false);
 	connect(&smfDriver, SIGNAL(playbackFinished()), SLOT(handlePlaybackFinished()));
 	connect(&smfDriver, SIGNAL(playbackTimeChanged(quint64, quint32)), SLOT(handlePlaybackTimeChanged(quint64, quint32)));
 	connect(&smfDriver, SIGNAL(tempoUpdated(quint32)), SLOT(handleTempoSet(quint32)));
@@ -146,6 +145,7 @@ void MidiPlayerDialog::on_tempoSpinBox_valueChanged(int newValue) {
 }
 
 void MidiPlayerDialog::on_positionSlider_valueChanged() {
+	if (sliderUpdating) return;
 	smfDriver.jump(ui->positionSlider->value());
 }
 
@@ -170,10 +170,12 @@ void MidiPlayerDialog::handlePlaybackTimeChanged(quint64 currentNanos, quint32 t
 	QString pos = QString("%1:%2 / %3:%4").arg(currentSeconds / 60, 2, 10, z).arg(currentSeconds % 60, 2, 10, z).arg(totalSeconds / 60, 2, 10, z).arg(totalSeconds % 60, 2, 10, z);
 	ui->positionLabel->setText(pos);
 	if (!ui->positionSlider->isSliderDown()) {
+		sliderUpdating = true;
 		ui->positionSlider->setSliderPosition((totalSeconds != 0) ? currentNanos / MasterClock::NANOS_PER_MILLISECOND / totalSeconds : 0);
+		sliderUpdating = false;
 	}
 }
 
 void MidiPlayerDialog::handleTempoSet(quint32 tempo) {
-	ui->tempoSpinBox->setValue(tempo);
+	ui->tempoSpinBox->setValue(tempo == 0 ? DEFAULT_BPM : tempo);
 }

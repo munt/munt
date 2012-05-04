@@ -22,6 +22,7 @@ private:
 	Ui::MidiPlayerDialog *ui;
 	SMFDriver smfDriver;
 	bool advancePlayList;
+	bool sliderUpdating;
 	int rowPlaying;
 
 private slots:

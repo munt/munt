@@ -86,12 +86,12 @@ void SMFProcessor::run() {
 					i = 0;
 					eventNanos = 0;
 					midiTick = parser.getMidiTick();
+					emit driver->tempoUpdated(0);
 				}
-				i = seek(synthRoute, midiEvents, i, seekNanos, eventNanos);
+				i = seek(synthRoute, midiEvents, i, seekNanos, eventNanos) - 1;
 				currentNanos = MasterClock::getClockNanos();
 				startNanos = currentNanos - seekNanos;
-				driver->seekPosition = -1;
-				continue;
+				break;
 			}
 			emit driver->playbackTimeChanged(MasterClock::getClockNanos() - startNanos, totalSeconds);
 			MasterClockNanos delay = currentNanos - MasterClock::getClockNanos();
@@ -105,6 +105,10 @@ void SMFProcessor::run() {
 			usleep(((delay < MAX_SLEEP_TIME ? delay : MAX_SLEEP_TIME) - MasterClock::NANOS_PER_MILLISECOND) / MasterClock::NANOS_PER_MICROSECOND);
 		}
 		if (stopProcessing) break;
+		if (driver->seekPosition > -1) {
+			driver->seekPosition = -1;
+			continue;
+		}
 		switch (e.getType()) {
 			case SHORT_MESSAGE:
 				synthRoute->pushMIDIShortMessage(e.getShortMessage(), currentNanos);
