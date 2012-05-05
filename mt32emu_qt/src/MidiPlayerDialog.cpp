@@ -141,11 +141,15 @@ void MidiPlayerDialog::on_fastFastForwardButton_released() {
 }
 
 void MidiPlayerDialog::on_tempoSpinBox_valueChanged(int newValue) {
-	smfDriver.setBPM(ui->tempoSpinBox->value());
+	smfDriver.setBPM(newValue);
 }
 
 void MidiPlayerDialog::on_positionSlider_valueChanged() {
-	if (sliderUpdating) return;
+	if (ui->positionSlider->isSliderDown() || sliderUpdating) return;
+	smfDriver.jump(ui->positionSlider->value());
+}
+
+void MidiPlayerDialog::on_positionSlider_sliderReleased() {
 	smfDriver.jump(ui->positionSlider->value());
 }
 

@@ -27,9 +27,11 @@ static const MasterClockNanos SAMPLE_PERIOD = MasterClock::NANOS_PER_SECOND / 32
 static const quint32 MICROSECONDS_PER_MINUTE = 60000000;
 
 void SMFProcessor::sendAllNotesOff(SynthRoute *synthRoute) {
+	MasterClockNanos nanosNow = MasterClock::getClockNanos();
 	for (int i = 0; i < 16; i++) {
 		quint32 msg = (0xB0 | i) | 0x7F00;
-		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		synthRoute->pushMIDIShortMessage(msg, nanosNow);
+		nanosNow += SAMPLE_PERIOD;
 	}
 }
 
