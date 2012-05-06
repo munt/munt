@@ -209,6 +209,7 @@ void RhythmPart::setTimbre(TimbreParam * /*timbre*/) {
 
 void Part::setTimbre(TimbreParam *timbre) {
 	*timbreTemp = *timbre;
+	synth->newTimbreSet(partNum, timbre->common.name);
 }
 
 unsigned int RhythmPart::getAbsTimbreNum() const {
@@ -538,6 +539,7 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 	synth->printPartialUsage();
 #endif
 	synth->partStateChanged(partNum, true);
+	synth->polyStateChanged(partNum);
 }
 
 void Part::allNotesOff() {
@@ -617,6 +619,7 @@ void Part::partialDeactivated(Poly *poly) {
 	if (!poly->isActive()) {
 		activePolys.remove(poly);
 		freePolys.push_front(poly);
+		synth->polyStateChanged(partNum);
 	}
 	if (activePartialCount == 0) {
 		synth->partStateChanged(partNum, false);

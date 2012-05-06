@@ -20,6 +20,7 @@
 #include "Master.h"
 #include "MidiSession.h"
 #include "font_6x8.h"
+#include "SynthStateMonitor.h"
 
 SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioDevice *useAudioDevice, QWidget *parent) :
 	QWidget(parent),
@@ -35,7 +36,10 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 
 	lcdWidget = new LCDWidget(synthRoute, ui->frame);
 	lcdWidget->setObjectName("lcdWidget");
-	ui->verticalLayout_5->addWidget(lcdWidget);
+	ui->lcdLayout->addWidget(lcdWidget);
+
+	ui->detailsFrame->setVisible(false);
+	synthStateMonitor = new SynthStateMonitor(ui, synthRoute);
 
 	refreshAudioDeviceList(master, useAudioDevice);
 	ui->pinCheckBox->setChecked(master->isPinned(synthRoute));
@@ -52,6 +56,7 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 }
 
 SynthWidget::~SynthWidget() {
+	delete synthStateMonitor;
 	delete lcdWidget;
 	delete ui;
 }
@@ -231,6 +236,10 @@ void SynthWidget::on_midiRecord_clicked() {
 		ui->midiRecord->setText("Stop");
 		recorder.startRecording();
 	}
+}
+
+void SynthWidget::on_detailsButton_clicked() {
+	ui->detailsFrame->setVisible(!ui->detailsFrame->isVisible());
 }
 
 void SynthWidget::setEmuModeText() {

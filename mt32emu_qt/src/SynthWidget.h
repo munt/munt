@@ -11,6 +11,7 @@
 class Master;
 class AudioDevice;
 class QListWidgetItem;
+class SynthStateMonitor;
 
 namespace Ui {
 	class SynthWidget;
@@ -54,6 +55,7 @@ private:
 	SynthRoute *synthRoute;
 	Ui::SynthWidget *ui;
 	LCDWidget *lcdWidget;
+	SynthStateMonitor *synthStateMonitor;
 	SynthPropertiesDialog spd;
 	AudioPropertiesDialog apd;
 	MidiPropertiesDialog mpd;
@@ -75,6 +77,7 @@ private slots:
 	void on_midiRemove_clicked();
 	void on_midiProperties_clicked();
 	void on_midiRecord_clicked();
+	void on_detailsButton_clicked();
 	void handleSynthRouteState(SynthRouteState state);
 	void handleSynthRoutePinned();
 	void handleMIDISessionAdded(MidiSession *midiSession);

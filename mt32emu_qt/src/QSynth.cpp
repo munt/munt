@@ -75,6 +75,18 @@ void QReportHandler::onPartStateChanged(int partNum, bool isActive) {
 	emit partStateChanged(partNum, isActive);
 }
 
+void QReportHandler::onPolyStateChanged(int partNum) {
+	emit polyStateChanged(partNum);
+}
+
+void QReportHandler::onPartialStateChanged(int partialNum, int partialPhase) {
+	emit partialStateChanged(partialNum, partialPhase);
+}
+
+void QReportHandler::onProgramChanged(int partNum, char patchName[]) {
+	emit programChanged(partNum, QString().fromAscii(patchName, 10));
+}
+
 QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED) {
 	isOpen = false;
 	synthMutex = new QMutex(QMutex::Recursive);
@@ -274,6 +286,14 @@ void QSynth::setDACInputMode(DACInputMode emuDACInputMode) {
 	synthMutex->lock();
 	synth->setDACInputMode(emuDACInputMode);
 	synthMutex->unlock();
+}
+
+QString QSynth::getPatchName(int partNum) {
+	return QString().fromAscii(synth->getPart(partNum)->getCurrentInstr(), 10);
+}
+
+const Partial *QSynth::getPartial(int partialNum){
+	return synth->getPartial(partialNum);
 }
 
 bool QSynth::isActive() {

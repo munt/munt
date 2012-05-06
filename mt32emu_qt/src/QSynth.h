@@ -26,6 +26,9 @@ public:
 	void onNewReverbTime(MT32Emu::Bit8u time);
 	void onNewReverbLevel(MT32Emu::Bit8u level);
 	void onPartStateChanged(int partNum, bool isActive);
+	void onPolyStateChanged(int partNum);
+	void onPartialStateChanged(int partialNum, int partialPhase);
+	void onProgramChanged(int partNum, char patchName[]);
 
 signals:
 	void balloonMessageAppeared(const QString &title, const QString &text);
@@ -35,6 +38,9 @@ signals:
 	void reverbTimeChanged(int);
 	void reverbLevelChanged(int);
 	void partStateChanged(int, bool);
+	void polyStateChanged(int);
+	void partialStateChanged(int, int);
+	void programChanged(int, QString);
 };
 
 class QSynth : public QObject {
@@ -76,6 +82,8 @@ public:
 	void setReverbOverridden(bool reverbOverridden);
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
+	QString getPatchName(int partNum);
+	const MT32Emu::Partial *getPartial(int partialNum);
 	bool isActive();
 
 signals:

@@ -40,6 +40,7 @@ void TVA::startRamp(Bit8u newTarget, Bit8u newIncrement, int newPhase) {
 #if MT32EMU_MONITOR_TVA >= 1
 	partial->getSynth()->printDebug("[+%lu] [Partial %d] TVA,ramp,%d,%d,%d,%d", partial->debugGetSampleNum(), partial->debugGetPartialNum(), (newIncrement & 0x80) ? -1 : 1, (newIncrement & 0x7F), newPhase);
 #endif
+	partial->getSynth()->partialStateChanged(partial, phase);
 }
 
 void TVA::end(int newPhase) {
@@ -48,6 +49,7 @@ void TVA::end(int newPhase) {
 #if MT32EMU_MONITOR_TVA >= 1
 	partial->getSynth()->printDebug("[+%lu] [Partial %d] TVA,end,%d", partial->debugGetSampleNum(), partial->debugGetPartialNum(), newPhase);
 #endif
+	partial->getSynth()->partialStateChanged(partial, phase);
 }
 
 static int multBias(Bit8u biasLevel, int bias) {
