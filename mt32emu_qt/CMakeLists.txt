@@ -18,6 +18,7 @@ set(mt32emu_qt_SOURCES
   src/MidiEvent.cpp
   src/MidiEventQueue.cpp
   src/MidiParser.cpp
+  src/MidiRecorder.cpp
   src/MidiSession.cpp
   src/QSynth.cpp
   src/SynthRoute.cpp

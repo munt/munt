@@ -74,6 +74,7 @@ private slots:
 	void on_midiAdd_clicked();
 	void on_midiRemove_clicked();
 	void on_midiProperties_clicked();
+	void on_midiRecord_clicked();
 	void handleSynthRouteState(SynthRouteState state);
 	void handleSynthRoutePinned();
 	void handleMIDISessionAdded(MidiSession *midiSession);

@@ -6,6 +6,7 @@
 #include <mt32emu/mt32emu.h>
 
 #include "QSynth.h"
+#include "MidiRecorder.h"
 
 class MidiSession;
 class AudioStream;
@@ -22,10 +23,9 @@ class SynthRoute : public QObject {
 	Q_OBJECT
 private:
 	SynthRouteState state;
-
 	QSynth qSynth;
-
 	QList<MidiSession *> midiSessions;
+	MidiRecorder recorder;
 
 	const AudioDevice *audioDevice;
 	AudioStream *audioStream; // NULL until a stream is created
@@ -55,6 +55,7 @@ public:
 	bool hasMIDISessions() const;
 	SynthRouteState getState() const;
 	void setAudioDevice(const AudioDevice *newAudioDevice);
+	MidiRecorder *getMidiRecorder();
 
 private slots:
 	void handleQSynthState(SynthState synthState);

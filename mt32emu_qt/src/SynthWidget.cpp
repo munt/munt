@@ -216,6 +216,23 @@ void SynthWidget::on_midiProperties_clicked() {
 	Master::getInstance()->setMidiPortProperties(&mpd, getSelectedMIDISession());
 }
 
+void SynthWidget::on_midiRecord_clicked() {
+	MidiRecorder &recorder = *synthRoute->getMidiRecorder();
+	if (recorder.isRecording()) {
+		ui->midiRecord->setText("Record");
+		recorder.stopRecording();
+		static QString currentDir = NULL;
+		QString fileName = QFileDialog::getSaveFileName(NULL, NULL, currentDir, "Standard MIDI files (*.mid)");
+		if (!fileName.isEmpty()) {
+			currentDir = QDir(fileName).absolutePath();
+			recorder.saveSMF(fileName, MasterClock::NANOS_PER_MILLISECOND);
+		}
+	} else {
+		ui->midiRecord->setText("Stop");
+		recorder.startRecording();
+	}
+}
+
 void SynthWidget::setEmuModeText() {
 	QString emuMode;
 	const MT32Emu::ROMImage *controlROMImage = NULL;

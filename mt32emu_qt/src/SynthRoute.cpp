@@ -158,10 +158,12 @@ void SynthRoute::handleQSynthState(SynthState synthState) {
 }
 
 bool SynthRoute::pushMIDIShortMessage(Bit32u msg, qint64 refNanos) {
+	recorder.recordShortMessage(msg, refNanos);
 	return qSynth.pushMIDIShortMessage(msg, refNanos);
 }
 
 bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, qint64 refNanos) {
+	recorder.recordSysex(sysexData, sysexLen, refNanos);
 	return qSynth.pushMIDISysex(sysexData, sysexLen, refNanos);
 }
 
@@ -191,4 +193,8 @@ void SynthRoute::setReverbSettings(int reverbMode, int reverbTime, int reverbLev
 
 void SynthRoute::setDACInputMode(DACInputMode emuDACInputMode) {
 	qSynth.setDACInputMode(emuDACInputMode);
+}
+
+MidiRecorder *SynthRoute::getMidiRecorder() {
+	return &recorder;
 }

@@ -26,14 +26,25 @@
          <widget class="QListWidget" name="midiList"/>
         </item>
         <item>
-         <widget class="QPushButton" name="midiProperties">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Properties...</string>
-          </property>
-         </widget>
+         <layout class="QHBoxLayout" name="horizontalLayout_8">
+          <item>
+           <widget class="QPushButton" name="midiProperties">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Properties...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="midiRecord">
+            <property name="text">
+             <string>Record</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -246,7 +257,6 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>midiProperties</tabstop>
   <tabstop>midiAdd</tabstop>
   <tabstop>midiRemove</tabstop>
   <tabstop>synthPropertiesButton</tabstop>
