@@ -59,6 +59,7 @@ private:
 	SynthPropertiesDialog spd;
 	AudioPropertiesDialog apd;
 	MidiPropertiesDialog mpd;
+	QTimer timer;
 
 	void refreshAudioDeviceList(Master *master, const AudioDevice *useAudioDevice);
 	int findMIDISession(MidiSession *midiSession);
@@ -77,12 +78,15 @@ private slots:
 	void on_midiRemove_clicked();
 	void on_midiProperties_clicked();
 	void on_midiRecord_clicked();
+	void on_masterVolumeSlider_valueChanged(int newValue);
 	void on_detailsButton_clicked();
 	void handleSynthRouteState(SynthRouteState state);
 	void handleSynthRoutePinned();
 	void handleMIDISessionAdded(MidiSession *midiSession);
 	void handleMIDISessionRemoved(MidiSession *midiSession);
 	void handleMIDISessionNameChanged(MidiSession *midiSession);
+	void handleMasterVolumeChanged(int volume);
+	void adjustMainWindowSize();
 };
 
 #endif // SYNTHWIDGET_H

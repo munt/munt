@@ -1,6 +1,7 @@
 <RCC>
   <qresource>
     <file>images/Details.gif</file>
+    <file>images/DetailsHide.gif</file>
     <file>images/LCDOn.gif</file>
     <file>images/LCDOff.gif</file>
     <file>images/Refresh.gif</file>
