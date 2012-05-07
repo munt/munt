@@ -29,6 +29,7 @@ public:
 	void onErrorControlROM();
 	void onErrorPCMROM();
 	void onDeviceReconfig();
+	void onDeviceReset();
 	void onNewReverbMode(MT32Emu::Bit8u mode);
 	void onNewReverbTime(MT32Emu::Bit8u time);
 	void onNewReverbLevel(MT32Emu::Bit8u level);

@@ -59,6 +59,10 @@ void QReportHandler::onDeviceReconfig() {
 	emit masterVolumeChanged(masterVolume);
 }
 
+void QReportHandler::onDeviceReset() {
+	emit masterVolumeChanged(100);
+}
+
 void QReportHandler::onNewReverbMode(Bit8u mode) {
 	emit reverbModeChanged(mode);
 }
