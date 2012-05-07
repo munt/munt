@@ -239,7 +239,9 @@ void SynthWidget::on_midiRecord_clicked() {
 }
 
 void SynthWidget::on_detailsButton_clicked() {
-	ui->detailsFrame->setVisible(!ui->detailsFrame->isVisible());
+	bool newVisible = !ui->detailsFrame->isVisible();
+	ui->detailsFrame->setVisible(newVisible);
+	synthStateMonitor->connectSignals(newVisible);
 }
 
 void SynthWidget::setEmuModeText() {

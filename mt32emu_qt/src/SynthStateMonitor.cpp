@@ -21,14 +21,12 @@
 #include "SynthRoute.h"
 #include "ui_SynthWidget.h"
 
+static QColor ColorGrey = QColor(100, 100, 100);
+static QColor partialStateColor[] = {ColorGrey, Qt::red, Qt::yellow, Qt::green};
+
 SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRoute) {
 	this->ui = ui;
 	synthRoute = useSynthRoute;
-
-	deadPartialLEDColor = QColor(100, 100, 100);
-	attackPartialLEDColor = Qt::red;
-	sustainPartialLEDColor = Qt::yellow;
-	releasePartialLEDColor = Qt::green;
 
 	for (int i = 0; i < 32; i++) {
 		partialStateLabel[i] = new QLabel();
@@ -44,12 +42,6 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 	}
 
 	qsynth = synthRoute->findChild<QSynth *>();
-	QReportHandler *handler = qsynth->findChild<QReportHandler *>();
-	handleReset();
-	connect(qsynth, SIGNAL(partStateReset()), SLOT(handleReset()));
-	connect(handler, SIGNAL(polyStateChanged(int)), SLOT(handlePolyStateChanged(int)));
-	connect(handler, SIGNAL(partialStateChanged(int, int)), SLOT(handlePartialStateChanged(int, int)));
-	connect(handler, SIGNAL(programChanged(int, QString)), SLOT(handleProgramChanged(int, QString)));
 }
 
 SynthStateMonitor::~SynthStateMonitor() {
@@ -60,15 +52,28 @@ SynthStateMonitor::~SynthStateMonitor() {
 	for (int i = 0; i < 32; i++) delete partialStateLabel[i];
 }
 
+void SynthStateMonitor::connectSignals(bool enable) {
+	QReportHandler *handler = qsynth->findChild<QReportHandler *>();
+	if (enable) {
+		connect(qsynth, SIGNAL(partStateReset()), SLOT(handleReset()));
+		connect(handler, SIGNAL(polyStateChanged(int)), SLOT(handlePolyStateChanged(int)));
+		connect(handler, SIGNAL(partialStateChanged(int, int)), SLOT(handlePartialStateChanged(int, int)));
+		connect(handler, SIGNAL(programChanged(int, QString)), SLOT(handleProgramChanged(int, QString)));
+		handleReset();
+	} else {
+		disconnect(qsynth, 0, this, 0);
+		disconnect(handler, 0, this, 0);
+	}
+}
+
 void SynthStateMonitor::handleReset() {
 	QPixmap partialLED(15, 15);
-	partialLED.fill(deadPartialLEDColor);
+	partialLED.fill(partialStateColor[PartialState_DEAD]);
 	for (int i = 0; i < 32; i++) {
 		partialStateLabel[i]->setPixmap(partialLED);
-		partialState[i] = 0;
 	}
 	QPixmap polyBar(480, 16);
-	polyBar.fill(deadPartialLEDColor);
+	polyBar.fill(ColorGrey);
 	for (int i = 0; i < 9; i++) {
 		patchNameLabel[i]->setText((i < 8) ? qsynth->getPatchName(i) : "Rhythm Channel");
 		polyStateLabel[i]->setPixmap(polyBar);
@@ -77,7 +82,7 @@ void SynthStateMonitor::handleReset() {
 
 void SynthStateMonitor::handlePolyStateChanged(int partNum) {
 	QPixmap &polyBar = const_cast <QPixmap &> (*polyStateLabel[partNum]->pixmap());
-	polyBar.fill(deadPartialLEDColor);
+	polyBar.fill(ColorGrey);
 	QPainter painter(&polyBar);
 	for (int i = 0; i < MT32EMU_MAX_POLY; i++) {
 		const MT32Emu::Partial *partial = qsynth->getPartial(i);
@@ -92,32 +97,9 @@ void SynthStateMonitor::handlePolyStateChanged(int partNum) {
 	polyStateLabel[partNum]->update();
 }
 
-void SynthStateMonitor::handlePartialStateChanged(int partialNum, int partialPhase) {
-	QColor *color;
-	int state;
-	switch (partialPhase) {
-		case MT32Emu::TVA_PHASE_4:
-		case MT32Emu::TVA_PHASE_SUSTAIN:
-			state = 2;
-			color = &sustainPartialLEDColor;
-			break;
-		case MT32Emu::TVA_PHASE_RELEASE:
-			state = 3;
-			color = &releasePartialLEDColor;
-			break;
-		case MT32Emu::TVA_PHASE_DEAD:
-			state = 0;
-			color = &deadPartialLEDColor;
-			break;
-		default:
-			state = 1;
-			color = &attackPartialLEDColor;
-			break;
-	}
-	if (partialState[partialNum] == state) return;
-	partialState[partialNum] = state;
+void SynthStateMonitor::handlePartialStateChanged(int partialNum, int partialState) {
 	QPixmap &partialLED = const_cast <QPixmap &> (*partialStateLabel[partialNum]->pixmap());
-	partialLED.fill(*color);
+	partialLED.fill(partialStateColor[partialState]);
 	partialStateLabel[partialNum]->update();
 }
 

@@ -198,10 +198,10 @@ void Synth::polyStateChanged(int partNum) {
 	reportHandler->onPolyStateChanged(partNum);
 }
 
-void Synth::partialStateChanged(const Partial * const partial, int partialPhase) {
+void Synth::partialStateChanged(const Partial * const partial, int oldPartialPhase, int newPartialPhase) {
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		if (getPartial(i) == partial) {
-			reportHandler->onPartialStateChanged(i, partialPhase);
+			reportHandler->onPartialStateChanged(i, oldPartialPhase, newPartialPhase);
 			break;
 		}
 	}

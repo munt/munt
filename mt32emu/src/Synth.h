@@ -245,7 +245,7 @@ protected:
 	virtual void onNewReverbLevel(Bit8u /* level */) {}
 	virtual void onPartStateChanged(int /* partNum */, bool /* isActive */) {}
 	virtual void onPolyStateChanged(int /* partNum */) {}
-	virtual void onPartialStateChanged(int /* partialNum */, int /* partialPhase */) {}
+	virtual void onPartialStateChanged(int /* partialNum */, int /* oldPartialPhase */, int /* newPartialPhase */) {}
 	virtual void onProgramChanged(int /* partNum */, char * /* patchName */) {}
 };
 
@@ -369,7 +369,7 @@ private:
 
 	void partStateChanged(int partNum, bool isPartActive);
 	void polyStateChanged(int partNum);
-	void partialStateChanged(const Partial * const partial, int partialPhase);
+	void partialStateChanged(const Partial * const partial, int oldPartialPhase, int newPartialPhase);
 	void newTimbreSet(int partNum, char patchName[]);
 	void printDebug(const char *fmt, ...);
 

@@ -30,26 +30,30 @@ namespace MT32Emu {
 static Bit8u biasLevelToAmpSubtractionCoeff[13] = {255, 187, 137, 100, 74, 54, 40, 29, 21, 15, 10, 5, 0};
 
 TVA::TVA(const Partial *usePartial, LA32Ramp *useAmpRamp) :
-	partial(usePartial), ampRamp(useAmpRamp), system(&usePartial->getSynth()->mt32ram.system) {
+	partial(usePartial), ampRamp(useAmpRamp), system(&usePartial->getSynth()->mt32ram.system), phase(TVA_PHASE_DEAD) {
 }
 
 void TVA::startRamp(Bit8u newTarget, Bit8u newIncrement, int newPhase) {
+	if (newPhase != phase) {
+		partial->getSynth()->partialStateChanged(partial, phase, newPhase);
+	}
 	target = newTarget;
 	phase = newPhase;
 	ampRamp->startRamp(newTarget, newIncrement);
 #if MT32EMU_MONITOR_TVA >= 1
 	partial->getSynth()->printDebug("[+%lu] [Partial %d] TVA,ramp,%d,%d,%d,%d", partial->debugGetSampleNum(), partial->debugGetPartialNum(), (newIncrement & 0x80) ? -1 : 1, (newIncrement & 0x7F), newPhase);
 #endif
-	partial->getSynth()->partialStateChanged(partial, phase);
 }
 
 void TVA::end(int newPhase) {
+	if (newPhase != phase) {
+		partial->getSynth()->partialStateChanged(partial, phase, newPhase);
+	}
 	phase = newPhase;
 	playing = false;
 #if MT32EMU_MONITOR_TVA >= 1
 	partial->getSynth()->printDebug("[+%lu] [Partial %d] TVA,end,%d", partial->debugGetSampleNum(), partial->debugGetPartialNum(), newPhase);
 #endif
-	partial->getSynth()->partialStateChanged(partial, phase);
 }
 
 static int multBias(Bit8u biasLevel, int bias) {

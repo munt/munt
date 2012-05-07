@@ -85,7 +85,7 @@ void Partial::deactivate() {
 			pair->pair = NULL;
 		}
 	}
-	synth->partialStateChanged(this, TVA_PHASE_DEAD);
+	synth->partialStateChanged(this, tva->getPhase(), TVA_PHASE_DEAD);
 #if MT32EMU_MONITOR_PARTIALS > 2
 	synth->printDebug("[+%lu] [Partial %d] Deactivated", sampleNum, debugPartialNum);
 	synth->printPartialUsage(sampleNum);

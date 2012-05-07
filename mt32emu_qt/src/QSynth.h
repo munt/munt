@@ -13,6 +13,13 @@ enum SynthState {
 	SynthState_CLOSING
 };
 
+enum PartialState {
+	PartialState_DEAD,
+	PartialState_ATTACK,
+	PartialState_SUSTAINED,
+	PartialState_RELEASED
+};
+
 class QReportHandler : public QObject, public MT32Emu::ReportHandler {
 	Q_OBJECT
 
@@ -27,7 +34,7 @@ public:
 	void onNewReverbLevel(MT32Emu::Bit8u level);
 	void onPartStateChanged(int partNum, bool isActive);
 	void onPolyStateChanged(int partNum);
-	void onPartialStateChanged(int partialNum, int partialPhase);
+	void onPartialStateChanged(int partialNum, int oldPartialPhase, int newPartialPhase);
 	void onProgramChanged(int partNum, char patchName[]);
 
 signals:

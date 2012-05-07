@@ -79,8 +79,13 @@ void QReportHandler::onPolyStateChanged(int partNum) {
 	emit polyStateChanged(partNum);
 }
 
-void QReportHandler::onPartialStateChanged(int partialNum, int partialPhase) {
-	emit partialStateChanged(partialNum, partialPhase);
+void QReportHandler::onPartialStateChanged(int partialNum, int oldPartialPhase, int newPartialPhase) {
+	static const int partialPhaseToState[8] = {
+		PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK,
+		PartialState_SUSTAINED, PartialState_SUSTAINED, PartialState_RELEASED, PartialState_DEAD
+	};
+	int newState = partialPhaseToState[newPartialPhase];
+	if (partialPhaseToState[oldPartialPhase] != newState) emit partialStateChanged(partialNum, newState);
 }
 
 void QReportHandler::onProgramChanged(int partNum, char patchName[]) {
