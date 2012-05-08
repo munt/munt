@@ -81,6 +81,9 @@ void SynthPropertiesDialog::on_buttonBox_clicked(QAbstractButton *button) {
 		case QDialogButtonBox::RestoreDefaults:
 			restoreDefaults();
 			break;
+		case QDialogButtonBox::Save:
+			saveSynthProfile();
+			break;
 		default:
 			break;
 	}
@@ -167,4 +170,7 @@ void SynthPropertiesDialog::restoreDefaults() {
 	ui->reverbCheckBox->setCheckState(Qt::PartiallyChecked);
 	ui->outputGainSlider->setValue(100);
 	ui->reverbOutputGainSlider->setValue(100);
+}
+
+void SynthPropertiesDialog::saveSynthProfile() {
 }

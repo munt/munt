@@ -24,6 +24,7 @@ private:
 	ROMSelectionDialog rsd;
 	void resetSynth();
 	void restoreDefaults();
+	void saveSynthProfile();
 
 private slots:
 	void on_romDirButton_clicked();

@@ -6,9 +6,21 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>546</width>
-    <height>213</height>
+    <width>350</width>
+    <height>305</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>305</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Synth Properties</string>
@@ -160,6 +172,13 @@
        </property>
       </widget>
      </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Output Gain</string>
+       </property>
+      </widget>
+     </item>
      <item row="6" column="1">
       <widget class="QSlider" name="outputGainSlider">
        <property name="maximum">
@@ -173,6 +192,13 @@
        </property>
        <property name="tickInterval">
         <number>100</number>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>Reverb Output Gain</string>
        </property>
       </widget>
      </item>
@@ -192,17 +218,40 @@
        </property>
       </widget>
      </item>
-     <item row="6" column="0">
-      <widget class="QLabel" name="label_5">
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QLabel" name="label_7">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
-        <string>Output Gain</string>
+        <string>Profile</string>
        </property>
       </widget>
      </item>
-     <item row="7" column="0">
-      <widget class="QLabel" name="label_6">
+     <item>
+      <widget class="QCheckBox" name="profileCheckBox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
-        <string>Reverb Output Gain</string>
+        <string>Default</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="profileComboBox">
+       <property name="editable">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -211,7 +260,7 @@
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="standardButtons">
-      <set>QDialogButtonBox::Ok|QDialogButtonBox::Reset|QDialogButtonBox::RestoreDefaults</set>
+      <set>QDialogButtonBox::Ok|QDialogButtonBox::Reset|QDialogButtonBox::RestoreDefaults|QDialogButtonBox::Save</set>
      </property>
      <property name="centerButtons">
       <bool>false</bool>
