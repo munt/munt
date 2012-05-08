@@ -53,6 +53,7 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	connect(synthRoute, SIGNAL(midiSessionRemoved(MidiSession *)), SLOT(handleMIDISessionRemoved(MidiSession *)));
 	connect(synthRoute, SIGNAL(midiSessionNameChanged(MidiSession *)), SLOT(handleMIDISessionNameChanged(MidiSession *)));
 	connect(master, SIGNAL(synthRoutePinned()), SLOT(handleSynthRoutePinned()));
+	connect(parent, SIGNAL(currentTabChanged(QWidget *)), SLOT(handleCurrentTabChanged(QWidget *)));
 	connect(ui->synthPropertiesButton, SIGNAL(clicked()), &spd, SLOT(exec()));
 	connect(&timer, SIGNAL(timeout()), SLOT(adjustMainWindowSize()));
 
@@ -258,6 +259,18 @@ void SynthWidget::adjustMainWindowSize() {
 	((QWidget*)spd.parent())->adjustSize();
 	int newHeight = height();
 	if (newHeight != oldHeight) timer.stop();
+}
+
+void SynthWidget::handleCurrentTabChanged(QWidget *currentSynthWidget) {
+	if (currentSynthWidget == this && Master::getInstance()->getSettings()->value("Master/showSynthDetails", "0").toBool()) {
+		ui->detailsFrame->setVisible(true);
+		ui->detailsButton->setIcon(QIcon(":/images/DetailsHide.gif"));
+		synthStateMonitor->connectSignals(true);
+	} else {
+		ui->detailsFrame->setVisible(false);
+		ui->detailsButton->setIcon(QIcon(":/images/Details.gif"));
+		synthStateMonitor->connectSignals(false);
+	}
 }
 
 void SynthWidget::on_detailsButton_clicked() {

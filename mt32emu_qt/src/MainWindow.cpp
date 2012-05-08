@@ -88,6 +88,10 @@ void MainWindow::on_actionAbout_triggered()
 					   );
 }
 
+void MainWindow::on_synthTabs_currentChanged() {
+	emit currentTabChanged(ui->synthTabs->currentWidget());
+}
+
 void MainWindow::refreshTabNames()
 {
 	QWidget *widget;
@@ -103,7 +107,9 @@ void MainWindow::refreshTabNames()
 
 void MainWindow::handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice) {
 	SynthWidget *synthWidget = new SynthWidget(master, synthRoute, audioDevice, this);
+	int newTabIx = ui->synthTabs->count();
 	ui->synthTabs->addTab(synthWidget, QString().sprintf("Synth &%i", ui->synthTabs->count() + 1));
+	ui->synthTabs->setCurrentIndex(newTabIx);
 }
 
 void MainWindow::handleSynthRouteRemoved(SynthRoute *synthRoute) {
@@ -123,6 +129,7 @@ void MainWindow::handleSynthRouteRemoved(SynthRoute *synthRoute) {
 		}
 	}
 }
+
 
 void MainWindow::on_menuMIDI_aboutToShow() {
 	ui->actionNew_MIDI_port->setEnabled(master->canCreateMidiPort());
@@ -204,6 +211,7 @@ void MainWindow::trayIconContextMenu() {
 	QFont bold;
 	bold.setBold(true);
 	menu->addAction("Show/Hide", this, SLOT(showHideMainWindow()))->setFont(bold);
+	menu->addAction("Show MIDI Player", this, SLOT(on_actionPlay_MIDI_file_triggered()));
 	menu->addAction(ui->actionStart_iconized);
 	ui->actionStart_iconized->setChecked(master->getSettings()->value("Master/startIconized", "0").toBool());
 #ifdef WITH_WINCONSOLE
