@@ -75,7 +75,7 @@ void SMFProcessor::run() {
 	for (int i = 0; i < midiEvents.count(); i++) {
 		const MidiEvent &e = midiEvents.at(i);
 		currentNanos += e.getTimestamp() * midiTick;
-		while (!stopProcessing) {
+		while (!stopProcessing && synthRoute->getState() == SynthRouteState_OPEN) {
 			if (bpmUpdated) {
 				bpmUpdated = false;
 				totalSeconds = (currentNanos - startNanos) / MasterClock::NANOS_PER_SECOND + estimateRemainingTime(midiEvents, i + 1);
@@ -106,7 +106,7 @@ void SMFProcessor::run() {
 			if (delay < MasterClock::NANOS_PER_MILLISECOND) break;
 			usleep(((delay < MAX_SLEEP_TIME ? delay : MAX_SLEEP_TIME) - MasterClock::NANOS_PER_MILLISECOND) / MasterClock::NANOS_PER_MICROSECOND);
 		}
-		if (stopProcessing) break;
+		if (stopProcessing || synthRoute->getState() != SynthRouteState_OPEN) break;
 		if (driver->seekPosition > -1) {
 			driver->seekPosition = -1;
 			continue;
@@ -147,20 +147,26 @@ int SMFProcessor::seek(SynthRoute *synthRoute, QVector<MidiEvent> &midiEvents, i
 	MasterClockNanos nanosNow = MasterClock::getClockNanos();
 	while (!stopProcessing && currentEventNanos < seekNanos) {
 		const MidiEvent &e = midiEvents.at(currentEventIx);
-		switch (e.getType()) {
-			case SHORT_MESSAGE: {
-					quint32 msg = e.getShortMessage();
-					if ((msg & 0xE0) != 0x80) synthRoute->pushMIDIShortMessage(msg, nanosNow);
+		while (!stopProcessing && synthRoute->getState() == SynthRouteState_OPEN) {
+			bool res = true;
+			switch (e.getType()) {
+				case SHORT_MESSAGE: {
+						quint32 msg = e.getShortMessage();
+						if ((msg & 0xE0) != 0x80) res = synthRoute->pushMIDIShortMessage(msg, nanosNow);
+						break;
+					}
+				case SYSEX:
+					res = synthRoute->pushMIDISysex(e.getSysexData(), e.getSysexLen(), nanosNow);
 					break;
-				}
-			case SYSEX:
-				synthRoute->pushMIDISysex(e.getSysexData(), e.getSysexLen(), nanosNow);
-				break;
-			case SET_TEMPO:
-				uint tempo = e.getShortMessage();
-				midiTick = parser.getMidiTick(tempo);
-				emit driver->tempoUpdated(MICROSECONDS_PER_MINUTE / tempo);
-				break;
+				case SET_TEMPO:
+					uint tempo = e.getShortMessage();
+					midiTick = parser.getMidiTick(tempo);
+					emit driver->tempoUpdated(MICROSECONDS_PER_MINUTE / tempo);
+					break;
+			}
+			if (res) break;
+			qDebug() << "SMFProcessor: MIDI buffer became full while seeking, taking a nap";
+			usleep(MAX_SLEEP_TIME / MasterClock::NANOS_PER_MICROSECOND);
 		}
 		currentEventIx++;
 		currentEventNanos += e.getTimestamp() * midiTick;
