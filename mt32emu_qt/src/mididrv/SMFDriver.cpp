@@ -47,7 +47,7 @@ void SMFProcessor::start(QString useFileName) {
 	fileName = useFileName;
 	if (!parser.parse(fileName)) {
 		qDebug() << "SMFDriver: Error parsing MIDI file:" << fileName;
-		QMessageBox::critical(NULL, "Error", "Error encountered while loading MIDI file");
+		QMessageBox::warning(NULL, "Error", "Error encountered while loading MIDI file");
 		emit driver->playbackFinished();
 		return;
 	}
