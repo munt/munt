@@ -21,8 +21,8 @@
 #include "SynthRoute.h"
 #include "ui_SynthWidget.h"
 
-static QColor ColorGrey = QColor(100, 100, 100);
-static QColor partialStateColor[] = {ColorGrey, Qt::red, Qt::yellow, Qt::green};
+static QColor colorGrey = QColor(100, 100, 100);
+static QColor partialStateColor[] = {colorGrey, Qt::red, Qt::yellow, Qt::green};
 
 SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRoute) {
 	this->ui = ui;
@@ -73,7 +73,7 @@ void SynthStateMonitor::handleReset() {
 		partialStateLabel[i]->setPixmap(partialLED);
 	}
 	QPixmap polyBar(480, 16);
-	polyBar.fill(ColorGrey);
+	polyBar.fill(colorGrey);
 	for (int i = 0; i < 9; i++) {
 		patchNameLabel[i]->setText((i < 8) ? qsynth->getPatchName(i) : "Rhythm Channel");
 		polyStateLabel[i]->setPixmap(polyBar);
@@ -82,9 +82,9 @@ void SynthStateMonitor::handleReset() {
 
 void SynthStateMonitor::handlePolyStateChanged(int partNum) {
 	QPixmap &polyBar = const_cast <QPixmap &> (*polyStateLabel[partNum]->pixmap());
-	polyBar.fill(ColorGrey);
+	polyBar.fill(colorGrey);
 	QPainter painter(&polyBar);
-	for (int i = 0; i < MT32EMU_MAX_POLY; i++) {
+	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		const MT32Emu::Partial *partial = qsynth->getPartial(i);
 		if (partial->getOwnerPart() != partNum) continue;
 		uint velocity = partial->getPoly()->getVelocity();
