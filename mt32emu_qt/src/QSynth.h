@@ -20,6 +20,20 @@ enum PartialState {
 	PartialState_RELEASED
 };
 
+struct SynthProfile {
+	QString name;
+	const MT32Emu::ROMImage *controlROMImage;
+	const MT32Emu::ROMImage *pcmROMImage;
+	MT32Emu::DACInputMode emuDACInputMode;
+	float outputGain;
+	float reverbOutputGain;
+	bool reverbEnabled;
+	bool reverbOverridden;
+	int reverbMode;
+	int reverbTime;
+	int reverbLevel;
+};
+
 class QReportHandler : public QObject, public MT32Emu::ReportHandler {
 	Q_OBJECT
 
@@ -63,6 +77,9 @@ private:
 	MidiEventQueue *midiEventQueue;
 
 	volatile bool isOpen;
+	const MT32Emu::ROMImage *controlROMImage;
+	const MT32Emu::ROMImage *pcmROMImage;
+
 	// For debugging
 	quint64 debugSampleIx;
 	quint64 debugLastEventSampleIx;

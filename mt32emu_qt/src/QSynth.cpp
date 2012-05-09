@@ -96,7 +96,7 @@ void QReportHandler::onProgramChanged(int partNum, char patchName[]) {
 	emit programChanged(partNum, QString().fromAscii(patchName, 10));
 }
 
-QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED) {
+QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED), controlROMImage(NULL), pcmROMImage(NULL) {
 	isOpen = false;
 	synthMutex = new QMutex(QMutex::Recursive);
 	midiEventQueue = new MidiEventQueue;
@@ -112,11 +112,11 @@ QSynth::~QSynth() {
 }
 
 bool QSynth::pushMIDIShortMessage(Bit32u msg, SynthTimestamp timestamp) {
-	return midiEventQueue->pushEvent(timestamp, msg, NULL, 0);
+	return isOpen && midiEventQueue->pushEvent(timestamp, msg, NULL, 0);
 }
 
 bool QSynth::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, SynthTimestamp timestamp) {
-	return midiEventQueue->pushEvent(timestamp, 0, sysexData, sysexLen);
+	return isOpen && midiEventQueue->pushEvent(timestamp, 0, sysexData, sysexLen);
 }
 
 // Note that the actualSampleRate given here only affects the timing of MIDI messages.
@@ -202,9 +202,9 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 }
 
 bool QSynth::openSynth() {
-	const MT32Emu::ROMImage *controlROMImage = NULL;
-	const MT32Emu::ROMImage *pcmROMImage = NULL;
-	Master::getInstance()->getROMImages(controlROMImage, pcmROMImage);
+	if (controlROMImage == NULL || pcmROMImage == NULL) {
+		Master::getInstance()->getROMImages(controlROMImage, pcmROMImage);
+	}
 	return synth->open(*controlROMImage, *pcmROMImage);
 }
 
