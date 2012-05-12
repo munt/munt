@@ -298,7 +298,8 @@ void QSynth::setDACInputMode(DACInputMode emuDACInputMode) {
 }
 
 QString QSynth::getPatchName(int partNum) {
-	return QString().fromAscii(synth->getPart(partNum)->getCurrentInstr(), 10);
+	if (isOpen) return QString().fromAscii(synth->getPart(partNum)->getCurrentInstr(), 10);
+	return QString("Channel %1").arg(partNum + 1);
 }
 
 const Partial *QSynth::getPartial(int partialNum){

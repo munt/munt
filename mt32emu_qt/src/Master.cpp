@@ -257,8 +257,14 @@ void Master::makeROMImages() {
 }
 
 void Master::freeROMImages() {
-	if (controlROMImage != NULL) MT32Emu::ROMImage::freeROMImage(controlROMImage);
-	if (pcmROMImage != NULL) MT32Emu::ROMImage::freeROMImage(pcmROMImage);
+	if (controlROMImage != NULL) {
+		delete controlROMImage->getFile();
+		MT32Emu::ROMImage::freeROMImage(controlROMImage);
+	}
+	if (pcmROMImage != NULL) {
+		delete pcmROMImage->getFile();
+		MT32Emu::ROMImage::freeROMImage(pcmROMImage);
+	}
 	controlROMImage = NULL;
 	pcmROMImage = NULL;
 }
