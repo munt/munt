@@ -80,7 +80,6 @@ void ROMSelectionDialog::clearButtonGroup(QButtonGroup &group) {
 void ROMSelectionDialog::refreshROMInfos() {
 	QString controlROMFileName = synthProfile.controlROMFileName;
 	QString pcmROMFileName = synthProfile.pcmROMFileName;
-	Master &master = *Master::getInstance();
 
 	clearButtonGroup(controlROMGroup);
 	clearButtonGroup(pcmROMGroup);

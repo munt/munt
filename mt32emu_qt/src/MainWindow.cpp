@@ -202,7 +202,8 @@ void MainWindow::on_actionShow_connection_balloons_toggled(bool checked) {
 
 void MainWindow::on_actionROM_Configuration_triggered() {
 	Master &master = *Master::getInstance();
-	SynthProfile synthProfile = {0};
+	SynthProfile synthProfile;
+	synthProfile.controlROMImage = synthProfile.pcmROMImage = NULL;
 	master.loadSynthProfile(synthProfile, "");
 	ROMSelectionDialog rsd(synthProfile, this);
 	if (!rsd.loadROMInfos()) return;

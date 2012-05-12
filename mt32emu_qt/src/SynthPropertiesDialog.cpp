@@ -97,7 +97,7 @@ void SynthPropertiesDialog::on_buttonBox_clicked(QAbstractButton *button) {
 	}
 }
 
-void SynthPropertiesDialog::on_profileComboBox_currentIndexChanged(int newProfileIx) {
+void SynthPropertiesDialog::on_profileComboBox_currentIndexChanged(int) {
 	Master &master = *Master::getInstance();
 	QString name = ui->profileComboBox->currentText();
 	synthRoute->getSynthProfile(synthProfile);

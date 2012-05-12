@@ -45,7 +45,7 @@ public:
 	void setTrayIcon(QSystemTrayIcon *trayIcon);
 	QString getDefaultSynthProfileName();
 	bool setDefaultSynthProfileName(QString name);
-	const QStringList Master::enumSynthProfiles() const;
+	const QStringList enumSynthProfiles() const;
 	void loadSynthProfile(SynthProfile &synthProfile, QString name);
 	void storeSynthProfile(const SynthProfile &synthProfile, QString name) const;
 	QSystemTrayIcon *getTrayIcon() const;

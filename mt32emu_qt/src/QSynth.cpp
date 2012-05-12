@@ -229,7 +229,8 @@ bool QSynth::open() {
 		isOpen = true;
 		setState(SynthState_OPEN);
 		reportHandler->onDeviceReconfig();
-		SynthProfile synthProfile = {0};
+		SynthProfile synthProfile;
+		getSynthProfile(synthProfile);
 		Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);
 		setSynthProfile(synthProfile, synthProfileName);
 		return true;
