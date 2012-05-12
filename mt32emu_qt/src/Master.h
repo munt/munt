@@ -24,11 +24,7 @@ private:
 	SynthRoute *pinnedSynthRoute;
 
 	QSettings *settings;
-	QDir romDir;
-	QString controlROMFileName;
-	QString pcmROMFileName;
-	const MT32Emu::ROMImage *controlROMImage;
-	const MT32Emu::ROMImage *pcmROMImage;
+	QString synthProfileName;
 	QSystemTrayIcon *trayIcon;
 	QString defaultAudioDriverId;
 	QString defaultAudioDeviceName;
@@ -38,21 +34,20 @@ private:
 	void initAudioDrivers();
 	void initMidiDrivers();
 	const AudioDevice *findAudioDevice(QString driverId, QString name) const;
-	const QString getROMPathName(QString romFileName) const;
-	void makeROMImages();
-	void freeROMImages();
+	const QString getROMPathName(const QDir &romDir, QString romFileName) const;
+	void makeROMImages(SynthProfile &synthProfile);
 	SynthRoute *startSynthRoute();
 
 public:
 	// May only be called from the application thread
 	const QList<AudioDevice *> getAudioDevices();
 	void setDefaultAudioDevice(QString driverId, QString name);
-	void setROMDir(QDir romDir);
-	void setROMFileNames(QString useControlROMFileName, QString usePCMROMFileName);
 	void setTrayIcon(QSystemTrayIcon *trayIcon);
-	QDir getROMDir();
-	void getROMFileNames(QString &controlROMFileName, QString &pcmROMFileName);
-	void getROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage);
+	QString getDefaultSynthProfileName();
+	bool setDefaultSynthProfileName(QString name);
+	const QStringList Master::enumSynthProfiles() const;
+	void loadSynthProfile(SynthProfile &synthProfile, QString name);
+	void storeSynthProfile(const SynthProfile &synthProfile, QString name) const;
 	QSystemTrayIcon *getTrayIcon() const;
 	QSettings *getSettings() const;
 	bool isPinned(const SynthRoute *synthRoute) const;
@@ -67,6 +62,8 @@ public:
 	void setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
 	bool isRunning();
 	void shutDown();
+
+	static void freeROMImages(const MT32Emu::ROMImage *controlROMImage, const MT32Emu::ROMImage *pcmROMImage);
 
 	static Master *getInstance();
 
@@ -83,6 +80,7 @@ signals:
 	void synthRouteAdded(SynthRoute *route, const AudioDevice *audioDevice);
 	void synthRouteRemoved(SynthRoute *route);
 	void synthRoutePinned();
+	void romsNotSet();
 };
 
 #endif

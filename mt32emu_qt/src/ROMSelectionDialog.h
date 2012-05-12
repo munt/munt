@@ -5,29 +5,27 @@
 #include <QButtonGroup>
 #include <QDir>
 
-class Master;
-class QCheckBox;
-
 namespace Ui {
 	class ROMSelectionDialog;
 }
+
+struct SynthProfile;
 
 class ROMSelectionDialog : public QDialog
 {
 	Q_OBJECT
 
 public:
-	explicit ROMSelectionDialog(QWidget *parent = 0);
+	explicit ROMSelectionDialog(SynthProfile &synthProfile, QWidget *parent = 0);
 	~ROMSelectionDialog();
-	void loadROMInfos(QString s);
+	bool loadROMInfos();
 
 private:
 	Ui::ROMSelectionDialog *ui;
 	QButtonGroup controlROMGroup;
 	QButtonGroup pcmROMGroup;
 
-	Master &master;
-	QDir romDir;
+	SynthProfile &synthProfile;
 	int controlROMRow;
 	int pcmROMRow;
 

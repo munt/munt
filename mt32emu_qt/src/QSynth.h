@@ -21,7 +21,9 @@ enum PartialState {
 };
 
 struct SynthProfile {
-	QString name;
+	QDir romDir;
+	QString controlROMFileName;
+	QString pcmROMFileName;
 	const MT32Emu::ROMImage *controlROMImage;
 	const MT32Emu::ROMImage *pcmROMImage;
 	MT32Emu::DACInputMode emuDACInputMode;
@@ -77,8 +79,17 @@ private:
 	MidiEventQueue *midiEventQueue;
 
 	volatile bool isOpen;
+	QDir romDir;
+	QString controlROMFileName;
+	QString pcmROMFileName;
 	const MT32Emu::ROMImage *controlROMImage;
 	const MT32Emu::ROMImage *pcmROMImage;
+	MT32Emu::DACInputMode emuDACInputMode;
+	float outputGain;
+	float reverbOutputGain;
+	int reverbMode;
+	int reverbTime;
+	int reverbLevel;
 
 	// For debugging
 	quint64 debugSampleIx;
@@ -86,6 +97,7 @@ private:
 
 	MT32Emu::Synth *synth;
 	QReportHandler *reportHandler;
+	QString synthProfileName;
 
 	bool openSynth();
 	void setState(SynthState newState);
@@ -100,6 +112,9 @@ public:
 	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, SynthTimestamp timestamp);
 	unsigned int render(MT32Emu::Bit16s *buf, unsigned int len, SynthTimestamp firstSampleTimestamp, double actualSampleRate);
 
+	void getSynthProfile(SynthProfile &synthProfile) const;
+	void setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName);
+
 	void setMasterVolume(int masterVolume);
 	void setOutputGain(float outputGain);
 	void setReverbOutputGain(float reverbOutputGain);
@@ -108,8 +123,8 @@ public:
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 	QString getPatchName(int partNum);
-	const MT32Emu::Partial *getPartial(int partialNum);
-	bool isActive();
+	const MT32Emu::Partial *getPartial(int partialNum) const;
+	bool isActive() const;
 
 signals:
 	void stateChanged(SynthState state);

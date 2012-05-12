@@ -43,6 +43,8 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
 	connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), SLOT(handleSynthRouteRemoved(SynthRoute *)));
 	connect(master, SIGNAL(synthRoutePinned()), SLOT(refreshTabNames()));
+	connect(master, SIGNAL(romsNotSet()), SLOT(on_actionROM_Configuration_triggered()));
+
 	if (master->getTrayIcon() != NULL) {
 		connect(master->getTrayIcon(), SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(handleTrayIconActivated(QSystemTrayIcon::ActivationReason)));
 		trayIconContextMenu();
@@ -199,11 +201,13 @@ void MainWindow::on_actionShow_connection_balloons_toggled(bool checked) {
 }
 
 void MainWindow::on_actionROM_Configuration_triggered() {
-	ROMSelectionDialog rsd;
-	QString s = QFileDialog::getExistingDirectory(this, "Choose ROM directory", master->getROMDir().absolutePath());
-	if (s.isNull()) return;
-	rsd.loadROMInfos(s);
+	Master &master = *Master::getInstance();
+	SynthProfile synthProfile = {0};
+	master.loadSynthProfile(synthProfile, "");
+	ROMSelectionDialog rsd(synthProfile, this);
+	if (!rsd.loadROMInfos()) return;
 	rsd.exec();
+	master.storeSynthProfile(synthProfile, "");
 }
 
 void MainWindow::trayIconContextMenu() {

@@ -64,14 +64,17 @@ void QReportHandler::onDeviceReset() {
 }
 
 void QReportHandler::onNewReverbMode(Bit8u mode) {
+	((QSynth *)parent())->reverbMode = mode;
 	emit reverbModeChanged(mode);
 }
 
 void QReportHandler::onNewReverbTime(Bit8u time) {
+	((QSynth *)parent())->reverbTime = time;
 	emit reverbTimeChanged(time);
 }
 
 void QReportHandler::onNewReverbLevel(Bit8u level) {
+	((QSynth *)parent())->reverbLevel = level;
 	emit reverbLevelChanged(level);
 }
 
@@ -105,6 +108,7 @@ QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED), con
 }
 
 QSynth::~QSynth() {
+	Master::freeROMImages(controlROMImage, pcmROMImage);
 	delete synth;
 	delete reportHandler;
 	delete midiEventQueue;
@@ -202,8 +206,14 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 }
 
 bool QSynth::openSynth() {
+	SynthProfile synthProfile;
+	getSynthProfile(synthProfile);
+	Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);
+	controlROMImage = synthProfile.controlROMImage;
+	pcmROMImage = synthProfile.pcmROMImage;
 	if (controlROMImage == NULL || pcmROMImage == NULL) {
-		Master::getInstance()->getROMImages(controlROMImage, pcmROMImage);
+		qDebug() << "Missing ROM files. Can't open synth :(";
+		return false;
 	}
 	return synth->open(*controlROMImage, *pcmROMImage);
 }
@@ -219,6 +229,9 @@ bool QSynth::open() {
 		isOpen = true;
 		setState(SynthState_OPEN);
 		reportHandler->onDeviceReconfig();
+		SynthProfile synthProfile = {0};
+		Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);
+		setSynthProfile(synthProfile, synthProfileName);
 		return true;
 	}
 	return false;
@@ -236,6 +249,7 @@ void QSynth::setMasterVolume(int masterVolume) {
 }
 
 void QSynth::setOutputGain(float outputGain) {
+	this->outputGain = outputGain;
 	if (!isOpen) {
 		return;
 	}
@@ -246,6 +260,7 @@ void QSynth::setOutputGain(float outputGain) {
 }
 
 void QSynth::setReverbOutputGain(float reverbOutputGain) {
+	this->reverbOutputGain = reverbOutputGain;
 	if (!isOpen) {
 		return;
 	}
@@ -276,6 +291,9 @@ void QSynth::setReverbOverridden(bool reverbOverridden) {
 }
 
 void QSynth::setReverbSettings(int reverbMode, int reverbTime, int reverbLevel) {
+	this->reverbMode = reverbMode;
+	this->reverbTime = reverbTime;
+	this->reverbLevel = reverbLevel;
 	if (!isOpen) {
 		return;
 	}
@@ -289,6 +307,7 @@ void QSynth::setReverbSettings(int reverbMode, int reverbTime, int reverbLevel) 
 }
 
 void QSynth::setDACInputMode(DACInputMode emuDACInputMode) {
+	this->emuDACInputMode = emuDACInputMode;
 	if (!isOpen) {
 		return;
 	}
@@ -302,11 +321,11 @@ QString QSynth::getPatchName(int partNum) {
 	return QString("Channel %1").arg(partNum + 1);
 }
 
-const Partial *QSynth::getPartial(int partialNum){
+const Partial *QSynth::getPartial(int partialNum) const {
 	return synth->getPartial(partialNum);
 }
 
-bool QSynth::isActive() {
+bool QSynth::isActive() const {
 	return synth->isActive();
 }
 
@@ -352,4 +371,51 @@ void QSynth::close() {
 	synth->close();
 	synthMutex->unlock();
 	setState(SynthState_CLOSED);
+}
+
+void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
+	synthProfile.romDir = romDir;
+	synthProfile.controlROMFileName = controlROMFileName;
+	synthProfile.pcmROMFileName = pcmROMFileName;
+	synthProfile.controlROMImage = controlROMImage;
+	synthProfile.pcmROMImage = pcmROMImage;
+	synthProfile.emuDACInputMode = emuDACInputMode;
+	synthProfile.outputGain = outputGain;
+	synthProfile.reverbOutputGain = reverbOutputGain;
+	synthProfile.reverbEnabled = synth->isReverbEnabled();
+	synthProfile.reverbOverridden = synth->isReverbOverridden();
+	synthProfile.reverbMode = reverbMode;
+	synthProfile.reverbTime = reverbTime;
+	synthProfile.reverbLevel = reverbLevel;
+}
+
+void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName) {
+	if (&synthProfile == NULL) {
+		synthProfileName = QString();
+		close();
+		return;
+	}
+	synthProfileName = useSynthProfileName;
+	romDir = synthProfile.romDir;
+	controlROMFileName = synthProfile.controlROMFileName;
+	pcmROMFileName = synthProfile.pcmROMFileName;
+	if (controlROMImage == NULL || pcmROMImage == NULL) {
+		controlROMImage = synthProfile.controlROMImage;
+		pcmROMImage = synthProfile.pcmROMImage;
+	} else if (synthProfile.controlROMImage != NULL && synthProfile.pcmROMImage != NULL) {
+		bool controlROMChanged = strcmp((char *)controlROMImage->getROMInfo()->sha1Digest, (char *)synthProfile.controlROMImage->getROMInfo()->sha1Digest) != 0;
+		bool pcmROMChanged = strcmp((char *)pcmROMImage->getROMInfo()->sha1Digest, (char *)synthProfile.pcmROMImage->getROMInfo()->sha1Digest) != 0;
+		if (controlROMChanged || pcmROMChanged) {
+			Master::freeROMImages(controlROMImage, pcmROMImage);
+			controlROMImage = synthProfile.controlROMImage;
+			pcmROMImage = synthProfile.pcmROMImage;
+			reset();
+		}
+	}
+	setDACInputMode(synthProfile.emuDACInputMode);
+	setOutputGain(synthProfile.outputGain);
+	setReverbOutputGain(synthProfile.reverbOutputGain);
+	setReverbSettings(synthProfile.reverbMode, synthProfile.reverbTime, synthProfile.reverbLevel);
+	setReverbEnabled(synthProfile.reverbEnabled);
+	setReverbOverridden(synthProfile.reverbOverridden);
 }

@@ -25,10 +25,22 @@ SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent, SynthRoute *useSyn
 	QDialog(parent),
 	ui(new Ui::SynthPropertiesDialog),
 	synthRoute(useSynthRoute),
-	rsd(this)
+	rsd(synthProfile, this)
 {
 	ui->setupUi(this);
-	restoreDefaults();
+	ui->profileComboBox->clear();
+	QStringList profiles = Master::getInstance()->enumSynthProfiles();
+	ui->profileComboBox->blockSignals(true);
+	ui->profileComboBox->addItems(profiles);
+	for (int i = 0; i < profiles.count(); i++) {
+		if (profiles[i] == Master::getInstance()->getDefaultSynthProfileName()) {
+			ui->profileComboBox->setCurrentIndex(i);
+			break;
+		}
+	}
+	ui->profileComboBox->blockSignals(false);
+	loadSynthProfile();
+
 	connect(ui->buttonBox, SIGNAL(clicked(QAbstractButton *)), SLOT(on_buttonBox_clicked(QAbstractButton *)));
 	connect(ui->reverbModeComboBox, SIGNAL(currentIndexChanged(int)), SLOT(updateReverbSettings()));
 	connect(ui->reverbTimeSlider, SIGNAL(valueChanged(int)), SLOT(updateReverbSettings()));
@@ -47,13 +59,9 @@ SynthPropertiesDialog::~SynthPropertiesDialog()
 
 void SynthPropertiesDialog::on_romDirButton_clicked()
 {
-	QString s = QFileDialog::getExistingDirectory(this, "Choose ROM directory", ui->romDirLineEdit->text());
-	if (s.isNull()) return;
-	rsd.loadROMInfos(s);
-	if (QDialog::Accepted == rsd.exec()) {
-		ui->romDirLineEdit->setText(s);
-		resetSynth();
-	}
+	if (!rsd.loadROMInfos()) return;
+	ui->romDirLineEdit->setText(synthProfile.romDir.absolutePath());
+	rsd.exec();
 }
 
 void SynthPropertiesDialog::on_dacEmuComboBox_currentIndexChanged(int index) {
@@ -72,7 +80,7 @@ void SynthPropertiesDialog::on_dacEmuComboBox_currentIndexChanged(int index) {
 
 void SynthPropertiesDialog::on_buttonBox_clicked(QAbstractButton *button) {
 	switch (ui->buttonBox->standardButton(button)) {
-		case QDialogButtonBox::Ok:
+		case QDialogButtonBox::Close:
 			QDialog::accept();
 			break;
 		case QDialogButtonBox::Reset:
@@ -89,12 +97,22 @@ void SynthPropertiesDialog::on_buttonBox_clicked(QAbstractButton *button) {
 	}
 }
 
+void SynthPropertiesDialog::on_profileComboBox_currentIndexChanged(int newProfileIx) {
+	Master &master = *Master::getInstance();
+	QString name = ui->profileComboBox->currentText();
+	synthRoute->getSynthProfile(synthProfile);
+	master.loadSynthProfile(synthProfile, name);
+	synthRoute->setSynthProfile(synthProfile, name);
+	ui->profileCheckBox->setChecked(name == master.getDefaultSynthProfileName());
+	loadSynthProfile();
+}
+
 void SynthPropertiesDialog::on_reverbCheckBox_stateChanged(int state) {
 	switch (state) {
 		case Qt::Unchecked:
-			ui->reverbModeComboBox->setEnabled(true);
-			ui->reverbTimeSlider->setEnabled(true);
-			ui->reverbLevelSlider->setEnabled(true);
+			ui->reverbModeComboBox->setEnabled(false);
+			ui->reverbTimeSlider->setEnabled(false);
+			ui->reverbLevelSlider->setEnabled(false);
 			synthRoute->setReverbEnabled(false);
 			synthRoute->setReverbOverridden(true);
 			break;
@@ -160,8 +178,6 @@ void SynthPropertiesDialog::resetSynth() {
 }
 
 void SynthPropertiesDialog::restoreDefaults() {
-	QString s = Master::getInstance()->getROMDir().absolutePath();
-	ui->romDirLineEdit->setText(s);
 	ui->dacEmuComboBox->setCurrentIndex(0);
 	ui->reverbCheckBox->setCheckState(Qt::Checked);
 	ui->reverbModeComboBox->setCurrentIndex(0);
@@ -172,5 +188,33 @@ void SynthPropertiesDialog::restoreDefaults() {
 	ui->reverbOutputGainSlider->setValue(100);
 }
 
+void SynthPropertiesDialog::loadSynthProfile() {
+	synthRoute->getSynthProfile(synthProfile);
+	ui->romDirLineEdit->setText(synthProfile.romDir.absolutePath());
+	ui->dacEmuComboBox->setCurrentIndex(synthProfile.emuDACInputMode == MT32Emu::DACInputMode_NICE ? MT32Emu::DACInputMode_NICE : synthProfile.emuDACInputMode - 1);
+	ui->reverbCheckBox->setCheckState(Qt::Checked);
+	ui->reverbModeComboBox->setCurrentIndex(synthProfile.reverbMode);
+	ui->reverbTimeSlider->setValue(synthProfile.reverbTime);
+	ui->reverbLevelSlider->setValue(synthProfile.reverbLevel);
+	if (synthProfile.reverbEnabled) {
+		ui->reverbCheckBox->setCheckState(synthProfile.reverbOverridden ? Qt::Checked : Qt::PartiallyChecked);
+	} else {
+		ui->reverbCheckBox->setCheckState(Qt::Unchecked);
+	}
+	ui->outputGainSlider->setValue(synthProfile.outputGain * 100);
+	ui->reverbOutputGainSlider->setValue(synthProfile.reverbOutputGain * 100);
+}
+
 void SynthPropertiesDialog::saveSynthProfile() {
+	SynthProfile newSynthProfile;
+	synthRoute->getSynthProfile(newSynthProfile);
+	newSynthProfile.romDir = synthProfile.romDir;
+	newSynthProfile.controlROMFileName = synthProfile.controlROMFileName;
+	newSynthProfile.pcmROMFileName = synthProfile.pcmROMFileName;
+	Master &master = *Master::getInstance();
+	QString name = ui->profileComboBox->currentText();
+	master.storeSynthProfile(newSynthProfile, name);
+	master.loadSynthProfile(synthProfile, name);
+	synthRoute->setSynthProfile(synthProfile, name);
+	if (ui->profileCheckBox->isChecked()) master.setDefaultSynthProfileName(name);
 }

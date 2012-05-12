@@ -66,10 +66,7 @@ void Master::init() {
 	MasterClock::init();
 
 	INSTANCE->settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
-	INSTANCE->romDir = INSTANCE->settings->value("Master/romDir", "./").toString();
-	INSTANCE->controlROMFileName = INSTANCE->settings->value("Master/ControlROM", "MT32_CONTROL.ROM").toString();
-	INSTANCE->pcmROMFileName = INSTANCE->settings->value("Master/PCMROM", "MT32_PCM.ROM").toString();
-	INSTANCE->makeROMImages();
+	INSTANCE->synthProfileName = INSTANCE->settings->value("Master/defaultSynthProfile", "default").toString();
 
 	INSTANCE->trayIcon = NULL;
 	INSTANCE->defaultAudioDriverId = INSTANCE->settings->value("Master/DefaultAudioDriver").toString();
@@ -115,8 +112,6 @@ void Master::deinit() {
 		delete audioDriverIt.next();
 		audioDriverIt.remove();
 	}
-
-	INSTANCE->freeROMImages();
 
 	MasterClock::deinit();
 
@@ -212,61 +207,118 @@ QSettings *Master::getSettings() const {
 	return settings;
 }
 
-QDir Master::getROMDir() {
-	return romDir;
+QString Master::getDefaultSynthProfileName() {
+	return synthProfileName;
 }
 
-void Master::setROMDir(QDir newROMDir) {
-	romDir = newROMDir;
-	settings->setValue("Master/romDir", romDir.absolutePath());
+bool Master::setDefaultSynthProfileName(QString name) {
+	const QStringList profiles = enumSynthProfiles();
+	if (profiles.contains(name, Qt::CaseInsensitive)) {
+		synthProfileName = name;
+		settings->setValue("Master/defaultSynthProfile", synthProfileName);
+		return true;
+	}
+	return false;
 }
 
-void Master::getROMFileNames(QString &controlROMFileName, QString &pcmROMFileName) {
-	controlROMFileName = this->controlROMFileName;
-	pcmROMFileName = this->pcmROMFileName;
+const QStringList Master::enumSynthProfiles() const {
+	settings->beginGroup("Profiles");
+	const QStringList profiles = settings->childGroups();
+	settings->endGroup();
+	return profiles;
 }
 
-void Master::setROMFileNames(QString useControlROMFileName, QString usePCMROMFileName) {
-	controlROMFileName = useControlROMFileName;
-	pcmROMFileName = usePCMROMFileName;
-	settings->setValue("Master/ControlROM", useControlROMFileName);
-	settings->setValue("Master/PCMROM", usePCMROMFileName);
-	makeROMImages();
-}
-
-void Master::getROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage) {
-	controlROMImage = this->controlROMImage;
-	pcmROMImage = this->pcmROMImage;
-}
-
-const QString Master::getROMPathName(QString romFileName) const {
+const QString Master::getROMPathName(const QDir &romDir, QString romFileName) const {
 	QString pathName = QDir::toNativeSeparators(romDir.absolutePath());
 	return pathName + QDir::separator() + romFileName;
 }
 
-void Master::makeROMImages() {
+void Master::makeROMImages(SynthProfile &synthProfile) {
+	freeROMImages(synthProfile.controlROMImage, synthProfile.pcmROMImage);
+
+	foreach (SynthRoute *synthRoute, INSTANCE->synthRoutes) {
+		SynthProfile profile;
+		synthRoute->getSynthProfile(profile);
+		if (synthProfile.romDir != profile.romDir) continue;
+		if (synthProfile.controlROMFileName == profile.controlROMFileName) synthProfile.controlROMImage = profile.controlROMImage;
+		if (synthProfile.pcmROMFileName == profile.pcmROMFileName) synthProfile.pcmROMImage = profile.pcmROMImage;
+	}
+
 	MT32Emu::FileStream *file;
-
-	freeROMImages();
-
-	file = new MT32Emu::FileStream();
-	if (file->open(getROMPathName(controlROMFileName).toUtf8())) controlROMImage = MT32Emu::ROMImage::makeROMImage(file);
-
-	file = new MT32Emu::FileStream();
-	if (file->open(getROMPathName(pcmROMFileName).toUtf8())) pcmROMImage = MT32Emu::ROMImage::makeROMImage(file);
+	if (synthProfile.controlROMImage == NULL) {
+		file = new MT32Emu::FileStream();
+		if (file->open(getROMPathName(synthProfile.romDir, synthProfile.controlROMFileName).toUtf8())) synthProfile.controlROMImage = MT32Emu::ROMImage::makeROMImage(file);
+	}
+	if (synthProfile.pcmROMImage == NULL) {
+		file = new MT32Emu::FileStream();
+		if (file->open(getROMPathName(synthProfile.romDir, synthProfile.pcmROMFileName).toUtf8())) synthProfile.pcmROMImage = MT32Emu::ROMImage::makeROMImage(file);
+	}
 }
 
-void Master::freeROMImages() {
-	if (controlROMImage != NULL) {
+void Master::freeROMImages(const MT32Emu::ROMImage *controlROMImage, const MT32Emu::ROMImage *pcmROMImage) {
+	if (controlROMImage == NULL && pcmROMImage == NULL) return;
+	bool controlROMInUse = false;
+	bool pcmROMInUse = false;
+	foreach (SynthRoute *synthRoute, INSTANCE->synthRoutes) {
+		SynthProfile synthProfile;
+		synthRoute->getSynthProfile(synthProfile);
+		controlROMInUse = controlROMInUse || (synthProfile.controlROMImage == controlROMImage);
+		pcmROMInUse = pcmROMInUse || (synthProfile.pcmROMImage == pcmROMImage);
+	}
+	if (!controlROMInUse && controlROMImage != NULL) {
 		delete controlROMImage->getFile();
 		MT32Emu::ROMImage::freeROMImage(controlROMImage);
+		controlROMImage = NULL;
 	}
-	if (pcmROMImage != NULL) {
+	if (!pcmROMInUse && pcmROMImage != NULL) {
 		delete pcmROMImage->getFile();
 		MT32Emu::ROMImage::freeROMImage(pcmROMImage);
+		pcmROMImage = NULL;
 	}
-	controlROMImage = NULL;
-	pcmROMImage = NULL;
+}
+
+void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
+	static bool romNotSetReported = false;
+	if (name.isEmpty()) name = synthProfileName;
+	settings->beginGroup("Profiles/" + name);
+	synthProfile.romDir.setPath(settings->value("romDir", "./").toString());
+	synthProfile.controlROMFileName = settings->value("controlROM").toString();
+	synthProfile.pcmROMFileName = settings->value("pcmROM").toString();
+	synthProfile.emuDACInputMode = (MT32Emu::DACInputMode)settings->value("emuDACInputMode", 0).toInt();
+	synthProfile.reverbEnabled = settings->value("reverbEnabled", true).toBool();
+	synthProfile.reverbOverridden = settings->value("reverbOverridden", false).toBool();
+	synthProfile.reverbMode = settings->value("reverbMode", 0).toInt();
+	synthProfile.reverbTime = settings->value("reverbTime", 5).toInt();
+	synthProfile.reverbLevel = settings->value("reverbLevel", 3).toInt();
+	synthProfile.outputGain = settings->value("outputGain", 1.0f).toFloat();
+	synthProfile.reverbOutputGain = settings->value("reverbOutputGain", 1.0f).toFloat();
+	settings->endGroup();
+
+	makeROMImages(synthProfile);
+	if (romNotSetReported || name != synthProfileName) return;
+	if (synthProfile.controlROMImage == NULL || synthProfile.pcmROMImage == NULL) {
+		romNotSetReported = true;
+		emit romsNotSet();
+		loadSynthProfile(synthProfile, name);
+		romNotSetReported = false;
+	}
+}
+
+void Master::storeSynthProfile(const SynthProfile &synthProfile, QString name) const {
+	if (name.isEmpty()) name = synthProfileName;
+	settings->beginGroup("Profiles/" + name);
+	settings->setValue("romDir", synthProfile.romDir.absolutePath());
+	settings->setValue("controlROM", synthProfile.controlROMFileName);
+	settings->setValue("pcmROM", synthProfile.pcmROMFileName);
+	settings->setValue("emuDACInputMode", synthProfile.emuDACInputMode);
+	settings->setValue("reverbEnabled", synthProfile.reverbEnabled);
+	settings->setValue("reverbOverridden", synthProfile.reverbOverridden);
+	settings->setValue("reverbMode", synthProfile.reverbMode);
+	settings->setValue("reverbTime", synthProfile.reverbTime);
+	settings->setValue("reverbLevel", synthProfile.reverbLevel);
+	settings->setValue("outputGain", QString().setNum(synthProfile.outputGain));
+	settings->setValue("reverbOutputGain", QString().setNum(synthProfile.reverbOutputGain));
+	settings->endGroup();
 }
 
 bool Master::isPinned(const SynthRoute *synthRoute) const {

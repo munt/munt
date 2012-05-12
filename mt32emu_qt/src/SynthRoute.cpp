@@ -198,3 +198,11 @@ void SynthRoute::setDACInputMode(DACInputMode emuDACInputMode) {
 MidiRecorder *SynthRoute::getMidiRecorder() {
 	return &recorder;
 }
+
+void SynthRoute::getSynthProfile(SynthProfile &synthProfile) const {
+	qSynth.getSynthProfile(synthProfile);
+}
+
+void SynthRoute::setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName) {
+	qSynth.setSynthProfile(synthProfile, useSynthProfileName);
+}

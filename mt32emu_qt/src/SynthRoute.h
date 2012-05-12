@@ -56,6 +56,8 @@ public:
 	SynthRouteState getState() const;
 	void setAudioDevice(const AudioDevice *newAudioDevice);
 	MidiRecorder *getMidiRecorder();
+	void getSynthProfile(SynthProfile &synthProfile) const;
+	void setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName);
 
 private slots:
 	void handleQSynthState(SynthState synthState);

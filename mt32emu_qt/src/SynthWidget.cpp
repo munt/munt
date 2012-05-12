@@ -284,12 +284,11 @@ void SynthWidget::on_detailsButton_clicked() {
 
 void SynthWidget::setEmuModeText() {
 	QString emuMode;
-	const MT32Emu::ROMImage *controlROMImage = NULL;
-	const MT32Emu::ROMImage *pcmROMImage = NULL;
-	Master::getInstance()->getROMImages(controlROMImage, pcmROMImage);
-	if (controlROMImage == NULL) emuMode = "Disabled";
-	else if (strncmp((char *)controlROMImage->getROMInfo()->shortName, "mt32", 4) == 0) emuMode = "MT-32";
-	else if (strncmp((char *)controlROMImage->getROMInfo()->shortName, "cm32", 4) == 0) emuMode = "CM-32L";
+	SynthProfile synthProfile;
+	synthRoute->getSynthProfile(synthProfile);
+	if (synthProfile.controlROMImage == NULL) emuMode = "Disabled";
+	else if (strncmp((char *)synthProfile.controlROMImage->getROMInfo()->shortName, "mt32", 4) == 0) emuMode = "MT-32";
+	else if (strncmp((char *)synthProfile.controlROMImage->getROMInfo()->shortName, "cm32", 4) == 0) emuMode = "CM-32L";
 	else emuMode = "Unknown";
 	ui->synthEmuModeLabel->setText(emuMode + " Emulation Mode");
 }

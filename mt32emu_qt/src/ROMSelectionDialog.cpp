@@ -28,12 +28,12 @@ static const int CHECKBOX_COLUMN = 0;
 static const int FILENAME_COLUMN = 1;
 static const int ROM_TYPE_COLUMN = 4;
 
-ROMSelectionDialog::ROMSelectionDialog(QWidget *parent) :
+ROMSelectionDialog::ROMSelectionDialog(SynthProfile &useSynthProfile, QWidget *parent) :
 		QDialog(parent),
 		ui(new Ui::ROMSelectionDialog),
 		controlROMGroup(this),
 		pcmROMGroup(this),
-		master(*Master::getInstance())
+		synthProfile(useSynthProfile)
 {
 	ui->setupUi(this);
 
@@ -46,6 +46,7 @@ ROMSelectionDialog::ROMSelectionDialog(QWidget *parent) :
 	fileFilter.clear();
 	fileFilter.append("*.*");
 	ui->fileFilterCombo->addItem(fileFilterToString(fileFilter), QVariant(fileFilter));
+	refreshROMInfos();
 }
 
 ROMSelectionDialog::~ROMSelectionDialog() {
@@ -59,11 +60,14 @@ const QString ROMSelectionDialog::fileFilterToString(const QStringList fileFilte
 	return NULL;
 }
 
-void ROMSelectionDialog::loadROMInfos(QString s) {
-	if (romDir.absolutePath() != s) {
-		romDir.setPath(s);
+bool ROMSelectionDialog::loadROMInfos() {
+	QString s = QFileDialog::getExistingDirectory(this, "Choose ROM directory", synthProfile.romDir.absolutePath());
+	if (s.isEmpty()) return false;
+	if (s != synthProfile.romDir.absolutePath()) {
+		synthProfile.romDir.setPath(s);
 		refreshROMInfos();
 	}
+	return true;
 }
 
 void ROMSelectionDialog::clearButtonGroup(QButtonGroup &group) {
@@ -74,9 +78,9 @@ void ROMSelectionDialog::clearButtonGroup(QButtonGroup &group) {
 }
 
 void ROMSelectionDialog::refreshROMInfos() {
-	QString controlROMFileName;
-	QString pcmROMFileName;
-	master.getROMFileNames(controlROMFileName, pcmROMFileName);
+	QString controlROMFileName = synthProfile.controlROMFileName;
+	QString pcmROMFileName = synthProfile.pcmROMFileName;
+	Master &master = *Master::getInstance();
 
 	clearButtonGroup(controlROMGroup);
 	clearButtonGroup(pcmROMGroup);
@@ -84,7 +88,7 @@ void ROMSelectionDialog::refreshROMInfos() {
 	pcmROMRow = -1;
 
 	QStringList fileFilter = ui->fileFilterCombo->itemData(ui->fileFilterCombo->currentIndex()).value<QStringList>();
-	QStringList dirEntries = romDir.entryList(fileFilter);
+	QStringList dirEntries = synthProfile.romDir.entryList(fileFilter);
 	ui->romInfoTable->clearContents();
 	ui->romInfoTable->setRowCount(dirEntries.size());
 
@@ -92,7 +96,7 @@ void ROMSelectionDialog::refreshROMInfos() {
 	for (QStringListIterator it(dirEntries); it.hasNext();) {
 		QString fileName = it.next();
 		FileStream file;
-		if (!file.open((romDir.absolutePath() + QDir::separator() + fileName).toUtf8())) continue;
+		if (!file.open((synthProfile.romDir.absolutePath() + QDir::separator() + fileName).toUtf8())) continue;
 		const ROMInfo &romInfo = *ROMInfo::getROMInfo(&file);
 		if (&romInfo == NULL) continue;
 
@@ -117,9 +121,10 @@ void ROMSelectionDialog::refreshROMInfos() {
 				continue;
 		}
 
-		if (master.getROMDir() == romDir) {
-			if (fileName == controlROMFileName) controlROMRow = row;
-			else if (fileName == pcmROMFileName) pcmROMRow = row;
+		if (fileName == controlROMFileName) {
+			controlROMRow = row;
+		} else if (fileName == pcmROMFileName) {
+			pcmROMRow = row;
 		}
 
 		int column = 0;
@@ -170,12 +175,8 @@ void ROMSelectionDialog::accept() {
 	QDialog::accept();
 	controlROMRow = controlROMGroup.checkedId();
 	pcmROMRow = pcmROMGroup.checkedId();
-	master.setROMDir(romDir);
-	QString controlROMFileName = NULL;
-	QString pcmROMFileName = NULL;
-	if (controlROMRow > -1) controlROMFileName = ui->romInfoTable->item(controlROMRow, FILENAME_COLUMN)->text();
-	if (pcmROMRow > -1) pcmROMFileName = ui->romInfoTable->item(pcmROMRow, FILENAME_COLUMN)->text();
-	master.setROMFileNames(controlROMFileName, pcmROMFileName);
+	if (controlROMRow > -1) synthProfile.controlROMFileName = ui->romInfoTable->item(controlROMRow, FILENAME_COLUMN)->text();
+	if (pcmROMRow > -1) synthProfile.pcmROMFileName = ui->romInfoTable->item(pcmROMRow, FILENAME_COLUMN)->text();
 }
 
 void ROMSelectionDialog::reject() {

@@ -21,15 +21,18 @@ public:
 private:
 	Ui::SynthPropertiesDialog *ui;
 	SynthRoute *synthRoute;
+	SynthProfile synthProfile;
 	ROMSelectionDialog rsd;
 	void resetSynth();
 	void restoreDefaults();
+	void loadSynthProfile();
 	void saveSynthProfile();
 
 private slots:
 	void on_romDirButton_clicked();
 	void on_dacEmuComboBox_currentIndexChanged(int);
 	void on_buttonBox_clicked(QAbstractButton *button);
+	void on_profileComboBox_currentIndexChanged(int);
 	void on_reverbCheckBox_stateChanged(int state);
 	void on_outputGainSlider_valueChanged(int value);
 	void on_reverbOutputGainSlider_valueChanged(int value);
