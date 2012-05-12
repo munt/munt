@@ -63,7 +63,7 @@ public:
 	bool isRunning();
 	void shutDown();
 
-	static void freeROMImages(const MT32Emu::ROMImage *controlROMImage, const MT32Emu::ROMImage *pcmROMImage);
+	static void freeROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage);
 
 	static Master *getInstance();
 

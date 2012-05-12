@@ -206,6 +206,14 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 }
 
 bool QSynth::openSynth() {
+	return synth->open(*controlROMImage, *pcmROMImage);
+}
+
+bool QSynth::open() {
+	if (isOpen) {
+		return true;
+	}
+
 	SynthProfile synthProfile;
 	getSynthProfile(synthProfile);
 	Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);
@@ -215,23 +223,12 @@ bool QSynth::openSynth() {
 		qDebug() << "Missing ROM files. Can't open synth :(";
 		return false;
 	}
-	return synth->open(*controlROMImage, *pcmROMImage);
-}
-
-bool QSynth::open() {
-	if (isOpen) {
-		return true;
-	}
-
 	if (openSynth()) {
 		debugSampleIx = 0;
 		debugLastEventSampleIx = 0;
 		isOpen = true;
 		setState(SynthState_OPEN);
 		reportHandler->onDeviceReconfig();
-		SynthProfile synthProfile;
-		getSynthProfile(synthProfile);
-		Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);
 		setSynthProfile(synthProfile, synthProfileName);
 		return true;
 	}

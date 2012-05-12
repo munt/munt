@@ -255,7 +255,7 @@ void Master::makeROMImages(SynthProfile &synthProfile) {
 	}
 }
 
-void Master::freeROMImages(const MT32Emu::ROMImage *controlROMImage, const MT32Emu::ROMImage *pcmROMImage) {
+void Master::freeROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage) {
 	if (controlROMImage == NULL && pcmROMImage == NULL) return;
 	bool controlROMInUse = false;
 	bool pcmROMInUse = false;
