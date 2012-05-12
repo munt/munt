@@ -81,6 +81,7 @@ void SynthStateMonitor::handleReset() {
 }
 
 void SynthStateMonitor::handlePolyStateChanged(int partNum) {
+	if (synthRoute->getState() != SynthRouteState_OPEN) return;
 	QPixmap &polyBar = const_cast <QPixmap &> (*polyStateLabel[partNum]->pixmap());
 	polyBar.fill(colorGrey);
 	QPainter painter(&polyBar);
