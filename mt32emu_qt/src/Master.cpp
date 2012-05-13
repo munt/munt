@@ -247,11 +247,22 @@ void Master::makeROMImages(SynthProfile &synthProfile) {
 	MT32Emu::FileStream *file;
 	if (synthProfile.controlROMImage == NULL) {
 		file = new MT32Emu::FileStream();
-		if (file->open(getROMPathName(synthProfile.romDir, synthProfile.controlROMFileName).toUtf8())) synthProfile.controlROMImage = MT32Emu::ROMImage::makeROMImage(file);
+		if (file->open(getROMPathName(synthProfile.romDir, synthProfile.controlROMFileName).toUtf8())) {
+			synthProfile.controlROMImage = MT32Emu::ROMImage::makeROMImage(file);
+			if (synthProfile.controlROMImage->getROMInfo() == NULL) {
+				freeROMImages(synthProfile.controlROMImage, synthProfile.pcmROMImage);
+				return;
+			}
+		}
 	}
 	if (synthProfile.pcmROMImage == NULL) {
 		file = new MT32Emu::FileStream();
-		if (file->open(getROMPathName(synthProfile.romDir, synthProfile.pcmROMFileName).toUtf8())) synthProfile.pcmROMImage = MT32Emu::ROMImage::makeROMImage(file);
+		if (file->open(getROMPathName(synthProfile.romDir, synthProfile.pcmROMFileName).toUtf8())) {
+			synthProfile.pcmROMImage = MT32Emu::ROMImage::makeROMImage(file);
+			if (synthProfile.pcmROMImage->getROMInfo() == NULL) {
+				freeROMImages(synthProfile.controlROMImage, synthProfile.pcmROMImage);
+			}
+		}
 	}
 }
 

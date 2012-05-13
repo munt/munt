@@ -27,6 +27,7 @@ private:
 	void restoreDefaults();
 	void loadSynthProfile();
 	void saveSynthProfile();
+	void refreshProfileCombo();
 
 private slots:
 	void on_romDirButton_clicked();

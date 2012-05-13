@@ -217,8 +217,7 @@ bool QSynth::open() {
 	SynthProfile synthProfile;
 	getSynthProfile(synthProfile);
 	Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);
-	controlROMImage = synthProfile.controlROMImage;
-	pcmROMImage = synthProfile.pcmROMImage;
+	setSynthProfile(synthProfile, synthProfileName);
 	if (controlROMImage == NULL || pcmROMImage == NULL) {
 		qDebug() << "Missing ROM files. Can't open synth :(";
 		return false;

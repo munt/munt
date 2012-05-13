@@ -28,17 +28,7 @@ SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent, SynthRoute *useSyn
 	rsd(synthProfile, this)
 {
 	ui->setupUi(this);
-	ui->profileComboBox->clear();
-	QStringList profiles = Master::getInstance()->enumSynthProfiles();
-	ui->profileComboBox->blockSignals(true);
-	ui->profileComboBox->addItems(profiles);
-	for (int i = 0; i < profiles.count(); i++) {
-		if (profiles[i] == Master::getInstance()->getDefaultSynthProfileName()) {
-			ui->profileComboBox->setCurrentIndex(i);
-			break;
-		}
-	}
-	ui->profileComboBox->blockSignals(false);
+	refreshProfileCombo();
 	loadSynthProfile();
 
 	connect(ui->buttonBox, SIGNAL(clicked(QAbstractButton *)), SLOT(on_buttonBox_clicked(QAbstractButton *)));
@@ -217,4 +207,20 @@ void SynthPropertiesDialog::saveSynthProfile() {
 	master.loadSynthProfile(synthProfile, name);
 	synthRoute->setSynthProfile(synthProfile, name);
 	if (ui->profileCheckBox->isChecked()) master.setDefaultSynthProfileName(name);
+	refreshProfileCombo();
+}
+
+void SynthPropertiesDialog::refreshProfileCombo() {
+	QStringList profiles = Master::getInstance()->enumSynthProfiles();
+	ui->profileComboBox->blockSignals(true);
+	ui->profileComboBox->clear();
+	ui->profileComboBox->addItems(profiles);
+	for (int i = 0; i < profiles.count(); i++) {
+		if (profiles[i] == Master::getInstance()->getDefaultSynthProfileName()) {
+			ui->profileComboBox->setCurrentIndex(i);
+			ui->profileCheckBox->setChecked(true);
+			break;
+		}
+	}
+	ui->profileComboBox->blockSignals(false);
 }
