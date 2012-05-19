@@ -26,6 +26,7 @@ MidiPlayerDialog::MidiPlayerDialog(Master *master, QWidget *parent) : QDialog(pa
 	connect(&smfDriver, SIGNAL(playbackFinished()), SLOT(handlePlaybackFinished()));
 	connect(&smfDriver, SIGNAL(playbackTimeChanged(quint64, quint32)), SLOT(handlePlaybackTimeChanged(quint64, quint32)));
 	connect(&smfDriver, SIGNAL(tempoUpdated(quint32)), SLOT(handleTempoSet(quint32)));
+	connect(this, SIGNAL(playbackStarted(const QString &, const QString &)), master, SLOT(showBalloon(const QString &, const QString &)));
 }
 
 MidiPlayerDialog::~MidiPlayerDialog() {
@@ -166,6 +167,9 @@ void MidiPlayerDialog::handlePlaybackFinished() {
 	advancePlayList = true;
 	ui->tempoSpinBox->setValue(DEFAULT_BPM);
 	smfDriver.start(ui->playList->currentItem()->text());
+	if (Master::getInstance()->getSettings()->value("Master/showConnectionBalloons", "1").toBool()) {
+		emit playbackStarted("Playing MIDI file", QFileInfo(ui->playList->currentItem()->text()).fileName());
+	}
 }
 
 void MidiPlayerDialog::handlePlaybackTimeChanged(quint64 currentNanos, quint32 totalSeconds) {

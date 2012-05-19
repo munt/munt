@@ -45,6 +45,9 @@ private slots:
 	void handlePlaybackFinished();
 	void handlePlaybackTimeChanged(quint64 currentNanos, quint32 totalSeconds);
 	void handleTempoSet(quint32 tempo);
+
+signals:
+	void playbackStarted(const QString &, const QString &);
 };
 
 #endif // MIDI_PLAYER_DIALOG_H
