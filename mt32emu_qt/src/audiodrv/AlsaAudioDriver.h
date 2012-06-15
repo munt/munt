@@ -3,7 +3,7 @@
 
 #include <QtCore>
 
-#include <asoundlib.h>
+#include <alsa/asoundlib.h>
 
 #include <mt32emu/mt32emu.h>
 
