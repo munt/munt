@@ -19,7 +19,7 @@
 #include "MidiConverterDialog.h"
 #include "Master.h"
 
-MidiConverterDialog::MidiConverterDialog(Master *master, QWidget *parent) : QDialog(parent), ui(new Ui::MidiConverterDialog), stopProcessing(false) {
+MidiConverterDialog::MidiConverterDialog(Master *master, QWidget *parent) : QDialog(parent), ui(new Ui::MidiConverterDialog) {
 	ui->setupUi(this);
 	connect(&converter, SIGNAL(conversionFinished()), SLOT(handleConversionFinished()));
 	connect(&converter, SIGNAL(midiEventProcessed(int, int)), SLOT(updateConversionProgress(int, int)));
@@ -104,10 +104,7 @@ void MidiConverterDialog::on_moveDownButton_clicked() {
 }
 
 void MidiConverterDialog::on_startButton_clicked() {
-	stopProcessing = false;
 	if (ui->pcmList->count() == 0) {
-		ui->midiList->clear();
-		ui->startButton->setEnabled(false);
 		enableControls(true);
 		return;
 	}
@@ -118,7 +115,6 @@ void MidiConverterDialog::on_startButton_clicked() {
 }
 
 void MidiConverterDialog::on_stopButton_clicked() {
-	stopProcessing = true;
 	converter.stop();
 	enableControls(true);
 }
@@ -128,15 +124,13 @@ void MidiConverterDialog::on_synthPropertiesButton_clicked() {
 }
 
 void MidiConverterDialog::on_pcmList_currentRowChanged(int currentRow) {
+	ui->midiList->clear();
 	if (currentRow == -1) return;
 	QStringList *midiFileNames = (QStringList *)ui->pcmList->currentItem()->data(Qt::UserRole).value<QObject *>();
-	ui->midiList->clear();
 	ui->midiList->addItems(*midiFileNames);
 }
 
 void MidiConverterDialog::handleConversionFinished() {
-	ui->progressBar->setValue(0);
-	if (stopProcessing) return;
 	if (Master::getInstance()->getSettings()->value("Master/showConnectionBalloons", "1").toBool()) {
 		emit conversionFinished("MIDI file converted", ui->pcmList->currentItem()->text());
 	}
@@ -152,6 +146,7 @@ void MidiConverterDialog::updateConversionProgress(int midiEventsProcessed, int 
 void MidiConverterDialog::enableControls(bool enable) {
 	if (enable == !ui->stopButton->isEnabled()) return;
 	ui->progressBar->setEnabled(!enable);
+	ui->progressBar->setValue(0);
 	ui->stopButton->setEnabled(!enable);
 	ui->startButton->setEnabled(enable && ui->pcmList->count() > 0);
 	ui->synthPropertiesButton->setEnabled(enable);

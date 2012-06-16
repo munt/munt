@@ -209,5 +209,5 @@ void AudioFileWriter::run() {
 	}
 	file.close();
 	synth->close();
-	emit conversionFinished();
+	if (!stopProcessing) emit conversionFinished();
 }

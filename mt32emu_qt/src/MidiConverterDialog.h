@@ -21,7 +21,6 @@ public:
 private:
 	Ui::MidiConverterDialog *ui;
 	AudioFileWriter converter;
-	bool stopProcessing;
 
 	void enableControls(bool enable);
 
