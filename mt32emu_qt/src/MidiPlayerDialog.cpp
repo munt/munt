@@ -61,7 +61,7 @@ void MidiPlayerDialog::on_addListButton_clicked() {
 }
 
 void MidiPlayerDialog::on_removeButton_clicked() {
-	ui->playList->takeItem(ui->playList->currentRow());
+	delete ui->playList->takeItem(ui->playList->currentRow());
 	ui->playButton->setEnabled(ui->playList->count() > 0);
 }
 
