@@ -130,6 +130,8 @@ void AudioFileWriter::run() {
 		midiEventIx = 0;
 	}
 	qDebug() << "AudioFileWriter: Rendering started";
+	MasterClockNanos startNanos = 0;
+	if (!realtimeMode) startNanos = MasterClock::getClockNanos();
 	while (!stopProcessing) {
 		unsigned int frameCount = 0;
 		if (realtimeMode) {
@@ -196,6 +198,7 @@ void AudioFileWriter::run() {
 		}
 	}
 	qDebug() << "AudioFileWriter: Rendering finished";
+	if (!realtimeMode) qDebug() << "AudioFileWriter: Elapsed seconds: " << 1e-9 * (MasterClock::getClockNanos() - startNanos);
 	if (waveMode) {
 		unsigned char *charBuffer = (unsigned char *)buffer;
 		memcpy(charBuffer, WAVE_HEADER, 44);
