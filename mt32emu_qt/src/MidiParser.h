@@ -26,6 +26,7 @@ private:
 
 public:
 	bool parse(QString fileName);
+	bool parse(QStringList fileNameList);
 	int getDivision();
 	QVector<MidiEvent> getMIDIEvents();
 	SynthTimestamp getMidiTick(uint tempo = DEFAULT_TEMPO);

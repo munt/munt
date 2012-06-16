@@ -24,6 +24,7 @@ set(mt32emu_qt_SOURCES
   src/SynthRoute.cpp
   src/SynthPropertiesDialog.cpp
   src/AudioPropertiesDialog.cpp
+  src/MidiConverterDialog.cpp
   src/MidiPropertiesDialog.cpp
   src/ROMSelectionDialog.cpp
   src/SynthStateMonitor.cpp
@@ -55,12 +56,14 @@ else()
 endif()
 
 set(mt32emu_qt_HEADERS
+  src/AudioFileWriter.h
   src/MainWindow.h
   src/Master.h
   src/MidiSession.h
   src/QSynth.h
   src/SynthPropertiesDialog.h
   src/AudioPropertiesDialog.h
+  src/MidiConverterDialog.h
   src/MidiPropertiesDialog.h
   src/ROMSelectionDialog.h
   src/SynthRoute.h
@@ -82,6 +85,7 @@ set(mt32emu_qt_FORMS
   src/SynthPropertiesDialog.ui
   src/ROMSelectionDialog.ui
   src/SynthWidget.ui
+  src/MidiConverterDialog.ui
   src/MidiPlayerDialog.ui
 )
 

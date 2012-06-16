@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #include "AudioFileWriter.h"
 #include "mididrv/TestDriver.h"
 #include "MidiPlayerDialog.h"
+#include "MidiConverterDialog.h"
 
 MainWindow::MainWindow(Master *master, QWidget *parent) :
 	QMainWindow(parent),
@@ -37,7 +38,8 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	master(master),
 	testMidiDriver(NULL),
 	audioFileWriter(NULL),
-	midiPlayerDialog(NULL)
+	midiPlayerDialog(NULL),
+	midiConverterDialog(NULL)
 {
 	ui->setupUi(this);
 	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
@@ -72,6 +74,10 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 	if (midiPlayerDialog != NULL) {
 		delete midiPlayerDialog;
 		midiPlayerDialog = NULL;
+	}
+	if (midiConverterDialog != NULL) {
+		delete midiConverterDialog;
+		midiConverterDialog = NULL;
 	}
 	event->accept();
 	master->shutDown();
@@ -165,21 +171,11 @@ void MainWindow::on_actionPlay_MIDI_file_triggered() {
 }
 
 void MainWindow::on_actionConvert_MIDI_to_Wave_triggered() {
-	static QString currentMidiDir = NULL;
-	static QString currentAudioDir = NULL;
-	if (audioFileWriter != NULL) {
-		delete audioFileWriter;
-		audioFileWriter = NULL;
-	} else {
-		QString midiFileName = QFileDialog::getOpenFileName(NULL, NULL, currentMidiDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
-		if (midiFileName.isEmpty()) return;
-		currentMidiDir = QDir(midiFileName).absolutePath();
-		QString audioFileName = QFileDialog::getSaveFileName(NULL, NULL, currentAudioDir, "*.wav *.raw;;*.wav;;*.raw;;*.*");
-		if (audioFileName.isEmpty()) return;
-		currentAudioDir = QDir(audioFileName).absolutePath();
-		audioFileWriter = new AudioFileWriter();
-		audioFileWriter->convertMIDIFile(audioFileName, midiFileName);
+	if (midiConverterDialog == NULL) {
+		midiConverterDialog = new MidiConverterDialog(master, this);
 	}
+	midiConverterDialog->setVisible(true);
+	midiConverterDialog->activateWindow();
 }
 
 void MainWindow::on_menuOptions_aboutToShow() {

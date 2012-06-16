@@ -289,11 +289,18 @@ bool MidiParser::doParse() {
 }
 
 bool MidiParser::parse(QString fileName) {
-	file.setFileName(fileName);
-	file.open(QIODevice::ReadOnly);
+	return parse(QStringList(fileName));
+}
+
+bool MidiParser::parse(QStringList fileNameList) {
 	midiEventList.clear();
-	bool parseResult = doParse();
-	file.close();
+	bool parseResult = true;
+	for (int i = 0; i < fileNameList.count(); i++) {
+		file.setFileName(fileNameList[i]);
+		file.open(QIODevice::ReadOnly);
+		if (!doParse()) parseResult = false;
+		file.close();
+	}
 	return parseResult;
 }
 

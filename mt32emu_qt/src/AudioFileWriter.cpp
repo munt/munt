@@ -14,11 +14,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <QMessageBox>
-#include <QFileDialog>
 
 #include "AudioFileWriter.h"
+#include "Master.h"
 
 static const unsigned int FRAME_SIZE = 4; // Stereo, 16-bit
 static const unsigned char WAVE_HEADER[] = {
@@ -31,7 +30,9 @@ AudioFileWriter::AudioFileWriter() :
 	synth(NULL),
 	buffer(NULL),
 	parser(NULL)
-	{}
+	{
+		connect(this, SIGNAL(parsingFailed(const QString &, const QString &)), Master::getInstance(), SLOT(showBalloon(const QString &, const QString &)));
+	}
 
 AudioFileWriter::~AudioFileWriter() {
 	stop();
@@ -45,38 +46,44 @@ AudioFileWriter::~AudioFileWriter() {
 	delete[] buffer;
 }
 
-void AudioFileWriter::convertMIDIFile(QString useOutFileName, QString useMIDIFileName, unsigned int useBufferSize) {
-	if (useOutFileName.isEmpty() || useMIDIFileName.isEmpty()) return;
+bool AudioFileWriter::convertMIDIFile(QString useOutFileName, QStringList midiFileNameList, unsigned int useBufferSize) {
+	if (useOutFileName.isEmpty() || midiFileNameList.isEmpty()) return false;
 	if (synth != NULL) {
 		synth->close();
 		delete synth;
 	}
 	delete parser;
 	delete[] buffer;
+	parser = new MidiParser;
+	if (!parser->parse(midiFileNameList)) {
+		qDebug() << "AudioFileWriter: Error parsing MIDI files";
+		QVector<MidiEvent> midiEvents = parser->getMIDIEvents();
+		if (midiEvents.count() == 0) {
+			QMessageBox::critical(NULL, "Error", "Error occured while parsing MIDI files. No MIDI events to process.");
+			delete parser;
+			return false;
+		}
+		emit parsingFailed("Warning", "Error occured while parsing MIDI files. Processing available MIDI events.");
+	}
+	parser->addAllNotesOff();
 	synth = new QSynth(this);
 	if (!synth->open()) {
 		synth->close();
 		delete synth;
+		delete parser;
 		qDebug() << "AudioFileWriter: Can't open synth";
 		QMessageBox::critical(NULL, "Error", "Failed to open synth");
-		return;
+		return false;
 	}
 	sampleRate = MT32Emu::SAMPLE_RATE;
 	bufferSize = useBufferSize;
 	latency = 0;
 	outFileName = useOutFileName;
-	buffer = new qint16[2 * bufferSize];
-	midiFileName = useMIDIFileName;
-	parser = new MidiParser;
 	realtimeMode = false;
 	stopProcessing = false;
-	if (!parser->parse(midiFileName)) {
-		qDebug() << "AudioFileWriter: Error parsing MIDI file:" << midiFileName;
-		QMessageBox::critical(NULL, "Error", "Error encountered while loading MIDI file");
-		return;
-	}
-	parser->addAllNotesOff();
+	buffer = new qint16[2 * bufferSize];
 	QThread::start();
+	return true;
 }
 
 void AudioFileWriter::startRealtimeProcessing(QSynth *useSynth, unsigned int useSampleRate, QString useOutFileName, unsigned int useBufferSize, MasterClockNanos useLatency) {
@@ -124,7 +131,7 @@ void AudioFileWriter::run() {
 	}
 	qDebug() << "AudioFileWriter: Rendering started";
 	while (!stopProcessing) {
-		unsigned int frameCount;
+		unsigned int frameCount = 0;
 		if (realtimeMode) {
 			frameCount = sampleRate * (MasterClock::getClockNanos() - firstSampleNanos) / MasterClock::NANOS_PER_SECOND;
 			if (frameCount < bufferSize) {
@@ -160,6 +167,7 @@ void AudioFileWriter::run() {
 				}
 				midiNanos = nextEventNanos;
 				midiEventIx++;
+				emit midiEventProcessed(midiEventIx, midiEvents.count());
 			}
 			if (midiEvents.count() <= midiEventIx) {
 				if (!synth->isActive()) break;
@@ -201,4 +209,5 @@ void AudioFileWriter::run() {
 	}
 	file.close();
 	synth->close();
+	emit conversionFinished();
 }

@@ -14,6 +14,7 @@ class Master;
 class MidiDriver;
 class AudioFileWriter;
 class MidiPlayerDialog;
+class MidiConverterDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -32,6 +33,7 @@ private:
 	MidiDriver *testMidiDriver;
 	AudioFileWriter *audioFileWriter;
 	MidiPlayerDialog *midiPlayerDialog;
+	MidiConverterDialog *midiConverterDialog;
 
 	void trayIconContextMenu();
 

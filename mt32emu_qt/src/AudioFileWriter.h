@@ -8,10 +8,12 @@
 #include "QSynth.h"
 
 class AudioFileWriter : public QThread {
+	Q_OBJECT
+
 public:
-	AudioFileWriter();
+	explicit AudioFileWriter();
 	~AudioFileWriter();
-	void convertMIDIFile(QString useOutFileName, QString useMIDIFileName, unsigned int bufferSize = 65536);
+	bool convertMIDIFile(QString useOutFileName, QStringList useMIDIFileNameList, unsigned int bufferSize = 65536);
 	void startRealtimeProcessing(QSynth *useSynth, unsigned int useSampleRate, QString useOutFileName, unsigned int bufferSize, MasterClockNanos latency);
 	void stop();
 
@@ -25,12 +27,16 @@ private:
 	MasterClockNanos latency;
 	QString outFileName;
 	qint16 *buffer;
-	QString midiFileName;
 	MidiParser *parser;
 	bool realtimeMode;
 	volatile bool stopProcessing;
 
 	void setTempo(uint newTempo);
+
+signals:
+	void parsingFailed(const QString &, const QString &);
+	void midiEventProcessed(int midiEventsProcessed, int midiEventsTotal);
+	void conversionFinished();
 };
 
 #endif
