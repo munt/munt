@@ -226,8 +226,11 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// Linear interpolation
 			float firstSample = synth->pcmROMData[pcmAddr + intPCMPosition];
-			float nextSample = getPCMSample(intPCMPosition + 1);
-			sample = firstSample + (nextSample - firstSample) * (pcmPosition - intPCMPosition);
+			if (pair == NULL || mixType == 0 || structurePosition == 0) {
+				sample = firstSample + (getPCMSample(intPCMPosition + 1) - firstSample) * (pcmPosition - intPCMPosition);
+			} else {
+				sample = firstSample;
+			}
 
 			float newPCMPosition = pcmPosition + positionDelta;
 			if (pcmWave->loop) {
