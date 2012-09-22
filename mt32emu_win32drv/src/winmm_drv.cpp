@@ -286,7 +286,7 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 				alreadyOpened = true;
 			}
 		}
-		midiHdr->dwFlags = MHDR_DONE;
+		midiHdr->dwFlags |= MHDR_DONE;
 		midiHdr->dwFlags &= ~MHDR_INQUEUE;
 		DoCallback(uDeviceID, dwUser, MOM_DONE, dwParam1, NULL);
  		return MMSYSERR_NOERROR;
