@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Sergey V. Mikayev
+/* Copyright (C) 2011, 2012 Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -48,7 +48,7 @@ void RegisterDriver() {
 		}
 	}
 	if (mt32emuDriver != -1) {
-		MessageBoxA(NULL, "Driver already installed.", "Error", MB_OK | MB_ICONEXCLAMATION);
+		MessageBoxA(NULL, "Driver successfully updated.", "Information", MB_OK | MB_ICONINFORMATION);
 		RegCloseKey(hReg);
 		return;
 	}
