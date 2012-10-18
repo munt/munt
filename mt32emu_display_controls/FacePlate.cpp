@@ -1,6 +1,0 @@
-#include "StdAfx.h"
-#include "LCDDisplay.h"
-#include "DisplayKnob.h"
-#include "KnobInterface.h"
-#include "..\mt32emu\src\structures.h"
-#include "FacePlate.h"

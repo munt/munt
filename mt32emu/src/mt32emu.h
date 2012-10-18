@@ -64,8 +64,6 @@
 // 1: Use precise float math
 #define MT32EMU_ACCURATE_WG 0
 
-#define MT32EMU_USE_EXTINT 0
-
 // Configuration
 // The maximum number of partials playing simultaneously
 #define MT32EMU_MAX_PARTIALS 32
