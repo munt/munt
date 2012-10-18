@@ -40,10 +40,10 @@ size_t FileStream::getSize() {
 	if (fileSize != 0) {
 		return fileSize;
 	}
-	if (!ifsp) {
+	if (ifsp == NULL) {
 		return 0;
 	}
-	if (ifsp->bad()) {
+	if (!ifsp->is_open()) {
 		return 0;
 	}
 	ifsp->seekg(0, ios_base::end);
@@ -58,7 +58,7 @@ unsigned char* FileStream::getData() {
 	if (ifsp == NULL) {
 		return NULL;
 	}
-	if (ifsp->bad()) {
+	if (!ifsp->is_open()) {
 		return NULL;
 	}
 	if (getSize() == 0) {
