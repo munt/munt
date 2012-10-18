@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Sergey V. Mikayev
+/* Copyright (C) 2011, 2012 Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -19,17 +19,18 @@
 #ifndef MT32EMU_MIDISYNTH_H
 #define MT32EMU_MIDISYNTH_H
 
-#define buffers 8
-
 namespace MT32Emu {
 
 class MidiSynth {
 private:
 	unsigned int sampleRate;
-	unsigned int len;
-	unsigned int latency;
+	unsigned int midiLatency;
+	unsigned int bufferSize;
+	unsigned int chunkSize;
+	bool useRingBuffer;
 	char pathToROMfiles[256];
 	bool resetEnabled;
+
 	DACInputMode emuDACInputMode;
 	float outputGain;
 	float reverbOutputGain;
@@ -39,32 +40,32 @@ private:
 	Bit8u reverbTime;
 	Bit8u reverbLevel;
 
-	Bit16s *stream[buffers];
-
-	bool pendingClose;
-	DWORD playCursor, playCursorWrap;
+	Bit16s *buffer;
+	DWORD framesRendered;
 
 	Synth *synth;
 
-public:
+	static int MT32_Report(void *userData, ReportType type, const void *reportData);
+	unsigned int MillisToFrames(unsigned int millis);
+	void LoadSettings();
+	void ReloadSettings();
+	void ApplySettings();
+
+	MidiSynth();
 
 #if MT32EMU_USE_EXTINT == 1
 	MT32Emu::ExternalInterface *mt32emuExtInt;
 #endif
 
-	MidiSynth();
+public:
+	static MidiSynth &getInstance();
 	int Init();
-	int Close();
+	void Close();
 	int Reset();
-	void LoadSettings();
-	void ReloadSettings();
-	void ApplySettings();
-	void SetMasterVolume(UINT pMasterVolume);
-	void Render(Bit16s *bufpos);
+	void RenderAvailableSpace();
+	void Render(Bit16s *bufpos, DWORD totalFrames);
 	void PushMIDI(DWORD msg);
 	void PlaySysex(Bit8u *bufpos, DWORD len);
-	bool IsPendingClose();
-	void handleReport(MT32Emu::ReportType type, const void *reportData);
 };
 
 }

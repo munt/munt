@@ -42,11 +42,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="../mt32emu/src"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -64,7 +65,7 @@
 				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)\mt32emu.dll"
 				LinkIncremental="2"
-				ModuleDefinitionFile="mm_win32drv.def"
+				ModuleDefinitionFile="src/winmm_drv.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
