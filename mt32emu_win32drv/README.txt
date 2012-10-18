@@ -1,12 +1,23 @@
-MT32Emu DirectMusic/WinMM Driver
+MT32Emu WinMM Driver
 ********************************
 
 First-time Installation
 -----------------------
 
- 1) Ensure that you have mt32emu.inf and mt32emu.dll unpacked to the same
-    directory as your MT32_PCM.ROM and MT32_CONTROL.ROM (not provided).
-    Remember the location of this directory.
+Run drvsetup.exe to perform installation. This will copy mt32emu.dll into
+C:\WINDOWS\SYSTEM32 (C:\WINDOWS\SYSWOW64 for x64 systems) directory and
+the configuration file mt32emu.ini into C:\WINDOWS directory.
+By default, ROM files are to be placed to the system directory (the one
+where the driver resides). PathToROMFiles variable in mt32emu.ini enables
+to set another location for your ROM files.
+
+--------------------------------------------------------------------------------
+
+You can also use the fail-safe approach "Add Hardware wizard" if you like.
+The information file mt32emu.inf is provided. However, this way works
+on x86 Windows only.
+
+ 1) Unpack mt32emu.inf and mt32emu.dll. Remember the location of this directory.
  2) Open Control Panel.
  3) Double-click on "Add Hardware".
  4) Click "Next" until you come to a message asking you whether you have
@@ -30,15 +41,24 @@ First-time Installation
 15) A dialog box will recommend that you reboot. Go ahead if you enjoy that
     sort of thing, but it shouldn't be necessary for a fresh installation.
 
-To begin playing back MIDI through the emulator, perform the following:
+--------------------------------------------------------------------------------
 
-16) Open "Sounds and Audio Devices" from the Control Panel.
-17) In the "Audio" tab, select "MT-32 Synth Emulator" in the drop-down list for
-    the MIDI playback device.
+To begin playing back MIDI through the emulator, you need to configure
+the corresponding MIDI device in your MIDI application. In order to set
+the emulator as the default MIDI device in the system you may use Control
+Panel or a MIDI switcher like Putzlowitschs Vista-MIDIMapper.
+If you change the emulation parameters in the configuration file mt32emu.ini
+you need to either restart MIDI playback or reopen your MIDI application
+for the new parameters to take effect.
 
 
 Upgrading
 ---------
+
+Run drvsetup.exe to upgrade the driver. You may also need to check
+the configuration file mt32emu.ini for new configuration variables.
+
+                             OR
 
  1) Click on "Start", then "Run...".
  2) Type "devmgmt.msc" and press enter.
@@ -60,7 +80,7 @@ License
 -------
 
 Copyright (C) 2003, 2004, 2005, 2011 Dean Beeler, Jerome Fisher
-Copyright (C) 2011 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011, 2012 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public

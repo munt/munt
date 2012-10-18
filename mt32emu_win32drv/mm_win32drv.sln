@@ -6,7 +6,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mm_win32drv", "mm_win32drv.
 		{063A149D-E48C-499B-B13F-7A70C140A662} = {063A149D-E48C-499B-B13F-7A70C140A662}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu", "..\mt32emu\mt32emu_4windrv.vcproj", "{063A149D-E48C-499B-B13F-7A70C140A662}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu", "..\mt32emu\mt32emu_msvc_stat.vcproj", "{063A149D-E48C-499B-B13F-7A70C140A662}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011, 2012 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -47,7 +47,7 @@ void updateNanoCounter() {
 	}
 }
 
-static MT32Emu::MidiSynth midiSynth;
+static MT32Emu::MidiSynth &midiSynth = MT32Emu::MidiSynth::getInstance();
 static bool synthOpened = false;
 static HWND hwnd = NULL;
 static int driverCount;
@@ -284,13 +284,13 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 		return modGetCaps((PVOID)dwParam1, dwParam2);
 
 	case MODM_DATA:
-		updateNanoCounter();
 		if (driver->clients[dwUser].allocated == false) {
 			return MMSYSERR_ERROR;
 		}
 		if (hwnd == NULL) {
 			midiSynth.PushMIDI(dwParam1);
 		} else {
+			updateNanoCounter();
 			DWORD msg[] = {0, 0, nanoCounter.LowPart, nanoCounter.HighPart, dwParam1}; // 0, short MIDI message indicator, timestamp, data
 			COPYDATASTRUCT cds = {driver->clients[dwUser].synth_instance, sizeof(msg), msg};
 			DWORD res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
