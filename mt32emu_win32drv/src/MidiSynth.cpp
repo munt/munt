@@ -20,6 +20,11 @@ namespace MT32Emu {
 
 #define	DRIVER_MODE
 
+static const char MT32EMU_REGISTRY_PATH[] = "Software\\muntemu.org\\Munt mt32emu-qt";
+static const char MT32EMU_REGISTRY_DRIVER_SUBKEY[] = "waveout";
+static const char MT32EMU_REGISTRY_MASTER_SUBKEY[] = "Master";
+static const char MT32EMU_REGISTRY_PROFILES_SUBKEY[] = "Profiles";
+
 static MidiSynth &midiSynth = MidiSynth::getInstance();
 
 static class MidiStream {
@@ -270,35 +275,26 @@ public:
 	}
 } waveOut;
 
+static class : public ReportHandler {
+protected:
+	virtual void onErrorControlROM() {
+		MessageBox(NULL, L"Couldn't open Control ROM file", L"MT32", MB_OK | MB_ICONEXCLAMATION);
+	}
+
+	virtual void onErrorPCMROM() {
+		MessageBox(NULL, L"Couldn't open PCM ROM file", L"MT32", MB_OK | MB_ICONEXCLAMATION);
+	}
+
+	virtual void showLCDMessage(const char *message) {
+		std::cout << "MT32: LCD-Message: " << message << "\n";
+	}
+
 #ifdef DRIVER_MODE
-void printDebug(void *userData, const char *fmt, va_list list) {
-}
-#else
-#define printDebug NULL
+	void printDebug(const char *fmt, va_list list) {}
 #endif
+} reportHandler;
 
 MidiSynth::MidiSynth() {}
-
-int MidiSynth::MT32_Report(void *userData, ReportType type, const void *reportData) {
-#if MT32EMU_USE_EXTINT == 1
-	midiSynth.mt32emuExtInt->handleReport(midiSynth.synth, type, reportData);
-#endif
-	switch(type) {
-	case MT32Emu::ReportType_errorControlROM:
-		MessageBox(NULL, L"Couldn't open Control ROM file", L"MT32", MB_OK | MB_ICONEXCLAMATION);
-		break;
-	case MT32Emu::ReportType_errorPCMROM:
-		MessageBox(NULL, L"Couldn't open PCM ROM file", L"MT32", MB_OK | MB_ICONEXCLAMATION);
-		break;
-	case MT32Emu::ReportType_lcdMessage:
-		std::cout << "MT32: LCD-Message: " << (char *)reportData << "\n";
-		break;
-	default:
-		//LOG(LOG_ALL,LOG_NORMAL)("MT32: Report %d",type);
-		break;
-	}
-	return 0;
-}
 
 MidiSynth &MidiSynth::getInstance() {
 	static MidiSynth *instance = new MidiSynth;
@@ -354,19 +350,59 @@ void MidiSynth::Render(Bit16s *bufpos, DWORD totalFrames) {
 	if (framesRendered >= bufferSize) {
 		framesRendered -= bufferSize;
 	}
-#if MT32EMU_USE_EXTINT == 1
-	if (mt32emuExtInt != NULL) {
-		mt32emuExtInt->doControlPanelComm(synth, 0);
+}
+
+static bool LoadBoolValue(HKEY hReg, const char *name, const bool nDefault) {
+	if (hReg != NULL) {
+		char destination[6];
+		DWORD nSize = sizeof(destination);
+		DWORD type;
+		LSTATUS res = RegQueryValueExA(hReg, name, NULL, &type, (LPBYTE)destination, &nSize);
+		if (res == ERROR_SUCCESS && type == REG_SZ) {
+			return destination[0] != '0' && (destination[0] & 0xDF) != 'F';
+		}
 	}
-#endif
+	return nDefault;
 }
 
-static int LoadIntValue(char *key, int nDefault) {
-	return GetPrivateProfileIntA("mt32emu", key, nDefault, "mt32emu.ini");
+static int LoadIntValue(HKEY hReg, const char *name, const int nDefault) {
+	if (hReg != NULL) {
+		DWORD destination = 0;
+		DWORD nSize = sizeof(DWORD);
+		DWORD type;
+		LSTATUS res = RegQueryValueExA(hReg, name, NULL, &type, (LPBYTE)&destination, &nSize);
+		if (res == ERROR_SUCCESS && type == REG_DWORD) {
+			return destination;
+		}
+	}
+	return nDefault;
 }
 
-static DWORD LoadStringValue(char *key, char *nDefault, char *destination, DWORD nSize) {
-	return GetPrivateProfileStringA("mt32emu", key, nDefault, destination, nSize, "mt32emu.ini");
+static float LoadFloatValue(HKEY hReg, const char *name, const float nDefault) {
+	if (hReg != NULL) {
+		float value = nDefault;
+		char destination[32];
+		DWORD nSize = sizeof(destination);
+		DWORD type;
+		LSTATUS res = RegQueryValueExA(hReg, name, NULL, &type, (LPBYTE)&destination, &nSize);
+		if (res == ERROR_SUCCESS && type == REG_SZ && sscanf_s(destination, "%f", &value) == 1) {
+			return value;
+		}
+	}
+	return nDefault;
+}
+
+static DWORD LoadStringValue(HKEY hReg, const char *name, const char *nDefault, char *destination, DWORD nSize) {
+	if (hReg != NULL) {
+		DWORD type;
+		LSTATUS res = RegQueryValueExA(hReg, name, NULL, &type, (LPBYTE)destination, &nSize);
+		if (res == ERROR_SUCCESS && type == REG_SZ) {
+			return nSize - 1;
+		}
+	}
+	lstrcpynA(destination, nDefault, nSize);
+	destination[nSize - 1] = 0;
+	return lstrlenA(destination);
 }
 
 unsigned int MidiSynth::MillisToFrames(unsigned int millis) {
@@ -374,12 +410,23 @@ unsigned int MidiSynth::MillisToFrames(unsigned int millis) {
 }
 
 void MidiSynth::LoadSettings() {
-	sampleRate = LoadIntValue("SampleRate", 32000);
+	HKEY hReg;
+	if (RegOpenKeyA(HKEY_CURRENT_USER, MT32EMU_REGISTRY_PATH, &hReg)) {
+		hReg = NULL;
+	}
+	HKEY hRegDriver;
+	if (hReg == NULL || RegOpenKeyA(hReg, MT32EMU_REGISTRY_DRIVER_SUBKEY, &hRegDriver)) {
+		hRegDriver = NULL;
+	}
+	RegCloseKey(hReg);
+	hReg = NULL;
+	sampleRate = 32000;
 	// Approx. bufferSize derived from latency
-	bufferSize = MillisToFrames(LoadIntValue("Latency", 100));
-	chunkSize = MillisToFrames(LoadIntValue("ChunkMs", 10));
-	midiLatency = MillisToFrames(LoadIntValue("MIDILatency", 0));
-	useRingBuffer = LoadIntValue("UseRingBuffer", 0) != 0;
+	bufferSize = MillisToFrames(LoadIntValue(hRegDriver, "AudioLatency", 100));
+	chunkSize = MillisToFrames(LoadIntValue(hRegDriver, "ChunkLen", 10));
+	midiLatency = MillisToFrames(LoadIntValue(hRegDriver, "MidiLatency", 0));
+	useRingBuffer = LoadIntValue(hRegDriver, "UseRingBuffer", 0) != 0;
+	RegCloseKey(hRegDriver);
 	if (!useRingBuffer) {
 		// Number of chunks should be ceil(bufferSize / chunkSize)
 		DWORD chunks = (bufferSize + chunkSize - 1) / chunkSize;
@@ -391,26 +438,38 @@ void MidiSynth::LoadSettings() {
 }
 
 void MidiSynth::ReloadSettings() {
-	resetEnabled = true;
-	if (LoadIntValue("ResetEnabled", 1) == 0) {
-		resetEnabled = false;
+	HKEY hReg;
+	if (RegOpenKeyA(HKEY_CURRENT_USER, MT32EMU_REGISTRY_PATH, &hReg)) {
+		hReg = NULL;
 	}
-
-	reverbEnabled = true;
-	if (LoadIntValue("ReverbEnabled", 1) == 0) {
-		reverbEnabled = false;
+	HKEY hRegMaster;
+	if (hReg == NULL || RegOpenKeyA(hReg, MT32EMU_REGISTRY_MASTER_SUBKEY, &hRegMaster)) {
+		hRegMaster = NULL;
 	}
+	resetEnabled = !LoadBoolValue(hRegMaster, "startPinnedSynthRoute", false);
+	char profile[256];
+	LoadStringValue(hRegMaster, "defaultSynthProfile", "default", profile, sizeof(profile));
+	RegCloseKey(hRegMaster);
 
-	reverbOverridden = true;
-	if (LoadIntValue("ReverbOverridden", 0) == 0) {
-		reverbOverridden = false;
+	HKEY hRegProfiles;
+	if (hReg == NULL || RegOpenKeyA(hReg, MT32EMU_REGISTRY_PROFILES_SUBKEY, &hRegProfiles)) {
+		hRegProfiles = NULL;
 	}
+	RegCloseKey(hReg);
+	hReg = NULL;
+	HKEY hRegProfile;
+	if (hRegProfiles == NULL || RegOpenKeyA(hRegProfiles, profile, &hRegProfile)) {
+		hRegProfile = NULL;
+	}
+	RegCloseKey(hRegProfiles);
+	hRegProfiles = NULL;
+	reverbEnabled = LoadBoolValue(hRegProfile, "reverbEnabled", true);
+	reverbOverridden = LoadBoolValue(hRegProfile, "reverbOverridden", false);
+	reverbMode = LoadIntValue(hRegProfile, "reverbMode", 0);
+	reverbTime = LoadIntValue(hRegProfile, "reverbTime", 5);
+	reverbLevel = LoadIntValue(hRegProfile, "reverbLevel", 3);
 
-	reverbMode = LoadIntValue("ReverbMode", 0);
-	reverbTime = LoadIntValue("ReverbTime", 5);
-	reverbLevel = LoadIntValue("ReverbLevel", 3);
-
-	outputGain = (float)LoadIntValue("OutputGain", 100);
+	outputGain = LoadFloatValue(hRegProfile, "outputGain", 1.0f);
 	if (outputGain < 0.0f) {
 		outputGain = -outputGain;
 	}
@@ -418,7 +477,7 @@ void MidiSynth::ReloadSettings() {
 		outputGain = 1000.0f;
 	}
 
-	reverbOutputGain = (float)LoadIntValue("ReverbOutputGain", 100);
+	reverbOutputGain = LoadFloatValue(hRegProfile, "reverbOutputGain", 1.0f);
 	if (reverbOutputGain < 0.0f) {
 		reverbOutputGain = -reverbOutputGain;
 	}
@@ -426,18 +485,37 @@ void MidiSynth::ReloadSettings() {
 		reverbOutputGain = 1000.0f;
 	}
 
-	emuDACInputMode = (DACInputMode)LoadIntValue("DACInputMode", DACInputMode_GENERATION2);
+	emuDACInputMode = (DACInputMode)LoadIntValue(hRegProfile, "emuDACInputMode", DACInputMode_NICE);
 
-	DWORD s = LoadStringValue("PathToROMFiles", "C:/WINDOWS/SYSTEM32/", pathToROMfiles, 254);
-	pathToROMfiles[s] = '/';
-	pathToROMfiles[s + 1] = 0;
+	char romDir[256];
+	char controlROMFileName[256];
+	char pcmROMFileName[256];
+	DWORD s = LoadStringValue(hRegProfile, "romDir", "C:/WINDOWS/SYSTEM32/", romDir, 254);
+	romDir[s] = '/';
+	romDir[s + 1] = 0;
+	LoadStringValue(hRegProfile, "controlROM", "MT32_CONTROL.ROM", controlROMFileName, 255);
+	LoadStringValue(hRegProfile, "pcmROM", "MT32_PCM.ROM", pcmROMFileName, 255);
+	RegCloseKey(hRegProfile);
+	hRegProfile = NULL;
+
+	char pathName[512];
+	lstrcpyA(pathName, romDir);
+	lstrcatA(pathName, controlROMFileName);
+	FileStream *controlROMFile = new FileStream;
+	controlROMFile->open(pathName);
+	lstrcpyA(pathName, romDir);
+	lstrcatA(pathName, pcmROMFileName);
+	FileStream *pcmROMFile = new FileStream;
+	pcmROMFile->open(pathName);
+	controlROM = ROMImage::makeROMImage(controlROMFile);
+	pcmROM = ROMImage::makeROMImage(pcmROMFile);
 }
 
 void MidiSynth::ApplySettings() {
 	synth->setReverbEnabled(reverbEnabled);
 	synth->setDACInputMode(emuDACInputMode);
-	synth->setOutputGain(outputGain / 100.0f);
-	synth->setReverbOutputGain(reverbOutputGain / 147.0f);
+	synth->setOutputGain(outputGain);
+	synth->setReverbOutputGain(reverbOutputGain * 0.68f);
 	if (reverbOverridden) {
 		Bit8u sysex[] = {0x10, 0x00, 0x01, reverbMode, reverbTime, reverbLevel};
 		synth->setReverbOverridden(false);
@@ -455,21 +533,13 @@ int MidiSynth::Init() {
 	if (synthEvent.Init()) {
 		return 1;
 	}
-	synth = new Synth();
-	SynthProperties synthProp = {sampleRate, true, true, 0, 0, 0, pathToROMfiles,
-		NULL, MT32_Report, printDebug, NULL, NULL};
-	if (!synth->open(synthProp)) {
+	synth = new Synth(&reportHandler);
+	if (!synth->open(*controlROM, *pcmROM)) {
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
 	}
 
 	ApplySettings();
-
-#if MT32EMU_USE_EXTINT == 1
-	// Init External Interface
-	mt32emuExtInt = new MT32Emu::ExternalInterface();
-	mt32emuExtInt->start();
-#endif
 
 	UINT wResult = waveOut.Init(buffer, bufferSize, chunkSize, useRingBuffer, sampleRate);
 	if (wResult) return wResult;
@@ -497,10 +567,8 @@ int MidiSynth::Reset() {
 	synthEvent.Wait();
 	synth->close();
 	delete synth;
-	synth = new Synth();
-	SynthProperties synthProp = {sampleRate, true, true, 0, 0, 0, pathToROMfiles,
-		NULL, MT32_Report, printDebug, NULL, NULL};
-	if (!synth->open(synthProp)) {
+	synth = new Synth(&reportHandler);
+	if (!synth->open(*controlROM, *pcmROM)) {
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
 	}
@@ -522,15 +590,6 @@ void MidiSynth::PlaySysex(Bit8u *bufpos, DWORD len) {
 }
 
 void MidiSynth::Close() {
-#if MT32EMU_USE_EXTINT == 1
-	// Close External Interface
-	if(mt32emuExtInt != NULL) {
-		mt32emuExtInt->stop();
-		delete mt32emuExtInt;
-		mt32emuExtInt = NULL;
-	}
-#endif
-
 	waveOut.Pause();
 	waveOut.Close();
 	synthEvent.Wait();
@@ -539,6 +598,12 @@ void MidiSynth::Close() {
 	// Cleanup memory
 	delete synth;
 	delete buffer;
+	controlROM->getFile()->close();
+	delete controlROM->getFile();
+	ROMImage::freeROMImage(controlROM);
+	pcmROM->getFile()->close();
+	delete pcmROM->getFile();
+	ROMImage::freeROMImage(pcmROM);
 
 	synthEvent.Close();
 }

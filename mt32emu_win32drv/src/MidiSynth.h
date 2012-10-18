@@ -28,7 +28,6 @@ private:
 	unsigned int bufferSize;
 	unsigned int chunkSize;
 	bool useRingBuffer;
-	char pathToROMfiles[256];
 	bool resetEnabled;
 
 	DACInputMode emuDACInputMode;
@@ -44,18 +43,15 @@ private:
 	DWORD framesRendered;
 
 	Synth *synth;
+	const ROMImage *controlROM;
+	const ROMImage *pcmROM;
 
-	static int MT32_Report(void *userData, ReportType type, const void *reportData);
 	unsigned int MillisToFrames(unsigned int millis);
 	void LoadSettings();
 	void ReloadSettings();
 	void ApplySettings();
 
 	MidiSynth();
-
-#if MT32EMU_USE_EXTINT == 1
-	MT32Emu::ExternalInterface *mt32emuExtInt;
-#endif
 
 public:
 	static MidiSynth &getInstance();
