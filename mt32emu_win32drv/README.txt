@@ -5,11 +5,8 @@ First-time Installation
 -----------------------
 
 Run drvsetup.exe to perform installation. This will copy mt32emu.dll into
-C:\WINDOWS\SYSTEM32 (C:\WINDOWS\SYSWOW64 for x64 systems) directory and
-the configuration file mt32emu.ini into C:\WINDOWS directory.
-By default, ROM files are to be placed to the system directory (the one
-where the driver resides). PathToROMFiles variable in mt32emu.ini enables
-to set another location for your ROM files.
+C:\WINDOWS\SYSTEM32 (C:\WINDOWS\SYSWOW64 for x64 systems) directory.
+Use the main UI-enabled application to configure driver settings.
 
 --------------------------------------------------------------------------------
 
@@ -47,9 +44,16 @@ To begin playing back MIDI through the emulator, you need to configure
 the corresponding MIDI device in your MIDI application. In order to set
 the emulator as the default MIDI device in the system you may use Control
 Panel or a MIDI switcher like Putzlowitschs Vista-MIDIMapper.
-If you change the emulation parameters in the configuration file mt32emu.ini
-you need to either restart MIDI playback or reopen your MIDI application
-for the new parameters to take effect.
+
+The driver tries to find out whether the main UI-enabled app is running, and if
+it is, the driver directs all the incoming MIDI messages to the main app
+for processing. If the app is not running, the driver operates in self-contained
+mode.
+
+If you start the main synth app and / or change the emulation parameters you need
+to either restart MIDI playback or reopen your MIDI application for the new
+parameters to take effect and for the driver to make an attempt to communicate
+with the main app.
 
 
 Upgrading
