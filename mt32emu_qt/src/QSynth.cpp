@@ -165,7 +165,7 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 				synthMutex->unlock();
 				if (debugSpecialEvent) {
 					quint64 delta = (debugSampleIx - debugLastEventSampleIx);
-					if (delta < 254 || 259 < delta || debugEventOffset < -1000000)
+					if (delta < 253 || 259 < delta || debugEventOffset < -1000000)
 						qDebug() << "M" << debugSampleIx << debugEventOffset << delta;
 					debugLastEventSampleIx = debugSampleIx;
 				} else if (debugEventOffset < -1000000) {

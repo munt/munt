@@ -32,14 +32,21 @@ double AudioStream::estimateActualSampleRate(const double sampleRate, MasterCloc
 	}
 	// Estimate rendering time using nominal sample rate
 	MasterClockNanos nominalNanosToRender = MasterClockNanos(MasterClock::NANOS_PER_SECOND * frameCount / sampleRate);
-	// Ensure outputBufferDacTime estimation doesn't go too far from expected, assume real sample rate differs from nominal one no more than 10%
+	// Ensure outputBufferDacTime estimation doesn't go too far from expected.
+	// Assume the real sample rate differs from nominal one no more than by 1%.
+	// Actual hardware sample rates tend to be even more accurate as noted,
+	// for example, in the paper http://www.portaudio.com/docs/portaudio_sync_acmc2003.pdf.
+	// Although, software resampling can introduce more significant inaccuracies,
+	// e.g. WinMME on my WinXP system works at about 32100Hz instead, while WASAPI, OSS, PulseAudio and ALSA perform much better.
+	// Setting 1% as the maximum relative error provides for superior rendering accuracy, and sample rate deviations should now be inaudible.
+	// In case there are nasty environments with greater deviations in sample rate, we should make this configurable.
 	MasterClockNanos nanosToRender = (newFirstSampleMasterClockNanos + nominalNanosToRender) - firstSampleMasterClockNanos;
 	double relativeError = (double)nanosToRender / nominalNanosToRender;
-	if (relativeError < 0.9) {
-		nanosToRender = 0.9 * nominalNanosToRender;
+	if (relativeError < 0.99) {
+		nanosToRender = 0.99 * nominalNanosToRender;
 	}
-	if (relativeError > 1.1) {
-		nanosToRender = 1.1 * nominalNanosToRender;
+	if (relativeError > 1.01) {
+		nanosToRender = 1.01 * nominalNanosToRender;
 	}
 	lastSampleMasterClockNanos = firstSampleMasterClockNanos + nanosToRender;
 	// Compute actual sample rate so that the actual rendering time interval ends exactly in lastSampleMasterClockNanos point
@@ -51,7 +58,7 @@ void AudioDriver::loadAudioSettings() {
 	chunkLen = settings->value(id + "/ChunkLen").toInt();
 	audioLatency = settings->value(id + "/AudioLatency").toInt();
 	midiLatency = settings->value(id + "/MidiLatency").toInt();
-	advancedTiming = settings->value(id + "/AdvancedTiming").toBool();
+	advancedTiming = settings->value(id + "/AdvancedTiming", true).toBool();
 	validateAudioSettings();
 }
 
