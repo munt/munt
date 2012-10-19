@@ -35,19 +35,29 @@ static const DWORD SAFE_FRAMES = 32 * SAFE_MS;
 static const DWORD FRAME_SIZE = 4;
 // Latency for MIDI processing. 15 ms is the offset of interprocess timeGetTime() difference.
 static const DWORD DEFAULT_MIDI_LATENCY = 15;
+static const MasterClockNanos MIN_XRUN_WARNING_NANOS = 3 * MasterClock::NANOS_PER_SECOND;
 
 WinMMAudioStream::WinMMAudioStream(const WinMMAudioDevice *device, QSynth *useSynth,
 	unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate),
-	hWaveOut(NULL), pendingClose(false)
+	hWaveOut(NULL), waveHdr(NULL), hEvent(NULL), stopProcessing(false)
 {
-	unsigned int midiLatency;
-	bool unused;
+	unsigned int milliLatency;
 
-	device->driver->getAudioSettings(&minSamplesToRender, &bufferSize, &midiLatency, &unused);
-	minSamplesToRender *= sampleRate / 1000 /* ms per sec*/;
+	device->driver->getAudioSettings(&chunkSize, &bufferSize, &milliLatency, &useRingBuffer);
+	chunkSize *= sampleRate / 1000 /* ms per sec*/;
 	bufferSize *= sampleRate / 1000 /* ms per sec*/;
+	if (useRingBuffer) {
+		numberOfChunks = 1;
+		qDebug() << "WinMMAudioDriver: Using looped ring buffer, buffer size:" << bufferSize << "frames.";
+	} else {
+		// Number of chunks should be ceil(bufferSize / chunkSize)
+		numberOfChunks = (bufferSize + chunkSize - 1) / chunkSize;
+		// Refine bufferSize as chunkSize * number of chunks, no less then the specified value
+		bufferSize = numberOfChunks * chunkSize;
+		qDebug() << "WinMMAudioDriver: Using" << numberOfChunks << "chunks, chunk size:" << chunkSize << "frames, buffer size:" << bufferSize << "frames.";
+	}
 	buffer = new Bit16s[2 * bufferSize];
-	latency = midiLatency * MasterClock::NANOS_PER_MILLISECOND;
+	midiLatency = milliLatency * MasterClock::NANOS_PER_MILLISECOND;
 }
 
 WinMMAudioStream::~WinMMAudioStream() {
@@ -61,17 +71,19 @@ void WinMMAudioStream::processingThread(void *userData) {
 	DWORD renderPos = 0;
 	DWORD playCursor, frameCount;
 	MMTIME mmTime;
-	WinMMAudioStream *stream = (WinMMAudioStream *)userData;
-	MasterClockNanos nanosNow, firstSampleNanos = MasterClock::getClockNanos() - stream->latency;
-	double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / stream->sampleRate;
+	WinMMAudioStream &stream = *(WinMMAudioStream *)userData;
+	MasterClockNanos nanosNow;
+	MasterClockNanos firstSampleNanos = MasterClock::getClockNanos() - stream.midiLatency;
+	MasterClockNanos lastXRunWarningNanos = firstSampleNanos - MIN_XRUN_WARNING_NANOS;
+	double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / stream.sampleRate;
 	DWORD prevPlayPos = 0;
 	DWORD getPosWraps = 0;
-	while (!stream->pendingClose) {
+	while (!stream.stopProcessing) {
 		mmTime.wType = TIME_SAMPLES;
-		if (waveOutGetPosition(stream->hWaveOut, &mmTime, sizeof (MMTIME)) != MMSYSERR_NOERROR) {
-			qDebug() << "waveOutGetPosition failed, thread stopped";
-			stream->pendingClose = true;
-			stream->synth->close();
+		if (waveOutGetPosition(stream.hWaveOut, &mmTime, sizeof (MMTIME)) != MMSYSERR_NOERROR) {
+			qDebug() << "WinMMAudioDriver: waveOutGetPosition failed, thread stopped";
+			stream.stopProcessing = true;
+			stream.synth->close();
 			return;
 		}
 
@@ -81,56 +93,88 @@ void WinMMAudioStream::processingThread(void *userData) {
 		// even during 2^27 samples playback, so we have to ensure the difference is big enough...
 		int delta = mmTime.u.sample - prevPlayPos;
 		if (delta < -(1 << 26)) {
-			qDebug() << "GetPos() wrap: " << delta << "\n";
+			qDebug() << "WinMMAudioDriver: GetPos() wrap: " << delta << "\n";
 			++getPosWraps;
 		}
 		prevPlayPos = mmTime.u.sample;
-		playCursor = (mmTime.u.sample + (quint64)getPosWraps * (1 << 27)) % stream->bufferSize;
+		playCursor = (mmTime.u.sample + (quint64)getPosWraps * (1 << 27)) % stream.bufferSize;
 
-		nanosNow = MasterClock::getClockNanos() - stream->latency;
-		if (playCursor < renderPos) {
-			// Buffer wrap, render 'till the end of buffer
-			frameCount = stream->bufferSize - renderPos;
+		nanosNow = MasterClock::getClockNanos() - stream.midiLatency;
+		Bit16s *buf = NULL;
+		WAVEHDR *waveHdr = NULL;
+		if (stream.useRingBuffer) {
+			if (playCursor < renderPos) {
+				// Buffer wrap, render 'till the end of buffer
+				frameCount = stream.bufferSize - renderPos;
 
-			// Estimate the buffer wrap time
-			nanosNow -= MasterClock::NANOS_PER_SECOND * playCursor / stream->sampleRate;
+				// Estimate the buffer wrap time
+				nanosNow -= MasterClock::NANOS_PER_SECOND * playCursor / stream.sampleRate;
+			} else {
+				frameCount = playCursor - renderPos;
+				if (frameCount < stream.chunkSize) {
+					Sleep(1 + DWORD((stream.chunkSize - frameCount) * samplePeriod));
+					continue;
+				}
+			}
+			buf = stream.buffer + (renderPos << 1);
 		} else {
-			frameCount = playCursor - renderPos;
-			if (frameCount < stream->minSamplesToRender) {
-				Sleep(1 + DWORD((stream->minSamplesToRender - frameCount) * samplePeriod));
+			bool allBuffersRendered = true;
+			for (unsigned int i = 0; i < stream.numberOfChunks; i++) {
+				if (stream.waveHdr[i].dwFlags & WHDR_DONE) {
+					allBuffersRendered = false;
+					waveHdr = &stream.waveHdr[i];
+					buf = (Bit16s *)waveHdr->lpData;
+					frameCount = stream.chunkSize;
+				}
+			}
+			if (allBuffersRendered) {
+				WaitForSingleObject(stream.hEvent, INFINITE);
 				continue;
 			}
 		}
+
 		double actualSampleRate = MasterClock::NANOS_PER_SECOND * frameCount / (nanosNow - firstSampleNanos);
-		unsigned int rendered = stream->synth->render(stream->buffer + (renderPos << 1), frameCount, firstSampleNanos, actualSampleRate);
-/*
-		Detection of writing to unsafe positions
-		30 ms is the size of KSMixer buffer. KSMixer pulls audio data at regular intervals (10 ms).
-		Thus, writing to the positions closer 30 ms before the playCursor is unsafe.
-		Unfortunately, there is no way to predict the safe writeCursor as with DSound.
-		Therefore, this allows detecting _possible_ underruns. This doesn't mean the underrun really happened.
-*/
-		if (((renderPos + stream->bufferSize - playCursor) % stream->bufferSize) < SAFE_FRAMES) {
-			qDebug() << "Rendering to unsafe positions! Probable underrun! Buffer size should be higher!";
+		unsigned int rendered = stream.synth->render(buf, frameCount, firstSampleNanos, actualSampleRate);
+		if (!stream.useRingBuffer && waveOutWrite(stream.hWaveOut, waveHdr, sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
+			qDebug() << "WinMMAudioDriver: waveOutWrite failed, thread stopped";
+			stream.stopProcessing = true;
+			stream.synth->close();
+			return;
 		}
 
-		// Underrun (buffer wrap) detection
-		int framesReallyPlayed = int(double(nanosNow - firstSampleNanos) / MasterClock::NANOS_PER_SECOND * stream->sampleRate);
-		if (framesReallyPlayed > (int)stream->bufferSize) {
-			qDebug() << "Underrun (buffer wrap) detected! Buffer size should be higher!";
+		if (nanosNow - lastXRunWarningNanos > MIN_XRUN_WARNING_NANOS) {
+			/*
+			 *	Detection of writing to unsafe positions
+			 *	30 ms is the size of KSMixer buffer. KSMixer pulls audio data at regular intervals (10 ms).
+			 *	Thus, writing to the positions closer 30 ms before the playCursor is unsafe.
+			 *	Unfortunately, there is no way to predict the safe writeCursor as with DSound.
+			 *	Therefore, this allows detecting _possible_ underruns. This doesn't mean the underrun really happened.
+			 */
+			if (((renderPos + stream.bufferSize - playCursor) % stream.bufferSize) < SAFE_FRAMES) {
+				qDebug() << "WinMMAudioDriver: Rendering to unsafe positions! Probable underrun! Buffer size should be higher!";
+				lastXRunWarningNanos = nanosNow;
+			}
+
+			// Underrun (buffer wrap) detection
+			int framesReallyPlayed = int(double(nanosNow - firstSampleNanos) / MasterClock::NANOS_PER_SECOND * stream.sampleRate);
+			if (framesReallyPlayed > (int)stream.bufferSize) {
+				qDebug() << "WinMMAudioDriver: Underrun (buffer wrap) detected! Buffer size should be higher!";
+				lastXRunWarningNanos = nanosNow;
+			}
 		}
+
 		firstSampleNanos = nanosNow;
 		if (rendered < frameCount) { // SergM: never found this true
-			char *out = (char *)stream->buffer + FRAME_SIZE * renderPos;
+			char *out = (char *)stream.buffer + FRAME_SIZE * renderPos;
 			// Fill this with 0 due to the real synth fault
 			memset(out + rendered * FRAME_SIZE, 0, (frameCount - rendered) * FRAME_SIZE);
 		}
 		renderPos += frameCount;
-		if (renderPos >= stream->bufferSize) {
-			renderPos -= stream->bufferSize;
+		if (renderPos >= stream.bufferSize) {
+			renderPos -= stream.bufferSize;
 		}
 	}
-	stream->pendingClose = false;
+	stream.stopProcessing = false;
 	return;
 }
 
@@ -144,38 +188,59 @@ bool WinMMAudioStream::start(int deviceIndex) {
 	}
 	if (deviceIndex < 0) {
 		deviceIndex = WAVE_MAPPER;
-		qDebug() << "Using default WaveOut device";
+		qDebug() << "WinMMAudioDriver: Using default WaveOut device";
 	} else {
-		qDebug() << "Using WaveOut device:" << deviceIndex;
+		qDebug() << "WinMMAudioDriver: Using WaveOut device:" << deviceIndex;
+	}
+
+	DWORD callbackType = CALLBACK_NULL;
+	DWORD_PTR callback = NULL;
+	if (!useRingBuffer) {
+		hEvent = CreateEvent(NULL, false, true, NULL);
+		callback = (DWORD_PTR)hEvent;
+		callbackType = CALLBACK_EVENT;
 	}
 
 	PCMWAVEFORMAT wFormat = {{WAVE_FORMAT_PCM, /* stereo */ 2, sampleRate,
 		sampleRate * FRAME_SIZE, FRAME_SIZE}, /* BitsPerSample */ 16};
 
-	//	Open waveout device
-	if (waveOutOpen(&hWaveOut, deviceIndex, (LPWAVEFORMATEX)&wFormat, NULL,
-		NULL, CALLBACK_NULL) != MMSYSERR_NOERROR) {
-			qDebug() << "waveOutOpen failed";
+	// Open waveout device
+	if (waveOutOpen(&hWaveOut, deviceIndex, (LPWAVEFORMATEX)&wFormat, callback,
+		(DWORD_PTR)this, callbackType) != MMSYSERR_NOERROR) {
+			qDebug() << "WinMMAudioDriver: waveOutOpen failed";
 			return false;
 	}
 
-	//	Prepare header
-	WaveHdr.dwBufferLength = FRAME_SIZE * bufferSize;
-	WaveHdr.lpData = (LPSTR)buffer;
-	WaveHdr.dwFlags = WHDR_BEGINLOOP | WHDR_ENDLOOP;
-	WaveHdr.dwLoops = -1;
-	if (waveOutPrepareHeader(hWaveOut, &WaveHdr, sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
-		qDebug() << "waveOutPrepareHeader failed";
-		waveOutClose(hWaveOut);
-		return false;
-	}
-
-	//	Start playing
-	if (waveOutWrite(hWaveOut, &WaveHdr, sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
-		qDebug() << "waveOutWrite failed";
-		waveOutUnprepareHeader(hWaveOut, &WaveHdr, sizeof(WAVEHDR));
-		waveOutClose(hWaveOut);
-		return false;
+	waveHdr = new WAVEHDR[numberOfChunks];
+	LPSTR chunkStart = (LPSTR)buffer;
+	DWORD chunkBytes = FRAME_SIZE * chunkSize;
+	for (unsigned int i = 0; i < numberOfChunks; i++) {
+		if (useRingBuffer) {
+			waveHdr[i].dwBufferLength = FRAME_SIZE * bufferSize;
+			waveHdr[i].lpData = chunkStart;
+			waveHdr[i].dwFlags = WHDR_BEGINLOOP | WHDR_ENDLOOP;
+			waveHdr[i].dwLoops = (DWORD)-1L;
+		} else {
+			waveHdr[i].dwBufferLength = chunkBytes;
+			waveHdr[i].lpData = chunkStart;
+			waveHdr[i].dwFlags = 0L;
+			waveHdr[i].dwLoops = 0L;
+			chunkStart += chunkBytes;
+		}
+		// Prepare headers
+		if (waveOutPrepareHeader(hWaveOut, &waveHdr[i], sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
+			qDebug() << "WinMMAudioDriver: waveOutPrepareHeader failed";
+			stopProcessing = true;
+			close();
+			return false;
+		}
+		// Start playing
+		if (waveOutWrite(hWaveOut, &waveHdr[i], sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
+			qDebug() << "WinMMAudioDriver: waveOutWrite failed";
+			stopProcessing = true;
+			close();
+			return false;
+		}
 	}
 	_beginthread(processingThread, 1024*1024, this);
 	return true;
@@ -183,32 +248,37 @@ bool WinMMAudioStream::start(int deviceIndex) {
 
 void WinMMAudioStream::close() {
 	if (hWaveOut != NULL) {
+		if (hEvent != NULL) SetEvent(hEvent);
 
 		// pendingClose == true means the thread has already exited upon a failure
-		if (pendingClose == false) {
-			pendingClose = true;
-			while (pendingClose) {
+		if (stopProcessing == false) {
+			stopProcessing = true;
+			while (stopProcessing) {
 				Sleep(10);
 			}
 		} else {
-			pendingClose = false;
+			stopProcessing = false;
 		}
 		waveOutReset(hWaveOut);
-		waveOutUnprepareHeader(hWaveOut, &WaveHdr, sizeof(WAVEHDR));
+		for (unsigned int i = 0; i < numberOfChunks; i++) {
+			waveOutUnprepareHeader(hWaveOut, &waveHdr[i], sizeof(WAVEHDR));
+		}
+		delete waveHdr;
+		waveHdr = NULL;
+		CloseHandle(hEvent);
+		hEvent = NULL;
 		waveOutClose(hWaveOut);
 		hWaveOut = NULL;
 	}
 	return;
 }
 
-WinMMAudioDevice::WinMMAudioDevice(const WinMMAudioDriver * const driver, int useDeviceIndex,
-																	 QString useDeviceName) :
+WinMMAudioDevice::WinMMAudioDevice(const WinMMAudioDriver * const driver, int useDeviceIndex, QString useDeviceName) :
 	AudioDevice(driver, QString::number(useDeviceIndex), useDeviceName),
 	deviceIndex(useDeviceIndex) {
 }
 
-WinMMAudioStream *WinMMAudioDevice::startAudioStream(QSynth *synth,
-																										 unsigned int sampleRate) const {
+WinMMAudioStream *WinMMAudioDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
 	WinMMAudioStream *stream = new WinMMAudioStream(this, synth, sampleRate);
 	if (stream->start(deviceIndex)) {
 		return stream;
@@ -232,7 +302,7 @@ QList<AudioDevice *> WinMMAudioDriver::getDeviceList() const {
 	for(UINT deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
 		WAVEOUTCAPS deviceInfo;
 		if (waveOutGetDevCaps(deviceIndex, &deviceInfo, sizeof(deviceInfo)) != MMSYSERR_NOERROR) {
-			qDebug() << "waveOutGetDevCaps failed for" << deviceIndex;
+			qDebug() << "WinMMAudioDriver: waveOutGetDevCaps failed for" << deviceIndex;
 			continue;
 		}
 		deviceList.append(new WinMMAudioDevice(this, deviceIndex, QString().fromLocal8Bit(deviceInfo.szPname)));
@@ -256,5 +326,4 @@ void WinMMAudioDriver::validateAudioSettings() {
 	if (chunkLen > (audioLatency - SAFE_MS)) {
 		chunkLen = audioLatency - SAFE_MS;
 	}
-	advancedTiming = true;
 }

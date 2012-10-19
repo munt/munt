@@ -14,15 +14,18 @@ class WinMMAudioDevice;
 
 class WinMMAudioStream : public AudioStream {
 private:
-	unsigned int minSamplesToRender;
+	unsigned int chunkSize;
 	unsigned int bufferSize;
-	MasterClockNanos latency;
+	MasterClockNanos midiLatency; // the delay for MIDI events to damp timing deviations and ensure accurate rendering
 	QSynth *synth;
 	const unsigned int sampleRate;
 	HWAVEOUT hWaveOut;
-	WAVEHDR	 WaveHdr;
+	WAVEHDR	 *waveHdr;
+	HANDLE hEvent;
+	unsigned int numberOfChunks;
 	MT32Emu::Bit16s *buffer;
-	bool volatile pendingClose;
+	bool volatile stopProcessing;
+	bool useRingBuffer;
 
 	static void processingThread(void *);
 
