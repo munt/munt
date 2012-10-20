@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,4 +43,8 @@ void AudioPropertiesDialog::setData(unsigned int chunkLen, unsigned int audioLat
 	ui->audioLatency->setText(QString().setNum(audioLatency));
 	ui->midiLatency->setText(QString().setNum(midiLatency));
 	ui->advancedTiming->setChecked(advancedTiming);
+}
+
+void AudioPropertiesDialog::setCheckText(QString text) {
+	ui->advancedTiming->setText(text);
 }

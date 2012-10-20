@@ -48,10 +48,12 @@ public:
 class WinMMAudioDriver : public AudioDriver {
 private:
 	void validateAudioSettings();
+	void loadAudioSettings();
 public:
 	WinMMAudioDriver(Master *useMaster);
 	~WinMMAudioDriver();
 	QList<AudioDevice *> getDeviceList() const;
+	void setAudioSettings(unsigned int *chunkLen, unsigned int *audioLatency, unsigned int *midiLatency, bool *advancedTiming);
 };
 
 #endif

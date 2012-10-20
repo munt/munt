@@ -16,6 +16,7 @@ public:
 	~AudioPropertiesDialog();
 	void getData(unsigned int &chunkLen, unsigned int &audioLatency, unsigned int &midiLatency, bool &advancedTiming);
 	void setData(unsigned int chunkLen, unsigned int audioLatency, unsigned int midiLatency, bool advancedTiming);
+	void setCheckText(QString text);
 
 private:
 	Ui::AudioPropertiesDialog *ui;

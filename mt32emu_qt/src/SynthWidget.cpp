@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -141,6 +141,7 @@ void SynthWidget::on_audioPropertiesButton_clicked()
 
 	AudioDevice *device = ui->audioDeviceComboBox->itemData(ui->audioDeviceComboBox->currentIndex()).value<AudioDevice *>();
 	device->driver->getAudioSettings(&chunkLen, &audioLatency, &midiLatency, &advancedTiming);
+	apd.setCheckText((device->driver->id == "waveout") ? "Use ring buffer renderer" : "Use advanced timing");
 	apd.setData(chunkLen, audioLatency, midiLatency, advancedTiming);
 	if (QDialog::Accepted == apd.exec()) {
 		apd.getData(chunkLen, audioLatency, midiLatency, advancedTiming);

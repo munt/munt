@@ -332,3 +332,16 @@ void WinMMAudioDriver::validateAudioSettings() {
 		chunkLen = audioLatency - SAFE_MS;
 	}
 }
+
+void WinMMAudioDriver::loadAudioSettings() {
+	AudioDriver::loadAudioSettings();
+	QSettings *settings = Master::getInstance()->getSettings();
+	advancedTiming = settings->value(id + "/UseRingBuffer").toBool();
+}
+
+void WinMMAudioDriver::setAudioSettings(unsigned int *pChunkLen, unsigned int *pAudioLatency, unsigned int *pMidiLatency, bool *pAdvancedTiming) {
+	AudioDriver::setAudioSettings(pChunkLen, pAudioLatency, pMidiLatency, pAdvancedTiming);
+	QSettings *settings = Master::getInstance()->getSettings();
+	settings->setValue(id + "/UseRingBuffer", *pAdvancedTiming);
+	settings->remove(id + "/AdvancedTiming");
+}
