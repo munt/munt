@@ -133,6 +133,10 @@ void WinMMAudioStream::processingThread(void *userData) {
 				WaitForSingleObject(stream.hEvent, INFINITE);
 				continue;
 			}
+			{
+				DWORD framesPlayed = playCursor > renderPos ? playCursor - renderPos : playCursor + stream.bufferSize - renderPos;
+				firstSampleNanos = nanosNow - MasterClock::NANOS_PER_SECOND * framesPlayed / stream.sampleRate;
+			}
 		}
 		double actualSampleRate = estimateActualSampleRate(stream.sampleRate, firstSampleNanos, lastSampleNanos, audioLatency, frameCount);
 		unsigned int rendered = stream.synth->render(buf, frameCount, firstSampleNanos, actualSampleRate);
