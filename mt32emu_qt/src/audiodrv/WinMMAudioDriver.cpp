@@ -134,8 +134,8 @@ void WinMMAudioStream::processingThread(void *userData) {
 				continue;
 			}
 			{
-				DWORD framesPlayed = playCursor > renderPos ? playCursor - renderPos : playCursor + stream.bufferSize - renderPos;
-				firstSampleNanos = nanosNow - MasterClock::NANOS_PER_SECOND * framesPlayed / stream.sampleRate;
+				DWORD freeFrames = playCursor > renderPos ? playCursor - renderPos : playCursor + stream.bufferSize - renderPos;
+				firstSampleNanos = nanosNow - MasterClock::NANOS_PER_SECOND * freeFrames / stream.sampleRate;
 			}
 		}
 		double actualSampleRate = estimateActualSampleRate(stream.sampleRate, firstSampleNanos, lastSampleNanos, audioLatency, frameCount);
