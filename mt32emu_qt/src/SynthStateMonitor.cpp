@@ -87,8 +87,10 @@ void SynthStateMonitor::handlePolyStateChanged(int partNum) {
 	QPainter painter(&polyBar);
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		const MT32Emu::Partial *partial = qsynth->getPartial(i);
-		if (partial->getOwnerPart() != partNum) continue;
-		uint velocity = partial->getPoly()->getVelocity();
+		if (partial == NULL || partial->getOwnerPart() != partNum) continue;
+		const MT32Emu::Poly *poly = partial->getPoly();
+		if (poly == NULL) continue;
+		uint velocity = poly->getVelocity();
 		if (velocity == 0) continue;
 		uint key = partial->getPoly()->getKey();
 		QColor color(2 * velocity, 255 - 2 * velocity, 0);
