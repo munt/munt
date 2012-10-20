@@ -21,6 +21,7 @@
 
 MidiConverterDialog::MidiConverterDialog(Master *master, QWidget *parent) : QDialog(parent), ui(new Ui::MidiConverterDialog) {
 	ui->setupUi(this);
+	loadProfileCombo();
 	connect(&converter, SIGNAL(conversionFinished()), SLOT(handleConversionFinished()));
 	connect(&converter, SIGNAL(midiEventProcessed(int, int)), SLOT(updateConversionProgress(int, int)));
 	connect(this, SIGNAL(conversionFinished(const QString &, const QString &)), master, SLOT(showBalloon(const QString &, const QString &)));
@@ -111,7 +112,7 @@ void MidiConverterDialog::on_startButton_clicked() {
 	enableControls(false);
 	ui->pcmList->setCurrentRow(0);
 	QStringList *midiFileNames = (QStringList *)ui->pcmList->currentItem()->data(Qt::UserRole).value<QObject *>();
-	if (!converter.convertMIDIFile(ui->pcmList->currentItem()->text(), *midiFileNames)) enableControls(true);
+	if (!converter.convertMIDIFile(ui->pcmList->currentItem()->text(), *midiFileNames, ui->profileComboBox->currentText())) enableControls(true);
 }
 
 void MidiConverterDialog::on_stopButton_clicked() {
@@ -119,8 +120,17 @@ void MidiConverterDialog::on_stopButton_clicked() {
 	enableControls(true);
 }
 
-void MidiConverterDialog::on_synthPropertiesButton_clicked() {
-	// TODO implement
+void MidiConverterDialog::loadProfileCombo() {
+	Master &master = *Master::getInstance();
+	QStringList profiles = master.enumSynthProfiles();
+	ui->profileComboBox->clear();
+	ui->profileComboBox->addItems(profiles);
+	for (int i = 0; i < profiles.count(); i++) {
+		if (profiles[i] == master.getDefaultSynthProfileName()) {
+			ui->profileComboBox->setCurrentIndex(i);
+			break;
+		}
+	}
 }
 
 void MidiConverterDialog::on_pcmList_currentRowChanged(int currentRow) {
@@ -149,7 +159,7 @@ void MidiConverterDialog::enableControls(bool enable) {
 	ui->progressBar->setValue(0);
 	ui->stopButton->setEnabled(!enable);
 	ui->startButton->setEnabled(enable && ui->pcmList->count() > 0);
-	ui->synthPropertiesButton->setEnabled(enable);
+	ui->profileComboBox->setEnabled(enable);
 	ui->midiList->setEnabled(enable);
 	ui->pcmList->setEnabled(enable);
 	ui->addMidiButton->setEnabled(enable);

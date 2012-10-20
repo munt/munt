@@ -13,7 +13,7 @@ class AudioFileWriter : public QThread {
 public:
 	explicit AudioFileWriter();
 	~AudioFileWriter();
-	bool convertMIDIFile(QString useOutFileName, QStringList useMIDIFileNameList, unsigned int bufferSize = 65536);
+	bool convertMIDIFile(QString useOutFileName, QStringList useMIDIFileNameList, QString synthProfileName, unsigned int bufferSize = 65536);
 	void startRealtimeProcessing(QSynth *useSynth, unsigned int useSampleRate, QString useOutFileName, unsigned int bufferSize, MasterClockNanos latency);
 	void stop();
 

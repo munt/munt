@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MIDI Player</string>
+   <string>Standard MIDI file converter</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
@@ -143,11 +143,17 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="synthPropertiesButton">
+        <widget class="QLabel" name="label_4">
          <property name="text">
           <string>Synth Properties</string>
          </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
         </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="profileComboBox"/>
        </item>
       </layout>
      </item>
@@ -166,7 +172,6 @@
   <tabstop>moveDownButton</tabstop>
   <tabstop>startButton</tabstop>
   <tabstop>stopButton</tabstop>
-  <tabstop>synthPropertiesButton</tabstop>
  </tabstops>
  <resources/>
  <connections/>

@@ -23,6 +23,7 @@ private:
 	AudioFileWriter converter;
 
 	void enableControls(bool enable);
+	void loadProfileCombo();
 
 private slots:
 	void on_addMidiButton_clicked();
@@ -33,7 +34,6 @@ private slots:
 	void on_moveDownButton_clicked();
 	void on_startButton_clicked();
 	void on_stopButton_clicked();
-	void on_synthPropertiesButton_clicked();
 	void on_pcmList_currentRowChanged(int currentRow);
 	void handleConversionFinished();
 	void updateConversionProgress(int midiEventsProcessed, int midiEventsTotal);

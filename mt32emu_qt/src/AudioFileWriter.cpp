@@ -46,7 +46,7 @@ AudioFileWriter::~AudioFileWriter() {
 	delete[] buffer;
 }
 
-bool AudioFileWriter::convertMIDIFile(QString useOutFileName, QStringList midiFileNameList, unsigned int useBufferSize) {
+bool AudioFileWriter::convertMIDIFile(QString useOutFileName, QStringList midiFileNameList, QString synthProfileName, unsigned int useBufferSize) {
 	if (useOutFileName.isEmpty() || midiFileNameList.isEmpty()) return false;
 	if (synth != NULL) {
 		synth->close();
@@ -67,6 +67,12 @@ bool AudioFileWriter::convertMIDIFile(QString useOutFileName, QStringList midiFi
 	}
 	parser->addAllNotesOff();
 	synth = new QSynth(this);
+	if (!synthProfileName.isEmpty()) {
+		SynthProfile synthProfile;
+		synth->getSynthProfile(synthProfile);
+		Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);
+		synth->setSynthProfile(synthProfile, synthProfileName);
+	}
 	if (!synth->open()) {
 		synth->close();
 		delete synth;
