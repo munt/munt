@@ -99,7 +99,6 @@ private:
 	QReportHandler *reportHandler;
 	QString synthProfileName;
 
-	bool openSynth();
 	void setState(SynthState newState);
 
 public:

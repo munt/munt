@@ -205,10 +205,6 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 	return renderedLen;
 }
 
-bool QSynth::openSynth() {
-	return synth->open(*controlROMImage, *pcmROMImage);
-}
-
 bool QSynth::open() {
 	if (isOpen) {
 		return true;
@@ -222,7 +218,7 @@ bool QSynth::open() {
 		qDebug() << "Missing ROM files. Can't open synth :(";
 		return false;
 	}
-	if (openSynth()) {
+	if (synth->open(*controlROMImage, *pcmROMImage)) {
 		debugSampleIx = 0;
 		debugLastEventSampleIx = 0;
 		isOpen = true;
@@ -335,7 +331,7 @@ bool QSynth::reset() {
 	synthMutex->lock();
 	delete synth;
 	synth = new Synth(reportHandler);
-	if (!openSynth()) {
+	if (!synth->open(*controlROMImage, *pcmROMImage)) {
 		// We're now in a partially-open state - better to properly close.
 		delete synth;
 		synth = new Synth(reportHandler);
