@@ -74,6 +74,8 @@ void WinMMAudioStream::processingThread(void *userData) {
 	WinMMAudioStream &stream = *(WinMMAudioStream *)userData;
 	MasterClockNanos nanosNow;
 	MasterClockNanos firstSampleNanos = MasterClock::getClockNanos() - stream.midiLatency;
+	MasterClockNanos lastSampleNanos = firstSampleNanos;
+	MasterClockNanos audioLatency = stream.bufferSize * MasterClock::NANOS_PER_SECOND / stream.sampleRate;
 	MasterClockNanos lastXRunWarningNanos = firstSampleNanos - MIN_XRUN_WARNING_NANOS;
 	double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / stream.sampleRate;
 	DWORD prevPlayPos = 0;
@@ -132,8 +134,7 @@ void WinMMAudioStream::processingThread(void *userData) {
 				continue;
 			}
 		}
-
-		double actualSampleRate = MasterClock::NANOS_PER_SECOND * frameCount / (nanosNow - firstSampleNanos);
+		double actualSampleRate = estimateActualSampleRate(stream.sampleRate, firstSampleNanos, lastSampleNanos, audioLatency, frameCount);
 		unsigned int rendered = stream.synth->render(buf, frameCount, firstSampleNanos, actualSampleRate);
 		if (!stream.useRingBuffer && waveOutWrite(stream.hWaveOut, waveHdr, sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
 			qDebug() << "WinMMAudioDriver: waveOutWrite failed, thread stopped";
