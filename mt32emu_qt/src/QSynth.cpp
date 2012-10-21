@@ -173,12 +173,7 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 					qDebug() << "L" << debugSampleIx << 1e-6 * debugEventOffset;
 				}
 				midiEventQueue->popEvent();
-
-				// This ensures minimum 1-sample delay between sequential MIDI events
-				// Without this, a sequence of NoteOn and immediately succeeding NoteOff messages is always silent
-				// Technically, it's also impossible to send events through the MIDI interface faster than about each millisecond
-				renderThisPass = 1;
-				break;
+				continue;
 			} else {
 				qint64 nanosUntilNextEvent = event->getTimestamp() - nanosNow;
 				unsigned int samplesUntilNextEvent = qMax((qint64)1, (qint64)(nanosUntilNextEvent * actualSampleRate / MasterClock::NANOS_PER_SECOND));

@@ -167,10 +167,10 @@ int SMFProcessor::seek(SynthRoute *synthRoute, QVector<MidiEvent> &midiEvents, i
 			if (res) break;
 			qDebug() << "SMFProcessor: MIDI buffer became full while seeking, taking a nap";
 			usleep(MAX_SLEEP_TIME / MasterClock::NANOS_PER_MICROSECOND);
+			nanosNow = MasterClock::getClockNanos();
 		}
 		currentEventIx++;
 		currentEventNanos += e.getTimestamp() * midiTick;
-		nanosNow += SAMPLE_PERIOD;
 	}
 	return currentEventIx;
 }
