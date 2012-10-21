@@ -1,16 +1,44 @@
 Munt mt32emu-qt
 ***************
 
-mt32emu-qt makes use of libmt32emu and Qt to provide a GUI to:
+mt32emu-qt makes use of libmt32emu and Qt to provide for:
 
-1) Configure synths, expose via RTP-MIDI (NYI)
-2) Play/record MIDI files (NYI)
+1) Multiple simultaneous synths, GUI to configure synths, manage ROMs and connections
+2) Funny LCD
+3) Easy usage in different operating system environments:
+   Windows multimedia, PulseAudio, ALSA, OSS and CoreMIDI supported
+4) Play and record Standard MIDI files
+5) Perform batch conversion of Standard MIDI files directly to .wav / .raw audio files
+
+
+Building
+--------
+Cmake is required to building. The minimum set of dependencies is:
+
+1) Cmake - cross platform make utility
+   @ http://www.cmake.org/
+
+2) Qt library
+   @ http://qt.digia.com/
+
+3) PortAudio - cross-platform audio I/O library (included to the main munt repository)
+   @ http://www.portaudio.com/
+
+4) GLib - Gnome library (for building smf2wav console tool only)
+   @ http://developer.gnome.org/glib/
+
+Additional dependencies maybe needed (depending on the platform):
+
+1) PulseAudio - sound system for POSIX OSes - provides for accurate audio rendering
+   @ http://www.pulseaudio.org/ or http://www.freedesktop.org/wiki/Software/PulseAudio
+
+2) DirectX SDK - for building PortAudio with DirectSound and WDMKS support
 
 
 License
 -------
 
-Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

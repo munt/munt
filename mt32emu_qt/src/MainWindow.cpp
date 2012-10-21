@@ -86,13 +86,16 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 void MainWindow::on_actionAbout_triggered()
 {
 	QMessageBox::about(this, "About",
-					   "Munt mt32emu-qt\n"
+					   "Munt - Roland (R) MT-32 sound module emulator\n"
 					   "\n"
-					   "Version wibble"
+					   "Version wibble\n"
 					   "\n"
-					   "Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev\n"
+					   "Build 58e952fba44ef45e9644ca5b611c558b39f859e2\n"
+					   "Date 21-OCT-2012\n"
 					   "\n"
-					   "Blah blah GPL etc."
+					   "Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev\n"
+					   "\n"
+					   "Licensed under GPL v3 or any later version."
 					   );
 }
 
