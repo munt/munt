@@ -589,7 +589,7 @@ void Part::stopNote(unsigned int key) {
 		// Key 0 (only used by special cases on rhythm part) reacts to note off even if non-sustaining or pedal held.
 		if (poly->getKey() == key && (poly->canSustain() || key == 0)) {
 			if (poly->noteOff(holdpedal && key != 0)) {
-				//break;
+				break;
 			}
 		}
 	}

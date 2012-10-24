@@ -226,6 +226,9 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			// Linear interpolation
 			float firstSample = synth->pcmROMData[pcmAddr + intPCMPosition];
+			// We observe that for partial structures with ring modulation the interpolation is not applied to the slave PCM partial.
+			// It's assumed that the multiplication circuitry intended to perform the interpolation on the slave PCM partial
+			// is borrowed by the ring modulation circuit (or the LA32 chip has a similar lack of resources assigned to each partial pair).
 			if (pair == NULL || mixType == 0 || structurePosition == 0) {
 				sample = firstSample + (getPCMSample(intPCMPosition + 1) - firstSample) * (pcmPosition - intPCMPosition);
 			} else {
