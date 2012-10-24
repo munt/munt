@@ -23,6 +23,18 @@
 #include <windows.h>
 #endif
 
+#ifndef GIT_HASH
+#define GIT_HASH "Unknown"
+#endif
+
+#ifndef BUILD_DATE
+#ifdef __DATE__
+#define BUILD_DATE __DATE__
+#elif
+#define BUILD_DATE "Unknown"
+#endif
+#endif
+
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 #include "Master.h"
@@ -90,8 +102,8 @@ void MainWindow::on_actionAbout_triggered()
 					   "\n"
 					   "Version wibble\n"
 					   "\n"
-					   "Build 58e952fba44ef45e9644ca5b611c558b39f859e2\n"
-					   "Date 21-OCT-2012\n"
+					   "Build " GIT_HASH "\n"
+					   "Date " BUILD_DATE "\n"
 					   "\n"
 					   "Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev\n"
 					   "\n"
