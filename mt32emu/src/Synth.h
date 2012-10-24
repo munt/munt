@@ -284,7 +284,6 @@ private:
 
 	Bit32u renderedSampleCount;
 
-	Tables tables;
 
 	MemParams mt32ram, mt32default;
 

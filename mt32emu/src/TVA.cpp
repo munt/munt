@@ -160,7 +160,7 @@ void TVA::reset(const Part *newPart, const TimbreParam::PartialParam *newPartial
 
 	playing = true;
 
-	Tables *tables = &partial->getSynth()->tables;
+	const Tables *tables = &Tables::getInstance();
 
 	int key = partial->getPoly()->getKey();
 	int velocity = partial->getPoly()->getVelocity();
@@ -221,7 +221,7 @@ void TVA::recalcSustain() {
 		return;
 	}
 	// We're sustaining. Recalculate all the values
-	Tables *tables = &partial->getSynth()->tables;
+	const Tables *tables = &Tables::getInstance();
 	int newTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
 	newTarget += partialParam->tva.envLevel[3];
 	// Since we're in TVA_PHASE_SUSTAIN at this point, we know that target has been reached and an interrupt fired, so we can rely on it being the current amp.
@@ -247,7 +247,7 @@ int TVA::getPhase() const {
 }
 
 void TVA::nextPhase() {
-	Tables *tables = &partial->getSynth()->tables;
+	const Tables *tables = &Tables::getInstance();
 
 	if (phase >= TVA_PHASE_DEAD || !playing) {
 		partial->getSynth()->printDebug("TVA::nextPhase(): Shouldn't have got here with phase %d, playing=%s", phase, playing ? "true" : "false");

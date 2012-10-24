@@ -422,7 +422,6 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage) {
 #if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Constant Tables");
 #endif
-	tables.init();
 #if !MT32EMU_REDUCE_REVERB_MEMORY
 	for (int i = 0; i < 4; i++) {
 		reverbModels[i]->open(useProp.sampleRate);

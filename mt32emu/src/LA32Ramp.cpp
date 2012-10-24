@@ -83,7 +83,9 @@ void LA32Ramp::startRamp(Bit8u target, Bit8u increment) {
 	if (increment == 0) {
 		largeIncrement = 0;
 	} else {
-		largeIncrement = (unsigned int)(EXP2F(((increment & 0x7F) + 24) / 8.0f) + 0.125f);
+		// Using integer argument here, no precision loss:
+		// (unsigned int)(EXP2F(((increment & 0x7F) + 24) / 8.0f) + 0.125f)
+		largeIncrement = (unsigned int)(EXP2I(((increment & 0x7F) + 24) << 9) + 0.125f);
 	}
 	descending = (increment & 0x80) != 0;
 	if (descending) {

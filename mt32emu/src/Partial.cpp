@@ -150,7 +150,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	}
 
 	// CONFIRMED: pulseWidthVal calculation is based on information from Mok
-	pulseWidthVal = (poly->getVelocity() - 64) * (patchCache->srcPartial.wg.pulseWidthVeloSensitivity - 7) + synth->tables.pulseWidth100To255[patchCache->srcPartial.wg.pulseWidth];
+	pulseWidthVal = (poly->getVelocity() - 64) * (patchCache->srcPartial.wg.pulseWidthVeloSensitivity - 7) + Tables::getInstance().pulseWidth100To255[patchCache->srcPartial.wg.pulseWidth];
 	if (pulseWidthVal < 0) {
 		pulseWidthVal = 0;
 	} else if (pulseWidthVal > 255) {
@@ -176,6 +176,7 @@ float Partial::getPCMSample(unsigned int position) {
 }
 
 unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) {
+	const Tables &tables = Tables::getInstance();
 	if (!isActive() || alreadyOutputed) {
 		return 0;
 	}
@@ -198,6 +199,9 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			deactivate();
 			break;
 		}
+
+		Bit16u pitch = tvp->nextPitch();
+
 		// SEMI-CONFIRMED: From sample analysis:
 		// (1) Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
 		// This gives results within +/- 2 at the output (before any DAC bitshifting)
@@ -207,10 +211,14 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		// positive amps, so negative still needs to be explored, as well as lower levels.
 		//
 		// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
-		float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
 
-		Bit16u pitch = tvp->nextPitch();
-		float freq = synth->tables.pitchToFreq[pitch];
+#if MT32EMU_ACCURATE_WG == 1
+		float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
+		float freq = EXP2F(pitch / 4096.0f - 16.0f) * 32000.0f;
+#else
+		float amp = 1 / EXP2I((67117056 - ampRampVal) >> 10);
+		float freq = EXP2I(pitch - 4236);
+#endif
 
 		if (patchCache->PCMPartial) {
 			// Render PCM waveform
@@ -254,8 +262,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			// res corresponds to a value set in an LA32 register
 			Bit8u res = patchCache->srcPartial.tvf.resonance + 1;
 
-			// EXP2F(1.0f - (32 - res) / 4.0f);
-			float resAmp = synth->tables.resAmpMax[res];
+			// Using tiny exact table for computation of EXP2F(1.0f - (32 - res) / 4.0f)
+			float resAmp = tables.resAmpMax[res];
 
 			// The cutoffModifier may not be supposed to be directly added to the cutoff -
 			// it may for example need to be multiplied in some way.
@@ -275,7 +283,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 				cosineLen *= EXP2F((cutoffVal - 128.0f) / -16.0f); // found from sample analysis
 #else
-				cosineLen *= synth->tables.cutoffToCosineLen[Bit32u((cutoffVal - 128.0f) * 8.0f)];
+				cosineLen /= EXP2I(Bit32u((cutoffVal - 128.0f) * 256.0f));
 #endif
 			}
 
@@ -288,7 +296,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 			float pulseLen = 0.5f;
 			if (pulseWidthVal > 128) {
-				pulseLen += synth->tables.pulseLenFactor[pulseWidthVal - 128];
+				pulseLen += tables.pulseLenFactor[pulseWidthVal - 128];
 			}
 			pulseLen *= waveLen;
 
@@ -310,7 +318,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 				resAmp *= sinf(FLOAT_PI * (cutoffVal - 128.0f) / 32.0f);
 #else
-				resAmp *= synth->tables.sinf10[Bit32u(64 * (cutoffVal - 128.0f))];
+				resAmp *= tables.sinf10[Bit32u(64 * (cutoffVal - 128.0f))];
 #endif
 			}
 
@@ -321,7 +329,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 				sample = -cosf(FLOAT_PI * relWavePos / cosineLen);
 #else
-				sample = -synth->tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) + 1024];
+				sample = -tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) + 1024];
 #endif
 			} else
 
@@ -335,7 +343,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 				sample = cosf(FLOAT_PI * (relWavePos - (cosineLen + hLen)) / cosineLen);
 #else
-				sample = synth->tables.sinf10[Bit32u(2048.0f * (relWavePos - (cosineLen + hLen)) / cosineLen) + 1024];
+				sample = tables.sinf10[Bit32u(2048.0f * (relWavePos - (cosineLen + hLen)) / cosineLen) + 1024];
 #endif
 			} else {
 
@@ -350,7 +358,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 				sample *= EXP2F(-0.125f * (128.0f - cutoffVal));
 #else
-				sample *= synth->tables.cutoffToFilterAmp[Bit32u(cutoffVal * 8.0f)];
+				sample /= EXP2I(Bit32u(512.0f * (128.0f - cutoffVal)));
 #endif
 			} else {
 
@@ -370,11 +378,15 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 				resSample *= sinf(FLOAT_PI * relWavePos / cosineLen);
 #else
-				resSample *= synth->tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) & 4095];
+				resSample *= tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) & 4095];
 #endif
 
 				// Resonance sine amp
-				float resAmpFade = EXP2F(-synth->tables.resAmpFadeFactor[res >> 2] * (relWavePos / cosineLen));	// seems to be exact
+#if MT32EMU_ACCURATE_WG == 1
+				float resAmpFade = EXP2F(-tables.resAmpFadeFactor[res >> 2] * (relWavePos / cosineLen));	// seems to be exact
+#else
+				float resAmpFade = 1 / EXP2I(Bit32u(tables.resAmpFadeFactor[res >> 2] * (relWavePos / cosineLen) * 4096.0f));
+#endif
 
 				// Now relWavePos set negative to the left from center of any cosine
 				relWavePos = wavePos;
@@ -395,7 +407,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 					resAmpFade *= 0.5f * (1.0f - cosf(FLOAT_PI * relWavePos / (0.5f * cosineLen)));
 #else
-					resAmpFade *= 0.5f * (1.0f + synth->tables.sinf10[Bit32s(2048.0f * relWavePos / (0.5f * cosineLen)) + 3072]);
+					resAmpFade *= 0.5f * (1.0f + tables.sinf10[Bit32s(2048.0f * relWavePos / (0.5f * cosineLen)) + 3072]);
 #endif
 				}
 
@@ -407,7 +419,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 				sample *= cosf(FLOAT_2PI * wavePos / waveLen);
 #else
-				sample *= synth->tables.sinf10[(Bit32u(4096.0f * wavePos / waveLen) & 4095) + 1024];
+				sample *= tables.sinf10[(Bit32u(4096.0f * wavePos / waveLen) & 4095) + 1024];
 #endif
 			}
 
