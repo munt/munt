@@ -111,10 +111,6 @@ void MainWindow::on_actionAbout_triggered()
 					   );
 }
 
-void MainWindow::on_synthTabs_currentChanged() {
-	emit currentTabChanged(ui->synthTabs->currentWidget());
-}
-
 void MainWindow::refreshTabNames()
 {
 	QWidget *widget;

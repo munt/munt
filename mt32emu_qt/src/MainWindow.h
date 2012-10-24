@@ -51,14 +51,10 @@ private slots:
 	void on_actionShow_LCD_balloons_toggled(bool checked);
 	void on_actionShow_connection_balloons_toggled(bool checked);
 	void on_actionROM_Configuration_triggered();
-	void on_synthTabs_currentChanged();
 	void refreshTabNames();
 	void showHideMainWindow();
 	void handleTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 	void toggleShowConsole();
-
-signals:
-	void currentTabChanged(QWidget *currentSynthWidget);
 };
 
 #endif // MAINWINDOW_H

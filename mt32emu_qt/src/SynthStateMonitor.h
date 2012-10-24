@@ -1,6 +1,8 @@
 #ifndef SYNTH_STATE_MONITOR_H
 #define SYNTH_STATE_MONITOR_H
 
+//#define SYNTH_MONITOR_UPDATE_MILLIS 30
+
 #include <QtCore>
 
 #include "SynthWidget.h"
@@ -31,6 +33,16 @@ private slots:
 	void handlePolyStateChanged(int partNum);
 	void handlePartialStateChanged(int partialNum, int partialState);
 	void handleProgramChanged(int partNum, QString patchName);
+
+#ifdef SYNTH_MONITOR_UPDATE_MILLIS
+private:
+	QTimer timer;
+	int polyState[32];
+	int partialState[32];
+
+private slots:
+	void handleUpdate();
+#endif
 };
 
 #endif
