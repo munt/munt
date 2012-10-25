@@ -14,8 +14,6 @@ class MidiPropertiesDialog;
 class Master : public QObject {
 	Q_OBJECT
 private:
-	static Master *INSTANCE;
-
 	bool running;
 	QList<SynthRoute *> synthRoutes;
 	QList<AudioDriver *> audioDrivers;
@@ -30,7 +28,9 @@ private:
 	QString defaultAudioDeviceName;
 	qint64 lastAudioDeviceScan;
 
-	Master();
+	void init();
+	~Master();
+
 	void initAudioDrivers();
 	void initMidiDrivers();
 	const AudioDevice *findAudioDevice(QString driverId, QString name) const;
@@ -39,6 +39,9 @@ private:
 	SynthRoute *startSynthRoute();
 
 public:
+	static Master *getInstance();
+	static void freeROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage);
+
 	// May only be called from the application thread
 	const QList<AudioDevice *> getAudioDevices();
 	void setDefaultAudioDevice(QString driverId, QString name);
@@ -54,6 +57,7 @@ public:
 	void setPinned(SynthRoute *synthRoute);
 	void startPinnedSynthRoute();
 	void startMidiProcessing();
+	void processCommandLine(int argv, char **args);
 	bool canCreateMidiPort();
 	bool canDeleteMidiPort(MidiSession *midiSession);
 	bool canSetMidiPortProperties(MidiSession *midiSession);
@@ -62,14 +66,6 @@ public:
 	void setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
 	bool isRunning();
 	void shutDown();
-
-	static void freeROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage);
-
-	static Master *getInstance();
-
-	// These two methods are only intended to be called at application startup/shutdown
-	static void init();
-	static void deinit();
 
 private slots:
 	void createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);

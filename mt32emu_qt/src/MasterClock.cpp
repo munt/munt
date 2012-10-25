@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
 #include <QDebug>
 
 #include "MasterClock.h"
+
+const MasterClock MasterClock::instance;
 
 #if _POSIX_C_SOURCE >= 199309L
 
@@ -61,11 +63,9 @@ MasterClockNanos MasterClock::getClockNanos() {
 	return timespecToNanos(ts);
 }
 
-void MasterClock::init() {
-}
+MasterClock::MasterClock() {}
 
-void MasterClock::deinit() {
-}
+MasterClock::~MasterClock() {}
 
 #else
 
@@ -117,7 +117,7 @@ MasterClockNanos MasterClock::getClockNanos() {
 	}
 }
 
-void MasterClock::init() {
+MasterClock::MasterClock() {
 	TIMECAPS tc;
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR) {
 		qDebug() << "Unable to get multimedia timer capabilities.";
@@ -144,7 +144,7 @@ void MasterClock::init() {
 	}
 }
 
-void MasterClock::deinit() {
+MasterClock::~MasterClock() {
 	if (mmTimerResolution != 0) {
 		qDebug() << "Restoring default multimedia timer resolution.";;
 		timeEndPeriod(mmTimerResolution);
@@ -161,12 +161,12 @@ MasterClockNanos MasterClock::getClockNanos() {
 	return (MasterClockNanos)elapsedTimer->elapsed() * NANOS_PER_MILLISECOND;
 }
 
-void MasterClock::init() {
+MasterClock::MasterClock() {
 	elapsedTimer = new QElapsedTimer();
 	elapsedTimer->start();
 }
 
-void MasterClock::deinit() {
+MasterClock::~MasterClock() {
 	delete elapsedTimer;
 	elapsedTimer = NULL;
 }

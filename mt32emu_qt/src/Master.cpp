@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -51,33 +51,22 @@
 #include "mididrv/OSSMidiPortDriver.h"
 #endif
 
-Master *Master::INSTANCE = NULL;
-
-Master::Master() {
-}
-
 void Master::init() {
-	static Master master;
+	moveToThread(QCoreApplication::instance()->thread());
 
-	if (INSTANCE != NULL) return;
-	INSTANCE = &master;
-	INSTANCE->moveToThread(QCoreApplication::instance()->thread());
+	settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
+	synthProfileName = settings->value("Master/defaultSynthProfile", "default").toString();
 
-	MasterClock::init();
+	trayIcon = NULL;
+	defaultAudioDriverId = settings->value("Master/DefaultAudioDriver").toString();
+	defaultAudioDeviceName = settings->value("Master/DefaultAudioDevice").toString();
 
-	INSTANCE->settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
-	INSTANCE->synthProfileName = INSTANCE->settings->value("Master/defaultSynthProfile", "default").toString();
-
-	INSTANCE->trayIcon = NULL;
-	INSTANCE->defaultAudioDriverId = INSTANCE->settings->value("Master/DefaultAudioDriver").toString();
-	INSTANCE->defaultAudioDeviceName = INSTANCE->settings->value("Master/DefaultAudioDevice").toString();
-
-	INSTANCE->initAudioDrivers();
-	INSTANCE->initMidiDrivers();
-	INSTANCE->lastAudioDeviceScan = -4 * MasterClock::NANOS_PER_SECOND;
-	INSTANCE->getAudioDevices();
-	INSTANCE->pinnedSynthRoute = NULL;
-	INSTANCE->running = true;
+	initAudioDrivers();
+	initMidiDrivers();
+	lastAudioDeviceScan = -4 * MasterClock::NANOS_PER_SECOND;
+	getAudioDevices();
+	pinnedSynthRoute = NULL;
+	running = true;
 
 	qRegisterMetaType<MidiDriver *>("MidiDriver*");
 	qRegisterMetaType<MidiSession *>("MidiSession*");
@@ -85,37 +74,32 @@ void Master::init() {
 	qRegisterMetaType<SynthState>("SynthState");
 }
 
-void Master::deinit() {
-	if (INSTANCE->trayIcon != NULL) delete INSTANCE->trayIcon;
-	delete INSTANCE->settings;
+Master::~Master() {
+	delete settings;
 
-	if (INSTANCE->midiDriver != NULL) {
-		INSTANCE->midiDriver->stop();
-		delete INSTANCE->midiDriver;
-		INSTANCE->midiDriver = NULL;
+	if (midiDriver != NULL) {
+		midiDriver->stop();
+		delete midiDriver;
+		midiDriver = NULL;
 	}
 
-	QMutableListIterator<SynthRoute *> synthRouteIt(INSTANCE->synthRoutes);
+	QMutableListIterator<SynthRoute *> synthRouteIt(synthRoutes);
 	while(synthRouteIt.hasNext()) {
 		delete synthRouteIt.next();
 		synthRouteIt.remove();
 	}
 
-	QMutableListIterator<AudioDevice *> audioDeviceIt(INSTANCE->audioDevices);
+	QMutableListIterator<AudioDevice *> audioDeviceIt(audioDevices);
 	while(audioDeviceIt.hasNext()) {
 		delete audioDeviceIt.next();
 		audioDeviceIt.remove();
 	}
 
-	QMutableListIterator<AudioDriver *> audioDriverIt(INSTANCE->audioDrivers);
+	QMutableListIterator<AudioDriver *> audioDriverIt(audioDrivers);
 	while(audioDriverIt.hasNext()) {
 		delete audioDriverIt.next();
 		audioDriverIt.remove();
 	}
-
-	MasterClock::deinit();
-
-	INSTANCE = NULL;
 }
 
 void Master::initAudioDrivers() {
@@ -159,7 +143,16 @@ void Master::startMidiProcessing() {
 }
 
 Master *Master::getInstance() {
-	return INSTANCE;
+	static Master master;
+
+	// This fixes a deadlock caused by static initialization algorithm of GCC
+	// Instead, MSVC invokes constructors for static vars only once
+	static bool initialized = false;
+	if (!initialized) {
+		initialized = true;
+		master.init();
+	}
+	return &master;
 }
 
 bool Master::isRunning() {
@@ -168,6 +161,11 @@ bool Master::isRunning() {
 
 void Master::shutDown() {
 	running = false;
+}
+
+void Master::processCommandLine(int argv, char **args) {
+	(void)argv;
+	(void)args;
 }
 
 void Master::setDefaultAudioDevice(QString driverId, QString name) {
@@ -183,7 +181,7 @@ const QList<AudioDevice *> Master::getAudioDevices() {
 		lastAudioDeviceScan = nanosNow;
 		qDebug() << "Scanning audio devices ...";
 		audioDevices.clear();
-		QListIterator<AudioDriver *> audioDriverIt(INSTANCE->audioDrivers);
+		QListIterator<AudioDriver *> audioDriverIt(audioDrivers);
 		while(audioDriverIt.hasNext()) {
 			AudioDriver *audioDriver = audioDriverIt.next();
 			audioDevices.append(audioDriver->getDeviceList());
@@ -236,7 +234,7 @@ const QString Master::getROMPathName(const QDir &romDir, QString romFileName) co
 void Master::makeROMImages(SynthProfile &synthProfile) {
 	freeROMImages(synthProfile.controlROMImage, synthProfile.pcmROMImage);
 
-	foreach (SynthRoute *synthRoute, INSTANCE->synthRoutes) {
+	foreach (SynthRoute *synthRoute, synthRoutes) {
 		SynthProfile profile;
 		synthRoute->getSynthProfile(profile);
 		if (synthProfile.romDir != profile.romDir) continue;
@@ -270,7 +268,7 @@ void Master::freeROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32
 	if (controlROMImage == NULL && pcmROMImage == NULL) return;
 	bool controlROMInUse = false;
 	bool pcmROMInUse = false;
-	foreach (SynthRoute *synthRoute, INSTANCE->synthRoutes) {
+	foreach (SynthRoute *synthRoute, getInstance()->synthRoutes) {
 		SynthProfile synthProfile;
 		synthRoute->getSynthProfile(synthProfile);
 		controlROMInUse = controlROMInUse || (synthProfile.controlROMImage == controlROMImage);
@@ -370,7 +368,7 @@ QSystemTrayIcon *Master::getTrayIcon() const {
 }
 
 void Master::setTrayIcon(QSystemTrayIcon *trayIcon) {
-	INSTANCE->trayIcon = trayIcon;
+	Master::trayIcon = trayIcon;
 }
 
 void Master::showBalloon(const QString &title, const QString &text) {

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,21 +26,23 @@ int main(int argv, char **args)
 
 	QProcessEnvironment::systemEnvironment().insert("PA_ALSA_PLUGHW", "1");
 
-	Master::init();
 	Master *master = Master::getInstance();
+	QSystemTrayIcon *trayIcon = NULL;
 	if (QSystemTrayIcon::isSystemTrayAvailable()) {
-		QSystemTrayIcon *trayIcon = new QSystemTrayIcon(QIcon(":/images/note.gif"));
+		trayIcon = new QSystemTrayIcon(QIcon(":/images/note.gif"));
 		trayIcon->setToolTip("Munt: MT-32 Emulator");
 		trayIcon->show();
 		master->setTrayIcon(trayIcon);
 	}
 	MainWindow mainWindow(master);
-	if (master->getTrayIcon() == NULL || !master->getSettings()->value("Master/startIconized", "0").toBool()) mainWindow.show();
+	if (trayIcon == NULL || !master->getSettings()->value("Master/startIconized", "0").toBool()) mainWindow.show();
 	master->startPinnedSynthRoute();
 	master->startMidiProcessing();
+	master->processCommandLine(argv, args);
 	while (master->isRunning()) {
 		app.exec();
 	}
-	Master::deinit();
+	master->setTrayIcon(NULL);
+	delete trayIcon;
 	return 0;
 }
