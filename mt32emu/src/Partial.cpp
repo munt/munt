@@ -216,7 +216,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		float freq = EXP2F(pitch / 4096.0f - 16.0f) * 32000.0f;
 #else
 		float amp = 1 / EXP2I((67117056 - ampRampVal) >> 10);
-		float freq = EXP2I(pitch - 4236);
+		float freq = EXP2IS(pitch - 4236);
 #endif
 
 		if (patchCache->PCMPartial) {
