@@ -69,7 +69,8 @@ WinMMAudioStream::~WinMMAudioStream() {
 
 void WinMMAudioStream::processingThread(void *userData) {
 	DWORD renderPos = 0;
-	DWORD playCursor, frameCount;
+	DWORD frameCount = 0;
+	DWORD playCursor;
 	MMTIME mmTime;
 	WinMMAudioStream &stream = *(WinMMAudioStream *)userData;
 	MasterClockNanos nanosNow;

@@ -229,7 +229,7 @@ void QSynth::setMasterVolume(int masterVolume) {
 	if (!isOpen) {
 		return;
 	}
-	Bit8u sysex[] = {0x10, 0x00, 0x16, masterVolume};
+	Bit8u sysex[] = {0x10, 0x00, 0x16, (Bit8u)masterVolume};
 
 	synthMutex->lock();
 	synth->writeSysex(16, sysex, 4);
@@ -285,7 +285,7 @@ void QSynth::setReverbSettings(int reverbMode, int reverbTime, int reverbLevel) 
 	if (!isOpen) {
 		return;
 	}
-	Bit8u sysex[] = {0x10, 0x00, 0x01, reverbMode, reverbTime, reverbLevel};
+	Bit8u sysex[] = {0x10, 0x00, 0x01, (Bit8u)reverbMode, (Bit8u)reverbTime, (Bit8u)reverbLevel};
 
 	synthMutex->lock();
 	synth->setReverbOverridden(false);

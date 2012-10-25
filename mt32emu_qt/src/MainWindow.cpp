@@ -30,7 +30,7 @@
 #ifndef BUILD_DATE
 #ifdef __DATE__
 #define BUILD_DATE __DATE__
-#elif
+#else
 #define BUILD_DATE "Unknown"
 #endif
 #endif

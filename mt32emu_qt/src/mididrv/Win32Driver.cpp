@@ -54,7 +54,7 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 		if (data[0] == 0) {				// special value, mark of a non-Sysex message
 			if (data[1] == (DWORD)-1) {		// special value, mark of a handshaking message
 				// Sync the timesource in the driver with MasterClock
-				LARGE_INTEGER t = {{data[3], data[4]}};
+				LARGE_INTEGER t = {{data[3], (LONG)data[4]}};
 				startMasterClock = t.QuadPart - MasterClock::getClockNanos();
 				// Process handshaking message
 				QString appName = QFileInfo(QString((const char *)&data[5])).fileName();
@@ -73,7 +73,7 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 					qDebug() << "Win32MidiDriver: Invalid midiSession handle supplied";
 					return 0;
 				}
-				LARGE_INTEGER t = {{data[2], data[3]}};
+				LARGE_INTEGER t = {{data[2], (LONG)data[3]}};
 //				qDebug() << "D" << 1e-6 * (MasterClock::getClockNanos() - timeToMasterClockNanos(t.QuadPart));
 				midiSession->getSynthRoute()->pushMIDIShortMessage(data[4], timeToMasterClockNanos(t.QuadPart));
 				return 1;

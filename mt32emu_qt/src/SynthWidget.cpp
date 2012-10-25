@@ -262,12 +262,12 @@ void SynthWidget::paintEvent(QPaintEvent *paintEvent) {
 	}
 }
 
-void SynthWidget::hideEvent(QHideEvent *hideEvent) {
+void SynthWidget::hideEvent(QHideEvent *) {
 	synthStateMonitor->connectSignals(false);
 	ui->detailsFrame->setVisible(false);
 }
 
-void SynthWidget::showEvent(QShowEvent *showEvent) {
+void SynthWidget::showEvent(QShowEvent *) {
 	bool monitorVisible = Master::getInstance()->getSettings()->value("Master/showSynthDetails", "0").toBool();
 	ui->detailsFrame->setVisible(monitorVisible);
 	ui->detailsButton->setIcon(monitorVisible ? QIcon(":/images/DetailsHide.gif") : QIcon(":/images/Details.gif"));
