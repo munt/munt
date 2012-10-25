@@ -2,13 +2,15 @@
 #define MIDI_EVENT_H
 
 #include <QtGlobal>
+#include <QVector>
 
 #include <mt32emu/mt32emu.h>
 
 enum MidiEventType {
 	SHORT_MESSAGE,
 	SYSEX,
-	SET_TEMPO
+	SET_TEMPO,
+	SYNC
 };
 
 typedef qint64 SynthTimestamp;
@@ -36,6 +38,12 @@ public:
 	void assignShortMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newMsg);
 	void assignSysex(SynthTimestamp newTimestamp, unsigned char *newSysexData, MT32Emu::Bit32u newSysexLen);
 	void assignSetTempoMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newTempo);
+	void assignSyncMessage(SynthTimestamp newTimestamp);
+};
+
+class MidiEventList : public QVector<MidiEvent> {
+public:
+	MidiEvent &newMidiEvent();
 };
 
 #endif

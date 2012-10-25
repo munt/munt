@@ -99,3 +99,17 @@ void MidiEvent::assignSetTempoMessage(SynthTimestamp newTimestamp, MT32Emu::Bit3
 	delete[] sysexData;
 	sysexData = NULL;
 }
+
+void MidiEvent::assignSyncMessage(SynthTimestamp newTimestamp) {
+	timestamp = newTimestamp;
+	type = SYNC;
+	msg = 0;
+	sysexLen = 0;
+	delete[] sysexData;
+	sysexData = NULL;
+}
+
+MidiEvent &MidiEventList::newMidiEvent() {
+	resize(size() + 1);
+	return last();
+}

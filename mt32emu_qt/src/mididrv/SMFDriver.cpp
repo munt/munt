@@ -67,7 +67,7 @@ void SMFProcessor::setBPM(quint32 newBPM) {
 void SMFProcessor::run() {
 	MidiSession *session = driver->createMidiSession(QFileInfo(fileName).fileName());
 	SynthRoute *synthRoute = session->getSynthRoute();
-	QVector<MidiEvent> midiEvents = parser.getMIDIEvents();
+	const MidiEventList &midiEvents = parser.getMIDIEvents();
 	midiTick = parser.getMidiTick();
 	quint32 totalSeconds = estimateRemainingTime(midiEvents, 0);
 	MasterClockNanos startNanos = MasterClock::getClockNanos();
@@ -118,10 +118,13 @@ void SMFProcessor::run() {
 			case SYSEX:
 				synthRoute->pushMIDISysex(e.getSysexData(), e.getSysexLen(), currentNanos);
 				break;
-			case SET_TEMPO:
+			case SET_TEMPO: {
 				uint tempo = e.getShortMessage();
 				midiTick = parser.getMidiTick(tempo);
 				emit driver->tempoUpdated(MICROSECONDS_PER_MINUTE / tempo);
+				break;
+			}
+			default:
 				break;
 		}
 	}
@@ -132,7 +135,7 @@ void SMFProcessor::run() {
 	if (!stopProcessing) emit driver->playbackFinished();
 }
 
-quint32 SMFProcessor::estimateRemainingTime(QVector<MidiEvent> &midiEvents, int currentEventIx) {
+quint32 SMFProcessor::estimateRemainingTime(const MidiEventList &midiEvents, int currentEventIx) {
 	MasterClockNanos tick = midiTick;
 	MasterClockNanos totalNanos = 0;
 	for (int i = currentEventIx; i < midiEvents.count(); i++) {
@@ -143,7 +146,7 @@ quint32 SMFProcessor::estimateRemainingTime(QVector<MidiEvent> &midiEvents, int 
 	return quint32(totalNanos / MasterClock::NANOS_PER_SECOND);
 }
 
-int SMFProcessor::seek(SynthRoute *synthRoute, QVector<MidiEvent> &midiEvents, int currentEventIx, MasterClockNanos seekNanos, MasterClockNanos currentEventNanos) {
+int SMFProcessor::seek(SynthRoute *synthRoute, const MidiEventList &midiEvents, int currentEventIx, MasterClockNanos seekNanos, MasterClockNanos currentEventNanos) {
 	MasterClockNanos nanosNow = MasterClock::getClockNanos();
 	while (!stopProcessing && currentEventNanos < seekNanos) {
 		const MidiEvent &e = midiEvents.at(currentEventIx);
@@ -158,10 +161,13 @@ int SMFProcessor::seek(SynthRoute *synthRoute, QVector<MidiEvent> &midiEvents, i
 				case SYSEX:
 					res = synthRoute->pushMIDISysex(e.getSysexData(), e.getSysexLen(), nanosNow);
 					break;
-				case SET_TEMPO:
+				case SET_TEMPO: {
 					uint tempo = e.getShortMessage();
 					midiTick = parser.getMidiTick(tempo);
 					emit driver->tempoUpdated(MICROSECONDS_PER_MINUTE / tempo);
+					break;
+				}
+				default:
 					break;
 			}
 			if (res) break;

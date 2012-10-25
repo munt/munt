@@ -48,7 +48,7 @@ bool MidiParser::parseHeader() {
 	return true;
 }
 
-bool MidiParser::parseTrack(QVector<MidiEvent> &midiEventList) {
+bool MidiParser::parseTrack(MidiEventList &midiEventList) {
 	char header[8];
 	forever {
 		if (!readFile(header, 8)) return false;
@@ -96,8 +96,8 @@ bool MidiParser::parseTrack(QVector<MidiEvent> &midiEventList) {
 					}
 					memcpy(&sysexBuffer[1], data, sysexLength);
 					data += sysexLength;
-					midiEventList.resize(midiEventList.size() + 1);
-					midiEventList.last().assignSysex(time, sysexBuffer, sysexLength + 1);
+					midiEventList.newMidiEvent().assignSysex(time, sysexBuffer, sysexLength + 1);
+					continue;
 				} else if (*data == 0xF7) {
 					qDebug() << "MidiParser: Fragmented sysex, unsupported";
 					data++;
@@ -112,15 +112,20 @@ bool MidiParser::parseTrack(QVector<MidiEvent> &midiEventList) {
 						break;
 					} else if (metaType == 0x51) {
 						uint newTempo = qFromBigEndian<quint32>(data) >> 8;
-						midiEventList.resize(midiEventList.size() + 1);
-						midiEventList.last().assignSetTempoMessage(time, newTempo);
+						midiEventList.newMidiEvent().assignSetTempoMessage(time, newTempo);
 						qDebug() << "MidiParser: Meta-event: Set tempo:" << newTempo;
+						continue;
 					} else {
 						qDebug() << "MidiParser: Meta-event code" << *data << "unsupported";
 					}
 					data += len;
 				} else {
 					qDebug() << "MidiParser: Unsupported event" << *(data++);
+				}
+				if (time > 0) {
+					// The event is unsupported. Nevertheless, assign a special marker event to retain timing information
+					qDebug() << "MidiParser: Adding sync event for" << time << "divisions";
+					midiEventList.newMidiEvent().assignSyncMessage(time);
 				}
 				continue;
 			} else if ((*data & 0xE0) == 0xC0) {
@@ -150,8 +155,7 @@ bool MidiParser::parseTrack(QVector<MidiEvent> &midiEventList) {
 				data += 2;
 			}
 		}
-		midiEventList.resize(midiEventList.size() + 1);
-		midiEventList.last().assignShortMessage(time, message);
+		midiEventList.newMidiEvent().assignShortMessage(time, message);
 	}
 	if (runningStatus != 0x2F) {
 		qDebug() << "MidiParser: End-of-track Meta-event isn't the last event, file is probably corrupted.";
@@ -172,7 +176,7 @@ quint32 MidiParser::parseVarLenInt(uchar * &data) {
 	return value;
 }
 
-void MidiParser::mergeMidiEventLists(QVector< QVector<MidiEvent> > &trackList) {
+void MidiParser::mergeMidiEventLists(QVector<MidiEventList> &trackList) {
 	int totalEventCount = 0;
 
 	// Remove empty tracks & allocate memory exactly needed
@@ -240,9 +244,8 @@ bool MidiParser::parseSysex() {
 			sysexBeginIx = i;
 		}
 		if (sysexBeginIx != -1 && data[i] == 0xF7) {
-			midiEventList.resize(midiEventList.size() + 1);
 			int sysexLen = i - sysexBeginIx + 1;
-			midiEventList.last().assignSysex(1, &data[sysexBeginIx], sysexLen);
+			midiEventList.newMidiEvent().assignSysex(1, &data[sysexBeginIx], sysexLen);
 			sysexBeginIx = -1;
 		}
 	}
@@ -264,7 +267,7 @@ bool MidiParser::doParse() {
 			return parseTrack(midiEventList);
 		case 1:
 			if (numberOfTracks > 0) {
-				QVector< QVector<MidiEvent> > trackList(numberOfTracks);
+				QVector<MidiEventList> trackList(numberOfTracks);
 				for (uint i = 0; i < numberOfTracks; i++) {
 					qDebug() << "MidiParser: Parsing & merging MIDI track" << i + 1;
 					if (!parseTrack(trackList[i])) return false;
@@ -277,7 +280,7 @@ bool MidiParser::doParse() {
 		case 2:
 			for (uint i = 0; i < numberOfTracks; i++) {
 				qDebug() << "MidiParser: Parsing & appending MIDI track" << i + 1;
-				QVector<MidiEvent> list;
+				MidiEventList list;
 				if (!parseTrack(list)) return false;
 				midiEventList += list;
 			}
@@ -308,7 +311,7 @@ int MidiParser::getDivision() {
 	return division;
 }
 
-QVector<MidiEvent> MidiParser::getMIDIEvents() {
+const MidiEventList &MidiParser::getMIDIEvents() {
 	return midiEventList;
 }
 

@@ -10,7 +10,7 @@ private:
 	static const int DEFAULT_TEMPO = 60000000 / 120;
 
 	QFile file;
-	QVector<MidiEvent> midiEventList;
+	MidiEventList midiEventList;
 
 	unsigned int format;
 	unsigned int numberOfTracks;
@@ -18,9 +18,9 @@ private:
 
 	bool readFile(char *data, qint64 len);
 	bool parseHeader();
-	bool parseTrack(QVector<MidiEvent> &midiEventList);
+	bool parseTrack(MidiEventList &midiEventList);
 	quint32 parseVarLenInt(uchar * &data);
-	void mergeMidiEventLists(QVector< QVector<MidiEvent> > &tracks);
+	void mergeMidiEventLists(QVector<MidiEventList> &tracks);
 	bool parseSysex();
 	bool doParse();
 
@@ -28,7 +28,7 @@ public:
 	bool parse(QString fileName);
 	bool parse(QStringList fileNameList);
 	int getDivision();
-	QVector<MidiEvent> getMIDIEvents();
+	const MidiEventList &getMIDIEvents();
 	SynthTimestamp getMidiTick(uint tempo = DEFAULT_TEMPO);
 	void addAllNotesOff();
 };

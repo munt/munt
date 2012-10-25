@@ -32,15 +32,15 @@ void MidiRecorder::startRecording() {
 }
 
 void MidiRecorder::recordShortMessage(quint32 msg, MasterClockNanos midiNanos) {
-	if (endNanos != -1) return;
-	midiEventList.resize(midiEventList.size() + 1);
-	midiEventList.last().assignShortMessage(midiNanos, msg);
+	if (isRecording()) {
+		midiEventList.newMidiEvent().assignShortMessage(midiNanos, msg);
+	}
 }
 
 void MidiRecorder::recordSysex(uchar *sysexData, quint32 sysexLen, MasterClockNanos midiNanos) {
-	if (endNanos != -1) return;
-	midiEventList.resize(midiEventList.size() + 1);
-	midiEventList.last().assignSysex(midiNanos, sysexData, sysexLen);
+	if (isRecording()) {
+		midiEventList.newMidiEvent().assignSysex(midiNanos, sysexData, sysexLen);
+	}
 }
 
 void MidiRecorder::stopRecording() {

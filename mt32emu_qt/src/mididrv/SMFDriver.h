@@ -31,8 +31,8 @@ private:
 	QString fileName;
 
 	static void sendAllNotesOff(SynthRoute *synthRoute);
-	quint32 estimateRemainingTime(QVector<MidiEvent> &midiEvents, int currentEventIx);
-	int seek(SynthRoute *synthRoute, QVector<MidiEvent> &midiEvents, int currentEventIx, MasterClockNanos seekNanos, MasterClockNanos currentEventNanos);
+	quint32 estimateRemainingTime(const MidiEventList &midiEvents, int currentEventIx);
+	int seek(SynthRoute *synthRoute, const MidiEventList &midiEvents, int currentEventIx, MasterClockNanos seekNanos, MasterClockNanos currentEventNanos);
 };
 
 class SMFDriver : public MidiDriver {

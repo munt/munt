@@ -17,7 +17,7 @@ public:
 	bool saveSMF(QString fileName, MasterClockNanos midiTick);
 
 private:
-	QVector<MidiEvent> midiEventList;
+	MidiEventList midiEventList;
 	QFile file;
 	MasterClockNanos startNanos, endNanos;
 	uint division;

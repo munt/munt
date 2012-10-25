@@ -57,7 +57,7 @@ bool AudioFileWriter::convertMIDIFile(QString useOutFileName, QStringList midiFi
 	parser = new MidiParser;
 	if (!parser->parse(midiFileNameList)) {
 		qDebug() << "AudioFileWriter: Error parsing MIDI files";
-		QVector<MidiEvent> midiEvents = parser->getMIDIEvents();
+		const MidiEventList &midiEvents = parser->getMIDIEvents();
 		if (midiEvents.count() == 0) {
 			QMessageBox::critical(NULL, "Error", "Error occured while parsing MIDI files. No MIDI events to process.");
 			delete parser;
@@ -121,23 +121,19 @@ void AudioFileWriter::run() {
 		return;
 	}
 	if (waveMode) file.seek(44);
-	MasterClockNanos firstSampleNanos;
-	MasterClockNanos midiTick;
-	MasterClockNanos midiNanos;
-	QVector<MidiEvent> midiEvents;
-	int midiEventIx;
+	MasterClockNanos startNanos = MasterClock::getClockNanos();
+	MasterClockNanos firstSampleNanos = 0;
+	MasterClockNanos midiTick = 0;
+	MasterClockNanos midiNanos = 0;
+	MidiEventList midiEvents;
+	int midiEventIx = 0;
 	if (realtimeMode) {
-		firstSampleNanos = MasterClock::getClockNanos();
+		firstSampleNanos = startNanos;
 	} else {
-		firstSampleNanos = 0;
 		midiEvents = parser->getMIDIEvents();
 		midiTick = parser->getMidiTick();
-		midiNanos = 0;
-		midiEventIx = 0;
 	}
 	qDebug() << "AudioFileWriter: Rendering started";
-	MasterClockNanos startNanos = 0;
-	if (!realtimeMode) startNanos = MasterClock::getClockNanos();
 	while (!stopProcessing) {
 		unsigned int frameCount = 0;
 		if (realtimeMode) {
@@ -167,6 +163,8 @@ void AudioFileWriter::run() {
 						break;
 					case SET_TEMPO:
 						midiTick = parser->getMidiTick(e.getShortMessage());
+						break;
+					default:
 						break;
 				}
 				if (!eventPushed) {
