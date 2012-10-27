@@ -114,9 +114,10 @@ bool MidiParser::parseTrack(MidiEventList &midiEventList) {
 						uint newTempo = qFromBigEndian<quint32>(data) >> 8;
 						midiEventList.newMidiEvent().assignSetTempoMessage(time, newTempo);
 						qDebug() << "MidiParser: Meta-event: Set tempo:" << newTempo;
+						data += len;
 						continue;
 					} else {
-						qDebug() << "MidiParser: Meta-event code" << *data << "unsupported";
+						qDebug() << "MidiParser: Meta-event code" << metaType << "unsupported";
 					}
 					data += len;
 				} else {
@@ -145,7 +146,7 @@ bool MidiParser::parseTrack(MidiEventList &midiEventList) {
 				data++;
 				continue;
 			}
-			if ((*data & 0xE0) == 0xC0) {
+			if ((runningStatus & 0xE0) == 0xC0) {
 				// It's a short message with one data byte
 				message = runningStatus | ((quint32)*data << 8);
 				data++;
