@@ -28,7 +28,8 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	ui(new Ui::SynthWidget),
 	spd(parent, useSynthRoute),
 	apd(parent),
-	mpd(parent)
+	mpd(parent),
+	adjustSize(false)
 {
 	ui->setupUi(this);
 
