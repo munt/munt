@@ -534,10 +534,9 @@ bool Partial::produceOutput(float *leftBuf, float *rightBuf, unsigned long lengt
 			}
 		}
 		if (numGenerated > pairNumGenerated) {
-			if (mixType == 1) {
-				mixBuffersRingMix(partialBuf + pairNumGenerated, NULL, numGenerated - pairNumGenerated);
-			} else {
-				mixBuffersRing(partialBuf + pairNumGenerated, NULL, numGenerated - pairNumGenerated);
+			if (mixType == 2) {
+				numGenerated = pairNumGenerated;
+				deactivate();
 			}
 		}
 	}
