@@ -17,6 +17,9 @@ class MidiPlayerDialog : public QDialog {
 public:
 	explicit MidiPlayerDialog(Master *master, QWidget *parent = 0);
 	~MidiPlayerDialog();
+	void dragEnterEvent(QDragEnterEvent *event);
+	void dragMoveEvent(QDragMoveEvent *event);
+	void dropEvent(QDropEvent *event);
 
 private:
 	Ui::MidiPlayerDialog *ui;
@@ -26,6 +29,8 @@ private:
 	int rowPlaying;
 
 private slots:
+	void on_playList_currentRowChanged(int currentRow);
+	void on_playList_doubleClicked(const QModelIndex &index);
 	void on_addButton_clicked();
 	void on_addListButton_clicked();
 	void on_removeButton_clicked();
