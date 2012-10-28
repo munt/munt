@@ -148,7 +148,7 @@ quint32 SMFProcessor::estimateRemainingTime(const MidiEventList &midiEvents, int
 
 int SMFProcessor::seek(SynthRoute *synthRoute, const MidiEventList &midiEvents, int currentEventIx, MasterClockNanos seekNanos, MasterClockNanos currentEventNanos) {
 	MasterClockNanos nanosNow = MasterClock::getClockNanos();
-	while (!stopProcessing && currentEventNanos < seekNanos) {
+	while (!stopProcessing && currentEventNanos < seekNanos && currentEventIx < midiEvents.size()) {
 		const MidiEvent &e = midiEvents.at(currentEventIx);
 		while (!stopProcessing && synthRoute->getState() == SynthRouteState_OPEN) {
 			bool res = true;
