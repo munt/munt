@@ -163,9 +163,15 @@ void Master::shutDown() {
 	running = false;
 }
 
-void Master::processCommandLine(int argv, char **args) {
-	(void)argv;
-	(void)args;
+void Master::processCommandLine(QStringList args) {
+	if (args.count() < 3) return;
+	QString command = args.at(1);
+	QStringList files = args.mid(2);
+	if (QString::compare(command, "play", Qt::CaseInsensitive) == 0) {
+		emit playMidiFiles(files);
+	} else if (QString::compare(command, "convert", Qt::CaseInsensitive) == 0) {
+		if (args.count() > 3) emit convertMidiFiles(files);
+	}
 }
 
 void Master::setDefaultAudioDevice(QString driverId, QString name) {

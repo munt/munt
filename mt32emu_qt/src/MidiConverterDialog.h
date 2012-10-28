@@ -17,13 +17,16 @@ class MidiConverterDialog : public QDialog {
 public:
 	explicit MidiConverterDialog(Master *master, QWidget *parent = 0);
 	~MidiConverterDialog();
+	void startConversion(const QStringList &fileList);
 
 private:
 	Ui::MidiConverterDialog *ui;
 	AudioFileWriter converter;
+	bool batchMode;
 
 	void enableControls(bool enable);
 	void loadProfileCombo();
+	const QStringList getMidiFileNames();
 
 private slots:
 	void on_addMidiButton_clicked();
@@ -34,7 +37,7 @@ private slots:
 	void on_moveDownButton_clicked();
 	void on_startButton_clicked();
 	void on_stopButton_clicked();
-	void on_pcmList_currentRowChanged(int currentRow);
+	void on_pcmList_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
 	void handleConversionFinished();
 	void updateConversionProgress(int midiEventsProcessed, int midiEventsTotal);
 

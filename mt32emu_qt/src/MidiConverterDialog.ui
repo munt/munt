@@ -31,7 +31,17 @@
           </widget>
          </item>
          <item>
-          <widget class="QListWidget" name="midiList"/>
+          <widget class="QListWidget" name="midiList">
+           <property name="dragEnabled">
+            <bool>true</bool>
+           </property>
+           <property name="dragDropMode">
+            <enum>QAbstractItemView::DragDrop</enum>
+           </property>
+           <property name="defaultDropAction">
+            <enum>Qt::MoveAction</enum>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>

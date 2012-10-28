@@ -58,6 +58,8 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), SLOT(handleSynthRouteRemoved(SynthRoute *)));
 	connect(master, SIGNAL(synthRoutePinned()), SLOT(refreshTabNames()));
 	connect(master, SIGNAL(romsNotSet()), SLOT(on_actionROM_Configuration_triggered()));
+	connect(master, SIGNAL(playMidiFiles(const QStringList &)), SLOT(handlePlayMidiFiles(const QStringList &)), Qt::QueuedConnection);
+	connect(master, SIGNAL(convertMidiFiles(const QStringList &)), SLOT(handleConvertMidiFiles(const QStringList &)), Qt::QueuedConnection);
 
 	if (master->getTrayIcon() != NULL) {
 		connect(master->getTrayIcon(), SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(handleTrayIconActivated(QSystemTrayIcon::ActivationReason)));
@@ -261,4 +263,16 @@ void MainWindow::handleTrayIconActivated(QSystemTrayIcon::ActivationReason reaso
 		showHideMainWindow();
 		break;
 	}
+}
+
+void MainWindow::handlePlayMidiFiles(const QStringList &fileList) {
+	qDebug() << "Playing:" << fileList;
+	on_actionPlay_MIDI_file_triggered();
+	midiPlayerDialog->startPlayingFiles(fileList);
+}
+
+void MainWindow::handleConvertMidiFiles(const QStringList &fileList) {
+	qDebug() << "Converting:" << fileList;
+	on_actionConvert_MIDI_to_Wave_triggered();
+	midiConverterDialog->startConversion(fileList);
 }

@@ -55,6 +55,8 @@ private slots:
 	void showHideMainWindow();
 	void handleTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 	void toggleShowConsole();
+	void handlePlayMidiFiles(const QStringList &fileList);
+	void handleConvertMidiFiles(const QStringList &fileList);
 };
 
 #endif // MAINWINDOW_H

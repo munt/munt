@@ -38,7 +38,7 @@ int main(int argv, char **args)
 	if (trayIcon == NULL || !master->getSettings()->value("Master/startIconized", "0").toBool()) mainWindow.show();
 	master->startPinnedSynthRoute();
 	master->startMidiProcessing();
-	master->processCommandLine(argv, args);
+	master->processCommandLine(app.arguments());
 	while (master->isRunning()) {
 		app.exec();
 	}

@@ -19,7 +19,7 @@
 #include "MidiConverterDialog.h"
 #include "Master.h"
 
-MidiConverterDialog::MidiConverterDialog(Master *master, QWidget *parent) : QDialog(parent), ui(new Ui::MidiConverterDialog) {
+MidiConverterDialog::MidiConverterDialog(Master *master, QWidget *parent) : QDialog(parent), ui(new Ui::MidiConverterDialog), batchMode(false) {
 	ui->setupUi(this);
 	loadProfileCombo();
 	connect(&converter, SIGNAL(conversionFinished()), SLOT(handleConversionFinished()));
@@ -38,11 +38,7 @@ void MidiConverterDialog::on_addMidiButton_clicked() {
 		currentDir = QDir(fileNames.first()).absolutePath();
 		if (ui->pcmList->count() == 0) on_addPcmButton_clicked();
 		if (ui->pcmList->count() > 0) {
-			QStringList *midiFileNames = (QStringList *)ui->pcmList->currentItem()->data(Qt::UserRole).value<QObject *>();
-			midiFileNames->append(fileNames);
-			ui->midiList->clear();
-			ui->midiList->addItems(*midiFileNames);
-			ui->startButton->setEnabled(true);
+			ui->midiList->addItems(fileNames);
 		}
 	}
 }
@@ -52,67 +48,61 @@ void MidiConverterDialog::on_addPcmButton_clicked() {
 	QString fileName = QFileDialog::getSaveFileName(this, NULL, currentDir, "*.wav *.raw;;*.wav;;*.raw;;*.*");
 	if (!fileName.isEmpty()) {
 		currentDir = QDir(fileName).absolutePath();
-		QListWidgetItem *item = new QListWidgetItem;
-		QStringList *midiFileNames = new QStringList;
-		item->setData(Qt::UserRole, QVariant::fromValue((QObject *)midiFileNames));
-		item->setText(fileName);
-		ui->pcmList->addItem(item);
-		ui->pcmList->setCurrentItem(item);
+		ui->pcmList->addItem(fileName);
+		ui->pcmList->setCurrentRow(ui->pcmList->count() - 1);
 	}
 }
 
 void MidiConverterDialog::on_removeButton_clicked() {
 	if (ui->pcmList->count() == 0) return;
 	if (ui->midiList->count() > 0) {
-		QStringList *midiFileNames = (QStringList *)ui->pcmList->currentItem()->data(Qt::UserRole).value<QObject *>();
-		midiFileNames->removeAt(ui->midiList->currentRow());
 		delete ui->midiList->takeItem(ui->midiList->currentRow());
 	} else {
 		delete ui->pcmList->takeItem(ui->pcmList->currentRow());
-		ui->startButton->setEnabled(ui->pcmList->count() > 0);
 	}
 }
 
 void MidiConverterDialog::on_clearButton_clicked() {
 	if (ui->midiList->count() > 0) {
-		QStringList *midiFileNames = (QStringList *)ui->pcmList->currentItem()->data(Qt::UserRole).value<QObject *>();
-		midiFileNames->clear();
 		ui->midiList->clear();
 	} else {
 		ui->pcmList->clear();
-		ui->startButton->setEnabled(false);
 	}
 }
 
 void MidiConverterDialog::on_moveUpButton_clicked() {
 	int currentRow = ui->midiList->currentRow();
 	if (currentRow < 1) return;
-	QStringList *midiFileNames = (QStringList *)ui->pcmList->currentItem()->data(Qt::UserRole).value<QObject *>();
-	midiFileNames->move(currentRow, currentRow - 1);
-	ui->midiList->clear();
-	ui->midiList->addItems(*midiFileNames);
+	QString currentFile = ui->midiList->currentItem()->text();
+	QString prevFile = ui->midiList->item(currentRow - 1)->text();
+	ui->midiList->currentItem()->setText(prevFile);
+	ui->midiList->item(currentRow - 1)->setText(currentFile);
 	ui->midiList->setCurrentRow(currentRow - 1);
 }
 
 void MidiConverterDialog::on_moveDownButton_clicked() {
 	int currentRow = ui->midiList->currentRow();
 	if ((currentRow == -1) || ((ui->midiList->count() - 2) < currentRow)) return;
-	QStringList *midiFileNames = (QStringList *)ui->pcmList->currentItem()->data(Qt::UserRole).value<QObject *>();
-	midiFileNames->move(currentRow, currentRow + 1);
-	ui->midiList->clear();
-	ui->midiList->addItems(*midiFileNames);
+	QString currentFile = ui->midiList->currentItem()->text();
+	QString nextFile = ui->midiList->item(currentRow + 1)->text();
+	ui->midiList->currentItem()->setText(nextFile);
+	ui->midiList->item(currentRow + 1)->setText(currentFile);
 	ui->midiList->setCurrentRow(currentRow + 1);
 }
 
 void MidiConverterDialog::on_startButton_clicked() {
 	if (ui->pcmList->count() == 0) {
+		if (batchMode) {
+			((QWidget *)parent())->close();
+			return;
+		}
 		enableControls(true);
 		return;
 	}
 	enableControls(false);
 	ui->pcmList->setCurrentRow(0);
-	QStringList *midiFileNames = (QStringList *)ui->pcmList->currentItem()->data(Qt::UserRole).value<QObject *>();
-	if (!converter.convertMIDIFile(ui->pcmList->currentItem()->text(), *midiFileNames, ui->profileComboBox->currentText())) enableControls(true);
+	const QStringList midiFileNames = getMidiFileNames();
+	if (!converter.convertMIDIFile(ui->pcmList->currentItem()->text(), midiFileNames, ui->profileComboBox->currentText())) enableControls(true);
 }
 
 void MidiConverterDialog::on_stopButton_clicked() {
@@ -133,17 +123,26 @@ void MidiConverterDialog::loadProfileCombo() {
 	}
 }
 
-void MidiConverterDialog::on_pcmList_currentRowChanged(int currentRow) {
+void MidiConverterDialog::on_pcmList_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous) {
+	const QStringList midiFileNames = getMidiFileNames();
 	ui->midiList->clear();
-	if (currentRow == -1) return;
-	QStringList *midiFileNames = (QStringList *)ui->pcmList->currentItem()->data(Qt::UserRole).value<QObject *>();
-	ui->midiList->addItems(*midiFileNames);
+	if (previous != NULL) {
+		previous->setData(Qt::UserRole, midiFileNames);
+	}
+	if (current == NULL) {
+		ui->startButton->setEnabled(false);
+		return;
+	}
+	ui->startButton->setEnabled(true);
+	const QStringList newMidiFileNames = (QStringList)current->data(Qt::UserRole).value<QStringList>();
+	ui->midiList->addItems(newMidiFileNames);
 }
 
 void MidiConverterDialog::handleConversionFinished() {
 	if (Master::getInstance()->getSettings()->value("Master/showConnectionBalloons", "1").toBool()) {
 		emit conversionFinished("MIDI file converted", ui->pcmList->currentItem()->text());
 	}
+	ui->midiList->clear();
 	delete ui->pcmList->takeItem(ui->pcmList->currentRow());
 	on_startButton_clicked();
 }
@@ -168,4 +167,23 @@ void MidiConverterDialog::enableControls(bool enable) {
 	ui->clearButton->setEnabled(enable);
 	ui->moveUpButton->setEnabled(enable);
 	ui->moveDownButton->setEnabled(enable);
+}
+
+void MidiConverterDialog::startConversion(const QStringList &fileList) {
+	if (fileList.count() < 2) return;
+	ui->pcmList->clear();
+	ui->pcmList->addItem(fileList.at(0));
+	ui->pcmList->setCurrentRow(0);
+	ui->midiList->clear();
+	ui->midiList->addItems(fileList.mid(1));
+	on_startButton_clicked();
+	batchMode = true;
+}
+
+const QStringList MidiConverterDialog::getMidiFileNames() {
+	QStringList list;
+	for (int i = 0; i < ui->midiList->count(); i++) {
+		list.append(ui->midiList->item(i)->text());
+	}
+	return list;
 }

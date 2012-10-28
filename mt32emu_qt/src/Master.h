@@ -57,7 +57,7 @@ public:
 	void setPinned(SynthRoute *synthRoute);
 	void startPinnedSynthRoute();
 	void startMidiProcessing();
-	void processCommandLine(int argv, char **args);
+	void processCommandLine(QStringList args);
 	bool canCreateMidiPort();
 	bool canDeleteMidiPort(MidiSession *midiSession);
 	bool canSetMidiPortProperties(MidiSession *midiSession);
@@ -77,6 +77,8 @@ signals:
 	void synthRouteRemoved(SynthRoute *route);
 	void synthRoutePinned();
 	void romsNotSet();
+	void playMidiFiles(const QStringList &);
+	void convertMidiFiles(const QStringList &);
 };
 
 #endif

@@ -228,29 +228,41 @@ void MidiPlayerDialog::dropEvent(QDropEvent *e) {
 		QUrl url = urls.at(i);
 		if (!url.isLocalFile()) continue;
 		QString fileName = url.toLocalFile();
-		QDir dir = QDir(fileName);
-		if (dir.exists()) {
-			if (dir.isReadable()) {
-				QStringList fileNames = dir.entryList(QStringList() << "*.mid" << "*.smf" << "*.syx");
-				QString fileName;
-				foreach (fileName, fileNames) {
-					ui->playList->addItem(dir.absolutePath() + "/" + fileName);
-				}
-			}
-		} else {
-			if (fileName.endsWith(".pls", Qt::CaseInsensitive)) {
-				QFile listFile(fileName);
-				if (!listFile.open(QIODevice::ReadOnly)) return;
-				QTextStream listStream(&listFile);
-				while (!listStream.atEnd()) {
-					QString s = listStream.readLine();
-					if (s.isEmpty()) continue;
-					ui->playList->addItem(s);
-				}
-			} else {
-				ui->playList->addItem(fileName);
-			}
-		}
+		addPathName(fileName);
 		ui->playList->setCurrentRow(ui->playList->count() - 1);
 	}
+}
+
+void MidiPlayerDialog::addPathName(const QString &fileName) {
+	QDir dir = QDir(fileName);
+	if (dir.exists()) {
+		if (dir.isReadable()) {
+			QStringList fileNames = dir.entryList(QStringList() << "*.mid" << "*.smf" << "*.syx");
+			foreach (QString fileName, fileNames) {
+				ui->playList->addItem(dir.absolutePath() + "/" + fileName);
+			}
+		}
+	} else {
+		if (fileName.endsWith(".pls", Qt::CaseInsensitive)) {
+			QFile listFile(fileName);
+			if (!listFile.open(QIODevice::ReadOnly)) return;
+			QTextStream listStream(&listFile);
+			while (!listStream.atEnd()) {
+				QString s = listStream.readLine();
+				if (s.isEmpty()) continue;
+				ui->playList->addItem(s);
+			}
+		} else {
+			ui->playList->addItem(fileName);
+		}
+	}
+}
+
+void MidiPlayerDialog::startPlayingFiles(const QStringList &fileList) {
+	ui->playList->clear();
+	foreach (QString fileName, fileList) {
+		addPathName(fileName);
+	}
+	ui->playList->setCurrentRow(0);
+	on_playButton_clicked();
 }

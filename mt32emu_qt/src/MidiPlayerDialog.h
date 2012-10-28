@@ -20,6 +20,7 @@ public:
 	void dragEnterEvent(QDragEnterEvent *event);
 	void dragMoveEvent(QDragMoveEvent *event);
 	void dropEvent(QDropEvent *event);
+	void startPlayingFiles(const QStringList &fileList);
 
 private:
 	Ui::MidiPlayerDialog *ui;
@@ -27,6 +28,8 @@ private:
 	bool advancePlayList;
 	bool sliderUpdating;
 	int rowPlaying;
+
+	void addPathName(const QString &fileName);
 
 private slots:
 	void on_playList_currentRowChanged(int currentRow);
