@@ -227,7 +227,30 @@ void MidiPlayerDialog::dropEvent(QDropEvent *e) {
 	for (int i = 0; i < urls.size(); i++) {
 		QUrl url = urls.at(i);
 		if (!url.isLocalFile()) continue;
-		ui->playList->addItem(url.toLocalFile());
+		QString fileName = url.toLocalFile();
+		QDir dir = QDir(fileName);
+		if (dir.exists()) {
+			if (dir.isReadable()) {
+				QStringList fileNames = dir.entryList(QStringList() << "*.mid" << "*.smf" << "*.syx");
+				QString fileName;
+				foreach (fileName, fileNames) {
+					ui->playList->addItem(dir.absolutePath() + "/" + fileName);
+				}
+			}
+		} else {
+			if (fileName.endsWith(".pls", Qt::CaseInsensitive)) {
+				QFile listFile(fileName);
+				if (!listFile.open(QIODevice::ReadOnly)) return;
+				QTextStream listStream(&listFile);
+				while (!listStream.atEnd()) {
+					QString s = listStream.readLine();
+					if (s.isEmpty()) continue;
+					ui->playList->addItem(s);
+				}
+			} else {
+				ui->playList->addItem(fileName);
+			}
+		}
 		ui->playList->setCurrentRow(ui->playList->count() - 1);
 	}
 }
