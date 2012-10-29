@@ -54,7 +54,6 @@ static inline float EXP2F(float x) {
 
 static inline float EXP2I(unsigned int i) {
 	return float(1 << (i >> 12)) * Tables::getInstance().exp2[i & 0x0FFF];
-	return float(double(1 << (i >> 12)) * Tables::getInstance().exp2[i & 0x0FFF]);
 }
 
 static inline float EXP10F(float x) {
