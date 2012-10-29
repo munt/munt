@@ -28,6 +28,7 @@ MidiPlayerDialog::MidiPlayerDialog(Master *master, QWidget *parent) : QDialog(pa
 	connect(&smfDriver, SIGNAL(playbackTimeChanged(quint64, quint32)), SLOT(handlePlaybackTimeChanged(quint64, quint32)));
 	connect(&smfDriver, SIGNAL(tempoUpdated(quint32)), SLOT(handleTempoSet(quint32)));
 	connect(this, SIGNAL(playbackStarted(const QString &, const QString &)), master, SLOT(showBalloon(const QString &, const QString &)));
+	setAcceptDrops(true);
 }
 
 MidiPlayerDialog::~MidiPlayerDialog() {
@@ -226,7 +227,7 @@ void MidiPlayerDialog::dropEvent(QDropEvent *e) {
 	QList<QUrl> urls = e->mimeData()->urls();
 	for (int i = 0; i < urls.size(); i++) {
 		QUrl url = urls.at(i);
-		if (!url.isLocalFile()) continue;
+		if (url.scheme() != "file") continue;
 		QString fileName = url.toLocalFile();
 		addPathName(fileName);
 		ui->playList->setCurrentRow(ui->playList->count() - 1);

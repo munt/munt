@@ -20,6 +20,9 @@
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <widget class="QListWidget" name="playList">
+         <property name="acceptDrops">
+          <bool>true</bool>
+         </property>
          <property name="dragEnabled">
           <bool>true</bool>
          </property>
