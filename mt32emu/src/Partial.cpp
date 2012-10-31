@@ -234,8 +234,11 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
 		float freq = EXP2F(pitch / 4096.0f - 16.0f) * 32000.0f;
 #else
-		float amp = 1 / EXP2I((67117056 - ampRampVal) >> 10);
-		float freq = EXP2I(pitch) * 0.48828125f;
+		static const float ampFactor = EXP2F(32772 / -2048.0f);
+		float amp = EXP2I(ampRampVal >> 10) * ampFactor;
+
+		static const float freqFactor = EXP2F(-16.0f) * 32000.0f;
+		float freq = EXP2I(pitch) * freqFactor;
 #endif
 
 		if (patchCache->PCMPartial) {
@@ -301,7 +304,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 				cosineLen *= EXP2F((cutoffVal - 128.0f) / -16.0f); // found from sample analysis
 #else
-				cosineLen /= EXP2I(Bit32u((cutoffVal - 128.0f) * 256.0f));
+				static const float cosineLenFactor = EXP2F(128.0f / -16.0f);
+				cosineLen *= EXP2I(Bit32u((256.0f - cutoffVal) * 256.0f)) * cosineLenFactor;
 #endif
 			}
 
@@ -376,7 +380,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 				sample *= EXP2F(-0.125f * (128.0f - cutoffVal));
 #else
-				sample /= EXP2I(Bit32u(512.0f * (128.0f - cutoffVal)));
+				static const float cutoffAttenuationFactor = EXP2F(-0.125f * 128.0f);
+				sample *= EXP2I(Bit32u(512.0f * cutoffVal)) * cutoffAttenuationFactor;
 #endif
 			} else {
 
@@ -400,10 +405,12 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #endif
 
 				// Resonance sine amp
+				float resAmpFadeLog2 = -tables.resAmpFadeFactor[res >> 2] * (relWavePos / cosineLen); // seems to be exact
 #if MT32EMU_ACCURATE_WG == 1
-				float resAmpFade = EXP2F(-tables.resAmpFadeFactor[res >> 2] * (relWavePos / cosineLen));	// seems to be exact
+				float resAmpFade = EXP2F(resAmpFadeLog2);
 #else
-				float resAmpFade = 1 / EXP2I(Bit32u(tables.resAmpFadeFactor[res >> 2] * (relWavePos / cosineLen) * 4096.0f));
+				static const float resAmpFadeFactor = EXP2F(-30.0f);
+				float resAmpFade = (resAmpFadeLog2 < -30.0f) ? 0.0f : EXP2I(Bit32u((30.0f + resAmpFadeLog2) * 4096.0f)) * resAmpFadeFactor;
 #endif
 
 				// Now relWavePos set negative to the left from center of any cosine
