@@ -134,6 +134,25 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	stereoVolume.leftVol = panVal / 7.0f;
 	stereoVolume.rightVol = 1.0f - stereoVolume.leftVol;
 
+	// SEMI-CONFIRMED: From sample analysis:
+	// Found that timbres with 3 or 4 partials (i.e. one using two partial pairs) are mixed in two different ways.
+	// Either partial pairs are added or subtracted, it depends on how the partial pairs are allocated.
+	// It seems that partials are grouped into quarters and if the partial pairs are allocated in different quarters the subtraction happens.
+	// Though, this matters little for the majority of timbres, it becomes crucial for timbres which contain several partials that sound very close.
+	// In this case that timbre can sound totally different depending of the way it is mixed up.
+	// Most easily this effect can be displayed with the help of a special timbre consisting of several identical square wave partials (3 or 4).
+	// Say, it is 3-partial timbre. Just play any two notes simultaneously and the polys very probably are mixed differently.
+	// Moreover, the partial allocator retains the last partial assignment it did and all the subsequent notes will sound the same as the last released one.
+	// The situation is better with 4-partial timbres since then a whole quarter is assigned for each poly. However, if a 3-partial timbre broke the normal
+	// whole-quarter assignment or after some partials got aborted, even 4-partial timbres can be found sounding differently.
+	// This behaviour is also confirmed with two more special timbres: one with identical sawtooth partials, and one with PCM wave 02.
+	// For my personal taste, this behaviour rather enriches the sounding and should be emulated.
+	// Also, the current partial allocator model probably needs to be refined.
+	if (debugPartialNum & 4) {
+		stereoVolume.leftVol = -stereoVolume.leftVol;
+		stereoVolume.rightVol = -stereoVolume.rightVol;
+	}
+
 	if (patchCache->PCMPartial) {
 		pcmNum = patchCache->pcm;
 		if (synth->controlROMMap->pcmCount > 128) {
@@ -216,8 +235,11 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
 		float freq = EXP2F(pitch / 4096.0f - 16.0f) * 32000.0f;
 #else
-		float amp = 1 / EXP2I((67117056 - ampRampVal) >> 10);
-		float freq = EXP2I(pitch) * 0.48828125f;
+		static const float ampFactor = EXP2F(32772 / -2048.0f);
+		float amp = EXP2I(ampRampVal >> 10) * ampFactor;
+
+		static const float freqFactor = EXP2F(-16.0f) * 32000.0f;
+		float freq = EXP2I(pitch) * freqFactor;
 #endif
 
 		if (patchCache->PCMPartial) {
@@ -283,7 +305,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 				cosineLen *= EXP2F((cutoffVal - 128.0f) / -16.0f); // found from sample analysis
 #else
-				cosineLen /= EXP2I(Bit32u((cutoffVal - 128.0f) * 256.0f));
+				static const float cosineLenFactor = EXP2F(128.0f / -16.0f);
+				cosineLen *= EXP2I(Bit32u((256.0f - cutoffVal) * 256.0f)) * cosineLenFactor;
 #endif
 			}
 
@@ -358,7 +381,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #if MT32EMU_ACCURATE_WG == 1
 				sample *= EXP2F(-0.125f * (128.0f - cutoffVal));
 #else
-				sample /= EXP2I(Bit32u(512.0f * (128.0f - cutoffVal)));
+				static const float cutoffAttenuationFactor = EXP2F(-0.125f * 128.0f);
+				sample *= EXP2I(Bit32u(512.0f * cutoffVal)) * cutoffAttenuationFactor;
 #endif
 			} else {
 
@@ -382,10 +406,12 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 #endif
 
 				// Resonance sine amp
+				float resAmpFadeLog2 = -tables.resAmpFadeFactor[res >> 2] * (relWavePos / cosineLen); // seems to be exact
 #if MT32EMU_ACCURATE_WG == 1
-				float resAmpFade = EXP2F(-tables.resAmpFadeFactor[res >> 2] * (relWavePos / cosineLen));	// seems to be exact
+				float resAmpFade = EXP2F(resAmpFadeLog2);
 #else
-				float resAmpFade = 1 / EXP2I(Bit32u(tables.resAmpFadeFactor[res >> 2] * (relWavePos / cosineLen) * 4096.0f));
+				static const float resAmpFadeFactor = EXP2F(-30.0f);
+				float resAmpFade = (resAmpFadeLog2 < -30.0f) ? 0.0f : EXP2I(Bit32u((30.0f + resAmpFadeLog2) * 4096.0f)) * resAmpFadeFactor;
 #endif
 
 				// Now relWavePos set negative to the left from center of any cosine
