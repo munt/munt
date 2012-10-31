@@ -79,7 +79,6 @@ LA32Ramp::LA32Ramp() :
 
 void LA32Ramp::startRamp(Bit8u target, Bit8u increment) {
 	// CONFIRMED: From sample analysis, this appears to be very accurate.
-	// FIXME: We could use a table for this in future
 	if (increment == 0) {
 		largeIncrement = 0;
 	} else {
