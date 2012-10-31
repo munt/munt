@@ -133,6 +133,25 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	stereoVolume.leftVol = panVal / 7.0f;
 	stereoVolume.rightVol = 1.0f - stereoVolume.leftVol;
 
+	// SEMI-CONFIRMED: From sample analysis:
+	// Found that timbres with 3 or 4 partials (i.e. one using two partial pairs) are mixed in two different ways.
+	// Either partial pairs are added or subtracted, it depends on how the partial pairs are allocated.
+	// It seems that partials are grouped into quarters and if the partial pairs are allocated in different quarters the subtraction happens.
+	// Though, this matters little for the majority of timbres, it becomes crucial for timbres which contain several partials that sound very close.
+	// In this case that timbre can sound totally different depending of the way it is mixed up.
+	// Most easily this effect can be displayed with the help of a special timbre consisting of several identical square wave partials (3 or 4).
+	// Say, it is 3-partial timbre. Just play any two notes simultaneously and the polys very probably are mixed differently.
+	// Moreover, the partial allocator retains the last partial assignment it did and all the subsequent notes will sound the same as the last released one.
+	// The situation is better with 4-partial timbres since then a whole quarter is assigned for each poly. However, if a 3-partial timbre broke the normal
+	// whole-quarter assignment or after some partials got aborted, even 4-partial timbres can be found sounding differently.
+	// This behaviour is also confirmed with two more special timbres: one with identical sawtooth partials, and one with PCM wave 02.
+	// For my personal taste, this behaviour rather enriches the sounding and should be emulated.
+	// Also, the current partial allocator model probably needs to be refined.
+	if (debugPartialNum & 4) {
+		stereoVolume.leftVol = -stereoVolume.leftVol;
+		stereoVolume.rightVol = -stereoVolume.rightVol;
+	}
+
 	if (patchCache->PCMPartial) {
 		pcmNum = patchCache->pcm;
 		if (synth->controlROMMap->pcmCount > 128) {
