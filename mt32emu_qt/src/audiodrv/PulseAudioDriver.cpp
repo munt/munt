@@ -31,8 +31,8 @@ using namespace MT32Emu;
 
 static const int FRAME_SIZE = 4; // Stereo, 16-bit
 static const unsigned int DEFAULT_CHUNK_MS = 10;
-static const unsigned int DEFAULT_AUDIO_LATENCY = 30;
-static const unsigned int DEFAULT_MIDI_LATENCY = 90;
+static const unsigned int DEFAULT_AUDIO_LATENCY = 200;
+static const unsigned int DEFAULT_MIDI_LATENCY = 20;
 
 static const char PA_LIB_NAME[] = "libpulse-simple.so"; // PulseAudio library filename
 
