@@ -23,15 +23,12 @@
 #include "../MidiSession.h"
 
 static const MasterClockNanos MAX_SLEEP_TIME = 200 * MasterClock::NANOS_PER_MILLISECOND;
-static const MasterClockNanos SAMPLE_PERIOD = MasterClock::NANOS_PER_SECOND / 32000;
-static const quint32 MICROSECONDS_PER_MINUTE = 60000000;
 
 void SMFProcessor::sendAllNotesOff(SynthRoute *synthRoute) {
 	MasterClockNanos nanosNow = MasterClock::getClockNanos();
 	for (int i = 0; i < 16; i++) {
 		quint32 msg = (0xB0 | i) | 0x7F00;
 		synthRoute->pushMIDIShortMessage(msg, nanosNow);
-		nanosNow += SAMPLE_PERIOD;
 	}
 }
 
@@ -60,7 +57,7 @@ void SMFProcessor::stop() {
 }
 
 void SMFProcessor::setBPM(quint32 newBPM) {
-	midiTick = parser.getMidiTick(MICROSECONDS_PER_MINUTE / newBPM);
+	midiTick = parser.getMidiTick(MidiParser::MICROSECONDS_PER_MINUTE / newBPM);
 	bpmUpdated = true;
 }
 
@@ -121,7 +118,7 @@ void SMFProcessor::run() {
 			case SET_TEMPO: {
 				uint tempo = e.getShortMessage();
 				midiTick = parser.getMidiTick(tempo);
-				emit driver->tempoUpdated(MICROSECONDS_PER_MINUTE / tempo);
+				emit driver->tempoUpdated(MidiParser::MICROSECONDS_PER_MINUTE / tempo);
 				break;
 			}
 			default:
@@ -164,7 +161,7 @@ int SMFProcessor::seek(SynthRoute *synthRoute, const MidiEventList &midiEvents, 
 				case SET_TEMPO: {
 					uint tempo = e.getShortMessage();
 					midiTick = parser.getMidiTick(tempo);
-					emit driver->tempoUpdated(MICROSECONDS_PER_MINUTE / tempo);
+					emit driver->tempoUpdated(MidiParser::MICROSECONDS_PER_MINUTE / tempo);
 					break;
 				}
 				default:

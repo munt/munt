@@ -102,7 +102,7 @@ void MidiConverterDialog::on_startButton_clicked() {
 	enableControls(false);
 	ui->pcmList->setCurrentRow(0);
 	const QStringList midiFileNames = getMidiFileNames();
-	if (!converter.convertMIDIFile(ui->pcmList->currentItem()->text(), midiFileNames, ui->profileComboBox->currentText())) enableControls(true);
+	if (!converter.convertMIDIFiles(ui->pcmList->currentItem()->text(), midiFileNames, ui->profileComboBox->currentText())) enableControls(true);
 }
 
 void MidiConverterDialog::on_stopButton_clicked() {

@@ -6,9 +6,17 @@
 #include "MidiEvent.h"
 
 class MidiParser {
-private:
-	static const int DEFAULT_TEMPO = 60000000 / 120;
+public:
+	static const quint32 DEFAULT_BPM = 120;
+	static const quint32 MICROSECONDS_PER_MINUTE = 60000000;
+	static const int DEFAULT_TEMPO = MICROSECONDS_PER_MINUTE / DEFAULT_BPM;
 
+	bool parse(const QString fileName);
+	const MidiEventList &getMIDIEvents();
+	SynthTimestamp getMidiTick(uint tempo = DEFAULT_TEMPO);
+	void addAllNotesOff();
+
+private:
 	QFile file;
 	MidiEventList midiEventList;
 
@@ -23,14 +31,6 @@ private:
 	void mergeMidiEventLists(QVector<MidiEventList> &tracks);
 	bool parseSysex();
 	bool doParse();
-
-public:
-	bool parse(QString fileName);
-	bool parse(QStringList fileNameList);
-	int getDivision();
-	const MidiEventList &getMIDIEvents();
-	SynthTimestamp getMidiTick(uint tempo = DEFAULT_TEMPO);
-	void addAllNotesOff();
 };
 
 #endif

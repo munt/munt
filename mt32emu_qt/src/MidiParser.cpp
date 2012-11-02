@@ -19,7 +19,7 @@
 
 static const char headerID[] = "MThd\x00\x00\x00\x06";
 static const char trackID[] = "MTrk";
-static const uint MAX_SYSEX_LENGTH = 1024;
+static const uint MAX_SYSEX_LENGTH = 266;
 
 bool MidiParser::readFile(char *data, qint64 len) {
 	qint64 readLen = file.read(data, len);
@@ -292,24 +292,13 @@ bool MidiParser::doParse() {
 	}
 }
 
-bool MidiParser::parse(QString fileName) {
-	return parse(QStringList(fileName));
-}
-
-bool MidiParser::parse(QStringList fileNameList) {
+bool MidiParser::parse(const QString fileName) {
 	midiEventList.clear();
-	bool parseResult = true;
-	for (int i = 0; i < fileNameList.count(); i++) {
-		file.setFileName(fileNameList[i]);
-		file.open(QIODevice::ReadOnly);
-		if (!doParse()) parseResult = false;
-		file.close();
-	}
+	file.setFileName(fileName);
+	file.open(QIODevice::ReadOnly);
+	bool parseResult = doParse();
+	file.close();
 	return parseResult;
-}
-
-int MidiParser::getDivision() {
-	return division;
 }
 
 const MidiEventList &MidiParser::getMIDIEvents() {
@@ -319,7 +308,7 @@ const MidiEventList &MidiParser::getMIDIEvents() {
 SynthTimestamp MidiParser::getMidiTick(uint tempo) {
 	if (division & 0x8000) {
 		// SMPTE timebase
-		uint framesPerSecond = -division >> 8;
+		uint framesPerSecond = -(division >> 8);
 		uint subframesPerFrame = division & 0xFF;
 		return MasterClock::NANOS_PER_SECOND / (framesPerSecond * subframesPerFrame);
 	} else {
@@ -329,10 +318,8 @@ SynthTimestamp MidiParser::getMidiTick(uint tempo) {
 }
 
 void MidiParser::addAllNotesOff() {
-	MidiEvent allNotesOffEvent;
 	for (int i = 0; i < 16; i++) {
 		quint32 msg = (0xB0 | i) | 0x7F00;
-		allNotesOffEvent.assignShortMessage(0, msg);
-		midiEventList.append(allNotesOffEvent);
+		midiEventList.newMidiEvent().assignShortMessage(0, msg);
 	}
 }

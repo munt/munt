@@ -29,43 +29,43 @@ static const unsigned char WAVE_HEADER[] = {
 AudioFileWriter::AudioFileWriter() :
 	synth(NULL),
 	buffer(NULL),
-	parser(NULL)
+	parsers(NULL)
 	{
 		connect(this, SIGNAL(parsingFailed(const QString &, const QString &)), Master::getInstance(), SLOT(showBalloon(const QString &, const QString &)));
 	}
 
 AudioFileWriter::~AudioFileWriter() {
 	stop();
-	if (!realtimeMode) {
-		delete parser;
-		if (synth != NULL) {
-			synth->close();
-			delete synth;
-		}
-	}
-	delete[] buffer;
-}
-
-bool AudioFileWriter::convertMIDIFile(QString useOutFileName, QStringList midiFileNameList, QString synthProfileName, unsigned int useBufferSize) {
-	if (useOutFileName.isEmpty() || midiFileNameList.isEmpty()) return false;
 	if (synth != NULL) {
 		synth->close();
 		delete synth;
 	}
-	delete parser;
+	delete[] parsers;
 	delete[] buffer;
-	parser = new MidiParser;
-	if (!parser->parse(midiFileNameList)) {
-		qDebug() << "AudioFileWriter: Error parsing MIDI files";
-		const MidiEventList &midiEvents = parser->getMIDIEvents();
-		if (midiEvents.count() == 0) {
-			QMessageBox::critical(NULL, "Error", "Error occured while parsing MIDI files. No MIDI events to process.");
-			delete parser;
-			return false;
+}
+
+bool AudioFileWriter::convertMIDIFiles(QString useOutFileName, QStringList midiFileNameList, QString synthProfileName, unsigned int useBufferSize) {
+	if (useOutFileName.isEmpty() || midiFileNameList.isEmpty()) return false;
+	delete[] parsers;
+	parsersCount = midiFileNameList.size();
+	parsers = new MidiParser[parsersCount];
+	for (uint i = 0; i < parsersCount; i++) {
+		if (!parsers[i].parse(midiFileNameList.at(i))) {
+			qDebug() << "AudioFileWriter: Error parsing MIDI files";
+			const MidiEventList &midiEvents = parsers[i].getMIDIEvents();
+			if (midiEvents.count() == 0) {
+				QMessageBox::critical(NULL, "Error", "Error occured while parsing MIDI files. No MIDI events to process.");
+				delete[] parsers;
+				return false;
+			}
+			emit parsingFailed("Warning", "Error occured while parsing MIDI files. Processing available MIDI events.");
 		}
-		emit parsingFailed("Warning", "Error occured while parsing MIDI files. Processing available MIDI events.");
 	}
-	parser->addAllNotesOff();
+	parsers[parsersCount - 1].addAllNotesOff();
+	if (synth != NULL) {
+		synth->close();
+		delete synth;
+	}
 	synth = new QSynth(this);
 	if (!synthProfileName.isEmpty()) {
 		SynthProfile synthProfile;
@@ -76,7 +76,9 @@ bool AudioFileWriter::convertMIDIFile(QString useOutFileName, QStringList midiFi
 	if (!synth->open()) {
 		synth->close();
 		delete synth;
-		delete parser;
+		synth = NULL;
+		delete[] parsers;
+		parsers = NULL;
 		qDebug() << "AudioFileWriter: Can't open synth";
 		QMessageBox::critical(NULL, "Error", "Failed to open synth");
 		return false;
@@ -87,6 +89,7 @@ bool AudioFileWriter::convertMIDIFile(QString useOutFileName, QStringList midiFi
 	outFileName = useOutFileName;
 	realtimeMode = false;
 	stopProcessing = false;
+	delete[] buffer;
 	buffer = new qint16[2 * bufferSize];
 	QThread::start();
 	return true;
@@ -94,12 +97,12 @@ bool AudioFileWriter::convertMIDIFile(QString useOutFileName, QStringList midiFi
 
 void AudioFileWriter::startRealtimeProcessing(QSynth *useSynth, unsigned int useSampleRate, QString useOutFileName, unsigned int useBufferSize, MasterClockNanos useLatency) {
 	if (useOutFileName.isEmpty()) return;
-	delete[] buffer;
 	synth = useSynth;
 	sampleRate = useSampleRate;
 	bufferSize = useBufferSize;
 	latency = useLatency;
 	outFileName = useOutFileName;
+	delete[] buffer;
 	buffer = new qint16[2 * bufferSize];
 	realtimeMode = true;
 	stopProcessing = false;
@@ -127,11 +130,12 @@ void AudioFileWriter::run() {
 	MasterClockNanos midiNanos = 0;
 	MidiEventList midiEvents;
 	int midiEventIx = 0;
+	uint parserIx = 0;
 	if (realtimeMode) {
 		firstSampleNanos = startNanos;
 	} else {
-		midiEvents = parser->getMIDIEvents();
-		midiTick = parser->getMidiTick();
+		midiEvents = parsers[parserIx].getMIDIEvents();
+		midiTick = parsers[parserIx].getMidiTick();
 	}
 	qDebug() << "AudioFileWriter: Rendering started";
 	while (!stopProcessing) {
@@ -162,7 +166,7 @@ void AudioFileWriter::run() {
 						eventPushed = synth->pushMIDISysex(e.getSysexData(), e.getSysexLen(), nextEventNanos);
 						break;
 					case SET_TEMPO:
-						midiTick = parser->getMidiTick(e.getShortMessage());
+						midiTick = parsers[parserIx].getMidiTick(e.getShortMessage());
 						break;
 					default:
 						break;
@@ -176,6 +180,13 @@ void AudioFileWriter::run() {
 				emit midiEventProcessed(midiEventIx, midiEvents.count());
 			}
 			if (midiEvents.count() <= midiEventIx) {
+				if (parserIx < parsersCount - 1) {
+					++parserIx;
+					midiEventIx = 0;
+					midiEvents = parsers[parserIx].getMIDIEvents();
+					midiTick = parsers[parserIx].getMidiTick();
+					continue;
+				}
 				if (!synth->isActive()) break;
 				frameCount += bufferSize;
 				qDebug() << "AudioFileWriter: Rendering after the end of MIDI file, time:" << (double)midiNanos / MasterClock::NANOS_PER_SECOND;

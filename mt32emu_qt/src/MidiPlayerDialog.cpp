@@ -19,8 +19,6 @@
 
 #include "MidiPlayerDialog.h"
 
-static const quint32 DEFAULT_BPM = 120;
-
 MidiPlayerDialog::MidiPlayerDialog(Master *master, QWidget *parent) : QDialog(parent), ui(new Ui::MidiPlayerDialog), smfDriver(master), advancePlayList(false), rowPlaying(-1) {
 	ui->setupUi(this);
 	ui->playButton->setEnabled(false);
@@ -134,7 +132,7 @@ void MidiPlayerDialog::on_stopButton_clicked() {
 		smfDriver.stop();
 	}
 	rowPlaying = -1;
-	ui->tempoSpinBox->setValue(DEFAULT_BPM);
+	ui->tempoSpinBox->setValue(MidiParser::DEFAULT_BPM);
 }
 
 void MidiPlayerDialog::on_fastForwardButton_pressed() {
@@ -167,17 +165,16 @@ void MidiPlayerDialog::on_positionSlider_sliderReleased() {
 }
 
 void MidiPlayerDialog::handlePlaybackFinished() {
+	ui->tempoSpinBox->setValue(MidiParser::DEFAULT_BPM);
 	if (advancePlayList) {
 		if (ui->playList->count() <= ++rowPlaying) {
 			rowPlaying = -1;
 			ui->playList->clearSelection();
-			ui->tempoSpinBox->setValue(DEFAULT_BPM);
 			return;
 		}
 		ui->playList->setCurrentRow(rowPlaying);
 	}
 	advancePlayList = true;
-	ui->tempoSpinBox->setValue(DEFAULT_BPM);
 	smfDriver.start(ui->playList->currentItem()->text());
 	if (Master::getInstance()->getSettings()->value("Master/showConnectionBalloons", "1").toBool()) {
 		emit playbackStarted("Playing MIDI file", QFileInfo(ui->playList->currentItem()->text()).fileName());
@@ -197,7 +194,7 @@ void MidiPlayerDialog::handlePlaybackTimeChanged(quint64 currentNanos, quint32 t
 }
 
 void MidiPlayerDialog::handleTempoSet(quint32 tempo) {
-	ui->tempoSpinBox->setValue(tempo == 0 ? DEFAULT_BPM : tempo);
+	ui->tempoSpinBox->setValue(tempo == 0 ? MidiParser::DEFAULT_BPM : tempo);
 }
 
 void MidiPlayerDialog::dragEnterEvent(QDragEnterEvent *e) {
