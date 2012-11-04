@@ -12,6 +12,9 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
@@ -42,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../mt32emu/src"
+				AdditionalIncludeDirectories="../../mt32emu_qt/mt32emu/src"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -65,10 +68,9 @@
 				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)\mt32emu.dll"
 				LinkIncremental="2"
-				ModuleDefinitionFile="src/winmm_drv.def"
+				ModuleDefinitionFile="../../mt32emu_qt/mt32emu_win32drv/src/winmm_drv.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
-				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -119,7 +121,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="../mt32emu/src"
+				AdditionalIncludeDirectories="../../mt32emu_qt/mt32emu/src"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -141,12 +143,163 @@
 				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)\mt32emu.dll"
 				LinkIncremental="1"
-				ModuleDefinitionFile="src/winmm_drv.def"
+				ModuleDefinitionFile="../../mt32emu_qt/mt32emu_win32drv/src/winmm_drv.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="x64/Debug"
+			IntermediateDirectory="x64/Debug"
+			ConfigurationType="2"
+			UseOfMFC="0"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="../../mt32emu_qt/mt32emu/src"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="winmm.lib"
+				OutputFile="$(OutDir)\mt32emu.dll"
+				LinkIncremental="2"
+				ModuleDefinitionFile="../../mt32emu_qt/mt32emu_win32drv/src/winmm_drv.def"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="x64/Release"
+			IntermediateDirectory="x64/Release"
+			ConfigurationType="2"
+			CharacterSet="1"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="../../mt32emu_qt/mt32emu/src"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				PrecompiledHeaderThrough=""
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="winmm.lib"
+				OutputFile="$(OutDir)\mt32emu.dll"
+				LinkIncremental="1"
+				ModuleDefinitionFile="../../mt32emu_qt/mt32emu_win32drv/src/winmm_drv.def"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -180,15 +333,15 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\src\MidiSynth.cpp"
+				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\MidiSynth.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\src\winmm_drv.cpp"
+				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\winmm_drv.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\src\winmm_drv.def"
+				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\winmm_drv.def"
 				>
 			</File>
 		</Filter>
@@ -198,15 +351,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\src\MidiSynth.h"
+				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\MidiSynth.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\stdafx.h"
+				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\stdafx.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\targetver.h"
+				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\targetver.h"
 				>
 			</File>
 		</Filter>
