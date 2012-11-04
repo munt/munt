@@ -147,7 +147,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	// This behaviour is also confirmed with two more special timbres: one with identical sawtooth partials, and one with PCM wave 02.
 	// For my personal taste, this behaviour rather enriches the sounding and should be emulated.
 	// Also, the current partial allocator model probably needs to be refined.
-	if (debugPartialNum & 4) {
+	if (debugPartialNum & 8) {
 		stereoVolume.leftVol = -stereoVolume.leftVol;
 		stereoVolume.rightVol = -stereoVolume.rightVol;
 	}
