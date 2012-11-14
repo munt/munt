@@ -66,7 +66,6 @@ void Master::init() {
 	lastAudioDeviceScan = -4 * MasterClock::NANOS_PER_SECOND;
 	getAudioDevices();
 	pinnedSynthRoute = NULL;
-	running = true;
 
 	qRegisterMetaType<MidiDriver *>("MidiDriver*");
 	qRegisterMetaType<MidiSession *>("MidiSession*");
@@ -153,14 +152,6 @@ Master *Master::getInstance() {
 		master.init();
 	}
 	return &master;
-}
-
-bool Master::isRunning() {
-	return running;
-}
-
-void Master::shutDown() {
-	running = false;
 }
 
 void Master::processCommandLine(QStringList args) {

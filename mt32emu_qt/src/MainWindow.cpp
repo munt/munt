@@ -94,7 +94,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 		midiConverterDialog = NULL;
 	}
 	event->accept();
-	master->shutDown();
+	QApplication::quit();
 }
 
 void MainWindow::on_actionAbout_triggered()

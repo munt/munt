@@ -23,6 +23,7 @@ int main(int argv, char **args)
 {
 	QApplication app(argv, args);
 	app.setApplicationName("Munt mt32emu-qt");
+	app.setQuitOnLastWindowClosed(false);
 
 	QProcessEnvironment::systemEnvironment().insert("PA_ALSA_PLUGHW", "1");
 
@@ -39,9 +40,7 @@ int main(int argv, char **args)
 	master->startPinnedSynthRoute();
 	master->startMidiProcessing();
 	master->processCommandLine(app.arguments());
-	while (master->isRunning()) {
-		app.exec();
-	}
+	app.exec();
 	master->setTrayIcon(NULL);
 	delete trayIcon;
 	return 0;

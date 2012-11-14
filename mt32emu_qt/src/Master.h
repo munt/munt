@@ -14,7 +14,6 @@ class MidiPropertiesDialog;
 class Master : public QObject {
 	Q_OBJECT
 private:
-	bool running;
 	QList<SynthRoute *> synthRoutes;
 	QList<AudioDriver *> audioDrivers;
 	QList<AudioDevice *> audioDevices;
@@ -64,8 +63,6 @@ public:
 	void createMidiPort(MidiPropertiesDialog *mpd, SynthRoute *synthRoute = NULL);
 	void deleteMidiPort(MidiSession *midiSession);
 	void setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
-	bool isRunning();
-	void shutDown();
 
 private slots:
 	void createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
