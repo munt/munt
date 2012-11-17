@@ -388,6 +388,7 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	controlROMFileName = synthProfile.controlROMFileName;
 	pcmROMFileName = synthProfile.pcmROMFileName;
 	if (controlROMImage == NULL || pcmROMImage == NULL) {
+		Master::freeROMImages(controlROMImage, pcmROMImage);
 		controlROMImage = synthProfile.controlROMImage;
 		pcmROMImage = synthProfile.pcmROMImage;
 	} else if (synthProfile.controlROMImage != NULL && synthProfile.pcmROMImage != NULL) {
