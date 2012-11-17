@@ -200,11 +200,12 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 	return renderedLen;
 }
 
-bool QSynth::open() {
+bool QSynth::open(const QString useSynthProfileName) {
 	if (isOpen) {
 		return true;
 	}
 
+	synthProfileName = useSynthProfileName;
 	SynthProfile synthProfile;
 	getSynthProfile(synthProfile);
 	Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);

@@ -104,7 +104,7 @@ private:
 public:
 	QSynth(QObject *parent = NULL);
 	~QSynth();
-	bool open();
+	bool open(const QString useSynthProfileName = "");
 	void close();
 	bool reset();
 	bool pushMIDIShortMessage(MT32Emu::Bit32u msg, SynthTimestamp timestamp);

@@ -67,13 +67,7 @@ bool AudioFileWriter::convertMIDIFiles(QString useOutFileName, QStringList midiF
 		delete synth;
 	}
 	synth = new QSynth(this);
-	if (!synthProfileName.isEmpty()) {
-		SynthProfile synthProfile;
-		synth->getSynthProfile(synthProfile);
-		Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);
-		synth->setSynthProfile(synthProfile, synthProfileName);
-	}
-	if (!synth->open()) {
+	if (!synth->open(synthProfileName)) {
 		synth->close();
 		delete synth;
 		synth = NULL;
