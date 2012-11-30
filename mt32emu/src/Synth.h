@@ -116,6 +116,13 @@ enum MemoryRegionType {
 	MR_PatchTemp, MR_RhythmTemp, MR_TimbreTemp, MR_Patches, MR_Timbres, MR_System, MR_Display, MR_Reset
 };
 
+enum ReverbMode {
+	REVERB_MODE_ROOM,
+	REVERB_MODE_HALL,
+	REVERB_MODE_PLATE,
+	REVERB_MODE_TAP_DELAY
+};
+
 class MemoryRegion {
 private:
 	Synth *synth;

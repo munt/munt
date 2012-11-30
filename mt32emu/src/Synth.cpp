@@ -151,16 +151,16 @@ Synth::Synth(ReportHandler *useReportHandler) {
 	}
 
 #if MT32EMU_USE_AREVERBMODEL == 1
-	reverbModels[0] = new AReverbModel(0);
-	reverbModels[1] = new AReverbModel(1);
-	reverbModels[2] = new AReverbModel(2);
+	reverbModels[REVERB_MODE_ROOM] = new AReverbModel(REVERB_MODE_ROOM);
+	reverbModels[REVERB_MODE_HALL] = new AReverbModel(REVERB_MODE_HALL);
+	reverbModels[REVERB_MODE_PLATE] = new AReverbModel(REVERB_MODE_PLATE);
 #else
-	reverbModels[0] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 0, 0.5f);
-	reverbModels[1] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 1, 0.5f);
-	reverbModels[2] = new FreeverbModel(0.4f, 0.939522749f, 0.38f, 2, 0.05f);
+	reverbModels[REVERB_MODE_ROOM] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 0, 0.5f);
+	reverbModels[REVERB_MODE_HALL] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 1, 0.5f);
+	reverbModels[REVERB_MODE_PLATE] = new FreeverbModel(0.4f, 0.939522749f, 0.38f, 2, 0.05f);
 #endif
 
-	reverbModels[3] = new DelayReverb();
+	reverbModels[REVERB_MODE_TAP_DELAY] = new DelayReverb();
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
 	setOutputGain(1.0f);
