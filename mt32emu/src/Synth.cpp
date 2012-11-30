@@ -151,9 +151,9 @@ Synth::Synth(ReportHandler *useReportHandler) {
 	}
 
 #if MT32EMU_USE_AREVERBMODEL == 1
-	reverbModels[0] = new AReverbModel(&AReverbModel::REVERB_MODE_0_SETTINGS);
-	reverbModels[1] = new AReverbModel(&AReverbModel::REVERB_MODE_1_SETTINGS);
-	reverbModels[2] = new AReverbModel(&AReverbModel::REVERB_MODE_2_SETTINGS);
+	reverbModels[0] = new AReverbModel(0);
+	reverbModels[1] = new AReverbModel(1);
+	reverbModels[2] = new AReverbModel(2);
 #else
 	reverbModels[0] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 0, 0.5f);
 	reverbModels[1] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 1, 0.5f);

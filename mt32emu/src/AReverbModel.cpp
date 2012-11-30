@@ -18,31 +18,44 @@
 #include "mt32emu.h"
 #include "AReverbModel.h"
 
+// Analysing of state of reverb RAM address lines gives exact sizes of the buffers of filters used. This also indicates that
+// the reverb model implemented in the real devices consists of three series allpass filters preceded by a non-feedback comb (or a delay with a LPF)
+// and followed by three parallel comb filters
+
 namespace MT32Emu {
 
 // Default reverb settings for modes 0-2
 
-static const unsigned int NUM_ALLPASSES = 6;
-static const unsigned int NUM_DELAYS = 5;
+static const Bit32u NUM_ALLPASSES = 3;
+static const Bit32u NUM_COMBS = 4;
 
-static const Bit32u MODE_0_ALLPASSES[] = {729, 78, 394, 994, 1250, 1889};
-static const Bit32u MODE_0_DELAYS[] = {846, 4, 1819, 778, 346};
-static const float MODE_0_TIMES[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.9f};
-static const float MODE_0_LEVELS[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 1.01575f};
+static const Bit32u MODE_0_ALLPASSES[] = {994, 729, 78};
+static const Bit32u MODE_0_COMBS[] = {705, 2349, 2839, 3632};
+static const Bit32u MODE_0_OUTL[] = {2349, 141, 1960};
+static const Bit32u MODE_0_OUTR[] = {1174, 1570, 145};
+static const float  MODE_0_TIMES[] = {-0.25f, -0.45f, -0.6f, -0.75f, -0.8f, -0.85f, -0.9f, -0.95f};
+static const float  MODE_0_LEVELS[] = {0.0f, -0.046f, -0.077f, -0.107f, -0.152f, -0.202f, -0.252f, -0.298f};
+static const float  MODE_0_LPF_FACTOR = 0.687771f;
 
-static const Bit32u MODE_1_ALLPASSES[] = {176, 809, 1324, 1258};
-static const Bit32u MODE_1_DELAYS[] = {2262, 124, 974, 2516, 356};
-static const float MODE_1_TIMES[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.95f};
-static const float MODE_1_LEVELS[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 1.01575f};
+static const Bit32u MODE_1_ALLPASSES[] = {1324, 809, 176};
+static const Bit32u MODE_1_COMBS[] = {961, 2619, 3545, 4519};
+static const Bit32u MODE_1_OUTL[] = {2618, 1760, 4518};
+static const Bit32u MODE_1_OUTR[] = {1300, 3532, 2274};
+static const float  MODE_1_TIMES[] = {-0.25f, -0.45f, -0.6f, -0.7f, -0.75f, -0.8f, -0.9f, -0.95f};
+static const float  MODE_1_LEVELS[] = {0.0f, -0.043f, -0.079f, -0.111f, -0.143f, -0.190f, -0.238f, -0.303f};
+static const float  MODE_1_LPF_FACTOR = 0.712025098f;
 
-static const Bit32u MODE_2_ALLPASSES[] = {78, 729, 994, 389};
-static const Bit32u MODE_2_DELAYS[] = {846, 4, 1819, 778, 346};
-static const float MODE_2_TIMES[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f};
-static const float MODE_2_LEVELS[] = {0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f};
+static const Bit32u MODE_2_ALLPASSES[] = {969, 644, 157};
+static const Bit32u MODE_2_COMBS[] = {2259, 2839, 3539};
+static const Bit32u MODE_2_OUTL[] = {2259, 718, 1769};
+static const Bit32u MODE_2_OUTR[] = {1136, 2128, 1};
+static const float  MODE_2_TIMES[] = {-0.225f, -0.4f, -0.55f, -0.62f, -0.72f, -0.83f, -0.86f, -0.935f};
+static const float  MODE_2_LEVELS[] = {0.0f, -0.0335f, -0.0614f, -0.0859f, -0.110f, -0.148f, -0.201f, -0.234f};
+static const float  MODE_2_LPF_FACTOR = 0.936272247f;
 
-const AReverbSettings AReverbModel::REVERB_MODE_0_SETTINGS = {MODE_0_ALLPASSES, MODE_0_DELAYS, MODE_0_TIMES, MODE_0_LEVELS, 0.687770909f, 0.5f, 0.5f};
-const AReverbSettings AReverbModel::REVERB_MODE_1_SETTINGS = {MODE_1_ALLPASSES, MODE_1_DELAYS, MODE_1_TIMES, MODE_1_LEVELS, 0.712025098f, 0.375f, 0.625f};
-const AReverbSettings AReverbModel::REVERB_MODE_2_SETTINGS = {MODE_2_ALLPASSES, MODE_2_DELAYS, MODE_2_TIMES, MODE_2_LEVELS, 0.939522749f, 0.0f, 0.0f};
+static const AReverbSettings REVERB_MODE_0_SETTINGS = {MODE_0_ALLPASSES, MODE_0_COMBS, MODE_0_OUTL, MODE_0_OUTR, MODE_0_TIMES, MODE_0_LEVELS, MODE_0_LPF_FACTOR};
+static const AReverbSettings REVERB_MODE_1_SETTINGS = {MODE_1_ALLPASSES, MODE_1_COMBS, MODE_1_OUTL, MODE_1_OUTR, MODE_1_TIMES, MODE_1_LEVELS, MODE_1_LPF_FACTOR};
+static const AReverbSettings REVERB_MODE_2_SETTINGS = {MODE_2_ALLPASSES, MODE_2_COMBS, MODE_2_OUTL, MODE_2_OUTR, MODE_2_TIMES, MODE_2_LEVELS, MODE_2_LPF_FACTOR};
 
 RingBuffer::RingBuffer(Bit32u newsize) {
 	index = 0;
@@ -57,8 +70,7 @@ RingBuffer::~RingBuffer() {
 }
 
 float RingBuffer::next() {
-	index++;
-	if (index >= size) {
+	if (++index >= size) {
 		index = 0;
 	}
 	return buffer[index];
@@ -83,43 +95,52 @@ void RingBuffer::mute() {
 	}
 }
 
-AllpassFilter::AllpassFilter(Bit32u useSize) : RingBuffer(useSize) {
-}
-
-Delay::Delay(Bit32u useSize) : RingBuffer(useSize) {
-}
+AllpassFilter::AllpassFilter(Bit32u useSize) : RingBuffer(useSize) {}
 
 float AllpassFilter::process(float in) {
-	// This model corresponds to the allpass filter implementation in the real CM-32L device
+	// This model corresponds to the allpass filter implementation of the real CM-32L device
 	// found from sample analysis
 
-	float out;
-
-	out = next();
+	float bufferOut = next();
 
 	// store input - feedback / 2
-	buffer[index] = in - 0.5f * out;
+	buffer[index] = in - 0.5f * bufferOut;
 
 	// return buffer output + feedforward / 2
-	return out + 0.5f * buffer[index];
+	return bufferOut + 0.5f * buffer[index];
 }
 
-float Delay::process(float in) {
-	// Implements a very simple delay
+CombFilter::CombFilter(Bit32u useSize) : RingBuffer(useSize) {}
 
-	float out;
+void CombFilter::process(const float in) {
+	// This model corresponds to the comb filter implementation of the real CM-32L device
+	// found from sample analysis
 
-	out = next();
+	// the previously stored value
+	float last = buffer[index];
 
-	// store input
-	buffer[index] = in;
+	// prepare input + feedback
+	float filterIn = in + next() * feedbackFactor;
 
-	// return buffer output
-	return out;
+	// store input + feedback processed by a low-pass filter
+	buffer[index] = last + filterFactor * (filterIn - last);
 }
 
-AReverbModel::AReverbModel(const AReverbSettings *useSettings) : allpasses(NULL), delays(NULL), currentSettings(useSettings) {
+float CombFilter::getOutputAt(const Bit32u outIndex) {
+	return buffer[(size + index - outIndex) % size];
 }
+
+void CombFilter::setFeedbackFactor(const float useFeedbackFactor) {
+	feedbackFactor = useFeedbackFactor;
+}
+
+void CombFilter::setFilterFactor(const float useFilterFactor) {
+	filterFactor = useFilterFactor;
+}
+
+AReverbModel::AReverbModel(const Bit8u mode) : allpasses(NULL), combs(NULL),
+	currentSettings(mode == 0 ? REVERB_MODE_0_SETTINGS :
+	mode == 1 ? REVERB_MODE_1_SETTINGS : REVERB_MODE_2_SETTINGS) {}
 
 AReverbModel::~AReverbModel() {
 	close();
@@ -130,11 +151,12 @@ void AReverbModel::open(unsigned int /*sampleRate*/) {
 	// IIR filter values depend on sample rate as well
 	allpasses = new AllpassFilter*[NUM_ALLPASSES];
 	for (Bit32u i = 0; i < NUM_ALLPASSES; i++) {
-		allpasses[i] = new AllpassFilter(currentSettings->allpassSizes[i]);
+		allpasses[i] = new AllpassFilter(currentSettings.allpassSizes[i]);
 	}
-	delays = new Delay*[NUM_DELAYS];
-	for (Bit32u i = 0; i < NUM_DELAYS; i++) {
-		delays[i] = new Delay(currentSettings->delaySizes[i]);
+	combs = new CombFilter*[NUM_COMBS];
+	for (Bit32u i = 0; i < NUM_COMBS; i++) {
+		combs[i] = new CombFilter(currentSettings.combSizes[i]);
+		combs[i]->setFilterFactor(currentSettings.filterFactor);
 	}
 	mute();
 }
@@ -150,84 +172,79 @@ void AReverbModel::close() {
 		delete[] allpasses;
 		allpasses = NULL;
 	}
-	if (delays != NULL) {
-		for (Bit32u i = 0; i < NUM_DELAYS; i++) {
-			if (delays[i] != NULL) {
-				delete delays[i];
-				delays[i] = NULL;
+	if (combs != NULL) {
+		for (Bit32u i = 0; i < NUM_COMBS; i++) {
+			if (combs[i] != NULL) {
+				delete combs[i];
+				combs[i] = NULL;
 			}
 		}
-		delete[] delays;
-		delays = NULL;
+		delete[] combs;
+		combs = NULL;
 	}
 }
 
 void AReverbModel::mute() {
+	if (allpasses == NULL || combs == NULL) return;
 	for (Bit32u i = 0; i < NUM_ALLPASSES; i++) {
 		allpasses[i]->mute();
 	}
-	for (Bit32u i = 0; i < NUM_DELAYS; i++) {
-		delays[i]->mute();
+	for (Bit32u i = 0; i < NUM_COMBS; i++) {
+		combs[i]->mute();
 	}
-	filterhist1 = 0;
-	filterhist2 = 0;
-	combhist = 0;
 }
 
 void AReverbModel::setParameters(Bit8u time, Bit8u level) {
 // FIXME: wetLevel definitely needs ramping when changed
 // Although, most games don't set reverb level during MIDI playback
-	decayTime = currentSettings->decayTimes[time];
-	wetLevel = currentSettings->wetLevels[level];
+	if (combs == NULL) return;
+	float decayTime = currentSettings.decayTimes[time];
+	for (Bit32u i = 0; i < NUM_COMBS; i++) {
+		combs[i]->setFeedbackFactor(i == 0 ? 0.0f : decayTime);
+	}
+	wetLevel = currentSettings.wetLevels[level];
 }
 
 bool AReverbModel::isActive() const {
-	bool bActive = false;
 	for (Bit32u i = 0; i < NUM_ALLPASSES; i++) {
-		bActive |= !allpasses[i]->isEmpty();
+		if (!allpasses[i]->isEmpty()) return true;
 	}
-	for (Bit32u i = 0; i < NUM_DELAYS; i++) {
-		bActive |= !delays[i]->isEmpty();
+	for (Bit32u i = 0; i < NUM_COMBS; i++) {
+		if (!combs[i]->isEmpty()) return true;
 	}
-	return bActive;
+	return false;
 }
 
 void AReverbModel::process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) {
-// Three series allpass filters followed by a delay, fourth allpass filter and another delay
-	float dry, link, outL1, outL2, outR1, outR2;
+	float dry, link, outL1;
 
 	for (unsigned long i = 0; i < numSamples; i++) {
 		dry = *inLeft + *inRight;
 
-		// Implementation of 2-stage IIR single-pole low-pass filter
-		// found at the entrance of reverb processing on real devices
-		filterhist1 += (dry - filterhist1) * currentSettings->filtVal;
-		filterhist2 += (filterhist1 - filterhist2) * currentSettings->filtVal;
+		// Get the last stored sample before processing in order not to loose it
+		link = combs[0]->getOutputAt(currentSettings.combSizes[0] - 1);
 
-		link = allpasses[0]->process(-filterhist2);
+		combs[0]->process(dry);
+
+		link = allpasses[0]->process(link);
 		link = allpasses[1]->process(link);
-
-		// this implements a comb filter cross-linked with the fourth allpass filter
-		link += combhist * decayTime;
 		link = allpasses[2]->process(link);
-		link = delays[0]->process(link);
-		outL1 = link;
-		link = allpasses[3]->process(link);
-		link = delays[1]->process(link);
-		outR1 = link;
-		link = allpasses[4]->process(link);
-		link = delays[2]->process(link);
-		outL2 = link;
-		link = allpasses[5]->process(link);
-		link = delays[3]->process(link);
-		outR2 = link;
-		link = delays[4]->process(link);
 
-		// comb filter end point
-		combhist = combhist * currentSettings->damp1 + link * currentSettings->damp2;
+		// If the output position is equal to the comb size, get it now in order not to loose it
+		outL1 = 1.5f * combs[1]->getOutputAt(currentSettings.outLPositions[0] - 1);
 
-		*outLeft = (outL1 + outL2) * wetLevel;
-		*outRight = (outR1 + outR2) * wetLevel;
+		combs[1]->process(link);
+		combs[2]->process(link);
+		combs[3]->process(link);
+
+		link = outL1 + 1.5f * combs[2]->getOutputAt(currentSettings.outLPositions[1]);
+		link += combs[3]->getOutputAt(currentSettings.outLPositions[2]);
+		*outLeft = link * wetLevel;
+
+		link = 1.5f * combs[1]->getOutputAt(currentSettings.outRPositions[0]);
+		link += 1.5f * combs[2]->getOutputAt(currentSettings.outRPositions[1]);
+		link += combs[3]->getOutputAt(currentSettings.outRPositions[2]);
+		*outRight = link * wetLevel;
 
 		inLeft++;
 		inRight++;

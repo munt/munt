@@ -21,13 +21,13 @@
 namespace MT32Emu {
 
 struct AReverbSettings {
-	const Bit32u *allpassSizes;
-	const Bit32u *delaySizes;
-	const float *decayTimes;
-	const float *wetLevels;
-	float filtVal;
-	float damp1;
-	float damp2;
+	const Bit32u * const allpassSizes;
+	const Bit32u * const combSizes;
+	const Bit32u * const outLPositions;
+	const Bit32u * const outRPositions;
+	const float * const decayTimes;
+	const float * const wetLevels;
+	const float filterFactor;
 };
 
 class RingBuffer {
@@ -45,41 +45,39 @@ public:
 
 class AllpassFilter : public RingBuffer {
 public:
-	AllpassFilter(Bit32u size);
+	AllpassFilter(const Bit32u size);
 	float process(float in);
 };
 
-class Delay : public RingBuffer {
+class CombFilter : public RingBuffer {
+	float feedbackFactor;
+	float filterFactor;
+
 public:
-	Delay(Bit32u size);
-	float process(float in);
+	CombFilter(Bit32u size);
+	void process(const float in);
+	float getOutputAt(const Bit32u outIndex);
+	void setFeedbackFactor(const float useFeedbackFactor);
+	void setFilterFactor(const float useFilterFactor);
 };
 
 class AReverbModel : public ReverbModel {
 	AllpassFilter **allpasses;
-	Delay **delays;
+	CombFilter **combs;
 
-	const AReverbSettings *currentSettings;
-	float decayTime;
+	const AReverbSettings &currentSettings;
 	float wetLevel;
-	float filterhist1, filterhist2;
-	float combhist;
 	void mute();
+
 public:
-	AReverbModel(const AReverbSettings *newSettings);
+	AReverbModel(const Bit8u mode);
 	~AReverbModel();
 	void open(unsigned int sampleRate);
 	void close();
 	void setParameters(Bit8u time, Bit8u level);
 	void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples);
 	bool isActive() const;
-
-	static const AReverbSettings REVERB_MODE_0_SETTINGS;
-	static const AReverbSettings REVERB_MODE_1_SETTINGS;
-	static const AReverbSettings REVERB_MODE_2_SETTINGS;
 };
-
-// Default reverb settings for modes 0-2
 
 }
 
