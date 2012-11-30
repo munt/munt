@@ -86,7 +86,7 @@
 
 // 0: Use standard Freeverb
 // 1: Use Accurate Reverb model aka AReverb
-#define MT32EMU_USE_AREVERBMODEL 0
+#define MT32EMU_USE_AREVERBMODEL 1
 
 namespace MT32Emu
 {

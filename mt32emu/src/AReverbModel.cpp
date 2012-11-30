@@ -34,7 +34,7 @@ static const Bit32u MODE_0_COMBS[] = {705, 2349, 2839, 3632};
 static const Bit32u MODE_0_OUTL[] = {2349, 141, 1960};
 static const Bit32u MODE_0_OUTR[] = {1174, 1570, 145};
 static const float  MODE_0_TIMES[] = {-0.25f, -0.45f, -0.6f, -0.75f, -0.8f, -0.85f, -0.9f, -0.95f};
-static const float  MODE_0_LEVELS[] = {0.0f, -0.295f, -0.295f, -0.295f, -0.295f, -0.295f, -0.295f, -0.295f};
+static const float  MODE_0_LEVELS[] = {0.0f, -0.046f, -0.077f, -0.107f, -0.152f, -0.202f, -0.252f, -0.298f};
 static const float  MODE_0_LPF_FACTOR = 0.687771f;
 
 static const Bit32u MODE_1_ALLPASSES[] = {1324, 809, 176};
@@ -42,7 +42,7 @@ static const Bit32u MODE_1_COMBS[] = {961, 2619, 3545, 4519};
 static const Bit32u MODE_1_OUTL[] = {2618, 1760, 4518};
 static const Bit32u MODE_1_OUTR[] = {1300, 3532, 2274};
 static const float  MODE_1_TIMES[] = {-0.25f, -0.45f, -0.6f, -0.7f, -0.75f, -0.8f, -0.9f, -0.95f};
-static const float  MODE_1_LEVELS[] = {0.0f, -0.3f, -0.3f, -0.3f, -0.3f, -0.3f, -0.3f, -0.3f};
+static const float  MODE_1_LEVELS[] = {0.0f, -0.043f, -0.079f, -0.111f, -0.143f, -0.190f, -0.238f, -0.303f};
 static const float  MODE_1_LPF_FACTOR = 0.712025098f;
 
 static const Bit32u MODE_2_ALLPASSES[] = {969, 644, 157};
@@ -50,7 +50,7 @@ static const Bit32u MODE_2_COMBS[] = {2259, 2839, 3539};
 static const Bit32u MODE_2_OUTL[] = {2259, 718, 1769};
 static const Bit32u MODE_2_OUTR[] = {1136, 2128, 1};
 static const float  MODE_2_TIMES[] = {-0.225f, -0.4f, -0.55f, -0.62f, -0.72f, -0.83f, -0.86f, -0.935f};
-static const float  MODE_2_LEVELS[] = {0.0f, -0.233f, -0.233f, -0.233f, -0.233f, -0.233f, -0.233f, -0.233f};
+static const float  MODE_2_LEVELS[] = {0.0f, -0.0335f, -0.0614f, -0.0859f, -0.110f, -0.148f, -0.201f, -0.234f};
 static const float  MODE_2_LPF_FACTOR = 0.936272247f;
 
 static const AReverbSettings REVERB_MODE_0_SETTINGS = {MODE_0_ALLPASSES, MODE_0_COMBS, MODE_0_OUTL, MODE_0_OUTR, MODE_0_TIMES, MODE_0_LEVELS, MODE_0_LPF_FACTOR};
