@@ -112,7 +112,7 @@ float AllpassFilter::process(float in) {
 
 CombFilter::CombFilter(Bit32u useSize) : RingBuffer(useSize) {}
 
-void CombFilter::process(float in) {
+void CombFilter::process(const float in) {
 	// This model corresponds to the comb filter implementation of the real CM-32L device
 	// found from sample analysis
 
@@ -126,15 +126,15 @@ void CombFilter::process(float in) {
 	buffer[index] = last + filterFactor * (filterIn - last);
 }
 
-float CombFilter::getOutputAt(Bit32u outIndex) {
+float CombFilter::getOutputAt(const Bit32u outIndex) {
 	return buffer[(size + index - outIndex) % size];
 }
 
-void CombFilter::setFeedbackFactor(float useFeedbackFactor) {
+void CombFilter::setFeedbackFactor(const float useFeedbackFactor) {
 	feedbackFactor = useFeedbackFactor;
 }
 
-void CombFilter::setFilterFactor(float useFilterFactor) {
+void CombFilter::setFilterFactor(const float useFilterFactor) {
 	filterFactor = useFilterFactor;
 }
 
@@ -222,7 +222,7 @@ void AReverbModel::process(const float *inLeft, const float *inRight, float *out
 		dry = *inLeft + *inRight;
 
 		// Get the last stored sample before processing in order not to loose it
-		link = combs[0]->getOutputAt(-1);
+		link = combs[0]->getOutputAt(currentSettings.combSizes[0] - 1);
 
 		combs[0]->process(dry);
 

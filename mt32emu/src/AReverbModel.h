@@ -45,7 +45,7 @@ public:
 
 class AllpassFilter : public RingBuffer {
 public:
-	AllpassFilter(Bit32u size);
+	AllpassFilter(const Bit32u size);
 	float process(float in);
 };
 
@@ -55,10 +55,10 @@ class CombFilter : public RingBuffer {
 
 public:
 	CombFilter(Bit32u size);
-	void process(float in);
-	float getOutputAt(Bit32u outIndex);
-	void setFeedbackFactor(float useFeedbackFactor);
-	void setFilterFactor(float useFilterFactor);
+	void process(const float in);
+	float getOutputAt(const Bit32u outIndex);
+	void setFeedbackFactor(const float useFeedbackFactor);
+	void setFilterFactor(const float useFilterFactor);
 };
 
 class AReverbModel : public ReverbModel {
