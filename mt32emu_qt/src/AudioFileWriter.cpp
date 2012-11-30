@@ -36,7 +36,7 @@ AudioFileWriter::AudioFileWriter() :
 
 AudioFileWriter::~AudioFileWriter() {
 	stop();
-	if (synth != NULL) {
+	if (!realtimeMode && synth != NULL) {
 		synth->close();
 		delete synth;
 	}
