@@ -46,7 +46,7 @@ static const float  MODE_1_LEVELS[] = {0.0f, -0.043f, -0.079f, -0.111f, -0.143f,
 static const float  MODE_1_LPF_FACTOR = 0.712025098f;
 
 static const Bit32u MODE_2_ALLPASSES[] = {969, 644, 157};
-static const Bit32u MODE_2_COMBS[] = {2259, 2839, 3539};
+static const Bit32u MODE_2_COMBS[] = {116, 2259, 2839, 3539};
 static const Bit32u MODE_2_OUTL[] = {2259, 718, 1769};
 static const Bit32u MODE_2_OUTR[] = {1136, 2128, 1};
 static const float  MODE_2_TIMES[] = {-0.225f, -0.4f, -0.55f, -0.62f, -0.72f, -0.83f, -0.86f, -0.935f};
