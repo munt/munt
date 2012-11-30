@@ -70,7 +70,7 @@ class AReverbModel : public ReverbModel {
 	void mute();
 
 public:
-	AReverbModel(const Bit8u mode);
+	AReverbModel(const ReverbMode mode);
 	~AReverbModel();
 	void open(unsigned int sampleRate);
 	void close();

@@ -57,6 +57,8 @@ static const AReverbSettings REVERB_MODE_0_SETTINGS = {MODE_0_ALLPASSES, MODE_0_
 static const AReverbSettings REVERB_MODE_1_SETTINGS = {MODE_1_ALLPASSES, MODE_1_COMBS, MODE_1_OUTL, MODE_1_OUTR, MODE_1_TIMES, MODE_1_LEVELS, MODE_1_LPF_FACTOR};
 static const AReverbSettings REVERB_MODE_2_SETTINGS = {MODE_2_ALLPASSES, MODE_2_COMBS, MODE_2_OUTL, MODE_2_OUTR, MODE_2_TIMES, MODE_2_LEVELS, MODE_2_LPF_FACTOR};
 
+static const AReverbSettings * const REVERB_SETTINGS[] = {&REVERB_MODE_0_SETTINGS, &REVERB_MODE_1_SETTINGS, &REVERB_MODE_2_SETTINGS, &REVERB_MODE_0_SETTINGS};
+
 RingBuffer::RingBuffer(Bit32u newsize) {
 	index = 0;
 	size = newsize;
@@ -138,9 +140,7 @@ void CombFilter::setFilterFactor(const float useFilterFactor) {
 	filterFactor = useFilterFactor;
 }
 
-AReverbModel::AReverbModel(const Bit8u mode) : allpasses(NULL), combs(NULL),
-	currentSettings(mode == 0 ? REVERB_MODE_0_SETTINGS :
-	mode == 1 ? REVERB_MODE_1_SETTINGS : REVERB_MODE_2_SETTINGS) {}
+AReverbModel::AReverbModel(const ReverbMode mode) : allpasses(NULL), combs(NULL), currentSettings(*REVERB_SETTINGS[mode]) {}
 
 AReverbModel::~AReverbModel() {
 	close();
