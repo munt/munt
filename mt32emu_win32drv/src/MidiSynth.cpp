@@ -425,7 +425,7 @@ void MidiSynth::LoadSettings() {
 	bufferSize = MillisToFrames(LoadIntValue(hRegDriver, "AudioLatency", 100));
 	chunkSize = MillisToFrames(LoadIntValue(hRegDriver, "ChunkLen", 10));
 	midiLatency = MillisToFrames(LoadIntValue(hRegDriver, "MidiLatency", 0));
-	useRingBuffer = LoadIntValue(hRegDriver, "UseRingBuffer", 0) != 0;
+	useRingBuffer = LoadBoolValue(hRegDriver, "UseRingBuffer", false);
 	RegCloseKey(hRegDriver);
 	if (!useRingBuffer) {
 		// Number of chunks should be ceil(bufferSize / chunkSize)
