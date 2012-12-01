@@ -24,13 +24,19 @@
 
 namespace MT32Emu {
 
+// Because LA-32 chip makes it's output available to process by the Boss chip with a significant delay,
+// the Boss chip puts to the buffer the LA32 dry output when it is ready and performs processing of the _previously_ latched data.
+// Of course, the right way would be to use a dedicated variable for this, but our reverb model is way higher level,
+// so we can simply increase the input buffer size.
+static const Bit32u PROCESS_DELAY = 1;
+
 // Default reverb settings for modes 0-2
 
 static const Bit32u NUM_ALLPASSES = 3;
 static const Bit32u NUM_COMBS = 4;
 
 static const Bit32u MODE_0_ALLPASSES[] = {994, 729, 78};
-static const Bit32u MODE_0_COMBS[] = {705, 2349, 2839, 3632};
+static const Bit32u MODE_0_COMBS[] = {705 + PROCESS_DELAY, 2349, 2839, 3632};
 static const Bit32u MODE_0_OUTL[] = {2349, 141, 1960};
 static const Bit32u MODE_0_OUTR[] = {1174, 1570, 145};
 static const float  MODE_0_TIMES[] = {-0.25f, -0.45f, -0.6f, -0.75f, -0.8f, -0.85f, -0.9f, -0.95f};
@@ -38,7 +44,7 @@ static const float  MODE_0_LEVELS[] = {0.0f, -0.046f, -0.077f, -0.107f, -0.152f,
 static const float  MODE_0_LPF_FACTOR = 0.687771f;
 
 static const Bit32u MODE_1_ALLPASSES[] = {1324, 809, 176};
-static const Bit32u MODE_1_COMBS[] = {961, 2619, 3545, 4519};
+static const Bit32u MODE_1_COMBS[] = {961 + PROCESS_DELAY, 2619, 3545, 4519};
 static const Bit32u MODE_1_OUTL[] = {2618, 1760, 4518};
 static const Bit32u MODE_1_OUTR[] = {1300, 3532, 2274};
 static const float  MODE_1_TIMES[] = {-0.25f, -0.45f, -0.6f, -0.7f, -0.75f, -0.8f, -0.9f, -0.95f};
@@ -46,7 +52,7 @@ static const float  MODE_1_LEVELS[] = {0.0f, -0.043f, -0.079f, -0.111f, -0.143f,
 static const float  MODE_1_LPF_FACTOR = 0.712025098f;
 
 static const Bit32u MODE_2_ALLPASSES[] = {969, 644, 157};
-static const Bit32u MODE_2_COMBS[] = {116, 2259, 2839, 3539};
+static const Bit32u MODE_2_COMBS[] = {116 + PROCESS_DELAY, 2259, 2839, 3539};
 static const Bit32u MODE_2_OUTL[] = {2259, 718, 1769};
 static const Bit32u MODE_2_OUTR[] = {1136, 2128, 1};
 static const float  MODE_2_TIMES[] = {-0.225f, -0.4f, -0.55f, -0.62f, -0.72f, -0.83f, -0.86f, -0.935f};
