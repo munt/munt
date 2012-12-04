@@ -21,38 +21,32 @@
 
 namespace MT32Emu {
 
-static void SHA1DigestToString(char *strDigest, const unsigned int intDigest [])
-{
-	for (int i = 0; i < 5 ; i++) {
-		sprintf(strDigest, "%08X", intDigest[i]);
-		if (i < 4) {
-			strDigest += 8;
-			*(strDigest++) = '-';
-		}
+static void SHA1DigestToString(char *strDigest, const unsigned int intDigest[]) {
+	sprintf(strDigest, "%08x%08x%08x%08x%08x", intDigest[0], intDigest[1], intDigest[2], intDigest[3], intDigest[4]);
+}
+
+File::File() : sha1DigestCalculated(false), fileSize(0), data(NULL) {
+	sha1DigestCalculated = false;
+}
+
+const char *File::getSHA1() {
+	if (sha1DigestCalculated) {
+		return sha1Digest;
 	}
-}
+	sha1Digest[0] = 0;
+	sha1DigestCalculated = true;
 
-File::File() : fileSize(0), data(NULL) {
-	sha1Digest [0] = 0;
-}
-
-unsigned char* File::getSHA1() {
-	if (sha1Digest [0] != 0) {
+	if (getData() == NULL) {
 		return sha1Digest;
 	}
 
-	if (getData() == NULL) {
-		return NULL;
-	}
-
 	SHA1 sha1;
-	unsigned int fileDigest [5];
+	unsigned int fileDigest[5];
 
 	sha1.Input(data, fileSize);
-	if (sha1.Result(fileDigest) == false) {
-		return NULL;
+	if (sha1.Result(fileDigest)) {
+		SHA1DigestToString(sha1Digest, fileDigest);
 	}
-	SHA1DigestToString((char *) sha1Digest, fileDigest);
 	return sha1Digest;
 }
 

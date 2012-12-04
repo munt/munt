@@ -20,59 +20,63 @@
 
 namespace MT32Emu {
 
-	// ROM definitions
-	static const ROMInfo mt32ctrl = {
-		65536, (unsigned char *)"B083518F-FFB7F66B-03C23B7E-B4F868E6-2DC5A987", ROMInfo::Control,
-		(unsigned char *)"mt32ctrl", (unsigned char *)"MT32 Control ROM", ROMInfo::Full, NULL, NULL};
+// Known ROMs
+static const ROMInfo CTRL_MT32_V1_04 = {65536, "5a5cb5a77d7d55ee69657c2f870416daed52dea7", ROMInfo::Control, "ctrl_mt32_1_04", "MT-32 Control v1.04", ROMInfo::Full, NULL, NULL};
+static const ROMInfo CTRL_MT32_V1_05 = {65536, "e17a3a6d265bf1fa150312061134293d2b58288c", ROMInfo::Control, "ctrl_mt32_1_05", "MT-32 Control v1.05", ROMInfo::Full, NULL, NULL};
+static const ROMInfo CTRL_MT32_V1_06 = {65536, "a553481f4e2794c10cfe597fef154eef0d8257de", ROMInfo::Control, "ctrl_mt32_1_06", "MT-32 Control v1.06", ROMInfo::Full, NULL, NULL};
+static const ROMInfo CTRL_MT32_V1_07 = {65536, "b083518fffb7f66b03c23b7eb4f868e62dc5a987", ROMInfo::Control, "ctrl_mt32_1_07", "MT-32 Control v1.07", ROMInfo::Full, NULL, NULL};
+static const ROMInfo CTRL_MT32_BLUER = {65536, "7b8c2a5ddb42fd0732e2f22b3340dcf5360edf92", ROMInfo::Control, "ctrl_mt32_bluer", "MT-32 Control BlueRidge", ROMInfo::Full, NULL, NULL};
 
-	static const ROMInfo cm32ctrl = {
-		65536, (unsigned char *)"A439FBB3-90DA38CA-DA95A7CB-B1D6CA19-9CD66EF8", ROMInfo::Control,
-		(unsigned char *)"cm32ctrl", (unsigned char *)"CM32L Control ROM", ROMInfo::Full, NULL, NULL};
+static const ROMInfo CTRL_CM32L_V1_00 = {65536, "73683d585cd6948cc19547942ca0e14a0319456d", ROMInfo::Control, "ctrl_cm32l_1_00", "CM-32L/LAPC-I Control v1.00", ROMInfo::Full, NULL, NULL};
+static const ROMInfo CTRL_CM32L_V1_02 = {65536, "a439fbb390da38cada95a7cbb1d6ca199cd66ef8", ROMInfo::Control, "ctrl_cm32l_1_02", "CM-32L/LAPC-I Control v1.02", ROMInfo::Full, NULL, NULL};
 
-	static const ROMInfo mt32pcm = {
-		524288, (unsigned char *)"F6B1EEBC-4B2D200E-C6D3D21D-51325D5B-48C60252", ROMInfo::PCM,
-		(unsigned char *)"mt32pcm", (unsigned char *)"MT32 PCM ROM", ROMInfo::Full, NULL, NULL};
+static const ROMInfo PCM_MT32 = {524288, "f6b1eebc4b2d200ec6d3d21d51325d5b48c60252", ROMInfo::PCM, "pcm_mt32", "MT-32 PCM ROM", ROMInfo::Full, NULL, NULL};
+static const ROMInfo PCM_CM32L = {1048576, "289cc298ad532b702461bfc738009d9ebe8025ea", ROMInfo::PCM, "pcm_cm32l", "CM-32L/CM-64/LAPC-I PCM ROM", ROMInfo::Full, NULL, NULL};
 
-	static const ROMInfo cm32pcm = {
-		1048576, (unsigned char *)"289CC298-AD532B70-2461BFC7-38009D9E-BE8025EA", ROMInfo::PCM,
-		(unsigned char *)"cm32pcm", (unsigned char *)"CM32L PCM ROM", ROMInfo::Full, NULL, NULL};
-
-	static const ROMInfo* romInfos[] = {&mt32ctrl, &cm32ctrl, &mt32pcm, &cm32pcm, NULL};
+static const ROMInfo * const ROM_INFOS[] = {
+		&CTRL_MT32_V1_04,
+		&CTRL_MT32_V1_05,
+		&CTRL_MT32_V1_06,
+		&CTRL_MT32_V1_07,
+		&CTRL_MT32_BLUER,
+		&CTRL_CM32L_V1_00,
+		&CTRL_CM32L_V1_02,
+		&PCM_MT32,
+		&PCM_CM32L,
+		NULL};
 
 const ROMInfo* ROMInfo::getROMInfo(File *file) {
 	size_t fileSize = file->getSize();
-	unsigned char *fileDigest = file->getSHA1();
-	const ROMInfo **romInfo = romInfos;
-	do {
-		if ((fileSize == (*romInfo)->fileSize)
-				&& (strcmp((char *)fileDigest, (char *)(*romInfo)->sha1Digest) == 0)) {
-			break;
+	const char *fileDigest = file->getSHA1();
+	for (int i = 0; ROM_INFOS[i] != NULL; i++) {
+		const ROMInfo *romInfo = ROM_INFOS[i];
+		if (fileSize == romInfo->fileSize && !strcmp(fileDigest, romInfo->sha1Digest)) {
+			return romInfo;
 		}
-	} while (*(++romInfo) != NULL);
-	return *romInfo;
+	}
+	return NULL;
 }
 
 void ROMInfo::freeROMInfo(const ROMInfo *romInfo) {
 	(void) romInfo;
 }
 
-const ROMInfo** ROMInfo::getROMInfoList(unsigned int types, unsigned int pairTypes) {
-	unsigned int romCount = 0;
-	const ROMInfo **romInfo = romInfos;
-	do 
-		++romCount;
-	while (*(++romInfo) != NULL);
-	if (romCount == 0) {
-		return NULL;
+static int getROMCount() {
+	int count;
+	for(count = 0; ROM_INFOS[count] != NULL; count++) {
 	}
-	const ROMInfo **romInfoList = new const ROMInfo*[romCount + 1];
+	return count;
+}
+
+const ROMInfo** ROMInfo::getROMInfoList(unsigned int types, unsigned int pairTypes) {
+	const ROMInfo **romInfoList = new const ROMInfo*[getROMCount() + 1];
 	const ROMInfo **currentROMInList = romInfoList;
-	romInfo = romInfos;
-	do {
-		if ((types & (1 << (*romInfo)->type)) && (pairTypes & (1 << (*romInfo)->pairType))) {
-			*(currentROMInList++) = *romInfo;
+	for(int i = 0; ROM_INFOS[i] != NULL; i++) {
+		const ROMInfo *romInfo = ROM_INFOS[i];
+		if ((types & (1 << romInfo->type)) && (pairTypes & (1 << romInfo->pairType))) {
+			*currentROMInList++ = romInfo;
 		}
-	} while (*(++romInfo) != NULL);
+	}
 	*currentROMInList = NULL;
 	return romInfoList;
 }
