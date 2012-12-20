@@ -24,8 +24,10 @@
 #include "mmath.h"
 #include "PartialManager.h"
 
-#if MT32EMU_USE_AREVERBMODEL == 1
+#if MT32EMU_USE_REVERBMODEL == 1
 #include "AReverbModel.h"
+#elif MT32EMU_USE_REVERBMODEL == 2
+#include "BReverbModel.h"
 #else
 #include "FreeverbModel.h"
 #endif
@@ -150,10 +152,14 @@ Synth::Synth(ReportHandler *useReportHandler) {
 		isDefaultReportHandler = false;
 	}
 
-#if MT32EMU_USE_AREVERBMODEL == 1
+#if MT32EMU_USE_REVERBMODEL == 1
 	reverbModels[REVERB_MODE_ROOM] = new AReverbModel(REVERB_MODE_ROOM);
 	reverbModels[REVERB_MODE_HALL] = new AReverbModel(REVERB_MODE_HALL);
 	reverbModels[REVERB_MODE_PLATE] = new AReverbModel(REVERB_MODE_PLATE);
+#elif MT32EMU_USE_REVERBMODEL == 2
+	reverbModels[REVERB_MODE_ROOM] = new BReverbModel(REVERB_MODE_ROOM);
+	reverbModels[REVERB_MODE_HALL] = new BReverbModel(REVERB_MODE_HALL);
+	reverbModels[REVERB_MODE_PLATE] = new BReverbModel(REVERB_MODE_PLATE);
 #else
 	reverbModels[REVERB_MODE_ROOM] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 0, 0.5f);
 	reverbModels[REVERB_MODE_HALL] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 1, 0.5f);
