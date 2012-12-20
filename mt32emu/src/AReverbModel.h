@@ -25,28 +25,30 @@ struct AReverbSettings {
 	const Bit32u * const combSizes;
 	const Bit32u * const outLPositions;
 	const Bit32u * const outRPositions;
-	const float * const decayTimes;
-	const float * const wetLevels;
-	const float filterFactor;
+	const Bit32u * const filterFactor;
+	const Bit32u * const decayTimes;
+	const Bit32u * const wetLevels;
+	const Bit32u lpfAmp;
 };
 
 class RingBuffer {
 protected:
 	float *buffer;
-	Bit32u size;
+	const Bit32u size;
 	Bit32u index;
+
 public:
-	RingBuffer(Bit32u size);
+	RingBuffer(const Bit32u size);
 	virtual ~RingBuffer();
 	float next();
-	bool isEmpty();
+	bool isEmpty() const;
 	void mute();
 };
 
 class AllpassFilter : public RingBuffer {
 public:
 	AllpassFilter(const Bit32u size);
-	float process(float in);
+	float process(const float in);
 };
 
 class CombFilter : public RingBuffer {
@@ -54,9 +56,9 @@ class CombFilter : public RingBuffer {
 	float filterFactor;
 
 public:
-	CombFilter(Bit32u size);
+	CombFilter(const Bit32u size);
 	void process(const float in);
-	float getOutputAt(const Bit32u outIndex);
+	float getOutputAt(const Bit32u outIndex) const;
 	void setFeedbackFactor(const float useFeedbackFactor);
 	void setFilterFactor(const float useFilterFactor);
 };
@@ -66,6 +68,7 @@ class AReverbModel : public ReverbModel {
 	CombFilter **combs;
 
 	const AReverbSettings &currentSettings;
+	float lpfAmp;
 	float wetLevel;
 	void mute();
 
