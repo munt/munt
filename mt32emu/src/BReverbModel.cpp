@@ -37,13 +37,13 @@ static const Bit32u PROCESS_DELAY = 1;
 // Found by tracing reverb RAM data lines (thanks go to Lord_Nightmare & balrog).
 
 static const Bit32u NUM_ALLPASSES = 3;
-static const Bit32u NUM_COMBS = 4; // Well, actually there are 3 comb filters, but the entrance LPF + delay can be perfectly processed via a comb here.
+static const Bit32u NUM_COMBS = 4; // Well, actually there are 3 comb filters, but the entrance LPF + delay can be processed via a hacked comb.
 
 static const Bit32u MODE_0_ALLPASSES[] = {994, 729, 78};
 static const Bit32u MODE_0_COMBS[] = {705 + PROCESS_DELAY, 2349, 2839, 3632};
 static const Bit32u MODE_0_OUTL[] = {2349, 141, 1960};
 static const Bit32u MODE_0_OUTR[] = {1174, 1570, 145};
-static const Bit32u MODE_0_COMB_FACTOR[] = {0x3C, 0x60, 0x60, 0x60};
+static const Bit32u MODE_0_COMB_FACTOR[] = {0xA0, 0x60, 0x60, 0x60};
 static const Bit32u MODE_0_COMB_FEEDBACK[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                               0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
                                               0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
@@ -56,7 +56,7 @@ static const Bit32u MODE_1_ALLPASSES[] = {1324, 809, 176};
 static const Bit32u MODE_1_COMBS[] = {961 + PROCESS_DELAY, 2619, 3545, 4519};
 static const Bit32u MODE_1_OUTL[] = {2618, 1760, 4518};
 static const Bit32u MODE_1_OUTR[] = {1300, 3532, 2274};
-static const Bit32u MODE_1_COMB_FACTOR[] = {0x30, 0x60, 0x60, 0x60};
+static const Bit32u MODE_1_COMB_FACTOR[] = {0x80, 0x60, 0x60, 0x60};
 static const Bit32u MODE_1_COMB_FEEDBACK[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 											  0x28, 0x48, 0x60, 0x70, 0x78, 0x80, 0x90, 0x98,
 											  0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
@@ -149,18 +149,27 @@ Bit32s AllpassFilter::process(const Bit32s in) {
 
 CombFilter::CombFilter(Bit32u useSize) : RingBuffer(useSize) {}
 
-void CombFilter::process(const Bit32s in, const Bit32u lpfMask = 0x40) {
+void CombFilter::process(const Bit32s in, const bool lpfDelayMode = false, const Bit32u lpfAmp = 0) {
 	// This model corresponds to the comb filter implementation of the real CM-32L device
-	// found from sample analysis
 
 	// the previously stored value
 	Bit32s last = buffer[index];
 
-	// prepare input + feedback
-	Bit32s filterIn = in + weirdMul(next(), feedbackFactor, 0x80);
+	if (lpfDelayMode) {
+		next();
 
-	// store input + feedback processed by a low-pass filter
-	buffer[index] = weirdMul(last, filterFactor, lpfMask) - filterIn;
+		// low-pass filter process
+		Bit32s lpfOut = weirdMul(last, filterFactor, 0xFF) + in;
+
+		// store lpfOut multiplied by LPF amp factor
+		buffer[index] = weirdMul(lpfOut, lpfAmp, 0xFF);
+	} else {
+		// prepare input + feedback
+		Bit32s filterIn = in + weirdMul(next(), feedbackFactor, 0x80);
+
+		// store input + feedback processed by a low-pass filter
+		buffer[index] = weirdMul(last, filterFactor, 0x40) - filterIn;
+	}
 }
 
 Bit32s CombFilter::getOutputAt(const Bit32u outIndex) const {
@@ -264,8 +273,7 @@ void BReverbModel::process(const float *inLeft, const float *inRight, float *out
 		link = combs[0]->getOutputAt(currentSettings.combSizes[0] - 1);
 
 		// Entrance LPF. Note, comb.process() differs a bit here.
-		combs[0]->process(-dry, 0xFF);
-		link = weirdMul(link, currentSettings.lpfAmp, 0xFF);
+		combs[0]->process(dry, true, currentSettings.lpfAmp);
 
 		// This introduces reverb noise which actually makes output from the real Boss chip nondeterministic
 		link = link - 1;

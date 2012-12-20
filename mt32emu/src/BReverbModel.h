@@ -58,7 +58,7 @@ class CombFilter : public RingBuffer {
 
 public:
 	CombFilter(const Bit32u size);
-	void process(const Bit32s in, const Bit32u lpfMask);
+	void process(const Bit32s in, const bool lpfDelayMode, const Bit32u lpfAmp);
 	Bit32s getOutputAt(const Bit32u outIndex) const;
 	void setFeedbackFactor(const Bit32u useFeedbackFactor);
 	void setFilterFactor(const Bit32u useFilterFactor);
