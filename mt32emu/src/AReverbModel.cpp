@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011, 2012 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -16,6 +16,9 @@
  */
 
 #include "mt32emu.h"
+
+#if MT32EMU_USE_REVERBMODEL == 1
+
 #include "AReverbModel.h"
 
 // Analysing of state of reverb RAM address lines gives exact sizes of the buffers of filters used. This also indicates that
@@ -260,3 +263,5 @@ void AReverbModel::process(const float *inLeft, const float *inRight, float *out
 }
 
 }
+
+#endif
