@@ -328,10 +328,14 @@ void BReverbModel::process(const float *inLeft, const float *inRight, float *out
 	Bit32s dry, link, outL1, outR1;
 
 	for (unsigned long i = 0; i < numSamples; i++) {
-		dry = Bit32s(*inLeft * 8192.0f) / 2 + Bit32s(*inRight * 8192.0f) / 2;
+		if (tapDelayMode) {
+			dry = Bit32s(*inLeft * 8192.0f) + Bit32s(*inRight * 8192.0f);
+		} else {
+			dry = Bit32s(*inLeft * 8192.0f) / 2 + Bit32s(*inRight * 8192.0f) / 2;
+		}
 
 		// Looks like dryAmp doesn't change in MT-32 but it does in CM-32L / LAPC-I
-		dry = weirdMul(dry * 2, dryAmp, 0xFF);
+		dry = weirdMul(dry, dryAmp, 0xFF);
 
 		if (tapDelayMode) {
 			TapDelayCombFilter *comb = static_cast<TapDelayCombFilter *> (*combs);
