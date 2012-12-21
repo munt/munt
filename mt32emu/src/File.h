@@ -24,7 +24,8 @@ namespace MT32Emu {
 
 class File {
 private:
-	unsigned char sha1Digest [45];
+	bool sha1DigestCalculated;
+	char sha1Digest[41];
 protected:
 	size_t fileSize;
 	unsigned char *data;
@@ -32,8 +33,8 @@ public:
 	File();
 	virtual ~File() {}
 	virtual size_t getSize() = 0;
-	virtual unsigned char *getData() = 0;
-	virtual unsigned char *getSHA1();
+	virtual const unsigned char *getData() = 0;
+	virtual const char *getSHA1();
 
 	virtual void close() = 0;
 };

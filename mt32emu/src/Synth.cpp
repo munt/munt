@@ -286,7 +286,7 @@ LoadResult Synth::loadControlROM(const char *filename) {
 	if (fileSize != CONTROL_ROM_SIZE) {
 		printDebug("Control ROM file %s size mismatch: %i", filename, fileSize);
 	}
-	Bit8u *fileData = file->getData();
+	const Bit8u *fileData = file->getData();
 	memcpy(controlROMData, fileData, CONTROL_ROM_SIZE);
 	closeFile(file);
 	if (fileData == NULL) {
@@ -316,13 +316,13 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 		closeFile(file);
 		return LoadResult_Invalid;
 	}
-	Bit8u *fileData = file->getData();
+	const Bit8u *fileData = file->getData();
 	if (fileData == NULL) {
 		closeFile(file);
 		return LoadResult_Unreadable;
 	}
 	LoadResult rc = LoadResult_OK;
-	for (int i = 0; i < pcmROMSize; i++) {
+	for (unsigned int i = 0; i < pcmROMSize; i++) {
 		Bit8u s = *(fileData++);
 		Bit8u c = *(fileData++);
 
@@ -357,7 +357,7 @@ LoadResult Synth::loadPCMROM(const char *filename) {
 bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 	ControlROMPCMStruct *tps = (ControlROMPCMStruct *)&controlROMData[mapAddress];
 	for (int i = 0; i < count; i++) {
-		int rAddr = tps[i].pos * 0x800;
+		unsigned int rAddr = tps[i].pos * 0x800;
 		int rLenExp = (tps[i].len & 0x70) >> 4;
 		int rLen = 0x800 << rLenExp;
 		if (rAddr + rLen > pcmROMSize) {

@@ -28,7 +28,7 @@ FileStream::FileStream() {
 }
 
 FileStream::~FileStream() {
-	if (ifsp) {
+	if (ifsp != NULL) {
 		delete ifsp; // destructor closes the file itself
 	}
 	if (data) {
@@ -40,7 +40,7 @@ size_t FileStream::getSize() {
 	if (fileSize != 0) {
 		return fileSize;
 	}
-	if (!ifsp) {
+	if (ifsp == NULL) {
 		return 0;
 	}
 	if (ifsp->bad()) {
@@ -51,7 +51,7 @@ size_t FileStream::getSize() {
 	return fileSize;
 }
 
-unsigned char* FileStream::getData() {
+const unsigned char* FileStream::getData() {
 	if (data != NULL) {
 		return data;
 	}

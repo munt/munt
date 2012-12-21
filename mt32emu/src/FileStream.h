@@ -33,7 +33,7 @@ public:
 	FileStream();
 	virtual ~FileStream();
 	virtual size_t getSize();
-	virtual unsigned char* getData();
+	virtual const unsigned char* getData();
 
 	bool open(const char *filename);
 	void close();
