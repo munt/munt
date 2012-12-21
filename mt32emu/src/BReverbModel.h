@@ -15,32 +15,33 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MT32EMU_A_REVERB_MODEL_H
-#define MT32EMU_A_REVERB_MODEL_H
+#ifndef MT32EMU_B_REVERB_MODEL_H
+#define MT32EMU_B_REVERB_MODEL_H
 
 namespace MT32Emu {
 
-struct AReverbSettings {
+struct BReverbSettings {
 	const Bit32u * const allpassSizes;
 	const Bit32u * const combSizes;
 	const Bit32u * const outLPositions;
 	const Bit32u * const outRPositions;
 	const Bit32u * const filterFactor;
 	const Bit32u * const decayTimes;
+	const Bit32u * const dryAmp;
 	const Bit32u * const wetLevels;
 	const Bit32u lpfAmp;
 };
 
 class RingBuffer {
 protected:
-	float *buffer;
+	Bit16s *buffer;
 	const Bit32u size;
 	Bit32u index;
 
 public:
 	RingBuffer(const Bit32u size);
 	virtual ~RingBuffer();
-	float next();
+	Bit32s next();
 	bool isEmpty() const;
 	void mute();
 };
@@ -48,33 +49,33 @@ public:
 class AllpassFilter : public RingBuffer {
 public:
 	AllpassFilter(const Bit32u size);
-	float process(const float in);
+	Bit32s process(const Bit32s in);
 };
 
 class CombFilter : public RingBuffer {
-	float feedbackFactor;
-	float filterFactor;
+	Bit32u feedbackFactor;
+	Bit32u filterFactor;
 
 public:
 	CombFilter(const Bit32u size);
-	void process(const float in);
-	float getOutputAt(const Bit32u outIndex) const;
-	void setFeedbackFactor(const float useFeedbackFactor);
-	void setFilterFactor(const float useFilterFactor);
+	void process(const Bit32s in, const bool lpfDelayMode, const Bit32u lpfAmp);
+	Bit32s getOutputAt(const Bit32u outIndex) const;
+	void setFeedbackFactor(const Bit32u useFeedbackFactor);
+	void setFilterFactor(const Bit32u useFilterFactor);
 };
 
-class AReverbModel : public ReverbModel {
+class BReverbModel : public ReverbModel {
 	AllpassFilter **allpasses;
 	CombFilter **combs;
 
-	const AReverbSettings &currentSettings;
-	float lpfAmp;
-	float wetLevel;
+	const BReverbSettings &currentSettings;
+	Bit32u dryAmp;
+	Bit32u wetLevel;
 	void mute();
 
 public:
-	AReverbModel(const ReverbMode mode);
-	~AReverbModel();
+	BReverbModel(const ReverbMode mode);
+	~BReverbModel();
 	void open(unsigned int sampleRate);
 	void close();
 	void setParameters(Bit8u time, Bit8u level);
