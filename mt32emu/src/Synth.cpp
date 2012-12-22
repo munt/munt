@@ -156,17 +156,19 @@ Synth::Synth(ReportHandler *useReportHandler) {
 	reverbModels[REVERB_MODE_ROOM] = new AReverbModel(REVERB_MODE_ROOM);
 	reverbModels[REVERB_MODE_HALL] = new AReverbModel(REVERB_MODE_HALL);
 	reverbModels[REVERB_MODE_PLATE] = new AReverbModel(REVERB_MODE_PLATE);
+	reverbModels[REVERB_MODE_TAP_DELAY] = new DelayReverb();
 #elif MT32EMU_USE_REVERBMODEL == 2
 	reverbModels[REVERB_MODE_ROOM] = new BReverbModel(REVERB_MODE_ROOM);
 	reverbModels[REVERB_MODE_HALL] = new BReverbModel(REVERB_MODE_HALL);
 	reverbModels[REVERB_MODE_PLATE] = new BReverbModel(REVERB_MODE_PLATE);
+	reverbModels[REVERB_MODE_TAP_DELAY] = new BReverbModel(REVERB_MODE_TAP_DELAY);
 #else
 	reverbModels[REVERB_MODE_ROOM] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 0, 0.5f);
 	reverbModels[REVERB_MODE_HALL] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 1, 0.5f);
 	reverbModels[REVERB_MODE_PLATE] = new FreeverbModel(0.4f, 0.939522749f, 0.38f, 2, 0.05f);
+	reverbModels[REVERB_MODE_TAP_DELAY] = new DelayReverb();
 #endif
 
-	reverbModels[REVERB_MODE_TAP_DELAY] = new DelayReverb();
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
 	setOutputGain(1.0f);
@@ -285,7 +287,7 @@ bool Synth::loadControlROM(const ROMImage &controlROMImage) {
 #if MT32EMU_MONITOR_INIT
 	printDebug("Found Control ROM: %s, %s", controlROMInfo->shortName, controlROMInfo->description);
 #endif
-	Bit8u *fileData = file->getData();
+	const Bit8u *fileData = file->getData();
 	memcpy(controlROMData, fileData, CONTROL_ROM_SIZE);
 
 	// Control ROM successfully loaded, now check whether it's a known type
@@ -321,7 +323,7 @@ bool Synth::loadPCMROM(const ROMImage &pcmROMImage) {
 #endif
 		return false;
 	}
-	Bit8u *fileData = file->getData();
+	const Bit8u *fileData = file->getData();
 	for (size_t i = 0; i < pcmROMSize; i++) {
 		Bit8u s = *(fileData++);
 		Bit8u c = *(fileData++);

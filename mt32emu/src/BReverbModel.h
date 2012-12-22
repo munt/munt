@@ -21,13 +21,15 @@
 namespace MT32Emu {
 
 struct BReverbSettings {
+	const Bit32u numberOfAllpasses;
 	const Bit32u * const allpassSizes;
+	const Bit32u numberOfCombs;
 	const Bit32u * const combSizes;
 	const Bit32u * const outLPositions;
 	const Bit32u * const outRPositions;
-	const Bit32u * const filterFactor;
-	const Bit32u * const decayTimes;
-	const Bit32u * const dryAmp;
+	const Bit32u * const filterFactors;
+	const Bit32u * const feedbackFactors;
+	const Bit32u * const dryAmps;
 	const Bit32u * const wetLevels;
 	const Bit32u lpfAmp;
 };
@@ -53,15 +55,36 @@ public:
 };
 
 class CombFilter : public RingBuffer {
+protected:
+	const Bit32u filterFactor;
 	Bit32u feedbackFactor;
-	Bit32u filterFactor;
 
 public:
-	CombFilter(const Bit32u size);
-	void process(const Bit32s in, const bool lpfDelayMode, const Bit32u lpfAmp);
+	CombFilter(const Bit32u size, const Bit32u useFilterFactor);
+	virtual void process(const Bit32s in); // Actually, no need to make it virtual, but for sure
 	Bit32s getOutputAt(const Bit32u outIndex) const;
 	void setFeedbackFactor(const Bit32u useFeedbackFactor);
-	void setFilterFactor(const Bit32u useFilterFactor);
+};
+
+class DelayWithLowPassFilter : public CombFilter {
+	Bit32u amp;
+
+public:
+	DelayWithLowPassFilter(const Bit32u useSize, const Bit32u useFilterFactor, const Bit32u useAmp);
+	void process(const Bit32s in);
+	void setFeedbackFactor(const Bit32u) {}
+};
+
+class TapDelayCombFilter : public CombFilter {
+	Bit32u outL;
+	Bit32u outR;
+
+public:
+	TapDelayCombFilter(const Bit32u useSize, const Bit32u useFilterFactor);
+	void process(const Bit32s in);
+	Bit32s getLeftOutput() const;
+	Bit32s getRightOutput() const;
+	void setOutputPositions(const Bit32u useOutL, const Bit32u useOutR);
 };
 
 class BReverbModel : public ReverbModel {
@@ -69,6 +92,7 @@ class BReverbModel : public ReverbModel {
 	CombFilter **combs;
 
 	const BReverbSettings &currentSettings;
+	const bool tapDelayMode;
 	Bit32u dryAmp;
 	Bit32u wetLevel;
 	void mute();
