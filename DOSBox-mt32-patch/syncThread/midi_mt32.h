@@ -49,9 +49,32 @@ private:
 	volatile bool stopProcessing;
 	bool open, noise, reverseStereo, renderInThread;
 
-static void printDebug(void *userData, const char *fmt, va_list list);
-static void mixerCallBack(Bitu len);
-static int processingThread(void *);
+	class MT32ReportHandler : public MT32Emu::ReportHandler {
+		protected:
+			virtual void onErrorControlROM() {
+				LOG_MSG("MT32: Couldn't open Control ROM file");
+			}
+
+			virtual void onErrorPCMROM() {
+				LOG_MSG("MT32: Couldn't open PCM ROM file");
+			}
+
+			virtual void showLCDMessage(const char *message) {
+				LOG_MSG("MT32: LCD-Message: %s", message);
+			}
+
+			virtual void printDebug(const char *fmt, va_list list) {
+				if (midiHandler_mt32.noise) {
+					char s[1024];
+					strcpy(s, "MT32: ");
+					vsnprintf(s + 6, 1017, fmt, list);
+					LOG_MSG(s);
+				}
+			}
+		} reportHandler;
+
+	static void mixerCallBack(Bitu len);
+	static int processingThread(void *);
 
 public:
 	MidiHandler_mt32() : open(false), chan(NULL), synth(NULL), thread(NULL), synthMutex(NULL), procIdleSem(NULL), mixerReqSem(NULL) {}
@@ -65,20 +88,25 @@ public:
 	}
 
 	bool Open(const char *conf) {
-		MT32Emu::SynthProperties tmpProp = {0};
-		tmpProp.sampleRate = 32000;
+		MT32Emu::FileStream controlROMFile;
+		MT32Emu::FileStream pcmROMFile;
 
-		tmpProp.useDefaultReverb = false;
-		tmpProp.useReverb = true;
-		tmpProp.reverbType = 0;
-		tmpProp.reverbTime = 5;
-		tmpProp.reverbLevel = 3;
-		tmpProp.userData = this;
-		tmpProp.printDebug = printDebug;
-		tmpProp.report = &report;
-
-		synth = new MT32Emu::Synth();
-		if (!synth->open(tmpProp)) {
+		if (!controlROMFile.open("CM32L_CONTROL.ROM")) {
+			if (!controlROMFile.open("MT32_CONTROL.ROM")) {
+				LOG_MSG("MT32: Control ROM file not found");
+				return false;
+			}
+		}
+		if (!pcmROMFile.open("CM32L_PCM.ROM")) {
+			if (!pcmROMFile.open("MT32_PCM.ROM")) {
+				LOG_MSG("MT32: PCM ROM file not found");
+				return false;
+			}
+		}
+		const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
+		const MT32Emu::ROMImage *pcmROMImage = MT32Emu::ROMImage::makeROMImage(&pcmROMFile);
+		synth = new MT32Emu::Synth(&reportHandler);
+		if (!synth->open(*controlROMImage, *pcmROMImage)) {
 			LOG_MSG("MT32: Error initialising emulation");
 			return false;
 		}
@@ -103,7 +131,7 @@ public:
 		noise = strcmp(section->Get_string("mt32.verbose"), "on") == 0;
 		renderInThread = strcmp(section->Get_string("mt32.thread"), "on") == 0;
 
-		chan = MIXER_AddChannel(mixerCallBack, tmpProp.sampleRate, "MT32");
+		chan = MIXER_AddChannel(mixerCallBack, MT32Emu::SAMPLE_RATE, "MT32");
 		if (renderInThread) {
 			mixerBufferSize = 0;
 			stopProcessing = false;
@@ -153,24 +181,6 @@ public:
 	}
 
 private:
-	static int report(void *userData, MT32Emu::ReportType type, const void *reportData) {
-		switch (type) {
-			case MT32Emu::ReportType_errorControlROM:
-				LOG_MSG("MT32: Couldn't find Control ROM file");
-				break;
-			case MT32Emu::ReportType_errorPCMROM:
-				LOG_MSG("MT32: Couldn't open PCM ROM file");
-				break;
-			case MT32Emu::ReportType_lcdMessage:
-				LOG_MSG("MT32: LCD-Message: %s", reportData);
-				break;
-			default:
-				//LOG(LOG_ALL,LOG_NORMAL)("MT32: Report %d",type);
-				break;
-		}
-		return 0;
-	}
-
 	void render(Bitu len, Bit16s *buf) {
 		Bit32u msg = midiBuffer.get();
 		if (msg != 0) synth->playMsg(msg);
@@ -187,14 +197,6 @@ private:
 		chan->AddSamples_s16(len, buf);
 	}
 } midiHandler_mt32;
-
-void MidiHandler_mt32::printDebug(void *userData, const char *fmt, va_list list) {
-	if (midiHandler_mt32.noise) {
-		printf("MT32: ");
-		vprintf(fmt, list);
-		printf("\n");
-	}
-}
 
 void MidiHandler_mt32::mixerCallBack(Bitu len) {
 	if (midiHandler_mt32.renderInThread) {
