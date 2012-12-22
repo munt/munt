@@ -71,14 +71,7 @@ private:
 			LOG_MSG("MT32: LCD-Message: %s", message);
 		}
 
-		virtual void printDebug(const char *fmt, va_list list) {
-			if (midiHandler_mt32.noise) {
-				char s[1024];
-				strcpy(s, "MT32: ");
-				vsnprintf(s + 6, 1017, fmt, list);
-				LOG_MSG(s);
-			}
-		}
+		virtual void printDebug(const char *fmt, va_list list);
 	} reportHandler;
 
 	static void mixerCallBack(Bitu len);
@@ -221,6 +214,15 @@ private:
 		}
 	}
 } midiHandler_mt32;
+
+void MidiHandler_mt32::MT32ReportHandler::printDebug(const char *fmt, va_list list) {
+	if (midiHandler_mt32.noise) {
+		char s[1024];
+		strcpy(s, "MT32: ");
+		vsnprintf(s + 6, 1017, fmt, list);
+		LOG_MSG(s);
+	}
+}
 
 void MidiHandler_mt32::mixerCallBack(Bitu len) {
 	if (midiHandler_mt32.renderInThread) {
