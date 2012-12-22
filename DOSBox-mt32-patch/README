@@ -1,0 +1,15 @@
+Patch for official DOSBox release v.0.74 to add mt32emu MIDI device
+
+dosbox-0.74-mt32-patch.diff - diff file to be applied to DOSBox's source distribution.
+
+singleThread/midi_mt32.h    - straightforward version of the synth engine.
+                              Simple, accurate and robust rendering.
+                              Lacks the support for additional CPU / cores.
+
+syncThread/midi_mt32.h      - version of the synth engine with synchronous rendering in a separate thread
+                              Utilizes power of another CPU / core.
+                              Adds latency about 1 ms and consumes more CPU time.
+
+asyncThread/midi_mt32.h     - version of the synth engine with asynchronous rendering in a separate thread
+                              Compared to the sync version, consumes significantly less CPU time.
+                              Adds latency about 128 ms.
