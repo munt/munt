@@ -97,7 +97,7 @@ void DelayReverb::recalcParameters() {
 	// Number of samples between a response and that response feeding back/echoing
 	delayFeedback = REVERB_TIMINGS[time][2] * sampleRate / 32000;
 
-	if (time < 6) {
+	if (level < 3 || time < 6) {
 		feedback = REVERB_FEEDBACK;
 	} else {
 		feedback = REVERB_FEEDBACK67;
