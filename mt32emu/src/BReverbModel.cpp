@@ -90,9 +90,9 @@ static const Bit32u MODE_3_DELAY[] = {16000 + MODE_3_FEEDBACK_DELAY + PROCESS_DE
 static const Bit32u MODE_3_OUTL[] = {400, 624, 960, 1488, 2256, 3472, 5280, 8000};
 static const Bit32u MODE_3_OUTR[] = {800, 1248, 1920, 2976, 4512, 6944, 10560, 16000};
 static const Bit32u MODE_3_COMB_FACTOR[] = {0x68};
-static const Bit32u MODE_3_COMB_FEEDBACK[] = {0x60};
-static const Bit32u MODE_3_DRY_AMP[] = {0, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50};
-static const Bit32u MODE_3_WET_AMP[] = {0, 0x18, 0x28, 0x40, 0x60, 0x80, 0xA8, 0xF8};
+static const Bit32u MODE_3_COMB_FEEDBACK[] = {0x68, 0x60};
+static const Bit32u MODE_3_DRY_AMP[] = {0x20, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50};
+static const Bit32u MODE_3_WET_AMP[] = {0x18, 0x18, 0x28, 0x40, 0x60, 0x80, 0xA8, 0xF8};
 
 static const BReverbSettings REVERB_MODE_0_SETTINGS = {MODE_0_NUMBER_OF_ALLPASSES, MODE_0_ALLPASSES, MODE_0_NUMBER_OF_COMBS, MODE_0_COMBS, MODE_0_OUTL, MODE_0_OUTR, MODE_0_COMB_FACTOR, MODE_0_COMB_FEEDBACK, MODE_0_DRY_AMP, MODE_0_WET_AMP, MODE_0_LPF_AMP};
 static const BReverbSettings REVERB_MODE_1_SETTINGS = {MODE_1_NUMBER_OF_ALLPASSES, MODE_1_ALLPASSES, MODE_1_NUMBER_OF_COMBS, MODE_1_COMBS, MODE_1_OUTL, MODE_1_OUTR, MODE_1_COMB_FACTOR, MODE_1_COMB_FEEDBACK, MODE_1_DRY_AMP, MODE_1_WET_AMP, MODE_1_LPF_AMP};
@@ -204,10 +204,7 @@ void DelayWithLowPassFilter::process(const Bit32s in) {
 	buffer[index] = weirdMul(lpfOut, amp, 0xFF);
 }
 
-TapDelayCombFilter::TapDelayCombFilter(const Bit32u useSize, const Bit32u useFilterFactor, const Bit32u useFeedbackFactor)
-	: CombFilter(useSize, useFilterFactor) {
-	feedbackFactor = useFeedbackFactor;
-}
+TapDelayCombFilter::TapDelayCombFilter(const Bit32u useSize, const Bit32u useFilterFactor) : CombFilter(useSize, useFilterFactor) {}
 
 void TapDelayCombFilter::process(const Bit32s in) {
 	// the previously stored value
@@ -255,7 +252,7 @@ void BReverbModel::open(unsigned int /*sampleRate*/) {
 	}
 	combs = new CombFilter*[currentSettings.numberOfCombs];
 	if (tapDelayMode) {
-		*combs = new TapDelayCombFilter(*currentSettings.combSizes, *currentSettings.filterFactors, *currentSettings.feedbackFactors);
+		*combs = new TapDelayCombFilter(*currentSettings.combSizes, *currentSettings.filterFactors);
 	} else {
 		combs[0] = new DelayWithLowPassFilter(currentSettings.combSizes[0], currentSettings.filterFactors[0], currentSettings.lpfAmp);
 		for (Bit32u i = 1; i < currentSettings.numberOfCombs; i++) {
@@ -303,15 +300,23 @@ void BReverbModel::mute() {
 
 void BReverbModel::setParameters(Bit8u time, Bit8u level) {
 	if (combs == NULL) return;
+	level &= 7;
+	time &= 7;
 	if (tapDelayMode) {
-		static_cast<TapDelayCombFilter *> (*combs)->setOutputPositions(currentSettings.outLPositions[time & 7], currentSettings.outRPositions[time & 7]);
+		TapDelayCombFilter *comb = static_cast<TapDelayCombFilter *> (*combs);
+		comb->setOutputPositions(currentSettings.outLPositions[time], currentSettings.outRPositions[time & 7]);
+		comb->setFeedbackFactor(currentSettings.feedbackFactors[((level < 3) || (time < 6)) ? 0 : 1]);
 	} else {
 		for (Bit32u i = 0; i < currentSettings.numberOfCombs; i++) {
-			combs[i]->setFeedbackFactor(currentSettings.feedbackFactors[(i << 3) + (time & 7)]);
+			combs[i]->setFeedbackFactor(currentSettings.feedbackFactors[(i << 3) + time]);
 		}
 	}
-	dryAmp = currentSettings.dryAmps[level];
-	wetLevel = currentSettings.wetLevels[level];
+	if (time == 0 && level == 0) {
+		dryAmp = wetLevel = 0;
+	} else {
+		dryAmp = currentSettings.dryAmps[level];
+		wetLevel = currentSettings.wetLevels[level];
+	}
 }
 
 bool BReverbModel::isActive() const {

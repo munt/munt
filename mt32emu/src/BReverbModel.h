@@ -80,11 +80,10 @@ class TapDelayCombFilter : public CombFilter {
 	Bit32u outR;
 
 public:
-	TapDelayCombFilter(const Bit32u useSize, const Bit32u useFilterFactor, const Bit32u useFeedbackFactor);
+	TapDelayCombFilter(const Bit32u useSize, const Bit32u useFilterFactor);
 	void process(const Bit32s in);
 	Bit32s getLeftOutput() const;
 	Bit32s getRightOutput() const;
-	void setFeedbackFactor(const Bit32u) {}
 	void setOutputPositions(const Bit32u useOutL, const Bit32u useOutR);
 };
 
