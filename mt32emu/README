@@ -6,9 +6,9 @@ named libmt32emu which provides classes to emulate (approximately) the Roland
 MT-32, CM-32L and LAPC-I synthesiser modules.
 
 This library is intended for developers wishing to integrate an MT-32 emulator
-into a driver or application. "Official" drivers for Windows and Linux (with
-ALSA) are available in the Munt project and use this library: mt32emu_win32drv
-and mt32emu_alsadrv, respectively.
+into a driver or an application. "Official" driver for Windows and a cross-platform
+UI-enabled application are available in the Munt project and use this library:
+mt32emu_win32drv and mt32emu_qt respectively.
 
 mt32emu requires CMake to build. See http://www.cmake.org/ for details. For a
 simple in-tree build, you can probably just do:

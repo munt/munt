@@ -5,7 +5,8 @@ Dean "Canadacow" Beeler
  - Original author of the MT-32 emulator.
 
 Jerome "KingGuppy" Fisher
- - Extensive modifications to the MT-32 emulator.
+ - Extensive modifications to the MT-32 emulator. Many bugfixes. Many cool ideas and loads of code.
+   SMF2WAV conversion tool. Cross-platform UI-enabled application. Digital captures, analysis.
 
 "Mok"
  - Through study of the original ROMs, provided information to greatly increase emulation accuracy.
@@ -14,13 +15,15 @@ Tristan
  - Original author of the ALSA driver.
 
 "SergM"
- - Improved waveform generation and performance.
+ - Improved waveform generation and performance. High-level models of LA32 and reverb chips. Bugfixes.
+   Reimplemented Windows driver. Help with UI-enabled application.
 
 Contributors
 ------------
 
 Jonathan Gevaryahu
  - Sent his MT-32 all the way from Pennsylvania, USA to Australia to get ROM dumps.
+   Help with reverb analysis.
 
 "The Guru" (http://unemulated.emuunlim.com/)
  - Dumped the ROMs of the device above.
