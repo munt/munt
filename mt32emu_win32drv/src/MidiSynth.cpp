@@ -420,7 +420,7 @@ void MidiSynth::LoadSettings() {
 	}
 	RegCloseKey(hReg);
 	hReg = NULL;
-	sampleRate = 32000;
+	sampleRate = SAMPLE_RATE;
 	// Approx. bufferSize derived from latency
 	bufferSize = MillisToFrames(LoadIntValue(hRegDriver, "AudioLatency", 100));
 	chunkSize = MillisToFrames(LoadIntValue(hRegDriver, "ChunkLen", 10));

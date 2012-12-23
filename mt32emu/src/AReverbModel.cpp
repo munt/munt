@@ -165,9 +165,7 @@ AReverbModel::~AReverbModel() {
 	close();
 }
 
-void AReverbModel::open(unsigned int /*sampleRate*/) {
-	// FIXME: filter sizes must be multiplied by sample rate to 32000Hz ratio
-	// IIR filter values depend on sample rate as well
+void AReverbModel::open() {
 	allpasses = new AllpassFilter*[NUM_ALLPASSES];
 	for (Bit32u i = 0; i < NUM_ALLPASSES; i++) {
 		allpasses[i] = new AllpassFilter(currentSettings.allpassSizes[i]);

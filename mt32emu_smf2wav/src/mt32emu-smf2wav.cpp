@@ -30,7 +30,7 @@
 #include "smf.h"
 
 static const int DEFAULT_BUFFER_SIZE = 128 * 1024;
-static const int DEFAULT_SAMPLE_RATE = 32000;
+static const int DEFAULT_SAMPLE_RATE = MT32Emu::SAMPLE_RATE;
 
 // Maximum number of frames to render in each pass while waiting for reverb to become inactive.
 static const unsigned int MAX_REVERB_END_FRAMES = 8192;

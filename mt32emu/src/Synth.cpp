@@ -1253,7 +1253,7 @@ void Synth::refreshSystemReverbParameters() {
 		if (reverbModel != NULL) {
 			reverbModel->close();
 		}
-		newReverbModel->open(getSampleRate());
+		newReverbModel->open();
 	}
 #endif
 	reverbModel = newReverbModel;

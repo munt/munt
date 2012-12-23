@@ -222,7 +222,7 @@ class ReverbModel {
 public:
 	virtual ~ReverbModel() {}
 	// After construction or a close(), open() will be called at least once before any other call (with the exception of close()).
-	virtual void open(unsigned int sampleRate) = 0;
+	virtual void open() = 0;
 	// May be called multiple times without an open() in between.
 	virtual void close() = 0;
 	virtual void setParameters(Bit8u time, Bit8u level) = 0;
@@ -368,8 +368,6 @@ private:
 	void refreshSystemMasterVol();
 	void refreshSystem();
 	void reset();
-
-	inline unsigned int getSampleRate() const {return SAMPLE_RATE;}
 
 	void printPartialUsage(unsigned long sampleOffset = 0);
 
