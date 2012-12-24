@@ -7,6 +7,8 @@ set(mt32emu_qt_VERSION_MAJOR 1)
 set(mt32emu_qt_VERSION_MINOR 0)
 set(mt32emu_qt_VERSION_PATCH 0)
 
+add_definitions(-DVERSION="${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
+
 set(mt32emu_qt_SOURCES
   src/main.cpp
 
