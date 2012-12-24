@@ -33,6 +33,7 @@ endforeach(HEADER)
 
 add_library(mt32emu STATIC
   src/AReverbModel.cpp
+  src/BReverbModel.cpp
   src/DelayReverb.cpp
   src/File.cpp
   src/FileStream.cpp
