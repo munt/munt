@@ -1,5 +1,5 @@
 Munt mt32emu-smf2wav
-********************
+====================
 
 mt32emu-smf2wav makes use of libmt32emu to produce a WAVE file from an SMF file.
 SMF stands for "Standard MIDI File", and files in this format commonly have the
@@ -16,7 +16,7 @@ are likely to produce pleasing output. The MT-32 is *not* a General MIDI device.
 
 
 License
--------
+=======
 
 Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>
 
@@ -35,7 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 Trademark disclaimer
---------------------
+====================
 
 Roland is a trademark of Roland Corp. All other brand and product names are
 trademarks or registered trademarks of their respective holder. Use of

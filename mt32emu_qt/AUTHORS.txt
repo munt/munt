@@ -1,0 +1,8 @@
+Developers
+----------
+
+Jerome "KingGuppy" Fisher
+ - General idea and design structure, MIDI and audio handling.
+
+"SergM"
+ - Platform-specific MIDI and audio drivers. Improved MIDI synchronisation. MIDI player and converter. Extended UI.

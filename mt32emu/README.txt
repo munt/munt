@@ -1,5 +1,5 @@
 Munt mt32emu
-************
+============
 
 mt32emu is a module of the Munt project. It produces a C++ static link library
 named libmt32emu which provides classes to emulate (approximately) the Roland
@@ -18,8 +18,14 @@ make
 sudo make install
 
 
+Hardware requirements
+=====================
+
+The emulation engine requires at least 800 MHz CPU to perform in real-time. 8MB of RAM is needed.
+
+
 License
--------
+=======
 
 Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
 Copyright (C) 2011 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
@@ -40,7 +46,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 Trademark disclaimer
---------------------
+====================
 
 Roland is a trademark of Roland Corp. All other brand and product names are
 trademarks or registered trademarks of their respective holder. Use of

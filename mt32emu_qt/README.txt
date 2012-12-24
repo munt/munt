@@ -1,5 +1,5 @@
 Munt mt32emu-qt
-***************
+===============
 
 mt32emu-qt makes use of libmt32emu and Qt to provide for:
 
@@ -12,7 +12,7 @@ mt32emu-qt makes use of libmt32emu and Qt to provide for:
 
 
 Building
---------
+========
 Cmake is required to building. The minimum set of dependencies is:
 
 1) Cmake - cross platform make utility
@@ -36,7 +36,7 @@ Additional dependencies maybe needed (depending on the platform):
 
 
 License
--------
+=======
 
 Copyright (C) 2011, 2012 Jerome Fisher, Sergey V. Mikayev
 
@@ -55,7 +55,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 Trademark disclaimer
---------------------
+====================
 
 Roland is a trademark of Roland Corp. All other brand and product names are
 trademarks or registered trademarks of their respective holder. Use of

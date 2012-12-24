@@ -1,5 +1,5 @@
-Munt mt32emu_alsadrv
-********************
+﻿Munt mt32emu_alsadrv
+====================
 
 mt32emu_alsadrv is a module of the Munt project. It uses the mt32emu library and
 provides an ALSA MIDI driver which emulates (approximately) the Roland MT-32,
@@ -7,7 +7,7 @@ CM-32L and LAPC-I synthesiser modules.
 
 
 Building
---------
+========
 
 Requirements:
 - A gcc/g++ version newer than 2.95.*. Successfully tested with GCC 3.3.
@@ -37,7 +37,7 @@ and permissions.
 
 
 Usage
------
+=====
 
 Requirements:
 - A copy of the MT32_PCM.ROM file (not provided).
@@ -61,7 +61,7 @@ CPU more aggressively.
 
 
 The user interface for xmt32
-----------------------------
+============================
 
 The main screen shows the latency (top left), outputs (top right), LCD
 messages (centre) and general messages (below LCD messages).
@@ -79,7 +79,7 @@ The buttons on the right control several aspects of operation:
 
 
 License
--------
+=======
 
 Copyright (C) 2003 Tristan
 Copyright (C) 2004, 2005 Tristan, Jerome Fisher
@@ -101,7 +101,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 Trademark disclaimer
---------------------
+====================
 
 Roland is a trademark of Roland Corp. All other brand and product names are
 trademarks or registered trademarks of their respective holder. Use of

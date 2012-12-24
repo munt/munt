@@ -45,15 +45,15 @@ the corresponding MIDI device in your MIDI application. In order to set
 the emulator as the default MIDI device in the system you may use Control
 Panel or a MIDI switcher like Putzlowitschs Vista-MIDIMapper.
 
-The driver tries to find out whether the main UI-enabled app is running, and if
-it is, the driver directs all the incoming MIDI messages to the main app
-for processing. If the app is not running, the driver operates in self-contained
+The driver tries to find out whether the main UI-enabled application is running, and if
+it is, the driver directs all the incoming MIDI messages to the main application
+for processing. If the application is not running, the driver operates in self-contained
 mode.
 
-If you start the main synth app and / or change the emulation parameters you need
+If you start the main synth application and / or change the emulation parameters you need
 to either restart MIDI playback or reopen your MIDI application for the new
 parameters to take effect and for the driver to make an attempt to communicate
-with the main app.
+with the main application.
 
 
 Upgrading

@@ -1,0 +1,11 @@
+2012-12-25:
+
+	0.1.4 released.
+
+	* The driver doesn't rely on the deprecated DirectMusic interface any more.
+	* Removed the deprecated in Vista driver control panel. Emulation settings can be controlled via mt32emu_qt,
+	  the main synthesiser application, or directly via a registry editor.
+	* Added support for an external synthesiser application. If the application is found running, incoming MIDI events
+	  are directed to the external application for processing.
+	* Added a dedicated driver installation helper to include to a setup package.
+	* Both i386 and x86_64 platforms are supported.

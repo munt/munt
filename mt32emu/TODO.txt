@@ -1,0 +1,12 @@
+Emulation engine:
+- Bit-perfect LA32 model. Improved LA32 emulation, especially in regard to TVA/TVF ramping speed.
+  Several patches (including standard ones) still sound incorrect during the attack phase.
+- Accurate partial allocator which should handle partial pairs.
+- Emulation of distinct LA unit model specific behaviour, especially the old MT-32 quirks.
+
+API:
+- Accurate sample conversion class.
+- Timestamped MIDI event queue and renderer support for simplifying realtime MIDI player implementations.
+
+Code:
+- Adding more comments regarding emulation specifics and used approaches
