@@ -71,8 +71,8 @@ set(MT32EMU_LIBRARY "${MT32EMU_LIBRARY}" CACHE FILEPATH "")
 
 # build a CPack driven installer package
 include(InstallRequiredSystemLibraries)
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER")
-set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER.txt")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.txt")
 set(CPACK_SOURCE_GENERATOR TGZ)
 set(CPACK_SOURCE_STRIP_FILES TRUE)
 # The default source package file name has "-Source" at the end, which doesn't match our previous releases
