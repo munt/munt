@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 2.6)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/")
 
 project(mt32emu-smf2wav CXX)
-set(mt32emu_smf2wav_VERSION_MAJOR 0)
-set(mt32emu_smf2wav_VERSION_MINOR 1)
-set(mt32emu_smf2wav_VERSION_PATCH 1)
+set(mt32emu_smf2wav_VERSION_MAJOR 1)
+set(mt32emu_smf2wav_VERSION_MINOR 0)
+set(mt32emu_smf2wav_VERSION_PATCH 0)
 
 find_package(GLIB2 REQUIRED)
 set(EXT_LIBS ${EXT_LIBS} ${GLIB2_LIBRARIES})
