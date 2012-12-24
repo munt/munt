@@ -590,6 +590,8 @@ static bool playFile(const gchar *inputFilename, const gchar *displayInputFilena
 
 int main(int argc, char *argv[]) {
 	Options options;
+	printf("Munt MT32Emu MIDI to Wave Conversion Utility. Version %s\n", VERSION);
+	printf("  Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>\n");
 	if (!parseOptions(argc, argv, &options)) {
 		return -1;
 	}
