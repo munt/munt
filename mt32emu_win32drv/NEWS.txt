@@ -1,6 +1,6 @@
 2012-12-25:
 
-	0.1.4 released.
+	1.0.0 released.
 
 	* The driver doesn't rely on the deprecated DirectMusic interface any more.
 	* Removed the deprecated in Vista driver control panel. Emulation settings can be controlled via mt32emu_qt,
