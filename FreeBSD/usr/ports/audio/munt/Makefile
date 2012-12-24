@@ -1,14 +1,14 @@
 # New ports collection makefile for:	munt
-# Date created:		2012-01-07
+# Date created:		2012-12-25
 # Whom:			sergm <sergm@muntemu.org>
 #
 # $FreeBSD$
 #
 
 PORTNAME=	munt
-PORTVERSION=	1.0
+PORTVERSION=	1.0.0
 CATEGORIES=	audio
-MASTER_SITES=	http://cloud.github.com/downloads/sergm/munt_devel/
+MASTER_SITES=	https://github.com/munt/munt/archive/
 
 MAINTAINER=	sergm@muntemu.org
 COMMENT=	Software synthesiser emulating pre-GM MIDI devices such as Roland MT-32, CM-32L, CM-64 and LAPC-I
