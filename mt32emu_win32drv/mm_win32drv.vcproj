@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../mt32emu_qt/mt32emu/src"
+				AdditionalIncludeDirectories="../../munt/mt32emu/src"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -68,7 +68,7 @@
 				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)\mt32emu.dll"
 				LinkIncremental="2"
-				ModuleDefinitionFile="../../mt32emu_qt/mt32emu_win32drv/src/winmm_drv.def"
+				ModuleDefinitionFile="../../munt/mt32emu_win32drv/src/winmm_drv.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 			/>
@@ -121,7 +121,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="../../mt32emu_qt/mt32emu/src"
+				AdditionalIncludeDirectories="../../munt/mt32emu/src"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -142,8 +142,9 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)\mt32emu.dll"
+				Version="1.0.0"
 				LinkIncremental="1"
-				ModuleDefinitionFile="../../mt32emu_qt/mt32emu_win32drv/src/winmm_drv.def"
+				ModuleDefinitionFile="../../munt/mt32emu_win32drv/src/winmm_drv.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -197,7 +198,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../mt32emu_qt/mt32emu/src"
+				AdditionalIncludeDirectories="../../munt/mt32emu/src"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -220,7 +221,7 @@
 				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)\mt32emu.dll"
 				LinkIncremental="2"
-				ModuleDefinitionFile="../../mt32emu_qt/mt32emu_win32drv/src/winmm_drv.def"
+				ModuleDefinitionFile="../../munt/mt32emu_win32drv/src/winmm_drv.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 			/>
@@ -273,7 +274,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="../../mt32emu_qt/mt32emu/src"
+				AdditionalIncludeDirectories="../../munt/mt32emu/src"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -295,7 +296,7 @@
 				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)\mt32emu.dll"
 				LinkIncremental="1"
-				ModuleDefinitionFile="../../mt32emu_qt/mt32emu_win32drv/src/winmm_drv.def"
+				ModuleDefinitionFile="../../munt/mt32emu_win32drv/src/winmm_drv.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -333,15 +334,15 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\MidiSynth.cpp"
+				RelativePath="..\..\munt\mt32emu_win32drv\src\MidiSynth.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\winmm_drv.cpp"
+				RelativePath="..\..\munt\mt32emu_win32drv\src\winmm_drv.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\winmm_drv.def"
+				RelativePath="..\..\munt\mt32emu_win32drv\src\winmm_drv.def"
 				>
 			</File>
 		</Filter>
@@ -351,15 +352,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\MidiSynth.h"
+				RelativePath="..\..\munt\mt32emu_win32drv\src\MidiSynth.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\stdafx.h"
+				RelativePath="..\..\munt\mt32emu_win32drv\src\stdafx.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu_win32drv\src\targetver.h"
+				RelativePath="..\..\munt\mt32emu_win32drv\src\targetver.h"
 				>
 			</File>
 		</Filter>

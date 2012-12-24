@@ -4,7 +4,6 @@
 	Version="9,00"
 	Name="mt32emu"
 	ProjectGUID="{063A149D-E48C-499B-B13F-7A70C140A662}"
-	RootNamespace="mt32emu_stat"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="131072"
 	>
@@ -120,7 +119,6 @@
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="1"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				AssemblerOutput="4"
@@ -258,7 +256,6 @@
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="1"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				AssemblerOutput="4"
@@ -305,82 +302,82 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\AReverbModel.cpp"
+				RelativePath="..\..\munt\mt32emu\src\AReverbModel.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\delayReverb.cpp"
+				RelativePath="..\..\munt\mt32emu\src\delayReverb.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\file.cpp"
+				RelativePath="..\..\munt\mt32emu\src\file.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\FileStream.cpp"
+				RelativePath="..\..\munt\mt32emu\src\FileStream.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\FreeverbModel.cpp"
+				RelativePath="..\..\munt\mt32emu\src\FreeverbModel.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\LA32Ramp.cpp"
+				RelativePath="..\..\munt\mt32emu\src\LA32Ramp.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\part.cpp"
+				RelativePath="..\..\munt\mt32emu\src\part.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\partial.cpp"
+				RelativePath="..\..\munt\mt32emu\src\partial.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\partialManager.cpp"
+				RelativePath="..\..\munt\mt32emu\src\partialManager.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\poly.cpp"
+				RelativePath="..\..\munt\mt32emu\src\poly.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\ROMInfo.cpp"
+				RelativePath="..\..\munt\mt32emu\src\ROMInfo.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\synth.cpp"
+				RelativePath="..\..\munt\mt32emu\src\synth.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\tables.cpp"
+				RelativePath="..\..\munt\mt32emu\src\tables.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\tva.cpp"
+				RelativePath="..\..\munt\mt32emu\src\tva.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\tvf.cpp"
+				RelativePath="..\..\munt\mt32emu\src\tvf.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\tvp.cpp"
+				RelativePath="..\..\munt\mt32emu\src\tvp.cpp"
 				>
 			</File>
 			<Filter
 				Name="freeverb"
 				>
 				<File
-					RelativePath="..\..\mt32emu_qt\mt32emu\src\freeverb\allpass.cpp"
+					RelativePath="..\..\munt\mt32emu\src\freeverb\allpass.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\mt32emu_qt\mt32emu\src\freeverb\comb.cpp"
+					RelativePath="..\..\munt\mt32emu\src\freeverb\comb.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\mt32emu_qt\mt32emu\src\freeverb\revmodel.cpp"
+					RelativePath="..\..\munt\mt32emu\src\freeverb\revmodel.cpp"
 					>
 				</File>
 			</Filter>
@@ -388,7 +385,7 @@
 				Name="sha1"
 				>
 				<File
-					RelativePath="..\..\mt32emu_qt\mt32emu\src\sha1\sha1.cpp"
+					RelativePath="..\..\munt\mt32emu\src\sha1\sha1.cpp"
 					>
 				</File>
 			</Filter>
@@ -399,98 +396,98 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\AReverbModel.h"
+				RelativePath="..\..\munt\mt32emu\src\AReverbModel.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\delayReverb.h"
+				RelativePath="..\..\munt\mt32emu\src\delayReverb.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\file.h"
+				RelativePath="..\..\munt\mt32emu\src\file.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\FileStream.h"
+				RelativePath="..\..\munt\mt32emu\src\FileStream.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\FreeverbModel.h"
+				RelativePath="..\..\munt\mt32emu\src\FreeverbModel.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\LA32Ramp.h"
+				RelativePath="..\..\munt\mt32emu\src\LA32Ramp.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\mt32emu.h"
+				RelativePath="..\..\munt\mt32emu\src\mt32emu.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\part.h"
+				RelativePath="..\..\munt\mt32emu\src\part.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\partial.h"
+				RelativePath="..\..\munt\mt32emu\src\partial.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\partialManager.h"
+				RelativePath="..\..\munt\mt32emu\src\partialManager.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\poly.h"
+				RelativePath="..\..\munt\mt32emu\src\poly.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\ROMInfo.h"
+				RelativePath="..\..\munt\mt32emu\src\ROMInfo.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\structures.h"
+				RelativePath="..\..\munt\mt32emu\src\structures.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\synth.h"
+				RelativePath="..\..\munt\mt32emu\src\synth.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\tables.h"
+				RelativePath="..\..\munt\mt32emu\src\tables.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\tva.h"
+				RelativePath="..\..\munt\mt32emu\src\tva.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\tvf.h"
+				RelativePath="..\..\munt\mt32emu\src\tvf.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mt32emu_qt\mt32emu\src\tvp.h"
+				RelativePath="..\..\munt\mt32emu\src\tvp.h"
 				>
 			</File>
 			<Filter
 				Name="freeverb"
 				>
 				<File
-					RelativePath="..\..\mt32emu_qt\mt32emu\src\freeverb\allpass.h"
+					RelativePath="..\..\munt\mt32emu\src\freeverb\allpass.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\mt32emu_qt\mt32emu\src\freeverb\comb.h"
+					RelativePath="..\..\munt\mt32emu\src\freeverb\comb.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\mt32emu_qt\mt32emu\src\freeverb\denormals.h"
+					RelativePath="..\..\munt\mt32emu\src\freeverb\denormals.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\mt32emu_qt\mt32emu\src\freeverb\revmodel.h"
+					RelativePath="..\..\munt\mt32emu\src\freeverb\revmodel.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\mt32emu_qt\mt32emu\src\freeverb\tuning.h"
+					RelativePath="..\..\munt\mt32emu\src\freeverb\tuning.h"
 					>
 				</File>
 			</Filter>
@@ -498,7 +495,7 @@
 				Name="sha1"
 				>
 				<File
-					RelativePath="..\..\mt32emu_qt\mt32emu\src\sha1\sha1.h"
+					RelativePath="..\..\munt\mt32emu\src\sha1\sha1.h"
 					>
 				</File>
 			</Filter>
