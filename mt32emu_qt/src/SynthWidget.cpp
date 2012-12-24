@@ -288,10 +288,8 @@ void SynthWidget::setEmuModeText() {
 	QString emuMode;
 	SynthProfile synthProfile;
 	synthRoute->getSynthProfile(synthProfile);
-	if (synthProfile.controlROMImage == NULL) emuMode = "Disabled";
-	else if (strncmp((char *)synthProfile.controlROMImage->getROMInfo()->shortName, "mt32", 4) == 0) emuMode = "MT-32";
-	else if (strncmp((char *)synthProfile.controlROMImage->getROMInfo()->shortName, "cm32", 4) == 0) emuMode = "CM-32L";
-	else emuMode = "Unknown";
+	if (synthProfile.controlROMImage == NULL) emuMode = "Unknown";
+	else emuMode = synthProfile.controlROMImage->getROMInfo()->description;
 	ui->synthEmuModeLabel->setText(emuMode + " Emulation Mode");
 }
 
