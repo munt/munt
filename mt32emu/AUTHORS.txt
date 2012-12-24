@@ -30,3 +30,6 @@ Jonathan Gevaryahu
 
 Laust "Talus" Brock-Nannestad
  - Dumped the CM-32L ROMs.
+
+"balrog"
+ - Helping with analysis, obtaining and dumping RWI-modded and v2.04 ROMs, supplying us with his costly logic analyzer :)
