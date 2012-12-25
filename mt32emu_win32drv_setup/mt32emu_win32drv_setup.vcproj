@@ -140,10 +140,10 @@
 				LinkIncremental="1"
 				UACExecutionLevel="2"
 				GenerateDebugInformation="true"
-				SubSystem="2"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				EntryPointSymbol="main"
+				EntryPointSymbol=""
 				TargetMachine="1"
 			/>
 			<Tool
