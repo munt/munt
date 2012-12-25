@@ -50,12 +50,12 @@ void RegisterDriver() {
 		}
 	}
 	if (mt32emuDriver != -1) {
-		MessageBoxA(NULL, "Driver successfully updated.", "Information", MB_OK | MB_ICONINFORMATION);
+		MessageBoxA(NULL, "MT32Emu MIDI Driver successfully updated.", "Information", MB_OK | MB_ICONINFORMATION);
 		RegCloseKey(hReg);
 		return;
 	}
 	if (freeDriver == -1) {
-		MessageBoxA(NULL, "Cannot install driver. There is no MIDI ports available.", "Error", MB_OK | MB_ICONEXCLAMATION);
+		MessageBoxA(NULL, "Cannot install MT32Emu MIDI driver. There is no MIDI ports available.", "Error", MB_OK | MB_ICONEXCLAMATION);
 		RegCloseKey(hReg);
 		return;
 	}
@@ -70,7 +70,7 @@ void RegisterDriver() {
 		RegCloseKey(hReg);
 		return;
 	}
-	MessageBoxA(NULL, "Driver successfully installed.", "Information", MB_OK | MB_ICONINFORMATION);
+	MessageBoxA(NULL, "MT32Emu MIDI Driver successfully installed.", "Information", MB_OK | MB_ICONINFORMATION);
 	RegCloseKey(hReg);
 }
 
@@ -99,26 +99,24 @@ void UnregisterDriver() {
 			mt32emuDriver = i;
 			res = RegDeleteValueA(hReg, drvName);
 			if (res != ERROR_SUCCESS) {
-				MessageBoxA(NULL, "Cannot uninstall driver", "Registry error", MB_OK | MB_ICONEXCLAMATION);
+				MessageBoxA(NULL, "Cannot uninstall MT32Emu MIDI driver", "Registry error", MB_OK | MB_ICONEXCLAMATION);
 				RegCloseKey(hReg);
 				return;
 			}
 		}
 	}
 	if (mt32emuDriver == -1) {
-		MessageBoxA(NULL, "Cannot uninstall driver. There is no driver found.", "Error", MB_OK | MB_ICONEXCLAMATION);
+		MessageBoxA(NULL, "Cannot uninstall MT32Emu MIDI driver. There is no driver found.", "Error", MB_OK | MB_ICONEXCLAMATION);
 		RegCloseKey(hReg);
 		return;
 	}
-	MessageBoxA(NULL, "Driver successfully uninstalled.", "Information", MB_OK | MB_ICONINFORMATION);
+	MessageBoxA(NULL, "MT32Emu MIDI Driver successfully uninstalled.", "Information", MB_OK | MB_ICONINFORMATION);
 	RegCloseKey(hReg);
 }
 
 int main(int argc, char *argv[]) {
 	if (argc != 2 || stricmp(INSTALL_COMMAND, argv[1]) != 0 && stricmp(UNINSTALL_COMMAND, argv[1]) != 0) {
-		printf("Usage:\n\n");
-		printf("drvsetup install   - install driver\n");
-		printf("drvsetup uninstall - uninstall driver\n");
+		MessageBoxA(NULL, "Usage:\n  drvsetup install - install driver\n  drvsetup uninstall - uninstall driver\n", "Information", MB_OK | MB_ICONINFORMATION);
 		return 1;
 	}
 	if (stricmp(UNINSTALL_COMMAND, argv[1]) == 0) {
