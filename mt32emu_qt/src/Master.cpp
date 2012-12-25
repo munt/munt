@@ -231,6 +231,7 @@ const QString Master::getROMPathName(const QDir &romDir, QString romFileName) co
 void Master::makeROMImages(SynthProfile &synthProfile) {
 	freeROMImages(synthProfile.controlROMImage, synthProfile.pcmROMImage);
 
+	// FIXME: Probably there need to be a proper ROMImage cache with allocation counters
 	foreach (SynthRoute *synthRoute, synthRoutes) {
 		SynthProfile profile;
 		synthRoute->getSynthProfile(profile);

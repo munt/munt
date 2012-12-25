@@ -360,6 +360,12 @@ void QSynth::close() {
 	synth->close();
 	synthMutex->unlock();
 	setState(SynthState_CLOSED);
+	// Make sure ROMImages will be freed even if SynthRoute is pinned
+	const ROMImage *cri = controlROMImage;
+	controlROMImage = NULL;
+	const ROMImage *pri = pcmROMImage;
+	pcmROMImage = NULL;
+	Master::freeROMImages(cri, pri);
 }
 
 void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
