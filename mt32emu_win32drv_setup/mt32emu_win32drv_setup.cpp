@@ -17,6 +17,8 @@
 #include "stdafx.h"
 
 char mt32emuDriverName[] = "mt32emu.dll";
+char INSTALL_COMMAND[] = "install";
+char UNINSTALL_COMMAND[] = "uninstall";
 
 void RegisterDriver() {
 	HKEY hReg;
@@ -112,14 +114,21 @@ void UnregisterDriver() {
 	RegCloseKey(hReg);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+	if (argc != 2 || stricmp(INSTALL_COMMAND, argv[1]) != 0 && stricmp(UNINSTALL_COMMAND, argv[1]) != 0) {
+		printf("Usage:\n\n");
+		printf("drvsetup install   - install driver\n");
+		printf("drvsetup uninstall - uninstall driver\n");
+		return 1;
+	}
+	if (stricmp(UNINSTALL_COMMAND, argv[1]) == 0) {
+		UnregisterDriver();
+		return 0;
+	}
 	char sysRoot[MAX_PATH];
 	char pathName[MAX_PATH];
 	char oldName[MAX_PATH];
 	GetEnvironmentVariableA("SYSTEMROOT", sysRoot, MAX_PATH);
-	strncpy(pathName, sysRoot, MAX_PATH);
-	strncat(pathName, "/mt32emu.ini", MAX_PATH);
-	CopyFileA("mt32emu.ini", pathName, TRUE);
 	strncpy(pathName, sysRoot, MAX_PATH);
 	strncat(pathName, "/SYSTEM32/mt32emu.dll", MAX_PATH);
 	strncpy(oldName, sysRoot, MAX_PATH);
