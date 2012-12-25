@@ -121,6 +121,15 @@ int main(int argc, char *argv[]) {
 	}
 	if (stricmp(UNINSTALL_COMMAND, argv[1]) == 0) {
 		UnregisterDriver();
+		char sysRoot[MAX_PATH];
+		char pathName[MAX_PATH];
+		GetEnvironmentVariableA("SYSTEMROOT", sysRoot, MAX_PATH);
+		strncpy(pathName, sysRoot, MAX_PATH);
+		strncat(pathName, "/SYSTEM32/mt32emu.dll", MAX_PATH);
+		if (!DeleteFileA(pathName)) {
+			// Driver can't be deleted, register pending deletion
+			MoveFileExA(pathName, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
+		}
 		return 0;
 	}
 	char sysRoot[MAX_PATH];
