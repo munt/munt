@@ -9,3 +9,8 @@ Copyright (C) 2011 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
 Incorporates the majority of the libsmf library v1.2.
 http://libsmf.sourceforge.net/
 Copyright (c) 2007, 2008 Edward Tomasz Napierała <trasz@FreeBSD.org>
+
+Uses GLIB v.2.26.1
+http://www.gtk.org/
+ftp://ftp.gtk.org/pub/glib/
+Various contributors. See AUTHORS file for a list of people on the GLib Team.
