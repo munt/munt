@@ -33,3 +33,6 @@ Laust "Talus" Brock-Nannestad
 
 "balrog"
  - Helping with analysis, obtaining and dumping RWI-modded and v2.04 ROMs, supplying us with his costly logic analyzer :)
+
+Also thanks go to Kaminari Redux, NewRisingSun, robertmo, ripsaw8080, Mau1wurf1977 and other inhabitants of VOGONS
+for their suggestions and help with debugging.
