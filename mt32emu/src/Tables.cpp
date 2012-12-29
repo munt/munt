@@ -78,11 +78,6 @@ Tables::Tables() {
 	}
 
 	// found from sample analysis
-	for (int i = 0; i < 32; i++) {
-		resAmpMax[i] = EXP2F(1.0f - (32 - i) / 4.0f);
-	}
-
-	// found from sample analysis
 	resAmpFadeFactor[7] = 1.0f / 8.0f;
 	resAmpFadeFactor[6] = 2.0f / 8.0f;
 	resAmpFadeFactor[5] = 3.0f / 8.0f;

@@ -284,8 +284,12 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			// res corresponds to a value set in an LA32 register
 			Bit8u res = patchCache->srcPartial.tvf.resonance + 1;
 
-			// Using tiny exact table for computation of EXP2F(1.0f - (32 - res) / 4.0f)
-			float resAmp = tables.resAmpMax[res];
+			float resAmp;
+			{
+				// resAmp = EXP2F(1.0f - (32 - res) / 4.0f);
+				static const float resAmpFactor = EXP2F(-7);
+				resAmp = EXP2I(res << 10) * resAmpFactor;
+			}
 
 			// The cutoffModifier may not be supposed to be directly added to the cutoff -
 			// it may for example need to be multiplied in some way.
