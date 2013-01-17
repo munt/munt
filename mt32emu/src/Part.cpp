@@ -246,7 +246,7 @@ void Part::backupCacheToPartials(PatchCache cache[4]) {
 	// if so then duplicate the cached data from the part to the partial so that
 	// we can change the part's cache without affecting the partial.
 	// We delay this until now to avoid a copy operation with every note played
-	for (std::list<Poly *>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+	for (PolyList::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
 		(*polyIt)->backupCacheToPartials(cache);
 	}
 }
@@ -412,7 +412,7 @@ void RhythmPart::noteOn(unsigned int midiKey, unsigned int velocity) {
 	// According to info from Mok, keyShift does not appear to affect anything on rhythm part on LAPC-I, but may do on MT-32 - needs investigation
 	synth->printDebug(" Patch: (timbreGroup %u), (timbreNum %u), (keyShift %u), fineTune %u, benderRange %u, assignMode %u, (reverbSwitch %u)", patchTemp->patch.timbreGroup, patchTemp->patch.timbreNum, patchTemp->patch.keyShift, patchTemp->patch.fineTune, patchTemp->patch.benderRange, patchTemp->patch.assignMode, patchTemp->patch.reverbSwitch);
 	synth->printDebug(" PatchTemp: outputLevel %u, (panpot %u)", patchTemp->outputLevel, patchTemp->panpot);
-	synth->printDebug(" RhythmTemp: timbre %u, outputLevel %u, panpot %u, reverbSwitch %u", rhythmTemp[drumNum].timbre, rhythmTemp[drumNum].outputLevel, rhythmTemp[drumNum].panpot, rhythmTemp[drumNum].reverbSwitch); 
+	synth->printDebug(" RhythmTemp: timbre %u, outputLevel %u, panpot %u, reverbSwitch %u", rhythmTemp[drumNum].timbre, rhythmTemp[drumNum].outputLevel, rhythmTemp[drumNum].panpot, rhythmTemp[drumNum].reverbSwitch);
 #endif
 #endif
 	playPoly(drumCache[drumNum], &rhythmTemp[drumNum], midiKey, key, velocity);
@@ -446,7 +446,7 @@ void Part::abortPoly(Poly *poly) {
 }
 
 bool Part::abortFirstPoly(unsigned int key) {
-	for (std::list<Poly *>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+	for (PolyList::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
 		Poly *poly = *polyIt;
 		if (poly->getKey() == key) {
 			abortPoly(poly);
@@ -457,7 +457,7 @@ bool Part::abortFirstPoly(unsigned int key) {
 }
 
 bool Part::abortFirstPoly(PolyState polyState) {
-	for (std::list<Poly *>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+	for (PolyList::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
 		Poly *poly = *polyIt;
 		if (poly->getState() == polyState) {
 			abortPoly(poly);
@@ -545,7 +545,7 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 void Part::allNotesOff() {
 	// The MIDI specification states - and Mok confirms - that all notes off (0x7B)
 	// should treat the hold pedal as usual.
-	for (std::list<Poly *>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+	for (PolyList::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
 		Poly *poly = *polyIt;
 		// FIXME: This has special handling of key 0 in NoteOff that Mok has not yet confirmed applies to AllNotesOff.
 		// if (poly->canSustain() || poly->getKey() == 0) {
@@ -560,14 +560,14 @@ void Part::allSoundOff() {
 	// MIDI "All sound off" (0x78) should release notes immediately regardless of the hold pedal.
 	// This controller is not actually implemented by the synths, though (according to the docs and Mok) -
 	// we're only using this method internally.
-	for (std::list<Poly *>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+	for (PolyList::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
 		Poly *poly = *polyIt;
 		poly->startDecay();
 	}
 }
 
 void Part::stopPedalHold() {
-	for (std::list<Poly *>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+	for (PolyList::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
 		Poly *poly = *polyIt;
 		poly->stopPedalHold();
 	}
@@ -586,7 +586,7 @@ void Part::stopNote(unsigned int key) {
 	synth->printDebug("%s (%s): stopping key %d", name, currentInstr, key);
 #endif
 
-	for (std::list<Poly *>::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+	for (PolyList::iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
 		Poly *poly = *polyIt;
 		// Generally, non-sustaining instruments ignore note off. They die away eventually anyway.
 		// Key 0 (only used by special cases on rhythm part) reacts to note off even if non-sustaining or pedal held.
@@ -608,7 +608,7 @@ unsigned int Part::getActivePartialCount() const {
 
 unsigned int Part::getActiveNonReleasingPartialCount() const {
 	unsigned int activeNonReleasingPartialCount = 0;
-	for (std::list<Poly *>::const_iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
+	for (PolyList::const_iterator polyIt = activePolys.begin(); polyIt != activePolys.end(); polyIt++) {
 		Poly *poly = *polyIt;
 		if (poly->getState() != POLY_Releasing) {
 			activeNonReleasingPartialCount += poly->getActivePartialCount();
