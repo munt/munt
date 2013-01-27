@@ -44,11 +44,6 @@ private:
 	int structurePosition; // 0 or 1 of a structure pair
 	StereoVolume stereoVolume;
 
-	// Distance in (possibly fractional) samples from the start of the current pulse
-	float wavePos;
-
-	float lastFreq;
-
 	float myBuffer[MAX_SAMPLES_PER_RUN];
 
 	// Only used for PCM partials
@@ -66,6 +61,9 @@ private:
 
 	LA32Ramp ampRamp;
 	LA32Ramp cutoffModifierRamp;
+
+	// TODO: This should be owned by PartialPair
+	LA32PartialPair la32Pair;
 
 	float *mixBuffersRingMix(float *buf1, float *buf2, unsigned long len);
 	float *mixBuffersRing(float *buf1, float *buf2, unsigned long len);

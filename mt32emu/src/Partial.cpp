@@ -164,8 +164,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 		pcmWave = &synth->pcmWaves[pcmNum];
 	} else {
 		pcmWave = NULL;
-		wavePos = 0.0f;
-		lastFreq = 0.0;
 	}
 
 	// CONFIRMED: pulseWidthVal calculation is based on information from Mok
@@ -182,6 +180,15 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	tva->reset(part, patchCache->partialParam, rhythmTemp);
 	tvp->reset(part, patchCache->partialParam);
 	tvf->reset(patchCache->partialParam, tvp->getBasePitch());
+	la32Pair.init(mixType != 0, mixType == 1);
+	if (isRingModulatingSlave()) {
+		la32Pair.initSlave((patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
+	} else {
+		la32Pair.initMaster((patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
+		if (!hasRingModulatingSlave()) {
+			la32Pair.deactivateSlave();
+		}
+	}
 }
 
 float Partial::getPCMSample(unsigned int position) {
@@ -231,16 +238,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		//
 		// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
 
-#if MT32EMU_ACCURATE_WG == 1
 		float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
 		float freq = EXP2F(pitch / 4096.0f - 16.0f) * SAMPLE_RATE;
-#else
-		static const float ampFactor = EXP2F(32772 / -2048.0f);
-		float amp = EXP2I(ampRampVal >> 10) * ampFactor;
-
-		static const float freqFactor = EXP2F(-16.0f) * SAMPLE_RATE;
-		float freq = EXP2I(pitch) * freqFactor;
-#endif
 
 		if (patchCache->PCMPartial) {
 			// Render PCM waveform
@@ -271,197 +270,6 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 			}
 			pcmPosition = newPCMPosition;
 		} else {
-			// Render synthesised waveform
-			wavePos *= lastFreq / freq;
-			lastFreq = freq;
-
-			Bit32u cutoffModifierRampVal = cutoffModifierRamp.nextValue();
-			if (cutoffModifierRamp.checkInterrupt()) {
-				tvf->handleInterrupt();
-			}
-			float cutoffModifier = cutoffModifierRampVal / 262144.0f;
-
-			// res corresponds to a value set in an LA32 register
-			Bit8u res = patchCache->srcPartial.tvf.resonance + 1;
-
-			float resAmp;
-			{
-				// resAmp = EXP2F(1.0f - (32 - res) / 4.0f);
-				static const float resAmpFactor = EXP2F(-7);
-				resAmp = EXP2I(res << 10) * resAmpFactor;
-			}
-
-			// The cutoffModifier may not be supposed to be directly added to the cutoff -
-			// it may for example need to be multiplied in some way.
-			// The 240 cutoffVal limit was determined via sample analysis (internal Munt capture IDs: glop3, glop4).
-			// More research is needed to be sure that this is correct, however.
-			float cutoffVal = tvf->getBaseCutoff() + cutoffModifier;
-			if (cutoffVal > 240.0f) {
-				cutoffVal = 240.0f;
-			}
-
-			// Wave length in samples
-			float waveLen = SAMPLE_RATE / freq;
-
-			// Init cosineLen
-			float cosineLen = 0.5f * waveLen;
-			if (cutoffVal > 128.0f) {
-#if MT32EMU_ACCURATE_WG == 1
-				cosineLen *= EXP2F((cutoffVal - 128.0f) / -16.0f); // found from sample analysis
-#else
-				static const float cosineLenFactor = EXP2F(128.0f / -16.0f);
-				cosineLen *= EXP2I(Bit32u((256.0f - cutoffVal) * 256.0f)) * cosineLenFactor;
-#endif
-			}
-
-			// Start playing in center of first cosine segment
-			// relWavePos is shifted by a half of cosineLen
-			float relWavePos = wavePos + 0.5f * cosineLen;
-			if (relWavePos > waveLen) {
-				relWavePos -= waveLen;
-			}
-
-			// Ratio of positive segment to wave length
-			float pulseLen = 0.5f;
-			if (pulseWidthVal > 128) {
-				// pulseLen = EXP2F((64 - pulseWidthVal) / 64);
-				static const float pulseLenFactor = EXP2F(-192 / 64);
-				pulseLen = EXP2I((256 - pulseWidthVal) << 6) * pulseLenFactor;
-			}
-			pulseLen *= waveLen;
-
-			float hLen = pulseLen - cosineLen;
-
-			// Ignore pulsewidths too high for given freq
-			if (hLen < 0.0f) {
-				hLen = 0.0f;
-			}
-
-			// Ignore pulsewidths too high for given freq and cutoff
-			float lLen = waveLen - hLen - 2 * cosineLen;
-			if (lLen < 0.0f) {
-				lLen = 0.0f;
-			}
-
-			// Correct resAmp for cutoff in range 50..66
-			if ((cutoffVal >= 128.0f) && (cutoffVal < 144.0f)) {
-#if MT32EMU_ACCURATE_WG == 1
-				resAmp *= sinf(FLOAT_PI * (cutoffVal - 128.0f) / 32.0f);
-#else
-				resAmp *= tables.sinf10[Bit32u(64 * (cutoffVal - 128.0f))];
-#endif
-			}
-
-			// Produce filtered square wave with 2 cosine waves on slopes
-
-			// 1st cosine segment
-			if (relWavePos < cosineLen) {
-#if MT32EMU_ACCURATE_WG == 1
-				sample = -cosf(FLOAT_PI * relWavePos / cosineLen);
-#else
-				sample = -tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) + 1024];
-#endif
-			} else
-
-			// high linear segment
-			if (relWavePos < (cosineLen + hLen)) {
-				sample = 1.f;
-			} else
-
-			// 2nd cosine segment
-			if (relWavePos < (2 * cosineLen + hLen)) {
-#if MT32EMU_ACCURATE_WG == 1
-				sample = cosf(FLOAT_PI * (relWavePos - (cosineLen + hLen)) / cosineLen);
-#else
-				sample = tables.sinf10[Bit32u(2048.0f * (relWavePos - (cosineLen + hLen)) / cosineLen) + 1024];
-#endif
-			} else {
-
-			// low linear segment
-				sample = -1.f;
-			}
-
-			if (cutoffVal < 128.0f) {
-
-				// Attenuate samples below cutoff 50
-				// Found by sample analysis
-#if MT32EMU_ACCURATE_WG == 1
-				sample *= EXP2F(-0.125f * (128.0f - cutoffVal));
-#else
-				static const float cutoffAttenuationFactor = EXP2F(-0.125f * 128.0f);
-				sample *= EXP2I(Bit32u(512.0f * cutoffVal)) * cutoffAttenuationFactor;
-#endif
-			} else {
-
-				// Add resonance sine. Effective for cutoff > 50 only
-				float resSample = 1.0f;
-
-				// Now relWavePos counts from the middle of first cosine
-				relWavePos = wavePos;
-
-				// negative segments
-				if (!(relWavePos < (cosineLen + hLen))) {
-					resSample = -resSample;
-					relWavePos -= cosineLen + hLen;
-				}
-
-				// Resonance sine WG
-#if MT32EMU_ACCURATE_WG == 1
-				resSample *= sinf(FLOAT_PI * relWavePos / cosineLen);
-#else
-				resSample *= tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) & 4095];
-#endif
-
-				// Resonance sine amp
-				float resAmpFadeLog2 = -tables.resAmpFadeFactor[res >> 2] * (relWavePos / cosineLen); // seems to be exact
-#if MT32EMU_ACCURATE_WG == 1
-				float resAmpFade = EXP2F(resAmpFadeLog2);
-#else
-				static const float resAmpFadeFactor = EXP2F(-30.0f);
-				float resAmpFade = (resAmpFadeLog2 < -30.0f) ? 0.0f : EXP2I(Bit32u((30.0f + resAmpFadeLog2) * 4096.0f)) * resAmpFadeFactor;
-#endif
-
-				// Now relWavePos set negative to the left from center of any cosine
-				relWavePos = wavePos;
-
-				// negative segment
-				if (!(wavePos < (waveLen - 0.5f * cosineLen))) {
-					relWavePos -= waveLen;
-				} else
-
-				// positive segment
-				if (!(wavePos < (hLen + 0.5f * cosineLen))) {
-					relWavePos -= cosineLen + hLen;
-				}
-
-				// Fading to zero while within cosine segments to avoid jumps in the wave
-				// Sample analysis suggests that this window is very close to cosine
-				if (relWavePos < 0.5f * cosineLen) {
-#if MT32EMU_ACCURATE_WG == 1
-					resAmpFade *= 0.5f * (1.0f - cosf(FLOAT_PI * relWavePos / (0.5f * cosineLen)));
-#else
-					resAmpFade *= 0.5f * (1.0f + tables.sinf10[Bit32s(2048.0f * relWavePos / (0.5f * cosineLen)) + 3072]);
-#endif
-				}
-
-				sample += resSample * resAmp * resAmpFade;
-			}
-
-			// sawtooth waves
-			if ((patchCache->waveform & 1) != 0) {
-#if MT32EMU_ACCURATE_WG == 1
-				sample *= cosf(FLOAT_2PI * wavePos / waveLen);
-#else
-				sample *= tables.sinf10[(Bit32u(4096.0f * wavePos / waveLen) & 4095) + 1024];
-#endif
-			}
-
-			wavePos++;
-
-			// wavePos isn't supposed to be > waveLen
-			if (wavePos > waveLen) {
-				wavePos -= waveLen;
-			}
 		}
 
 		// Multiply sample with current TVA value
