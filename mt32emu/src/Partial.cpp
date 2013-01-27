@@ -78,6 +78,7 @@ void Partial::deactivate() {
 	if (!isActive()) {
 		return;
 	}
+	la32Pair.deactivateMaster();
 	ownerPart = -1;
 	if (poly != NULL) {
 		poly->partialDeactivated(this);
@@ -180,6 +181,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	tva->reset(part, patchCache->partialParam, rhythmTemp);
 	tvp->reset(part, patchCache->partialParam);
 	tvf->reset(patchCache->partialParam, tvp->getBasePitch());
+	/*
 	la32Pair.init(mixType != 0, mixType == 1);
 	if (isRingModulatingSlave()) {
 		la32Pair.initSlave((patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
@@ -189,6 +191,10 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 			la32Pair.deactivateSlave();
 		}
 	}
+	*/
+	la32Pair.init(false, false);
+	la32Pair.initMaster((patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
+	la32Pair.deactivateSlave();
 }
 
 float Partial::getPCMSample(unsigned int position) {
@@ -217,6 +223,16 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 	for (sampleNum = 0; sampleNum < length; sampleNum++) {
 		float sample = 0;
+
+		// SEMI-CONFIRMED: From sample analysis:
+		// (1) Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
+		// This gives results within +/- 2 at the output (before any DAC bitshifting)
+		// when sustaining at levels 156 - 255 with no modifiers.
+		// (2) Tested with a special square wave partial (internal capture ID tva5) at TVA envelope levels 155-255.
+		// This gives deltas between -1 and 0 compared to the real output. Note that this special partial only produces
+		// positive amps, so negative still needs to be explored, as well as lower levels.
+		//
+		// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
 		Bit32u ampRampVal = ampRamp.nextValue();
 		if (ampRamp.checkInterrupt()) {
 			tva->handleInterrupt();
@@ -228,20 +244,10 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 
 		Bit16u pitch = tvp->nextPitch();
 
-		// SEMI-CONFIRMED: From sample analysis:
-		// (1) Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
-		// This gives results within +/- 2 at the output (before any DAC bitshifting)
-		// when sustaining at levels 156 - 255 with no modifiers.
-		// (2) Tested with a special square wave partial (internal capture ID tva5) at TVA envelope levels 155-255.
-		// This gives deltas between -1 and 0 compared to the real output. Note that this special partial only produces
-		// positive amps, so negative still needs to be explored, as well as lower levels.
-		//
-		// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
-
-		float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
-		float freq = EXP2F(pitch / 4096.0f - 16.0f) * SAMPLE_RATE;
-
 		if (patchCache->PCMPartial) {
+			float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
+			float freq = EXP2F(pitch / 4096.0f - 16.0f) * SAMPLE_RATE;
+
 			// Render PCM waveform
 			int len = pcmWave->len;
 			int intPCMPosition = (int)pcmPosition;
@@ -269,11 +275,24 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				newPCMPosition = fmod(newPCMPosition, (float)pcmWave->len);
 			}
 			pcmPosition = newPCMPosition;
+
+			// Multiply sample with current TVA value
+			sample *= amp;
 		} else {
+			Bit32u cutoffModifierRampVal = cutoffModifierRamp.nextValue();
+			if (cutoffModifierRamp.checkInterrupt()) {
+				tvf->handleInterrupt();
+			}
+			Bit32u cutoffVal = (tvf->getBaseCutoff() << 18) + cutoffModifierRampVal;
+			/*
+			if (hasRingModulatingSlave()) {
+				la32Pair.generateNextSlaveSample(ampRampVal, pitch, cutoffVal);
+			}
+			*/
+			la32Pair.generateNextMasterSample(ampRampVal, pitch, cutoffVal);
+			sample = la32Pair.nextOutSample() / 8192.0f;
 		}
 
-		// Multiply sample with current TVA value
-		sample *= amp;
 		*partialBuf++ = sample;
 	}
 	unsigned long renderedSamples = sampleNum;
