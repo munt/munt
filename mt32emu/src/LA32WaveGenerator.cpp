@@ -24,6 +24,7 @@ namespace MT32Emu {
 
 static const Bit32u MIDDLE_CUTOFF_VALUE = 128 << 18;
 static const Bit32u RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE = 144 << 18;
+static const Bit32u MAX_CUTOFF_VALUE = 240 << 18;
 static const LogSample SILENCE = {65535, LogSample::POSITIVE};
 
 Bit16u LA32Utilites::interpolateExp(Bit16u fract) {
@@ -51,7 +52,7 @@ LogSample LA32Utilites::addLogSamples(LogSample sample1, LogSample sample2) {
 }
 
 void LA32WaveGenerator::updateWaveGeneratorState() {
-	// sawtoothCosineStep = EXP2F(pitch / 4096. + cosineLenFactor / 4096. + 4)
+	// sawtoothCosineStep = EXP2F(pitch / 4096. + 4)
 	if (sawtoothWaveform) {
 		Bit32u expArgInt = pitch >> 12;
 		sawtoothCosineStep = LA32Utilites::interpolateExp(~pitch & 4095);
@@ -60,6 +61,12 @@ void LA32WaveGenerator::updateWaveGeneratorState() {
 		} else {
 			sawtoothCosineStep <<= expArgInt - 8;
 		}
+	}
+
+	// The 240 cutoffVal limit was determined via sample analysis (internal Munt capture IDs: glop3, glop4).
+	// More research is needed to be sure that this is correct, however.
+	if (cutoffVal > MAX_CUTOFF_VALUE) {
+		cutoffVal = MAX_CUTOFF_VALUE;
 	}
 
 	Bit32u cosineLenFactor = 0;
