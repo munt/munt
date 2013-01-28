@@ -289,7 +289,7 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 				la32Pair.generateNextSlaveSample(ampRampVal, pitch, cutoffVal);
 			}
 			*/
-			la32Pair.generateNextMasterSample(ampRampVal, pitch, cutoffVal);
+			la32Pair.generateNextMasterSample(67117056 - ampRampVal, pitch, cutoffVal);
 			sample = la32Pair.nextOutSample() / 8192.0f;
 		}
 
