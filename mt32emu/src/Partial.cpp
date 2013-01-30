@@ -98,19 +98,6 @@ void Partial::deactivate() {
 #endif
 }
 
-// DEPRECATED: This should probably go away eventually, it's currently only used as a kludge to protect our old assumptions that
-// rhythm part notes were always played as key MIDDLEC.
-int Partial::getKey() const {
-	if (poly == NULL) {
-		return -1;
-	} else if (ownerPart == 8) {
-		// FIXME: Hack, should go away after new pitch stuff is committed (and possibly some TVF changes)
-		return MIDDLEC;
-	} else {
-		return poly->getKey();
-	}
-}
-
 void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *usePatchCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial) {
 	if (usePoly == NULL || usePatchCache == NULL) {
 		synth->printDebug("[Partial %d] *** Error: Starting partial for owner %d, usePoly=%s, usePatchCache=%s", debugPartialNum, ownerPart, usePoly == NULL ? "*** NULL ***" : "OK", usePatchCache == NULL ? "*** NULL ***" : "OK");

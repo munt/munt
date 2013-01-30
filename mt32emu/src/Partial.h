@@ -88,7 +88,6 @@ public:
 	unsigned long debugGetSampleNum() const;
 
 	int getOwnerPart() const;
-	int getKey() const;
 	const Poly *getPoly() const;
 	bool isActive() const;
 	void activate(int part);
