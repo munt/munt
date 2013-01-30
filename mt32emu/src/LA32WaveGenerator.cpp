@@ -361,24 +361,24 @@ void LA32PartialPair::init(const bool ringModulated, const bool mixed) {
 	this->mixed = mixed;
 }
 
-void LA32PartialPair::initSynth(const bool useMaster, const bool sawtoothWaveform, const Bit8u pulseWidth, const Bit8u resonance) {
-	if (useMaster) {
+void LA32PartialPair::initSynth(const PairType useMaster, const bool sawtoothWaveform, const Bit8u pulseWidth, const Bit8u resonance) {
+	if (useMaster == MASTER) {
 		master.initSynth(sawtoothWaveform, pulseWidth, resonance);
 	} else {
 		slave.initSynth(sawtoothWaveform, pulseWidth, resonance);
 	}
 }
 
-void LA32PartialPair::initPCM(const bool useMaster, const Bit16s *pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped) {
-	if (useMaster) {
+void LA32PartialPair::initPCM(const PairType useMaster, const Bit16s *pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped) {
+	if (useMaster == MASTER) {
 		master.initPCM(pcmWaveAddress, pcmWaveLength, pcmWaveLooped, true);
 	} else {
 		slave.initPCM(pcmWaveAddress, pcmWaveLength, pcmWaveLooped, !ringModulated);
 	}
 }
 
-void LA32PartialPair::generateNextSample(const bool useMaster, const Bit32u amp, const Bit16u pitch, const Bit32u cutoff) {
-	if (useMaster) {
+void LA32PartialPair::generateNextSample(const PairType useMaster, const Bit32u amp, const Bit16u pitch, const Bit32u cutoff) {
+	if (useMaster == MASTER) {
 		master.generateNextSample(amp, pitch, cutoff);
 	} else {
 		slave.generateNextSample(amp, pitch, cutoff);
@@ -418,16 +418,16 @@ Bit16s LA32PartialPair::nextOutSample() {
 	return unlogAndMixWGOutput(master, NULL) + unlogAndMixWGOutput(slave, NULL);
 }
 
-void LA32PartialPair::deactivate(const bool useMaster) {
-	if (useMaster) {
+void LA32PartialPair::deactivate(const PairType useMaster) {
+	if (useMaster == MASTER) {
 		master.deactivate();
 	} else {
 		slave.deactivate();
 	}
 }
 
-bool LA32PartialPair::isActive(const bool useMaster) const {
-	if (useMaster) {
+bool LA32PartialPair::isActive(const PairType useMaster) const {
+	if (useMaster == MASTER) {
 		return master.isActive();
 	} else {
 		return slave.isActive();

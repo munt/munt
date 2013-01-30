@@ -44,7 +44,7 @@ private:
 	int structurePosition; // 0 or 1 of a structure pair
 	StereoVolume stereoVolume;
 
-	float myBuffer[MAX_SAMPLES_PER_RUN];
+	Bit16s myBuffer[MAX_SAMPLES_PER_RUN];
 
 	// Only used for PCM partials
 	int pcmNum;
@@ -65,10 +65,8 @@ private:
 	// TODO: This should be owned by PartialPair
 	LA32PartialPair la32Pair;
 
-	float *mixBuffersRingMix(float *buf1, float *buf2, unsigned long len);
-	float *mixBuffersRing(float *buf1, float *buf2, unsigned long len);
-
-	float getPCMSample(unsigned int position);
+	Bit32u getAmpValue();
+	Bit32u getCutoffValue();
 
 public:
 	const PatchCache *patchCache;
@@ -108,7 +106,7 @@ public:
 	bool produceOutput(float *leftBuf, float *rightBuf, unsigned long length);
 
 	// This function writes mono sample output to the provided buffer, and returns the number of samples written
-	unsigned long generateSamples(float *partialBuf, unsigned long length);
+	unsigned long generateSamples(Bit16s *partialBuf, unsigned long length);
 };
 
 }

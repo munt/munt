@@ -83,7 +83,6 @@ void Partial::deactivate() {
 	if (!isActive()) {
 		return;
 	}
-	la32Pair.deactivate(true);
 	ownerPart = -1;
 	if (poly != NULL) {
 		poly->partialDeactivated(this);
@@ -96,6 +95,15 @@ void Partial::deactivate() {
 	synth->printDebug("[+%lu] [Partial %d] Deactivated", sampleNum, debugPartialNum);
 	synth->printPartialUsage(sampleNum);
 #endif
+	if (isRingModulatingSlave()) {
+		pair->la32Pair.deactivate(LA32PartialPair::SLAVE);
+	} else {
+		la32Pair.deactivate(LA32PartialPair::MASTER);
+		if (pair != NULL) {
+			pair->deactivate();
+			pair = NULL;
+		}
+	}
 }
 
 void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *usePatchCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial) {
@@ -173,37 +181,60 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	tva->reset(part, patchCache->partialParam, rhythmTemp);
 	tvp->reset(part, patchCache->partialParam);
 	tvf->reset(patchCache->partialParam, tvp->getBasePitch());
-	/*
-	la32Pair.init(mixType != 0, mixType == 1);
+
+	LA32PartialPair::PairType pairType;
+	LA32PartialPair *useLA32Pair;
 	if (isRingModulatingSlave()) {
-		la32Pair.initSlave((patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
+		pairType = LA32PartialPair::SLAVE;
+		useLA32Pair = &pair->la32Pair;
 	} else {
-		la32Pair.initMaster((patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
-		if (!hasRingModulatingSlave()) {
-			la32Pair.deactivateSlave();
-		}
+		pairType = LA32PartialPair::MASTER;
+		la32Pair.init(mixType != 0, mixType == 1);
+		useLA32Pair = &la32Pair;
 	}
-	*/
-	la32Pair.init(false, false);
-	if (patchCache->PCMPartial) {
-		la32Pair.initPCM(true, &synth->pcmROMData[pcmWave->addr], pcmWave->len, pcmWave->loop);
+	if (isPCM()) {
+		useLA32Pair->initPCM(pairType, &synth->pcmROMData[pcmWave->addr], pcmWave->len, pcmWave->loop);
 	} else {
-		la32Pair.initSynth(true, (patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
+		useLA32Pair->initSynth(pairType, (patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
 	}
-	la32Pair.deactivate(false);
+	if (pair == NULL) {
+		la32Pair.deactivate(LA32PartialPair::SLAVE);
+	}
+	// Temporary integration hack
+	stereoVolume.leftVol /= 8192.0f;
+	stereoVolume.rightVol /= 8192.0f;
 }
 
-float Partial::getPCMSample(unsigned int position) {
-	if (position >= pcmWave->len) {
-		if (!pcmWave->loop) {
-			return 0;
-		}
-		position = position % pcmWave->len;
+Bit32u Partial::getAmpValue() {
+	// SEMI-CONFIRMED: From sample analysis:
+	// (1) Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
+	// This gives results within +/- 2 at the output (before any DAC bitshifting)
+	// when sustaining at levels 156 - 255 with no modifiers.
+	// (2) Tested with a special square wave partial (internal capture ID tva5) at TVA envelope levels 155-255.
+	// This gives deltas between -1 and 0 compared to the real output. Note that this special partial only produces
+	// positive amps, so negative still needs to be explored, as well as lower levels.
+	//
+	// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
+	// TODO: The tests above were performed using the float model, to be refined
+	Bit32u ampRampVal = 67117056 - ampRamp.nextValue();
+	if (ampRamp.checkInterrupt()) {
+		tva->handleInterrupt();
 	}
-	return synth->pcmROMData[pcmWave->addr + position];
+	return ampRampVal;
 }
 
-unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) {
+Bit32u Partial::getCutoffValue() {
+	if (isPCM()) {
+		return 0;
+	}
+	Bit32u cutoffModifierRampVal = cutoffModifierRamp.nextValue();
+	if (cutoffModifierRamp.checkInterrupt()) {
+		tvf->handleInterrupt();
+	}
+	return (tvf->getBaseCutoff() << 18) + cutoffModifierRampVal;
+}
+
+unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length) {
 	const Tables &tables = Tables::getInstance();
 	if (!isActive() || alreadyOutputed) {
 		return 0;
@@ -212,95 +243,29 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		synth->printDebug("[Partial %d] *** ERROR: poly is NULL at Partial::generateSamples()!", debugPartialNum);
 		return 0;
 	}
-
 	alreadyOutputed = true;
 
-	// Generate samples
-
 	for (sampleNum = 0; sampleNum < length; sampleNum++) {
-		float sample = 0;
-
-		// SEMI-CONFIRMED: From sample analysis:
-		// (1) Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
-		// This gives results within +/- 2 at the output (before any DAC bitshifting)
-		// when sustaining at levels 156 - 255 with no modifiers.
-		// (2) Tested with a special square wave partial (internal capture ID tva5) at TVA envelope levels 155-255.
-		// This gives deltas between -1 and 0 compared to the real output. Note that this special partial only produces
-		// positive amps, so negative still needs to be explored, as well as lower levels.
-		//
-		// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
-		// TODO: The tests above were performed using the float model, to be refined
-		Bit32u ampRampVal = 67117056 - ampRamp.nextValue();
-		if (ampRamp.checkInterrupt()) {
-			tva->handleInterrupt();
-		}
-		if (!tva->isPlaying()) {
+		if (!tva->isPlaying() || (isPCM() && !la32Pair.isActive(LA32PartialPair::MASTER))) {
 			deactivate();
 			break;
 		}
-
-		Bit16u pitch = tvp->nextPitch();
-		Bit32u cutoffVal = 0;
-
-		if (patchCache->PCMPartial) {
-			if (!la32Pair.isActive(true)) {
-				deactivate();
-				break;
-			}
-		} else {
-			Bit32u cutoffModifierRampVal = cutoffModifierRamp.nextValue();
-			if (cutoffModifierRamp.checkInterrupt()) {
-				tvf->handleInterrupt();
-			}
-			cutoffVal = (tvf->getBaseCutoff() << 18) + cutoffModifierRampVal;
-		}
-		/*
+		la32Pair.generateNextSample(LA32PartialPair::MASTER, getAmpValue(), tvp->nextPitch(), getCutoffValue());
 		if (hasRingModulatingSlave()) {
-			la32Pair.generateNextSlaveSample(ampRampVal, pitch, cutoffVal);
+			la32Pair.generateNextSample(LA32PartialPair::SLAVE, pair->getAmpValue(), pair->tvp->nextPitch(), pair->getCutoffValue());
+			if (!pair->tva->isPlaying() || (pair->isPCM() && !la32Pair.isActive(LA32PartialPair::SLAVE))) {
+				pair->deactivate();
+				if (mixType == 2) {
+					deactivate();
+					break;
+				}
+			}
 		}
-		*/
-		la32Pair.generateNextSample(true, ampRampVal, pitch, cutoffVal);
-		sample = la32Pair.nextOutSample() / 8192.0f;
-
-		*partialBuf++ = sample;
+		*partialBuf++ = la32Pair.nextOutSample();
 	}
 	unsigned long renderedSamples = sampleNum;
 	sampleNum = 0;
 	return renderedSamples;
-}
-
-float *Partial::mixBuffersRingMix(float *buf1, float *buf2, unsigned long len) {
-	if (buf1 == NULL) {
-		return NULL;
-	}
-	if (buf2 == NULL) {
-		return buf1;
-	}
-
-	while (len--) {
-		// FIXME: At this point we have no idea whether this is remotely correct...
-		*buf1 = *buf1 * *buf2 + *buf1;
-		buf1++;
-		buf2++;
-	}
-	return buf1;
-}
-
-float *Partial::mixBuffersRing(float *buf1, float *buf2, unsigned long len) {
-	if (buf1 == NULL) {
-		return NULL;
-	}
-	if (buf2 == NULL) {
-		return NULL;
-	}
-
-	while (len--) {
-		// FIXME: At this point we have no idea whether this is remotely correct...
-		*buf1 = *buf1 * *buf2;
-		buf1++;
-		buf2++;
-	}
-	return buf1;
 }
 
 bool Partial::hasRingModulatingSlave() const {
@@ -334,53 +299,14 @@ bool Partial::produceOutput(float *leftBuf, float *rightBuf, unsigned long lengt
 		synth->printDebug("[Partial %d] *** ERROR: poly is NULL at Partial::produceOutput()!", debugPartialNum);
 		return false;
 	}
-
-	float *partialBuf = &myBuffer[0];
-	unsigned long numGenerated = generateSamples(partialBuf, length);
-	if (mixType == 1 || mixType == 2) {
-		float *pairBuf;
-		unsigned long pairNumGenerated;
-		if (pair == NULL) {
-			pairBuf = NULL;
-			pairNumGenerated = 0;
-		} else {
-			pairBuf = &pair->myBuffer[0];
-			pairNumGenerated = pair->generateSamples(pairBuf, numGenerated);
-			// pair will have been set to NULL if it deactivated within generateSamples()
-			if (pair != NULL) {
-				if (!isActive()) {
-					pair->deactivate();
-					pair = NULL;
-				} else if (!pair->isActive()) {
-					pair = NULL;
-				}
-			}
-		}
-		if (pairNumGenerated > 0) {
-			if (mixType == 1) {
-				mixBuffersRingMix(partialBuf, pairBuf, pairNumGenerated);
-			} else {
-				mixBuffersRing(partialBuf, pairBuf, pairNumGenerated);
-			}
-		}
-		if (numGenerated > pairNumGenerated) {
-			if (mixType == 2) {
-				numGenerated = pairNumGenerated;
-				deactivate();
-			}
-		}
-	}
-
+	unsigned long numGenerated = generateSamples(myBuffer, length);
 	for (unsigned int i = 0; i < numGenerated; i++) {
-		*leftBuf++ = partialBuf[i] * stereoVolume.leftVol;
+		*leftBuf++ = myBuffer[i] * stereoVolume.leftVol;
+		*rightBuf++ = myBuffer[i] * stereoVolume.rightVol;
 	}
-	for (unsigned int i = 0; i < numGenerated; i++) {
-		*rightBuf++ = partialBuf[i] * stereoVolume.rightVol;
-	}
-	while (numGenerated < length) {
+	for (; numGenerated < length; numGenerated++) {
 		*leftBuf++ = 0.0f;
 		*rightBuf++ = 0.0f;
-		numGenerated++;
 	}
 	return true;
 }
