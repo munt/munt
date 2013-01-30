@@ -35,7 +35,12 @@ static const float PAN_NUMERATOR_MASTER[] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
 static const float PAN_NUMERATOR_SLAVE[]  = {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f};
 
 Partial::Partial(Synth *useSynth, int useDebugPartialNum) :
-	synth(useSynth), debugPartialNum(useDebugPartialNum), sampleNum(0), tva(new TVA(this, &ampRamp)), tvp(new TVP(this)), tvf(new TVF(this, &cutoffModifierRamp)) {
+	synth(useSynth), debugPartialNum(useDebugPartialNum), sampleNum(0) {
+	// Initialisation of tva, tvp and tvf uses 'this' pointer
+	// and thus should not be in the initializer list to avoid a compiler warning
+	tva = new TVA(this, &ampRamp);
+	tvp = new TVP(this);
+	tvf = new TVF(this, &cutoffModifierRamp);
 	ownerPart = -1;
 	poly = NULL;
 	pair = NULL;
