@@ -43,8 +43,8 @@ struct LogSample {
 
 class LA32Utilites {
 public:
-	static Bit16u interpolateExp(Bit16u fract);
-	static Bit16s unlog(LogSample logSample);
+	static Bit16u interpolateExp(const Bit16u fract);
+	static Bit16s unlog(const LogSample logSample);
 	static void addLogSamples(LogSample logSample1, const LogSample logSample2);
 };
 
@@ -85,7 +85,7 @@ class LA32WaveGenerator {
 	Bit32u cutoffVal;
 
 	// Logarithmic PCM sample start address
-	Bit16s *pcmWaveAddress;
+	const Bit16s *pcmWaveAddress;
 
 	// Logarithmic PCM sample length
 	Bit32u pcmWaveLength;
@@ -181,23 +181,23 @@ class LA32WaveGenerator {
 
 	void generateNextSquareWaveLogSample();
 	void generateNextResonanceWaveLogSample();
-	LogSample nextSawtoothCosineLogSample();
+	LogSample nextSawtoothCosineLogSample() const;
 
-	LogSample pcmSampleToLogSample(Bit16s pcmSample);
+	LogSample pcmSampleToLogSample(const Bit16s pcmSample) const;
 	void generateNextPCMWaveLogSamples();
 
 public:
 	// Initialise the WG engine for generation of synth partial samples and set up the invariant parameters
-	void initSynth(bool sawtoothWaveform, Bit8u pulseWidth, Bit8u resonance);
+	void initSynth(const bool sawtoothWaveform, const Bit8u pulseWidth, const Bit8u resonance);
 
 	// Initialise the WG engine for generation of PCM partial samples and set up the invariant parameters
-	void initPCM(Bit16s *pcmWaveAddress, Bit32u pcmWaveLength, bool pcmWaveLooped, bool pcmWaveInterpolated);
+	void initPCM(const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped, const bool pcmWaveInterpolated);
 
 	// Update parameters with respect to TVP, TVA and TVF, and generate next sample
-	void generateNextSample(Bit32u amp, Bit16u pitch, Bit32u cutoff);
+	void generateNextSample(const Bit32u amp, const Bit16u pitch, const Bit32u cutoff);
 
 	// WG output in the log-space consists of two components which are to be added (or ring modulated) in the linear-space afterwards
-	LogSample getOutputLogSample(bool first) const;
+	LogSample getOutputLogSample(const bool first) const;
 
 	// Deactivate the WG engine
 	void deactivate();
@@ -225,25 +225,25 @@ public:
 	// ringModulated should be set to false for the structures with mixing or stereo output
 	// ringModulated should be set to true for the structures with ring modulation
 	// mixed is used for the structures with ring modulation and indicates whether the master partial output is mixed to the ring modulator output
-	void init(bool ringModulated, bool mixed);
+	void init(const bool ringModulated, const bool mixed);
 
 	// Initialise the WG engine for generation of synth partial samples and set up the invariant parameters
-	void initSynth(bool master, bool sawtoothWaveform, Bit8u pulseWidth, Bit8u resonance);
+	void initSynth(const bool master, const bool sawtoothWaveform, const Bit8u pulseWidth, const Bit8u resonance);
 
 	// Initialise the WG engine for generation of PCM partial samples and set up the invariant parameters
-	void initPCM(bool master, Bit16s *pcmWaveAddress, Bit32u pcmWaveLength, bool pcmWaveLooped);
+	void initPCM(const bool master, const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped);
 
 	// Update parameters with respect to TVP, TVA and TVF, and generate next sample
-	void generateNextSample(bool master, Bit32u amp, Bit16u pitch, Bit32u cutoff);
+	void generateNextSample(const bool master, const Bit32u amp, const Bit16u pitch, const Bit32u cutoff);
 
 	// Perform mixing / ring modulation and return the result
 	Bit16s nextOutSample();
 
 	// Deactivate the WG engine
-	void deactivate(bool master);
+	void deactivate(const bool master);
 
 	// Return active state of the WG engine
-	bool isActive(bool master);
+	bool isActive(const bool master) const;
 };
 
 } // namespace MT32Emu

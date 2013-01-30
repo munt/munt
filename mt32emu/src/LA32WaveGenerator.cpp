@@ -27,7 +27,7 @@ static const Bit32u RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE = 144 << 18;
 static const Bit32u MAX_CUTOFF_VALUE = 240 << 18;
 static const LogSample SILENCE = {65535, LogSample::POSITIVE};
 
-Bit16u LA32Utilites::interpolateExp(Bit16u fract) {
+Bit16u LA32Utilites::interpolateExp(const Bit16u fract) {
 	Bit16u expTabIndex = fract >> 3;
 	Bit16u extraBits = fract & 7;
 	Bit16u expTabEntry2 = 8191 - Tables::getInstance().exp9[expTabIndex];
@@ -35,7 +35,7 @@ Bit16u LA32Utilites::interpolateExp(Bit16u fract) {
 	return expTabEntry1 + (((expTabEntry2 - expTabEntry1) * extraBits) >> 3);
 }
 
-Bit16s LA32Utilites::unlog(LogSample logSample) {
+Bit16s LA32Utilites::unlog(const LogSample logSample) {
 	//Bit16s sample = (Bit16s)EXP2F(13.0f - logSample.logValue / 1024.0f);
 	Bit32u intLogValue = logSample.logValue >> 12;
 	Bit32u fracLogValue = logSample.logValue & 4095;
@@ -214,7 +214,7 @@ void LA32WaveGenerator::generateNextResonanceWaveLogSample() {
 	resonanceLogSample.sign = resonancePhase < NEGATIVE_FALLING_RESONANCE_SINE_SEGMENT ? LogSample::POSITIVE : LogSample::NEGATIVE;
 }
 
-LogSample LA32WaveGenerator::nextSawtoothCosineLogSample() {
+LogSample LA32WaveGenerator::nextSawtoothCosineLogSample() const {
 	Bit32u logSampleValue;
 	if ((sawtoothCosinePosition & (1 << 18)) > 0) {
 		logSampleValue = Tables::getInstance().logsin9[~(sawtoothCosinePosition >> 9) & 511];
@@ -229,7 +229,7 @@ LogSample LA32WaveGenerator::nextSawtoothCosineLogSample() {
 	return logSample;
 }
 
-LogSample LA32WaveGenerator::pcmSampleToLogSample(Bit16s pcmSample) {
+LogSample LA32WaveGenerator::pcmSampleToLogSample(const Bit16s pcmSample) const {
 	LogSample logSample;
 	logSample.sign = pcmSample < 0 ? LogSample::NEGATIVE : LogSample::POSITIVE;
 	// TODO: This was accurate for the float model, to be refined
@@ -277,7 +277,7 @@ void LA32WaveGenerator::generateNextPCMWaveLogSamples() {
 	}
 }
 
-void LA32WaveGenerator::initSynth(bool sawtoothWaveform, Bit8u pulseWidth, Bit8u resonance) {
+void LA32WaveGenerator::initSynth(const bool sawtoothWaveform, const Bit8u pulseWidth, const Bit8u resonance) {
 	this->sawtoothWaveform = sawtoothWaveform;
 	this->pulseWidth = pulseWidth;
 	this->resonance = resonance;
@@ -296,7 +296,7 @@ void LA32WaveGenerator::initSynth(bool sawtoothWaveform, Bit8u pulseWidth, Bit8u
 	active = true;
 }
 
-void LA32WaveGenerator::initPCM(Bit16s *pcmWaveAddress, Bit32u pcmWaveLength, bool pcmWaveLooped, bool pcmWaveInterpolated) {
+void LA32WaveGenerator::initPCM(const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped, const bool pcmWaveInterpolated) {
 	this->pcmWaveAddress = pcmWaveAddress;
 	this->pcmWaveLength = pcmWaveLength;
 	this->pcmWaveLooped = pcmWaveLooped;
@@ -306,7 +306,7 @@ void LA32WaveGenerator::initPCM(Bit16s *pcmWaveAddress, Bit32u pcmWaveLength, bo
 	active = true;
 }
 
-void LA32WaveGenerator::generateNextSample(Bit32u amp, Bit16u pitch, Bit32u cutoffVal) {
+void LA32WaveGenerator::generateNextSample(const Bit32u amp, const Bit16u pitch, const Bit32u cutoffVal) {
 	if (!active) {
 		return;
 	}
@@ -332,7 +332,7 @@ void LA32WaveGenerator::generateNextSample(Bit32u amp, Bit16u pitch, Bit32u cuto
 	advancePosition();
 }
 
-LogSample LA32WaveGenerator::getOutputLogSample(bool first) const {
+LogSample LA32WaveGenerator::getOutputLogSample(const bool first) const {
 	if (isPCMWave()) {
 		return first ? firstPCMLogSample : secondPCMLogSample;
 	}
@@ -356,12 +356,12 @@ Bit32u LA32WaveGenerator::getPCMInterpolationFactor() const {
 	return pcmInterpolationFactor;
 }
 
-void LA32PartialPair::init(bool ringModulated, bool mixed) {
+void LA32PartialPair::init(const bool ringModulated, const bool mixed) {
 	this->ringModulated = ringModulated;
 	this->mixed = mixed;
 }
 
-void LA32PartialPair::initSynth(bool useMaster, bool sawtoothWaveform, Bit8u pulseWidth, Bit8u resonance) {
+void LA32PartialPair::initSynth(const bool useMaster, const bool sawtoothWaveform, const Bit8u pulseWidth, const Bit8u resonance) {
 	if (useMaster) {
 		master.initSynth(sawtoothWaveform, pulseWidth, resonance);
 	} else {
@@ -369,7 +369,7 @@ void LA32PartialPair::initSynth(bool useMaster, bool sawtoothWaveform, Bit8u pul
 	}
 }
 
-void LA32PartialPair::initPCM(bool useMaster, Bit16s *pcmWaveAddress, Bit32u pcmWaveLength, bool pcmWaveLooped) {
+void LA32PartialPair::initPCM(const bool useMaster, const Bit16s *pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped) {
 	if (useMaster) {
 		master.initPCM(pcmWaveAddress, pcmWaveLength, pcmWaveLooped, true);
 	} else {
@@ -377,7 +377,7 @@ void LA32PartialPair::initPCM(bool useMaster, Bit16s *pcmWaveAddress, Bit32u pcm
 	}
 }
 
-void LA32PartialPair::generateNextSample(bool useMaster, Bit32u amp, Bit16u pitch, Bit32u cutoff) {
+void LA32PartialPair::generateNextSample(const bool useMaster, const Bit32u amp, const Bit16u pitch, const Bit32u cutoff) {
 	if (useMaster) {
 		master.generateNextSample(amp, pitch, cutoff);
 	} else {
@@ -418,7 +418,7 @@ Bit16s LA32PartialPair::nextOutSample() {
 	return unlogAndMixWGOutput(master, NULL) + unlogAndMixWGOutput(slave, NULL);
 }
 
-void LA32PartialPair::deactivate(bool useMaster) {
+void LA32PartialPair::deactivate(const bool useMaster) {
 	if (useMaster) {
 		master.deactivate();
 	} else {
@@ -426,7 +426,7 @@ void LA32PartialPair::deactivate(bool useMaster) {
 	}
 }
 
-bool LA32PartialPair::isActive(bool useMaster) {
+bool LA32PartialPair::isActive(const bool useMaster) const {
 	if (useMaster) {
 		return master.isActive();
 	} else {
