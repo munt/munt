@@ -386,7 +386,7 @@ void LA32PartialPair::generateNextSample(const bool useMaster, const Bit32u amp,
 }
 
 Bit16s LA32PartialPair::unlogAndMixWGOutput(const LA32WaveGenerator &wg, const LogSample * const ringModulatingLogSample) {
-	if (!wg.isActive() || (ringModulatingLogSample->logValue == SILENCE.logValue)) {
+	if (!wg.isActive() || ((ringModulatingLogSample != NULL) && (ringModulatingLogSample->logValue == SILENCE.logValue))) {
 		return 0;
 	}
 	LogSample firstLogSample = wg.getOutputLogSample(true);
