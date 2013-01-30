@@ -78,7 +78,7 @@ void Partial::deactivate() {
 	if (!isActive()) {
 		return;
 	}
-	la32Pair.deactivateMaster();
+	la32Pair.deactivate(true);
 	ownerPart = -1;
 	if (poly != NULL) {
 		poly->partialDeactivated(this);
@@ -193,8 +193,12 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	}
 	*/
 	la32Pair.init(false, false);
-	la32Pair.initMaster((patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
-	la32Pair.deactivateSlave();
+	if (patchCache->PCMPartial) {
+		la32Pair.initPCM(true, &synth->pcmROMData[pcmWave->addr], pcmWave->len, pcmWave->loop);
+	} else {
+		la32Pair.initSynth(true, (patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
+	}
+	la32Pair.deactivate(false);
 }
 
 float Partial::getPCMSample(unsigned int position) {
@@ -233,7 +237,8 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		// positive amps, so negative still needs to be explored, as well as lower levels.
 		//
 		// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
-		Bit32u ampRampVal = ampRamp.nextValue();
+		// TODO: The tests above were performed using the float model, to be refined
+		Bit32u ampRampVal = 67117056 - ampRamp.nextValue();
 		if (ampRamp.checkInterrupt()) {
 			tva->handleInterrupt();
 		}
@@ -243,55 +248,27 @@ unsigned long Partial::generateSamples(float *partialBuf, unsigned long length) 
 		}
 
 		Bit16u pitch = tvp->nextPitch();
+		Bit32u cutoffVal = 0;
 
 		if (patchCache->PCMPartial) {
-			float amp = EXP2F((32772 - ampRampVal / 2048) / -2048.0f);
-			float freq = EXP2F(pitch / 4096.0f - 16.0f) * SAMPLE_RATE;
-
-			// Render PCM waveform
-			int len = pcmWave->len;
-			int intPCMPosition = (int)pcmPosition;
-			if (intPCMPosition >= len && !pcmWave->loop) {
-				// We're now past the end of a non-looping PCM waveform so it's time to die.
+			if (!la32Pair.isActive(true)) {
 				deactivate();
 				break;
 			}
-			Bit32u pcmAddr = pcmWave->addr;
-			float positionDelta = freq * 2048.0f / SAMPLE_RATE;
-
-			// Linear interpolation
-			float firstSample = synth->pcmROMData[pcmAddr + intPCMPosition];
-			// We observe that for partial structures with ring modulation the interpolation is not applied to the slave PCM partial.
-			// It's assumed that the multiplication circuitry intended to perform the interpolation on the slave PCM partial
-			// is borrowed by the ring modulation circuit (or the LA32 chip has a similar lack of resources assigned to each partial pair).
-			if (pair == NULL || mixType == 0 || structurePosition == 0) {
-				sample = firstSample + (getPCMSample(intPCMPosition + 1) - firstSample) * (pcmPosition - intPCMPosition);
-			} else {
-				sample = firstSample;
-			}
-
-			float newPCMPosition = pcmPosition + positionDelta;
-			if (pcmWave->loop) {
-				newPCMPosition = fmod(newPCMPosition, (float)pcmWave->len);
-			}
-			pcmPosition = newPCMPosition;
-
-			// Multiply sample with current TVA value
-			sample *= amp;
 		} else {
 			Bit32u cutoffModifierRampVal = cutoffModifierRamp.nextValue();
 			if (cutoffModifierRamp.checkInterrupt()) {
 				tvf->handleInterrupt();
 			}
-			Bit32u cutoffVal = (tvf->getBaseCutoff() << 18) + cutoffModifierRampVal;
-			/*
-			if (hasRingModulatingSlave()) {
-				la32Pair.generateNextSlaveSample(ampRampVal, pitch, cutoffVal);
-			}
-			*/
-			la32Pair.generateNextMasterSample(67117056 - ampRampVal, pitch, cutoffVal);
-			sample = la32Pair.nextOutSample() / 8192.0f;
+			cutoffVal = (tvf->getBaseCutoff() << 18) + cutoffModifierRampVal;
 		}
+		/*
+		if (hasRingModulatingSlave()) {
+			la32Pair.generateNextSlaveSample(ampRampVal, pitch, cutoffVal);
+		}
+		*/
+		la32Pair.generateNextSample(true, ampRampVal, pitch, cutoffVal);
+		sample = la32Pair.nextOutSample() / 8192.0f;
 
 		*partialBuf++ = sample;
 	}

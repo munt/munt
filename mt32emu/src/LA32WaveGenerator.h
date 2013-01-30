@@ -45,7 +45,7 @@ class LA32Utilites {
 public:
 	static Bit16u interpolateExp(Bit16u fract);
 	static Bit16s unlog(LogSample logSample);
-	static LogSample addLogSamples(LogSample sample1, LogSample sample2);
+	static void addLogSamples(LogSample logSample1, const LogSample logSample2);
 };
 
 /**
@@ -84,6 +84,18 @@ class LA32WaveGenerator {
 	// Composed of the base cutoff in range [78..178] left-shifted by 18 bits and the TVF modifier
 	Bit32u cutoffVal;
 
+	// Logarithmic PCM sample start address
+	Bit16s *pcmWaveAddress;
+
+	// Logarithmic PCM sample length
+	Bit32u pcmWaveLength;
+
+	// true for looped logarithmic PCM samples
+	bool pcmWaveLooped;
+
+	// false for slave PCM partials in the structures with the ring modulation
+	bool pcmWaveInterpolated;
+
 	//***************************************************************************
 	// Internal variables below
 	//***************************************************************************
@@ -114,6 +126,14 @@ class LA32WaveGenerator {
 	// The wave length corresponds to the current pitch
 	Bit32u sawtoothCosinePosition;
 
+	// Relative position within the PCM sampled wave
+	// 0 - start of the PCM sample
+	// The wave length corresponds to the current pitch
+	Bit32u pcmPosition;
+
+	// Fractional part of the pcmPosition
+	Bit32u pcmInterpolationFactor;
+
 	// Current phase of the square wave
 	enum {
 		POSITIVE_RISING_SINE_SEGMENT,
@@ -140,9 +160,17 @@ class LA32WaveGenerator {
 	// Depends on the current pitch value
 	Bit32u sawtoothCosineStep;
 
+	// The pcmPosition increment which is added when the current sample is completely processed
+	// Derived from the current pitch value
+	Bit32u pcmSampleStep;
+
 	// Resulting log-space samples of the square and resonance waves
 	LogSample squareLogSample;
 	LogSample resonanceLogSample;
+
+	// Processed neighbour log-space samples of the PCM wave
+	LogSample firstPCMLogSample;
+	LogSample secondPCMLogSample;
 
 	//***************************************************************************
 	// Internal methods below
@@ -151,23 +179,37 @@ class LA32WaveGenerator {
 	void updateWaveGeneratorState();
 	void advancePosition();
 
-	LogSample nextSquareWaveLogSample();
-	LogSample nextResonanceWaveLogSample();
+	void generateNextSquareWaveLogSample();
+	void generateNextResonanceWaveLogSample();
 	LogSample nextSawtoothCosineLogSample();
 
+	LogSample pcmSampleToLogSample(Bit16s pcmSample);
+	void generateNextPCMWaveLogSamples();
+
 public:
-	// Initialise the WG engine and set up the invariant parameters
-	void init(bool sawtoothWaveform, Bit8u pulseWidth, Bit8u resonance);
+	// Initialise the WG engine for generation of synth partial samples and set up the invariant parameters
+	void initSynth(bool sawtoothWaveform, Bit8u pulseWidth, Bit8u resonance);
+
+	// Initialise the WG engine for generation of PCM partial samples and set up the invariant parameters
+	void initPCM(Bit16s *pcmWaveAddress, Bit32u pcmWaveLength, bool pcmWaveLooped, bool pcmWaveInterpolated);
 
 	// Update parameters with respect to TVP, TVA and TVF, and generate next sample
 	void generateNextSample(Bit32u amp, Bit16u pitch, Bit32u cutoff);
 
 	// WG output in the log-space consists of two components which are to be added (or ring modulated) in the linear-space afterwards
-	LogSample getSquareLogSample();
-	LogSample getResonanceLogSample();
+	LogSample getOutputLogSample(bool first) const;
 
 	// Deactivate the WG engine
 	void deactivate();
+
+	// Return active state of the WG engine
+	bool isActive() const;
+
+	// Return true if the WG engine generates PCM wave samples
+	bool isPCMWave() const;
+
+	// Return current PCM interpolation factor
+	Bit32u getPCMInterpolationFactor() const;
 };
 
 // LA32PartialPair contains a structure of two partials being mixed / ring modulated
@@ -177,26 +219,31 @@ class LA32PartialPair {
 	bool ringModulated;
 	bool mixed;
 
+	static Bit16s unlogAndMixWGOutput(const LA32WaveGenerator &wg, const LogSample * const ringModulatingLogSample);
+
 public:
 	// ringModulated should be set to false for the structures with mixing or stereo output
 	// ringModulated should be set to true for the structures with ring modulation
 	// mixed is used for the structures with ring modulation and indicates whether the master partial output is mixed to the ring modulator output
 	void init(bool ringModulated, bool mixed);
 
-	// Initialise the WG engines and set up the invariant parameters
-	void initMaster(bool sawtoothWaveform, Bit8u pulseWidth, Bit8u resonance);
-	void initSlave(bool sawtoothWaveform, Bit8u pulseWidth, Bit8u resonance);
+	// Initialise the WG engine for generation of synth partial samples and set up the invariant parameters
+	void initSynth(bool master, bool sawtoothWaveform, Bit8u pulseWidth, Bit8u resonance);
+
+	// Initialise the WG engine for generation of PCM partial samples and set up the invariant parameters
+	void initPCM(bool master, Bit16s *pcmWaveAddress, Bit32u pcmWaveLength, bool pcmWaveLooped);
 
 	// Update parameters with respect to TVP, TVA and TVF, and generate next sample
-	void generateNextMasterSample(Bit32u amp, Bit16u pitch, Bit32u cutoff);
-	void generateNextSlaveSample(Bit32u amp, Bit16u pitch, Bit32u cutoff);
+	void generateNextSample(bool master, Bit32u amp, Bit16u pitch, Bit32u cutoff);
 
 	// Perform mixing / ring modulation and return the result
 	Bit16s nextOutSample();
 
 	// Deactivate the WG engine
-	void deactivateMaster();
-	void deactivateSlave();
+	void deactivate(bool master);
+
+	// Return active state of the WG engine
+	bool isActive(bool master);
 };
 
 } // namespace MT32Emu
