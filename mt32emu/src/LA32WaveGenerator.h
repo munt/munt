@@ -45,7 +45,7 @@ class LA32Utilites {
 public:
 	static Bit16u interpolateExp(const Bit16u fract);
 	static Bit16s unlog(const LogSample logSample);
-	static void addLogSamples(LogSample logSample1, const LogSample logSample2);
+	static void addLogSamples(LogSample &logSample1, const LogSample logSample2);
 };
 
 /**

@@ -43,7 +43,7 @@ Bit16s LA32Utilites::unlog(const LogSample logSample) {
 	return logSample.sign == LogSample::POSITIVE ? sample : -sample;
 }
 
-void LA32Utilites::addLogSamples(LogSample logSample1, const LogSample logSample2) {
+void LA32Utilites::addLogSamples(LogSample &logSample1, const LogSample logSample2) {
 	Bit32u logSampleValue = logSample1.logValue + logSample2.logValue;
 	logSample1.logValue = logSampleValue < 65536 ? logSampleValue : 65535;
 	logSample1.sign = logSample1.sign == logSample2.sign ? LogSample::POSITIVE : LogSample::NEGATIVE;
@@ -59,12 +59,6 @@ void LA32WaveGenerator::updateWaveGeneratorState() {
 		} else {
 			sawtoothCosineStep <<= expArgInt - 8;
 		}
-	}
-
-	// The 240 cutoffVal limit was determined via sample analysis (internal Munt capture IDs: glop3, glop4).
-	// More research is needed to be sure that this is correct, however.
-	if (cutoffVal > MAX_CUTOFF_VALUE) {
-		cutoffVal = MAX_CUTOFF_VALUE;
 	}
 
 	Bit32u cosineLenFactor = 0;
@@ -215,16 +209,14 @@ void LA32WaveGenerator::generateNextResonanceWaveLogSample() {
 }
 
 LogSample LA32WaveGenerator::nextSawtoothCosineLogSample() const {
-	Bit32u logSampleValue;
-	if ((sawtoothCosinePosition & (1 << 18)) > 0) {
-		logSampleValue = Tables::getInstance().logsin9[~(sawtoothCosinePosition >> 9) & 511];
-	} else {
-		logSampleValue = Tables::getInstance().logsin9[(sawtoothCosinePosition >> 9) & 511];
-	}
-	logSampleValue <<= 2;
-
 	LogSample logSample;
-	logSample.logValue = logSampleValue < 65536 ? logSampleValue : 65535;
+	if ((sawtoothCosinePosition & (1 << 18)) > 0) {
+		logSample.logValue = Tables::getInstance().logsin9[~(sawtoothCosinePosition >> 9) & 511];
+	} else {
+		logSample.logValue = Tables::getInstance().logsin9[(sawtoothCosinePosition >> 9) & 511];
+	}
+	logSample.logValue <<= 2;
+
 	logSample.sign = ((sawtoothCosinePosition & (1 << 19)) == 0) ? LogSample::POSITIVE : LogSample::NEGATIVE;
 	return logSample;
 }
@@ -319,7 +311,9 @@ void LA32WaveGenerator::generateNextSample(const Bit32u amp, const Bit16u pitch,
 		return;
 	}
 
-	this->cutoffVal = cutoffVal;
+	// The 240 cutoffVal limit was determined via sample analysis (internal Munt capture IDs: glop3, glop4).
+	// More research is needed to be sure that this is correct, however.
+	this->cutoffVal = (cutoffVal > MAX_CUTOFF_VALUE) ? MAX_CUTOFF_VALUE : cutoffVal;
 
 	updateWaveGeneratorState();
 	generateNextSquareWaveLogSample();
@@ -333,6 +327,9 @@ void LA32WaveGenerator::generateNextSample(const Bit32u amp, const Bit16u pitch,
 }
 
 LogSample LA32WaveGenerator::getOutputLogSample(const bool first) const {
+	if (!isActive()) {
+		return SILENCE;
+	}
 	if (isPCMWave()) {
 		return first ? firstPCMLogSample : secondPCMLogSample;
 	}
@@ -340,7 +337,6 @@ LogSample LA32WaveGenerator::getOutputLogSample(const bool first) const {
 }
 
 void LA32WaveGenerator::deactivate() {
-	squareLogSample = resonanceLogSample = firstPCMLogSample = secondPCMLogSample = SILENCE;
 	active = false;
 }
 
@@ -400,7 +396,7 @@ Bit16s LA32PartialPair::unlogAndMixWGOutput(const LA32WaveGenerator &wg, const L
 		Bit32s secondSample = LA32Utilites::unlog(secondLogSample);
 		return Bit16s(firstSample + (((secondSample - firstSample) * wg.getPCMInterpolationFactor()) >> 7));
 	}
-	return LA32Utilites::unlog(wg.getOutputLogSample(true)) + LA32Utilites::unlog(secondLogSample);
+	return LA32Utilites::unlog(firstLogSample) + LA32Utilites::unlog(secondLogSample);
 }
 
 Bit16s LA32PartialPair::nextOutSample() {
@@ -414,6 +410,7 @@ Bit16s LA32PartialPair::nextOutSample() {
 		if (mixed) {
 			sample += unlogAndMixWGOutput(master, NULL);
 		}
+		return sample;
 	}
 	return unlogAndMixWGOutput(master, NULL) + unlogAndMixWGOutput(slave, NULL);
 }
@@ -427,11 +424,7 @@ void LA32PartialPair::deactivate(const PairType useMaster) {
 }
 
 bool LA32PartialPair::isActive(const PairType useMaster) const {
-	if (useMaster == MASTER) {
-		return master.isActive();
-	} else {
-		return slave.isActive();
-	}
+	return useMaster == MASTER ? master.isActive() : slave.isActive();
 }
 
 }
