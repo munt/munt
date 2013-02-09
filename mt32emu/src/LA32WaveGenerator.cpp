@@ -391,12 +391,12 @@ Bit16s LA32PartialPair::unlogAndMixWGOutput(const LA32WaveGenerator &wg, const L
 		LA32Utilites::addLogSamples(firstLogSample, *ringModulatingLogSample);
 		LA32Utilites::addLogSamples(secondLogSample, *ringModulatingLogSample);
 	}
+	Bit16s firstSample = LA32Utilites::unlog(firstLogSample);
+	Bit16s secondSample = LA32Utilites::unlog(secondLogSample);
 	if (wg.isPCMWave()) {
-		Bit32s firstSample = LA32Utilites::unlog(firstLogSample);
-		Bit32s secondSample = LA32Utilites::unlog(secondLogSample);
-		return Bit16s(firstSample + (((secondSample - firstSample) * wg.getPCMInterpolationFactor()) >> 7));
+		return Bit16s(firstSample + ((Bit32s(secondSample - firstSample) * wg.getPCMInterpolationFactor()) >> 7));
 	}
-	return LA32Utilites::unlog(firstLogSample) + LA32Utilites::unlog(secondLogSample);
+	return firstSample + secondSample;
 }
 
 Bit16s LA32PartialPair::nextOutSample() {
