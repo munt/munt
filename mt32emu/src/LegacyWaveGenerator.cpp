@@ -366,8 +366,10 @@ Bit16s LA32PartialPair::nextOutSample() {
 void LA32PartialPair::deactivate(const PairType useMaster) {
 	if (useMaster == MASTER) {
 		master.deactivate();
+		masterOutputSample = 0.0f;
 	} else {
 		slave.deactivate();
+		slaveOutputSample = 0.0f;
 	}
 }
 
