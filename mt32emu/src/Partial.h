@@ -55,8 +55,6 @@ private:
 	// Range: 0-255
 	int pulseWidthVal;
 
-	float pcmPosition;
-
 	Poly *poly;
 
 	LA32Ramp ampRamp;

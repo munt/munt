@@ -175,7 +175,6 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 		pulseWidthVal = 255;
 	}
 
-	pcmPosition = 0.0f;
 	pair = pairPartial;
 	alreadyOutputed = false;
 	tva->reset(part, patchCache->partialParam, rhythmTemp);
