@@ -236,6 +236,9 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 			// Add resonance sine. Effective for cutoff > 50 only
 			float resSample = 1.0f;
 
+			// Resonance decay speed factor
+			float resAmpDecayFactor = Tables::getInstance().resAmpDecayFactor[resonance >> 2];
+
 			// Now relWavePos counts from the middle of first cosine
 			relWavePos = wavePos;
 
@@ -243,6 +246,9 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 			if (!(relWavePos < (cosineLen + hLen))) {
 				resSample = -resSample;
 				relWavePos -= cosineLen + hLen;
+
+				// From the digital captures, the decaying speed of the resonance sine is found a bit different for the positive and the negative segments
+				resAmpDecayFactor += 0.25f;
 			}
 
 			// Resonance sine WG
@@ -253,7 +259,7 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 #endif
 
 			// Resonance sine amp
-			float resAmpFadeLog2 = -Tables::getInstance().resAmpDecayFactor[resonance >> 2] * (relWavePos / cosineLen); // seems to be exact
+			float resAmpFadeLog2 = -0.125f * resAmpDecayFactor * (relWavePos / cosineLen); // seems to be exact
 #if MT32EMU_ACCURATE_WG == 1
 			float resAmpFade = EXP2F(resAmpFadeLog2);
 #else
