@@ -109,28 +109,34 @@ void LA32WaveGenerator::advancePosition() {
 	if (sawtoothWaveform) {
 		sawtoothCosinePosition = (sawtoothCosinePosition + sawtoothCosineStep) & ((1 << 20) - 1);
 	}
-	if (phase == POSITIVE_LINEAR_SEGMENT) {
-		if (squareWavePosition >= highLen) {
-			squareWavePosition -= highLen;
-			phase = POSITIVE_FALLING_SINE_SEGMENT;
-		}
-	} else if (phase == NEGATIVE_LINEAR_SEGMENT) {
-		if (squareWavePosition >= lowLen) {
-			squareWavePosition -= lowLen;
-			phase = NEGATIVE_RISING_SINE_SEGMENT;
-		}
-	} else if (squareWavePosition >= (1 << 18)) {
-		squareWavePosition -= 1 << 18;
-		if (phase == NEGATIVE_RISING_SINE_SEGMENT) {
-			phase = POSITIVE_RISING_SINE_SEGMENT;
-			resonancePhase = POSITIVE_RISING_RESONANCE_SINE_SEGMENT;
-			resonanceSinePosition = squareWavePosition;
+	for (;;) {
+		if (phase == POSITIVE_LINEAR_SEGMENT) {
+			if (squareWavePosition < highLen) {
+				break;
+			} else {
+				squareWavePosition -= highLen;
+				phase = POSITIVE_FALLING_SINE_SEGMENT;
+			}
+		} else if (phase == NEGATIVE_LINEAR_SEGMENT) {
+			if (squareWavePosition < lowLen) {
+				break;
+			} else {
+				squareWavePosition -= lowLen;
+				phase = NEGATIVE_RISING_SINE_SEGMENT;
+			}
+		} else if (squareWavePosition < (1 << 18)) {
+			break;
 		} else {
-			// phase incrementing hack
-			++(*(int*)&phase);
-			if (phase == NEGATIVE_FALLING_SINE_SEGMENT) {
-				resonancePhase = NEGATIVE_FALLING_RESONANCE_SINE_SEGMENT;
+			squareWavePosition -= 1 << 18;
+			if (phase == NEGATIVE_RISING_SINE_SEGMENT) {
+				phase = POSITIVE_RISING_SINE_SEGMENT;
 				resonanceSinePosition = squareWavePosition;
+			} else {
+				// phase incrementing hack
+				++(*(int*)&phase);
+				if (phase == NEGATIVE_FALLING_SINE_SEGMENT) {
+					resonanceSinePosition = squareWavePosition;
+				}
 			}
 		}
 	}
