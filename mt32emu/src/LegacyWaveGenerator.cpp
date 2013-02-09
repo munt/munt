@@ -280,12 +280,19 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 				relWavePos -= cosineLen + hLen;
 			}
 
-			// Fading to zero while within cosine segments to avoid jumps in the wave
-			// Sample analysis suggests that this window is very close to cosine
+			// To ensure the output wave has no breaks, two different windows are appied to the beginning and the ending of the resonance sine segment
 			if (relWavePos < 0.5f * cosineLen) {
 #if MT32EMU_ACCURATE_WG == 1
-				resAmpFade *= 0.5f * (1.0f - cosf(FLOAT_PI * relWavePos / (0.5f * cosineLen)));
+				float syncSine = sinf(FLOAT_PI * relWavePos / cosineLen);
+				if (relWavePos < 0.0f) {
+					// The window is synchronous square sine here
+					resAmpFade *= syncSine * syncSine;
+				} else {
+					// The window is synchronous sine here
+					resAmpFade *= syncSine;
+				}
 #else
+				// FIXME: Inconsistent
 				resAmpFade *= 0.5f * (1.0f + tables.sinf10[Bit32s(2048.0f * relWavePos / (0.5f * cosineLen)) + 3072]);
 #endif
 			}
