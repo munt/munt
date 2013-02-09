@@ -86,9 +86,6 @@ void Partial::deactivate() {
 	ownerPart = -1;
 	if (poly != NULL) {
 		poly->partialDeactivated(this);
-		if (pair != NULL) {
-			pair->pair = NULL;
-		}
 	}
 	synth->partialStateChanged(this, tva->getPhase(), TVA_PHASE_DEAD);
 #if MT32EMU_MONITOR_PARTIALS > 2
@@ -99,10 +96,13 @@ void Partial::deactivate() {
 		pair->la32Pair.deactivate(LA32PartialPair::SLAVE);
 	} else {
 		la32Pair.deactivate(LA32PartialPair::MASTER);
-		if (pair != NULL) {
+		if (hasRingModulatingSlave()) {
 			pair->deactivate();
 			pair = NULL;
 		}
+	}
+	if (pair != NULL) {
+		pair->pair = NULL;
 	}
 }
 
@@ -196,7 +196,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	} else {
 		useLA32Pair->initSynth(pairType, (patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
 	}
-	if (pair == NULL) {
+	if (!hasRingModulatingSlave()) {
 		la32Pair.deactivate(LA32PartialPair::SLAVE);
 	}
 	// Temporary integration hack
@@ -245,14 +245,14 @@ unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length)
 	alreadyOutputed = true;
 
 	for (sampleNum = 0; sampleNum < length; sampleNum++) {
-		if (!tva->isPlaying() || (isPCM() && !la32Pair.isActive(LA32PartialPair::MASTER))) {
+		if (!tva->isPlaying() || !la32Pair.isActive(LA32PartialPair::MASTER)) {
 			deactivate();
 			break;
 		}
 		la32Pair.generateNextSample(LA32PartialPair::MASTER, getAmpValue(), tvp->nextPitch(), getCutoffValue());
 		if (hasRingModulatingSlave()) {
 			la32Pair.generateNextSample(LA32PartialPair::SLAVE, pair->getAmpValue(), pair->tvp->nextPitch(), pair->getCutoffValue());
-			if (!pair->tva->isPlaying() || (pair->isPCM() && !la32Pair.isActive(LA32PartialPair::SLAVE))) {
+			if (!pair->tva->isPlaying() || !la32Pair.isActive(LA32PartialPair::SLAVE)) {
 				pair->deactivate();
 				if (mixType == 2) {
 					deactivate();
