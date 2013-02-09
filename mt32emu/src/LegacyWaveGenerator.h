@@ -15,40 +15,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if MT32EMU_ACCURATE_WG == 0
+#if MT32EMU_ACCURATE_WG == 1
 
 #ifndef MT32EMU_LA32_WAVE_GENERATOR_H
 #define MT32EMU_LA32_WAVE_GENERATOR_H
 
 namespace MT32Emu {
-
-/**
- * LA32 performs wave generation in the log-space that allows replacing multiplications by cheap additions
- * It's assumed that only low-bit multiplications occur in a few places which are unavoidable like these:
- * - interpolation of exponent table (obvious, a delta value has 4 bits)
- * - computation of resonance amp decay envelope (the table contains values with 1-2 "1" bits except the very first value 31 but this case can be found using inversion)
- * - interpolation of PCM samples (obvious, the wave position counter is in the linear space, there is no log() table in the chip)
- * and it seems to be implemented in the same way as in the Boss chip, i.e. right shifted additions which involved noticeable precision loss
- * Subtraction is supposed to be replaced by simple inversion
- * As the logarithmic sine is always negative, all the logarithmic values are treated as decrements
- */
-struct LogSample {
-	// 16-bit fixed point value, includes 12-bit fractional part
-	// 4-bit integer part allows to present any 16-bit sample in the log-space
-	// Obviously, the log value doesn't contain the sign of the resulting sample
-	Bit16u logValue;
-	enum {
-		POSITIVE,
-		NEGATIVE
-	} sign;
-};
-
-class LA32Utilites {
-public:
-	static Bit16u interpolateExp(const Bit16u fract);
-	static Bit16s unlog(const LogSample logSample);
-	static void addLogSamples(LogSample &logSample1, const LogSample logSample2);
-};
 
 /**
  * LA32WaveGenerator is aimed to represent the exact model of LA32 wave generator.
@@ -102,91 +74,11 @@ class LA32WaveGenerator {
 	// Internal variables below
 	//***************************************************************************
 
-	// Relative position within a square wave phase:
-	// 0             - start of the phase
-	// 262144 (2^18) - corresponds to end of the sine phases, the length of linear phases may vary
-	Bit32u squareWavePosition;
-	Bit32u highLen;
-	Bit32u lowLen;
+	float wavePos;
+	float lastFreq;
+	float pcmPosition;
 
-	// Relative position within the positive or negative wave segment:
-	// 0 - start of the corresponding positive or negative segment of the square wave
-	// 262144 (2^18) - corresponds to end of the first sine phase in the square wave
-	// The same increment sampleStep is used to indicate the current position
-	// since the length of the resonance wave is always equal to four square wave sine segments.
-	Bit32u resonanceSinePosition;
-
-	// The amp of the resonance sine wave grows with the resonance value
-	// As the resonance value cannot change while the partial is active, it is initialised once
-	Bit32u resonanceAmpSubtraction;
-
-	// The decay speed of resonance sine wave, depends on the resonance value
-	Bit32u resAmpDecayFactor;
-
-	// Relative position within the cosine wave which is used to form the sawtooth wave
-	// 0 - start of the positive rising segment of the square wave
-	// The wave length corresponds to the current pitch
-	Bit32u sawtoothCosinePosition;
-
-	// Relative position within the PCM sampled wave
-	// 0 - start of the PCM sample
-	// The wave length corresponds to the current pitch
-	Bit32u pcmPosition;
-
-	// Fractional part of the pcmPosition
-	Bit32u pcmInterpolationFactor;
-
-	// Current phase of the square wave
-	enum {
-		POSITIVE_RISING_SINE_SEGMENT,
-		POSITIVE_LINEAR_SEGMENT,
-		POSITIVE_FALLING_SINE_SEGMENT,
-		NEGATIVE_FALLING_SINE_SEGMENT,
-		NEGATIVE_LINEAR_SEGMENT,
-		NEGATIVE_RISING_SINE_SEGMENT
-	} phase;
-
-	// Current phase of the resonance wave
-	enum {
-		POSITIVE_RISING_RESONANCE_SINE_SEGMENT,
-		POSITIVE_FALLING_RESONANCE_SINE_SEGMENT,
-		NEGATIVE_FALLING_RESONANCE_SINE_SEGMENT,
-		NEGATIVE_RISING_RESONANCE_SINE_SEGMENT
-	} resonancePhase;
-
-	// The increment of a wave position which is added when the current sample is completely processed
-	// Derived from the current values of pitch and cutoff
-	Bit32u sampleStep;
-
-	// The increment of sawtoothCosinePosition, the same as the sampleStep but for different wave length
-	// Depends on the current pitch value
-	Bit32u sawtoothCosineStep;
-
-	// The pcmPosition increment which is added when the current sample is completely processed
-	// Derived from the current pitch value
-	Bit32u pcmSampleStep;
-
-	// Resulting log-space samples of the square and resonance waves
-	LogSample squareLogSample;
-	LogSample resonanceLogSample;
-
-	// Processed neighbour log-space samples of the PCM wave
-	LogSample firstPCMLogSample;
-	LogSample secondPCMLogSample;
-
-	//***************************************************************************
-	// Internal methods below
-	//***************************************************************************
-
-	void updateWaveGeneratorState();
-	void advancePosition();
-
-	void generateNextSquareWaveLogSample();
-	void generateNextResonanceWaveLogSample();
-	LogSample nextSawtoothCosineLogSample() const;
-
-	LogSample pcmSampleToLogSample(const Bit16s pcmSample) const;
-	void generateNextPCMWaveLogSamples();
+	float getPCMSample(unsigned int position);
 
 public:
 	// Initialise the WG engine for generation of synth partial samples and set up the invariant parameters
@@ -196,10 +88,7 @@ public:
 	void initPCM(const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped, const bool pcmWaveInterpolated);
 
 	// Update parameters with respect to TVP, TVA and TVF, and generate next sample
-	void generateNextSample(const Bit32u amp, const Bit16u pitch, const Bit32u cutoff);
-
-	// WG output in the log-space consists of two components which are to be added (or ring modulated) in the linear-space afterwards
-	LogSample getOutputLogSample(const bool first) const;
+	float generateNextSample(const Bit32u amp, const Bit16u pitch, const Bit32u cutoff);
 
 	// Deactivate the WG engine
 	void deactivate();
@@ -209,9 +98,6 @@ public:
 
 	// Return true if the WG engine generates PCM wave samples
 	bool isPCMWave() const;
-
-	// Return current PCM interpolation factor
-	Bit32u getPCMInterpolationFactor() const;
 };
 
 // LA32PartialPair contains a structure of two partials being mixed / ring modulated
@@ -220,8 +106,8 @@ class LA32PartialPair {
 	LA32WaveGenerator slave;
 	bool ringModulated;
 	bool mixed;
-
-	static Bit16s unlogAndMixWGOutput(const LA32WaveGenerator &wg, const LogSample * const ringModulatingLogSample);
+	float masterOutputSample;
+	float slaveOutputSample;
 
 public:
 	enum PairType {
@@ -257,4 +143,4 @@ public:
 
 #endif // #ifndef MT32EMU_LA32_WAVE_GENERATOR_H
 
-#endif // #if MT32EMU_ACCURATE_WG == 0
+#endif // #if MT32EMU_ACCURATE_WG == 1

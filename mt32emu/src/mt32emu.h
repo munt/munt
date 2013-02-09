@@ -75,6 +75,10 @@
 // 2: Use Bit-perfect Boss Reverb model aka BReverb (for developers, not much practical use)
 #define MT32EMU_USE_REVERBMODEL 1
 
+// 0: Use refined wave generator based on logarithmic fixed-point computations and LUTs
+// 1: Use legacy accurate wave generator based on float computations
+#define MT32EMU_ACCURATE_WG 1
+
 namespace MT32Emu
 {
 // The higher this number, the more memory will be used, but the more samples can be processed in one run -
@@ -100,6 +104,7 @@ const unsigned int MAX_PRERENDER_SAMPLES = 1024;
 #include "Poly.h"
 #include "LA32Ramp.h"
 #include "LA32WaveGenerator.h"
+#include "LegacyWaveGenerator.h"
 #include "TVA.h"
 #include "TVP.h"
 #include "TVF.h"

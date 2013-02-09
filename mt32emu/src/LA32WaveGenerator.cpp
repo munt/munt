@@ -20,6 +20,8 @@
 #include "mmath.h"
 #include "LA32WaveGenerator.h"
 
+#if MT32EMU_ACCURATE_WG == 0
+
 namespace MT32Emu {
 
 static const Bit32u MIDDLE_CUTOFF_VALUE = 128 << 18;
@@ -428,3 +430,5 @@ bool LA32PartialPair::isActive(const PairType useMaster) const {
 }
 
 }
+
+#endif // #if MT32EMU_ACCURATE_WG == 0
