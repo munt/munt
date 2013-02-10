@@ -77,7 +77,7 @@
 
 // 0: Use refined wave generator based on logarithmic fixed-point computations and LUTs
 // 1: Use legacy accurate wave generator based on float computations
-#define MT32EMU_ACCURATE_WG 1
+#define MT32EMU_ACCURATE_WG 0
 
 namespace MT32Emu
 {
