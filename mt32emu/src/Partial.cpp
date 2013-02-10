@@ -541,7 +541,7 @@ bool Partial::produceOutput(float *leftBuf, float *rightBuf, unsigned long lengt
 
 	float *partialBuf = &myBuffer[0];
 	unsigned long numGenerated = generateSamples(partialBuf, length);
-	if (mixType == 1 || mixType == 2) {
+	if (hasRingModulatingSlave()) {
 		float *pairBuf;
 		unsigned long pairNumGenerated;
 		if (pair == NULL) {
