@@ -131,7 +131,7 @@ void LA32WaveGenerator::advancePosition() {
 			if (phase == NEGATIVE_RISING_SINE_SEGMENT) {
 				phase = POSITIVE_RISING_SINE_SEGMENT;
 				resonanceSinePosition = squareWavePosition;
-				sawtoothCosinePosition = 1 << 18;//Bit32u((1 << 18) + squareWavePosition * sawtoothCosineStep / (double)sampleStep);
+				sawtoothCosinePosition = 1 << 18;
 			} else {
 				// phase incrementing hack
 				++(*(int*)&phase);
