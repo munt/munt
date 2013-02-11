@@ -188,7 +188,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 		useLA32Pair = &pair->la32Pair;
 	} else {
 		pairType = LA32PartialPair::MASTER;
-		la32Pair.init(mixType != 0, mixType == 1);
+		la32Pair.init(hasRingModulatingSlave(), mixType == 1);
 		useLA32Pair = &la32Pair;
 	}
 	if (isPCM()) {
