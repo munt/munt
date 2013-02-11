@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.6)
 project(libmt32emu CXX)
 set(libmt32emu_VERSION_MAJOR 1)
-set(libmt32emu_VERSION_MINOR 0)
-set(libmt32emu_VERSION_PATCH 0)
+set(libmt32emu_VERSION_MINOR 1)
+set(libmt32emu_VERSION_PATCH 1)
 
 # Only headers that need to be installed should be listed here:
 set(libmt32emu_HEADERS

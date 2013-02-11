@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011, 2012, 2013 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -74,7 +74,7 @@ static int calcBaseCutoff(const TimbreParam::PartialParam *partialParam, Bit32u 
 		// biasPoint range here: 64 to 127
 		int bias = biasPoint - 31 - key; // bias range here: -75 to 84
 		if (bias < 0) {
-			baseCutoff += bias * biasLevelToBiasMult[partialParam->tvf.biasLevel]; // Calculation range: −6375 to 6375
+			baseCutoff += bias * biasLevelToBiasMult[partialParam->tvf.biasLevel]; // Calculation range: -6375 to 6375
 			// baseCutoff range now: -9399 to 9399
 		}
 	}
