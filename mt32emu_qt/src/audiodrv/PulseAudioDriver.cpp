@@ -14,6 +14,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
 #include <pthread.h>
 #include <dlfcn.h>
 
@@ -192,11 +193,11 @@ bool PulseAudioStream::start() {
 	// Configuring desired audio latency
 	qDebug() << "Using audio latency:" << audioLatency;
 	static const pa_buffer_attr ba = {
-		-1, // uint32_t maxlength;
+		(uint32_t)-1, // uint32_t maxlength;
 		audioLatency * FRAME_SIZE * sampleRate / 1000, // uint32_t tlength;
-		-1, // uint32_t prebuf;
-		-1, // uint32_t minreq;
-		-1 // uint32_t fragsize;
+		(uint32_t)-1, // uint32_t prebuf;
+		(uint32_t)-1, // uint32_t minreq;
+		(uint32_t)-1 // uint32_t fragsize;
 	};
 
 	// Create a new playback stream
