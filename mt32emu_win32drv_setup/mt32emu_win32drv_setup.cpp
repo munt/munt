@@ -144,6 +144,7 @@ int main(int argc, char *argv[]) {
 	MoveFileA(pathName, oldName);
 	int setupPathLen = strrchr(argv[0], '\\') - argv[0];
 	strncpy(oldName, argv[0], setupPathLen);
+	oldName[setupPathLen] = 0;
 	strncat(oldName, "/mt32emu.dll", MAX_PATH);
 	CopyFileA(oldName, pathName, FALSE);
 	RegisterDriver();
