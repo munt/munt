@@ -16,8 +16,7 @@ MAINTAINER=	sergm@muntemu.org
 COMMENT=	Software synthesiser emulating pre-GM MIDI devices such as Roland MT-32, CM-32L, CM-64 and LAPC-I
 
 USE_CMAKE=	yes
-USE_QT_VER=	4
-QT_COMPONENTS=	gui imageformats qmake_build moc_build rcc_build uic_build
+USE_QT4=	gui imageformats qmake_build moc_build rcc_build uic_build
 
 PLIST_FILES=	bin/mt32emu-smf2wav \
 		bin/mt32emu-qt \
