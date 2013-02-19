@@ -64,8 +64,8 @@ void LA32WaveGenerator::updateWaveGeneratorState() {
 	}
 
 	Bit32u cosineLenFactor = 0;
-	if (cutoffVal > MIDDLE_CUTOFF_VALUE) {
-		cosineLenFactor = (cutoffVal - MIDDLE_CUTOFF_VALUE) >> 10;
+	if (effectiveCutoffVal > MIDDLE_CUTOFF_VALUE) {
+		cosineLenFactor = (effectiveCutoffVal - MIDDLE_CUTOFF_VALUE) >> 10;
 	}
 
 	// sampleStep = EXP2F(pitch / 4096. + cosineLenFactor / 4096. + 4)
@@ -132,6 +132,7 @@ void LA32WaveGenerator::advancePosition() {
 				phase = POSITIVE_RISING_SINE_SEGMENT;
 				resonanceSinePosition = squareWavePosition;
 				sawtoothCosinePosition = 1 << 18;
+				effectiveCutoffVal = cutoffVal;
 			} else {
 				// phase incrementing hack
 				++(*(int*)&phase);
@@ -286,6 +287,7 @@ void LA32WaveGenerator::initSynth(const bool sawtoothWaveform, const Bit8u pulse
 	phase = POSITIVE_RISING_SINE_SEGMENT;
 	squareWavePosition = 0;
 	sawtoothCosinePosition = 1 << 18;
+	effectiveCutoffVal = MIDDLE_CUTOFF_VALUE;
 
 	resonancePhase = POSITIVE_RISING_RESONANCE_SINE_SEGMENT;
 	resonanceSinePosition = 0;

@@ -166,6 +166,12 @@ class LA32WaveGenerator {
 	// Derived from the current pitch value
 	Bit32u pcmSampleStep;
 
+	// Directly applying time-variant cutoff value would lead to either unpleasant changing in pitch or
+	// breaking the waveform (also the latter requires multiplications to scale the wave positions,
+	// one per variable - this seems not cheap)
+	// So, store cutoff value here and apply it as close as possible to the wave starting position to minimise the error.
+	Bit32u effectiveCutoffVal;
+
 	// Resulting log-space samples of the square and resonance waves
 	LogSample squareLogSample;
 	LogSample resonanceLogSample;
