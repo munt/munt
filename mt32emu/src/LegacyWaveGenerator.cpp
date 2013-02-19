@@ -145,9 +145,9 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 
 		// Init cosineLen
 		float cosineLen = 0.5f * waveLen;
-		if (cutoffVal > 128.0f) {
+		if (cutoffVal > MIDDLE_CUTOFF_VALUE) {
 #if MT32EMU_ACCURATE_WG == 1
-			cosineLen *= EXP2F((cutoffVal - 128.0f) / -16.0f); // found from sample analysis
+			cosineLen *= EXP2F((cutoffVal - MIDDLE_CUTOFF_VALUE) / -16.0f); // found from sample analysis
 #else
 			static const float cosineLenFactor = EXP2F(128.0f / -16.0f);
 			cosineLen *= EXP2I(Bit32u((256.0f - cutoffVal) * 256.0f)) * cosineLenFactor;
@@ -163,7 +163,7 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 
 		// Ratio of positive segment to wave length
 		float pulseLen = 0.5f;
-		if (pulseWidth > MIDDLE_CUTOFF_VALUE) {
+		if (pulseWidth > 128) {
 			pulseLen = EXP2F((64 - pulseWidth) / 64.0f);
 			//static const float pulseLenFactor = EXP2F(-192 / 64);
 			//pulseLen = EXP2I((256 - pulseWidthVal) << 6) * pulseLenFactor;
