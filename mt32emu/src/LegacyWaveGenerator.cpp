@@ -82,16 +82,8 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 	//
 	// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
 
-#if MT32EMU_ACCURATE_WG == 1
 	float amp = EXP2F(ampVal / -1024.0f / 4096.0f);
 	float freq = EXP2F(pitch / 4096.0f - 16.0f) * SAMPLE_RATE;
-#else
-	static const float ampFactor = EXP2F(32772 / -2048.0f);
-	float amp = EXP2I(ampRampVal >> 10) * ampFactor;
-
-	static const float freqFactor = EXP2F(-16.0f) * SAMPLE_RATE;
-	float freq = EXP2I(pitch) * freqFactor;
-#endif
 
 	if (isPCMWave()) {
 		// Render PCM waveform
@@ -146,12 +138,7 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 		// Init cosineLen
 		float cosineLen = 0.5f * waveLen;
 		if (cutoffVal > MIDDLE_CUTOFF_VALUE) {
-#if MT32EMU_ACCURATE_WG == 1
 			cosineLen *= EXP2F((cutoffVal - MIDDLE_CUTOFF_VALUE) / -16.0f); // found from sample analysis
-#else
-			static const float cosineLenFactor = EXP2F(128.0f / -16.0f);
-			cosineLen *= EXP2I(Bit32u((256.0f - cutoffVal) * 256.0f)) * cosineLenFactor;
-#endif
 		}
 
 		// Start playing in center of first cosine segment
@@ -185,22 +172,14 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 
 		// Correct resAmp for cutoff in range 50..66
 		if ((cutoffVal >= 128.0f) && (cutoffVal < 144.0f)) {
-#if MT32EMU_ACCURATE_WG == 1
 			resAmp *= sinf(FLOAT_PI * (cutoffVal - 128.0f) / 32.0f);
-#else
-			resAmp *= tables.sinf10[Bit32u(64 * (cutoffVal - 128.0f))];
-#endif
 		}
 
 		// Produce filtered square wave with 2 cosine waves on slopes
 
 		// 1st cosine segment
 		if (relWavePos < cosineLen) {
-#if MT32EMU_ACCURATE_WG == 1
 			sample = -cosf(FLOAT_PI * relWavePos / cosineLen);
-#else
-			sample = -tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) + 1024];
-#endif
 		} else
 
 		// high linear segment
@@ -210,11 +189,7 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 
 		// 2nd cosine segment
 		if (relWavePos < (2 * cosineLen + hLen)) {
-#if MT32EMU_ACCURATE_WG == 1
 			sample = cosf(FLOAT_PI * (relWavePos - (cosineLen + hLen)) / cosineLen);
-#else
-			sample = tables.sinf10[Bit32u(2048.0f * (relWavePos - (cosineLen + hLen)) / cosineLen) + 1024];
-#endif
 		} else {
 
 		// low linear segment
@@ -225,12 +200,7 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 
 			// Attenuate samples below cutoff 50
 			// Found by sample analysis
-#if MT32EMU_ACCURATE_WG == 1
 			sample *= EXP2F(-0.125f * (128.0f - cutoffVal));
-#else
-			static const float cutoffAttenuationFactor = EXP2F(-0.125f * 128.0f);
-			sample *= EXP2I(Bit32u(512.0f * cutoffVal)) * cutoffAttenuationFactor;
-#endif
 		} else {
 
 			// Add resonance sine. Effective for cutoff > 50 only
@@ -252,20 +222,11 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 			}
 
 			// Resonance sine WG
-#if MT32EMU_ACCURATE_WG == 1
 			resSample *= sinf(FLOAT_PI * relWavePos / cosineLen);
-#else
-			resSample *= tables.sinf10[Bit32u(2048.0f * relWavePos / cosineLen) & 4095];
-#endif
 
 			// Resonance sine amp
 			float resAmpFadeLog2 = -0.125f * resAmpDecayFactor * (relWavePos / cosineLen); // seems to be exact
-#if MT32EMU_ACCURATE_WG == 1
 			float resAmpFade = EXP2F(resAmpFadeLog2);
-#else
-			static const float resAmpFadeFactor = EXP2F(-30.0f);
-			float resAmpFade = (resAmpFadeLog2 < -30.0f) ? 0.0f : EXP2I(Bit32u((30.0f + resAmpFadeLog2) * 4096.0f)) * resAmpFadeFactor;
-#endif
 
 			// Now relWavePos set negative to the left from center of any cosine
 			relWavePos = wavePos;
@@ -282,7 +243,6 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 
 			// To ensure the output wave has no breaks, two different windows are appied to the beginning and the ending of the resonance sine segment
 			if (relWavePos < 0.5f * cosineLen) {
-#if MT32EMU_ACCURATE_WG == 1
 				float syncSine = sinf(FLOAT_PI * relWavePos / cosineLen);
 				if (relWavePos < 0.0f) {
 					// The window is synchronous square sine here
@@ -291,10 +251,6 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 					// The window is synchronous sine here
 					resAmpFade *= syncSine;
 				}
-#else
-				// FIXME: Inconsistent
-				resAmpFade *= 0.5f * (1.0f + tables.sinf10[Bit32s(2048.0f * relWavePos / (0.5f * cosineLen)) + 3072]);
-#endif
 			}
 
 			sample += resSample * resAmp * resAmpFade;
@@ -302,11 +258,7 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 
 		// sawtooth waves
 		if (sawtoothWaveform) {
-#if MT32EMU_ACCURATE_WG == 1
 			sample *= cosf(FLOAT_2PI * wavePos / waveLen);
-#else
-			sample *= tables.sinf10[(Bit32u(4096.0f * wavePos / waveLen) & 4095) + 1024];
-#endif
 		}
 
 		wavePos++;
