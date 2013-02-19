@@ -234,7 +234,6 @@ Bit32u Partial::getCutoffValue() {
 }
 
 unsigned long Partial::generateSamples(Bit16s *partialBuf, unsigned long length) {
-	const Tables &tables = Tables::getInstance();
 	if (!isActive() || alreadyOutputed) {
 		return 0;
 	}
