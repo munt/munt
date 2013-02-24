@@ -24,6 +24,7 @@
 
 namespace MT32Emu {
 
+static const Bit32u SINE_SEGMENT_RELATIVE_LENGTH = 1 << 18;
 static const Bit32u MIDDLE_CUTOFF_VALUE = 128 << 18;
 static const Bit32u RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE = 144 << 18;
 static const Bit32u MAX_CUTOFF_VALUE = 240 << 18;
@@ -37,7 +38,7 @@ Bit16u LA32Utilites::interpolateExp(const Bit16u fract) {
 	return expTabEntry1 + (((expTabEntry2 - expTabEntry1) * extraBits) >> 3);
 }
 
-Bit16s LA32Utilites::unlog(const LogSample logSample) {
+Bit16s LA32Utilites::unlog(const LogSample &logSample) {
 	//Bit16s sample = (Bit16s)EXP2F(13.0f - logSample.logValue / 1024.0f);
 	Bit32u intLogValue = logSample.logValue >> 12;
 	Bit32u fracLogValue = logSample.logValue & 4095;
@@ -45,103 +46,100 @@ Bit16s LA32Utilites::unlog(const LogSample logSample) {
 	return logSample.sign == LogSample::POSITIVE ? sample : -sample;
 }
 
-void LA32Utilites::addLogSamples(LogSample &logSample1, const LogSample logSample2) {
+void LA32Utilites::addLogSamples(LogSample &logSample1, const LogSample &logSample2) {
 	Bit32u logSampleValue = logSample1.logValue + logSample2.logValue;
 	logSample1.logValue = logSampleValue < 65536 ? logSampleValue : 65535;
 	logSample1.sign = logSample1.sign == logSample2.sign ? LogSample::POSITIVE : LogSample::NEGATIVE;
 }
 
-void LA32WaveGenerator::updateWaveGeneratorState() {
-	// sawtoothCosineStep = EXP2F(pitch / 4096. + 4)
-	if (sawtoothWaveform) {
-		Bit32u expArgInt = pitch >> 12;
-		sawtoothCosineStep = LA32Utilites::interpolateExp(~pitch & 4095);
-		if (expArgInt < 8) {
-			sawtoothCosineStep >>= 8 - expArgInt;
-		} else {
-			sawtoothCosineStep <<= expArgInt - 8;
-		}
-	}
-
-	Bit32u cosineLenFactor = 0;
-	if (effectiveCutoffVal > MIDDLE_CUTOFF_VALUE) {
-		cosineLenFactor = (effectiveCutoffVal - MIDDLE_CUTOFF_VALUE) >> 10;
-	}
-
-	// sampleStep = EXP2F(pitch / 4096. + cosineLenFactor / 4096. + 4)
-	{
-		Bit32u expArg = pitch + cosineLenFactor;
-		Bit32u expArgInt = expArg >> 12;
-		sampleStep = LA32Utilites::interpolateExp(~expArg & 4095);
-		if (expArgInt < 8) {
-			sampleStep >>= 8 - expArgInt;
-		} else {
-			sampleStep <<= expArgInt - 8;
-		}
-	}
-
-	// Ratio of positive segment to wave length
-	Bit32u pulseLenFactor = 0;
-	if (pulseWidth > 128) {
-		pulseLenFactor = (pulseWidth - 128) << 6;
-	}
-
-	// highLen = EXP2F(19 - pulseLenFactor / 4096. + cosineLenFactor / 4096.) - (2 << 18);
-	if (pulseLenFactor < cosineLenFactor) {
-		Bit32u expArg = cosineLenFactor - pulseLenFactor;
-		Bit32u expArgInt = expArg >> 12;
-		highLen = LA32Utilites::interpolateExp(~expArg & 4095);
-		highLen <<= 7 + expArgInt;
-		highLen -= (2 << 18);
+Bit32u LA32WaveGenerator::getSampleStep() {
+	// sampleStep = EXP2F(pitch / 4096. + 4)
+	Bit32u expArgInt = pitch >> 12;
+	Bit32u sampleStep = LA32Utilites::interpolateExp(~pitch & 4095);
+	if (expArgInt < 8) {
+		sampleStep >>= 8 - expArgInt;
 	} else {
-		highLen = 0;
+		sampleStep <<= expArgInt - 8;
+	}
+	return sampleStep;
+}
+
+Bit32u LA32WaveGenerator::getResonanceWaveLengthFactor(Bit32u effectiveCutoffValue) {
+	// resonanceWaveLengthFactor = (Bit32u)EXP2F(8.0f + effectiveCutoffValue / 4096.0f);
+	Bit32u resonanceWaveLengthFactor = LA32Utilites::interpolateExp(~effectiveCutoffValue & 4095);
+	resonanceWaveLengthFactor <<= effectiveCutoffValue >> 12;
+	resonanceWaveLengthFactor >>= 4;
+	return resonanceWaveLengthFactor;
+}
+
+Bit32u LA32WaveGenerator::getHighLinearLength(Bit32u effectiveCutoffValue) {
+	// Ratio of positive segment to wave length
+	Bit32u effectivePulseWidthValue = 0;
+	if (pulseWidth > 128) {
+		effectivePulseWidthValue = (pulseWidth - 128) << 6;
 	}
 
-	// lowLen = EXP2F(20 + cosineLenFactor / 4096.) - (4 << 18) - highLen;
-	lowLen = LA32Utilites::interpolateExp(~cosineLenFactor & 4095);
-	lowLen <<= 8 + (cosineLenFactor >> 12);
-	lowLen -= (4 << 18) + highLen;
+	Bit32u highLinearLength = 0;
+	// highLen = EXP2F(19 - effectivePulseWidthValue / 4096. + effectiveCutoffValue / 4096.) - (2 << 18);
+	if (effectivePulseWidthValue < effectiveCutoffValue) {
+		Bit32u expArg = effectiveCutoffValue - effectivePulseWidthValue;
+		Bit32u expArgInt = expArg >> 12;
+		highLinearLength = LA32Utilites::interpolateExp(~expArg & 4095);
+		highLinearLength <<= 7 + expArgInt;
+		highLinearLength -= 2 * SINE_SEGMENT_RELATIVE_LENGTH;
+	}
+	return highLinearLength;
+}
+
+Bit32u LA32WaveGenerator::getLowLinearLength(Bit32u effectiveCutoffValue, Bit32u highLinearLength) {
+	// lowLen = EXP2F(20 + effectiveCutoffValue / 4096.) - (4 << 18) - highLen;
+	Bit32u lowLinearLength = LA32Utilites::interpolateExp(~effectiveCutoffValue & 4095);
+	lowLinearLength <<= 8 + (effectiveCutoffValue >> 12);
+	lowLinearLength -= 4 * SINE_SEGMENT_RELATIVE_LENGTH + highLinearLength;
+	return lowLinearLength;
+}
+
+void LA32WaveGenerator::computePositions(Bit32u highLinearLength, Bit32u lowLinearLength, Bit32u resonanceWaveLengthFactor) {
+	squareWavePosition = resonanceSinePosition = (wavePosition * resonanceWaveLengthFactor) >> 8;
+	if (resonanceSinePosition < SINE_SEGMENT_RELATIVE_LENGTH) {
+		phase = POSITIVE_RISING_SINE_SEGMENT;
+		return;
+	}
+	squareWavePosition -= SINE_SEGMENT_RELATIVE_LENGTH;
+	if (squareWavePosition < highLinearLength) {
+		phase = POSITIVE_LINEAR_SEGMENT;
+		return;
+	}
+	squareWavePosition -= highLinearLength;
+	if (squareWavePosition < SINE_SEGMENT_RELATIVE_LENGTH) {
+		phase = POSITIVE_FALLING_SINE_SEGMENT;
+		return;
+	}
+	resonanceSinePosition -= 2 * SINE_SEGMENT_RELATIVE_LENGTH + highLinearLength;
+	squareWavePosition -= SINE_SEGMENT_RELATIVE_LENGTH;
+	if (squareWavePosition < SINE_SEGMENT_RELATIVE_LENGTH) {
+		phase = NEGATIVE_FALLING_SINE_SEGMENT;
+		return;
+	}
+	squareWavePosition -= SINE_SEGMENT_RELATIVE_LENGTH;
+	if (squareWavePosition < lowLinearLength) {
+		phase = NEGATIVE_LINEAR_SEGMENT;
+		return;
+	}
+	squareWavePosition -= lowLinearLength;
+	phase = NEGATIVE_RISING_SINE_SEGMENT;
 }
 
 void LA32WaveGenerator::advancePosition() {
-	squareWavePosition += sampleStep;
-	resonanceSinePosition += sampleStep;
-	if (sawtoothWaveform) {
-		sawtoothCosinePosition = (sawtoothCosinePosition + sawtoothCosineStep) & ((1 << 20) - 1);
-	}
-	for (;;) {
-		if (phase == POSITIVE_LINEAR_SEGMENT) {
-			if (squareWavePosition < highLen) {
-				break;
-			} else {
-				squareWavePosition -= highLen;
-				phase = POSITIVE_FALLING_SINE_SEGMENT;
-			}
-		} else if (phase == NEGATIVE_LINEAR_SEGMENT) {
-			if (squareWavePosition < lowLen) {
-				break;
-			} else {
-				squareWavePosition -= lowLen;
-				phase = NEGATIVE_RISING_SINE_SEGMENT;
-			}
-		} else if (squareWavePosition < (1 << 18)) {
-			break;
-		} else {
-			squareWavePosition -= 1 << 18;
-			if (phase == NEGATIVE_RISING_SINE_SEGMENT) {
-				phase = POSITIVE_RISING_SINE_SEGMENT;
-				resonanceSinePosition = squareWavePosition;
-				sawtoothCosinePosition = 1 << 18;
-				effectiveCutoffVal = cutoffVal;
-			} else {
-				// phase incrementing hack
-				++(*(int*)&phase);
-				if (phase == NEGATIVE_FALLING_SINE_SEGMENT) {
-					resonanceSinePosition = squareWavePosition;
-				}
-			}
-		}
-	}
+	wavePosition += getSampleStep();
+	wavePosition %= 4 * SINE_SEGMENT_RELATIVE_LENGTH;
+
+	Bit32u effectiveCutoffValue = (cutoffVal > MIDDLE_CUTOFF_VALUE) ? (cutoffVal - MIDDLE_CUTOFF_VALUE) >> 10 : 0;
+	Bit32u highLinearLength = getHighLinearLength(effectiveCutoffValue);
+	Bit32u lowLinearLength = getLowLinearLength(effectiveCutoffValue, highLinearLength);
+	Bit32u resonanceWaveLengthFactor = getResonanceWaveLengthFactor(effectiveCutoffValue);
+	computePositions(highLinearLength, lowLinearLength, resonanceWaveLengthFactor);
+
 	// resonancePhase computation hack
 	*(int*)&resonancePhase = ((resonanceSinePosition >> 18) + (phase > POSITIVE_FALLING_SINE_SEGMENT ? 2 : 0)) & 3;
 }
@@ -218,50 +216,39 @@ void LA32WaveGenerator::generateNextResonanceWaveLogSample() {
 	resonanceLogSample.sign = resonancePhase < NEGATIVE_FALLING_RESONANCE_SINE_SEGMENT ? LogSample::POSITIVE : LogSample::NEGATIVE;
 }
 
-LogSample LA32WaveGenerator::nextSawtoothCosineLogSample() const {
-	LogSample logSample;
+void LA32WaveGenerator::nextSawtoothCosineLogSample(LogSample &logSample) const {
+	Bit32u sawtoothCosinePosition = wavePosition + (1 << 18);
 	if ((sawtoothCosinePosition & (1 << 18)) > 0) {
 		logSample.logValue = Tables::getInstance().logsin9[~(sawtoothCosinePosition >> 9) & 511];
 	} else {
 		logSample.logValue = Tables::getInstance().logsin9[(sawtoothCosinePosition >> 9) & 511];
 	}
 	logSample.logValue <<= 2;
-
 	logSample.sign = ((sawtoothCosinePosition & (1 << 19)) == 0) ? LogSample::POSITIVE : LogSample::NEGATIVE;
-	return logSample;
 }
 
-LogSample LA32WaveGenerator::pcmSampleToLogSample(const Bit16s pcmSample) const {
-	LogSample logSample;
-	logSample.sign = pcmSample < 0 ? LogSample::NEGATIVE : LogSample::POSITIVE;
-	// TODO: This was accurate for the float model, to be refined
+void LA32WaveGenerator::pcmSampleToLogSample(LogSample &logSample, const Bit16s pcmSample) const {
 	Bit32u logSampleValue = (32787 - (pcmSample & 32767)) << 1;
 	logSampleValue += amp >> 10;
 	logSample.logValue = logSampleValue < 65536 ? logSampleValue : 65535;
-	return logSample;
+	logSample.sign = pcmSample < 0 ? LogSample::NEGATIVE : LogSample::POSITIVE;
 }
 
 void LA32WaveGenerator::generateNextPCMWaveLogSamples() {
-	// pcmSampleStep = EXP2F(pitch / 4096. - 5.);
-	pcmSampleStep = LA32Utilites::interpolateExp(~pitch & 4095);
-	pcmSampleStep <<= pitch >> 12;
-	// Seeing the actual lengths of the PCM wave for pitches 00..12,
-	// the pcmPosition counter can be assumed to have 8-bit fractions
-	pcmSampleStep >>= 9;
 	// This should emulate the ladder we see in the PCM captures for pitches 01, 02, 07, etc.
 	// The most probable cause is the factor in the interpolation formula is one bit less
 	// accurate than the sample position counter
-	pcmInterpolationFactor = (pcmPosition & 255) >> 1;
-	Bit32u pcmWaveTableIx = pcmPosition >> 8;
-	firstPCMLogSample = pcmSampleToLogSample(pcmWaveAddress[pcmWaveTableIx]);
+	pcmInterpolationFactor = (wavePosition & 255) >> 1;
+	Bit32u pcmWaveTableIx = wavePosition >> 8;
+	pcmSampleToLogSample(firstPCMLogSample, pcmWaveAddress[pcmWaveTableIx]);
 	if (pcmWaveInterpolated) {
 		pcmWaveTableIx++;
 		if (pcmWaveTableIx < pcmWaveLength) {
-			secondPCMLogSample = pcmSampleToLogSample(pcmWaveAddress[pcmWaveTableIx]);
+			pcmSampleToLogSample(secondPCMLogSample, pcmWaveAddress[pcmWaveTableIx]);
 		} else {
 			if (pcmWaveLooped) {
 				pcmWaveTableIx -= pcmWaveLength;
-				secondPCMLogSample = pcmSampleToLogSample(pcmWaveAddress[pcmWaveTableIx]);
+				pcmSampleToLogSample(secondPCMLogSample, pcmWaveAddress[pcmWaveTableIx]);
 			} else {
 				secondPCMLogSample = SILENCE;
 			}
@@ -269,12 +256,18 @@ void LA32WaveGenerator::generateNextPCMWaveLogSamples() {
 	} else {
 		secondPCMLogSample = SILENCE;
 	}
-	pcmPosition += pcmSampleStep;
-	if (pcmPosition >= (pcmWaveLength << 8)) {
+	// pcmSampleStep = EXP2F(pitch / 4096. - 5.);
+	Bit32u pcmSampleStep = LA32Utilites::interpolateExp(~pitch & 4095);
+	pcmSampleStep <<= pitch >> 12;
+	// Seeing the actual lengths of the PCM wave for pitches 00..12,
+	// the pcmPosition counter can be assumed to have 8-bit fractions
+	pcmSampleStep >>= 9;
+	wavePosition += pcmSampleStep;
+	if (wavePosition >= (pcmWaveLength << 8)) {
 		if (pcmWaveLooped) {
-			pcmPosition -= pcmWaveLength << 8;
+			wavePosition -= pcmWaveLength << 8;
 		} else {
-			active = false;
+			deactivate();
 		}
 	}
 }
@@ -284,15 +277,14 @@ void LA32WaveGenerator::initSynth(const bool sawtoothWaveform, const Bit8u pulse
 	this->pulseWidth = pulseWidth;
 	this->resonance = resonance;
 
-	phase = POSITIVE_RISING_SINE_SEGMENT;
+	wavePosition = 0;
+
 	squareWavePosition = 0;
-	sawtoothCosinePosition = 1 << 18;
-	effectiveCutoffVal = MIDDLE_CUTOFF_VALUE;
+	phase = POSITIVE_RISING_SINE_SEGMENT;
 
-	resonancePhase = POSITIVE_RISING_RESONANCE_SINE_SEGMENT;
 	resonanceSinePosition = 0;
+	resonancePhase = POSITIVE_RISING_RESONANCE_SINE_SEGMENT;
 	resonanceAmpSubtraction = (32 - resonance) << 10;
-
 	resAmpDecayFactor = Tables::getInstance().resAmpDecayFactor[resonance >> 2] << 2;
 
 	pcmWaveAddress = NULL;
@@ -305,7 +297,7 @@ void LA32WaveGenerator::initPCM(const Bit16s * const pcmWaveAddress, const Bit32
 	this->pcmWaveLooped = pcmWaveLooped;
 	this->pcmWaveInterpolated = pcmWaveInterpolated;
 
-	pcmPosition = 0;
+	wavePosition = 0;
 	active = true;
 }
 
@@ -326,11 +318,11 @@ void LA32WaveGenerator::generateNextSample(const Bit32u amp, const Bit16u pitch,
 	// More research is needed to be sure that this is correct, however.
 	this->cutoffVal = (cutoffVal > MAX_CUTOFF_VALUE) ? MAX_CUTOFF_VALUE : cutoffVal;
 
-	updateWaveGeneratorState();
 	generateNextSquareWaveLogSample();
 	generateNextResonanceWaveLogSample();
 	if (sawtoothWaveform) {
-		LogSample cosineLogSample = nextSawtoothCosineLogSample();
+		LogSample cosineLogSample;
+		nextSawtoothCosineLogSample(cosineLogSample);
 		LA32Utilites::addLogSamples(squareLogSample, cosineLogSample);
 		LA32Utilites::addLogSamples(resonanceLogSample, cosineLogSample);
 	}

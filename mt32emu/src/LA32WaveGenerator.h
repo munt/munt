@@ -46,8 +46,8 @@ struct LogSample {
 class LA32Utilites {
 public:
 	static Bit16u interpolateExp(const Bit16u fract);
-	static Bit16s unlog(const LogSample logSample);
-	static void addLogSamples(LogSample &logSample1, const LogSample logSample2);
+	static Bit16s unlog(const LogSample &logSample);
+	static void addLogSamples(LogSample &logSample1, const LogSample &logSample2);
 };
 
 /**
@@ -102,12 +102,16 @@ class LA32WaveGenerator {
 	// Internal variables below
 	//***************************************************************************
 
+	// Relative position within either the synth wave or the PCM sampled wave
+	// 0 - start of the positive rising sine segment of the square wave or start of the PCM sample
+	// 1048576 (2^20) - end of the negative rising sine segment of the square wave
+	// For PCM waves, the address of the currently playing sample equals (wavePosition / 256)
+	Bit32u wavePosition;
+
 	// Relative position within a square wave phase:
 	// 0             - start of the phase
-	// 262144 (2^18) - corresponds to end of the sine phases, the length of linear phases may vary
+	// 262144 (2^18) - end of a sine phase in the square wave
 	Bit32u squareWavePosition;
-	Bit32u highLen;
-	Bit32u lowLen;
 
 	// Relative position within the positive or negative wave segment:
 	// 0 - start of the corresponding positive or negative segment of the square wave
@@ -122,16 +126,6 @@ class LA32WaveGenerator {
 
 	// The decay speed of resonance sine wave, depends on the resonance value
 	Bit32u resAmpDecayFactor;
-
-	// Relative position within the cosine wave which is used to form the sawtooth wave
-	// 0 - start of the positive rising segment of the square wave
-	// The wave length corresponds to the current pitch
-	Bit32u sawtoothCosinePosition;
-
-	// Relative position within the PCM sampled wave
-	// 0 - start of the PCM sample
-	// The wave length corresponds to the current pitch
-	Bit32u pcmPosition;
 
 	// Fractional part of the pcmPosition
 	Bit32u pcmInterpolationFactor;
@@ -154,24 +148,6 @@ class LA32WaveGenerator {
 		NEGATIVE_RISING_RESONANCE_SINE_SEGMENT
 	} resonancePhase;
 
-	// The increment of a wave position which is added when the current sample is completely processed
-	// Derived from the current values of pitch and cutoff
-	Bit32u sampleStep;
-
-	// The increment of sawtoothCosinePosition, the same as the sampleStep but for different wave length
-	// Depends on the current pitch value
-	Bit32u sawtoothCosineStep;
-
-	// The pcmPosition increment which is added when the current sample is completely processed
-	// Derived from the current pitch value
-	Bit32u pcmSampleStep;
-
-	// Directly applying time-variant cutoff value would lead to either unpleasant changing in pitch or
-	// breaking the waveform (also the latter requires multiplications to scale the wave positions,
-	// one per variable - this seems not cheap)
-	// So, store cutoff value here and apply it as close as possible to the wave starting position to minimise the error.
-	Bit32u effectiveCutoffVal;
-
 	// Resulting log-space samples of the square and resonance waves
 	LogSample squareLogSample;
 	LogSample resonanceLogSample;
@@ -184,14 +160,19 @@ class LA32WaveGenerator {
 	// Internal methods below
 	//***************************************************************************
 
-	void updateWaveGeneratorState();
+	Bit32u getSampleStep();
+	Bit32u getResonanceWaveLengthFactor(Bit32u effectiveCutoffValue);
+	Bit32u getHighLinearLength(Bit32u effectiveCutoffValue);
+	Bit32u getLowLinearLength(Bit32u effectiveCutoffValue, Bit32u highLinearLength);
+
+	void computePositions(Bit32u highLinearLength, Bit32u lowLinearLength, Bit32u resonanceWaveLengthFactor);
 	void advancePosition();
 
 	void generateNextSquareWaveLogSample();
 	void generateNextResonanceWaveLogSample();
-	LogSample nextSawtoothCosineLogSample() const;
+	void nextSawtoothCosineLogSample(LogSample &logSample) const;
 
-	LogSample pcmSampleToLogSample(const Bit16s pcmSample) const;
+	void pcmSampleToLogSample(LogSample &logSample, const Bit16s pcmSample) const;
 	void generateNextPCMWaveLogSamples();
 
 public:
