@@ -163,7 +163,6 @@ class LA32WaveGenerator {
 	Bit32u getSampleStep();
 	Bit32u getResonanceWaveLengthFactor(Bit32u effectiveCutoffValue);
 	Bit32u getHighLinearLength(Bit32u effectiveCutoffValue);
-	Bit32u getLowLinearLength(Bit32u effectiveCutoffValue, Bit32u highLinearLength);
 
 	void computePositions(Bit32u highLinearLength, Bit32u lowLinearLength, Bit32u resonanceWaveLengthFactor);
 	void advancePosition();

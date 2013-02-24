@@ -53,22 +53,17 @@ void LA32Utilites::addLogSamples(LogSample &logSample1, const LogSample &logSamp
 }
 
 Bit32u LA32WaveGenerator::getSampleStep() {
-	// sampleStep = EXP2F(pitch / 4096. + 4)
-	Bit32u expArgInt = pitch >> 12;
+	// sampleStep = EXP2F(pitch / 4096.0f + 4.0f)
 	Bit32u sampleStep = LA32Utilites::interpolateExp(~pitch & 4095);
-	if (expArgInt < 8) {
-		sampleStep >>= 8 - expArgInt;
-	} else {
-		sampleStep <<= expArgInt - 8;
-	}
+	sampleStep <<= pitch >> 12;
+	sampleStep >>= 8;
 	return sampleStep;
 }
 
 Bit32u LA32WaveGenerator::getResonanceWaveLengthFactor(Bit32u effectiveCutoffValue) {
-	// resonanceWaveLengthFactor = (Bit32u)EXP2F(8.0f + effectiveCutoffValue / 4096.0f);
+	// resonanceWaveLengthFactor = (Bit32u)EXP2F(12.0f + effectiveCutoffValue / 4096.0f);
 	Bit32u resonanceWaveLengthFactor = LA32Utilites::interpolateExp(~effectiveCutoffValue & 4095);
 	resonanceWaveLengthFactor <<= effectiveCutoffValue >> 12;
-	resonanceWaveLengthFactor >>= 4;
 	return resonanceWaveLengthFactor;
 }
 
@@ -80,27 +75,19 @@ Bit32u LA32WaveGenerator::getHighLinearLength(Bit32u effectiveCutoffValue) {
 	}
 
 	Bit32u highLinearLength = 0;
-	// highLen = EXP2F(19 - effectivePulseWidthValue / 4096. + effectiveCutoffValue / 4096.) - (2 << 18);
+	// highLinearLength = EXP2F(19.0f - effectivePulseWidthValue / 4096.0f + effectiveCutoffValue / 4096.0f) - 2 * SINE_SEGMENT_RELATIVE_LENGTH;
 	if (effectivePulseWidthValue < effectiveCutoffValue) {
 		Bit32u expArg = effectiveCutoffValue - effectivePulseWidthValue;
-		Bit32u expArgInt = expArg >> 12;
 		highLinearLength = LA32Utilites::interpolateExp(~expArg & 4095);
-		highLinearLength <<= 7 + expArgInt;
+		highLinearLength <<= 7 + (expArg >> 12);
 		highLinearLength -= 2 * SINE_SEGMENT_RELATIVE_LENGTH;
 	}
 	return highLinearLength;
 }
 
-Bit32u LA32WaveGenerator::getLowLinearLength(Bit32u effectiveCutoffValue, Bit32u highLinearLength) {
-	// lowLen = EXP2F(20 + effectiveCutoffValue / 4096.) - (4 << 18) - highLen;
-	Bit32u lowLinearLength = LA32Utilites::interpolateExp(~effectiveCutoffValue & 4095);
-	lowLinearLength <<= 8 + (effectiveCutoffValue >> 12);
-	lowLinearLength -= 4 * SINE_SEGMENT_RELATIVE_LENGTH + highLinearLength;
-	return lowLinearLength;
-}
-
 void LA32WaveGenerator::computePositions(Bit32u highLinearLength, Bit32u lowLinearLength, Bit32u resonanceWaveLengthFactor) {
-	squareWavePosition = resonanceSinePosition = (wavePosition * resonanceWaveLengthFactor) >> 8;
+	// Assuming 8-bit multiplication used here
+	squareWavePosition = resonanceSinePosition = (wavePosition * (resonanceWaveLengthFactor >> 4)) >> 8;
 	if (resonanceSinePosition < SINE_SEGMENT_RELATIVE_LENGTH) {
 		phase = POSITIVE_RISING_SINE_SEGMENT;
 		return;
@@ -135,9 +122,9 @@ void LA32WaveGenerator::advancePosition() {
 	wavePosition %= 4 * SINE_SEGMENT_RELATIVE_LENGTH;
 
 	Bit32u effectiveCutoffValue = (cutoffVal > MIDDLE_CUTOFF_VALUE) ? (cutoffVal - MIDDLE_CUTOFF_VALUE) >> 10 : 0;
-	Bit32u highLinearLength = getHighLinearLength(effectiveCutoffValue);
-	Bit32u lowLinearLength = getLowLinearLength(effectiveCutoffValue, highLinearLength);
 	Bit32u resonanceWaveLengthFactor = getResonanceWaveLengthFactor(effectiveCutoffValue);
+	Bit32u highLinearLength = getHighLinearLength(effectiveCutoffValue);
+	Bit32u lowLinearLength = (resonanceWaveLengthFactor << 8) - 4 * SINE_SEGMENT_RELATIVE_LENGTH - highLinearLength;
 	computePositions(highLinearLength, lowLinearLength, resonanceWaveLengthFactor);
 
 	// resonancePhase computation hack
