@@ -86,8 +86,8 @@ Bit32u LA32WaveGenerator::getHighLinearLength(Bit32u effectiveCutoffValue) {
 }
 
 void LA32WaveGenerator::computePositions(Bit32u highLinearLength, Bit32u lowLinearLength, Bit32u resonanceWaveLengthFactor) {
-	// Assuming 8-bit multiplication used here
-	squareWavePosition = resonanceSinePosition = (wavePosition * (resonanceWaveLengthFactor >> 4)) >> 8;
+	// Assuming 12-bit multiplication used here
+	squareWavePosition = resonanceSinePosition = (wavePosition >> 8) * (resonanceWaveLengthFactor >> 4);
 	if (resonanceSinePosition < SINE_SEGMENT_RELATIVE_LENGTH) {
 		phase = POSITIVE_RISING_SINE_SEGMENT;
 		return;
@@ -102,8 +102,8 @@ void LA32WaveGenerator::computePositions(Bit32u highLinearLength, Bit32u lowLine
 		phase = POSITIVE_FALLING_SINE_SEGMENT;
 		return;
 	}
-	resonanceSinePosition -= 2 * SINE_SEGMENT_RELATIVE_LENGTH + highLinearLength;
 	squareWavePosition -= SINE_SEGMENT_RELATIVE_LENGTH;
+	resonanceSinePosition = squareWavePosition;
 	if (squareWavePosition < SINE_SEGMENT_RELATIVE_LENGTH) {
 		phase = NEGATIVE_FALLING_SINE_SEGMENT;
 		return;
