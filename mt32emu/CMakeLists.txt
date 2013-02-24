@@ -10,6 +10,8 @@ set(libmt32emu_HEADERS
   src/FileStream.h
   src/mt32emu.h
   src/LA32Ramp.h
+  src/LA32WaveGenerator.h
+  src/LegacyWaveGenerator.h
   src/Part.h
   src/Partial.h
   src/Poly.h
@@ -39,6 +41,8 @@ add_library(mt32emu STATIC
   src/FileStream.cpp
   src/FreeverbModel.cpp
   src/LA32Ramp.cpp
+  src/LA32WaveGenerator.cpp
+  src/LegacyWaveGenerator.cpp
   src/Part.cpp
   src/Partial.cpp
   src/PartialManager.cpp
