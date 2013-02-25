@@ -41,14 +41,14 @@ Bit16u LA32Utilites::interpolateExp(const Bit16u fract) {
 Bit16s LA32Utilites::unlog(const LogSample &logSample) {
 	//Bit16s sample = (Bit16s)EXP2F(13.0f - logSample.logValue / 1024.0f);
 	Bit32u intLogValue = logSample.logValue >> 12;
-	Bit32u fracLogValue = logSample.logValue & 4095;
+	Bit16u fracLogValue = logSample.logValue & 4095;
 	Bit16s sample = interpolateExp(fracLogValue) >> intLogValue;
 	return logSample.sign == LogSample::POSITIVE ? sample : -sample;
 }
 
 void LA32Utilites::addLogSamples(LogSample &logSample1, const LogSample &logSample2) {
 	Bit32u logSampleValue = logSample1.logValue + logSample2.logValue;
-	logSample1.logValue = logSampleValue < 65536 ? logSampleValue : 65535;
+	logSample1.logValue = logSampleValue < 65536 ? (Bit16u)logSampleValue : 65535;
 	logSample1.sign = logSample1.sign == logSample2.sign ? LogSample::POSITIVE : LogSample::NEGATIVE;
 }
 
@@ -144,6 +144,7 @@ void LA32WaveGenerator::generateNextSquareWaveLogSample() {
 			break;
 		case POSITIVE_LINEAR_SEGMENT:
 		case NEGATIVE_LINEAR_SEGMENT:
+		default:
 			logSampleValue = 0;
 			break;
 	}
@@ -153,7 +154,7 @@ void LA32WaveGenerator::generateNextSquareWaveLogSample() {
 		logSampleValue += (MIDDLE_CUTOFF_VALUE - cutoffVal) >> 9;
 	}
 
-	squareLogSample.logValue = logSampleValue < 65536 ? logSampleValue : 65535;
+	squareLogSample.logValue = logSampleValue < 65536 ? (Bit16u)logSampleValue : 65535;
 	squareLogSample.sign = phase < NEGATIVE_FALLING_SINE_SEGMENT ? LogSample::POSITIVE : LogSample::NEGATIVE;
 }
 
@@ -193,7 +194,7 @@ void LA32WaveGenerator::generateNextResonanceWaveLogSample() {
 	// After all the amp decrements are added, it should be safe now to adjust the amp of the resonance wave to what we see on captures
 	logSampleValue -= 1 << 12;
 
-	resonanceLogSample.logValue = logSampleValue < 65536 ? logSampleValue : 65535;
+	resonanceLogSample.logValue = logSampleValue < 65536 ? (Bit16u)logSampleValue : 65535;
 	resonanceLogSample.sign = resonancePhase < NEGATIVE_FALLING_RESONANCE_SINE_SEGMENT ? LogSample::POSITIVE : LogSample::NEGATIVE;
 }
 
@@ -211,7 +212,7 @@ void LA32WaveGenerator::generateNextSawtoothCosineLogSample(LogSample &logSample
 void LA32WaveGenerator::pcmSampleToLogSample(LogSample &logSample, const Bit16s pcmSample) const {
 	Bit32u logSampleValue = (32787 - (pcmSample & 32767)) << 1;
 	logSampleValue += amp >> 10;
-	logSample.logValue = logSampleValue < 65536 ? logSampleValue : 65535;
+	logSample.logValue = logSampleValue < 65536 ? (Bit16u)logSampleValue : 65535;
 	logSample.sign = pcmSample < 0 ? LogSample::NEGATIVE : LogSample::POSITIVE;
 }
 
@@ -253,10 +254,10 @@ void LA32WaveGenerator::generateNextPCMWaveLogSamples() {
 	}
 }
 
-void LA32WaveGenerator::initSynth(const bool sawtoothWaveform, const Bit8u pulseWidth, const Bit8u resonance) {
-	this->sawtoothWaveform = sawtoothWaveform;
-	this->pulseWidth = pulseWidth;
-	this->resonance = resonance;
+void LA32WaveGenerator::initSynth(const bool useSawtoothWaveform, const Bit8u usePulseWidth, const Bit8u useResonance) {
+	sawtoothWaveform = useSawtoothWaveform;
+	pulseWidth = usePulseWidth;
+	resonance = useResonance;
 
 	wavePosition = 0;
 
@@ -272,23 +273,23 @@ void LA32WaveGenerator::initSynth(const bool sawtoothWaveform, const Bit8u pulse
 	active = true;
 }
 
-void LA32WaveGenerator::initPCM(const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped, const bool pcmWaveInterpolated) {
-	this->pcmWaveAddress = pcmWaveAddress;
-	this->pcmWaveLength = pcmWaveLength;
-	this->pcmWaveLooped = pcmWaveLooped;
-	this->pcmWaveInterpolated = pcmWaveInterpolated;
+void LA32WaveGenerator::initPCM(const Bit16s * const usePCMWaveAddress, const Bit32u usePCMWaveLength, const bool usePCMWaveLooped, const bool usePCMWaveInterpolated) {
+	pcmWaveAddress = usePCMWaveAddress;
+	pcmWaveLength = usePCMWaveLength;
+	pcmWaveLooped = usePCMWaveLooped;
+	pcmWaveInterpolated = usePCMWaveInterpolated;
 
 	wavePosition = 0;
 	active = true;
 }
 
-void LA32WaveGenerator::generateNextSample(const Bit32u amp, const Bit16u pitch, const Bit32u cutoffVal) {
+void LA32WaveGenerator::generateNextSample(const Bit32u useAmp, const Bit16u usePitch, const Bit32u useCutoffVal) {
 	if (!active) {
 		return;
 	}
 
-	this->amp = amp;
-	this->pitch = pitch;
+	amp = useAmp;
+	pitch = usePitch;
 
 	if (isPCMWave()) {
 		generateNextPCMWaveLogSamples();
@@ -297,7 +298,7 @@ void LA32WaveGenerator::generateNextSample(const Bit32u amp, const Bit16u pitch,
 
 	// The 240 cutoffVal limit was determined via sample analysis (internal Munt capture IDs: glop3, glop4).
 	// More research is needed to be sure that this is correct, however.
-	this->cutoffVal = (cutoffVal > MAX_CUTOFF_VALUE) ? MAX_CUTOFF_VALUE : cutoffVal;
+	cutoffVal = (useCutoffVal > MAX_CUTOFF_VALUE) ? MAX_CUTOFF_VALUE : useCutoffVal;
 
 	generateNextSquareWaveLogSample();
 	generateNextResonanceWaveLogSample();
@@ -336,9 +337,9 @@ Bit32u LA32WaveGenerator::getPCMInterpolationFactor() const {
 	return pcmInterpolationFactor;
 }
 
-void LA32PartialPair::init(const bool ringModulated, const bool mixed) {
-	this->ringModulated = ringModulated;
-	this->mixed = mixed;
+void LA32PartialPair::init(const bool useRingModulated, const bool useMixed) {
+	ringModulated = useRingModulated;
+	mixed = useMixed;
 }
 
 void LA32PartialPair::initSynth(const PairType useMaster, const bool sawtoothWaveform, const Bit8u pulseWidth, const Bit8u resonance) {
