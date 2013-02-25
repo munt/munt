@@ -169,7 +169,7 @@ class LA32WaveGenerator {
 
 	void generateNextSquareWaveLogSample();
 	void generateNextResonanceWaveLogSample();
-	void nextSawtoothCosineLogSample(LogSample &logSample) const;
+	void generateNextSawtoothCosineLogSample(LogSample &logSample) const;
 
 	void pcmSampleToLogSample(LogSample &logSample, const Bit16s pcmSample) const;
 	void generateNextPCMWaveLogSamples();

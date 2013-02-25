@@ -197,7 +197,7 @@ void LA32WaveGenerator::generateNextResonanceWaveLogSample() {
 	resonanceLogSample.sign = resonancePhase < NEGATIVE_FALLING_RESONANCE_SINE_SEGMENT ? LogSample::POSITIVE : LogSample::NEGATIVE;
 }
 
-void LA32WaveGenerator::nextSawtoothCosineLogSample(LogSample &logSample) const {
+void LA32WaveGenerator::generateNextSawtoothCosineLogSample(LogSample &logSample) const {
 	Bit32u sawtoothCosinePosition = wavePosition + (1 << 18);
 	if ((sawtoothCosinePosition & (1 << 18)) > 0) {
 		logSample.logValue = Tables::getInstance().logsin9[~(sawtoothCosinePosition >> 9) & 511];
@@ -303,7 +303,7 @@ void LA32WaveGenerator::generateNextSample(const Bit32u amp, const Bit16u pitch,
 	generateNextResonanceWaveLogSample();
 	if (sawtoothWaveform) {
 		LogSample cosineLogSample;
-		nextSawtoothCosineLogSample(cosineLogSample);
+		generateNextSawtoothCosineLogSample(cosineLogSample);
 		LA32Utilites::addLogSamples(squareLogSample, cosineLogSample);
 		LA32Utilites::addLogSamples(resonanceLogSample, cosineLogSample);
 	}
