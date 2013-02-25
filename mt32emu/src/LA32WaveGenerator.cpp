@@ -176,7 +176,7 @@ void LA32WaveGenerator::generateNextResonanceWaveLogSample() {
 	// From the digital captures, the decaying speed of the resonance sine is found a bit different for the positive and the negative segments
 	Bit32u decayFactor = phase < NEGATIVE_FALLING_SINE_SEGMENT ? resAmpDecayFactor : resAmpDecayFactor + 1;
 	// Unsure about resonanceSinePosition here. It's possible that dedicated counter & decrement are used. Although, cutoff is finely ramped, so maybe not.
-	logSampleValue += resonanceAmpSubtraction + ((resonanceSinePosition * decayFactor) >> 12);
+	logSampleValue += resonanceAmpSubtraction + (((resonanceSinePosition >> 4) * decayFactor) >> 8);
 
 	// To ensure the output wave has no breaks, two different windows are appied to the beginning and the ending of the resonance sine segment
 	if (phase == POSITIVE_RISING_SINE_SEGMENT || phase == NEGATIVE_FALLING_SINE_SEGMENT) {
