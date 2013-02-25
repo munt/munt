@@ -135,22 +135,16 @@ void LA32WaveGenerator::generateNextSquareWaveLogSample() {
 	Bit32u logSampleValue;
 	switch (phase) {
 		case POSITIVE_RISING_SINE_SEGMENT:
-			logSampleValue = Tables::getInstance().logsin9[(squareWavePosition >> 9) & 511];
-			break;
-		case POSITIVE_LINEAR_SEGMENT:
-			logSampleValue = 0;
-			break;
-		case POSITIVE_FALLING_SINE_SEGMENT:
-			logSampleValue = Tables::getInstance().logsin9[~(squareWavePosition >> 9) & 511];
-			break;
 		case NEGATIVE_FALLING_SINE_SEGMENT:
 			logSampleValue = Tables::getInstance().logsin9[(squareWavePosition >> 9) & 511];
 			break;
-		case NEGATIVE_LINEAR_SEGMENT:
-			logSampleValue = 0;
-			break;
+		case POSITIVE_FALLING_SINE_SEGMENT:
 		case NEGATIVE_RISING_SINE_SEGMENT:
 			logSampleValue = Tables::getInstance().logsin9[~(squareWavePosition >> 9) & 511];
+			break;
+		case POSITIVE_LINEAR_SEGMENT:
+		case NEGATIVE_LINEAR_SEGMENT:
+			logSampleValue = 0;
 			break;
 	}
 	logSampleValue <<= 2;
