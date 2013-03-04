@@ -172,14 +172,14 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 
 		// Correct resAmp for cutoff in range 50..66
 		if ((cutoffVal >= 128.0f) && (cutoffVal < 144.0f)) {
-			resAmp *= sinf(FLOAT_PI * (cutoffVal - 128.0f) / 32.0f);
+			resAmp *= sin(FLOAT_PI * (cutoffVal - 128.0f) / 32.0f);
 		}
 
 		// Produce filtered square wave with 2 cosine waves on slopes
 
 		// 1st cosine segment
 		if (relWavePos < cosineLen) {
-			sample = -cosf(FLOAT_PI * relWavePos / cosineLen);
+			sample = -cos(FLOAT_PI * relWavePos / cosineLen);
 		} else
 
 		// high linear segment
@@ -189,7 +189,7 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 
 		// 2nd cosine segment
 		if (relWavePos < (2 * cosineLen + hLen)) {
-			sample = cosf(FLOAT_PI * (relWavePos - (cosineLen + hLen)) / cosineLen);
+			sample = cos(FLOAT_PI * (relWavePos - (cosineLen + hLen)) / cosineLen);
 		} else {
 
 		// low linear segment
@@ -222,7 +222,7 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 			}
 
 			// Resonance sine WG
-			resSample *= sinf(FLOAT_PI * relWavePos / cosineLen);
+			resSample *= sin(FLOAT_PI * relWavePos / cosineLen);
 
 			// Resonance sine amp
 			float resAmpFadeLog2 = -0.125f * resAmpDecayFactor * (relWavePos / cosineLen); // seems to be exact
@@ -243,7 +243,7 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 
 			// To ensure the output wave has no breaks, two different windows are appied to the beginning and the ending of the resonance sine segment
 			if (relWavePos < 0.5f * cosineLen) {
-				float syncSine = sinf(FLOAT_PI * relWavePos / cosineLen);
+				float syncSine = sin(FLOAT_PI * relWavePos / cosineLen);
 				if (relWavePos < 0.0f) {
 					// The window is synchronous square sine here
 					resAmpFade *= syncSine * syncSine;
@@ -258,7 +258,7 @@ float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pi
 
 		// sawtooth waves
 		if (sawtoothWaveform) {
-			sample *= cosf(FLOAT_2PI * wavePos / waveLen);
+			sample *= cos(FLOAT_2PI * wavePos / waveLen);
 		}
 
 		wavePos++;
