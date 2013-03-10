@@ -1,3 +1,9 @@
+2013-03-10:
+
+	1.0.2 released.
+
+	* Fixed core WinMME driver for x64 compatibility.
+
 2013-02-11:
 
 	1.0.1 released.
