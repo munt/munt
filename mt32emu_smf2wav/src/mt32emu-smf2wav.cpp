@@ -663,6 +663,9 @@ int main(int argc, char *argv[]) {
 		} else {
 			outputFile = fopen(outputFilename, "wb");
 		}
+
+		clock_t startTime = clock();
+
 		if (outputFile != NULL) {
 			if (options.rawChannelCount > 0 || writeWAVEHeader(outputFile, options.sampleRate)) {
 				State state = {NULL, {NULL, NULL, NULL, NULL, NULL, NULL}, synth, outputFile, false, false, 0, 0, 0};
@@ -699,6 +702,7 @@ int main(int argc, char *argv[]) {
 				fprintf(stderr, "Error writing WAVE header to '%s'\n", displayOutputFilename);
 			}
 			fclose(outputFile);
+			printf("Elapsed time: %f sec\n", float(clock() - startTime) / CLOCKS_PER_SEC);
 		} else {
 			fprintf(stderr, "Error opening file '%s' for writing.\n", displayOutputFilename);
 		}
@@ -714,4 +718,3 @@ int main(int argc, char *argv[]) {
 	freeOptions(&options);
 	return 0;
 }
-
