@@ -58,7 +58,7 @@ struct Driver {
 	HDRVR hdrvr;
 	struct Client {
 		bool allocated;
-		DWORD instance;
+		DWORD_PTR instance;
 		DWORD flags;
 		DWORD_PTR callback;
 		DWORD synth_instance;
@@ -187,12 +187,12 @@ HRESULT modGetCaps(PVOID capsPtr, DWORD capsSize) {
 	}
 }
 
-void DoCallback(int driverNum, int clientNum, DWORD msg, DWORD param1, DWORD param2) {
+void DoCallback(int driverNum, DWORD_PTR clientNum, DWORD msg, DWORD_PTR param1, DWORD_PTR param2) {
 	Driver::Client *client = &drivers[driverNum].clients[clientNum];
 	DriverCallback(client->callback, client->flags, drivers[driverNum].hdrvr, msg, client->instance, param1, param2);
 }
 
-LONG OpenDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1, DWORD dwParam2) {
+LONG OpenDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
 	int clientNum;
 	if (driver->clientCount == 0) {
 		clientNum = 0;
@@ -221,7 +221,7 @@ LONG OpenDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD d
 	return MMSYSERR_NOERROR;
 }
 
-LONG CloseDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1, DWORD dwParam2) {
+LONG CloseDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
 	if (!driver->clients[dwUser].allocated) {
 		return MMSYSERR_INVALPARAM;
 	}
@@ -231,7 +231,7 @@ LONG CloseDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD 
 	return MMSYSERR_NOERROR;
 }
 
-STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1, DWORD dwParam2) {
+STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
 	MIDIHDR *midiHdr;
 	Driver *driver = &drivers[uDeviceID];
 	DWORD instance;
@@ -256,11 +256,11 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 			DWORD msg[260] = {0, -1, 1, nanoCounter.LowPart, nanoCounter.HighPart}; // 0, handshake indicator, version, timestamp, .exe filename of calling application
 			GetModuleFileNameA(GetModuleHandle(NULL), (char *)&msg[5], 255);
 			COPYDATASTRUCT cds = {0, sizeof(msg), msg};
-			instance = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
+			instance = (DWORD)SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
 		}
 		DWORD res;
 		res = OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
-		driver->clients[*(DWORD *)dwUser].synth_instance = instance;
+		driver->clients[*(LONG *)dwUser].synth_instance = instance;
 		return res;
 
 	case MODM_CLOSE:
@@ -281,19 +281,19 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 		return MMSYSERR_NOTSUPPORTED;
 
 	case MODM_GETDEVCAPS:
-		return modGetCaps((PVOID)dwParam1, dwParam2);
+		return modGetCaps((PVOID)dwParam1, (DWORD)dwParam2);
 
 	case MODM_DATA:
 		if (driver->clients[dwUser].allocated == false) {
 			return MMSYSERR_ERROR;
 		}
 		if (hwnd == NULL) {
-			midiSynth.PushMIDI(dwParam1);
+			midiSynth.PushMIDI((DWORD)dwParam1);
 		} else {
 			updateNanoCounter();
-			DWORD msg[] = {0, 0, nanoCounter.LowPart, nanoCounter.HighPart, dwParam1}; // 0, short MIDI message indicator, timestamp, data
+			DWORD msg[] = {0, 0, nanoCounter.LowPart, nanoCounter.HighPart, (DWORD)dwParam1}; // 0, short MIDI message indicator, timestamp, data
 			COPYDATASTRUCT cds = {driver->clients[dwUser].synth_instance, sizeof(msg), msg};
-			DWORD res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
+			LRESULT res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
 			if (res != 1) {
 				// Synth app was terminated. Fall back to integrated synth
 				hwnd = NULL;
@@ -315,7 +315,7 @@ STDAPI_(LONG) modMessage(UINT uDeviceID, UINT uMsg, DWORD dwUser, DWORD dwParam1
 			midiSynth.PlaySysex((MT32Emu::Bit8u*)midiHdr->lpData, midiHdr->dwBufferLength);
 		} else {
 			COPYDATASTRUCT cds = {driver->clients[dwUser].synth_instance, midiHdr->dwBufferLength, midiHdr->lpData};
-			DWORD res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
+			LRESULT res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
 			if (res != 1) {
 				// Synth app was terminated. Fall back to integrated synth
 				hwnd = NULL;
