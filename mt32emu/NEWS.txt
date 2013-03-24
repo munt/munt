@@ -1,3 +1,13 @@
+2013-03-24:
+
+	1.2.0 released.
+
+	* Major wave generator rework by SergM. The wave generator now modularised and ready for integration
+	  with other emulation software. With the help of Lord_Nightmare, Balrog and Sarayan, LA32 internals became clearer,
+	  which allows to further improve the emulation accuracy. Still, we are not precise yet but very close now.
+	  The output wave now has about the same FFT spectrum as the original digitally captured waves. As the wave
+	  generation engine is completely new, some bugs probably still exist, though.
+
 2013-02-11:
 
 	1.1.1 released.

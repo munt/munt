@@ -23,7 +23,7 @@ Contributors
 
 Jonathan Gevaryahu
  - Sent his MT-32 all the way from Pennsylvania, USA to Australia to get ROM dumps.
-   Help with reverb analysis.
+   Help with reverb analysis. LA32 ROM analysing.
 
 "The Guru" (http://unemulated.emuunlim.com/)
  - Dumped the ROMs of the device above.
@@ -32,7 +32,11 @@ Laust "Talus" Brock-Nannestad
  - Dumped the CM-32L ROMs.
 
 "balrog"
- - Helping with analysis, obtaining and dumping RWI-modded and v2.04 ROMs, supplying us with his costly logic analyzer :)
+ - Helping with analysis, obtaining and dumping RWI-modded and v2.04 ROMs, supplying us with his costly logic analyzer. :)
+   LA32 ROM analysing.
+
+"Sarayan"
+ - Reversed some LA32 circuits and internal LA32 ROMs. LA32 ROM analysing.
 
 Also thanks go to Kaminari Redux, NewRisingSun, robertmo, ripsaw8080, Mau1wurf1977 and other inhabitants of VOGONS
 for their suggestions and help with debugging.
