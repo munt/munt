@@ -6,11 +6,11 @@
 #
 
 PORTNAME=	munt
-PORTVERSION=	1.1.1
+PORTVERSION=	1.2.0
 CATEGORIES=	audio
 MASTER_SITES=	https://github.com/munt/munt/archive/
 FETCH_ARGS=	-a
-DISTFILES=	munt_1_1_1.tar.gz
+DISTFILES=	munt_1_2_0.tar.gz
 
 MAINTAINER=	sergm@muntemu.org
 COMMENT=	Software synthesiser emulating pre-GM MIDI devices such as Roland MT-32, CM-32L, CM-64 and LAPC-I
@@ -40,7 +40,7 @@ PLIST_DIRS=	include/mt32emu
 CMAKE_BUILD_TYPE?=	Release
 
 post-extract:
-		mv $(WRKDIR)/munt-munt_1_1_1 $(WRKSRC)
+		mv $(WRKDIR)/munt-munt_1_2_0 $(WRKSRC)
 
 do-configure:
 		cd $(WRKSRC); \
