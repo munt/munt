@@ -19,7 +19,15 @@
 
 static const char headerID[] = "MThd\x00\x00\x00\x06";
 static const char trackID[] = "MTrk";
-static const uint MAX_SYSEX_LENGTH = 266;
+
+/**
+ * According to the Roland units Owner's manuals (at least MT-32 and CM32-L),
+ * the length of SysEx messages is limited to 256 bytes.
+ * However, we have no explicit limit implemented in the mt32emu library (as of v. 1.2.0),
+ * so this is just a recommended SysEx buffer size. Besides, a quick test on a real CM-64
+ * indicates a larger SysEx messages are possible but unreliable and may result in a unit hang.
+ */
+static const uint MAX_SYSEX_LENGTH = 256;
 
 bool MidiParser::readFile(char *data, qint64 len) {
 	qint64 readLen = file.read(data, len);
@@ -76,8 +84,8 @@ bool MidiParser::parseTrack(MidiEventList &midiEventList) {
 
 	// Parsing actual MIDI events
 	unsigned int runningStatus = 0;
-	uchar *data = (uchar *)trackData;
-	uchar sysexBuffer[MAX_SYSEX_LENGTH];
+	const uchar *data = (uchar *)trackData;
+	QVector<uchar> sysexBuffer(MAX_SYSEX_LENGTH);
 	while(data < (uchar *)trackData + trackLen) {
 		SynthTimestamp time = parseVarLenInt(data);
 		quint32 message = 0;
@@ -90,13 +98,14 @@ bool MidiParser::parseTrack(MidiEventList &midiEventList) {
 					sysexBuffer[0] = *(data++);
 					quint32 sysexLength = parseVarLenInt(data);
 					if (MAX_SYSEX_LENGTH <= sysexLength) {
-						qDebug() << "MidiParser: too long sysex encountered:" << sysexLength;
-						data += sysexLength;
-						continue;
+						qDebug() << "MidiParser: Warning: too long sysex encountered, it may cause problems with real hardware. Sysex length:" << sysexLength + 1;
+						if (sysexBuffer.size() < (int)sysexLength) {
+							sysexBuffer.resize(sysexLength + 1);
+						}
 					}
 					memcpy(&sysexBuffer[1], data, sysexLength);
 					data += sysexLength;
-					midiEventList.newMidiEvent().assignSysex(time, sysexBuffer, sysexLength + 1);
+					midiEventList.newMidiEvent().assignSysex(time, sysexBuffer.constData(), sysexLength + 1);
 					continue;
 				} else if (*data == 0xF7) {
 					qDebug() << "MidiParser: Fragmented sysex, unsupported";
@@ -166,7 +175,7 @@ bool MidiParser::parseTrack(MidiEventList &midiEventList) {
 	return true;
 }
 
-quint32 MidiParser::parseVarLenInt(uchar * &data) {
+quint32 MidiParser::parseVarLenInt(const uchar * &data) {
 	quint32 value = 0;
 	for (int i = 0; i < 3; i++) {
 		value = (value << 7) | (*data & 0x7F);

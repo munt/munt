@@ -24,10 +24,11 @@ private:
 	unsigned int numberOfTracks;
 	int division;
 
+	static quint32 parseVarLenInt(const uchar * &data);
+
 	bool readFile(char *data, qint64 len);
 	bool parseHeader();
 	bool parseTrack(MidiEventList &midiEventList);
-	quint32 parseVarLenInt(uchar * &data);
 	void mergeMidiEventLists(QVector<MidiEventList> &tracks);
 	bool parseSysex();
 	bool doParse();
