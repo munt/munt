@@ -99,7 +99,7 @@ bool MidiParser::parseTrack(MidiEventList &midiEventList) {
 					quint32 sysexLength = parseVarLenInt(data);
 					if (MAX_SYSEX_LENGTH <= sysexLength) {
 						qDebug() << "MidiParser: Warning: too long sysex encountered, it may cause problems with real hardware. Sysex length:" << sysexLength + 1;
-						if (sysexBuffer.size() < (int)sysexLength) {
+						if (sysexBuffer.size() <= (int)sysexLength) {
 							sysexBuffer.resize(sysexLength + 1);
 						}
 					}
