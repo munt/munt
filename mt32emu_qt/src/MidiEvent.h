@@ -36,7 +36,7 @@ public:
 
 	void setTimestamp(SynthTimestamp newTimestamp);
 	void assignShortMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newMsg);
-	void assignSysex(SynthTimestamp newTimestamp, unsigned char *newSysexData, MT32Emu::Bit32u newSysexLen);
+	void assignSysex(SynthTimestamp newTimestamp, unsigned char const * const newSysexData, MT32Emu::Bit32u newSysexLen);
 	void assignSetTempoMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newTempo);
 	void assignSyncMessage(SynthTimestamp newTimestamp);
 };

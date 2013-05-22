@@ -80,7 +80,7 @@ void MidiEvent::assignShortMessage(SynthTimestamp newTimestamp, Bit32u newMsg) {
 	sysexData = NULL;
 }
 
-void MidiEvent::assignSysex(SynthTimestamp newTimestamp, unsigned char *newSysexData, Bit32u newSysexLen) {
+void MidiEvent::assignSysex(SynthTimestamp newTimestamp, unsigned char const * const newSysexData, Bit32u newSysexLen) {
 	timestamp = newTimestamp;
 	type = SYSEX;
 	msg = 0;
