@@ -1,3 +1,8 @@
+Next release:
+
+	* Some improvements in mt32emu_win32drv_setup, fixed several bugs and security issues,
+	  better MIDI driver registering algorithm.
+
 2013-03-24:
 
 	1.2.0 released.

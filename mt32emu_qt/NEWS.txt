@@ -1,3 +1,7 @@
+Next release:
+
+	* Removed sysex length limit set in the internal MIDI player and converter.
+
 2013-03-24:
 
 	1.0.2 released.

@@ -25,7 +25,7 @@ and is able to operate in stand-alone mode if the main application mt32emu_qt is
 
 mt32emu_win32drv_setup
 ======================
-A tool intended to fascilate installation / upgrade of the Windows driver mt32emu_win32drv.
+A tool intended to fascilitate installation / upgrade of the Windows driver mt32emu_win32drv.
 
 portaudio
 =========
