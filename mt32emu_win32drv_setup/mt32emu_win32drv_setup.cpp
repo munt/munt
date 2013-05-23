@@ -17,22 +17,23 @@
 #include "stdafx.h"
 
 const char MT32EMU_DRIVER_NAME[] = "mt32emu.dll";
+const char WDM_DRIVER_NAME[] = "wdmaud.drv";
 const char SYSTEM_DIR_NAME[] = "SYSTEM32";
 const char SYSTEM_ROOT_ENV_NAME[] = "SYSTEMROOT";
 const char INSTALL_COMMAND[] = "install";
 const char UNINSTALL_COMMAND[] = "uninstall";
 
-void registerDriver() {
+bool registerDriver() {
 	HKEY hReg;
 	if (RegOpenKeyA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Drivers32", &hReg)) {
 		MessageBoxA(NULL, "Cannot open registry key", "Registry error", MB_OK | MB_ICONEXCLAMATION);
-		return;
+		return false;
 	}
 	char str[255];
-	char drvName[] = "MIDI0";
+	char drvName[] = "midi0";
 	DWORD len, res;
-	int freeDriver = -1;
-	int mt32emuDriver = -1;
+	bool wdmEntryFound = false;
+	int freeEntry = -1;
 	for (int i = 0; i < 10; i++) {
 		len = 255;
 		if (i) {
@@ -42,27 +43,35 @@ void registerDriver() {
 		}
 		res = RegQueryValueExA(hReg, drvName, NULL, NULL, (LPBYTE)str, &len);
 		if (res != ERROR_SUCCESS) {
-			if ((freeDriver == -1) && (res == ERROR_FILE_NOT_FOUND)) {
-				freeDriver = i;
+			if ((freeEntry == -1) && (res == ERROR_FILE_NOT_FOUND)) {
+				freeEntry = i;
 			}
 			continue;
 		}
 		if (!_stricmp(str, MT32EMU_DRIVER_NAME)) {
-			mt32emuDriver = i;
+			MessageBoxA(NULL, "MT32Emu MIDI Driver successfully updated.", "Information", MB_OK | MB_ICONINFORMATION);
+			RegCloseKey(hReg);
+			return true;
+		}
+		if (freeEntry != -1) continue;
+		if (strlen(str) == 0) {
+			freeEntry = i;
+		} else if (!_stricmp(str, WDM_DRIVER_NAME)) {
+			// Considering multiple WDM entries are just garbage, though one entry shouldn't be modified
+			if (wdmEntryFound) {
+				freeEntry = i;
+			} else {
+				wdmEntryFound = true;
+			}
 		}
 	}
-	if (mt32emuDriver != -1) {
-		MessageBoxA(NULL, "MT32Emu MIDI Driver successfully updated.", "Information", MB_OK | MB_ICONINFORMATION);
-		RegCloseKey(hReg);
-		return;
-	}
-	if (freeDriver == -1) {
+	if (freeEntry == -1) {
 		MessageBoxA(NULL, "Cannot install MT32Emu MIDI driver. There is no MIDI ports available.", "Error", MB_OK | MB_ICONEXCLAMATION);
 		RegCloseKey(hReg);
-		return;
+		return false;
 	}
-	if (freeDriver) {
-		drvName[4] = '0' + freeDriver;
+	if (freeEntry) {
+		drvName[4] = '0' + freeEntry;
 	} else {
 		drvName[4] = 0;
 	}
@@ -70,10 +79,11 @@ void registerDriver() {
 	if (res != ERROR_SUCCESS) {
 		MessageBoxA(NULL, "Cannot register driver", "Registry error", MB_OK | MB_ICONEXCLAMATION);
 		RegCloseKey(hReg);
-		return;
+		return false;
 	}
 	MessageBoxA(NULL, "MT32Emu MIDI Driver successfully installed.", "Information", MB_OK | MB_ICONINFORMATION);
 	RegCloseKey(hReg);
+	return true;
 }
 
 void unregisterDriver() {
@@ -85,7 +95,6 @@ void unregisterDriver() {
 	char str[255];
 	char drvName[] = "MIDI0";
 	DWORD len, res;
-	int mt32emuDriver = -1;
 	for (int i = 0; i < 10; i++) {
 		len = 255;
 		if (i) {
@@ -98,21 +107,17 @@ void unregisterDriver() {
 			continue;
 		}
 		if (!_stricmp(str, MT32EMU_DRIVER_NAME)) {
-			mt32emuDriver = i;
 			res = RegDeleteValueA(hReg, drvName);
 			if (res != ERROR_SUCCESS) {
 				MessageBoxA(NULL, "Cannot uninstall MT32Emu MIDI driver", "Registry error", MB_OK | MB_ICONEXCLAMATION);
 				RegCloseKey(hReg);
 				return;
 			}
+			MessageBoxA(NULL, "MT32Emu MIDI Driver successfully uninstalled.", "Information", MB_OK | MB_ICONINFORMATION);
+			RegCloseKey(hReg);
 		}
 	}
-	if (mt32emuDriver == -1) {
-		MessageBoxA(NULL, "Cannot uninstall MT32Emu MIDI driver. There is no driver found.", "Error", MB_OK | MB_ICONEXCLAMATION);
-		RegCloseKey(hReg);
-		return;
-	}
-	MessageBoxA(NULL, "MT32Emu MIDI Driver successfully uninstalled.", "Information", MB_OK | MB_ICONINFORMATION);
+	MessageBoxA(NULL, "Cannot uninstall MT32Emu MIDI driver. There is no driver found.", "Error", MB_OK | MB_ICONEXCLAMATION);
 	RegCloseKey(hReg);
 }
 
@@ -146,6 +151,7 @@ void deleteFileReliably(char *pathName) {
 	constructSystemDirName(tmpDirName);
 	char tmpPathName[MAX_PATH + 1];
 	GetTempFileNameA(tmpDirName, tmpFilePrefix, 0, tmpPathName);
+	DeleteFileA(tmpPathName);
 	MoveFileA(pathName, tmpPathName);
 	MoveFileExA(tmpPathName, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
 }
@@ -162,16 +168,25 @@ int main(int argc, char *argv[]) {
 		deleteFileReliably(pathName);
 		return 0;
 	}
+	int setupPathLen = strrchr(argv[0], '\\') - argv[0];
+	if (setupPathLen > MAX_PATH - sizeof(MT32EMU_DRIVER_NAME) - 2) {
+		MessageBoxA(NULL, "MT32Emu MIDI Driver cannot be installed:\n Installation path is too long", "Error", MB_OK | MB_ICONEXCLAMATION);
+		return 2;
+	}
+	if (!registerDriver()) {
+		return 3;
+	}
 	char driverPathName[MAX_PATH + 1];
 	constructDriverPathName(driverPathName);
 	deleteFileReliably(driverPathName);
-	int setupPathLen = strrchr(argv[0], '\\') - argv[0];
 	char setupPathName[MAX_PATH + 1];
 	strncpy(setupPathName, argv[0], setupPathLen);
 	setupPathName[setupPathLen] = 0;
 	strncat(setupPathName, "/", MAX_PATH - strlen(setupPathName));
 	strncat(setupPathName, MT32EMU_DRIVER_NAME, MAX_PATH - strlen(setupPathName));
-	CopyFileA(setupPathName, driverPathName, FALSE);
-	registerDriver();
+	if (!CopyFileA(setupPathName, driverPathName, FALSE)) {
+		MessageBoxA(NULL, "MT32Emu MIDI Driver failed to install:\n File copying error", "File error", MB_OK | MB_ICONEXCLAMATION);
+		return 4;
+	}
 	return 0;
 }
