@@ -16,11 +16,13 @@
 
 #include "stdafx.h"
 
-char mt32emuDriverName[] = "mt32emu.dll";
-char INSTALL_COMMAND[] = "install";
-char UNINSTALL_COMMAND[] = "uninstall";
+const char MT32EMU_DRIVER_NAME[] = "mt32emu.dll";
+const char SYSTEM_DIR_NAME[] = "SYSTEM32";
+const char SYSTEM_ROOT_ENV_NAME[] = "SYSTEMROOT";
+const char INSTALL_COMMAND[] = "install";
+const char UNINSTALL_COMMAND[] = "uninstall";
 
-void RegisterDriver() {
+void registerDriver() {
 	HKEY hReg;
 	if (RegOpenKeyA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Drivers32", &hReg)) {
 		MessageBoxA(NULL, "Cannot open registry key", "Registry error", MB_OK | MB_ICONEXCLAMATION);
@@ -45,7 +47,7 @@ void RegisterDriver() {
 			}
 			continue;
 		}
-		if (!_stricmp(str, mt32emuDriverName)) {
+		if (!_stricmp(str, MT32EMU_DRIVER_NAME)) {
 			mt32emuDriver = i;
 		}
 	}
@@ -64,7 +66,7 @@ void RegisterDriver() {
 	} else {
 		drvName[4] = 0;
 	}
-	res = RegSetValueExA(hReg, drvName, NULL, REG_SZ, (LPBYTE)mt32emuDriverName, sizeof(mt32emuDriverName));
+	res = RegSetValueExA(hReg, drvName, NULL, REG_SZ, (LPBYTE)MT32EMU_DRIVER_NAME, sizeof(MT32EMU_DRIVER_NAME));
 	if (res != ERROR_SUCCESS) {
 		MessageBoxA(NULL, "Cannot register driver", "Registry error", MB_OK | MB_ICONEXCLAMATION);
 		RegCloseKey(hReg);
@@ -74,7 +76,7 @@ void RegisterDriver() {
 	RegCloseKey(hReg);
 }
 
-void UnregisterDriver() {
+void unregisterDriver() {
 	HKEY hReg;
 	if (RegOpenKeyA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Drivers32", &hReg)) {
 		MessageBoxA(NULL, "Cannot open registry key", "Registry error", MB_OK | MB_ICONEXCLAMATION);
@@ -95,7 +97,7 @@ void UnregisterDriver() {
 		if (res != ERROR_SUCCESS) {
 			continue;
 		}
-		if (!_stricmp(str, mt32emuDriverName)) {
+		if (!_stricmp(str, MT32EMU_DRIVER_NAME)) {
 			mt32emuDriver = i;
 			res = RegDeleteValueA(hReg, drvName);
 			if (res != ERROR_SUCCESS) {
@@ -114,39 +116,62 @@ void UnregisterDriver() {
 	RegCloseKey(hReg);
 }
 
+void constructSystemDirName(char *pathName) {
+	char sysRoot[MAX_PATH + 1];
+	GetEnvironmentVariableA(SYSTEM_ROOT_ENV_NAME, sysRoot, MAX_PATH);
+	strncpy(pathName, sysRoot, MAX_PATH);
+	strncat(pathName, "/", MAX_PATH - strlen(pathName));
+	strncat(pathName, SYSTEM_DIR_NAME, MAX_PATH - strlen(pathName));
+	strncat(pathName, "/", MAX_PATH - strlen(pathName));
+}
+
+void constructDriverPathName(char *pathName) {
+	constructSystemDirName(pathName);
+	strncat(pathName, MT32EMU_DRIVER_NAME, MAX_PATH - strlen(pathName));
+}
+
+void deleteFileReliably(char *pathName) {
+	if (DeleteFileA(pathName)) {
+		return;
+	}
+	// File doesn't exist, nothing to do
+	if (ERROR_FILE_NOT_FOUND == GetLastError()) {
+		return;
+	}
+	// File can't be deleted, rename it and register pending deletion
+	char tmpFilePrefix[sizeof(MT32EMU_DRIVER_NAME) + 1];
+	strncpy(tmpFilePrefix, MT32EMU_DRIVER_NAME, sizeof(MT32EMU_DRIVER_NAME));
+	strncat(tmpFilePrefix, ".", 1);
+	char tmpDirName[MAX_PATH + 1];
+	constructSystemDirName(tmpDirName);
+	char tmpPathName[MAX_PATH + 1];
+	GetTempFileNameA(tmpDirName, tmpFilePrefix, 0, tmpPathName);
+	MoveFileA(pathName, tmpPathName);
+	MoveFileExA(tmpPathName, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
+}
+
 int main(int argc, char *argv[]) {
-	if (argc != 2 || stricmp(INSTALL_COMMAND, argv[1]) != 0 && stricmp(UNINSTALL_COMMAND, argv[1]) != 0) {
+	if (argc != 2 || _stricmp(INSTALL_COMMAND, argv[1]) != 0 && _stricmp(UNINSTALL_COMMAND, argv[1]) != 0) {
 		MessageBoxA(NULL, "Usage:\n  drvsetup install - install driver\n  drvsetup uninstall - uninstall driver\n", "Information", MB_OK | MB_ICONINFORMATION);
 		return 1;
 	}
-	if (stricmp(UNINSTALL_COMMAND, argv[1]) == 0) {
-		UnregisterDriver();
-		char sysRoot[MAX_PATH];
-		char pathName[MAX_PATH];
-		GetEnvironmentVariableA("SYSTEMROOT", sysRoot, MAX_PATH);
-		strncpy(pathName, sysRoot, MAX_PATH);
-		strncat(pathName, "/SYSTEM32/mt32emu.dll", MAX_PATH);
-		if (!DeleteFileA(pathName)) {
-			// Driver can't be deleted, register pending deletion
-			MoveFileExA(pathName, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
-		}
+	if (_stricmp(UNINSTALL_COMMAND, argv[1]) == 0) {
+		unregisterDriver();
+		char pathName[MAX_PATH + 1];
+		constructDriverPathName(pathName);
+		deleteFileReliably(pathName);
 		return 0;
 	}
-	char sysRoot[MAX_PATH];
-	char pathName[MAX_PATH];
-	char oldName[MAX_PATH];
-	GetEnvironmentVariableA("SYSTEMROOT", sysRoot, MAX_PATH);
-	strncpy(pathName, sysRoot, MAX_PATH);
-	strncat(pathName, "/SYSTEM32/mt32emu.dll", MAX_PATH);
-	strncpy(oldName, sysRoot, MAX_PATH);
-	strncat(oldName, "/SYSTEM32/mt32emu.old", MAX_PATH);
-	DeleteFileA(oldName);
-	MoveFileA(pathName, oldName);
+	char driverPathName[MAX_PATH + 1];
+	constructDriverPathName(driverPathName);
+	deleteFileReliably(driverPathName);
 	int setupPathLen = strrchr(argv[0], '\\') - argv[0];
-	strncpy(oldName, argv[0], setupPathLen);
-	oldName[setupPathLen] = 0;
-	strncat(oldName, "/mt32emu.dll", MAX_PATH);
-	CopyFileA(oldName, pathName, FALSE);
-	RegisterDriver();
+	char setupPathName[MAX_PATH + 1];
+	strncpy(setupPathName, argv[0], setupPathLen);
+	setupPathName[setupPathLen] = 0;
+	strncat(setupPathName, "/", MAX_PATH - strlen(setupPathName));
+	strncat(setupPathName, MT32EMU_DRIVER_NAME, MAX_PATH - strlen(setupPathName));
+	CopyFileA(setupPathName, driverPathName, FALSE);
+	registerDriver();
 	return 0;
 }
