@@ -115,6 +115,7 @@ void unregisterDriver() {
 			}
 			MessageBoxA(NULL, "MT32Emu MIDI Driver successfully uninstalled.", "Information", MB_OK | MB_ICONINFORMATION);
 			RegCloseKey(hReg);
+			return;
 		}
 	}
 	MessageBoxA(NULL, "Cannot uninstall MT32Emu MIDI driver. There is no driver found.", "Error", MB_OK | MB_ICONEXCLAMATION);
