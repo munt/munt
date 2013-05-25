@@ -117,6 +117,11 @@ bool MidiParser::parseTrack(MidiEventList &midiEventList) {
 					quint32 len = parseVarLenInt(data);
 					if (metaType == 0x2F) {
 						qDebug() << "MidiParser: End-of-track Meta-event";
+						if (time > 0) {
+							// Assign a special marker event to end the track in time
+							qDebug() << "MidiParser: Adding sync event for" << time << "divisions";
+							midiEventList.newMidiEvent().assignSyncMessage(time);
+						}
 						runningStatus = 0x2F;
 						break;
 					} else if (metaType == 0x51) {
