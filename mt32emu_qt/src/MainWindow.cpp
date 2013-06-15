@@ -66,6 +66,8 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 		trayIconContextMenu();
 	}
 
+	setAcceptDrops(true);
+
 	QSettings *settings = Master::getInstance()->getSettings();
 	QRect rect = settings->value("Master/mainWindowGeometry", geometry()).toRect();
 	if (rect != geometry()) {
@@ -284,4 +286,30 @@ void MainWindow::handleConvertMidiFiles(const QStringList &fileList) {
 	qDebug() << "Converting:" << fileList;
 	on_actionConvert_MIDI_to_Wave_triggered();
 	midiConverterDialog->startConversion(fileList);
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent *e) {
+	dragMoveEvent(e);
+}
+
+void MainWindow::dragMoveEvent(QDragMoveEvent *e) {
+	if (!e->mimeData()->hasUrls()) {
+		e->ignore();
+		return;
+	}
+	if ((e->possibleActions() & Qt::CopyAction) == 0) {
+		e->ignore();
+		return;
+	}
+	if (e->proposedAction() != Qt::CopyAction) {
+		e->setDropAction(Qt::CopyAction);
+	}
+	e->accept();
+}
+
+void MainWindow::dropEvent(QDropEvent *e) {
+	if (!e->mimeData()->hasUrls()) return;
+	if ((e->possibleActions() & Qt::CopyAction) == 0) return;
+	on_actionPlay_MIDI_file_triggered();
+	midiPlayerDialog->dropEvent(e);
 }

@@ -5,6 +5,7 @@ Next release:
 	  e.g. when the user closes the application console or shuts down the system.
 	* Improved ROM configuration. Added support for default ROM search path which is a directory "roms" located
 	  in the current user home directory.
+	* Other UI improvements.
 
 2013-03-24:
 

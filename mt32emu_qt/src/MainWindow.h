@@ -23,6 +23,9 @@ class MainWindow : public QMainWindow
 public:
 	explicit MainWindow(Master *master, QWidget *parent = 0);
 	~MainWindow();
+	void dragEnterEvent(QDragEnterEvent *event);
+	void dragMoveEvent(QDragMoveEvent *event);
+	void dropEvent(QDropEvent *event);
 
 protected:
 	void closeEvent(QCloseEvent *);
