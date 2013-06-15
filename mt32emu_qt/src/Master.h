@@ -27,6 +27,8 @@ private:
 	QString defaultAudioDeviceName;
 	qint64 lastAudioDeviceScan;
 
+	bool stopping;
+
 	void init();
 	~Master();
 
@@ -68,6 +70,7 @@ private slots:
 	void createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
 	void deleteMidiSession(MidiSession *midiSession);
 	void showBalloon(const QString &title, const QString &text);
+	void aboutToQuit();
 
 signals:
 	void synthRouteAdded(SynthRoute *route, const AudioDevice *audioDevice);

@@ -52,6 +52,8 @@
 #endif
 
 void Master::init() {
+	stopping = false;
+
 	moveToThread(QCoreApplication::instance()->thread());
 
 	settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
@@ -73,7 +75,22 @@ void Master::init() {
 	qRegisterMetaType<SynthState>("SynthState");
 }
 
+void Master::aboutToQuit() {
+	qDebug() << "Got Master::aboutToQuit()";
+	stopping = true;
+	return;
+}
+
 Master::~Master() {
+	if (!stopping) {
+		// Emergency exit
+		fprintf(stderr, "Master is going down but haven't got Master::aboutToQuit(), exiting immediately!\n");
+		if (trayIcon != NULL) {
+			trayIcon->hide();
+		}
+		exit(1);
+	}
+
 	delete settings;
 
 	if (midiDriver != NULL) {

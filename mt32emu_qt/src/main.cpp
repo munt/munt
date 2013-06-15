@@ -40,6 +40,7 @@ int main(int argv, char **args)
 	master->startPinnedSynthRoute();
 	master->startMidiProcessing();
 	master->processCommandLine(app.arguments());
+	master->connect(&app, SIGNAL(aboutToQuit()), SLOT(aboutToQuit()));
 	app.exec();
 	master->setTrayIcon(NULL);
 	delete trayIcon;
