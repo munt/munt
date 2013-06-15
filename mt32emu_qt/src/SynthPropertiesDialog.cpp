@@ -49,7 +49,6 @@ SynthPropertiesDialog::~SynthPropertiesDialog()
 
 void SynthPropertiesDialog::on_changeROMSetButton_clicked() {
 	rsd.exec();
-	ui->romSetLabel->setText(getROMSetDescription());
 }
 
 void SynthPropertiesDialog::on_dacEmuComboBox_currentIndexChanged(int index) {
