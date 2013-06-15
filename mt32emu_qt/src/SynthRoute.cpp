@@ -145,9 +145,13 @@ void SynthRoute::handleQSynthState(SynthState synthState) {
 
 	switch (synthState) {
 	case SynthState_OPEN:
+		if (audioStream != NULL) {
+			setState(SynthRouteState_OPEN);
+		}
 		break;
 	case SynthState_CLOSING:
 		//audioStream->suspend();
+		setState(SynthRouteState_CLOSING);
 		break;
 	case SynthState_CLOSED:
 		delete audioStream;

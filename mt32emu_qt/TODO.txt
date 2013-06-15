@@ -1,4 +1,3 @@
-- Default platform-specific ROM searching path.
 - RTP MIDI driver hopefully with full Bonjour support.
 - Extended MIDI to Wave conversion options
 - Better drag & drop support

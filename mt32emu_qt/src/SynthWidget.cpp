@@ -107,7 +107,6 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 		ui->stopButton->setEnabled(true);
 		ui->audioDeviceComboBox->setEnabled(false);
 		ui->statusLabel->setText("Open");
-		setEmuModeText();
 		break;
 	case SynthRouteState_OPENING:
 		ui->startButton->setEnabled(false);
@@ -128,6 +127,7 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 		ui->statusLabel->setText("Closed");
 		break;
 	}
+	setEmuModeText();
 }
 
 void SynthWidget::on_audioPropertiesButton_clicked()

@@ -47,11 +47,9 @@ SynthPropertiesDialog::~SynthPropertiesDialog()
 	delete ui;
 }
 
-void SynthPropertiesDialog::on_romDirButton_clicked()
-{
-	if (!rsd.loadROMInfos()) return;
-	ui->romDirLineEdit->setText(synthProfile.romDir.absolutePath());
+void SynthPropertiesDialog::on_changeROMSetButton_clicked() {
 	rsd.exec();
+	ui->romSetLabel->setText(getROMSetDescription());
 }
 
 void SynthPropertiesDialog::on_dacEmuComboBox_currentIndexChanged(int index) {
@@ -180,7 +178,8 @@ void SynthPropertiesDialog::restoreDefaults() {
 
 void SynthPropertiesDialog::loadSynthProfile() {
 	synthRoute->getSynthProfile(synthProfile);
-	ui->romDirLineEdit->setText(synthProfile.romDir.absolutePath());
+	ui->romSetLabel->setText(getROMSetDescription());
+	rsd.loadROMInfos();
 	ui->dacEmuComboBox->setCurrentIndex(synthProfile.emuDACInputMode == MT32Emu::DACInputMode_NICE ? MT32Emu::DACInputMode_NICE : synthProfile.emuDACInputMode - 1);
 	ui->reverbCheckBox->setCheckState(Qt::Checked);
 	ui->reverbModeComboBox->setCurrentIndex(synthProfile.reverbMode);
@@ -204,9 +203,12 @@ void SynthPropertiesDialog::saveSynthProfile() {
 	Master &master = *Master::getInstance();
 	QString name = ui->profileComboBox->currentText();
 	master.storeSynthProfile(newSynthProfile, name);
+	synthProfile.controlROMImage = NULL;
+	synthProfile.pcmROMImage = NULL;
 	master.loadSynthProfile(synthProfile, name);
 	synthRoute->setSynthProfile(synthProfile, name);
 	if (ui->profileCheckBox->isChecked()) master.setDefaultSynthProfileName(name);
+	ui->romSetLabel->setText(getROMSetDescription());
 	refreshProfileCombo();
 }
 
@@ -223,4 +225,8 @@ void SynthPropertiesDialog::refreshProfileCombo() {
 		}
 	}
 	ui->profileComboBox->blockSignals(false);
+}
+
+QString SynthPropertiesDialog::getROMSetDescription() {
+	return (synthProfile.controlROMImage == NULL) ? "Unknown" : synthProfile.controlROMImage->getROMInfo()->description;
 }

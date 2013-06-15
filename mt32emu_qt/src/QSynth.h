@@ -100,6 +100,7 @@ private:
 	QString synthProfileName;
 
 	void setState(SynthState newState);
+	void freeROMImages();
 
 public:
 	QSynth(QObject *parent = NULL);

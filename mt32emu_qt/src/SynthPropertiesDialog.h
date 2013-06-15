@@ -28,9 +28,10 @@ private:
 	void loadSynthProfile();
 	void saveSynthProfile();
 	void refreshProfileCombo();
+	QString getROMSetDescription();
 
 private slots:
-	void on_romDirButton_clicked();
+	void on_changeROMSetButton_clicked();
 	void on_dacEmuComboBox_currentIndexChanged(int);
 	void on_buttonBox_clicked(QAbstractButton *button);
 	void on_profileComboBox_currentIndexChanged(int);

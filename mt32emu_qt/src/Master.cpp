@@ -301,11 +301,26 @@ void Master::freeROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32
 	}
 }
 
+QString Master::getDefaultROMSearchPath() {
+	QString defaultPath;
+	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+	if (env.contains("USERPROFILE")) {
+		defaultPath = env.value("USERPROFILE");
+	} else if (env.contains("HOME")) {
+		defaultPath = env.value("HOME");
+	} else {
+		defaultPath = ".";
+	}
+	return defaultPath + "/roms/";
+}
+
 void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	static bool romNotSetReported = false;
 	if (name.isEmpty()) name = synthProfileName;
 	settings->beginGroup("Profiles/" + name);
-	synthProfile.romDir.setPath(settings->value("romDir", "./").toString());
+
+	QString romPath = settings->value("romDir", "").toString();
+	synthProfile.romDir.setPath(romPath.isEmpty() ? getDefaultROMSearchPath(): romPath);
 	synthProfile.controlROMFileName = settings->value("controlROM").toString();
 	synthProfile.pcmROMFileName = settings->value("pcmROM").toString();
 	synthProfile.emuDACInputMode = (MT32Emu::DACInputMode)settings->value("emuDACInputMode", 0).toInt();

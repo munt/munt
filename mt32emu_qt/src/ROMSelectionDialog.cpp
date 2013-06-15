@@ -44,9 +44,14 @@ ROMSelectionDialog::ROMSelectionDialog(SynthProfile &useSynthProfile, QWidget *p
 	fileFilter.append("*.BIN");
 	ui->fileFilterCombo->addItem(fileFilterToString(fileFilter), QVariant(fileFilter));
 	fileFilter.clear();
+	fileFilter.append("*.ROM");
+	ui->fileFilterCombo->addItem(fileFilterToString(fileFilter), QVariant(fileFilter));
+	fileFilter.clear();
+	fileFilter.append("*.BIN");
+	ui->fileFilterCombo->addItem(fileFilterToString(fileFilter), QVariant(fileFilter));
+	fileFilter.clear();
 	fileFilter.append("*.*");
 	ui->fileFilterCombo->addItem(fileFilterToString(fileFilter), QVariant(fileFilter));
-	refreshROMInfos();
 }
 
 ROMSelectionDialog::~ROMSelectionDialog() {
@@ -61,10 +66,8 @@ const QString ROMSelectionDialog::fileFilterToString(const QStringList fileFilte
 }
 
 bool ROMSelectionDialog::loadROMInfos() {
-	QString s = QFileDialog::getExistingDirectory(this, "Choose ROM directory", synthProfile.romDir.absolutePath());
-	if (s.isEmpty()) return false;
-	if (s != synthProfile.romDir.absolutePath()) {
-		synthProfile.romDir.setPath(s);
+	if (ui->romDirLineEdit->text() != synthProfile.romDir.absolutePath()) {
+		ui->romDirLineEdit->setText(synthProfile.romDir.absolutePath());
 		refreshROMInfos();
 	}
 	return true;
@@ -162,6 +165,20 @@ void ROMSelectionDialog::refreshROMInfos() {
 	}
 	ui->romInfoTable->setRowCount(row);
 	ui->romInfoTable->resizeColumnsToContents();
+}
+
+void ROMSelectionDialog::on_romDirButton_clicked() {
+	QString s = QFileDialog::getExistingDirectory(this, "Choose ROM directory", synthProfile.romDir.absolutePath());
+	if (s.isEmpty()) return;
+	if (s != synthProfile.romDir.absolutePath()) {
+		synthProfile.romDir.setPath(s);
+		ui->romDirLineEdit->setText(s);
+		refreshROMInfos();
+	}
+}
+
+void ROMSelectionDialog::on_refreshButton_clicked() {
+	refreshROMInfos();
 }
 
 void ROMSelectionDialog::on_fileFilterCombo_currentIndexChanged(int index) {

@@ -34,6 +34,8 @@ private:
 	void refreshROMInfos();
 
 private slots:
+	void on_romDirButton_clicked();
+	void on_refreshButton_clicked();
 	void on_fileFilterCombo_currentIndexChanged(int);
 	void accept();
 	void reject();

@@ -108,7 +108,7 @@ QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED), con
 }
 
 QSynth::~QSynth() {
-	Master::freeROMImages(controlROMImage, pcmROMImage);
+	freeROMImages();
 	delete synth;
 	delete reportHandler;
 	delete midiEventQueue;
@@ -360,12 +360,7 @@ void QSynth::close() {
 	synth->close();
 	synthMutex->unlock();
 	setState(SynthState_CLOSED);
-	// Make sure ROMImages will be freed even if SynthRoute is pinned
-	const ROMImage *cri = controlROMImage;
-	controlROMImage = NULL;
-	const ROMImage *pri = pcmROMImage;
-	pcmROMImage = NULL;
-	Master::freeROMImages(cri, pri);
+	freeROMImages();
 }
 
 void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
@@ -395,14 +390,14 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	controlROMFileName = synthProfile.controlROMFileName;
 	pcmROMFileName = synthProfile.pcmROMFileName;
 	if (controlROMImage == NULL || pcmROMImage == NULL) {
-		Master::freeROMImages(controlROMImage, pcmROMImage);
+		freeROMImages();
 		controlROMImage = synthProfile.controlROMImage;
 		pcmROMImage = synthProfile.pcmROMImage;
 	} else if (synthProfile.controlROMImage != NULL && synthProfile.pcmROMImage != NULL) {
 		bool controlROMChanged = strcmp((char *)controlROMImage->getROMInfo()->sha1Digest, (char *)synthProfile.controlROMImage->getROMInfo()->sha1Digest) != 0;
 		bool pcmROMChanged = strcmp((char *)pcmROMImage->getROMInfo()->sha1Digest, (char *)synthProfile.pcmROMImage->getROMInfo()->sha1Digest) != 0;
 		if (controlROMChanged || pcmROMChanged) {
-			Master::freeROMImages(controlROMImage, pcmROMImage);
+			freeROMImages();
 			controlROMImage = synthProfile.controlROMImage;
 			pcmROMImage = synthProfile.pcmROMImage;
 			reset();
@@ -414,4 +409,13 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	setReverbSettings(synthProfile.reverbMode, synthProfile.reverbTime, synthProfile.reverbLevel);
 	setReverbEnabled(synthProfile.reverbEnabled);
 	setReverbOverridden(synthProfile.reverbOverridden);
+}
+
+void QSynth::freeROMImages() {
+	// Ensure our ROM images get freed even if the synth is still in use
+	const ROMImage *cri = controlROMImage;
+	controlROMImage = NULL;
+	const ROMImage *pri = pcmROMImage;
+	pcmROMImage = NULL;
+	Master::freeROMImages(cri, pri);
 }

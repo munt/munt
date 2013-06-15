@@ -65,6 +65,7 @@ public:
 	void createMidiPort(MidiPropertiesDialog *mpd, SynthRoute *synthRoute = NULL);
 	void deleteMidiPort(MidiSession *midiSession);
 	void setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
+	QString getDefaultROMSearchPath();
 
 private slots:
 	void createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
