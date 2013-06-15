@@ -65,6 +65,13 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 		connect(master->getTrayIcon(), SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(handleTrayIconActivated(QSystemTrayIcon::ActivationReason)));
 		trayIconContextMenu();
 	}
+
+	QSettings *settings = Master::getInstance()->getSettings();
+	QRect rect = settings->value("Master/mainWindowGeometry", geometry()).toRect();
+	if (rect != geometry()) {
+		setGeometry(rect);
+	}
+
 #ifdef WITH_WINCONSOLE
 	if (!master->getSettings()->value("Master/showConsole", "0").toBool())
 		ShowWindow(GetConsoleWindow(), SW_HIDE);
@@ -77,6 +84,8 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
+	QSettings *settings = Master::getInstance()->getSettings();
+	settings->setValue("Master/mainWindowGeometry", geometry());
 	if (testMidiDriver != NULL) {
 		delete testMidiDriver;
 		testMidiDriver = NULL;
