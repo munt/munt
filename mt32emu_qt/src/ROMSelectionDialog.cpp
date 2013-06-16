@@ -65,12 +65,11 @@ const QString ROMSelectionDialog::fileFilterToString(const QStringList fileFilte
 	return NULL;
 }
 
-bool ROMSelectionDialog::loadROMInfos() {
+void ROMSelectionDialog::loadROMInfos() {
 	if (ui->romDirLineEdit->text() != synthProfile.romDir.absolutePath()) {
 		ui->romDirLineEdit->setText(synthProfile.romDir.absolutePath());
 		refreshROMInfos();
 	}
-	return true;
 }
 
 void ROMSelectionDialog::clearButtonGroup(QButtonGroup &group) {

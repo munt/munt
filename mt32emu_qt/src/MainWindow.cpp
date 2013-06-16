@@ -224,11 +224,14 @@ void MainWindow::on_actionROM_Configuration_triggered() {
 	Master &master = *Master::getInstance();
 	SynthProfile synthProfile;
 	synthProfile.controlROMImage = synthProfile.pcmROMImage = NULL;
+	master.disconnect(this, SLOT(on_actionROM_Configuration_triggered()));
 	master.loadSynthProfile(synthProfile, "");
+	connect(&master, SIGNAL(romsNotSet()), SLOT(on_actionROM_Configuration_triggered()));
 	ROMSelectionDialog rsd(synthProfile, this);
-	if (!rsd.loadROMInfos()) return;
-	rsd.exec();
-	master.storeSynthProfile(synthProfile, "");
+	rsd.loadROMInfos();
+	if (rsd.exec() == QDialog::Accepted) {
+		master.storeSynthProfile(synthProfile, "");
+	}
 }
 
 void MainWindow::trayIconContextMenu() {

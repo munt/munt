@@ -321,8 +321,8 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 
 	QString romPath = settings->value("romDir", "").toString();
 	synthProfile.romDir.setPath(romPath.isEmpty() ? getDefaultROMSearchPath(): romPath);
-	synthProfile.controlROMFileName = settings->value("controlROM").toString();
-	synthProfile.pcmROMFileName = settings->value("pcmROM").toString();
+	synthProfile.controlROMFileName = settings->value("controlROM", "MT32_CONTROL.ROM").toString();
+	synthProfile.pcmROMFileName = settings->value("pcmROM", "MT32_PCM.ROM").toString();
 	synthProfile.emuDACInputMode = (MT32Emu::DACInputMode)settings->value("emuDACInputMode", 0).toInt();
 	synthProfile.reverbEnabled = settings->value("reverbEnabled", true).toBool();
 	synthProfile.reverbOverridden = settings->value("reverbOverridden", false).toBool();

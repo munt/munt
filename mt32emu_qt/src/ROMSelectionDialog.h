@@ -18,7 +18,7 @@ class ROMSelectionDialog : public QDialog
 public:
 	explicit ROMSelectionDialog(SynthProfile &synthProfile, QWidget *parent = 0);
 	~ROMSelectionDialog();
-	bool loadROMInfos();
+	void loadROMInfos();
 
 private:
 	Ui::ROMSelectionDialog *ui;
