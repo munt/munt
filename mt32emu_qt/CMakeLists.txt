@@ -117,6 +117,19 @@ find_package(MT32EMU REQUIRED)
 set(EXT_LIBS ${EXT_LIBS} ${MT32EMU_LIBRARIES})
 include_directories(${MT32EMU_INCLUDE_DIRS})
 
+find_package(PORTAUDIO)
+if(PORTAUDIO_FOUND)
+  add_definitions(-DWITH_PORT_AUDIO_DRIVER)
+  set(EXT_LIBS ${EXT_LIBS} ${PORTAUDIO_LIBRARIES})
+  include_directories(${PORTAUDIO_INCLUDE_DIRS})
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/audiodrv/PortAudioDriver.cpp
+  )
+  set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
+    src/audiodrv/PortAudioDriver.h
+  )
+endif()
+
 find_package(ALSA)
 if(ALSA_FOUND)
   add_definitions(-DWITH_ALSA_AUDIO_DRIVER -DWITH_ALSA_MIDI_DRIVER)
@@ -154,19 +167,6 @@ if(SYS_SOUNDCARD_FOUND)
   )
   set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
     src/audiodrv/OSSAudioDriver.h
-  )
-endif()
-
-find_package(PORTAUDIO)
-if(PORTAUDIO_FOUND)
-  add_definitions(-DWITH_PORT_AUDIO_DRIVER)
-  set(EXT_LIBS ${EXT_LIBS} ${PORTAUDIO_LIBRARIES})
-  include_directories(${PORTAUDIO_INCLUDE_DIRS})
-  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
-    src/audiodrv/PortAudioDriver.cpp
-  )
-  set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-    src/audiodrv/PortAudioDriver.h
   )
 endif()
 
