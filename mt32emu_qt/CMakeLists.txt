@@ -9,6 +9,8 @@ set(mt32emu_qt_VERSION_PATCH 2)
 
 add_definitions(-DVERSION="${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
 
+include(CheckIncludeFiles)
+
 set(mt32emu_qt_SOURCES
   src/main.cpp
 
@@ -49,6 +51,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
   add_definitions(-DWITH_WIN32_MIDI_DRIVER -DWITH_WINMM_AUDIO_DRIVER -DWITH_WINMMTIMER -DWITH_WINCONSOLE)
   list(APPEND mt32emu_qt_SOURCES src/mididrv/Win32Driver.cpp)
   list(APPEND mt32emu_qt_SOURCES src/audiodrv/WinMMAudioDriver.cpp)
+  set(EXT_LIBS ${EXT_LIBS} winmm)
 elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   add_definitions(-DWITH_COREMIDI_DRIVER -DWITH_COREAUDIO_DRIVER)
   list(APPEND mt32emu_qt_SOURCES src/mididrv/CoreMidiDriver.cpp)
