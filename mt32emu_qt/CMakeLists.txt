@@ -58,6 +58,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   set(CMAKE_EXE_LINKER_FLAGS "-framework CoreMIDI")
 else()
   list(APPEND mt32emu_qt_SOURCES src/mididrv/OSSMidiPortDriver.cpp)
+  set(EXT_LIBS ${EXT_LIBS} pthread)
 endif()
 
 set(mt32emu_qt_HEADERS
@@ -153,6 +154,7 @@ if(PULSEAUDIO_FOUND)
   add_definitions(-DWITH_PULSE_AUDIO_DRIVER)
 # FIXME: we need to setup a define for Pulse dynamic loading
 # set(EXT_LIBS ${EXT_LIBS} ${PULSEAUDIO_LIBRARIES})
+  set(EXT_LIBS ${EXT_LIBS} dl)
   include_directories(${PULSEAUDIO_INCLUDE_DIRS})
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/PulseAudioDriver.cpp
