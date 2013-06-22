@@ -10,6 +10,7 @@ set(mt32emu_qt_VERSION_PATCH 2)
 add_definitions(-DVERSION="${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
 
 include(CheckIncludeFiles)
+include(CheckLibraryExists)
 
 set(mt32emu_qt_SOURCES
   src/main.cpp
@@ -154,7 +155,10 @@ if(PULSEAUDIO_FOUND)
   add_definitions(-DWITH_PULSE_AUDIO_DRIVER)
 # FIXME: we need to setup a define for Pulse dynamic loading
 # set(EXT_LIBS ${EXT_LIBS} ${PULSEAUDIO_LIBRARIES})
-  set(EXT_LIBS ${EXT_LIBS} dl)
+  check_library_exists(dl dlopen "" SEPARATE_DL_FOUND)
+  if(SEPARATE_DL_FOUND)
+    set(EXT_LIBS ${EXT_LIBS} dl)
+  endif()
   include_directories(${PULSEAUDIO_INCLUDE_DIRS})
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/PulseAudioDriver.cpp
