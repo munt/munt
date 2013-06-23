@@ -301,7 +301,7 @@ void QSynth::setDACInputMode(DACInputMode emuDACInputMode) {
 	synthMutex->unlock();
 }
 
-QString QSynth::getPatchName(int partNum) {
+const QString QSynth::getPatchName(int partNum) const {
 	if (isOpen) return QString().fromAscii(synth->getPart(partNum)->getCurrentInstr());
 	return QString("Channel %1").arg(partNum + 1);
 }

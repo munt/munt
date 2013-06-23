@@ -120,7 +120,7 @@ public:
 	void setReverbOverridden(bool reverbOverridden);
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
-	QString getPatchName(int partNum);
+	const QString getPatchName(int partNum) const;
 	const MT32Emu::Partial *getPartial(int partialNum) const;
 	bool isActive() const;
 
