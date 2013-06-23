@@ -22,6 +22,8 @@
 #include "font_6x8.h"
 #include "SynthStateMonitor.h"
 
+#define LCD_WIDGET_UPDATE_MILLIS 30
+
 SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioDevice *useAudioDevice, QWidget *parent) :
 	QWidget(parent),
 	synthRoute(useSynthRoute),
@@ -304,12 +306,13 @@ LCDWidget::LCDWidget(SynthRoute *useSynthRoute, QWidget *parent) :
 	setMinimumSize(254, 40);
 	handlePartStateReset();
 
-	QSynth *qsynth = synthRoute->findChild<QSynth *>();
+	qsynth = synthRoute->findChild<QSynth *>();
 	QReportHandler *handler = qsynth->findChild<QReportHandler *>();
 	connect(handler, SIGNAL(lcdMessageDisplayed(const QString)), SLOT(setLCDText(const QString)));
 	connect(handler, SIGNAL(masterVolumeChanged(int)), SLOT(handleMasterVolumeChanged(int)));
-	connect(handler, SIGNAL(partStateChanged(int, bool)), SLOT(handlePartStateChanged(int, bool)));
 	connect(qsynth, SIGNAL(partStateReset()), SLOT(handlePartStateReset()));
+	connect(&timer, SIGNAL(timeout()), SLOT(handleUpdate()));
+	timer.start(LCD_WIDGET_UPDATE_MILLIS);
 }
 
 void LCDWidget::setLCDText(const QString useText)
@@ -330,13 +333,20 @@ void LCDWidget::handleMasterVolumeChanged(int volume) {
 	setLCDText("");
 }
 
-void LCDWidget::handlePartStateChanged(int partNum, bool isActive) {
-	if (partNum == 8) {
-		partNum = 5; // mapping for the rhythm channel
-	} else if (partNum > 4) {
-		return;
+void LCDWidget::handleUpdate() {
+	if (!isVisible() || synthRoute->getState() != SynthRouteState_OPEN) return;
+	bool partActiveNonReleasing[9] = {false};
+	for (int partialNum = 0; partialNum < MT32EMU_MAX_PARTIALS; partialNum++) {
+		const MT32Emu::Partial *partial = qsynth->getPartial(partialNum);
+		int partNum = partial->getOwnerPart();
+		if (partNum < 0) continue; // This means inactive partial
+		const MT32Emu::Poly *poly = partial->getPoly();
+		partActiveNonReleasing[partNum] = partActiveNonReleasing[partNum] || (poly->isActive() && poly->getState() != MT32Emu::POLY_Releasing);
 	}
-	maskedChar[partNum << 1] = isActive;
+	for (int partNum = 0; partNum < 5; partNum++) {
+		maskedChar[partNum << 1] = partActiveNonReleasing[partNum];
+	}
+	maskedChar[5 << 1] = partActiveNonReleasing[8]; // mapping for the rhythm channel
 	setLCDText("");
 }
 

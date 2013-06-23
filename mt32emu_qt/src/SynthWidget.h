@@ -29,6 +29,8 @@ protected:
 
 private:
 	SynthRoute *synthRoute;
+	QSynth *qsynth;
+	QTimer timer;
 	QPixmap offBackground;
 	QPixmap onBackground;
 	QByteArray lcdText;
@@ -38,8 +40,8 @@ private:
 private slots:
 	void setLCDText(const QString text = "");
 	void handleMasterVolumeChanged(int volume);
-	void handlePartStateChanged(int, bool);
 	void handlePartStateReset();
+	void handleUpdate();
 };
 
 class SynthWidget : public QWidget

@@ -78,10 +78,6 @@ void QReportHandler::onNewReverbLevel(Bit8u level) {
 	emit reverbLevelChanged(level);
 }
 
-void QReportHandler::onPartStateChanged(int partNum, bool isActive) {
-	emit partStateChanged(partNum, isActive);
-}
-
 void QReportHandler::onPolyStateChanged(int partNum) {
 	emit polyStateChanged(partNum);
 }

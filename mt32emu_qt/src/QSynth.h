@@ -49,7 +49,6 @@ public:
 	void onNewReverbMode(MT32Emu::Bit8u mode);
 	void onNewReverbTime(MT32Emu::Bit8u time);
 	void onNewReverbLevel(MT32Emu::Bit8u level);
-	void onPartStateChanged(int partNum, bool isActive);
 	void onPolyStateChanged(int partNum);
 	void onPartialStateChanged(int partialNum, int oldPartialPhase, int newPartialPhase);
 	void onProgramChanged(int partNum, const char patchName[]);
@@ -61,7 +60,6 @@ signals:
 	void reverbModeChanged(int);
 	void reverbTimeChanged(int);
 	void reverbLevelChanged(int);
-	void partStateChanged(int, bool);
 	void polyStateChanged(int);
 	void partialStateChanged(int, int);
 	void programChanged(int, QString);

@@ -139,7 +139,7 @@ void SynthStateMonitor::handleUpdate() {
 
 	if (!ui->detailsFrame->isVisible() || synthRoute->getState() != SynthRouteState_OPEN) return;
 	bool partUpdated[9] = {false};
-	for (int i = 0; i < 32; i++) {
+	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
 		const MT32Emu::Partial *partial = qsynth->getPartial(i);
 		int newState = partial->isActive() ? partialPhaseToState[partial->tva->getPhase()] : PartialState_DEAD;
 		if (partialState[i] != newState) {
