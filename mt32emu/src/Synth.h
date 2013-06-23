@@ -253,7 +253,7 @@ protected:
 	virtual void onPartStateChanged(int /* partNum */, bool /* isActive */) {}
 	virtual void onPolyStateChanged(int /* partNum */) {}
 	virtual void onPartialStateChanged(int /* partialNum */, int /* oldPartialPhase */, int /* newPartialPhase */) {}
-	virtual void onProgramChanged(int /* partNum */, char * /* patchName */) {}
+	virtual void onProgramChanged(int /* partNum */, const char * /* patchName */) {}
 };
 
 class Synth {
@@ -374,7 +374,7 @@ private:
 	void partStateChanged(int partNum, bool isPartActive);
 	void polyStateChanged(int partNum);
 	void partialStateChanged(const Partial * const partial, int oldPartialPhase, int newPartialPhase);
-	void newTimbreSet(int partNum, char patchName[]);
+	void newTimbreSet(int partNum, const char patchName[]);
 	void printDebug(const char *fmt, ...);
 
 public:

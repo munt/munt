@@ -95,7 +95,7 @@ void QReportHandler::onPartialStateChanged(int partialNum, int oldPartialPhase, 
 	if (partialPhaseToState[oldPartialPhase] != newState) emit partialStateChanged(partialNum, newState);
 }
 
-void QReportHandler::onProgramChanged(int partNum, char patchName[]) {
+void QReportHandler::onProgramChanged(int partNum, const char patchName[]) {
 	emit programChanged(partNum, QString().fromAscii(patchName, 10));
 }
 

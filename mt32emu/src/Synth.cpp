@@ -215,7 +215,7 @@ void Synth::partialStateChanged(const Partial * const partial, int oldPartialPha
 	}
 }
 
-void Synth::newTimbreSet(int partNum, char patchName[]) {
+void Synth::newTimbreSet(int partNum, const char patchName[]) {
 	reportHandler->onProgramChanged(partNum, patchName);
 }
 

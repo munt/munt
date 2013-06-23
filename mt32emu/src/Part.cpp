@@ -175,6 +175,7 @@ void Part::refresh() {
 		patchCache[t].reverb = patchTemp->patch.reverbSwitch > 0;
 	}
 	memcpy(currentInstr, timbreTemp->common.name, 10);
+	synth->newTimbreSet(partNum, currentInstr);
 	updatePitchBenderRange();
 }
 
@@ -207,7 +208,6 @@ void RhythmPart::setTimbre(TimbreParam * /*timbre*/) {
 
 void Part::setTimbre(TimbreParam *timbre) {
 	*timbreTemp = *timbre;
-	synth->newTimbreSet(partNum, timbre->common.name);
 }
 
 unsigned int RhythmPart::getAbsTimbreNum() const {

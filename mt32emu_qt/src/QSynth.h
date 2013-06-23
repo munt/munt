@@ -52,7 +52,7 @@ public:
 	void onPartStateChanged(int partNum, bool isActive);
 	void onPolyStateChanged(int partNum);
 	void onPartialStateChanged(int partialNum, int oldPartialPhase, int newPartialPhase);
-	void onProgramChanged(int partNum, char patchName[]);
+	void onProgramChanged(int partNum, const char patchName[]);
 
 signals:
 	void balloonMessageAppeared(const QString &title, const QString &text);
