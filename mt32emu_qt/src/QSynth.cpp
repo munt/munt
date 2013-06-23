@@ -92,7 +92,7 @@ void QReportHandler::onPartialStateChanged(int partialNum, int oldPartialPhase, 
 }
 
 void QReportHandler::onProgramChanged(int partNum, const char patchName[]) {
-	emit programChanged(partNum, QString().fromAscii(patchName, 10));
+	emit programChanged(partNum, QString().fromAscii(patchName));
 }
 
 QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED), controlROMImage(NULL), pcmROMImage(NULL) {
@@ -302,7 +302,7 @@ void QSynth::setDACInputMode(DACInputMode emuDACInputMode) {
 }
 
 QString QSynth::getPatchName(int partNum) {
-	if (isOpen) return QString().fromAscii(synth->getPart(partNum)->getCurrentInstr(), 10);
+	if (isOpen) return QString().fromAscii(synth->getPart(partNum)->getCurrentInstr());
 	return QString("Channel %1").arg(partNum + 1);
 }
 
