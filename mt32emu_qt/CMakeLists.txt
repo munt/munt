@@ -60,6 +60,10 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 else()
   list(APPEND mt32emu_qt_SOURCES src/mididrv/OSSMidiPortDriver.cpp)
   set(EXT_LIBS ${EXT_LIBS} pthread)
+  check_library_exists(rt clock_nanosleep "" NANOSLEEP_IN_RT_FOUND)
+  if(NANOSLEEP_IN_RT_FOUND)
+    set(EXT_LIBS ${EXT_LIBS} rt)
+  endif()
 endif()
 
 set(mt32emu_qt_HEADERS
