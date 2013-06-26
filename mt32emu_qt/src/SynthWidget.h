@@ -17,33 +17,6 @@ namespace Ui {
 	class SynthWidget;
 }
 
-class LCDWidget : public QWidget
-{
-	Q_OBJECT
-
-public:
-	explicit LCDWidget(SynthRoute *useSynthRoute, QWidget *parent = 0);
-
-protected:
-	void paintEvent(QPaintEvent *);
-
-private:
-	SynthRoute *synthRoute;
-	QSynth *qsynth;
-	QTimer timer;
-	QPixmap offBackground;
-	QPixmap onBackground;
-	QByteArray lcdText;
-	bool drawMaskedChars, maskedChar[20];
-	int masterVolume;
-
-private slots:
-	void setLCDText(const QString text = "");
-	void handleMasterVolumeChanged(int volume);
-	void handlePartStateReset();
-	void handleUpdate();
-};
-
 class SynthWidget : public QWidget
 {
 	Q_OBJECT
@@ -56,7 +29,6 @@ public:
 private:
 	SynthRoute *synthRoute;
 	Ui::SynthWidget *ui;
-	LCDWidget *lcdWidget;
 	SynthStateMonitor *synthStateMonitor;
 	SynthPropertiesDialog spd;
 	AudioPropertiesDialog apd;

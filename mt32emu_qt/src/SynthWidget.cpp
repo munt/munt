@@ -19,10 +19,7 @@
 #include "ui_SynthWidget.h"
 #include "Master.h"
 #include "MidiSession.h"
-#include "font_6x8.h"
 #include "SynthStateMonitor.h"
-
-#define LCD_WIDGET_UPDATE_MILLIS 30
 
 SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioDevice *useAudioDevice, QWidget *parent) :
 	QWidget(parent),
@@ -36,10 +33,6 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	ui->setupUi(this);
 
 	setEmuModeText();
-
-	lcdWidget = new LCDWidget(synthRoute, ui->frame);
-	lcdWidget->setObjectName("lcdWidget");
-	ui->lcdLayout->addWidget(lcdWidget);
 
 	ui->detailsFrame->setVisible(false);
 	synthStateMonitor = new SynthStateMonitor(ui, synthRoute);
@@ -65,7 +58,6 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 
 SynthWidget::~SynthWidget() {
 	delete synthStateMonitor;
-	delete lcdWidget;
 	delete ui;
 }
 
@@ -107,25 +99,25 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 	case SynthRouteState_OPEN:
 		ui->startButton->setEnabled(false);
 		ui->stopButton->setEnabled(true);
-		ui->audioDeviceComboBox->setEnabled(false);
+		ui->audioOutputGroupBox->setEnabled(false);
 		ui->statusLabel->setText("Open");
 		break;
 	case SynthRouteState_OPENING:
 		ui->startButton->setEnabled(false);
 		ui->stopButton->setEnabled(false);
-		ui->audioDeviceComboBox->setEnabled(false);
+		ui->audioOutputGroupBox->setEnabled(false);
 		ui->statusLabel->setText("Opening");
 		break;
 	case SynthRouteState_CLOSING:
 		ui->startButton->setEnabled(false);
 		ui->stopButton->setEnabled(false);
-		ui->audioDeviceComboBox->setEnabled(false);
+		ui->audioOutputGroupBox->setEnabled(false);
 		ui->statusLabel->setText("Closing");
 		break;
 	case SynthRouteState_CLOSED:
 		ui->startButton->setEnabled(true);
 		ui->stopButton->setEnabled(false);
-		ui->audioDeviceComboBox->setEnabled(true);
+		ui->audioOutputGroupBox->setEnabled(true);
 		ui->statusLabel->setText("Closed");
 		break;
 	}
@@ -293,119 +285,4 @@ void SynthWidget::setEmuModeText() {
 	if (synthProfile.controlROMImage == NULL) emuMode = "Unknown";
 	else emuMode = synthProfile.controlROMImage->getROMInfo()->description;
 	ui->synthEmuModeLabel->setText(emuMode + " Emulation Mode");
-}
-
-LCDWidget::LCDWidget(SynthRoute *useSynthRoute, QWidget *parent) :
-	QWidget(parent),
-	synthRoute(useSynthRoute),
-	offBackground(":/images/LCDOff.gif"),
-	onBackground(":/images/LCDOn.gif"),
-	drawMaskedChars(true),
-	masterVolume(100)
-{
-	setMinimumSize(254, 40);
-	handlePartStateReset();
-
-	qsynth = synthRoute->findChild<QSynth *>();
-	QReportHandler *handler = qsynth->findChild<QReportHandler *>();
-	connect(handler, SIGNAL(lcdMessageDisplayed(const QString)), SLOT(setLCDText(const QString)));
-	connect(handler, SIGNAL(masterVolumeChanged(int)), SLOT(handleMasterVolumeChanged(int)));
-	connect(qsynth, SIGNAL(partStateReset()), SLOT(handlePartStateReset()));
-	connect(&timer, SIGNAL(timeout()), SLOT(handleUpdate()));
-	timer.start(LCD_WIDGET_UPDATE_MILLIS);
-}
-
-void LCDWidget::setLCDText(const QString useText)
-{
-	QString text;
-	if (useText.isEmpty()) {
-		lcdText = QString().sprintf("1 2 3 4 5 R |vol:%3d", masterVolume).toAscii();
-		drawMaskedChars = true;
-	} else {
-		lcdText = useText.toAscii();
-		drawMaskedChars = false;
-	}
-	update();
-}
-
-void LCDWidget::handleMasterVolumeChanged(int volume) {
-	masterVolume = volume;
-	setLCDText("");
-}
-
-void LCDWidget::handleUpdate() {
-	if (!isVisible() || synthRoute->getState() != SynthRouteState_OPEN) return;
-	bool partActiveNonReleasing[9] = {false};
-	for (int partialNum = 0; partialNum < MT32EMU_MAX_PARTIALS; partialNum++) {
-		const MT32Emu::Partial *partial = qsynth->getPartial(partialNum);
-		int partNum = partial->getOwnerPart();
-		if (partNum < 0) continue; // This means inactive partial
-		const MT32Emu::Poly *poly = partial->getPoly();
-		partActiveNonReleasing[partNum] = partActiveNonReleasing[partNum] || (poly->isActive() && poly->getState() != MT32Emu::POLY_Releasing);
-	}
-	for (int partNum = 0; partNum < 5; partNum++) {
-		maskedChar[partNum << 1] = partActiveNonReleasing[partNum];
-	}
-	maskedChar[5 << 1] = partActiveNonReleasing[8]; // mapping for the rhythm channel
-	setLCDText("");
-}
-
-void LCDWidget::handlePartStateReset()
-{
-	for (int i = 0; i < 20; i++) maskedChar[i] = false;
-	setLCDText();
-}
-
-void LCDWidget::paintEvent(QPaintEvent *)
-{
-	QPainter lcdPainter(this);
-	if (synthRoute->getState() != SynthRouteState_OPEN) {
-		lcdPainter.drawPixmap(0, 0, offBackground);
-		return;
-	}
-	lcdPainter.drawPixmap(0, 0, onBackground);
-	lcdPainter.translate(7, 9);
-
-	QColor bgColor(98, 127, 0);
-	QColor fgColor(232, 254, 0);
-
-	int xat, xstart, yat;
-	xstart = 0;
-	yat = 0;
-
-	for (int i = 0; i < 20; i++) {
-		unsigned char c;
-		c = 0x20;
-		if (i < lcdText.size()) {
-			c = lcdText[i];
-		}
-
-		// Don't render characters we don't have mapped
-		if (c < 0x20) c = 0x20;
-		if (c > 0x7f) c = 0x20;
-
-		c -= 0x20;
-
-		yat = 1;
-		for (int t = 0; t < 8; t++) {
-			xat = xstart;
-			unsigned char fval;
-			if (maskedChar[i] && (t != 7) && drawMaskedChars) {
-				fval = 0x1f;
-			} else {
-				fval = Font_6x8[c][t];
-			}
-			for (int m = 4; m >= 0; --m) {
-				if ((fval >> m) & 1) {
-					lcdPainter.fillRect(xat, yat, 2, 2, fgColor);
-				} else {
-					lcdPainter.fillRect(xat, yat, 2, 2, bgColor);
-				}
-				xat += 2;
-			}
-			yat += 2;
-			if (t == 6) yat += 2;
-		}
-		xstart += 12;
-	}
 }

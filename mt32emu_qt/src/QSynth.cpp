@@ -82,17 +82,8 @@ void QReportHandler::onPolyStateChanged(int partNum) {
 	emit polyStateChanged(partNum);
 }
 
-void QReportHandler::onPartialStateChanged(int partialNum, int oldPartialPhase, int newPartialPhase) {
-	static const int partialPhaseToState[8] = {
-		PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK,
-		PartialState_SUSTAINED, PartialState_SUSTAINED, PartialState_RELEASED, PartialState_DEAD
-	};
-	int newState = partialPhaseToState[newPartialPhase];
-	if (partialPhaseToState[oldPartialPhase] != newState) emit partialStateChanged(partialNum, newState);
-}
-
-void QReportHandler::onProgramChanged(int partNum, const char patchName[]) {
-	emit programChanged(partNum, QString().fromAscii(patchName));
+void QReportHandler::onProgramChanged(int partNum, int timbreGroup, const char patchName[]) {
+	emit programChanged(partNum, timbreGroup, QString().fromAscii(patchName));
 }
 
 QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED), controlROMImage(NULL), pcmROMImage(NULL) {
@@ -112,10 +103,12 @@ QSynth::~QSynth() {
 }
 
 bool QSynth::pushMIDIShortMessage(Bit32u msg, SynthTimestamp timestamp) {
+	emit midiMessagePushed();
 	return isOpen && midiEventQueue->pushEvent(timestamp, msg, NULL, 0);
 }
 
 bool QSynth::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, SynthTimestamp timestamp) {
+	emit midiMessagePushed();
 	return isOpen && midiEventQueue->pushEvent(timestamp, 0, sysexData, sysexLen);
 }
 
@@ -414,4 +407,12 @@ void QSynth::freeROMImages() {
 	const ROMImage *pri = pcmROMImage;
 	pcmROMImage = NULL;
 	Master::freeROMImages(cri, pri);
+}
+
+const PartialState QSynth::getPartialState(int partialPhase) {
+	static const PartialState partialPhaseToState[8] = {
+		PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK,
+		PartialState_SUSTAINED, PartialState_SUSTAINED, PartialState_RELEASED, PartialState_DEAD
+	};
+	return partialPhaseToState[partialPhase];
 }

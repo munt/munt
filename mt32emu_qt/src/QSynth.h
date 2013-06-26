@@ -50,8 +50,7 @@ public:
 	void onNewReverbTime(MT32Emu::Bit8u time);
 	void onNewReverbLevel(MT32Emu::Bit8u level);
 	void onPolyStateChanged(int partNum);
-	void onPartialStateChanged(int partialNum, int oldPartialPhase, int newPartialPhase);
-	void onProgramChanged(int partNum, const char patchName[]);
+	void onProgramChanged(int partNum, int timbreGroup, const char patchName[]);
 
 signals:
 	void balloonMessageAppeared(const QString &title, const QString &text);
@@ -61,8 +60,7 @@ signals:
 	void reverbTimeChanged(int);
 	void reverbLevelChanged(int);
 	void polyStateChanged(int);
-	void partialStateChanged(int, int);
-	void programChanged(int, QString);
+	void programChanged(int, int, QString);
 };
 
 class QSynth : public QObject {
@@ -101,6 +99,8 @@ private:
 	void freeROMImages();
 
 public:
+	static const PartialState getPartialState(int partialPhase);
+
 	QSynth(QObject *parent = NULL);
 	~QSynth();
 	bool open(const QString useSynthProfileName = "");
@@ -127,6 +127,7 @@ public:
 signals:
 	void stateChanged(SynthState state);
 	void partStateReset();
+	void midiMessagePushed();
 };
 
 #endif

@@ -175,7 +175,7 @@ void Part::refresh() {
 		patchCache[t].reverb = patchTemp->patch.reverbSwitch > 0;
 	}
 	memcpy(currentInstr, timbreTemp->common.name, 10);
-	synth->newTimbreSet(partNum, currentInstr);
+	synth->newTimbreSet(partNum, patchTemp->patch.timbreGroup, currentInstr);
 	updatePitchBenderRange();
 }
 
@@ -533,7 +533,6 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 #if MT32EMU_MONITOR_PARTIALS > 1
 	synth->printPartialUsage();
 #endif
-	synth->partStateChanged(partNum, true);
 	synth->polyStateChanged(partNum);
 }
 
@@ -613,9 +612,6 @@ void Part::partialDeactivated(Poly *poly) {
 		activePolys.remove(poly);
 		freePolys.prepend(poly);
 		synth->polyStateChanged(partNum);
-	}
-	if (activePartialCount == 0) {
-		synth->partStateChanged(partNum, false);
 	}
 }
 
