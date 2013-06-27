@@ -68,10 +68,10 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 	connect(qsynth, SIGNAL(partStateReset()), SLOT(handleReset()));
 	connect(qsynth, SIGNAL(midiMessagePushed()), SLOT(handleMIDIMessagePushed()));
 	connect(handler, SIGNAL(programChanged(int, int, QString)), SLOT(handleProgramChanged(int, int, QString)));
+	connect(handler, SIGNAL(polyStateChanged(int)), SLOT(handlePolyStateChanged(int)));
 	lcdWidget.connect(handler, SIGNAL(lcdMessageDisplayed(const QString)), SLOT(handleLCDMessageDisplayed(const QString)));
 	lcdWidget.connect(handler, SIGNAL(masterVolumeChanged(int)), SLOT(handleMasterVolumeChanged(int)));
 	connect(&timer, SIGNAL(timeout()), SLOT(handleUpdate()));
-	timer.start(SYNTH_MONITOR_UPDATE_MILLIS);
 }
 
 SynthStateMonitor::~SynthStateMonitor() {
@@ -82,15 +82,11 @@ SynthStateMonitor::~SynthStateMonitor() {
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) delete partialStateLED[i];
 }
 
-void SynthStateMonitor::connectSignals(bool enable) {
-	QReportHandler *handler = qsynth->findChild<QReportHandler *>();
+void SynthStateMonitor::enableMonitor(bool enable) {
 	if (enable) {
-		connect(handler, SIGNAL(polyStateChanged(int)), SLOT(handlePolyStateChanged(int)));
-		for (int i = 0; i < 9; i++) {
-			partStateWidget[i]->update();
-		}
+		timer.start(SYNTH_MONITOR_UPDATE_MILLIS);
 	} else {
-		handler->disconnect(this, SLOT(handlePolyStateChanged(int)));
+		timer.stop();
 	}
 }
 
@@ -124,7 +120,7 @@ void SynthStateMonitor::handleProgramChanged(int partNum, int timbreGroup, QStri
 }
 
 void SynthStateMonitor::handleUpdate() {
-	if (!ui->synthFrame->isVisible() || synthRoute->getState() != SynthRouteState_OPEN) return;
+	if (synthRoute->getState() != SynthRouteState_OPEN) return;
 	bool partActiveNonReleasing[9] = {false};
 	bool midiMessageOn = false;
 	for (int partialNum = 0; partialNum < MT32EMU_MAX_PARTIALS; partialNum++) {

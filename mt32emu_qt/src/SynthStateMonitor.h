@@ -85,7 +85,7 @@ friend class LCDWidget;
 public:
 	SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRoute);
 	~SynthStateMonitor();
-	void connectSignals(bool enable);
+	void enableMonitor(bool enable);
 
 private:
 	const SynthRoute * const synthRoute;
