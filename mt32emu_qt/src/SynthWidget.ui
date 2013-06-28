@@ -443,11 +443,20 @@
   </layout>
  </widget>
  <tabstops>
+  <tabstop>midiList</tabstop>
+  <tabstop>midiAdd</tabstop>
+  <tabstop>midiRemove</tabstop>
+  <tabstop>midiProperties</tabstop>
+  <tabstop>midiRecord</tabstop>
+  <tabstop>masterVolumeSlider</tabstop>
+  <tabstop>pinCheckBox</tabstop>
+  <tabstop>synthPropertiesButton</tabstop>
   <tabstop>audioDeviceComboBox</tabstop>
   <tabstop>refreshButton</tabstop>
   <tabstop>audioPropertiesButton</tabstop>
   <tabstop>startButton</tabstop>
   <tabstop>stopButton</tabstop>
+  <tabstop>detailsButton</tabstop>
  </tabstops>
  <resources>
   <include location="images.qrc"/>
