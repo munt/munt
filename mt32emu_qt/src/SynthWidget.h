@@ -37,7 +37,8 @@ private:
 	SynthPropertiesDialog spd;
 	AudioPropertiesDialog apd;
 	MidiPropertiesDialog mpd;
-	bool adjustSize;
+
+	static const QIcon &getSynthDetailsIcon(bool visible);
 
 	void refreshAudioDeviceList(Master *master, const AudioDevice *useAudioDevice);
 	int findMIDISession(MidiSession *midiSession);
@@ -64,7 +65,6 @@ private slots:
 	void handleMIDISessionRemoved(MidiSession *midiSession);
 	void handleMIDISessionNameChanged(MidiSession *midiSession);
 	void handleMasterVolumeChanged(int volume);
-	void paintEvent(QPaintEvent *paintEvent);
 };
 
 #endif // SYNTHWIDGET_H

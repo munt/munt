@@ -27,16 +27,17 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	ui(new Ui::SynthWidget),
 	spd(parent, useSynthRoute),
 	apd(parent),
-	mpd(parent),
-	adjustSize(false)
+	mpd(parent)
 {
 	ui->setupUi(this);
 
 	setEmuModeText();
 
-	ui->detailsFrame->setVisible(false);
 	synthStateMonitor = new SynthStateMonitor(ui, synthRoute);
-	if (master->getSettings()->value("Master/showSynthDetails", "0").toBool()) on_detailsButton_clicked();
+
+	bool detailsVisible = master->getSettings()->value("Master/showSynthDetails", "0").toBool();
+	ui->detailsFrame->setVisible(detailsVisible);
+	ui->detailsButton->setIcon(SynthWidget::getSynthDetailsIcon(detailsVisible));
 
 	refreshAudioDeviceList(master, useAudioDevice);
 	ui->pinCheckBox->setChecked(master->isPinned(synthRoute));
@@ -247,16 +248,6 @@ void SynthWidget::handleMasterVolumeChanged(int volume) {
 	ui->masterVolumeSlider->setValue(volume);
 }
 
-void SynthWidget::paintEvent(QPaintEvent *paintEvent) {
-	QWidget::paintEvent(paintEvent);
-	if (adjustSize) {
-		int oldHeight = height();
-		((QWidget*)spd.parent())->adjustSize();
-		int newHeight = height();
-		if (newHeight != oldHeight) adjustSize = false;
-	}
-}
-
 void SynthWidget::hideEvent(QHideEvent *) {
 	synthStateMonitor->enableMonitor(false);
 }
@@ -268,9 +259,28 @@ void SynthWidget::showEvent(QShowEvent *) {
 void SynthWidget::on_detailsButton_clicked() {
 	bool newVisible = !ui->detailsFrame->isVisible();
 	ui->detailsFrame->setVisible(newVisible);
-	ui->detailsButton->setIcon(newVisible ? QIcon(":/images/DetailsHide.gif") : QIcon(":/images/Details.gif"));
+	ui->detailsButton->setIcon(SynthWidget::getSynthDetailsIcon(newVisible));
 	Master::getInstance()->getSettings()->setValue("Master/showSynthDetails", newVisible);
-	adjustSize = adjustSize || !newVisible;
+
+	// Adjust size of main window
+	int heightDelta = ui->detailsFrame->height() + layout()->spacing();
+	if (!newVisible) {
+		heightDelta = -heightDelta;
+
+		// Enforce relayout of widget hierarchy up to the main window to allow its shrinking
+		QWidget *p = this;
+		while (p != NULL) {
+			p->updateGeometry();
+			p = p->parentWidget();
+		}
+		layout()->activate();
+		window()->layout()->activate();
+	}
+
+	// OK, widgets' layouts updated, now resize main window
+	QSize newSize = window()->size();
+	newSize.rheight() += heightDelta;
+	window()->resize(newSize);
 }
 
 void SynthWidget::setEmuModeText() {
@@ -280,4 +290,11 @@ void SynthWidget::setEmuModeText() {
 	if (synthProfile.controlROMImage == NULL) emuMode = "Unknown";
 	else emuMode = synthProfile.controlROMImage->getROMInfo()->description;
 	ui->synthEmuModeLabel->setText(emuMode + " Emulation Mode");
+}
+
+const QIcon &SynthWidget::getSynthDetailsIcon(bool visible) {
+	static const QIcon SYNTH_DETAILS_VISIBLE(":/images/DetailsHide.gif");
+	static const QIcon SYNTH_DETAILS_HIDDEN(":/images/Details.gif");
+
+	return visible ? SYNTH_DETAILS_VISIBLE : SYNTH_DETAILS_HIDDEN;
 }
