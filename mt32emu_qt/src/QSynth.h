@@ -99,7 +99,7 @@ private:
 	void freeROMImages();
 
 public:
-	static const PartialState getPartialState(int partialPhase);
+	static PartialState getPartialState(int partialPhase);
 
 	QSynth(QObject *parent = NULL);
 	~QSynth();

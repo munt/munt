@@ -34,8 +34,8 @@ static const QColor lcdFgColor(232, 254, 0);
 static const QColor partialStateColor[] = {COLOR_GRAY, Qt::red, Qt::yellow, Qt::green};
 
 SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRoute) :
-	ui(ui),
 	synthRoute(useSynthRoute),
+	ui(ui),
 	lcdWidget(*this, ui->synthFrame),
 	midiMessageLED(&COLOR_GRAY, ui->midiMessageFrame)
 {
@@ -152,7 +152,7 @@ void SynthStateMonitor::handleUpdate() {
 	midiMessageLED.setColor(midiMessageOn ? &COLOR_GREEN : &COLOR_GRAY);
 }
 
-LEDWidget::LEDWidget(const QColor *color, QWidget *parent) : colorProperty(color), QWidget(parent) {}
+LEDWidget::LEDWidget(const QColor *color, QWidget *parent) : QWidget(parent), colorProperty(color) {}
 
 const QColor *LEDWidget::color() const {
 	return colorProperty;
@@ -172,7 +172,7 @@ void LEDWidget::paintEvent(QPaintEvent *paintEvent) {
 	}
 }
 
-PartStateWidget::PartStateWidget(int partNum, const SynthStateMonitor &monitor, QWidget *parent) : partNum(partNum), monitor(monitor), QWidget(parent) {}
+PartStateWidget::PartStateWidget(int partNum, const SynthStateMonitor &monitor, QWidget *parent) : QWidget(parent), partNum(partNum), monitor(monitor) {}
 
 void PartStateWidget::paintEvent(QPaintEvent *) {
 	QPainter painter(this);

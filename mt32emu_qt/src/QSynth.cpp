@@ -409,7 +409,7 @@ void QSynth::freeROMImages() {
 	Master::freeROMImages(cri, pri);
 }
 
-const PartialState QSynth::getPartialState(int partialPhase) {
+PartialState QSynth::getPartialState(int partialPhase) {
 	static const PartialState partialPhaseToState[8] = {
 		PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK,
 		PartialState_SUSTAINED, PartialState_SUSTAINED, PartialState_RELEASED, PartialState_DEAD
