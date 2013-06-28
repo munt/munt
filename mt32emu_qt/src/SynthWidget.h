@@ -26,6 +26,10 @@ public:
 	~SynthWidget();
 	SynthRoute *getSynthRoute();
 
+protected:
+	void hideEvent(QHideEvent *hideEvent);
+	void showEvent(QShowEvent *showEvent);
+
 private:
 	SynthRoute *synthRoute;
 	Ui::SynthWidget *ui;
@@ -61,8 +65,6 @@ private slots:
 	void handleMIDISessionNameChanged(MidiSession *midiSession);
 	void handleMasterVolumeChanged(int volume);
 	void paintEvent(QPaintEvent *paintEvent);
-	void hideEvent(QHideEvent *hideEvent);
-	void showEvent(QShowEvent *showEvent);
 };
 
 #endif // SYNTHWIDGET_H
