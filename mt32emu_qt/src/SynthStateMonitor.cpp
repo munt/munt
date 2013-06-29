@@ -26,7 +26,7 @@ static const int SYNTH_MONITOR_UPDATE_MILLIS = 30;
 static const MasterClockNanos LCD_MESSAGE_DISPLAYING_NANOS = 2 * MasterClock::NANOS_PER_SECOND;
 static const MasterClockNanos LCD_TIMBRE_NAME_DISPLAYING_NANOS = 1 * MasterClock::NANOS_PER_SECOND;
 
-static const QString BANK_NAMES[] = {"Synth-1", "Synth-2", "Memory "};
+static const QString BANK_NAMES[] = {"Synth-1", "Synth-2", "Memory ", "Rhythm "};
 static const QColor COLOR_GRAY = QColor(100, 100, 100);
 static const QColor COLOR_GREEN = Qt::green;
 static const QColor lcdBgColor(98, 127, 0);
