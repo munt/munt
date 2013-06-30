@@ -32,10 +32,11 @@ private:
 	void enableControls(bool enable);
 	void loadProfileCombo();
 	const QStringList getMidiFileNames();
+	void addPcmFile(QString proposedPCMFileName = NULL);
 
 private slots:
 	void on_addMidiButton_clicked();
-	void on_addPcmButton_clicked(QString proposedPCMFileName = NULL);
+	void on_addPcmButton_clicked();
 	void on_removeButton_clicked();
 	void on_clearButton_clicked();
 	void on_moveUpButton_clicked();

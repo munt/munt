@@ -38,14 +38,14 @@ void MidiConverterDialog::on_addMidiButton_clicked() {
 	QStringList fileNames = QFileDialog::getOpenFileNames(this, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
 	if (!fileNames.isEmpty()) {
 		currentDir = QDir(fileNames.first()).absolutePath();
-		if (ui->pcmList->count() == 0) on_addPcmButton_clicked(currentDir);
+		if (ui->pcmList->count() == 0) addPcmFile(currentDir);
 		if (ui->pcmList->count() > 0) {
 			ui->midiList->addItems(fileNames);
 		}
 	}
 }
 
-void MidiConverterDialog::on_addPcmButton_clicked(QString proposedPCMFileName) {
+void MidiConverterDialog::addPcmFile(QString proposedPCMFileName) {
 	static QString currentDir = NULL;
 	if (proposedPCMFileName == NULL || proposedPCMFileName.isEmpty()) {
 		proposedPCMFileName = currentDir;
@@ -61,6 +61,10 @@ void MidiConverterDialog::on_addPcmButton_clicked(QString proposedPCMFileName) {
 		ui->pcmList->addItem(fileName);
 		ui->pcmList->setCurrentRow(ui->pcmList->count() - 1);
 	}
+}
+
+void MidiConverterDialog::on_addPcmButton_clicked() {
+	addPcmFile();
 }
 
 void MidiConverterDialog::on_removeButton_clicked() {
@@ -215,7 +219,7 @@ void MidiConverterDialog::dropEvent(QDropEvent *e) {
 		if (url.scheme() != "file") continue;
 		QString fileName = url.toLocalFile();
 		if (ui->pcmList->count() == 0) {
-			on_addPcmButton_clicked(fileName);
+			addPcmFile(fileName);
 		}
 		if (ui->pcmList->count() == 0) {
 			e->ignore();
