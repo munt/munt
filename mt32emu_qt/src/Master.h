@@ -10,6 +10,7 @@ class MidiDriver;
 class MidiSession;
 class QSystemTrayIcon;
 class MidiPropertiesDialog;
+class QDropEvent;
 
 class Master : public QObject {
 	Q_OBJECT
@@ -42,6 +43,7 @@ private:
 
 public:
 	static Master *getInstance();
+	static void isSupportedDropEvent(QDropEvent *e);
 
 	// May only be called from the application thread
 	const QList<AudioDevice *> getAudioDevices();

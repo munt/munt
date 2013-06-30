@@ -15,6 +15,7 @@
  */
 
 #include <QSystemTrayIcon>
+#include <QDropEvent>
 
 #include "Master.h"
 #include "MasterClock.h"
@@ -465,4 +466,19 @@ void Master::setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiS
 // when closing another synth which uses the same ROMImages
 void Master::setAudioFileWriterSynth(const QSynth *qSynth) {
 	audioFileWriterSynth = qSynth;
+}
+
+void Master::isSupportedDropEvent(QDropEvent *e) {
+	if (!e->mimeData()->hasUrls()) {
+		e->ignore();
+		return;
+	}
+	if ((e->possibleActions() & Qt::CopyAction) == 0) {
+		e->ignore();
+		return;
+	}
+	if (e->proposedAction() != Qt::CopyAction) {
+		e->setDropAction(Qt::CopyAction);
+	}
+	e->accept();
 }

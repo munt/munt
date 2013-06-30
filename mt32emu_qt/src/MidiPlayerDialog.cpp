@@ -198,29 +198,18 @@ void MidiPlayerDialog::handleTempoSet(quint32 tempo) {
 }
 
 void MidiPlayerDialog::dragEnterEvent(QDragEnterEvent *e) {
-	dragMoveEvent(e);
+	Master::isSupportedDropEvent(e);
 }
 
 void MidiPlayerDialog::dragMoveEvent(QDragMoveEvent *e) {
-	if (!e->mimeData()->hasUrls()) {
-		e->ignore();
-		return;
-	}
-	if ((e->possibleActions() & Qt::CopyAction) == 0) {
-		e->ignore();
-		return;
-	}
-	if (e->proposedAction() != Qt::CopyAction) {
-		e->setDropAction(Qt::CopyAction);
-	}
-	e->accept();
+	Master::isSupportedDropEvent(e);
 }
 
 void MidiPlayerDialog::dropEvent(QDropEvent *e) {
-	if (!e->mimeData()->hasUrls()) return;
-	if ((e->possibleActions() & Qt::CopyAction) == 0) return;
-	e->setDropAction(Qt::CopyAction);
-	e->accept();
+	if (!e->isAccepted()) {
+		Master::isSupportedDropEvent(e);
+		if (!e->isAccepted()) return;
+	}
 	QList<QUrl> urls = e->mimeData()->urls();
 	for (int i = 0; i < urls.size(); i++) {
 		QUrl url = urls.at(i);

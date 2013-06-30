@@ -292,27 +292,17 @@ void MainWindow::handleConvertMidiFiles(const QStringList &fileList) {
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *e) {
-	dragMoveEvent(e);
+	Master::isSupportedDropEvent(e);
 }
 
 void MainWindow::dragMoveEvent(QDragMoveEvent *e) {
-	if (!e->mimeData()->hasUrls()) {
-		e->ignore();
-		return;
-	}
-	if ((e->possibleActions() & Qt::CopyAction) == 0) {
-		e->ignore();
-		return;
-	}
-	if (e->proposedAction() != Qt::CopyAction) {
-		e->setDropAction(Qt::CopyAction);
-	}
-	e->accept();
+	Master::isSupportedDropEvent(e);
 }
 
 void MainWindow::dropEvent(QDropEvent *e) {
-	if (!e->mimeData()->hasUrls()) return;
-	if ((e->possibleActions() & Qt::CopyAction) == 0) return;
-	on_actionPlay_MIDI_file_triggered();
-	midiPlayerDialog->dropEvent(e);
+	Master::isSupportedDropEvent(e);
+	if (e->isAccepted()) {
+		on_actionPlay_MIDI_file_triggered();
+		midiPlayerDialog->dropEvent(e);
+	}
 }
