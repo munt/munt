@@ -110,6 +110,8 @@ public:
 	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, SynthTimestamp timestamp);
 	unsigned int render(MT32Emu::Bit16s *buf, unsigned int len, SynthTimestamp firstSampleTimestamp, double actualSampleRate);
 
+	const QReportHandler *getReportHandler() const;
+
 	void getSynthProfile(SynthProfile &synthProfile) const;
 	void setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName);
 

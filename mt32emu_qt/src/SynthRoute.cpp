@@ -161,6 +161,14 @@ void SynthRoute::handleQSynthState(SynthState synthState) {
 	}
 }
 
+const QString SynthRoute::getPatchName(int partNum) const {
+	return qSynth.getPatchName(partNum);
+}
+
+const MT32Emu::Partial *SynthRoute::getPartial(int partialNum) const {
+	return qSynth.getPartial(partialNum);
+}
+
 bool SynthRoute::pushMIDIShortMessage(Bit32u msg, qint64 refNanos) {
 	recorder.recordShortMessage(msg, refNanos);
 	return qSynth.pushMIDIShortMessage(msg, refNanos);
@@ -209,4 +217,12 @@ void SynthRoute::getSynthProfile(SynthProfile &synthProfile) const {
 
 void SynthRoute::setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName) {
 	qSynth.setSynthProfile(synthProfile, useSynthProfileName);
+}
+
+bool SynthRoute::connectSynth(const char *signal, const QObject *receiver, const char *slot) const {
+	return QObject::connect(&qSynth, signal, receiver, slot);
+}
+
+bool SynthRoute::connectReportHandler(const char *signal, const QObject *receiver, const char *slot) const {
+	return QObject::connect(qSynth.getReportHandler(), signal, receiver, slot);
 }

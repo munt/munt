@@ -39,6 +39,9 @@ public:
 	bool close();
 	bool reset();
 
+	const QString getPatchName(int partNum) const;
+	const MT32Emu::Partial *getPartial(int partialNum) const;
+
 	bool pushMIDIShortMessage(MT32Emu::Bit32u msg, qint64 midiNanos);
 	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, qint64 midiNanos);
 	void setMasterVolume(int masterVolume);
@@ -58,6 +61,8 @@ public:
 	MidiRecorder *getMidiRecorder();
 	void getSynthProfile(SynthProfile &synthProfile) const;
 	void setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName);
+	bool connectSynth(const char *signal, const QObject *receiver, const char *slot) const;
+	bool connectReportHandler(const char *signal, const QObject *receiver, const char *slot) const;
 
 private slots:
 	void handleQSynthState(SynthState synthState);

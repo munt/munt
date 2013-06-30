@@ -416,3 +416,7 @@ PartialState QSynth::getPartialState(int partialPhase) {
 	};
 	return partialPhaseToState[partialPhase];
 }
+
+const QReportHandler *QSynth::getReportHandler() const {
+	return reportHandler;
+}

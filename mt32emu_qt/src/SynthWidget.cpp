@@ -51,8 +51,7 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 	connect(master, SIGNAL(synthRoutePinned()), SLOT(handleSynthRoutePinned()));
 	connect(ui->synthPropertiesButton, SIGNAL(clicked()), &spd, SLOT(exec()));
 
-	QReportHandler *handler = synthRoute->findChild<QSynth *>()->findChild<QReportHandler *>();
-	connect(handler, SIGNAL(masterVolumeChanged(int)), SLOT(handleMasterVolumeChanged(int)));
+	synthRoute->connectReportHandler(SIGNAL(masterVolumeChanged(int)), this, SLOT(handleMasterVolumeChanged(int)));
 
 	handleSynthRouteState(synthRoute->getState());
 }

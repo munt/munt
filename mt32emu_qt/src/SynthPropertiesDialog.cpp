@@ -36,10 +36,9 @@ SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent, SynthRoute *useSyn
 	connect(ui->reverbTimeSlider, SIGNAL(valueChanged(int)), SLOT(updateReverbSettings()));
 	connect(ui->reverbLevelSlider, SIGNAL(valueChanged(int)), SLOT(updateReverbSettings()));
 
-	QReportHandler *handler = synthRoute->findChild<QSynth *>()->findChild<QReportHandler *>();
-	connect(handler, SIGNAL(reverbModeChanged(int)), SLOT(handleReverbModeChanged(int)));
-	connect(handler, SIGNAL(reverbTimeChanged(int)), SLOT(handleReverbTimeChanged(int)));
-	connect(handler, SIGNAL(reverbLevelChanged(int)), SLOT(handleReverbLevelChanged(int)));
+	synthRoute->connectReportHandler(SIGNAL(reverbModeChanged(int)), this, SLOT(handleReverbModeChanged(int)));
+	synthRoute->connectReportHandler(SIGNAL(reverbTimeChanged(int)), this, SLOT(handleReverbTimeChanged(int)));
+	synthRoute->connectReportHandler(SIGNAL(reverbLevelChanged(int)), this, SLOT(handleReverbLevelChanged(int)));
 }
 
 SynthPropertiesDialog::~SynthPropertiesDialog()

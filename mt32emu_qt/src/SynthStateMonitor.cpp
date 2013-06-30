@@ -61,16 +61,13 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 		ui->polyStateGrid->addWidget(partStateWidget[i], i, 1);
 	}
 
-	qsynth = synthRoute->findChild<QSynth *>();
-	QReportHandler *handler = qsynth->findChild<QReportHandler *>();
-
 	handleReset();
-	connect(qsynth, SIGNAL(partStateReset()), SLOT(handleReset()));
-	connect(qsynth, SIGNAL(midiMessagePushed()), SLOT(handleMIDIMessagePushed()));
-	connect(handler, SIGNAL(programChanged(int, int, QString)), SLOT(handleProgramChanged(int, int, QString)));
-	connect(handler, SIGNAL(polyStateChanged(int)), SLOT(handlePolyStateChanged(int)));
-	lcdWidget.connect(handler, SIGNAL(lcdMessageDisplayed(const QString)), SLOT(handleLCDMessageDisplayed(const QString)));
-	lcdWidget.connect(handler, SIGNAL(masterVolumeChanged(int)), SLOT(handleMasterVolumeChanged(int)));
+	synthRoute->connectSynth(SIGNAL(partStateReset()), this, SLOT(handleReset()));
+	synthRoute->connectSynth(SIGNAL(midiMessagePushed()), this, SLOT(handleMIDIMessagePushed()));
+	synthRoute->connectReportHandler(SIGNAL(programChanged(int, int, QString)), this, SLOT(handleProgramChanged(int, int, QString)));
+	synthRoute->connectReportHandler(SIGNAL(polyStateChanged(int)), this, SLOT(handlePolyStateChanged(int)));
+	synthRoute->connectReportHandler(SIGNAL(lcdMessageDisplayed(const QString)), &lcdWidget, SLOT(handleLCDMessageDisplayed(const QString)));
+	synthRoute->connectReportHandler(SIGNAL(masterVolumeChanged(int)), &lcdWidget, SLOT(handleMasterVolumeChanged(int)));
 	connect(&timer, SIGNAL(timeout()), SLOT(handleUpdate()));
 }
 
@@ -99,7 +96,7 @@ void SynthStateMonitor::handleReset() {
 	}
 
 	for (int i = 0; i < 9; i++) {
-		patchNameLabel[i]->setText((i < 8) ? qsynth->getPatchName(i) : "Rhythm Channel");
+		patchNameLabel[i]->setText((i < 8) ? synthRoute->getPatchName(i) : "Rhythm Channel");
 		partStateWidget[i]->update();
 	}
 }
@@ -124,7 +121,7 @@ void SynthStateMonitor::handleUpdate() {
 	bool partActiveNonReleasing[9] = {false};
 	bool midiMessageOn = false;
 	for (int partialNum = 0; partialNum < MT32EMU_MAX_PARTIALS; partialNum++) {
-		const MT32Emu::Partial *partial = qsynth->getPartial(partialNum);
+		const MT32Emu::Partial *partial = synthRoute->getPartial(partialNum);
 		int partNum = partial->getOwnerPart();
 		bool partialActive = partNum > -1;
 		PartialState partialState = partialActive ? QSynth::getPartialState(partial->tva->getPhase()) : PartialState_DEAD;
@@ -179,7 +176,7 @@ void PartStateWidget::paintEvent(QPaintEvent *) {
 	painter.fillRect(rect(), COLOR_GRAY);
 	if (monitor.synthRoute->getState() != SynthRouteState_OPEN) return;
 	for (int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
-		const MT32Emu::Partial *partial = monitor.qsynth->getPartial(i);
+		const MT32Emu::Partial *partial = monitor.synthRoute->getPartial(i);
 		if (partial->getOwnerPart() != partNum) continue;
 		const MT32Emu::Poly *poly = partial->getPoly();
 		uint velocity = poly->getVelocity();
