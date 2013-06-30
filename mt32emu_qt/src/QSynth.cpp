@@ -406,7 +406,7 @@ void QSynth::freeROMImages() {
 	controlROMImage = NULL;
 	const ROMImage *pri = pcmROMImage;
 	pcmROMImage = NULL;
-	Master::freeROMImages(cri, pri);
+	Master::getInstance()->freeROMImages(cri, pri);
 }
 
 PartialState QSynth::getPartialState(int partialPhase) {

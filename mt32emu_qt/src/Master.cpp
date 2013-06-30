@@ -283,8 +283,13 @@ void Master::freeROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32
 	if (controlROMImage == NULL && pcmROMImage == NULL) return;
 	bool controlROMInUse = false;
 	bool pcmROMInUse = false;
-	foreach (SynthRoute *synthRoute, getInstance()->synthRoutes) {
-		SynthProfile synthProfile;
+	SynthProfile synthProfile;
+	if (audioFileWriterSynth != NULL) {
+		audioFileWriterSynth->getSynthProfile(synthProfile);
+		controlROMInUse = controlROMInUse || (synthProfile.controlROMImage == controlROMImage);
+		pcmROMInUse = pcmROMInUse || (synthProfile.pcmROMImage == pcmROMImage);
+	}
+	foreach (SynthRoute *synthRoute, synthRoutes) {
 		synthRoute->getSynthProfile(synthProfile);
 		controlROMInUse = controlROMInUse || (synthProfile.controlROMImage == controlROMImage);
 		pcmROMInUse = pcmROMInUse || (synthProfile.pcmROMImage == pcmROMImage);
@@ -454,4 +459,10 @@ void Master::deleteMidiPort(MidiSession *midiSession) {
 
 void Master::setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
 	midiDriver->setPortProperties(mpd, midiSession);
+}
+
+// A quick hack to prevent ROMImages used in SMF converter from being freed
+// when closing another synth which uses the same ROMImages
+void Master::setAudioFileWriterSynth(const QSynth *qSynth) {
+	audioFileWriterSynth = qSynth;
 }

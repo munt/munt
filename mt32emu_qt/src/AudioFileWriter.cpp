@@ -77,6 +77,7 @@ bool AudioFileWriter::convertMIDIFiles(QString useOutFileName, QStringList midiF
 		QMessageBox::critical(NULL, "Error", "Failed to open synth");
 		return false;
 	}
+	Master::getInstance()->setAudioFileWriterSynth(synth);
 	sampleRate = MT32Emu::SAMPLE_RATE;
 	bufferSize = useBufferSize;
 	latency = 0;
@@ -115,6 +116,9 @@ void AudioFileWriter::run() {
 	if (!file.open(QIODevice::WriteOnly)) {
 		qDebug() << "AudioFileWriter: Can't open file for writing:" << outFileName;
 		synth->close();
+		if (!realtimeMode) {
+			Master::getInstance()->setAudioFileWriterSynth(NULL);
+		}
 		return;
 	}
 	if (waveMode) file.seek(44);
@@ -236,5 +240,8 @@ void AudioFileWriter::run() {
 	}
 	file.close();
 	synth->close();
+	if (!realtimeMode) {
+		Master::getInstance()->setAudioFileWriterSynth(NULL);
+	}
 	if (!stopProcessing) emit conversionFinished();
 }

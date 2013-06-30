@@ -32,7 +32,6 @@ private:
 	bool realtimeMode;
 	volatile bool stopProcessing;
 
-	void setTempo(uint newTempo);
 
 signals:
 	void parsingFailed(const QString &, const QString &);

@@ -19,6 +19,7 @@ private:
 	QList<AudioDevice *> audioDevices;
 	MidiDriver *midiDriver;
 	SynthRoute *pinnedSynthRoute;
+	const QSynth *audioFileWriterSynth;
 
 	QSettings *settings;
 	QString synthProfileName;
@@ -41,7 +42,6 @@ private:
 
 public:
 	static Master *getInstance();
-	static void freeROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage);
 
 	// May only be called from the application thread
 	const QList<AudioDevice *> getAudioDevices();
@@ -52,6 +52,7 @@ public:
 	const QStringList enumSynthProfiles() const;
 	void loadSynthProfile(SynthProfile &synthProfile, QString name);
 	void storeSynthProfile(const SynthProfile &synthProfile, QString name) const;
+	void freeROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage);
 	QSystemTrayIcon *getTrayIcon() const;
 	QSettings *getSettings() const;
 	bool isPinned(const SynthRoute *synthRoute) const;
@@ -66,6 +67,7 @@ public:
 	void deleteMidiPort(MidiSession *midiSession);
 	void setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
 	QString getDefaultROMSearchPath();
+	void setAudioFileWriterSynth(const QSynth *);
 
 private slots:
 	void createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
