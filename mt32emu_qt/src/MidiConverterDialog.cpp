@@ -15,6 +15,7 @@
  */
 
 #include <QFileDialog>
+#include <QDropEvent>
 
 #include "MidiConverterDialog.h"
 #include "Master.h"
@@ -25,6 +26,7 @@ MidiConverterDialog::MidiConverterDialog(Master *master, QWidget *parent) : QDia
 	connect(&converter, SIGNAL(conversionFinished()), SLOT(handleConversionFinished()));
 	connect(&converter, SIGNAL(midiEventProcessed(int, int)), SLOT(updateConversionProgress(int, int)));
 	connect(this, SIGNAL(conversionFinished(const QString &, const QString &)), master, SLOT(showBalloon(const QString &, const QString &)));
+	setAcceptDrops(true);
 }
 
 MidiConverterDialog::~MidiConverterDialog() {
@@ -194,4 +196,31 @@ const QStringList MidiConverterDialog::getMidiFileNames() {
 		list.append(ui->midiList->item(i)->text());
 	}
 	return list;
+}
+
+void MidiConverterDialog::dragEnterEvent(QDragEnterEvent *e) {
+	Master::isSupportedDropEvent(e);
+}
+
+void MidiConverterDialog::dragMoveEvent(QDragMoveEvent *e) {
+	Master::isSupportedDropEvent(e);
+}
+
+void MidiConverterDialog::dropEvent(QDropEvent *e) {
+	Master::isSupportedDropEvent(e);
+	if (!e->isAccepted()) return;
+	QList<QUrl> urls = e->mimeData()->urls();
+	for (int i = 0; i < urls.size(); i++) {
+		QUrl url = urls.at(i);
+		if (url.scheme() != "file") continue;
+		QString fileName = url.toLocalFile();
+		if (ui->pcmList->count() == 0) {
+			on_addPcmButton_clicked(fileName);
+		}
+		if (ui->pcmList->count() == 0) {
+			e->ignore();
+			return;
+		}
+		ui->midiList->addItem(fileName);
+	}
 }

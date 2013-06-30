@@ -19,6 +19,11 @@ public:
 	~MidiConverterDialog();
 	void startConversion(const QStringList &fileList);
 
+protected:
+	void dragEnterEvent(QDragEnterEvent *event);
+	void dragMoveEvent(QDragMoveEvent *event);
+	void dropEvent(QDropEvent *event);
+
 private:
 	Ui::MidiConverterDialog *ui;
 	AudioFileWriter converter;
