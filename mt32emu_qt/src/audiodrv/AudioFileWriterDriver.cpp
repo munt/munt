@@ -26,12 +26,9 @@ static const unsigned int DEFAULT_MIDI_LATENCY = 50;
 AudioFileWriterStream::AudioFileWriterStream(const AudioFileWriterDevice *device, QSynth *useSynth, unsigned int useSampleRate)	{
 	synth = useSynth;
 	sampleRate = useSampleRate;
-	unsigned int unused;
-	unsigned int midiLatency;
-	unsigned int audioLatency;
-	device->driver->getAudioSettings(&unused, &audioLatency, &midiLatency, (bool *)&unused);
-	bufferSize = sampleRate * audioLatency / 1000;
-	latency = MasterClock::NANOS_PER_MILLISECOND * midiLatency;
+	const AudioDriverSettings driveSettings = device->driver->getAudioSettings();
+	bufferSize = sampleRate * driveSettings.audioLatency / 1000;
+	latency = MasterClock::NANOS_PER_MILLISECOND * driveSettings.midiLatency;
 }
 
 bool AudioFileWriterStream::start() {
@@ -47,7 +44,7 @@ void AudioFileWriterStream::close() {
 	writer.stop();
 }
 
-AudioFileWriterDevice::AudioFileWriterDevice(const AudioFileWriterDriver * const driver, QString useDeviceIndex, QString useDeviceName) :
+AudioFileWriterDevice::AudioFileWriterDevice(AudioFileWriterDriver * const driver, QString useDeviceIndex, QString useDeviceName) :
 	AudioDevice(driver, useDeviceIndex, useDeviceName) {
 }
 
@@ -69,22 +66,22 @@ AudioFileWriterDriver::AudioFileWriterDriver(Master *master) : AudioDriver("file
 AudioFileWriterDriver::~AudioFileWriterDriver() {
 }
 
-QList<AudioDevice *> AudioFileWriterDriver::getDeviceList() const {
-	QList<AudioDevice *> deviceList;
+const QList<const AudioDevice *> AudioFileWriterDriver::createDeviceList() {
+	QList<const AudioDevice *> deviceList;
 	deviceList.append(new AudioFileWriterDevice(this, "fileWriter", "Audio file writer"));
 	return deviceList;
 }
 
-void AudioFileWriterDriver::validateAudioSettings() {
-	if (midiLatency == 0) {
-		midiLatency = DEFAULT_MIDI_LATENCY;
+void AudioFileWriterDriver::validateAudioSettings(AudioDriverSettings &settings) const {
+	if (settings.midiLatency == 0) {
+		settings.midiLatency = DEFAULT_MIDI_LATENCY;
 	}
-	if (audioLatency == 0) {
-		audioLatency = DEFAULT_AUDIO_LATENCY;
+	if (settings.audioLatency == 0) {
+		settings.audioLatency = DEFAULT_AUDIO_LATENCY;
 	}
-	if (chunkLen > audioLatency) {
-		chunkLen = audioLatency;
+	if (settings.chunkLen > settings.audioLatency) {
+		settings.chunkLen = settings.audioLatency;
 	}
-	chunkLen = 0;
-	advancedTiming = true;
+	settings.chunkLen = 0;
+	settings.advancedTiming = true;
 }

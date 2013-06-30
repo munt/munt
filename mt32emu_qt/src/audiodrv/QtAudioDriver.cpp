@@ -98,9 +98,10 @@ QtAudioStream::QtAudioStream(const AudioDevice *device, QSynth *useSynth, unsign
 #endif
 	format.setSampleType(QAudioFormat::SignedInt);
 
-	unsigned int unused;
-
-	device->driver->getAudioSettings(&unused, &audioLatency, &midiLatency, &advancedTiming);
+	const AudioDriverSettings &driverSettings = device->driver->getAudioSettings();
+	audioLatency = driverSettings.audioLatency;
+	midiLatency = driverSettings.midiLatency;
+	advancedTiming = driverSettings.advancedTiming;
 
 	audioOutput = new QAudioOutput(format);
 	waveGenerator = new WaveGenerator(useSynth, audioOutput, sampleRate, advancedTiming);
@@ -122,7 +123,7 @@ void QtAudioStream::close() {
 	audioOutput->stop();
 }
 
-QtAudioDefaultDevice::QtAudioDefaultDevice(const QtAudioDriver *driver) : AudioDevice(driver, "default", "Default") {
+QtAudioDefaultDevice::QtAudioDefaultDevice(QtAudioDriver * const driver) : AudioDevice(driver, "default", "Default") {
 }
 
 QtAudioStream *QtAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
@@ -142,13 +143,13 @@ QtAudioDriver::QtAudioDriver(Master *useMaster) : AudioDriver("qtaudio", "QtAudi
 QtAudioDriver::~QtAudioDriver() {
 }
 
-QList<AudioDevice *> QtAudioDriver::getDeviceList() const {
-	QList<AudioDevice *> deviceList;
+const QList<const AudioDevice *> QtAudioDriver::createDeviceList() {
+	QList<const AudioDevice *> deviceList;
 	deviceList.append(new QtAudioDefaultDevice(this));
 	return deviceList;
 }
 
-void QtAudioDriver::validateAudioSettings() {
-	chunkLen = audioLatency / 5;
-	if (midiLatency < chunkLen) midiLatency = chunkLen;
+void QtAudioDriver::validateAudioSettings(AudioDriverSettings &settings) const {
+	settings.chunkLen = settings.audioLatency / 5;
+	if (settings.midiLatency < settings.chunkLen) settings.midiLatency = settings.chunkLen;
 }

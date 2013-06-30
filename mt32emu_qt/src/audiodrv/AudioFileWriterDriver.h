@@ -28,18 +28,18 @@ public:
 class AudioFileWriterDevice : public AudioDevice {
 friend class AudioFileWriterDriver;
 private:
-	AudioFileWriterDevice(const AudioFileWriterDriver * const driver, QString useDeviceIndex, QString useDeviceName);
+	AudioFileWriterDevice(AudioFileWriterDriver * const driver, QString useDeviceIndex, QString useDeviceName);
 public:
 	AudioFileWriterStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
 
 class AudioFileWriterDriver : public AudioDriver {
 private:
-	void validateAudioSettings();
+	void validateAudioSettings(AudioDriverSettings &settings) const;
 public:
 	AudioFileWriterDriver(Master *useMaster);
 	~AudioFileWriterDriver();
-	QList<AudioDevice *> getDeviceList() const;
+	const QList<const AudioDevice *> createDeviceList();
 };
 
 #endif

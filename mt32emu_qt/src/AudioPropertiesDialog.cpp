@@ -31,18 +31,18 @@ AudioPropertiesDialog::~AudioPropertiesDialog()
 	delete ui;
 }
 
-void AudioPropertiesDialog::getData(unsigned int &chunkLen, unsigned int &audioLatency, unsigned int &midiLatency, bool &advancedTiming) {
-	chunkLen = ui->chunkLen->text().toInt();
-	audioLatency = ui->audioLatency->text().toInt();
-	midiLatency = ui->midiLatency->text().toInt();
-	advancedTiming = ui->advancedTiming->isChecked();
+void AudioPropertiesDialog::getData(AudioDriverSettings &driverSettings) {
+	driverSettings.chunkLen = ui->chunkLen->text().toInt();
+	driverSettings.audioLatency = ui->audioLatency->text().toInt();
+	driverSettings.midiLatency = ui->midiLatency->text().toInt();
+	driverSettings.advancedTiming = ui->advancedTiming->isChecked();
 }
 
-void AudioPropertiesDialog::setData(unsigned int chunkLen, unsigned int audioLatency, unsigned int midiLatency, bool advancedTiming) {
-	ui->chunkLen->setText(QString().setNum(chunkLen));
-	ui->audioLatency->setText(QString().setNum(audioLatency));
-	ui->midiLatency->setText(QString().setNum(midiLatency));
-	ui->advancedTiming->setChecked(advancedTiming);
+void AudioPropertiesDialog::setData(const AudioDriverSettings &driverSettings) {
+	ui->chunkLen->setText(QString().setNum(driverSettings.chunkLen));
+	ui->audioLatency->setText(QString().setNum(driverSettings.audioLatency));
+	ui->midiLatency->setText(QString().setNum(driverSettings.midiLatency));
+	ui->advancedTiming->setChecked(driverSettings.advancedTiming);
 }
 
 void AudioPropertiesDialog::setCheckText(QString text) {

@@ -37,18 +37,18 @@ public:
 
 class OSSAudioDefaultDevice : public AudioDevice {
 friend class OSSAudioDriver;
-	OSSAudioDefaultDevice(OSSAudioDriver const * const driver);
+	OSSAudioDefaultDevice(OSSAudioDriver * const driver);
 public:
 	OSSAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
 
 class OSSAudioDriver : public AudioDriver {
 private:
-	void validateAudioSettings();
+	void validateAudioSettings(AudioDriverSettings &settings) const;
 public:
 	OSSAudioDriver(Master *useMaster);
 	~OSSAudioDriver();
-	QList<AudioDevice *> getDeviceList() const;
+	const QList<const AudioDevice *> createDeviceList();
 };
 
 #endif

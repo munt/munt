@@ -106,7 +106,7 @@ Master::~Master() {
 		synthRouteIt.remove();
 	}
 
-	QMutableListIterator<AudioDevice *> audioDeviceIt(audioDevices);
+	QMutableListIterator<const AudioDevice *> audioDeviceIt(audioDevices);
 	while(audioDeviceIt.hasNext()) {
 		delete audioDeviceIt.next();
 		audioDeviceIt.remove();
@@ -190,7 +190,7 @@ void Master::setDefaultAudioDevice(QString driverId, QString name) {
 	settings->setValue("Master/DefaultAudioDevice", name);
 }
 
-const QList<AudioDevice *> Master::getAudioDevices() {
+const QList<const AudioDevice *> Master::getAudioDevices() {
 	MasterClockNanos nanosNow = MasterClock::getClockNanos();
 	if ((nanosNow - lastAudioDeviceScan) > 3 * MasterClock::NANOS_PER_SECOND) {
 		lastAudioDeviceScan = nanosNow;
@@ -199,16 +199,16 @@ const QList<AudioDevice *> Master::getAudioDevices() {
 		QListIterator<AudioDriver *> audioDriverIt(audioDrivers);
 		while(audioDriverIt.hasNext()) {
 			AudioDriver *audioDriver = audioDriverIt.next();
-			audioDevices.append(audioDriver->getDeviceList());
+			audioDevices.append(audioDriver->createDeviceList());
 		}
 	}
 	return audioDevices;
 }
 
 const AudioDevice *Master::findAudioDevice(QString driverId, QString name) const {
-	QListIterator<AudioDevice *> audioDeviceIt(audioDevices);
+	QListIterator<const AudioDevice *> audioDeviceIt(audioDevices);
 	while(audioDeviceIt.hasNext()) {
-		AudioDevice *audioDevice = audioDeviceIt.next();
+		const AudioDevice *audioDevice = audioDeviceIt.next();
 		if (driverId == audioDevice->driver->id && name == audioDevice->name) {
 			return audioDevice;
 		}

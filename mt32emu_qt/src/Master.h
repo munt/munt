@@ -17,7 +17,7 @@ class Master : public QObject {
 private:
 	QList<SynthRoute *> synthRoutes;
 	QList<AudioDriver *> audioDrivers;
-	QList<AudioDevice *> audioDevices;
+	QList<const AudioDevice *> audioDevices;
 	MidiDriver *midiDriver;
 	SynthRoute *pinnedSynthRoute;
 	const QSynth *audioFileWriterSynth;
@@ -46,7 +46,7 @@ public:
 	static void isSupportedDropEvent(QDropEvent *e);
 
 	// May only be called from the application thread
-	const QList<AudioDevice *> getAudioDevices();
+	const QList<const AudioDevice *> getAudioDevices();
 	void setDefaultAudioDevice(QString driverId, QString name);
 	void setTrayIcon(QSystemTrayIcon *trayIcon);
 	QString getDefaultSynthProfileName();

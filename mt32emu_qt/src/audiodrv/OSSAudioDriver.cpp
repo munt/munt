@@ -38,8 +38,11 @@ OSSAudioStream::OSSAudioStream(const AudioDevice *device, QSynth *useSynth,
 		unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate),
 		buffer(NULL), stream(0), sampleCount(0), pendingClose(false)
 {
-	device->driver->getAudioSettings(&bufferSize, &audioLatency, &midiLatency, &useAdvancedTiming);
-	bufferSize *= sampleRate / 1000 /* ms per sec*/;
+	const AudioDriverSettings &driverSettings = device->driver->getAudioSettings();
+	bufferSize = driverSettings.chunkLen * sampleRate / 1000 /* ms per sec*/;
+	audioLatency = driverSettings.audioLatency;
+	midiLatency = driverSettings.midiLatency;
+	useAdvancedTiming = driverSettings.advancedTiming;
 }
 
 OSSAudioStream::~OSSAudioStream() {
@@ -211,7 +214,7 @@ void OSSAudioStream::stop() {
 	return;
 }
 
-OSSAudioDefaultDevice::OSSAudioDefaultDevice(OSSAudioDriver const * const driver) :
+OSSAudioDefaultDevice::OSSAudioDefaultDevice(OSSAudioDriver * const driver) :
 	AudioDevice(driver, "default", "Default")
 {
 }
@@ -236,23 +239,23 @@ OSSAudioDriver::OSSAudioDriver(Master *master) : AudioDriver("OSS", "OSS") {
 OSSAudioDriver::~OSSAudioDriver() {
 }
 
-QList<AudioDevice *> OSSAudioDriver::getDeviceList() const {
-	QList<AudioDevice *> deviceList;
+const QList<const AudioDevice *> OSSAudioDriver::createDeviceList() {
+	QList<const AudioDevice *> deviceList;
 	deviceList.append(new OSSAudioDefaultDevice(this));
 	return deviceList;
 }
 
-void OSSAudioDriver::validateAudioSettings() {
-	if (midiLatency == 0) {
-		midiLatency = DEFAULT_MIDI_LATENCY;
+void OSSAudioDriver::validateAudioSettings(AudioDriverSettings &settings) const {
+	if (settings.midiLatency == 0) {
+		settings.midiLatency = DEFAULT_MIDI_LATENCY;
 	}
-	if (audioLatency == 0) {
-		audioLatency = DEFAULT_AUDIO_LATENCY;
+	if (settings.audioLatency == 0) {
+		settings.audioLatency = DEFAULT_AUDIO_LATENCY;
 	}
-	if (chunkLen == 0) {
-		chunkLen = DEFAULT_CHUNK_MS;
+	if (settings.chunkLen == 0) {
+		settings.chunkLen = DEFAULT_CHUNK_MS;
 	}
-	if (chunkLen > audioLatency) {
-		chunkLen = audioLatency;
+	if (settings.chunkLen > settings.audioLatency) {
+		settings.chunkLen = settings.audioLatency;
 	}
 }

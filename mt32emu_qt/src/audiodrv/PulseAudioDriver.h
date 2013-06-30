@@ -39,7 +39,7 @@ public:
 
 class PulseAudioDefaultDevice : public AudioDevice {
 friend class PulseAudioDriver;
-	PulseAudioDefaultDevice(PulseAudioDriver const * const driver);
+	PulseAudioDefaultDevice(PulseAudioDriver * const driver);
 public:
 	PulseAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
@@ -47,11 +47,11 @@ public:
 class PulseAudioDriver : public AudioDriver {
 private:
 	bool isLibraryFound;
-	void validateAudioSettings();
+	void validateAudioSettings(AudioDriverSettings &settings) const;
 public:
 	PulseAudioDriver(Master *useMaster);
 	~PulseAudioDriver();
-	QList<AudioDevice *> getDeviceList() const;
+	const QList<const AudioDevice *> createDeviceList();
 };
 
 #endif

@@ -3,6 +3,8 @@
 
 #include <QDialog>
 
+#include "audiodrv/AudioDriver.h"
+
 namespace Ui {
 	class AudioPropertiesDialog;
 }
@@ -14,8 +16,8 @@ class AudioPropertiesDialog : public QDialog
 public:
 	explicit AudioPropertiesDialog(QWidget *parent = 0);
 	~AudioPropertiesDialog();
-	void getData(unsigned int &chunkLen, unsigned int &audioLatency, unsigned int &midiLatency, bool &advancedTiming);
-	void setData(unsigned int chunkLen, unsigned int audioLatency, unsigned int midiLatency, bool advancedTiming);
+	void getData(AudioDriverSettings &driverSettings);
+	void setData(const AudioDriverSettings &driverSettings);
 	void setCheckText(QString text);
 
 private:

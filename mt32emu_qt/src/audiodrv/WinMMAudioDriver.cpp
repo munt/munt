@@ -41,11 +41,10 @@ WinMMAudioStream::WinMMAudioStream(const WinMMAudioDevice *device, QSynth *useSy
 	unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate),
 	hWaveOut(NULL), waveHdr(NULL), hEvent(NULL), stopProcessing(false)
 {
-	unsigned int milliLatency;
-
-	device->driver->getAudioSettings(&chunkSize, &bufferSize, &milliLatency, &useRingBuffer);
-	chunkSize *= sampleRate / 1000 /* ms per sec*/;
-	bufferSize *= sampleRate / 1000 /* ms per sec*/;
+	const AudioDriverSettings &driverSettings = device->driver->getAudioSettings();
+	chunkSize = driverSettings.chunkLen * sampleRate / 1000 /* ms per sec*/;
+	bufferSize = driverSettings.audioLatency * sampleRate / 1000 /* ms per sec*/;
+	useRingBuffer = driverSettings.advancedTiming;
 	if (useRingBuffer) {
 		numberOfChunks = 1;
 		qDebug() << "WinMMAudioDriver: Using looped ring buffer, buffer size:" << bufferSize << "frames.";
@@ -57,7 +56,7 @@ WinMMAudioStream::WinMMAudioStream(const WinMMAudioDevice *device, QSynth *useSy
 		qDebug() << "WinMMAudioDriver: Using" << numberOfChunks << "chunks, chunk size:" << chunkSize << "frames, buffer size:" << bufferSize << "frames.";
 	}
 	buffer = new Bit16s[2 * bufferSize];
-	midiLatency = milliLatency * MasterClock::NANOS_PER_MILLISECOND;
+	midiLatency = driverSettings.midiLatency * MasterClock::NANOS_PER_MILLISECOND;
 }
 
 WinMMAudioStream::~WinMMAudioStream() {
@@ -279,7 +278,7 @@ void WinMMAudioStream::close() {
 	return;
 }
 
-WinMMAudioDevice::WinMMAudioDevice(const WinMMAudioDriver * const driver, int useDeviceIndex, QString useDeviceName) :
+WinMMAudioDevice::WinMMAudioDevice(WinMMAudioDriver * const driver, int useDeviceIndex, QString useDeviceName) :
 	AudioDevice(driver, QString::number(useDeviceIndex), useDeviceName),
 	deviceIndex(useDeviceIndex) {
 }
@@ -302,8 +301,8 @@ WinMMAudioDriver::WinMMAudioDriver(Master *master) : AudioDriver("waveout", "Win
 WinMMAudioDriver::~WinMMAudioDriver() {
 }
 
-QList<AudioDevice *> WinMMAudioDriver::getDeviceList() const {
-	QList<AudioDevice *> deviceList;
+const QList<const AudioDevice *> WinMMAudioDriver::createDeviceList() {
+	QList<const AudioDevice *> deviceList;
 	UINT deviceCount = waveOutGetNumDevs();
 	for(UINT deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
 		WAVEOUTCAPS deviceInfo;
@@ -316,33 +315,33 @@ QList<AudioDevice *> WinMMAudioDriver::getDeviceList() const {
 	return deviceList;
 }
 
-void WinMMAudioDriver::validateAudioSettings() {
-	if (midiLatency == 0) {
-		midiLatency = DEFAULT_MIDI_LATENCY;
+void WinMMAudioDriver::validateAudioSettings(AudioDriverSettings &useSettings) const {
+	if (useSettings.midiLatency == 0) {
+		useSettings.midiLatency = DEFAULT_MIDI_LATENCY;
 	}
-	if (audioLatency == 0) {
-		audioLatency = DEFAULT_AUDIO_LATENCY;
+	if (useSettings.audioLatency == 0) {
+		useSettings.audioLatency = DEFAULT_AUDIO_LATENCY;
 	}
-	if (chunkLen == 0) {
-		chunkLen = DEFAULT_CHUNK_MS;
+	if (useSettings.chunkLen == 0) {
+		useSettings.chunkLen = DEFAULT_CHUNK_MS;
 	}
-	if (audioLatency <= SAFE_MS) {
-		audioLatency = SAFE_MS + 1;
+	if (useSettings.audioLatency <= SAFE_MS) {
+		useSettings.audioLatency = SAFE_MS + 1;
 	}
-	if (chunkLen > (audioLatency - SAFE_MS)) {
-		chunkLen = audioLatency - SAFE_MS;
+	if (useSettings.chunkLen > (useSettings.audioLatency - SAFE_MS)) {
+		useSettings.chunkLen = useSettings.audioLatency - SAFE_MS;
 	}
 }
 
 void WinMMAudioDriver::loadAudioSettings() {
 	AudioDriver::loadAudioSettings();
-	QSettings *settings = Master::getInstance()->getSettings();
-	advancedTiming = settings->value(id + "/UseRingBuffer").toBool();
+	QSettings *qSettings = Master::getInstance()->getSettings();
+	settings.advancedTiming = qSettings->value(id + "/UseRingBuffer").toBool();
 }
 
-void WinMMAudioDriver::setAudioSettings(unsigned int *pChunkLen, unsigned int *pAudioLatency, unsigned int *pMidiLatency, bool *pAdvancedTiming) {
-	AudioDriver::setAudioSettings(pChunkLen, pAudioLatency, pMidiLatency, pAdvancedTiming);
-	QSettings *settings = Master::getInstance()->getSettings();
-	settings->setValue(id + "/UseRingBuffer", *pAdvancedTiming);
-	settings->remove(id + "/AdvancedTiming");
+void WinMMAudioDriver::setAudioSettings(AudioDriverSettings &useSettings) {
+	AudioDriver::setAudioSettings(useSettings);
+	QSettings *qSettings = Master::getInstance()->getSettings();
+	qSettings->setValue(id + "/UseRingBuffer", useSettings.advancedTiming);
+	qSettings->remove(id + "/AdvancedTiming");
 }

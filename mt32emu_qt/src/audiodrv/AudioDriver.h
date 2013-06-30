@@ -24,20 +24,19 @@ public:
 
 class AudioDevice {
 public:
-	const AudioDriver *driver;
+	AudioDriver * const driver;
 	// id must be unique within the driver and as permanent as possible -
 	// it will be stored and retrieved from settings.
 	const QString id;
 	const QString name;
-	AudioDevice(const AudioDriver * const driver, QString id, QString name);
+	AudioDevice(AudioDriver *driver, QString id, QString name);
 	virtual ~AudioDevice() {};
 	virtual AudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const = 0;
 };
 
-Q_DECLARE_METATYPE(AudioDevice*);
+Q_DECLARE_METATYPE(const AudioDevice *);
 
-class AudioDriver {
-protected:
+struct AudioDriverSettings {
 	// The maximum number of milliseconds to render at once
 	unsigned int chunkLen;
 	// The total latency of audio stream buffers in milliseconds
@@ -47,9 +46,15 @@ protected:
 	// true - use advanced timing functions provided by audio API
 	// false - instead, compute average actual sample rate using clockSync
 	bool advancedTiming;
+};
+
+class AudioDriver {
+protected:
+	// settings holds current driver settings in effect
+	AudioDriverSettings settings;
 
 	virtual void loadAudioSettings();
-	virtual void validateAudioSettings() = 0;
+	virtual void validateAudioSettings(AudioDriverSettings &settings) const = 0;
 
 public:
 	// id must be unique within the application and permanent -
@@ -57,11 +62,12 @@ public:
 	const QString id;
 	// name is the English human-readable name to be used in the GUI.
 	const QString name;
+
 	AudioDriver(QString useID, QString useName);
 	virtual ~AudioDriver() {};
-	virtual QList<AudioDevice *> getDeviceList() const = 0;
-	virtual void getAudioSettings(unsigned int *chunkLen, unsigned int *audioLatency, unsigned int *midiLatency, bool *advancedTiming) const;
-	virtual void setAudioSettings(unsigned int *chunkLen, unsigned int *audioLatency, unsigned int *midiLatency, bool *advancedTiming);
+	virtual const QList<const AudioDevice *> createDeviceList() = 0;
+	virtual const AudioDriverSettings &getAudioSettings() const;
+	virtual void setAudioSettings(AudioDriverSettings &useSettings);
 };
 
 #endif

@@ -82,7 +82,7 @@ set(mt32emu_qt_HEADERS
   src/SynthWidget.h
   src/MidiPlayerDialog.h
 
-  src/audiodrv/AudioDriver.h
+#  src/audiodrv/AudioDriver.h
 
   src/mididrv/MidiDriver.h
   src/mididrv/TestDriver.h
@@ -135,7 +135,7 @@ if(PORTAUDIO_FOUND)
     src/audiodrv/PortAudioDriver.cpp
   )
   set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-    src/audiodrv/PortAudioDriver.h
+#    src/audiodrv/PortAudioDriver.h
   )
 endif()
 
@@ -150,7 +150,7 @@ if(ALSA_FOUND)
   )
   set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
     src/mididrv/ALSADriver.h
-    src/audiodrv/AlsaAudioDriver.h
+#    src/audiodrv/AlsaAudioDriver.h
   )
 endif()
 
@@ -168,7 +168,7 @@ if(PULSEAUDIO_FOUND)
     src/audiodrv/PulseAudioDriver.cpp
   )
   set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-    src/audiodrv/PulseAudioDriver.h
+#    src/audiodrv/PulseAudioDriver.h
   )
 endif()
 
@@ -179,7 +179,7 @@ if(SYS_SOUNDCARD_FOUND)
     src/audiodrv/OSSAudioDriver.cpp
   )
   set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-    src/audiodrv/OSSAudioDriver.h
+#    src/audiodrv/OSSAudioDriver.h
   )
 endif()
 

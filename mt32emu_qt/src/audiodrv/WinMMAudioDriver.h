@@ -40,20 +40,20 @@ class WinMMAudioDevice : public AudioDevice {
 friend class WinMMAudioDriver;
 private:
 	UINT deviceIndex;
-	WinMMAudioDevice(const WinMMAudioDriver * const driver, int useDeviceIndex, QString useDeviceName);
+	WinMMAudioDevice(WinMMAudioDriver * const driver, int useDeviceIndex, QString useDeviceName);
 public:
 	WinMMAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
 
 class WinMMAudioDriver : public AudioDriver {
 private:
-	void validateAudioSettings();
+	void validateAudioSettings(AudioDriverSettings &useSettings) const;
 	void loadAudioSettings();
 public:
 	WinMMAudioDriver(Master *useMaster);
 	~WinMMAudioDriver();
-	QList<AudioDevice *> getDeviceList() const;
-	void setAudioSettings(unsigned int *chunkLen, unsigned int *audioLatency, unsigned int *midiLatency, bool *advancedTiming);
+	const QList<const AudioDevice *> createDeviceList();
+	void setAudioSettings(AudioDriverSettings &useSettings);
 };
 
 #endif

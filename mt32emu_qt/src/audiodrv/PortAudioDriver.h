@@ -44,7 +44,7 @@ class PortAudioDevice : public AudioDevice {
 friend class PortAudioDriver;
 private:
 	PaDeviceIndex deviceIndex;
-	PortAudioDevice(const PortAudioDriver * const driver, int useDeviceIndex, QString useDeviceName);
+	PortAudioDevice(PortAudioDriver * const driver, int useDeviceIndex, QString useDeviceName);
 
 public:
 	PortAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
@@ -52,11 +52,11 @@ public:
 
 class PortAudioDriver : public AudioDriver {
 private:
-	void validateAudioSettings() {}
+	void validateAudioSettings(AudioDriverSettings &) const {}
 public:
 	PortAudioDriver(Master *useMaster);
 	~PortAudioDriver();
-	QList<AudioDevice *> getDeviceList() const;
+	const QList<const AudioDevice *> createDeviceList();
 };
 
 #endif

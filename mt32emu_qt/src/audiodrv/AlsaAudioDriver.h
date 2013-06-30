@@ -39,18 +39,18 @@ public:
 
 class AlsaAudioDefaultDevice : public AudioDevice {
 friend class AlsaAudioDriver;
-	AlsaAudioDefaultDevice(AlsaAudioDriver const * const driver);
+	AlsaAudioDefaultDevice(AlsaAudioDriver * const driver);
 public:
 	AlsaAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
 };
 
 class AlsaAudioDriver : public AudioDriver {
 private:
-	void validateAudioSettings();
+	void validateAudioSettings(AudioDriverSettings &settings) const;
 public:
 	AlsaAudioDriver(Master *useMaster);
 	~AlsaAudioDriver();
-	QList<AudioDevice *> getDeviceList() const;
+	const QList<const AudioDevice *> createDeviceList();
 };
 
 #endif
