@@ -17,10 +17,12 @@ class MidiPlayerDialog : public QDialog {
 public:
 	explicit MidiPlayerDialog(Master *master, QWidget *parent = 0);
 	~MidiPlayerDialog();
-	void dragEnterEvent(QDragEnterEvent *event);
-	void dragMoveEvent(QDragMoveEvent *event);
 	void dropEvent(QDropEvent *event);
 	void startPlayingFiles(const QStringList &fileList);
+
+protected:
+	void dragEnterEvent(QDragEnterEvent *event);
+	void dragMoveEvent(QDragMoveEvent *event);
 
 private:
 	Ui::MidiPlayerDialog *ui;
