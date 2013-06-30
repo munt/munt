@@ -56,6 +56,7 @@ bool AudioFileWriter::convertMIDIFiles(QString useOutFileName, QStringList midiF
 			if (midiEvents.count() == 0) {
 				QMessageBox::critical(NULL, "Error", "Error occured while parsing MIDI files. No MIDI events to process.");
 				delete[] parsers;
+				parsers = NULL;
 				return false;
 			}
 			emit parsingFailed("Warning", "Error occured while parsing MIDI files. Processing available MIDI events.");
