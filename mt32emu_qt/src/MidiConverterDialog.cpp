@@ -34,10 +34,11 @@ MidiConverterDialog::~MidiConverterDialog() {
 }
 
 void MidiConverterDialog::on_addMidiButton_clicked() {
-	static QString currentDir = NULL;
+	static QString currentDir = Master::getInstance()->getSettings()->value("Master/LastAddMidiFileDir").toString();
 	QStringList fileNames = QFileDialog::getOpenFileNames(this, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
 	if (!fileNames.isEmpty()) {
 		currentDir = QDir(fileNames.first()).absolutePath();
+		Master::getInstance()->getSettings()->setValue("Master/LastAddMidiFileDir", currentDir);
 		if (ui->pcmList->count() == 0) addPcmFile(currentDir);
 		if (ui->pcmList->count() > 0) {
 			ui->midiList->addItems(fileNames);
@@ -46,8 +47,8 @@ void MidiConverterDialog::on_addMidiButton_clicked() {
 }
 
 void MidiConverterDialog::addPcmFile(QString proposedPCMFileName) {
-	static QString currentDir = NULL;
-	if (proposedPCMFileName == NULL || proposedPCMFileName.isEmpty()) {
+	static QString currentDir = Master::getInstance()->getSettings()->value("Master/LastAddPcmFileDir").toString();
+	if (proposedPCMFileName.isEmpty()) {
 		proposedPCMFileName = currentDir;
 	} else {
 		if (proposedPCMFileName.endsWith(".mid") || proposedPCMFileName.endsWith(".smf") || proposedPCMFileName.endsWith(".syx")) {
@@ -58,13 +59,14 @@ void MidiConverterDialog::addPcmFile(QString proposedPCMFileName) {
 	QString fileName = QFileDialog::getSaveFileName(this, NULL, proposedPCMFileName, "*.wav *.raw;;*.wav;;*.raw;;*.*");
 	if (!fileName.isEmpty()) {
 		currentDir = QDir(fileName).absolutePath();
+		Master::getInstance()->getSettings()->setValue("Master/LastAddPcmFileDir", currentDir);
 		ui->pcmList->addItem(fileName);
 		ui->pcmList->setCurrentRow(ui->pcmList->count() - 1);
 	}
 }
 
 void MidiConverterDialog::on_addPcmButton_clicked() {
-	addPcmFile();
+	addPcmFile(QString());
 }
 
 void MidiConverterDialog::on_removeButton_clicked() {
