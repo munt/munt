@@ -125,11 +125,13 @@ void AudioFileWriter::run() {
 	MidiEventList midiEvents;
 	int midiEventIx = 0;
 	uint parserIx = 0;
+	bool skipSilence = false;
 	if (realtimeMode) {
 		firstSampleNanos = startNanos;
 	} else {
 		midiEvents = parsers[parserIx].getMIDIEvents();
 		midiTick = parsers[parserIx].getMidiTick();
+		skipSilence = true;
 	}
 	qDebug() << "AudioFileWriter: Rendering started";
 	while (!stopProcessing) {
@@ -191,6 +193,19 @@ void AudioFileWriter::run() {
 			unsigned int framesRendered = synth->render(buffer, framesToRender, firstSampleNanos - latency, sampleRate);
 			qint64 bytesToWrite = framesRendered * FRAME_SIZE;
 			char *bufferPos = (char *)buffer;
+			if (skipSilence) {
+				qint32 *startPos = (qint32 *)buffer;
+				qint32 *endPos = startPos + framesRendered;
+				bytesToWrite = 0;
+				for (qint32 *p = startPos; p < endPos; p++) {
+					if (*p != 0) {
+						skipSilence = false;
+						bufferPos = (char *)p;
+						bytesToWrite = (char *)endPos - bufferPos;
+						break;
+					}
+				}
+			}
 			while (bytesToWrite > 0) {
 				qint64 bytesWritten = file.write(bufferPos, bytesToWrite);
 				if (bytesWritten == -1) {

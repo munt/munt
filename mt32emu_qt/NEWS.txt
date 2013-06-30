@@ -1,11 +1,14 @@
 Next release:
 
 	* Removed sysex length limit set in the internal MIDI player and converter.
+	* MIDI file converter now removes leading silence.
 	* Eliminated application hangs on Windows when the application is closed enforcedly,
 	  e.g. when the user closes the application console or shuts down the system.
 	* Improved ROM configuration. Added support for default ROM search path which is a directory "roms" located
 	  in the current user home directory.
-	* Other UI improvements.
+	* Reworked synth visualisation in order to make our LCD model close the hardware behaviour.
+	  Added emulation of the "MIDI MESSAGE" led.
+	* Overall UI layout made more compact. Other UI improvements.
 
 2013-03-24:
 
