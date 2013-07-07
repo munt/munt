@@ -128,7 +128,7 @@ void SynthStateMonitor::handleUpdate() {
 		partialStateLED[partialNum]->setColor(&partialStateColor[partialState]);
 		if (partialActive) {
 			const MT32Emu::Poly *poly = partial->getPoly();
-			bool polyActiveNonReleasing = poly->isActive() && poly->getState() != MT32Emu::POLY_Releasing;
+			bool polyActiveNonReleasing = poly != NULL && poly->isActive() && poly->getState() != MT32Emu::POLY_Releasing;
 			partActiveNonReleasing[partNum] = partActiveNonReleasing[partNum] || polyActiveNonReleasing;
 			midiMessageOn = midiMessageOn || polyActiveNonReleasing;
 		}
