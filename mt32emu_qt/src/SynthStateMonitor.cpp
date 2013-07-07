@@ -179,9 +179,10 @@ void PartStateWidget::paintEvent(QPaintEvent *) {
 		const MT32Emu::Partial *partial = monitor.synthRoute->getPartial(i);
 		if (partial->getOwnerPart() != partNum) continue;
 		const MT32Emu::Poly *poly = partial->getPoly();
+		if (poly == NULL) continue;
 		uint velocity = poly->getVelocity();
 		if (velocity == 0) continue;
-		uint key = partial->getPoly()->getKey();
+		uint key = poly->getKey();
 		QColor color(2 * velocity, 255 - 2 * velocity, 0);
 		uint x  = 5 * (key - 12);
 		painter.fillRect(x, 0, 5, 16, color);

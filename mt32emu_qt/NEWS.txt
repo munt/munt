@@ -8,6 +8,7 @@ Next release:
 	  in the current user home directory.
 	* Reworked synth visualisation in order to make our LCD model close the hardware behaviour.
 	  Added emulation of the "MIDI MESSAGE" led.
+	* MIDI files can now be dropped to main window and MIDI file converter dialog.
 	* Overall UI layout made more compact. Other UI improvements.
 
 2013-03-24:

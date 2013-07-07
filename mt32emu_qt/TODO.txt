@@ -1,6 +1,4 @@
 - RTP MIDI driver hopefully with full Bonjour support.
-- Extended MIDI to Wave conversion options
-- Better drag & drop support
 - Context help
 - Code refactoring
 - Adding comments
