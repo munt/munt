@@ -408,7 +408,9 @@ void Master::setTrayIcon(QSystemTrayIcon *trayIcon) {
 }
 
 void Master::showBalloon(const QString &title, const QString &text) {
-	trayIcon->showMessage(title, text);
+	if (trayIcon != NULL) {
+		trayIcon->showMessage(title, text);
+	}
 }
 
 void Master::createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name) {
