@@ -81,3 +81,18 @@ bool MidiDriver::setPortProperties(MidiPropertiesDialog *, MidiSession *) {
 QString MidiDriver::getNewPortName(MidiPropertiesDialog *) {
 	return "";
 }
+
+/**
+ * This prevents deadlock which happens when the processing thread tries to create new MidiSession while the main thread is waiting for it to terminate.
+ * The cause is that creating MidiSession blocks the processing thread and invokes corresponding slot of Master in its thread as required.
+ * On the other hand, stop() is usually called in the main thread - the thread of Master. So, we attempt to unblock
+ * by processing posted QEvent::MetaCall events directed to Master.
+ */
+void MidiDriver::waitForProcessingThread(QThread *thread, MasterClockNanos timeout) {
+	while (!thread->wait(timeout / MasterClock::NANOS_PER_MILLISECOND)) {
+		Master *master = Master::getInstance();
+		if (QThread::currentThread() == master->thread()) {
+			QCoreApplication::sendPostedEvents(master, QEvent::MetaCall);
+		}
+	}
+}

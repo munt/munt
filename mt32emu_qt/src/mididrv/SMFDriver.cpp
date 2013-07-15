@@ -53,7 +53,7 @@ void SMFProcessor::start(QString useFileName) {
 
 void SMFProcessor::stop() {
 	stopProcessing = true;
-	wait();
+	MidiDriver::waitForProcessingThread(this, MAX_SLEEP_TIME);
 }
 
 void SMFProcessor::setBPM(quint32 newBPM) {

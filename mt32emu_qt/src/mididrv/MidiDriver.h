@@ -15,6 +15,8 @@ protected:
 	QString name;
 	QList<MidiSession *>midiSessions;
 
+	static void waitForProcessingThread(QThread *thread, MasterClockNanos timeout);
+
 	MidiSession *createMidiSession(QString sessionName);
 	void deleteMidiSession(MidiSession *midiSession);
 	void showBalloon(const QString &title, const QString &text);
