@@ -194,8 +194,8 @@ void ReportHandler::showLCDMessage(const char *data) {
 }
 
 void ReportHandler::printDebug(const char *fmt, va_list list) {
-		vprintf(fmt, list);
-		printf("\n");
+	vprintf(fmt, list);
+	printf("\n");
 }
 
 void Synth::polyStateChanged(int partNum) {

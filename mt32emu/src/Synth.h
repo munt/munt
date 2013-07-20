@@ -414,6 +414,10 @@ public:
 	void setOutputGain(float);
 
 	// Sets output gain factor for the reverb wet output. setOutputGain() doesn't change reverb output gain.
+	// Note: We're currently emulate CM-32L/CM-64 reverb quite accurately and the reverb output level closely
+	// corresponds to the level of digital capture. Although, according to the CM-64 PCB schematic,
+	// there is a difference in the reverb analogue circuit, and the resulting output signal is 0.68
+	// of the synth analogue output. This factor should be considered when adjusting the reverb output gain.
 	void setReverbOutputGain(float);
 
 	// Renders samples to the specified output stream.
