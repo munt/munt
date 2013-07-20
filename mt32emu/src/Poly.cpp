@@ -124,9 +124,8 @@ void Poly::terminate() {
 void Poly::backupCacheToPartials(PatchCache cache[4]) {
 	for (int partialNum = 0; partialNum < 4; partialNum++) {
 		Partial *partial = partials[partialNum];
-		if (partial != NULL && partial->patchCache == &cache[partialNum]) {
-			partial->cachebackup = cache[partialNum];
-			partial->patchCache = &partial->cachebackup;
+		if (partial != NULL) {
+			partial->backupCache(cache[partialNum]);
 		}
 	}
 }

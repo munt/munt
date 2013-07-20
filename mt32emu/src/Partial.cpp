@@ -292,6 +292,13 @@ TVA *Partial::getTVA() const {
 	return tva;
 }
 
+void Partial::backupCache(const PatchCache &cache) {
+	if (patchCache == &cache) {
+		cachebackup = cache;
+		patchCache = &cachebackup;
+	}
+}
+
 bool Partial::produceOutput(float *leftBuf, float *rightBuf, unsigned long length) {
 	if (!isActive() || alreadyOutputed || isRingModulatingSlave()) {
 		return false;

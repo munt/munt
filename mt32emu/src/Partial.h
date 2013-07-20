@@ -66,13 +66,13 @@ private:
 	// TODO: This should be owned by PartialPair
 	LA32PartialPair la32Pair;
 
+	const PatchCache *patchCache;
+	PatchCache cachebackup;
+
 	Bit32u getAmpValue();
 	Bit32u getCutoffValue();
 
 public:
-	const PatchCache *patchCache;
-	PatchCache cachebackup;
-
 	bool alreadyOutputed;
 
 	Partial(Synth *synth, int debugPartialNum);
@@ -96,6 +96,8 @@ public:
 	const ControlROMPCMStruct *getControlROMPCMStruct() const;
 	Synth *getSynth() const;
 	TVA *getTVA() const;
+
+	void backupCache(const PatchCache &cache);
 
 	// Returns true only if data written to buffer
 	// This function (unlike the one below it) returns processed stereo samples
