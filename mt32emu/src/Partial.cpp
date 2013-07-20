@@ -288,6 +288,10 @@ Synth *Partial::getSynth() const {
 	return synth;
 }
 
+TVA *Partial::getTVA() const {
+	return tva;
+}
+
 bool Partial::produceOutput(float *leftBuf, float *rightBuf, unsigned long length) {
 	if (!isActive() || alreadyOutputed || isRingModulatingSlave()) {
 		return false;

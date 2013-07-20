@@ -124,7 +124,7 @@ void SynthStateMonitor::handleUpdate() {
 		const MT32Emu::Partial *partial = synthRoute->getPartial(partialNum);
 		int partNum = partial->getOwnerPart();
 		bool partialActive = partNum > -1;
-		PartialState partialState = partialActive ? QSynth::getPartialState(partial->tva->getPhase()) : PartialState_DEAD;
+		PartialState partialState = partialActive ? QSynth::getPartialState(partial->getTVA()->getPhase()) : PartialState_DEAD;
 		partialStateLED[partialNum]->setColor(&partialStateColor[partialState]);
 		if (partialActive) {
 			const MT32Emu::Poly *poly = partial->getPoly();

@@ -32,8 +32,6 @@ struct StereoVolume {
 
 // A partial represents one of up to four waveform generators currently playing within a poly.
 class Partial {
-friend class TVP;
-
 private:
 	Synth *synth;
 	const int debugPartialNum; // Only used for debugging
@@ -97,6 +95,7 @@ public:
 	bool isPCM() const;
 	const ControlROMPCMStruct *getControlROMPCMStruct() const;
 	Synth *getSynth() const;
+	TVA *getTVA() const;
 
 	// Returns true only if data written to buffer
 	// This function (unlike the one below it) returns processed stereo samples
