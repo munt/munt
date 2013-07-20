@@ -28,7 +28,7 @@ namespace MT32Emu {
 
 class FileStream: public File {
 private:
-	std::ifstream *ifsp;
+	std::ifstream * const ifsp;
 public:
 	FileStream();
 	virtual ~FileStream();

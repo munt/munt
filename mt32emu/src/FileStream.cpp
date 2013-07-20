@@ -23,14 +23,10 @@ namespace MT32Emu {
 using std::ifstream;
 using std::ios_base;
 
-FileStream::FileStream() {
-	ifsp = new ifstream();
-}
+FileStream::FileStream() : ifsp(new ifstream()) {}
 
 FileStream::~FileStream() {
-	if (ifsp != NULL) {
-		delete ifsp; // destructor closes the file itself
-	}
+	delete ifsp; // destructor closes the file itself
 	if (data) {
 		delete[] data;
 	}
@@ -39,9 +35,6 @@ FileStream::~FileStream() {
 size_t FileStream::getSize() {
 	if (fileSize != 0) {
 		return fileSize;
-	}
-	if (ifsp == NULL) {
-		return 0;
 	}
 	if (!ifsp->is_open()) {
 		return 0;
@@ -55,9 +48,6 @@ const unsigned char* FileStream::getData() {
 	if (data != NULL) {
 		return data;
 	}
-	if (ifsp == NULL) {
-		return NULL;
-	}
 	if (!ifsp->is_open()) {
 		return NULL;
 	}
@@ -69,7 +59,7 @@ const unsigned char* FileStream::getData() {
 		return NULL;
 	}
 	ifsp->seekg(0);
-	ifsp->read((char *)data, fileSize);
+	ifsp->read((char *)data, (std::streamsize)fileSize);
 	if ((size_t)ifsp->tellg() != fileSize) {
 		delete[] data;
 		data = NULL;
@@ -79,10 +69,9 @@ const unsigned char* FileStream::getData() {
 }
 
 bool FileStream::open(const char *filename) {
-	if (ifsp) {
-		ifsp->open(filename, ios_base::in | ios_base::binary);
-	}
-	return (ifsp->good());
+	ifsp->clear();
+	ifsp->open(filename, ios_base::in | ios_base::binary);
+	return !ifsp->fail();
 }
 
 void FileStream::close() {
