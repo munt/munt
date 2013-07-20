@@ -296,10 +296,11 @@ bool Partial::produceOutput(float *leftBuf, float *rightBuf, unsigned long lengt
 		synth->printDebug("[Partial %d] *** ERROR: poly is NULL at Partial::produceOutput()!", debugPartialNum);
 		return false;
 	}
-	unsigned long numGenerated = generateSamples(myBuffer, length);
+	Bit16s buffer[MAX_SAMPLES_PER_RUN];
+	unsigned long numGenerated = generateSamples(buffer, length);
 	for (unsigned int i = 0; i < numGenerated; i++) {
-		*leftBuf++ = myBuffer[i] * stereoVolume.leftVol;
-		*rightBuf++ = myBuffer[i] * stereoVolume.rightVol;
+		*leftBuf++ = buffer[i] * stereoVolume.leftVol;
+		*rightBuf++ = buffer[i] * stereoVolume.rightVol;
 	}
 	for (; numGenerated < length; numGenerated++) {
 		*leftBuf++ = 0.0f;

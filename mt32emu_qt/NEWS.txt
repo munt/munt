@@ -4,6 +4,7 @@ Next release:
 	* MIDI file converter now removes leading silence.
 	* Eliminated application hangs on Windows when the application is closed enforcedly,
 	  e.g. when the user closes the application console or shuts down the system.
+	* Fixed deadlock which may happen when the user quickly pushes "Play" button in the MIDI player.
 	* Improved ROM configuration. Added support for default ROM search path which is a directory "roms" located
 	  in the current user home directory.
 	* Reworked synth visualisation in order to make our LCD model close the hardware behaviour.

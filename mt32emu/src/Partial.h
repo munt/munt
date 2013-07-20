@@ -32,6 +32,8 @@ struct StereoVolume {
 
 // A partial represents one of up to four waveform generators currently playing within a poly.
 class Partial {
+friend class TVP;
+
 private:
 	Synth *synth;
 	const int debugPartialNum; // Only used for debugging
@@ -44,8 +46,6 @@ private:
 	int structurePosition; // 0 or 1 of a structure pair
 	StereoVolume stereoVolume;
 
-	Bit16s myBuffer[MAX_SAMPLES_PER_RUN];
-
 	// Only used for PCM partials
 	int pcmNum;
 	// FIXME: Give this a better name (e.g. pcmWaveInfo)
@@ -56,6 +56,11 @@ private:
 	int pulseWidthVal;
 
 	Poly *poly;
+	Partial *pair;
+
+	TVA *tva;
+	TVP *tvp;
+	TVF *tvf;
 
 	LA32Ramp ampRamp;
 	LA32Ramp cutoffModifierRamp;
@@ -68,13 +73,8 @@ private:
 
 public:
 	const PatchCache *patchCache;
-	TVA *tva;
-	TVP *tvp;
-	TVF *tvf;
-
 	PatchCache cachebackup;
 
-	Partial *pair;
 	bool alreadyOutputed;
 
 	Partial(Synth *synth, int debugPartialNum);
