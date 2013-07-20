@@ -287,7 +287,9 @@ private:
 	Bit16s *pcmROMData;
 	size_t pcmROMSize; // This is in 16-bit samples, therefore half the number of bytes in the ROM
 
-	Bit8s chantable[32];
+	unsigned int partialCount;
+	unsigned int polyCount;
+	Bit8s chantable[32]; // FIXME: Need explanation why 32 is set, obviously it should be 16
 
 	Bit32u renderedSampleCount;
 
@@ -384,7 +386,9 @@ public:
 	// Used to initialise the MT-32. Must be called before any other function.
 	// Returns true if initialization was sucessful, otherwise returns false.
 	// controlROMImage and pcmROMImage represent Control and PCM ROM images for use by synth.
-	bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage);
+	// usePartialCount sets the maximum number of partials playing simultaneously for this session.
+	// usePolyCount sets the maximum number of notes playing simultaneously per part (clamped to be less than or equal to usePartialCount).
+	bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount = MT32EMU_DEFAULT_MAX_PARTIALS, unsigned int usePolyCount = (unsigned int)-1);
 
 	// Closes the MT-32 and deallocates any memory used by the synthesizer
 	void close(void);
@@ -427,6 +431,12 @@ public:
 	bool isActive() const;
 
 	const Partial *getPartial(unsigned int partialNum) const;
+
+	// Returns the maximum number of partials playing simultaneously.
+	unsigned int getPartialCount() const;
+
+	// Returns the maximum number of notes playing simultaneously per part.
+	unsigned int getPolyCount() const;
 
 	void readMemory(Bit32u addr, Bit32u len, Bit8u *data);
 

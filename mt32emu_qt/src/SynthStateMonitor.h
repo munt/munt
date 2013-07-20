@@ -94,7 +94,7 @@ private:
 	const Ui::SynthWidget * const ui;
 	LCDWidget lcdWidget;
 	LEDWidget midiMessageLED;
-	LEDWidget *partialStateLED[MT32EMU_MAX_PARTIALS];
+	LEDWidget *partialStateLED[MT32EMU_DEFAULT_MAX_PARTIALS];
 	QLabel *patchNameLabel[9];
 	PartStateWidget *partStateWidget[9];
 

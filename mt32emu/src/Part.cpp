@@ -67,7 +67,7 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	pitchBend = 0;
 	activePartialCount = 0;
 	memset(patchCache, 0, sizeof(patchCache));
-	for (int i = 0; i < MT32EMU_MAX_POLY; i++) {
+	for (unsigned int i = 0; i < synth->getPolyCount(); i++) {
 		freePolys.prepend(new Poly(this));
 	}
 }

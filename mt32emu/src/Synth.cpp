@@ -399,10 +399,12 @@ bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, int count, int startTi
 	return true;
 }
 
-bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage) {
+bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount, unsigned int usePolyCount) {
 	if (isOpen) {
 		return false;
 	}
+	partialCount = usePartialCount;
+	polyCount = (partialCount < usePolyCount) ? usePartialCount : usePolyCount;
 	prerenderReadIx = prerenderWriteIx = 0;
 #if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Constant Tables");
@@ -1416,7 +1418,7 @@ void Synth::renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s 
 void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len) {
 	clearFloats(&tmpBufMixLeft[0], &tmpBufMixRight[0], len);
 	if (!reverbEnabled) {
-		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
+		for (unsigned int i = 0; i < getPartialCount(); i++) {
 			if (partialManager->produceOutput(i, &tmpBufPartialLeft[0], &tmpBufPartialRight[0], len)) {
 				mix(&tmpBufMixLeft[0], &tmpBufPartialLeft[0], len);
 				mix(&tmpBufMixRight[0], &tmpBufPartialRight[0], len);
@@ -1433,7 +1435,7 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 		clearIfNonNull(reverbWetLeft, len);
 		clearIfNonNull(reverbWetRight, len);
 	} else {
-		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
+		for (unsigned int i = 0; i < getPartialCount(); i++) {
 			if (!partialManager->shouldReverb(i)) {
 				if (partialManager->produceOutput(i, &tmpBufPartialLeft[0], &tmpBufPartialRight[0], len)) {
 					mix(&tmpBufMixLeft[0], &tmpBufPartialLeft[0], len);
@@ -1449,7 +1451,7 @@ void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16
 		}
 
 		clearFloats(&tmpBufMixLeft[0], &tmpBufMixRight[0], len);
-		for (unsigned int i = 0; i < MT32EMU_MAX_PARTIALS; i++) {
+		for (unsigned int i = 0; i < getPartialCount(); i++) {
 			if (partialManager->shouldReverb(i)) {
 				if (partialManager->produceOutput(i, &tmpBufPartialLeft[0], &tmpBufPartialRight[0], len)) {
 					mix(&tmpBufMixLeft[0], &tmpBufPartialLeft[0], len);
@@ -1481,9 +1483,9 @@ void Synth::printPartialUsage(unsigned long sampleOffset) {
 	unsigned int partialUsage[9];
 	partialManager->getPerPartPartialUsage(partialUsage);
 	if (sampleOffset > 0) {
-		printDebug("[+%lu] Partial Usage: 1:%02d 2:%02d 3:%02d 4:%02d 5:%02d 6:%02d 7:%02d 8:%02d R: %02d  TOTAL: %02d", sampleOffset, partialUsage[0], partialUsage[1], partialUsage[2], partialUsage[3], partialUsage[4], partialUsage[5], partialUsage[6], partialUsage[7], partialUsage[8], MT32EMU_MAX_PARTIALS - partialManager->getFreePartialCount());
+		printDebug("[+%lu] Partial Usage: 1:%02d 2:%02d 3:%02d 4:%02d 5:%02d 6:%02d 7:%02d 8:%02d R: %02d  TOTAL: %02d", sampleOffset, partialUsage[0], partialUsage[1], partialUsage[2], partialUsage[3], partialUsage[4], partialUsage[5], partialUsage[6], partialUsage[7], partialUsage[8], getPartialCount() - partialManager->getFreePartialCount());
 	} else {
-		printDebug("Partial Usage: 1:%02d 2:%02d 3:%02d 4:%02d 5:%02d 6:%02d 7:%02d 8:%02d R: %02d  TOTAL: %02d", partialUsage[0], partialUsage[1], partialUsage[2], partialUsage[3], partialUsage[4], partialUsage[5], partialUsage[6], partialUsage[7], partialUsage[8], MT32EMU_MAX_PARTIALS - partialManager->getFreePartialCount());
+		printDebug("Partial Usage: 1:%02d 2:%02d 3:%02d 4:%02d 5:%02d 6:%02d 7:%02d 8:%02d R: %02d  TOTAL: %02d", partialUsage[0], partialUsage[1], partialUsage[2], partialUsage[3], partialUsage[4], partialUsage[5], partialUsage[6], partialUsage[7], partialUsage[8], getPartialCount() - partialManager->getFreePartialCount());
 	}
 }
 
@@ -1493,7 +1495,7 @@ bool Synth::hasActivePartials() const {
 		// It also means that partials are definitely active at this render point.
 		return true;
 	}
-	for (int partialNum = 0; partialNum < MT32EMU_MAX_PARTIALS; partialNum++) {
+	for (unsigned int partialNum = 0; partialNum < getPartialCount(); partialNum++) {
 		if (partialManager->getPartial(partialNum)->isActive()) {
 			return true;
 		}
@@ -1513,6 +1515,14 @@ bool Synth::isActive() const {
 
 const Partial *Synth::getPartial(unsigned int partialNum) const {
 	return partialManager->getPartial(partialNum);
+}
+
+unsigned int Synth::getPartialCount() const {
+	return partialCount;
+}
+
+unsigned int Synth::getPolyCount() const {
+	return polyCount;
 }
 
 const Part *Synth::getPart(unsigned int partNum) const {

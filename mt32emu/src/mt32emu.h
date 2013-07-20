@@ -60,11 +60,8 @@
 #define MT32EMU_MONITOR_TVF 0
 
 // Configuration
-// The maximum number of partials playing simultaneously
-#define MT32EMU_MAX_PARTIALS 32
-// The maximum number of notes playing simultaneously per part.
-// No point making it more than MT32EMU_MAX_PARTIALS, since each note needs at least one partial.
-#define MT32EMU_MAX_POLY 32
+// The default value for the maximum number of partials playing simultaneously
+#define MT32EMU_DEFAULT_MAX_PARTIALS 32
 
 // If non-zero, deletes reverb buffers that are not in use to save memory.
 // If zero, keeps reverb buffers for all modes around all the time to avoid allocating/freeing in the critical path.
