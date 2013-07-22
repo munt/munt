@@ -256,6 +256,49 @@ protected:
 	virtual void onProgramChanged(int /* partNum */, int /* bankNum */, const char * /* patchName */) {}
 };
 
+/**
+ * Used to safely store timestamped MIDI events in a local queue.
+ */
+struct MidiEvent {
+	Bit32u shortMessageData;
+	Bit8u *sysexData;
+	Bit32u sysexLength;
+	Bit32u timestamp;
+
+	~MidiEvent();
+	void setShortMessage(Bit32u shortMessageData, Bit32u timestamp);
+	void setSysex(Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
+};
+
+/**
+ * Simple queue implementation using a ring buffer to store incoming MIDI event before the synth actually processes it.
+ * It is intended to:
+ * - get rid of prerenderer while retaining graceful partial abortion
+ * - add fair emulation of the MIDI interface delays
+ * - extend the synth interface with the default implementation of a typical rendering loop.
+ * THREAD SAFETY:
+ * It is safe to use either in a single thread environment or when there are only two threads - one performs only reading
+ * and one performs only writing. More complicated usage requires external synchronisation.
+ */
+class MidiEventQueue {
+private:
+	static const Bit32u DEFAULT_SIZE = 1024;
+
+	MidiEvent *ringBuffer;
+	Bit32u ringBufferSize;
+	volatile Bit32u startPosition;
+	volatile Bit32u endPosition;
+
+public:
+	MidiEventQueue(Bit32u ringBufferSize = DEFAULT_SIZE);
+	~MidiEventQueue();
+	void reset();
+	bool pushShortMessage(Bit32u shortMessageData, Bit32u timestamp);
+	bool pushSysex(Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
+	const MidiEvent *popMidiEvent();
+	const MidiEvent *peekMidiEvent();
+};
+
 class Synth {
 friend class Part;
 friend class RhythmPart;

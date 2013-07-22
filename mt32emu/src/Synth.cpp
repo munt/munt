@@ -1337,6 +1337,83 @@ bool Synth::prerender() {
 	return true;
 }
 
+MidiEvent::~MidiEvent() {
+	if (sysexData != NULL) {
+		delete[] sysexData;
+	}
+}
+
+void MidiEvent::setShortMessage(Bit32u useShortMessageData, Bit32u useTimestamp) {
+	if (sysexData != NULL) {
+		delete[] sysexData;
+	}
+	shortMessageData = useShortMessageData;
+	timestamp = useTimestamp;
+	sysexData = NULL;
+	sysexLength = 0;
+}
+
+void MidiEvent::setSysex(Bit8u *useSysexData, Bit32u useSysexLength, Bit32u useTimestamp) {
+	if (sysexData != NULL) {
+		delete[] sysexData;
+	}
+	shortMessageData = 0;
+	timestamp = useTimestamp;
+	sysexLength = useSysexLength;
+	sysexData = new Bit8u[sysexLength];
+	memcpy(sysexData, useSysexData, sysexLength);
+}
+
+MidiEventQueue::MidiEventQueue(Bit32u ringBufferSize) : ringBufferSize(ringBufferSize) {
+	ringBuffer = new MidiEvent[ringBufferSize];
+	reset();
+}
+
+MidiEventQueue::~MidiEventQueue() {
+	delete[] ringBuffer;
+}
+
+void MidiEventQueue::reset() {
+	startPosition = 0;
+	endPosition = 0;
+}
+
+bool MidiEventQueue::pushShortMessage(Bit32u shortMessageData, Bit32u timestamp) {
+	unsigned int newEndPosition = (endPosition + 1) % ringBufferSize;
+	// Is ring buffer full?
+	if (startPosition == newEndPosition) return false;
+	ringBuffer[endPosition].setShortMessage(shortMessageData, timestamp);
+	endPosition = newEndPosition;
+	return true;
+}
+
+bool MidiEventQueue::pushSysex(Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp) {
+	unsigned int newEndPosition = (endPosition + 1) % ringBufferSize;
+	// Is ring buffer full?
+	if (startPosition == newEndPosition) return false;
+	ringBuffer[endPosition].setSysex(sysexData, sysexLength, timestamp);
+	endPosition = newEndPosition;
+	return true;
+}
+
+const MidiEvent *MidiEventQueue::popMidiEvent() {
+	// Is ring buffer empty?
+	if (startPosition == endPosition) {
+		return NULL;
+	}
+	MidiEvent *midiEvent = &ringBuffer[startPosition];
+	startPosition = (startPosition + 1) % ringBufferSize;
+	return midiEvent;
+}
+
+const MidiEvent *MidiEventQueue::peekMidiEvent() {
+	// Is ring buffer empty?
+	if (startPosition == endPosition) {
+		return NULL;
+	}
+	return &ringBuffer[startPosition];
+}
+
 static inline void maybeCopy(Bit16s *out, Bit32u outPos, Bit16s *in, Bit32u inPos, Bit32u len) {
 	if (out == NULL) {
 		return;
