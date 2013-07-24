@@ -250,9 +250,7 @@ protected:
 	virtual void onNewReverbMode(Bit8u /* mode */) {}
 	virtual void onNewReverbTime(Bit8u /* time */) {}
 	virtual void onNewReverbLevel(Bit8u /* level */) {}
-	virtual void onPartStateChanged(int /* partNum */, bool /* hasActiveNonReleasingPolys */) {}
 	virtual void onPolyStateChanged(int /* partNum */) {}
-	virtual void onPartialStateChanged(int /* partialNum */, int /* oldPartialPhase */, int /* newPartialPhase */) {}
 	virtual void onProgramChanged(int /* partNum */, int /* bankNum */, const char * /* patchName */) {}
 };
 
