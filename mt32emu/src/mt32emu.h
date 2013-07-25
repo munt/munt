@@ -61,7 +61,7 @@
 
 // Configuration
 // The default value for the maximum number of partials playing simultaneously
-#define MT32EMU_DEFAULT_MAX_PARTIALS 32
+#define MT32EMU_DEFAULT_MAX_PARTIALS 128
 
 // If non-zero, deletes reverb buffers that are not in use to save memory.
 // If zero, keeps reverb buffers for all modes around all the time to avoid allocating/freeing in the critical path.
