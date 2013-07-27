@@ -100,7 +100,6 @@ const unsigned int MAX_PRERENDER_SAMPLES = 1024;
 #include "Poly.h"
 #include "LA32Ramp.h"
 #include "LA32WaveGenerator.h"
-#include "LegacyWaveGenerator.h"
 #include "TVA.h"
 #include "TVP.h"
 #include "TVF.h"

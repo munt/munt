@@ -18,9 +18,7 @@
 #include <cmath>
 #include "mt32emu.h"
 #include "mmath.h"
-#include "LegacyWaveGenerator.h"
-
-#if MT32EMU_USE_FLOAT_SAMPLES
+#include "LA32FloatWaveGenerator.h"
 
 namespace MT32Emu {
 
@@ -343,5 +341,3 @@ bool LA32PartialPair::isActive(const PairType useMaster) const {
 }
 
 }
-
-#endif // #if MT32EMU_USE_FLOAT_SAMPLES

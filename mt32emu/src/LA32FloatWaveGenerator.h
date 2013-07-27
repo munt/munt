@@ -15,8 +15,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if MT32EMU_USE_FLOAT_SAMPLES
-
 #ifndef MT32EMU_LA32_WAVE_GENERATOR_H
 #define MT32EMU_LA32_WAVE_GENERATOR_H
 
@@ -142,5 +140,3 @@ public:
 } // namespace MT32Emu
 
 #endif // #ifndef MT32EMU_LA32_WAVE_GENERATOR_H
-
-#endif // #if MT32EMU_USE_FLOAT_SAMPLES
