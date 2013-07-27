@@ -1424,14 +1424,17 @@ void Synth::floatToBit16s(Bit16s *target, const float *source, Bit32u len, bool 
 
 	if (target == NULL) return;
 
-	float gain = outputGain * PURE_OUTPUT_GAIN;
-	switch (dacInputMode + (int)reverb) {
+	float gain;
+	if (dacInputMode == DACInputMode_PURE) {
+		gain = PURE_OUTPUT_GAIN;
+	} else if (reverb) {
+		gain = reverbOutputGain * PURE_OUTPUT_GAIN;
+	} else {
+		gain = outputGain * PURE_OUTPUT_GAIN;
+		switch (dacInputMode) {
 		case DACInputMode_NICE:
 			// Since we're not shooting for accuracy here, don't worry about the rounding mode.
 			gain *= 2.0f;
-			break;
-		case DACInputMode_PURE:
-			gain = PURE_OUTPUT_GAIN;
 			break;
 		case DACInputMode_GENERATION1:
 			while (len--) {
@@ -1449,9 +1452,7 @@ void Synth::floatToBit16s(Bit16s *target, const float *source, Bit32u len, bool 
 				target++;
 			}
 			return;
-		default:
-			gain = reverbOutputGain * PURE_OUTPUT_GAIN;
-			break;
+		}
 	}
 	while (len--) {
 		*target = clipBit16s(Bit32s(*source * gain));
