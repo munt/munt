@@ -293,8 +293,8 @@ public:
 	void reset();
 	bool pushShortMessage(Bit32u shortMessageData, Bit32u timestamp);
 	bool pushSysex(Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
-	const MidiEvent *popMidiEvent();
 	const MidiEvent *peekMidiEvent();
+	const void dropMidiEvent();
 };
 
 class Synth {
@@ -332,8 +332,8 @@ private:
 	unsigned int polyCount;
 	Bit8s chantable[32]; // FIXME: Need explanation why 32 is set, obviously it should be 16
 
+	MidiEventQueue *midiQueue;
 	Bit32u renderedSampleCount;
-
 
 	MemParams mt32ram, mt32default;
 

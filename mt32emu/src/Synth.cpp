@@ -1338,24 +1338,14 @@ bool MidiEventQueue::pushSysex(Bit8u *sysexData, Bit32u sysexLength, Bit32u time
 	return true;
 }
 
-const MidiEvent *MidiEventQueue::popMidiEvent() {
-	// Is ring buffer empty?
-	if (startPosition == endPosition) {
-		return NULL;
-	}
-	MidiEvent *midiEvent = &ringBuffer[startPosition];
-	startPosition = (startPosition + 1) % ringBufferSize;
-	return midiEvent;
-}
-
 const MidiEvent *MidiEventQueue::peekMidiEvent() {
-	// Is ring buffer empty?
-	if (startPosition == endPosition) {
-		return NULL;
-	}
-	return &ringBuffer[startPosition];
+	return (startPosition == endPosition) ? NULL : &ringBuffer[startPosition];
 }
 
+const void MidiEventQueue::dropMidiEvent() {
+	// Is ring buffer empty?
+	if (startPosition != endPosition) {
+		startPosition = (startPosition + 1) % ringBufferSize;
 	}
 }
 
