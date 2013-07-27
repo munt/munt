@@ -87,7 +87,7 @@ public:
 	void setOutputPositions(const Bit32u useOutL, const Bit32u useOutR);
 };
 
-class BReverbModel : public ReverbModel {
+class BReverbModel {
 	AllpassFilter **allpasses;
 	CombFilter **combs;
 

@@ -34,12 +34,9 @@ foreach(HEADER ${libmt32emu_HEADERS})
 endforeach(HEADER)
 
 add_library(mt32emu STATIC
-  src/AReverbModel.cpp
   src/BReverbModel.cpp
-  src/DelayReverb.cpp
   src/File.cpp
   src/FileStream.cpp
-  src/FreeverbModel.cpp
   src/LA32Ramp.cpp
   src/LA32WaveGenerator.cpp
   src/LegacyWaveGenerator.cpp
@@ -53,9 +50,6 @@ add_library(mt32emu STATIC
   src/TVA.cpp
   src/TVF.cpp
   src/TVP.cpp
-  src/freeverb/allpass.cpp
-  src/freeverb/comb.cpp
-  src/freeverb/revmodel.cpp
   src/sha1/sha1.cpp
 )
 

@@ -28,6 +28,7 @@ class Partial;
 class PartialManager;
 class Part;
 class ROMImage;
+class BReverbModel;
 
 /**
  * Methods for emulating the connection between the LA32 and the DAC, which involves
@@ -219,18 +220,6 @@ public:
 	ResetMemoryRegion(Synth *useSynth) : MemoryRegion(useSynth, NULL, NULL, MR_Reset, MT32EMU_MEMADDR(0x7F0000), 0x3FFF, 1) {}
 };
 
-class ReverbModel {
-public:
-	virtual ~ReverbModel() {}
-	// After construction or a close(), open() will be called at least once before any other call (with the exception of close()).
-	virtual void open() = 0;
-	// May be called multiple times without an open() in between.
-	virtual void close() = 0;
-	virtual void setParameters(Bit8u time, Bit8u level) = 0;
-	virtual void process(const float *inLeft, const float *inRight, float *outLeft, float *outRight, unsigned long numSamples) = 0;
-	virtual bool isActive() const = 0;
-};
-
 class ReportHandler {
 friend class Synth;
 
@@ -338,8 +327,8 @@ private:
 
 	MemParams mt32ram, mt32default;
 
-	ReverbModel *reverbModels[4];
-	ReverbModel *reverbModel;
+	BReverbModel *reverbModels[4];
+	BReverbModel *reverbModel;
 	bool reverbEnabled;
 	bool reverbOverridden;
 

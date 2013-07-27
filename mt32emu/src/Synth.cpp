@@ -23,15 +23,7 @@
 #include "mt32emu.h"
 #include "mmath.h"
 #include "PartialManager.h"
-
-#if MT32EMU_USE_REVERBMODEL == 1
-#include "AReverbModel.h"
-#elif MT32EMU_USE_REVERBMODEL == 2
 #include "BReverbModel.h"
-#else
-#include "FreeverbModel.h"
-#endif
-#include "DelayReverb.h"
 
 namespace MT32Emu {
 
@@ -105,22 +97,10 @@ Synth::Synth(ReportHandler *useReportHandler) {
 		isDefaultReportHandler = false;
 	}
 
-#if MT32EMU_USE_REVERBMODEL == 1
-	reverbModels[REVERB_MODE_ROOM] = new AReverbModel(REVERB_MODE_ROOM);
-	reverbModels[REVERB_MODE_HALL] = new AReverbModel(REVERB_MODE_HALL);
-	reverbModels[REVERB_MODE_PLATE] = new AReverbModel(REVERB_MODE_PLATE);
-	reverbModels[REVERB_MODE_TAP_DELAY] = new DelayReverb();
-#elif MT32EMU_USE_REVERBMODEL == 2
 	reverbModels[REVERB_MODE_ROOM] = new BReverbModel(REVERB_MODE_ROOM);
 	reverbModels[REVERB_MODE_HALL] = new BReverbModel(REVERB_MODE_HALL);
 	reverbModels[REVERB_MODE_PLATE] = new BReverbModel(REVERB_MODE_PLATE);
 	reverbModels[REVERB_MODE_TAP_DELAY] = new BReverbModel(REVERB_MODE_TAP_DELAY);
-#else
-	reverbModels[REVERB_MODE_ROOM] = new FreeverbModel(0.76f, 0.687770909f, 0.63f, 0, 0.5f);
-	reverbModels[REVERB_MODE_HALL] = new FreeverbModel(2.0f, 0.712025098f, 0.86f, 1, 0.5f);
-	reverbModels[REVERB_MODE_PLATE] = new FreeverbModel(0.4f, 0.939522749f, 0.38f, 2, 0.05f);
-	reverbModels[REVERB_MODE_TAP_DELAY] = new DelayReverb();
-#endif
 
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
@@ -1161,7 +1141,7 @@ void Synth::refreshSystemReverbParameters() {
 	reportHandler->onNewReverbTime(mt32ram.system.reverbTime);
 	reportHandler->onNewReverbLevel(mt32ram.system.reverbLevel);
 
-	ReverbModel *newReverbModel = reverbModels[mt32ram.system.reverbMode];
+	BReverbModel *newReverbModel = reverbModels[mt32ram.system.reverbMode];
 #if MT32EMU_REDUCE_REVERB_MEMORY
 	if (reverbModel != newReverbModel) {
 		if (reverbModel != NULL) {

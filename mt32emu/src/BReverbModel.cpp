@@ -16,9 +16,6 @@
  */
 
 #include "mt32emu.h"
-
-#if MT32EMU_USE_REVERBMODEL == 2
-
 #include "BReverbModel.h"
 
 // Analysing of state of reverb RAM address lines gives exact sizes of the buffers of filters used. This also indicates that
@@ -389,5 +386,3 @@ void BReverbModel::process(const float *inLeft, const float *inRight, float *out
 }
 
 }
-
-#endif
