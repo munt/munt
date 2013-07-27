@@ -436,6 +436,7 @@ public:
 	void setDACInputMode(DACInputMode mode);
 
 	// Sets output gain factor. Applied to all output samples and unrelated with the synth's Master volume.
+	// Ignored in DACInputMode_PURE
 	void setOutputGain(float);
 
 	// Sets output gain factor for the reverb wet output. setOutputGain() doesn't change reverb output gain.
@@ -443,6 +444,7 @@ public:
 	// corresponds to the level of digital capture. Although, according to the CM-64 PCB schematic,
 	// there is a difference in the reverb analogue circuit, and the resulting output signal is 0.68
 	// of the synth analogue output. This factor should be considered when adjusting the reverb output gain.
+	// Ignored in DACInputMode_PURE
 	void setReverbOutputGain(float);
 
 	// Renders samples to the specified output stream.
