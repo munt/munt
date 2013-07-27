@@ -20,7 +20,7 @@
 #include "mmath.h"
 #include "LA32WaveGenerator.h"
 
-#if MT32EMU_ACCURATE_WG == 0
+#if !MT32EMU_USE_FLOAT_SAMPLES
 
 namespace MT32Emu {
 
@@ -415,4 +415,4 @@ bool LA32PartialPair::isActive(const PairType useMaster) const {
 
 }
 
-#endif // #if MT32EMU_ACCURATE_WG == 0
+#endif // #if !MT32EMU_USE_FLOAT_SAMPLES

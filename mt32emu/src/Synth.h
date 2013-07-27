@@ -61,8 +61,6 @@ enum DACInputMode {
 	DACInputMode_GENERATION2
 };
 
-typedef void (*FloatToBit16sFunc)(Bit16s *target, const float *source, Bit32u len, float outputGain);
-
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
 
 const Bit8u SYSEX_MDL_MT32 = 0x16;
@@ -347,20 +345,20 @@ private:
 	// These ring buffers are only used to simulate delays present on the real device.
 	// In particular, when a partial needs to be aborted to free it up for use by a new Poly,
 	// the controller will busy-loop waiting for the sound to finish.
-	Bit16s prerenderNonReverbLeft[MAX_PRERENDER_SAMPLES];
-	Bit16s prerenderNonReverbRight[MAX_PRERENDER_SAMPLES];
-	Bit16s prerenderReverbDryLeft[MAX_PRERENDER_SAMPLES];
-	Bit16s prerenderReverbDryRight[MAX_PRERENDER_SAMPLES];
-	Bit16s prerenderReverbWetLeft[MAX_PRERENDER_SAMPLES];
-	Bit16s prerenderReverbWetRight[MAX_PRERENDER_SAMPLES];
-	int prerenderReadIx;
-	int prerenderWriteIx;
+	Sample prerenderNonReverbLeft[MAX_PRERENDER_SAMPLES];
+	Sample prerenderNonReverbRight[MAX_PRERENDER_SAMPLES];
+	Sample prerenderReverbDryLeft[MAX_PRERENDER_SAMPLES];
+	Sample prerenderReverbDryRight[MAX_PRERENDER_SAMPLES];
+	Sample prerenderReverbWetLeft[MAX_PRERENDER_SAMPLES];
+	Sample prerenderReverbWetRight[MAX_PRERENDER_SAMPLES];
+	Bit32u prerenderReadIx;
+	Bit32u prerenderWriteIx;
 
 	bool prerender();
-	void copyPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u pos, Bit32u len);
-	void checkPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u &pos, Bit32u &len);
-	void floatToBit16s(Bit16s *target, const float *source, Bit32u len, bool reverb);
-	void doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
+	void copyPrerender(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u pos, Bit32u len);
+	void checkPrerender(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u &pos, Bit32u &len);
+	void convertSamplesToOutput(Sample *target, const Sample *source, Bit32u len, bool reverb);
+	void doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);
 
 	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len) const;
 	void initMemoryRegions();
@@ -391,6 +389,14 @@ private:
 	void printDebug(const char *fmt, ...);
 
 public:
+	static inline Bit16s clipBit16s(Bit32s sample) {
+		// Clamp values above 32767 to 32767, and values below -32768 to -32768
+		if ((sample + 32768) & ~65535) {
+			return (sample >> 31) ^ 32767;
+		}
+		return sample;
+	}
+
 	static Bit8u calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum);
 
 	// Optionally sets callbacks for reporting various errors, information and debug messages
@@ -439,10 +445,10 @@ public:
 	// Renders samples to the specified output stream.
 	// The length is in frames, not bytes (in 16-bit stereo,
 	// one frame is 4 bytes).
-	void render(Bit16s *stream, Bit32u len);
+	void render(Sample *stream, Bit32u len);
 
 	// Renders samples to the specified output streams (any or all of which may be NULL).
-	void renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
+	void renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);
 
 	// Returns true when there is at least one active partial, otherwise false.
 	bool hasActivePartials() const;

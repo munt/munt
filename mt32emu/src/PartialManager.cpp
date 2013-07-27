@@ -48,7 +48,7 @@ bool PartialManager::shouldReverb(int i) {
 	return partialTable[i]->shouldReverb();
 }
 
-bool PartialManager::produceOutput(int i, float *leftBuf, float *rightBuf, Bit32u bufferLength) {
+bool PartialManager::produceOutput(int i, Sample *leftBuf, Sample *rightBuf, Bit32u bufferLength) {
 	return partialTable[i]->produceOutput(leftBuf, rightBuf, bufferLength);
 }
 

@@ -67,9 +67,13 @@
 // If zero, keeps reverb buffers for all modes around all the time to avoid allocating/freeing in the critical path.
 #define MT32EMU_REDUCE_REVERB_MEMORY 1
 
-// 0: Use refined wave generator based on logarithmic fixed-point computations and LUTs
-// 1: Use legacy accurate wave generator based on float computations
-#define MT32EMU_ACCURATE_WG 0
+// 0: Maximum speed at the cost of a bit lower emulation accuracy.
+// 1: Maximum achievable emulation accuracy.
+#define MT32EMU_BOSS_REVERB_PRECISE_MODE 0
+
+// 0: Use 16-bit signed samples and refined wave generator based on logarithmic fixed-point computations and LUTs. Maximum emulation accuracy and speed.
+// 1: Use float samples in the wave generator and renderer. Maximum output quality and minimum noise.
+#define MT32EMU_USE_FLOAT_SAMPLES 0
 
 namespace MT32Emu
 {

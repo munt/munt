@@ -20,7 +20,7 @@
 #include "mmath.h"
 #include "LegacyWaveGenerator.h"
 
-#if MT32EMU_ACCURATE_WG == 1
+#if MT32EMU_USE_FLOAT_SAMPLES
 
 namespace MT32Emu {
 
@@ -317,7 +317,7 @@ void LA32PartialPair::generateNextSample(const PairType useMaster, const Bit32u 
 	}
 }
 
-Bit16s LA32PartialPair::nextOutSample() {
+float LA32PartialPair::nextOutSample() {
 	float outputSample;
 	if (ringModulated) {
 		float ringModulatedSample = masterOutputSample * slaveOutputSample;
@@ -325,7 +325,7 @@ Bit16s LA32PartialPair::nextOutSample() {
 	} else {
 		outputSample = masterOutputSample + slaveOutputSample;
 	}
-	return Bit16s(outputSample * 8192.0f);
+	return outputSample;
 }
 
 void LA32PartialPair::deactivate(const PairType useMaster) {
@@ -344,4 +344,4 @@ bool LA32PartialPair::isActive(const PairType useMaster) const {
 
 }
 
-#endif // #if MT32EMU_ACCURATE_WG == 1
+#endif // #if MT32EMU_USE_FLOAT_SAMPLES

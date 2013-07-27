@@ -40,37 +40,28 @@ static const ControlROMMap ControlROMMaps[7] = {
 };
 
 // FIXME: Need to die along with prerenderer
-static inline Bit16s *streamOffset(Bit16s *stream, Bit32u pos) {
+static inline Sample *streamOffset(Sample *stream, Bit32u pos) {
 	return stream == NULL ? NULL : stream + pos;
 }
 
 // FIXME: Need to die along with prerenderer
-static inline void maybeCopy(Bit16s *out, Bit32u outPos, Bit16s *in, Bit32u inPos, Bit32u len) {
+static inline void maybeCopy(Sample *out, Bit32u outPos, Sample *in, Bit32u inPos, Bit32u len) {
 	if (out != NULL) {
-		memcpy(out + outPos, in + inPos, len * sizeof(Bit16s));
+		memcpy(out + outPos, in + inPos, len * sizeof(Sample));
 	}
 }
 
-static inline void clearIfNonNull(Bit16s *stream, Bit32u len) {
-	if (stream != NULL) {
-		memset(stream, 0, len * sizeof(Bit16s));
-	}
-}
+static inline void muteStream(Sample *stream, Bit32u len) {
+	if (stream == NULL) return;
 
-static inline void clearFloats(float *leftBuf, float *rightBuf, Bit32u len) {
+#if MT32EMU_USE_FLOAT_SAMPLES
 	// FIXME: Use memset() where compatibility is guaranteed (if this turns out to be a win)
 	while (len--) {
-		*leftBuf++ = 0.0f;
-		*rightBuf++ = 0.0f;
+		*stream++ = 0.0f;
 	}
-}
-
-static inline Bit16s clipBit16s(Bit32s a) {
-	// Clamp values above 32767 to 32767, and values below -32768 to -32768
-	if ((a + 32768) & ~65535) {
-		return (a >> 31) ^ 32767;
-	}
-	return a;
+#else
+	memset(stream, 0, len * sizeof(Sample));
+#endif
 }
 
 Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
@@ -1217,32 +1208,37 @@ void Synth::reset() {
 	isEnabled = false;
 }
 
-void Synth::render(Bit16s *stream, Bit32u len) {
+void Synth::render(Sample *stream, Bit32u len) {
 	if (!isEnabled) {
-		memset(stream, 0, len * sizeof(Bit16s) * 2);
+		muteStream(stream, len);
 		return;
 	}
 
-	Bit16s tmpNonReverbLeft[MAX_SAMPLES_PER_RUN];
-	Bit16s tmpNonReverbRight[MAX_SAMPLES_PER_RUN];
-	Bit16s tmpReverbDryLeft[MAX_SAMPLES_PER_RUN];
-	Bit16s tmpReverbDryRight[MAX_SAMPLES_PER_RUN];
-	Bit16s tmpReverbWetLeft[MAX_SAMPLES_PER_RUN];
-	Bit16s tmpReverbWetRight[MAX_SAMPLES_PER_RUN];
+	Sample tmpNonReverbLeft[MAX_SAMPLES_PER_RUN];
+	Sample tmpNonReverbRight[MAX_SAMPLES_PER_RUN];
+	Sample tmpReverbDryLeft[MAX_SAMPLES_PER_RUN];
+	Sample tmpReverbDryRight[MAX_SAMPLES_PER_RUN];
+	Sample tmpReverbWetLeft[MAX_SAMPLES_PER_RUN];
+	Sample tmpReverbWetRight[MAX_SAMPLES_PER_RUN];
 
 	while (len > 0) {
 		Bit32u thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
 		renderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisLen);
 		for (Bit32u i = 0; i < thisLen; i++) {
+#if MT32EMU_USE_FLOAT_SAMPLES
+			*(stream++) = tmpNonReverbLeft[i] + tmpReverbDryLeft[i] + tmpReverbWetLeft[i];
+			*(stream++) = tmpNonReverbRight[i] + tmpReverbDryRight[i] + tmpReverbWetRight[i];
+#else
 			*(stream++) = clipBit16s((Bit32s)tmpNonReverbLeft[i] + (Bit32s)tmpReverbDryLeft[i] + (Bit32s)tmpReverbWetLeft[i]);
 			*(stream++) = clipBit16s((Bit32s)tmpNonReverbRight[i] + (Bit32s)tmpReverbDryRight[i] + (Bit32s)tmpReverbWetRight[i]);
+#endif
 		}
 		len -= thisLen;
 	}
 }
 
 bool Synth::prerender() {
-	int newPrerenderWriteIx = (prerenderWriteIx + 1) % MAX_PRERENDER_SAMPLES;
+	Bit32u newPrerenderWriteIx = (prerenderWriteIx + 1) % MAX_PRERENDER_SAMPLES;
 	if (newPrerenderWriteIx == prerenderReadIx) {
 		// The prerender buffer is full
 		return false;
@@ -1329,7 +1325,7 @@ const void MidiEventQueue::dropMidiEvent() {
 	}
 }
 
-void Synth::copyPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u pos, Bit32u len) {
+void Synth::copyPrerender(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u pos, Bit32u len) {
 	maybeCopy(nonReverbLeft, pos, prerenderNonReverbLeft, prerenderReadIx, len);
 	maybeCopy(nonReverbRight, pos, prerenderNonReverbRight, prerenderReadIx, len);
 	maybeCopy(reverbDryLeft, pos, prerenderReverbDryLeft, prerenderReadIx, len);
@@ -1338,7 +1334,7 @@ void Synth::copyPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s 
 	maybeCopy(reverbWetRight, pos, prerenderReverbWetRight, prerenderReadIx, len);
 }
 
-void Synth::checkPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u &pos, Bit32u &len) {
+void Synth::checkPrerender(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u &pos, Bit32u &len) {
 	if (prerenderReadIx > prerenderWriteIx) {
 		// There's data in the prerender buffer, and the write index has wrapped.
 		Bit32u prerenderCopyLen = MAX_PRERENDER_SAMPLES - prerenderReadIx;
@@ -1368,14 +1364,14 @@ void Synth::checkPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s
 	}
 }
 
-void Synth::renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len) {
+void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len) {
 	if (!isEnabled) {
-		clearIfNonNull(nonReverbLeft, len);
-		clearIfNonNull(nonReverbRight, len);
-		clearIfNonNull(reverbDryLeft, len);
-		clearIfNonNull(reverbDryRight, len);
-		clearIfNonNull(reverbWetLeft, len);
-		clearIfNonNull(reverbWetRight, len);
+		muteStream(nonReverbLeft, len);
+		muteStream(nonReverbRight, len);
+		muteStream(reverbDryLeft, len);
+		muteStream(reverbDryRight, len);
+		muteStream(reverbWetLeft, len);
+		muteStream(reverbWetRight, len);
 		return;
 	}
 	Bit32u pos = 0;
@@ -1399,18 +1395,17 @@ void Synth::renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s 
 	}
 }
 
-void Synth::floatToBit16s(Bit16s *target, const float *source, Bit32u len, bool reverb) {
-	static const float PURE_OUTPUT_GAIN = 8192.0f;
+void Synth::convertSamplesToOutput(Sample *target, const Sample *source, Bit32u len, bool reverb) {
+	if (target == NULL || dacInputMode == DACInputMode_PURE) return;
 
-	if (target == NULL) return;
-
-	float gain;
-	if (dacInputMode == DACInputMode_PURE) {
-		gain = PURE_OUTPUT_GAIN;
-	} else if (reverb) {
-		gain = reverbOutputGain * PURE_OUTPUT_GAIN;
-	} else {
-		gain = outputGain * PURE_OUTPUT_GAIN;
+#if MT32EMU_USE_FLOAT_SAMPLES
+	float gain = reverb ? reverbOutputGain : outputGain;
+	while (len--) {
+		*(target++) = *(source++) * gain;
+	}
+#else
+	float gain = reverb ? reverbOutputGain : outputGain;
+	if (!reverb) {
 		switch (dacInputMode) {
 		case DACInputMode_NICE:
 			// Since we're not shooting for accuracy here, don't worry about the rounding mode.
@@ -1435,42 +1430,43 @@ void Synth::floatToBit16s(Bit16s *target, const float *source, Bit32u len, bool 
 		}
 	}
 	while (len--) {
-		*target = clipBit16s(Bit32s(*source * gain));
-		source++;
-		target++;
+		*(target++) = clipBit16s(Bit32s(*(source++) * gain));
 	}
+#endif
 }
 
-void Synth::doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len) {
-	float tmpBufMixLeft[MAX_SAMPLES_PER_RUN], tmpBufMixRight[MAX_SAMPLES_PER_RUN];
-	clearFloats(tmpBufMixLeft, tmpBufMixRight, len);
+void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len) {
+	Sample tmpBufMixLeft[MAX_SAMPLES_PER_RUN], tmpBufMixRight[MAX_SAMPLES_PER_RUN];
+	muteStream(tmpBufMixLeft, len);
+	muteStream(tmpBufMixRight, len);
 	for (unsigned int i = 0; i < getPartialCount(); i++) {
 		if (!reverbEnabled || !partialManager->shouldReverb(i)) {
 			partialManager->produceOutput(i, tmpBufMixLeft, tmpBufMixRight, len);
 		}
 	}
-	floatToBit16s(nonReverbLeft, tmpBufMixLeft, len, false);
-	floatToBit16s(nonReverbRight, tmpBufMixRight, len, false);
+	convertSamplesToOutput(nonReverbLeft, tmpBufMixLeft, len, false);
+	convertSamplesToOutput(nonReverbRight, tmpBufMixRight, len, false);
 
 	if (reverbEnabled) {
-		clearFloats(tmpBufMixLeft, tmpBufMixRight, len);
+		muteStream(tmpBufMixLeft, len);
+		muteStream(tmpBufMixRight, len);
 		for (unsigned int i = 0; i < getPartialCount(); i++) {
 			if (partialManager->shouldReverb(i)) {
 				partialManager->produceOutput(i, tmpBufMixLeft, tmpBufMixRight, len);
 			}
 		}
-		floatToBit16s(reverbDryLeft, tmpBufMixLeft, len, false);
-		floatToBit16s(reverbDryRight, tmpBufMixRight, len, false);
+		convertSamplesToOutput(reverbDryLeft, tmpBufMixLeft, len, false);
+		convertSamplesToOutput(reverbDryRight, tmpBufMixRight, len, false);
 
-		float tmpBufReverbOutLeft[MAX_SAMPLES_PER_RUN], tmpBufReverbOutRight[MAX_SAMPLES_PER_RUN];
+		Sample tmpBufReverbOutLeft[MAX_SAMPLES_PER_RUN], tmpBufReverbOutRight[MAX_SAMPLES_PER_RUN];
 		reverbModel->process(tmpBufMixLeft, tmpBufMixRight, tmpBufReverbOutLeft, tmpBufReverbOutRight, len);
-		floatToBit16s(reverbWetLeft, tmpBufReverbOutLeft, len, true);
-		floatToBit16s(reverbWetRight, tmpBufReverbOutRight, len, true);
+		convertSamplesToOutput(reverbWetLeft, tmpBufReverbOutLeft, len, true);
+		convertSamplesToOutput(reverbWetRight, tmpBufReverbOutRight, len, true);
 	} else {
-		clearIfNonNull(reverbDryLeft, len);
-		clearIfNonNull(reverbDryRight, len);
-		clearIfNonNull(reverbWetLeft, len);
-		clearIfNonNull(reverbWetRight, len);
+		muteStream(reverbDryLeft, len);
+		muteStream(reverbDryRight, len);
+		muteStream(reverbWetLeft, len);
+		muteStream(reverbWetRight, len);
 	}
 
 	partialManager->clearAlreadyOutputed();

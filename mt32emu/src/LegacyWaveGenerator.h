@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if MT32EMU_ACCURATE_WG == 1
+#if MT32EMU_USE_FLOAT_SAMPLES
 
 #ifndef MT32EMU_LA32_WAVE_GENERATOR_H
 #define MT32EMU_LA32_WAVE_GENERATOR_H
@@ -130,7 +130,7 @@ public:
 	void generateNextSample(const PairType master, const Bit32u amp, const Bit16u pitch, const Bit32u cutoff);
 
 	// Perform mixing / ring modulation and return the result
-	Bit16s nextOutSample();
+	float nextOutSample();
 
 	// Deactivate the WG engine
 	void deactivate(const PairType master);
@@ -143,4 +143,4 @@ public:
 
 #endif // #ifndef MT32EMU_LA32_WAVE_GENERATOR_H
 
-#endif // #if MT32EMU_ACCURATE_WG == 1
+#endif // #if MT32EMU_USE_FLOAT_SAMPLES

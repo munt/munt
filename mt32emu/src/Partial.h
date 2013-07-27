@@ -102,10 +102,10 @@ public:
 	// Returns true only if data written to buffer
 	// This function (unlike the one below it) returns processed stereo samples
 	// made from combining this single partial with its pair, if it has one.
-	bool produceOutput(float *leftBuf, float *rightBuf, unsigned long length);
+	bool produceOutput(Sample *leftBuf, Sample *rightBuf, unsigned long length);
 
 	// This function writes mono sample output to the provided buffer, and returns the number of samples written
-	unsigned long generateSamples(Bit16s *partialBuf, unsigned long length);
+	unsigned long generateSamples(Sample *partialBuf, unsigned long length);
 };
 
 }
