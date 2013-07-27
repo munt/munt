@@ -45,6 +45,7 @@ enum DACInputMode {
 	// * Much less likely to overdrive than any other mode.
 	// * Half the volume of any of the other modes, meaning its volume relative to the reverb
 	//   output when mixed together directly will sound wrong.
+	// * Output gain is ignored for both LA32 and reverb output.
 	// * Perfect for developers while debugging :)
 	DACInputMode_PURE,
 
