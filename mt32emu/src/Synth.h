@@ -342,8 +342,7 @@ private:
 	bool reverbEnabled;
 	bool reverbOverridden;
 
-	FloatToBit16sFunc la32FloatToBit16sFunc;
-	FloatToBit16sFunc reverbFloatToBit16sFunc;
+	DACInputMode dacInputMode;
 	float outputGain;
 	float reverbOutputGain;
 
@@ -354,23 +353,6 @@ private:
 
 	PartialManager *partialManager;
 	Part *parts[9];
-
-	// FIXME: We can reorganise things so that we don't need all these separate tmpBuf, tmp and prerender buffers.
-	// This should be rationalised when things have stabilised a bit (if prerender buffers don't die in the mean time).
-
-	float tmpBufPartialLeft[MAX_SAMPLES_PER_RUN];
-	float tmpBufPartialRight[MAX_SAMPLES_PER_RUN];
-	float tmpBufMixLeft[MAX_SAMPLES_PER_RUN];
-	float tmpBufMixRight[MAX_SAMPLES_PER_RUN];
-	float tmpBufReverbOutLeft[MAX_SAMPLES_PER_RUN];
-	float tmpBufReverbOutRight[MAX_SAMPLES_PER_RUN];
-
-	Bit16s tmpNonReverbLeft[MAX_SAMPLES_PER_RUN];
-	Bit16s tmpNonReverbRight[MAX_SAMPLES_PER_RUN];
-	Bit16s tmpReverbDryLeft[MAX_SAMPLES_PER_RUN];
-	Bit16s tmpReverbDryRight[MAX_SAMPLES_PER_RUN];
-	Bit16s tmpReverbWetLeft[MAX_SAMPLES_PER_RUN];
-	Bit16s tmpReverbWetRight[MAX_SAMPLES_PER_RUN];
 
 	// These ring buffers are only used to simulate delays present on the real device.
 	// In particular, when a partial needs to be aborted to free it up for use by a new Poly,
@@ -387,6 +369,7 @@ private:
 	bool prerender();
 	void copyPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u pos, Bit32u len);
 	void checkPrerender(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u &pos, Bit32u &len);
+	void floatToBit16s(Bit16s *target, const float *source, Bit32u len, bool reverb);
 	void doRenderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
 
 	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len) const;

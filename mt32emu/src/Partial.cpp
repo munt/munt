@@ -310,12 +310,8 @@ bool Partial::produceOutput(float *leftBuf, float *rightBuf, unsigned long lengt
 	Bit16s buffer[MAX_SAMPLES_PER_RUN];
 	unsigned long numGenerated = generateSamples(buffer, length);
 	for (unsigned int i = 0; i < numGenerated; i++) {
-		*leftBuf++ = buffer[i] * stereoVolume.leftVol;
-		*rightBuf++ = buffer[i] * stereoVolume.rightVol;
-	}
-	for (; numGenerated < length; numGenerated++) {
-		*leftBuf++ = 0.0f;
-		*rightBuf++ = 0.0f;
+		*leftBuf++ += buffer[i] * stereoVolume.leftVol;
+		*rightBuf++ += buffer[i] * stereoVolume.rightVol;
 	}
 	return true;
 }
