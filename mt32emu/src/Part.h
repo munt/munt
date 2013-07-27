@@ -57,7 +57,6 @@ private:
 	void setPatch(const PatchParam *patch);
 	unsigned int midiKeyToKey(unsigned int midiKey);
 
-	void abortPoly(Poly *poly);
 	bool abortFirstPoly(unsigned int key);
 
 protected:
@@ -112,6 +111,7 @@ public:
 	const char *getCurrentInstr() const;
 	unsigned int getActivePartialCount() const;
 	unsigned int getActiveNonReleasingPartialCount() const;
+	Synth *getSynth() const;
 
 	const MemParams::PatchTemp *getPatchTemp() const;
 

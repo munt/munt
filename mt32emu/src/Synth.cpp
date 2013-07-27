@@ -39,18 +39,6 @@ static const ControlROMMap ControlROMMaps[7] = {
 	// (Note that all but CM-32L ROM actually have 86 entries for rhythmTemp)
 };
 
-// FIXME: Need to die along with prerenderer
-static inline Sample *streamOffset(Sample *stream, Bit32u pos) {
-	return stream == NULL ? NULL : stream + pos;
-}
-
-// FIXME: Need to die along with prerenderer
-static inline void maybeCopy(Sample *out, Bit32u outPos, Sample *in, Bit32u inPos, Bit32u len) {
-	if (out != NULL) {
-		memcpy(out + outPos, in + inPos, len * sizeof(Sample));
-	}
-}
-
 static inline void muteStream(Sample *stream, Bit32u len) {
 	if (stream == NULL) return;
 
@@ -311,7 +299,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	}
 	partialCount = usePartialCount;
 	polyCount = (partialCount < usePolyCount) ? usePartialCount : usePolyCount;
-	prerenderReadIx = prerenderWriteIx = 0;
+	abortingPoly = NULL;
 #if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Constant Tables");
 #endif
@@ -510,7 +498,7 @@ void Synth::playMsg(Bit32u msg) {
 	// This ensures minimum 1-sample delay between sequential MIDI events
 	// Without this, a sequence of NoteOn and immediately succeeding NoteOff messages is always silent
 	// Technically, it's also impossible to send events through the MIDI interface faster than about each millisecond
-	prerender();
+	//prerender();
 }
 
 void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity) {
@@ -1208,53 +1196,6 @@ void Synth::reset() {
 	isEnabled = false;
 }
 
-void Synth::render(Sample *stream, Bit32u len) {
-	if (!isEnabled) {
-		muteStream(stream, len);
-		return;
-	}
-
-	Sample tmpNonReverbLeft[MAX_SAMPLES_PER_RUN];
-	Sample tmpNonReverbRight[MAX_SAMPLES_PER_RUN];
-	Sample tmpReverbDryLeft[MAX_SAMPLES_PER_RUN];
-	Sample tmpReverbDryRight[MAX_SAMPLES_PER_RUN];
-	Sample tmpReverbWetLeft[MAX_SAMPLES_PER_RUN];
-	Sample tmpReverbWetRight[MAX_SAMPLES_PER_RUN];
-
-	while (len > 0) {
-		Bit32u thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
-		renderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisLen);
-		for (Bit32u i = 0; i < thisLen; i++) {
-#if MT32EMU_USE_FLOAT_SAMPLES
-			*(stream++) = tmpNonReverbLeft[i] + tmpReverbDryLeft[i] + tmpReverbWetLeft[i];
-			*(stream++) = tmpNonReverbRight[i] + tmpReverbDryRight[i] + tmpReverbWetRight[i];
-#else
-			*(stream++) = clipBit16s((Bit32s)tmpNonReverbLeft[i] + (Bit32s)tmpReverbDryLeft[i] + (Bit32s)tmpReverbWetLeft[i]);
-			*(stream++) = clipBit16s((Bit32s)tmpNonReverbRight[i] + (Bit32s)tmpReverbDryRight[i] + (Bit32s)tmpReverbWetRight[i]);
-#endif
-		}
-		len -= thisLen;
-	}
-}
-
-bool Synth::prerender() {
-	Bit32u newPrerenderWriteIx = (prerenderWriteIx + 1) % MAX_PRERENDER_SAMPLES;
-	if (newPrerenderWriteIx == prerenderReadIx) {
-		// The prerender buffer is full
-		return false;
-	}
-	doRenderStreams(
-		prerenderNonReverbLeft + prerenderWriteIx,
-		prerenderNonReverbRight + prerenderWriteIx,
-		prerenderReverbDryLeft + prerenderWriteIx,
-		prerenderReverbDryRight + prerenderWriteIx,
-		prerenderReverbWetLeft + prerenderWriteIx,
-		prerenderReverbWetRight + prerenderWriteIx,
-		1);
-	prerenderWriteIx = newPrerenderWriteIx;
-	return true;
-}
-
 MidiEvent::~MidiEvent() {
 	if (sysexData != NULL) {
 		delete[] sysexData;
@@ -1325,42 +1266,32 @@ const void MidiEventQueue::dropMidiEvent() {
 	}
 }
 
-void Synth::copyPrerender(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u pos, Bit32u len) {
-	maybeCopy(nonReverbLeft, pos, prerenderNonReverbLeft, prerenderReadIx, len);
-	maybeCopy(nonReverbRight, pos, prerenderNonReverbRight, prerenderReadIx, len);
-	maybeCopy(reverbDryLeft, pos, prerenderReverbDryLeft, prerenderReadIx, len);
-	maybeCopy(reverbDryRight, pos, prerenderReverbDryRight, prerenderReadIx, len);
-	maybeCopy(reverbWetLeft, pos, prerenderReverbWetLeft, prerenderReadIx, len);
-	maybeCopy(reverbWetRight, pos, prerenderReverbWetRight, prerenderReadIx, len);
-}
+void Synth::render(Sample *stream, Bit32u len) {
+	if (!isEnabled) {
+		muteStream(stream, len);
+		return;
+	}
 
-void Synth::checkPrerender(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u &pos, Bit32u &len) {
-	if (prerenderReadIx > prerenderWriteIx) {
-		// There's data in the prerender buffer, and the write index has wrapped.
-		Bit32u prerenderCopyLen = MAX_PRERENDER_SAMPLES - prerenderReadIx;
-		if (prerenderCopyLen > len) {
-			prerenderCopyLen = len;
+	Sample tmpNonReverbLeft[MAX_SAMPLES_PER_RUN];
+	Sample tmpNonReverbRight[MAX_SAMPLES_PER_RUN];
+	Sample tmpReverbDryLeft[MAX_SAMPLES_PER_RUN];
+	Sample tmpReverbDryRight[MAX_SAMPLES_PER_RUN];
+	Sample tmpReverbWetLeft[MAX_SAMPLES_PER_RUN];
+	Sample tmpReverbWetRight[MAX_SAMPLES_PER_RUN];
+
+	while (len > 0) {
+		Bit32u thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
+		renderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisLen);
+		for (Bit32u i = 0; i < thisLen; i++) {
+#if MT32EMU_USE_FLOAT_SAMPLES
+			*(stream++) = tmpNonReverbLeft[i] + tmpReverbDryLeft[i] + tmpReverbWetLeft[i];
+			*(stream++) = tmpNonReverbRight[i] + tmpReverbDryRight[i] + tmpReverbWetRight[i];
+#else
+			*(stream++) = clipBit16s((Bit32s)tmpNonReverbLeft[i] + (Bit32s)tmpReverbDryLeft[i] + (Bit32s)tmpReverbWetLeft[i]);
+			*(stream++) = clipBit16s((Bit32s)tmpNonReverbRight[i] + (Bit32s)tmpReverbDryRight[i] + (Bit32s)tmpReverbWetRight[i]);
+#endif
 		}
-		copyPrerender(nonReverbLeft, nonReverbRight, reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, pos, prerenderCopyLen);
-		len -= prerenderCopyLen;
-		pos += prerenderCopyLen;
-		prerenderReadIx = (prerenderReadIx + prerenderCopyLen) % MAX_PRERENDER_SAMPLES;
-	}
-	if (prerenderReadIx < prerenderWriteIx) {
-		// There's data in the prerender buffer, and the write index is ahead of the read index.
-		Bit32u prerenderCopyLen = prerenderWriteIx - prerenderReadIx;
-		if (prerenderCopyLen > len) {
-			prerenderCopyLen = len;
-		}
-		copyPrerender(nonReverbLeft, nonReverbRight, reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, pos, prerenderCopyLen);
-		len -= prerenderCopyLen;
-		pos += prerenderCopyLen;
-		prerenderReadIx += prerenderCopyLen;
-	}
-	if (prerenderReadIx == prerenderWriteIx) {
-		// If the ring buffer's empty, reset it to start at 0 to minimise wrapping,
-		// which requires two writes instead of one.
-		prerenderReadIx = prerenderWriteIx = 0;
+		len -= thisLen;
 	}
 }
 
@@ -1376,20 +1307,9 @@ void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample 
 	}
 	Bit32u pos = 0;
 
-	// First, check for data in the prerender buffer and spit that out before generating anything new.
-	// Note that the prerender buffer is rarely used - see comments elsewhere for details.
-	checkPrerender(nonReverbLeft, nonReverbRight, reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, pos, len);
-
 	while (len > 0) {
 		Bit32u thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
-		doRenderStreams(
-			streamOffset(nonReverbLeft, pos),
-			streamOffset(nonReverbRight, pos),
-			streamOffset(reverbDryLeft, pos),
-			streamOffset(reverbDryRight, pos),
-			streamOffset(reverbWetLeft, pos),
-			streamOffset(reverbWetRight, pos),
-			thisLen);
+		doRenderStreams(nonReverbLeft, nonReverbRight, reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, thisLen);
 		len -= thisLen;
 		pos += thisLen;
 	}
@@ -1484,17 +1404,16 @@ void Synth::printPartialUsage(unsigned long sampleOffset) {
 }
 
 bool Synth::hasActivePartials() const {
-	if (prerenderReadIx != prerenderWriteIx) {
-		// Data in the prerender buffer means that the current isActive() states are "in the future".
-		// It also means that partials are definitely active at this render point.
-		return true;
-	}
 	for (unsigned int partialNum = 0; partialNum < getPartialCount(); partialNum++) {
 		if (partialManager->getPartial(partialNum)->isActive()) {
 			return true;
 		}
 	}
 	return false;
+}
+
+bool Synth::isAbortingPoly() const {
+	return abortingPoly != NULL;
 }
 
 bool Synth::isActive() const {

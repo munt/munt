@@ -290,6 +290,7 @@ friend class Part;
 friend class RhythmPart;
 friend class Poly;
 friend class Partial;
+friend class PartialManager;
 friend class Tables;
 friend class MemoryRegion;
 friend class TVA;
@@ -342,22 +343,13 @@ private:
 	PartialManager *partialManager;
 	Part *parts[9];
 
-	// These ring buffers are only used to simulate delays present on the real device.
-	// In particular, when a partial needs to be aborted to free it up for use by a new Poly,
+	// When a partial needs to be aborted to free it up for use by a new Poly,
 	// the controller will busy-loop waiting for the sound to finish.
-	Sample prerenderNonReverbLeft[MAX_PRERENDER_SAMPLES];
-	Sample prerenderNonReverbRight[MAX_PRERENDER_SAMPLES];
-	Sample prerenderReverbDryLeft[MAX_PRERENDER_SAMPLES];
-	Sample prerenderReverbDryRight[MAX_PRERENDER_SAMPLES];
-	Sample prerenderReverbWetLeft[MAX_PRERENDER_SAMPLES];
-	Sample prerenderReverbWetRight[MAX_PRERENDER_SAMPLES];
-	Bit32u prerenderReadIx;
-	Bit32u prerenderWriteIx;
+	// We emulate this by delaying new MIDI events processing until abortion finishes.
+	Poly *abortingPoly;
 
-	bool prerender();
-	void copyPrerender(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u pos, Bit32u len);
-	void checkPrerender(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u &pos, Bit32u &len);
 	void convertSamplesToOutput(Sample *target, const Sample *source, Bit32u len, bool reverb);
+	bool isAbortingPoly() const;
 	void doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);
 
 	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len) const;

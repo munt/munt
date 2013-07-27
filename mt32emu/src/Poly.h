@@ -50,7 +50,6 @@ public:
 	bool stopPedalHold();
 	bool startDecay();
 	bool startAbort();
-	void terminate();
 
 	void backupCacheToPartials(PatchCache cache[4]);
 

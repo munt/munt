@@ -92,33 +92,17 @@ bool Poly::startDecay() {
 }
 
 bool Poly::startAbort() {
-	if (state == POLY_Inactive) {
+	if (state == POLY_Inactive || part->getSynth()->isAbortingPoly()) {
 		return false;
 	}
 	for (int t = 0; t < 4; t++) {
 		Partial *partial = partials[t];
 		if (partial != NULL) {
 			partial->startAbort();
+			part->getSynth()->abortingPoly = this;
 		}
 	}
 	return true;
-}
-
-void Poly::terminate() {
-	if (state == POLY_Inactive) {
-		return;
-	}
-	for (int t = 0; t < 4; t++) {
-		Partial *partial = partials[t];
-		if (partial != NULL) {
-			partial->deactivate();
-		}
-	}
-	if (state != POLY_Inactive) {
-		// FIXME: Throw out lots of debug output - this should never happen
-		// (Deactivating the partials above should've made them each call partialDeactivated(), ultimately changing the state to POLY_Inactive)
-		state = POLY_Inactive;
-	}
 }
 
 void Poly::backupCacheToPartials(PatchCache cache[4]) {
@@ -170,6 +154,9 @@ void Poly::partialDeactivated(Partial *partial) {
 	}
 	if (activePartialCount == 0) {
 		state = POLY_Inactive;
+		if (part->getSynth()->abortingPoly == this) {
+			part->getSynth()->abortingPoly = NULL;
+		}
 	}
 	part->partialDeactivated(this);
 }

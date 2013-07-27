@@ -431,23 +431,10 @@ void Part::noteOn(unsigned int midiKey, unsigned int velocity) {
 	playPoly(patchCache, NULL, midiKey, key, velocity);
 }
 
-void Part::abortPoly(Poly *poly) {
-	if (poly->startAbort()) {
-		while (poly->isActive()) {
-			if (!synth->prerender()) {
-				synth->printDebug("%s (%s): Ran out of prerender space to abort poly gracefully", name, currentInstr);
-				poly->terminate();
-				break;
-			}
-		}
-	}
-}
-
 bool Part::abortFirstPoly(unsigned int key) {
 	for (Poly *poly = activePolys.getFirst(); poly != NULL; poly = poly->getNext()) {
 		if (poly->getKey() == key) {
-			abortPoly(poly);
-			return true;
+			return poly->startAbort();
 		}
 	}
 	return false;
@@ -456,8 +443,7 @@ bool Part::abortFirstPoly(unsigned int key) {
 bool Part::abortFirstPoly(PolyState polyState) {
 	for (Poly *poly = activePolys.getFirst(); poly != NULL; poly = poly->getNext()) {
 		if (poly->getState() == polyState) {
-			abortPoly(poly);
-			return true;
+			return poly->startAbort();
 		}
 	}
 	return false;
@@ -474,8 +460,7 @@ bool Part::abortFirstPoly() {
 	if (activePolys.isEmpty()) {
 		return false;
 	}
-	abortPoly(activePolys.getFirst());
-	return true;
+	return activePolys.getFirst()->startAbort();
 }
 
 void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhythmTemp, unsigned int midiKey, unsigned int key, unsigned int velocity) {
@@ -604,6 +589,10 @@ unsigned int Part::getActiveNonReleasingPartialCount() const {
 		}
 	}
 	return activeNonReleasingPartialCount;
+}
+
+Synth *Part::getSynth() const {
+	return synth;
 }
 
 void Part::partialDeactivated(Poly *poly) {

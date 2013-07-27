@@ -191,7 +191,7 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 			break;
 		}
 #endif
-		if (getFreePartialCount() >= needed) {
+		if (synth->isAbortingPoly() || getFreePartialCount() >= needed) {
 			return true;
 		}
 	}
@@ -208,7 +208,7 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 			if (!abortFirstPolyPreferHeldWhereReserveExceeded(partNum)) {
 				break;
 			}
-			if (getFreePartialCount() >= needed) {
+			if (synth->isAbortingPoly() || getFreePartialCount() >= needed) {
 				return true;
 			}
 		}
@@ -224,7 +224,7 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 			if (!abortFirstPolyPreferHeldWhereReserveExceeded(-1)) {
 				break;
 			}
-			if (getFreePartialCount() >= needed) {
+			if (synth->isAbortingPoly() || getFreePartialCount() >= needed) {
 				return true;
 			}
 		}
@@ -235,7 +235,7 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 		if (!parts[partNum]->abortFirstPolyPreferHeld()) {
 			break;
 		}
-		if (getFreePartialCount() >= needed) {
+		if (synth->isAbortingPoly() || getFreePartialCount() >= needed) {
 			return true;
 		}
 	}
