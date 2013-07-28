@@ -534,9 +534,8 @@ void Synth::playSysex(const Bit8u *sysex, Bit32u len) {
 void Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
 #if MT32EMU_EMULATE_MIDI_DELAYS == 2
 	timestamp = addMIDIInterfaceDelay(len, timestamp);
-#else
-	midiQueue->pushSysex(sysex, len, timestamp);
 #endif
+	midiQueue->pushSysex(sysex, len, timestamp);
 }
 
 void Synth::playMsgNow(Bit32u msg) {
