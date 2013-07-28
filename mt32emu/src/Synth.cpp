@@ -612,8 +612,6 @@ void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char 
 #endif
 		break;
 	}
-
-	//midiOutShortMsg(m_out, msg);
 }
 
 void Synth::playSysex(const Bit8u *sysex, Bit32u len) {
