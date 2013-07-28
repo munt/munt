@@ -1282,6 +1282,8 @@ void MidiEvent::setSysex(const Bit8u *useSysexData, Bit32u useSysexLength, Bit32
 
 MidiEventQueue::MidiEventQueue(Bit32u ringBufferSize) : ringBufferSize(ringBufferSize) {
 	ringBuffer = new MidiEvent[ringBufferSize];
+	memset(ringBuffer, 0, ringBufferSize * sizeof(MidiEvent));
+	ringBuffer[ringBufferSize];
 	reset();
 }
 
@@ -1354,22 +1356,24 @@ void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample 
 			thisLen = 1;
 		} else {
 			const MidiEvent *nextEvent = midiQueue->peekMidiEvent();
-			Bit32s samplesToNextEvent = Bit32s(nextEvent->timestamp - renderedSampleCount);
-			if (samplesToNextEvent > 0) {
-				if (thisLen > (Bit32u)samplesToNextEvent) {
-					thisLen = samplesToNextEvent;
-				}
-			} else {
-				if (nextEvent->sysexData == NULL) {
-					playMsgNow(nextEvent->shortMessageData);
-					// If a poly is aborting we don't drop the event from the queue.
-					// Instead, we'll return to it again when the abortion is done.
-					if (!isAbortingPoly()) {
-						midiQueue->dropMidiEvent();
+			if (nextEvent != NULL) {
+				Bit32s samplesToNextEvent = Bit32s(nextEvent->timestamp - renderedSampleCount);
+				if (samplesToNextEvent > 0) {
+					if (thisLen > (Bit32u)samplesToNextEvent) {
+						thisLen = samplesToNextEvent;
 					}
 				} else {
-					playSysexNow(nextEvent->sysexData, nextEvent->sysexLength);
-					midiQueue->dropMidiEvent();
+					if (nextEvent->sysexData == NULL) {
+						playMsgNow(nextEvent->shortMessageData);
+						// If a poly is aborting we don't drop the event from the queue.
+						// Instead, we'll return to it again when the abortion is done.
+						if (!isAbortingPoly()) {
+							midiQueue->dropMidiEvent();
+						}
+					} else {
+						playSysexNow(nextEvent->sysexData, nextEvent->sysexLength);
+						midiQueue->dropMidiEvent();
+					}
 				}
 			}
 		}
