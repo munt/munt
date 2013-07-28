@@ -73,6 +73,12 @@
 // 1: Use float samples in the wave generator and renderer. Maximum output quality and minimum noise.
 #define MT32EMU_USE_FLOAT_SAMPLES 0
 
+// 0: Process incoming MIDI events immediately.
+// 1: Delay incoming short MIDI messages as if they where transferred via a MIDI cable to a real hardware unit (immediate sysex processing).
+//    This ensures more accurate timing of simultaneous NoteOn messages.
+// 2: Delay all incoming MIDI events as if they where transferred via a MIDI cable to a real hardware unit.
+#define MT32EMU_EMULATE_MIDI_DELAYS 1
+
 namespace MT32Emu
 {
 // The default value for the maximum number of partials playing simultaneously.

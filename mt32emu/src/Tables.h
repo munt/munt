@@ -25,6 +25,9 @@ namespace MT32Emu {
 // The output from the synth is supposed to be resampled to convert the sample rate.
 const unsigned int SAMPLE_RATE = 32000;
 
+// MIDI interface data transfer rate in samples. Used to simulate the transfer delay.
+const double MIDI_DATA_TRANSFER_RATE = (double)SAMPLE_RATE / 31250.0 * 8.0;
+
 const int MIDDLEC = 60;
 
 class Synth;

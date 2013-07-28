@@ -52,6 +52,12 @@ static inline void muteStream(Sample *stream, Bit32u len) {
 #endif
 }
 
+static inline void advanceStreamPosition(Sample *&stream, Bit32u posDelta) {
+	if (stream != NULL) {
+		stream += posDelta;
+	}
+}
+
 Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 	for (unsigned int i = 0; i < len; i++) {
 		checksum = checksum + data[i];
@@ -87,6 +93,7 @@ Synth::Synth(ReportHandler *useReportHandler) {
 	setReverbOutputGain(0.68f);
 	partialManager = NULL;
 	midiQueue = NULL;
+	lastReceivedMIDIEventTimestamp = 0;
 	memset(parts, 0, sizeof(parts));
 	renderedSampleCount = 0;
 }
@@ -489,7 +496,50 @@ void Synth::setMIDIEventQueueSize(Bit32u useSize) {
 	}
 }
 
+Bit32u Synth::getShortMessageLength(Bit32u msg) {
+	if ((msg & 0xF0) == 0xF0) return 1;
+	// NOTE: This calculation isn't quite correct
+	// as it doesn't consider the running status byte
+	return ((msg & 0xE0) == 0xC0) ? 2 : 3;
+}
+
+Bit32u Synth::addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp) {
+#if MT32EMU_EMULATE_MIDI_DELAYS
+	Bit32u transferTime = Bit32u((double)len * MIDI_DATA_TRANSFER_RATE);
+#else
+	// We need to ensure zero-duration notes will play so add 1-sample delay.
+	Bit32u transferTime = 1;
+#endif
+	// Dealing with wrapping
+	if (Bit32s(timestamp - lastReceivedMIDIEventTimestamp) < 0) {
+		timestamp = lastReceivedMIDIEventTimestamp;
+	}
+	timestamp += transferTime;
+	lastReceivedMIDIEventTimestamp = timestamp;
+	return timestamp;
+}
+
 void Synth::playMsg(Bit32u msg) {
+	playMsg(msg, renderedSampleCount);
+}
+
+void Synth::playMsg(Bit32u msg, Bit32u timestamp) {
+	midiQueue->pushShortMessage(msg, addMIDIInterfaceDelay(getShortMessageLength(msg), timestamp));
+}
+
+void Synth::playSysex(const Bit8u *sysex, Bit32u len) {
+	playSysex(sysex, len, renderedSampleCount);
+}
+
+void Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
+#if MT32EMU_EMULATE_MIDI_DELAYS == 2
+	timestamp = addMIDIInterfaceDelay(len, timestamp);
+#else
+	midiQueue->pushSysex(sysex, len, timestamp);
+#endif
+}
+
+void Synth::playMsgNow(Bit32u msg) {
 	// FIXME: Implement active sensing
 	unsigned char code     = (unsigned char)((msg & 0x0000F0) >> 4);
 	unsigned char chan     = (unsigned char)(msg & 0x00000F);
@@ -507,11 +557,6 @@ void Synth::playMsg(Bit32u msg) {
 		return;
 	}
 	playMsgOnPart(part, code, note, velocity);
-
-	// This ensures minimum 1-sample delay between sequential MIDI events
-	// Without this, a sequence of NoteOn and immediately succeeding NoteOff messages is always silent
-	// Technically, it's also impossible to send events through the MIDI interface faster than about each millisecond
-	//prerender();
 }
 
 void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity) {
@@ -614,7 +659,7 @@ void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char 
 	}
 }
 
-void Synth::playSysex(const Bit8u *sysex, Bit32u len) {
+void Synth::playSysexNow(const Bit8u *sysex, Bit32u len) {
 	if (len < 2) {
 		printDebug("playSysex: Message is too short for sysex (%d bytes)", len);
 	}
@@ -1223,15 +1268,16 @@ void MidiEvent::setShortMessage(Bit32u useShortMessageData, Bit32u useTimestamp)
 	sysexLength = 0;
 }
 
-void MidiEvent::setSysex(Bit8u *useSysexData, Bit32u useSysexLength, Bit32u useTimestamp) {
+void MidiEvent::setSysex(const Bit8u *useSysexData, Bit32u useSysexLength, Bit32u useTimestamp) {
 	if (sysexData != NULL) {
 		delete[] sysexData;
 	}
 	shortMessageData = 0;
 	timestamp = useTimestamp;
 	sysexLength = useSysexLength;
-	sysexData = new Bit8u[sysexLength];
-	memcpy(sysexData, useSysexData, sysexLength);
+	Bit8u *dstSysexData = new Bit8u[sysexLength];
+	sysexData = dstSysexData;
+	memcpy(dstSysexData, useSysexData, sysexLength);
 }
 
 MidiEventQueue::MidiEventQueue(Bit32u ringBufferSize) : ringBufferSize(ringBufferSize) {
@@ -1257,7 +1303,7 @@ bool MidiEventQueue::pushShortMessage(Bit32u shortMessageData, Bit32u timestamp)
 	return true;
 }
 
-bool MidiEventQueue::pushSysex(Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp) {
+bool MidiEventQueue::pushSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp) {
 	unsigned int newEndPosition = (endPosition + 1) % ringBufferSize;
 	// Is ring buffer full?
 	if (startPosition == newEndPosition) return false;
@@ -1278,11 +1324,6 @@ const void MidiEventQueue::dropMidiEvent() {
 }
 
 void Synth::render(Sample *stream, Bit32u len) {
-	if (!isEnabled) {
-		muteStream(stream, len);
-		return;
-	}
-
 	Sample tmpNonReverbLeft[MAX_SAMPLES_PER_RUN];
 	Sample tmpNonReverbRight[MAX_SAMPLES_PER_RUN];
 	Sample tmpReverbDryLeft[MAX_SAMPLES_PER_RUN];
@@ -1307,22 +1348,39 @@ void Synth::render(Sample *stream, Bit32u len) {
 }
 
 void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len) {
-	if (!isEnabled) {
-		muteStream(nonReverbLeft, len);
-		muteStream(nonReverbRight, len);
-		muteStream(reverbDryLeft, len);
-		muteStream(reverbDryRight, len);
-		muteStream(reverbWetLeft, len);
-		muteStream(reverbWetRight, len);
-		return;
-	}
-	Bit32u pos = 0;
-
 	while (len > 0) {
 		Bit32u thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
+		if (isAbortingPoly()) {
+			thisLen = 1;
+		} else {
+			const MidiEvent *nextEvent = midiQueue->peekMidiEvent();
+			Bit32s samplesToNextEvent = Bit32s(nextEvent->timestamp - renderedSampleCount);
+			if (samplesToNextEvent > 0) {
+				if (thisLen > (Bit32u)samplesToNextEvent) {
+					thisLen = samplesToNextEvent;
+				}
+			} else {
+				if (nextEvent->sysexData == NULL) {
+					playMsgNow(nextEvent->shortMessageData);
+					// If a poly is aborting we don't drop the event from the queue.
+					// Instead, we'll return to it again when the abortion is done.
+					if (!isAbortingPoly()) {
+						midiQueue->dropMidiEvent();
+					}
+				} else {
+					playSysexNow(nextEvent->sysexData, nextEvent->sysexLength);
+					midiQueue->dropMidiEvent();
+				}
+			}
+		}
 		doRenderStreams(nonReverbLeft, nonReverbRight, reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, thisLen);
+		advanceStreamPosition(nonReverbLeft, thisLen);
+		advanceStreamPosition(nonReverbRight, thisLen);
+		advanceStreamPosition(reverbDryLeft, thisLen);
+		advanceStreamPosition(reverbDryRight, thisLen);
+		advanceStreamPosition(reverbWetLeft, thisLen);
+		advanceStreamPosition(reverbWetRight, thisLen);
 		len -= thisLen;
-		pos += thisLen;
 	}
 }
 
@@ -1367,18 +1425,24 @@ void Synth::convertSamplesToOutput(Sample *target, const Sample *source, Bit32u 
 }
 
 void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len) {
-	Sample tmpBufMixLeft[MAX_SAMPLES_PER_RUN], tmpBufMixRight[MAX_SAMPLES_PER_RUN];
-	muteStream(tmpBufMixLeft, len);
-	muteStream(tmpBufMixRight, len);
-	for (unsigned int i = 0; i < getPartialCount(); i++) {
-		if (!reverbEnabled || !partialManager->shouldReverb(i)) {
-			partialManager->produceOutput(i, tmpBufMixLeft, tmpBufMixRight, len);
+	if (isEnabled) {
+		Sample tmpBufMixLeft[MAX_SAMPLES_PER_RUN], tmpBufMixRight[MAX_SAMPLES_PER_RUN];
+		muteStream(tmpBufMixLeft, len);
+		muteStream(tmpBufMixRight, len);
+		for (unsigned int i = 0; i < getPartialCount(); i++) {
+			if (!reverbEnabled || !partialManager->shouldReverb(i)) {
+				partialManager->produceOutput(i, tmpBufMixLeft, tmpBufMixRight, len);
+			}
 		}
+		convertSamplesToOutput(nonReverbLeft, tmpBufMixLeft, len, false);
+		convertSamplesToOutput(nonReverbRight, tmpBufMixRight, len, false);
+	} else {
+		muteStream(nonReverbLeft, len);
+		muteStream(nonReverbRight, len);
 	}
-	convertSamplesToOutput(nonReverbLeft, tmpBufMixLeft, len, false);
-	convertSamplesToOutput(nonReverbRight, tmpBufMixRight, len, false);
 
-	if (reverbEnabled) {
+	if (isEnabled && reverbEnabled) {
+		Sample tmpBufMixLeft[MAX_SAMPLES_PER_RUN], tmpBufMixRight[MAX_SAMPLES_PER_RUN];
 		muteStream(tmpBufMixLeft, len);
 		muteStream(tmpBufMixRight, len);
 		for (unsigned int i = 0; i < getPartialCount(); i++) {

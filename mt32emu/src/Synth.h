@@ -247,13 +247,13 @@ protected:
  */
 struct MidiEvent {
 	Bit32u shortMessageData;
-	Bit8u *sysexData;
+	const Bit8u *sysexData;
 	Bit32u sysexLength;
 	Bit32u timestamp;
 
 	~MidiEvent();
 	void setShortMessage(Bit32u shortMessageData, Bit32u timestamp);
-	void setSysex(Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
+	void setSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
 };
 
 /**
@@ -278,7 +278,7 @@ public:
 	~MidiEventQueue();
 	void reset();
 	bool pushShortMessage(Bit32u shortMessageData, Bit32u timestamp);
-	bool pushSysex(Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
+	bool pushSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
 	const MidiEvent *peekMidiEvent();
 	const void dropMidiEvent();
 };
@@ -320,6 +320,7 @@ private:
 	Bit8s chantable[32]; // FIXME: Need explanation why 32 is set, obviously it should be 16
 
 	MidiEventQueue *midiQueue;
+	Bit32u lastReceivedMIDIEventTimestamp;
 	Bit32u renderedSampleCount;
 
 	MemParams mt32ram, mt32default;
@@ -345,6 +346,9 @@ private:
 	// the controller will busy-loop waiting for the sound to finish.
 	// We emulate this by delaying new MIDI events processing until abortion finishes.
 	Poly *abortingPoly;
+
+	Bit32u getShortMessageLength(Bit32u msg);
+	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
 
 	void convertSamplesToOutput(Sample *target, const Sample *source, Bit32u len, bool reverb);
 	bool isAbortingPoly() const;
@@ -407,13 +411,31 @@ public:
 	// When a new size of the queue is set all the enqueued events are lost.
 	void setMIDIEventQueueSize(Bit32u);
 
-	// Sends a 4-byte MIDI message to the MT-32 for immediate playback
+	// Enqueues a MIDI event for subsequent playback.
+	// The minimum delay involves the delay introduced while the event is transferred via MIDI interface
+	// and emulation of the MCU busy-loop while it frees partials for use by a new Poly.
+	// Calls from multiple threads must be synchronised, although,
+	// no synchronisation is required with the rendering thread.
+
+	// The MIDI event will be processed not before the specified timestamp.
+	// The timestamp is measured as the global rendered sample count since the synth was created.
+	void playMsg(Bit32u msg, Bit32u timestamp);
+	void playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp);
+	// The MIDI event will be processed ASAP.
 	void playMsg(Bit32u msg);
+	void playSysex(const Bit8u *sysex, Bit32u len);
+
+	// WARNING:
+	// The methods below don't ensure minimum 1-sample delay between sequential MIDI events,
+	// and a sequence of NoteOn and immediately succeeding NoteOff messages is always silent.
+
+	// Sends a 4-byte MIDI message to the MT-32 for immediate playback.
+	void playMsgNow(Bit32u msg);
 	void playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity);
 
 	// Sends a string of Sysex commands to the MT-32 for immediate interpretation
 	// The length is in bytes
-	void playSysex(const Bit8u *sysex, Bit32u len);
+	void playSysexNow(const Bit8u *sysex, Bit32u len);
 	void playSysexWithoutFraming(const Bit8u *sysex, Bit32u len);
 	void playSysexWithoutHeader(unsigned char device, unsigned char command, const Bit8u *sysex, Bit32u len);
 	void writeSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
