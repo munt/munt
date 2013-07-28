@@ -474,6 +474,7 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 	if ((patchTemp->patch.assignMode & 2) == 0) {
 		// Single-assign mode
 		abortFirstPoly(key);
+		if (synth->isAbortingPoly()) return;
 	}
 
 	if (!synth->partialManager->freePartials(needPartials, partNum)) {
