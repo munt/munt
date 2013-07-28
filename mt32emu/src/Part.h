@@ -109,6 +109,7 @@ public:
 	virtual void setTimbre(TimbreParam *timbre);
 	virtual unsigned int getAbsTimbreNum() const;
 	const char *getCurrentInstr() const;
+	const Poly *getFirstActivePoly() const;
 	unsigned int getActivePartialCount() const;
 	unsigned int getActiveNonReleasingPartialCount() const;
 	Synth *getSynth() const;

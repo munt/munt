@@ -581,6 +581,10 @@ unsigned int Part::getActivePartialCount() const {
 	return activePartialCount;
 }
 
+const Poly *Part::getFirstActivePoly() const {
+	return activePolys.getFirst();
+}
+
 unsigned int Part::getActiveNonReleasingPartialCount() const {
 	unsigned int activeNonReleasingPartialCount = 0;
 	for (Poly *poly = activePolys.getFirst(); poly != NULL; poly = poly->getNext()) {

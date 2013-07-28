@@ -44,7 +44,8 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 	midiMessageLED.setMinimumSize(10, 2);
 	ui->midiMessageLayout->addWidget(&midiMessageLED, 0, Qt::AlignHCenter);
 
-	for (int i = 0; i < MT32EMU_DEFAULT_MAX_PARTIALS; i++) {
+	partialStateLED = new LEDWidget*[synthRoute->getPartialCount()];
+	for (unsigned int i = 0; i < synthRoute->getPartialCount(); i++) {
 		partialStateLED[i] = new LEDWidget(&COLOR_GRAY, ui->partialStateGrid->widget());
 		partialStateLED[i]->setMinimumSize(16, 16);
 		partialStateLED[i]->setMaximumSize(16, 16);
@@ -76,7 +77,8 @@ SynthStateMonitor::~SynthStateMonitor() {
 		delete partStateWidget[i];
 		delete patchNameLabel[i];
 	}
-	for (int i = 0; i < MT32EMU_DEFAULT_MAX_PARTIALS; i++) delete partialStateLED[i];
+	for (unsigned int i = 0; i < synthRoute->getPartialCount(); i++) delete partialStateLED[i];
+	delete[] partialStateLED;
 }
 
 void SynthStateMonitor::enableMonitor(bool enable) {
@@ -91,7 +93,7 @@ void SynthStateMonitor::handleReset() {
 	lcdWidget.reset();
 	midiMessageLED.setColor(&COLOR_GRAY);
 
-	for (int i = 0; i < MT32EMU_DEFAULT_MAX_PARTIALS; i++) {
+	for (unsigned int i = 0; i < synthRoute->getPartialCount(); i++) {
 		partialStateLED[i]->setColor(&partialStateColor[PartialState_DEAD]);
 	}
 
@@ -120,7 +122,7 @@ void SynthStateMonitor::handleUpdate() {
 	if (synthRoute->getState() != SynthRouteState_OPEN) return;
 	bool partActiveNonReleasing[9] = {false};
 	bool midiMessageOn = false;
-	for (int partialNum = 0; partialNum < MT32EMU_DEFAULT_MAX_PARTIALS; partialNum++) {
+	for (unsigned int partialNum = 0; partialNum < synthRoute->getPartialCount(); partialNum++) {
 		const MT32Emu::Partial *partial = synthRoute->getPartial(partialNum);
 		int partNum = partial->getOwnerPart();
 		bool partialActive = partNum > -1;
@@ -175,17 +177,15 @@ void PartStateWidget::paintEvent(QPaintEvent *) {
 	QPainter painter(this);
 	painter.fillRect(rect(), COLOR_GRAY);
 	if (monitor.synthRoute->getState() != SynthRouteState_OPEN) return;
-	for (int i = 0; i < MT32EMU_DEFAULT_MAX_PARTIALS; i++) {
-		const MT32Emu::Partial *partial = monitor.synthRoute->getPartial(i);
-		if (partial->getOwnerPart() != partNum) continue;
-		const MT32Emu::Poly *poly = partial->getPoly();
-		if (poly == NULL) continue;
+	const MT32Emu::Poly *poly = monitor.synthRoute->getFirstActivePolyOnPart(partNum);
+	while (poly != NULL) {
 		uint velocity = poly->getVelocity();
 		if (velocity == 0) continue;
 		uint key = poly->getKey();
 		QColor color(2 * velocity, 255 - 2 * velocity, 0);
 		uint x  = 5 * (key - 12);
 		painter.fillRect(x, 0, 5, 16, color);
+		poly = poly->getNext();
 	}
 }
 

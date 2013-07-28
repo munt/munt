@@ -303,6 +303,14 @@ const Partial *QSynth::getPartial(int partialNum) const {
 	return synth->getPartial(partialNum);
 }
 
+const MT32Emu::Poly *QSynth::getFirstActivePolyOnPart(unsigned int partNum) const {
+	return synth->getPart(partNum)->getFirstActivePoly();
+}
+
+unsigned int QSynth::getPartialCount() const {
+	return synth->getPartialCount();
+}
+
 bool QSynth::isActive() const {
 	return synth->isActive();
 }

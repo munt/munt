@@ -161,7 +161,7 @@ void Poly::partialDeactivated(Partial *partial) {
 	part->partialDeactivated(this);
 }
 
-Poly *Poly::getNext() {
+Poly *Poly::getNext() const {
 	return next;
 }
 

@@ -124,6 +124,8 @@ public:
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 	const QString getPatchName(int partNum) const;
 	const MT32Emu::Partial *getPartial(int partialNum) const;
+	const MT32Emu::Poly *getFirstActivePolyOnPart(unsigned int partNum) const;
+	unsigned int getPartialCount() const;
 	bool isActive() const;
 
 signals:

@@ -62,7 +62,7 @@ public:
 
 	void partialDeactivated(Partial *partial);
 
-	Poly *getNext();
+	Poly *getNext() const;
 	void setNext(Poly *poly);
 };
 

@@ -226,3 +226,11 @@ bool SynthRoute::connectSynth(const char *signal, const QObject *receiver, const
 bool SynthRoute::connectReportHandler(const char *signal, const QObject *receiver, const char *slot) const {
 	return QObject::connect(qSynth.getReportHandler(), signal, receiver, slot);
 }
+
+unsigned int SynthRoute::getPartialCount() const {
+	return qSynth.getPartialCount();
+}
+
+const MT32Emu::Poly *SynthRoute::getFirstActivePolyOnPart(unsigned int partNum) const {
+	return qSynth.getFirstActivePolyOnPart(partNum);
+}
