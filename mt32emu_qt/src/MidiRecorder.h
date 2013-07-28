@@ -4,7 +4,7 @@
 #include <QtCore>
 
 #include "MasterClock.h"
-#include "MidiEvent.h"
+#include "QMidiEvent.h"
 
 class MidiRecorder {
 public:
@@ -17,7 +17,7 @@ public:
 	bool saveSMF(QString fileName, MasterClockNanos midiTick);
 
 private:
-	MidiEventList midiEventList;
+	QMidiEventList midiEventList;
 	QFile file;
 	MasterClockNanos startNanos, endNanos;
 	uint division;

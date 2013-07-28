@@ -64,13 +64,13 @@ void SMFProcessor::setBPM(quint32 newBPM) {
 void SMFProcessor::run() {
 	MidiSession *session = driver->createMidiSession(QFileInfo(fileName).fileName());
 	SynthRoute *synthRoute = session->getSynthRoute();
-	const MidiEventList &midiEvents = parser.getMIDIEvents();
+	const QMidiEventList &midiEvents = parser.getMIDIEvents();
 	midiTick = parser.getMidiTick();
 	quint32 totalSeconds = estimateRemainingTime(midiEvents, 0);
 	MasterClockNanos startNanos = MasterClock::getClockNanos();
 	MasterClockNanos currentNanos = startNanos;
 	for (int i = 0; i < midiEvents.count(); i++) {
-		const MidiEvent &e = midiEvents.at(i);
+		const QMidiEvent &e = midiEvents.at(i);
 		currentNanos += e.getTimestamp() * midiTick;
 		while (!stopProcessing && synthRoute->getState() == SynthRouteState_OPEN) {
 			if (bpmUpdated) {
@@ -132,21 +132,21 @@ void SMFProcessor::run() {
 	if (!stopProcessing) emit driver->playbackFinished();
 }
 
-quint32 SMFProcessor::estimateRemainingTime(const MidiEventList &midiEvents, int currentEventIx) {
+quint32 SMFProcessor::estimateRemainingTime(const QMidiEventList &midiEvents, int currentEventIx) {
 	MasterClockNanos tick = midiTick;
 	MasterClockNanos totalNanos = 0;
 	for (int i = currentEventIx; i < midiEvents.count(); i++) {
-		const MidiEvent &e = midiEvents.at(i);
+		const QMidiEvent &e = midiEvents.at(i);
 		totalNanos += e.getTimestamp() * tick;
 		if (e.getType() == SET_TEMPO) tick = parser.getMidiTick(e.getShortMessage());
 	}
 	return quint32(totalNanos / MasterClock::NANOS_PER_SECOND);
 }
 
-int SMFProcessor::seek(SynthRoute *synthRoute, const MidiEventList &midiEvents, int currentEventIx, MasterClockNanos seekNanos, MasterClockNanos currentEventNanos) {
+int SMFProcessor::seek(SynthRoute *synthRoute, const QMidiEventList &midiEvents, int currentEventIx, MasterClockNanos seekNanos, MasterClockNanos currentEventNanos) {
 	MasterClockNanos nanosNow = MasterClock::getClockNanos();
 	while (!stopProcessing && currentEventNanos < seekNanos && currentEventIx < midiEvents.size()) {
-		const MidiEvent &e = midiEvents.at(currentEventIx);
+		const QMidiEvent &e = midiEvents.at(currentEventIx);
 		while (!stopProcessing && synthRoute->getState() == SynthRouteState_OPEN) {
 			bool res = true;
 			switch (e.getType()) {

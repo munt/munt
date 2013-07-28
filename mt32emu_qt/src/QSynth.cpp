@@ -89,7 +89,7 @@ void QReportHandler::onProgramChanged(int partNum, int timbreGroup, const char p
 QSynth::QSynth(QObject *parent) : QObject(parent), state(SynthState_CLOSED), controlROMImage(NULL), pcmROMImage(NULL) {
 	isOpen = false;
 	synthMutex = new QMutex(QMutex::Recursive);
-	midiEventQueue = new MidiEventQueue;
+	midiEventQueue = new QMidiEventQueue;
 	reportHandler = new QReportHandler(this);
 	synth = new Synth(reportHandler);
 }
@@ -125,7 +125,7 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 		bool closed = false;
 		qint64 nanosNow = firstSampleTimestamp + renderedLen * MasterClock::NANOS_PER_SECOND / actualSampleRate;
 		for (;;) {
-			const MidiEvent *event = midiEventQueue->peekEvent();
+			const QMidiEvent *event = midiEventQueue->peekEvent();
 			if (event == NULL) {
 				// Queue empty
 //				qDebug() << "Q" << debugSampleIx;

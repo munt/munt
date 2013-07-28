@@ -5,7 +5,7 @@
 #include <QtCore>
 #include <mt32emu/mt32emu.h>
 
-#include "MidiEventQueue.h"
+#include "QMidiEventQueue.h"
 
 enum SynthState {
 	SynthState_CLOSED,
@@ -72,7 +72,7 @@ private:
 	SynthState state;
 
 	QMutex *synthMutex;
-	MidiEventQueue *midiEventQueue;
+	QMidiEventQueue *midiEventQueue;
 
 	volatile bool isOpen;
 	QDir romDir;

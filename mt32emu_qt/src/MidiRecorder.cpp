@@ -95,7 +95,7 @@ bool MidiRecorder::writeTrack(MasterClockNanos midiTick) {
 	uchar eventData[16]; // Buffer for single short event / sysex header
 	for (int i = 0; i < midiEventList.count(); i++) {
 		// Compute timestamp
-		const MidiEvent &evt = midiEventList.at(i);
+		const QMidiEvent &evt = midiEventList.at(i);
 		uchar *data = eventData;
 		quint32 deltaTicks = (evt.getTimestamp() - startNanos) / midiTick - eventTicks;
 		eventTicks += deltaTicks;

@@ -56,7 +56,7 @@ bool MidiParser::parseHeader() {
 	return true;
 }
 
-bool MidiParser::parseTrack(MidiEventList &midiEventList) {
+bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 	char header[8];
 	forever {
 		if (!readFile(header, 8)) return false;
@@ -191,7 +191,7 @@ quint32 MidiParser::parseVarLenInt(const uchar * &data) {
 	return value;
 }
 
-void MidiParser::mergeMidiEventLists(QVector<MidiEventList> &trackList) {
+void MidiParser::mergeMidiEventLists(QVector<QMidiEventList> &trackList) {
 	int totalEventCount = 0;
 
 	// Remove empty tracks & allocate memory exactly needed
@@ -227,7 +227,7 @@ void MidiParser::mergeMidiEventLists(QVector<MidiEventList> &trackList) {
 			}
 		}
 		if (trackIx == -1) break;
-		const MidiEvent *e = &trackList.at(trackIx).at(currentIx[trackIx]);
+		const QMidiEvent *e = &trackList.at(trackIx).at(currentIx[trackIx]);
 		forever {
 			midiEventList.append(*e);
 			midiEventList.last().setTimestamp(nextEventTime - lastEventTime);
@@ -282,7 +282,7 @@ bool MidiParser::doParse() {
 			return parseTrack(midiEventList);
 		case 1:
 			if (numberOfTracks > 0) {
-				QVector<MidiEventList> trackList(numberOfTracks);
+				QVector<QMidiEventList> trackList(numberOfTracks);
 				for (uint i = 0; i < numberOfTracks; i++) {
 					qDebug() << "MidiParser: Parsing & merging MIDI track" << i + 1;
 					if (!parseTrack(trackList[i])) return false;
@@ -295,7 +295,7 @@ bool MidiParser::doParse() {
 		case 2:
 			for (uint i = 0; i < numberOfTracks; i++) {
 				qDebug() << "MidiParser: Parsing & appending MIDI track" << i + 1;
-				MidiEventList list;
+				QMidiEventList list;
 				if (!parseTrack(list)) return false;
 				midiEventList += list;
 			}
@@ -315,7 +315,7 @@ bool MidiParser::parse(const QString fileName) {
 	return parseResult;
 }
 
-const MidiEventList &MidiParser::getMIDIEvents() {
+const QMidiEventList &MidiParser::getMIDIEvents() {
 	return midiEventList;
 }
 

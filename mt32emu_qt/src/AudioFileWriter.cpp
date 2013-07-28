@@ -52,7 +52,7 @@ bool AudioFileWriter::convertMIDIFiles(QString useOutFileName, QStringList midiF
 	for (uint i = 0; i < parsersCount; i++) {
 		if (!parsers[i].parse(midiFileNameList.at(i))) {
 			qDebug() << "AudioFileWriter: Error parsing MIDI files";
-			const MidiEventList &midiEvents = parsers[i].getMIDIEvents();
+			const QMidiEventList &midiEvents = parsers[i].getMIDIEvents();
 			if (midiEvents.count() == 0) {
 				QMessageBox::critical(NULL, "Error", "Error occured while parsing MIDI files. No MIDI events to process.");
 				delete[] parsers;
@@ -127,7 +127,7 @@ void AudioFileWriter::run() {
 	MasterClockNanos firstSampleNanos = 0;
 	MasterClockNanos midiTick = 0;
 	MasterClockNanos midiNanos = 0;
-	MidiEventList midiEvents;
+	QMidiEventList midiEvents;
 	int midiEventIx = 0;
 	uint parserIx = 0;
 	bool skipSilence = false;
@@ -151,7 +151,7 @@ void AudioFileWriter::run() {
 			}
 		} else {
 			while (midiEventIx < midiEvents.count()) {
-				const MidiEvent &e = midiEvents.at(midiEventIx);
+				const QMidiEvent &e = midiEvents.at(midiEventIx);
 				bool eventPushed = true;
 				MasterClockNanos nextEventNanos = midiNanos + e.getTimestamp() * midiTick;
 				frameCount = (uint)(sampleRate * (nextEventNanos - firstSampleNanos) / MasterClock::NANOS_PER_SECOND);

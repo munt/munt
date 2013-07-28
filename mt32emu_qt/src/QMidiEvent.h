@@ -1,5 +1,5 @@
-#ifndef MIDI_EVENT_H
-#define MIDI_EVENT_H
+#ifndef QMIDI_EVENT_H
+#define QMIDI_EVENT_H
 
 #include <QtGlobal>
 #include <QVector>
@@ -15,7 +15,7 @@ enum MidiEventType {
 
 typedef qint64 SynthTimestamp;
 
-class MidiEvent {
+class QMidiEvent {
 private:
 	SynthTimestamp timestamp;
 	MidiEventType type;
@@ -24,9 +24,9 @@ private:
 	unsigned char *sysexData;
 
 public:
-	MidiEvent();
-	MidiEvent(const MidiEvent &copyOf);
-	~MidiEvent();
+	QMidiEvent();
+	QMidiEvent(const QMidiEvent &copyOf);
+	~QMidiEvent();
 
 	SynthTimestamp getTimestamp() const;
 	MidiEventType getType() const;
@@ -41,9 +41,9 @@ public:
 	void assignSyncMessage(SynthTimestamp newTimestamp);
 };
 
-class MidiEventList : public QVector<MidiEvent> {
+class QMidiEventList : public QVector<QMidiEvent> {
 public:
-	MidiEvent &newMidiEvent();
+	QMidiEvent &newMidiEvent();
 };
 
 #endif

@@ -3,7 +3,7 @@
 
 #include <QtCore>
 
-#include "MidiEvent.h"
+#include "QMidiEvent.h"
 
 class MidiParser {
 public:
@@ -12,13 +12,13 @@ public:
 	static const int DEFAULT_TEMPO = MICROSECONDS_PER_MINUTE / DEFAULT_BPM;
 
 	bool parse(const QString fileName);
-	const MidiEventList &getMIDIEvents();
+	const QMidiEventList &getMIDIEvents();
 	SynthTimestamp getMidiTick(uint tempo = DEFAULT_TEMPO);
 	void addAllNotesOff();
 
 private:
 	QFile file;
-	MidiEventList midiEventList;
+	QMidiEventList midiEventList;
 
 	unsigned int format;
 	unsigned int numberOfTracks;
@@ -28,8 +28,8 @@ private:
 
 	bool readFile(char *data, qint64 len);
 	bool parseHeader();
-	bool parseTrack(MidiEventList &midiEventList);
-	void mergeMidiEventLists(QVector<MidiEventList> &tracks);
+	bool parseTrack(QMidiEventList &midiEventList);
+	void mergeMidiEventLists(QVector<QMidiEventList> &tracks);
 	bool parseSysex();
 	bool doParse();
 };

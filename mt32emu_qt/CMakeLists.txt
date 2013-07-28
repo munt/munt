@@ -20,11 +20,11 @@ set(mt32emu_qt_SOURCES
   src/MainWindow.cpp
   src/Master.cpp
   src/MasterClock.cpp
-  src/MidiEvent.cpp
-  src/MidiEventQueue.cpp
   src/MidiParser.cpp
   src/MidiRecorder.cpp
   src/MidiSession.cpp
+  src/QMidiEvent.cpp
+  src/QMidiEventQueue.cpp
   src/QSynth.cpp
   src/SynthRoute.cpp
   src/SynthPropertiesDialog.cpp

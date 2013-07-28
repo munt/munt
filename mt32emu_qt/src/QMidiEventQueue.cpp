@@ -18,16 +18,16 @@
  * Simple ringbuffer for MidiEvents.
  */
 
-#include "MidiEventQueue.h"
+#include "QMidiEventQueue.h"
 
 using namespace MT32Emu;
 
-MidiEventQueue::MidiEventQueue() {
+QMidiEventQueue::QMidiEventQueue() {
 	startPos = 0;
 	endPos = 0;
 }
 
-bool MidiEventQueue::pushEvent(SynthTimestamp timestamp, Bit32u msg, Bit8u *sysexData, unsigned int sysexLen) {
+bool QMidiEventQueue::pushEvent(SynthTimestamp timestamp, Bit32u msg, Bit8u *sysexData, unsigned int sysexLen) {
 	unsigned int newEndPos = endPos;
 	bool result = true;
 	mutex.lock();
@@ -49,8 +49,8 @@ bool MidiEventQueue::pushEvent(SynthTimestamp timestamp, Bit32u msg, Bit8u *syse
 	return result;
 }
 
-const MidiEvent *MidiEventQueue::popEvent() {
-	MidiEvent *event = NULL;
+const QMidiEvent *QMidiEventQueue::popEvent() {
+	QMidiEvent *event = NULL;
 	mutex.lock();
 	// check for buffer empty
 	if (startPos != endPos) {
@@ -63,8 +63,8 @@ const MidiEvent *MidiEventQueue::popEvent() {
 	return event;
 }
 
-const MidiEvent *MidiEventQueue::peekEvent() {
-	const MidiEvent *event = NULL;
+const QMidiEvent *QMidiEventQueue::peekEvent() {
+	const QMidiEvent *event = NULL;
 	mutex.lock();
 	// check for buffer empty
 	if (startPos != endPos) {
@@ -74,8 +74,8 @@ const MidiEvent *MidiEventQueue::peekEvent() {
 	return event;
 }
 
-const MidiEvent *MidiEventQueue::peekEventAt(unsigned int pos) {
-	const MidiEvent *event = NULL;
+const QMidiEvent *QMidiEventQueue::peekEventAt(unsigned int pos) {
+	const QMidiEvent *event = NULL;
 	mutex.lock();
 	// check for buffer empty
 	if (startPos != endPos) {

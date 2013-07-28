@@ -14,20 +14,20 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "MidiEvent.h"
+#include "QMidiEvent.h"
 
 #include <cstring>
 
 using namespace MT32Emu;
 
-MidiEvent::MidiEvent() {
+QMidiEvent::QMidiEvent() {
 	type = SHORT_MESSAGE;
 	msg = 0;
 	sysexLen = 0;
 	sysexData = NULL;
 };
 
-MidiEvent::MidiEvent(const MidiEvent &copyOf) {
+QMidiEvent::QMidiEvent(const QMidiEvent &copyOf) {
 	timestamp = copyOf.timestamp;
 	type = copyOf.type;
 	msg = copyOf.msg;
@@ -41,37 +41,37 @@ MidiEvent::MidiEvent(const MidiEvent &copyOf) {
 	}
 };
 
-MidiEvent::~MidiEvent() {
+QMidiEvent::~QMidiEvent() {
 	if (sysexData != 0) {
 		delete[] sysexData;
 	}
 }
 
-SynthTimestamp MidiEvent::getTimestamp() const {
+SynthTimestamp QMidiEvent::getTimestamp() const {
 	return timestamp;
 }
 
-MidiEventType MidiEvent::getType() const {
+MidiEventType QMidiEvent::getType() const {
 	return type;
 }
 
-unsigned char *MidiEvent::getSysexData() const {
+unsigned char *QMidiEvent::getSysexData() const {
 	return sysexData;
 }
 
-Bit32u MidiEvent::getShortMessage() const {
+Bit32u QMidiEvent::getShortMessage() const {
 	return msg;
 }
 
-Bit32u MidiEvent::getSysexLen() const {
+Bit32u QMidiEvent::getSysexLen() const {
 	return sysexLen;
 }
 
-void MidiEvent::setTimestamp(SynthTimestamp newTimestamp) {
+void QMidiEvent::setTimestamp(SynthTimestamp newTimestamp) {
 	timestamp = newTimestamp;
 }
 
-void MidiEvent::assignShortMessage(SynthTimestamp newTimestamp, Bit32u newMsg) {
+void QMidiEvent::assignShortMessage(SynthTimestamp newTimestamp, Bit32u newMsg) {
 	timestamp = newTimestamp;
 	type = SHORT_MESSAGE;
 	msg = newMsg;
@@ -80,7 +80,7 @@ void MidiEvent::assignShortMessage(SynthTimestamp newTimestamp, Bit32u newMsg) {
 	sysexData = NULL;
 }
 
-void MidiEvent::assignSysex(SynthTimestamp newTimestamp, unsigned char const * const newSysexData, Bit32u newSysexLen) {
+void QMidiEvent::assignSysex(SynthTimestamp newTimestamp, unsigned char const * const newSysexData, Bit32u newSysexLen) {
 	timestamp = newTimestamp;
 	type = SYSEX;
 	msg = 0;
@@ -91,7 +91,7 @@ void MidiEvent::assignSysex(SynthTimestamp newTimestamp, unsigned char const * c
 	sysexData = copy;
 }
 
-void MidiEvent::assignSetTempoMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newTempo) {
+void QMidiEvent::assignSetTempoMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newTempo) {
 	timestamp = newTimestamp;
 	type = SET_TEMPO;
 	msg = newTempo;
@@ -100,7 +100,7 @@ void MidiEvent::assignSetTempoMessage(SynthTimestamp newTimestamp, MT32Emu::Bit3
 	sysexData = NULL;
 }
 
-void MidiEvent::assignSyncMessage(SynthTimestamp newTimestamp) {
+void QMidiEvent::assignSyncMessage(SynthTimestamp newTimestamp) {
 	timestamp = newTimestamp;
 	type = SYNC;
 	msg = 0;
@@ -109,7 +109,7 @@ void MidiEvent::assignSyncMessage(SynthTimestamp newTimestamp) {
 	sysexData = NULL;
 }
 
-MidiEvent &MidiEventList::newMidiEvent() {
+QMidiEvent &QMidiEventList::newMidiEvent() {
 	resize(size() + 1);
 	return last();
 }
