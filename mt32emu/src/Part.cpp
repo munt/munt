@@ -484,6 +484,7 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 #endif
 		return;
 	}
+	if (synth->isAbortingPoly()) return;
 
 	if (freePolys.isEmpty()) {
 		synth->printDebug("%s (%s): No free poly to play key %d (velocity %d)", name, currentInstr, midiKey, velocity);
