@@ -268,15 +268,13 @@ struct MidiEvent {
  */
 class MidiEventQueue {
 private:
-	static const Bit32u DEFAULT_SIZE = 1024;
-
 	MidiEvent *ringBuffer;
 	Bit32u ringBufferSize;
 	volatile Bit32u startPosition;
 	volatile Bit32u endPosition;
 
 public:
-	MidiEventQueue(Bit32u ringBufferSize = DEFAULT_SIZE);
+	MidiEventQueue(Bit32u ringBufferSize = DEFAULT_MIDI_EVENT_QUEUE_SIZE);
 	~MidiEventQueue();
 	void reset();
 	bool pushShortMessage(Bit32u shortMessageData, Bit32u timestamp);
@@ -400,10 +398,14 @@ public:
 	// controlROMImage and pcmROMImage represent Control and PCM ROM images for use by synth.
 	// usePartialCount sets the maximum number of partials playing simultaneously for this session.
 	// usePolyCount sets the maximum number of notes playing simultaneously per part (clamped to be less than or equal to usePartialCount).
-	bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount = MT32EMU_DEFAULT_MAX_PARTIALS, unsigned int usePolyCount = (unsigned int)-1);
+	bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount = DEFAULT_MAX_PARTIALS, unsigned int usePolyCount = (unsigned int)-1);
 
 	// Closes the MT-32 and deallocates any memory used by the synthesizer
 	void close(void);
+
+	// Sets size of the internal MIDI event queue.
+	// When a new size of the queue is set all the enqueued events are lost.
+	void setMIDIEventQueueSize(Bit32u);
 
 	// Sends a 4-byte MIDI message to the MT-32 for immediate playback
 	void playMsg(Bit32u msg);

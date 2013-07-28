@@ -86,6 +86,7 @@ Synth::Synth(ReportHandler *useReportHandler) {
 	setOutputGain(1.0f);
 	setReverbOutputGain(0.68f);
 	partialManager = NULL;
+	midiQueue = NULL;
 	memset(parts, 0, sizeof(parts));
 	renderedSampleCount = 0;
 }
@@ -442,6 +443,8 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	// For resetting mt32 mid-execution
 	mt32default = mt32ram;
 
+	midiQueue = new MidiEventQueue();
+
 	isOpen = true;
 	isEnabled = false;
 
@@ -455,6 +458,9 @@ void Synth::close() {
 	if (!isOpen) {
 		return;
 	}
+
+	delete midiQueue;
+	midiQueue = NULL;
 
 	delete partialManager;
 	partialManager = NULL;
@@ -474,6 +480,13 @@ void Synth::close() {
 	}
 	reverbModel = NULL;
 	isOpen = false;
+}
+
+void Synth::setMIDIEventQueueSize(Bit32u useSize) {
+	if (midiQueue != NULL) {
+		delete midiQueue;
+		midiQueue = new MidiEventQueue(useSize);
+	}
 }
 
 void Synth::playMsg(Bit32u msg) {
