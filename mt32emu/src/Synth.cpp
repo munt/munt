@@ -519,23 +519,23 @@ Bit32u Synth::addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp) {
 	return timestamp;
 }
 
-void Synth::playMsg(Bit32u msg) {
-	playMsg(msg, renderedSampleCount);
+bool Synth::playMsg(Bit32u msg) {
+	return playMsg(msg, renderedSampleCount);
 }
 
-void Synth::playMsg(Bit32u msg, Bit32u timestamp) {
-	midiQueue->pushShortMessage(msg, addMIDIInterfaceDelay(getShortMessageLength(msg), timestamp));
+bool Synth::playMsg(Bit32u msg, Bit32u timestamp) {
+	return midiQueue->pushShortMessage(msg, addMIDIInterfaceDelay(getShortMessageLength(msg), timestamp));
 }
 
-void Synth::playSysex(const Bit8u *sysex, Bit32u len) {
-	playSysex(sysex, len, renderedSampleCount);
+bool Synth::playSysex(const Bit8u *sysex, Bit32u len) {
+	return playSysex(sysex, len, renderedSampleCount);
 }
 
-void Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
+bool Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
 #if MT32EMU_EMULATE_MIDI_DELAYS == 2
 	timestamp = addMIDIInterfaceDelay(len, timestamp);
 #endif
-	midiQueue->pushSysex(sysex, len, timestamp);
+	return midiQueue->pushSysex(sysex, len, timestamp);
 }
 
 void Synth::playMsgNow(Bit32u msg) {
@@ -1350,14 +1350,13 @@ void Synth::render(Sample *stream, Bit32u len) {
 
 void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len) {
 	while (len > 0) {
-		Bit32u thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
-		if (isAbortingPoly()) {
-			thisLen = 1;
-		} else {
+		Bit32u thisLen = 1;
+		if (!isAbortingPoly()) {
 			const MidiEvent *nextEvent = midiQueue->peekMidiEvent();
 			if (nextEvent != NULL) {
 				Bit32s samplesToNextEvent = Bit32s(nextEvent->timestamp - renderedSampleCount);
 				if (samplesToNextEvent > 0) {
+					thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
 					if (thisLen > (Bit32u)samplesToNextEvent) {
 						thisLen = samplesToNextEvent;
 					}

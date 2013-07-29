@@ -419,11 +419,11 @@ public:
 
 	// The MIDI event will be processed not before the specified timestamp.
 	// The timestamp is measured as the global rendered sample count since the synth was created.
-	void playMsg(Bit32u msg, Bit32u timestamp);
-	void playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp);
+	bool playMsg(Bit32u msg, Bit32u timestamp);
+	bool playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp);
 	// The MIDI event will be processed ASAP.
-	void playMsg(Bit32u msg);
-	void playSysex(const Bit8u *sysex, Bit32u len);
+	bool playMsg(Bit32u msg);
+	bool playSysex(const Bit8u *sysex, Bit32u len);
 
 	// WARNING:
 	// The methods below don't ensure minimum 1-sample delay between sequential MIDI events,
