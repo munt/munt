@@ -237,9 +237,9 @@ bool Synth::loadPCMROM(const ROMImage &pcmROMImage) {
 bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 	ControlROMPCMStruct *tps = (ControlROMPCMStruct *)&controlROMData[mapAddress];
 	for (int i = 0; i < count; i++) {
-		size_t rAddr = tps[i].pos * 0x800;
-		size_t rLenExp = (tps[i].len & 0x70) >> 4;
-		size_t rLen = 0x800 << rLenExp;
+		Bit32u rAddr = tps[i].pos * 0x800;
+		Bit32u rLenExp = (tps[i].len & 0x70) >> 4;
+		Bit32u rLen = 0x800 << rLenExp;
 		if (rAddr + rLen > pcmROMSize) {
 			printDebug("Control ROM error: Wave map entry %d points to invalid PCM address 0x%04X, length 0x%04X", i, rAddr, rLen);
 			return false;

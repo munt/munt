@@ -388,7 +388,7 @@ public:
 		if ((sample + 32768) & ~65535) {
 			return (sample >> 31) ^ 32767;
 		}
-		return sample;
+		return (Bit16s)sample;
 	}
 
 	static Bit8u calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum);
