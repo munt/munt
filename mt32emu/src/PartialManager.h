@@ -24,17 +24,17 @@ class Synth;
 
 class PartialManager {
 private:
-	Synth *synth; // Only used for sending debug output
+	Synth *synth;
 	Part **parts;
-
+	Poly **freePolys;
 	Partial **partialTable;
 	Bit8u numReservedPartialsForPart[9];
+	Bit32u firstFreePolyIndex;
 
 	bool abortFirstReleasingPolyWhereReserveExceeded(int minPart);
 	bool abortFirstPolyPreferHeldWhereReserveExceeded(int minPart);
 
 public:
-
 	PartialManager(Synth *synth, Part **parts);
 	~PartialManager();
 	Partial *allocPartial(int partNum);
@@ -47,6 +47,8 @@ public:
 	bool shouldReverb(int i);
 	void clearAlreadyOutputed();
 	const Partial *getPartial(unsigned int partialNum) const;
+	Poly *assignPolyToPart(Part *part);
+	void polyFreed(Poly *poly);
 };
 
 }

@@ -44,7 +44,8 @@ private:
 	Poly *next;
 
 public:
-	Poly(Part *part);
+	Poly();
+	void setPart(Part *usePart);
 	void reset(unsigned int key, unsigned int velocity, bool sustain, Partial **partials);
 	bool noteOff(bool pedalHeld);
 	bool stopPedalHold();

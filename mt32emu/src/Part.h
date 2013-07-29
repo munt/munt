@@ -51,7 +51,6 @@ private:
 
 	unsigned int activePartialCount;
 	PatchCache patchCache[4];
-	PolyList freePolys;
 	PolyList activePolys;
 
 	void setPatch(const PatchParam *patch);

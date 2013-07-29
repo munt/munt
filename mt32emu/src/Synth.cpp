@@ -313,12 +313,11 @@ bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, int count, int startTi
 	return true;
 }
 
-bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount, unsigned int usePolyCount) {
+bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount) {
 	if (isOpen) {
 		return false;
 	}
 	partialCount = usePartialCount;
-	polyCount = (partialCount < usePolyCount) ? usePartialCount : usePolyCount;
 	abortingPoly = NULL;
 #if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Constant Tables");
@@ -1521,10 +1520,6 @@ const Partial *Synth::getPartial(unsigned int partialNum) const {
 
 unsigned int Synth::getPartialCount() const {
 	return partialCount;
-}
-
-unsigned int Synth::getPolyCount() const {
-	return polyCount;
 }
 
 const Part *Synth::getPart(unsigned int partNum) const {

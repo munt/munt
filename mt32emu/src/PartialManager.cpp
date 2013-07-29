@@ -26,16 +26,21 @@ PartialManager::PartialManager(Synth *useSynth, Part **useParts) {
 	synth = useSynth;
 	parts = useParts;
 	partialTable = new Partial *[synth->getPartialCount()];
+	freePolys = new Poly *[synth->getPartialCount()];
+	firstFreePolyIndex = 0;
 	for (unsigned int i = 0; i < synth->getPartialCount(); i++) {
 		partialTable[i] = new Partial(synth, i);
+		freePolys[i] = new Poly();
 	}
 }
 
 PartialManager::~PartialManager(void) {
 	for (unsigned int i = 0; i < synth->getPartialCount(); i++) {
 		delete partialTable[i];
+		if (freePolys[i] != NULL) delete freePolys[i];
 	}
 	delete[] partialTable;
+	delete[] freePolys;
 }
 
 void PartialManager::clearAlreadyOutputed() {
@@ -249,6 +254,35 @@ const Partial *PartialManager::getPartial(unsigned int partialNum) const {
 		return NULL;
 	}
 	return partialTable[partialNum];
+}
+
+Poly *PartialManager::assignPolyToPart(Part *part) {
+	if (firstFreePolyIndex < synth->getPartialCount()) {
+		Poly *poly = freePolys[firstFreePolyIndex];
+		freePolys[firstFreePolyIndex] = NULL;
+		firstFreePolyIndex++;
+		poly->setPart(part);
+		return poly;
+	}
+	return NULL;
+}
+
+void PartialManager::polyFreed(Poly *poly) {
+	if (0 == firstFreePolyIndex) {
+		synth->printDebug("Cannot return freed poly, currently active polys:\n");
+		for (Bit32u partNum = 0; partNum < 9; partNum++) {
+			const Poly *poly = synth->getPart(partNum)->getFirstActivePoly();
+			Bit32u polyCount = 0;
+			while (poly != NULL) {
+				poly->getNext();
+				polyCount++;
+			}
+			synth->printDebug("Part: %i, active poly count: %i\n", partNum, polyCount);
+		}
+	}
+	poly->setPart(NULL);
+	firstFreePolyIndex--;
+	freePolys[firstFreePolyIndex] = poly;
 }
 
 }

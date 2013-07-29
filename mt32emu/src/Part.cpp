@@ -67,17 +67,11 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	pitchBend = 0;
 	activePartialCount = 0;
 	memset(patchCache, 0, sizeof(patchCache));
-	for (unsigned int i = 0; i < synth->getPolyCount(); i++) {
-		freePolys.prepend(new Poly(this));
-	}
 }
 
 Part::~Part() {
 	while (!activePolys.isEmpty()) {
 		delete activePolys.takeFirst();
-	}
-	while (!freePolys.isEmpty()) {
-		delete freePolys.takeFirst();
 	}
 }
 
@@ -486,11 +480,11 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 	}
 	if (synth->isAbortingPoly()) return;
 
-	if (freePolys.isEmpty()) {
+	Poly *poly = synth->partialManager->assignPolyToPart(this);
+	if (poly == NULL) {
 		synth->printDebug("%s (%s): No free poly to play key %d (velocity %d)", name, currentInstr, midiKey, velocity);
 		return;
 	}
-	Poly *poly = freePolys.takeFirst();
 	if (patchTemp->patch.assignMode & 1) {
 		// Priority to data first received
 		activePolys.prepend(poly);
@@ -605,7 +599,7 @@ void Part::partialDeactivated(Poly *poly) {
 	activePartialCount--;
 	if (!poly->isActive()) {
 		activePolys.remove(poly);
-		freePolys.prepend(poly);
+		synth->partialManager->polyFreed(poly);
 		synth->polyStateChanged(partNum);
 	}
 }

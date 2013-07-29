@@ -19,8 +19,8 @@
 
 namespace MT32Emu {
 
-Poly::Poly(Part *usePart) {
-	part = usePart;
+Poly::Poly() {
+	part = NULL;
 	key = 255;
 	velocity = 255;
 	sustain = false;
@@ -30,6 +30,10 @@ Poly::Poly(Part *usePart) {
 	}
 	state = POLY_Inactive;
 	next = NULL;
+}
+
+void Poly::setPart(Part *usePart) {
+	part = usePart;
 }
 
 void Poly::reset(unsigned int newKey, unsigned int newVelocity, bool newSustain, Partial **newPartials) {
