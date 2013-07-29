@@ -90,7 +90,7 @@ Synth::Synth(ReportHandler *useReportHandler) {
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
 	setOutputGain(1.0f);
-	setReverbOutputGain(0.68f);
+	setReverbOutputGain(1.0f);
 	partialManager = NULL;
 	midiQueue = NULL;
 	lastReceivedMIDIEventTimestamp = 0;
@@ -156,12 +156,24 @@ void Synth::setDACInputMode(DACInputMode mode) {
 	dacInputMode = mode;
 }
 
+DACInputMode Synth::getDACInputMode() const {
+	return dacInputMode;
+}
+
 void Synth::setOutputGain(float newOutputGain) {
 	outputGain = newOutputGain;
 }
 
+float Synth::getOutputGain() const {
+	return outputGain;
+}
+
 void Synth::setReverbOutputGain(float newReverbOutputGain) {
 	reverbOutputGain = newReverbOutputGain;
+}
+
+float Synth::getReverbOutputGain() const {
+	return reverbOutputGain;
 }
 
 bool Synth::loadControlROM(const ROMImage &controlROMImage) {
@@ -1390,12 +1402,12 @@ void Synth::convertSamplesToOutput(Sample *target, const Sample *source, Bit32u 
 	if (target == NULL || dacInputMode == DACInputMode_PURE) return;
 
 #if MT32EMU_USE_FLOAT_SAMPLES
-	float gain = reverb ? reverbOutputGain : outputGain;
+	float gain = reverb ? reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR : 2.0f * outputGain;
 	while (len--) {
 		*(target++) = *(source++) * gain;
 	}
 #else
-	float gain = reverb ? reverbOutputGain : outputGain;
+	float gain = reverb ? reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR : outputGain;
 	if (!reverb) {
 		switch (dacInputMode) {
 		case DACInputMode_NICE:

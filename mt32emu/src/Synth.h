@@ -445,18 +445,21 @@ public:
 	void setReverbOverridden(bool reverbOverridden);
 	bool isReverbOverridden() const;
 	void setDACInputMode(DACInputMode mode);
+	DACInputMode getDACInputMode() const;
 
 	// Sets output gain factor. Applied to all output samples and unrelated with the synth's Master volume.
 	// Ignored in DACInputMode_PURE
 	void setOutputGain(float);
+	float getOutputGain() const;
 
 	// Sets output gain factor for the reverb wet output. setOutputGain() doesn't change reverb output gain.
 	// Note: We're currently emulate CM-32L/CM-64 reverb quite accurately and the reverb output level closely
 	// corresponds to the level of digital capture. Although, according to the CM-64 PCB schematic,
-	// there is a difference in the reverb analogue circuit, and the resulting output signal is 0.68
-	// of the synth analogue output. This factor should be considered when adjusting the reverb output gain.
+	// there is a difference in the reverb analogue circuit, and the resulting output gain is 0.68
+	// of that for LA32 analogue output. This factor is applied to the reverb output gain.
 	// Ignored in DACInputMode_PURE
 	void setReverbOutputGain(float);
+	float getReverbOutputGain() const;
 
 	// Renders samples to the specified output stream.
 	// The length is in frames, not bytes (in 16-bit stereo,
