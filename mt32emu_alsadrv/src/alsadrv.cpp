@@ -904,8 +904,8 @@ void reload_mt32_core(int rv)
 		exit(1);
 	}	
 
-	mt32->setOutputGain(1.0f * gain_multiplier);
-	mt32->setReverbOutputGain(0.68f * gain_multiplier);
+	mt32->setOutputGain(gain_multiplier);
+	mt32->setReverbOutputGain(gain_multiplier);
 
 }
 

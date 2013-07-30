@@ -244,7 +244,7 @@ void QSynth::setReverbOutputGain(float reverbOutputGain) {
 	}
 
 	synthMutex->lock();
-	synth->setReverbOutputGain(/* Dry / wet gain ratio */ 0.68f * reverbOutputGain);
+	synth->setReverbOutputGain(reverbOutputGain);
 	synthMutex->unlock();
 }
 

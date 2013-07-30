@@ -515,7 +515,7 @@ void MidiSynth::ApplySettings() {
 	synth->setReverbEnabled(reverbEnabled);
 	synth->setDACInputMode(emuDACInputMode);
 	synth->setOutputGain(outputGain);
-	synth->setReverbOutputGain(reverbOutputGain * 0.68f);
+	synth->setReverbOutputGain(reverbOutputGain);
 	if (reverbOverridden) {
 		Bit8u sysex[] = {0x10, 0x00, 0x01, reverbMode, reverbTime, reverbLevel};
 		synth->setReverbOverridden(false);
