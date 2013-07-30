@@ -89,7 +89,7 @@ int events_qd = 0;
 
 int tempo = -1, ppq = -1;
 double timepertick = -1;
-double bytespermsec = (double)(44100 * 2 * 2) / 1000000.0;
+double bytespermsec = (double)(MT32Emu::SAMPLE_RATE * 2 * 2) / 1000000.0;
 
 int channelmap[16];
 int channeluse[16];
@@ -143,7 +143,7 @@ int alsa_set_buffer_time(int msec)
 	unsigned int v, rate, periods;
 	double sec, tpp;
 	
-	rate = 44100;
+	rate = MT32Emu::SAMPLE_RATE;
 	channels = 2;
 	sec = (double)msec / 1000.0;
 	
@@ -829,7 +829,7 @@ int init_alsadrv()
 		exit(1);
 			
 	/* create pcm thread if needed */
-	alsa_init_pcm(44100, 2);		    
+	alsa_init_pcm(MT32Emu::SAMPLE_RATE, 2);
 		
 	/* create communication pipe from alsa reader to processor */
 	if (socketpair(PF_LOCAL, SOCK_STREAM, 0, eventpipe))
@@ -885,7 +885,7 @@ void reload_mt32_core(int rv)
 	mt32 = new MT32Emu::Synth();
 
 	/* setup synth params */
-	synthp.sampleRate = 44100;
+	synthp.sampleRate = MT32Emu::SAMPLE_RATE;
 	
 	if (rv)
 		synthp.useReverb = true;
