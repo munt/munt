@@ -553,8 +553,8 @@ void Synth::playMsgNow(Bit32u msg) {
 	// FIXME: Implement active sensing
 	unsigned char code     = (unsigned char)((msg & 0x0000F0) >> 4);
 	unsigned char chan     = (unsigned char)(msg & 0x00000F);
-	unsigned char note     = (unsigned char)((msg & 0x00FF00) >> 8);
-	unsigned char velocity = (unsigned char)((msg & 0xFF0000) >> 16);
+	unsigned char note     = (unsigned char)((msg & 0x007F00) >> 8);
+	unsigned char velocity = (unsigned char)((msg & 0x7F0000) >> 16);
 	isEnabled = true;
 
 	//printDebug("Playing chan %d, code 0x%01x note: 0x%02x", chan, code, note);
