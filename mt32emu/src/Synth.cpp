@@ -1364,25 +1364,23 @@ void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample 
 		Bit32u thisLen = 1;
 		if (!isAbortingPoly()) {
 			const MidiEvent *nextEvent = midiQueue->peekMidiEvent();
-			if (nextEvent != NULL) {
-				Bit32s samplesToNextEvent = Bit32s(nextEvent->timestamp - renderedSampleCount);
-				if (samplesToNextEvent > 0) {
-					thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
-					if (thisLen > (Bit32u)samplesToNextEvent) {
-						thisLen = samplesToNextEvent;
-					}
-				} else {
-					if (nextEvent->sysexData == NULL) {
-						playMsgNow(nextEvent->shortMessageData);
-						// If a poly is aborting we don't drop the event from the queue.
-						// Instead, we'll return to it again when the abortion is done.
-						if (!isAbortingPoly()) {
-							midiQueue->dropMidiEvent();
-						}
-					} else {
-						playSysexNow(nextEvent->sysexData, nextEvent->sysexLength);
+			Bit32s samplesToNextEvent = (nextEvent != NULL) ? Bit32s(nextEvent->timestamp - renderedSampleCount) : MAX_SAMPLES_PER_RUN;
+			if (samplesToNextEvent > 0) {
+				thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
+				if (thisLen > (Bit32u)samplesToNextEvent) {
+					thisLen = samplesToNextEvent;
+				}
+			} else {
+				if (nextEvent->sysexData == NULL) {
+					playMsgNow(nextEvent->shortMessageData);
+					// If a poly is aborting we don't drop the event from the queue.
+					// Instead, we'll return to it again when the abortion is done.
+					if (!isAbortingPoly()) {
 						midiQueue->dropMidiEvent();
 					}
+				} else {
+					playSysexNow(nextEvent->sysexData, nextEvent->sysexLength);
+					midiQueue->dropMidiEvent();
 				}
 			}
 		}
@@ -1398,7 +1396,12 @@ void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample 
 }
 
 void Synth::convertSamplesToOutput(Sample *target, const Sample *source, Bit32u len, bool reverb) {
-	if (target == NULL || dacInputMode == DACInputMode_PURE) return;
+	if (target == NULL) return;
+
+	if (dacInputMode == DACInputMode_PURE) {
+		memcpy(target, source, len * sizeof(Sample));
+		return;
+	}
 
 #if MT32EMU_USE_FLOAT_SAMPLES
 	float gain = reverb ? reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR : 2.0f * outputGain;
