@@ -188,7 +188,7 @@ void AudioFileWriter::run() {
 					midiTick = parsers[parserIx].getMidiTick();
 					continue;
 				}
-				if (!synth->isActive()) break;
+				if (!synth->isActive() && frameCount == 0) break;
 				frameCount += bufferSize;
 				qDebug() << "AudioFileWriter: Rendering after the end of MIDI file, time:" << (double)midiNanos / MasterClock::NANOS_PER_SECOND;
 			}
