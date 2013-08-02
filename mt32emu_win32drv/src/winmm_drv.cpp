@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011, 2012 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011, 2012, 2013 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -288,7 +288,7 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 			return MMSYSERR_ERROR;
 		}
 		if (hwnd == NULL) {
-			midiSynth.PushMIDI((DWORD)dwParam1);
+			midiSynth.PlayMIDI((DWORD)dwParam1);
 		} else {
 			updateNanoCounter();
 			DWORD msg[] = {0, 0, nanoCounter.LowPart, nanoCounter.HighPart, (DWORD)dwParam1}; // 0, short MIDI message indicator, timestamp, data

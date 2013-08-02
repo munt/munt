@@ -1,4 +1,4 @@
-/* Copyright (C) 2011, 2012 Sergey V. Mikayev
+/* Copyright (C) 2011, 2012, 2013 Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -40,6 +40,7 @@ private:
 	Bit8u reverbLevel;
 
 	Bit16s *buffer;
+	DWORD renderedBufferCount;
 	DWORD framesRendered;
 
 	Synth *synth;
@@ -60,8 +61,9 @@ public:
 	int Reset();
 	void RenderAvailableSpace();
 	void Render(Bit16s *bufpos, DWORD totalFrames);
-	void PushMIDI(DWORD msg);
-	void PlaySysex(Bit8u *bufpos, DWORD len);
+	Bit32u getMIDIEventTimestamp();
+	void PlayMIDI(DWORD msg);
+	void PlaySysex(const Bit8u *bufpos, DWORD len);
 };
 
 }

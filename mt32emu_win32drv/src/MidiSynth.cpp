@@ -1,4 +1,4 @@
-/* Copyright (C) 2011, 2012 Sergey V. Mikayev
+/* Copyright (C) 2011, 2012, 2013 Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,7 @@
 
 namespace MT32Emu {
 
-#define	DRIVER_MODE
+#define	SUPPRESS_DEBUG_OUTPUT
 
 static const char MT32EMU_REGISTRY_PATH[] = "Software\\muntemu.org\\Munt mt32emu-qt";
 static const char MT32EMU_REGISTRY_DRIVER_SUBKEY[] = "waveout";
@@ -26,57 +26,6 @@ static const char MT32EMU_REGISTRY_MASTER_SUBKEY[] = "Master";
 static const char MT32EMU_REGISTRY_PROFILES_SUBKEY[] = "Profiles";
 
 static MidiSynth &midiSynth = MidiSynth::getInstance();
-
-static class MidiStream {
-private:
-	static const unsigned int maxPos = 1024;
-	unsigned int startpos;
-	unsigned int endpos;
-	DWORD stream[maxPos][2];
-
-public:
-	MidiStream() {
-		startpos = 0;
-		endpos = 0;
-	}
-
-	DWORD PutMessage(DWORD msg, DWORD timestamp) {
-		unsigned int newEndpos = endpos;
-
-		newEndpos++;
-		if (newEndpos == maxPos) // check for buffer rolloff
-			newEndpos = 0;
-		if (startpos == newEndpos) // check for buffer full
-			return -1;
-		stream[endpos][0] = msg;	// ok to put data and update endpos
-		stream[endpos][1] = timestamp;
-		endpos = newEndpos;
-		return 0;
-	}
-
-	DWORD GetMessage() {
-		if (startpos == endpos) // check for buffer empty
-			return -1;
-		DWORD msg = stream[startpos][0];
-		startpos++;
-		if (startpos == maxPos) // check for buffer rolloff
-			startpos = 0;
-		return msg;
-	}
-
-	DWORD PeekMessageTime() {
-		if (startpos == endpos) // check for buffer empty
-			return (DWORD)-1;
-		return stream[startpos][1];
-	}
-
-	DWORD PeekMessageTimeAt(unsigned int pos) {
-		if (startpos == endpos) // check for buffer empty
-			return -1;
-		unsigned int peekPos = (startpos + pos) % maxPos;
-		return stream[peekPos][1];
-	}
-} midiStream;
 
 static class SynthEventWin32 {
 private:
@@ -244,6 +193,12 @@ public:
 		if (delta < -(1 << 26)) {
 			std::cout << "MT32: GetPos() wrap: " << delta << "\n";
 			++getPosWraps;
+/*
+		} else if (delta < 0) {
+			// This ensures the return is monotonically increased
+			std::cout << "MT32: GetPos() went back by " << delta << " samples\n";
+			return prevPlayPos + getPosWraps * (1 << 27);
+*/
 		}
 		prevPlayPos = mmTime.u.sample;
 		return mmTime.u.sample + getPosWraps * (1 << 27);
@@ -289,7 +244,7 @@ protected:
 		std::cout << "MT32: LCD-Message: " << message << "\n";
 	}
 
-#ifdef DRIVER_MODE
+#ifdef SUPPRESS_DEBUG_OUTPUT
 	void printDebug(const char *fmt, va_list list) {}
 #endif
 } reportHandler;
@@ -321,34 +276,16 @@ void MidiSynth::RenderAvailableSpace() {
 
 // Renders totalFrames frames starting from bufpos
 // The number of frames rendered is added to the global counter framesRendered
-void MidiSynth::Render(Bit16s *bufpos, DWORD totalFrames) {
-	while (totalFrames > 0) {
-		DWORD timeStamp;
-		// Incoming MIDI messages timestamped with the current audio playback position + midiLatency
-		while ((timeStamp = midiStream.PeekMessageTime()) == framesRendered) {
-			DWORD msg = midiStream.GetMessage();
-			synthEvent.Wait();
-			synth->playMsg(msg);
-			synthEvent.Release();
-		}
-
-		// Find out how many frames to render. The value of timeStamp == -1 indicates the MIDI buffer is empty
-		DWORD framesToRender = timeStamp - framesRendered;
-		if (framesToRender > totalFrames) {
-			// MIDI message is too far - render the rest of frames
-			framesToRender = totalFrames;
-		}
-		synthEvent.Wait();
-		synth->render(bufpos, framesToRender);
-		synthEvent.Release();
-		framesRendered += framesToRender;
-		bufpos += 2 * framesToRender; // each frame consists of two samples for both the Left and Right channels
-		totalFrames -= framesToRender;
-	}
+void MidiSynth::Render(Bit16s *bufpos, DWORD framesToRender) {
+	synthEvent.Wait();
+	synth->render(bufpos, framesToRender);
+	synthEvent.Release();
+	framesRendered += framesToRender;
 
 	// Wrap framesRendered counter
 	if (framesRendered >= bufferSize) {
 		framesRendered -= bufferSize;
+		renderedBufferCount++;
 	}
 }
 
@@ -546,6 +483,7 @@ int MidiSynth::Init() {
 
 	// Start playing stream
 	synth->render(buffer, bufferSize);
+	renderedBufferCount = 1;
 	framesRendered = 0;
 
 	wResult = waveOut.Start();
@@ -553,21 +491,17 @@ int MidiSynth::Init() {
 }
 
 int MidiSynth::Reset() {
-#ifdef DRIVER_MODE
 	ReloadSettings();
 	if (!resetEnabled) {
 		ApplySettings();
 		return 0;
 	}
-#endif
 
 	UINT wResult = waveOut.Pause();
 	if (wResult) return wResult;
 
 	synthEvent.Wait();
 	synth->close();
-	delete synth;
-	synth = new Synth(&reportHandler);
 	if (!synth->open(*controlROM, *pcmROM)) {
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
@@ -579,14 +513,21 @@ int MidiSynth::Reset() {
 	return wResult;
 }
 
-void MidiSynth::PushMIDI(DWORD msg) {
-	midiStream.PutMessage(msg, (waveOut.GetPos() + midiLatency) % bufferSize);
+Bit32u MidiSynth::getMIDIEventTimestamp() {
+	// Using relative play position helps to keep correct timing after underruns
+	Bit32u playPosition = Bit32u(waveOut.GetPos() % bufferSize);
+	if (playPosition < framesRendered) {
+		playPosition += bufferSize;
+	}
+	return renderedBufferCount * bufferSize + playPosition + midiLatency;
 }
 
-void MidiSynth::PlaySysex(Bit8u *bufpos, DWORD len) {
-	synthEvent.Wait();
-	synth->playSysex(bufpos, len);
-	synthEvent.Release();
+void MidiSynth::PlayMIDI(DWORD msg) {
+	synth->playMsg(msg, getMIDIEventTimestamp());
+}
+
+void MidiSynth::PlaySysex(const Bit8u *bufpos, DWORD len) {
+	synth->playSysex(bufpos, len, getMIDIEventTimestamp());
 }
 
 void MidiSynth::Close() {
