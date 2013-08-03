@@ -103,6 +103,8 @@ public:
 			LOG_MSG("MT32: Error initialising emulation");
 			return false;
 		}
+		MT32Emu::ROMImage::freeROMImage(controlROMImage);
+		MT32Emu::ROMImage::freeROMImage(pcmROMImage);
 
 		Section_prop *section = static_cast<Section_prop *>(control->GetSection("midi"));
 		if (strcmp(section->Get_string("mt32.reverb.mode"), "auto") != 0) {
