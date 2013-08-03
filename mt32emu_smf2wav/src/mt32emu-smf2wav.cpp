@@ -326,7 +326,7 @@ static bool playSysexFileBuffer(MT32Emu::Synth *synth, const gchar *displayFilen
 			if (start == -1) {
 				fprintf(stderr, "Ended a sysex message without a start byte - sysex file '%s' may be in an unsupported format.\n", displayFilename);
 			} else {
-				synth->playSysex((MT32Emu::Bit8u*)(fileBuffer + start), i - start + 1);
+				synth->playSysexNow((MT32Emu::Bit8u*)(fileBuffer + start), i - start + 1);
 			}
 			start = -1;
 		}
@@ -527,8 +527,8 @@ static void playSMF(smf_t *smf, const Options &options, State &state) {
 	flushSilence(MIDI_ENDED, options, state);
 	if (options.sendAllNotesOff) {
 		for (unsigned char part = 0; part < 9; part++) {
-			state.synth->playMsgOnPart(part, 0xB, 0x40, 0x00); // Release sustain pedal
-			state.synth->playMsgOnPart(part, 0xB, 0x7B, 0x00); // All notes off
+			state.synth->playMsg(0x0040B0 & part); // Release sustain pedal
+			state.synth->playMsg(0x007BB0 & part); // All notes off
 		}
 	}
 	if (state.lastInputFile && options.renderMinFrames > state.renderedFrames) {
