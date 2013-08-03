@@ -14,7 +14,7 @@ public:
 	bool parse(const QString fileName);
 	const QMidiEventList &getMIDIEvents();
 	SynthTimestamp getMidiTick(uint tempo = DEFAULT_TEMPO);
-	void addAllNotesOff();
+	void addChannelsReset();
 
 private:
 	QFile file;

@@ -24,10 +24,15 @@
 
 static const MasterClockNanos MAX_SLEEP_TIME = 200 * MasterClock::NANOS_PER_MILLISECOND;
 
-void SMFProcessor::sendAllNotesOff(SynthRoute *synthRoute) {
+void SMFProcessor::sendChannelsReset(SynthRoute *synthRoute) {
 	MasterClockNanos nanosNow = MasterClock::getClockNanos();
-	for (int i = 0; i < 16; i++) {
-		quint32 msg = (0xB0 | i) | 0x7F00;
+	for (quint8 i = 0; i < 16; i++) {
+		// All notes off
+		quint32 msg = 0x7FB0 | i;
+		synthRoute->pushMIDIShortMessage(msg, nanosNow);
+
+		// Reset all controllers
+		msg = 0x79B0 | i;
 		synthRoute->pushMIDIShortMessage(msg, nanosNow);
 	}
 }
@@ -78,7 +83,7 @@ void SMFProcessor::run() {
 				totalSeconds = (currentNanos - startNanos) / MasterClock::NANOS_PER_SECOND + estimateRemainingTime(midiEvents, i + 1);
 			}
 			if (driver->seekPosition > -1) {
-				SMFProcessor::sendAllNotesOff(synthRoute);
+				SMFProcessor::sendChannelsReset(synthRoute);
 				MasterClockNanos seekNanos = totalSeconds * driver->seekPosition * MasterClock::NANOS_PER_MILLISECOND;
 				MasterClockNanos eventNanos = currentNanos - e.getTimestamp() * midiTick - startNanos;
 				if (seekNanos < eventNanos) {
@@ -125,7 +130,7 @@ void SMFProcessor::run() {
 				break;
 		}
 	}
-	SMFProcessor::sendAllNotesOff(synthRoute);
+	SMFProcessor::sendChannelsReset(synthRoute);
 	emit driver->playbackTimeChanged(0, 0);
 	qDebug() << "SMFDriver: processor thread stopped";
 	driver->deleteMidiSession(session);

@@ -331,9 +331,14 @@ SynthTimestamp MidiParser::getMidiTick(uint tempo) {
 	}
 }
 
-void MidiParser::addAllNotesOff() {
-	for (int i = 0; i < 16; i++) {
-		quint32 msg = (0xB0 | i) | 0x7F00;
+void MidiParser::addChannelsReset() {
+	for (quint8 i = 0; i < 16; i++) {
+		// All notes off
+		quint32 msg = 0x7FB0 | i;
+		midiEventList.newMidiEvent().assignShortMessage(0, msg);
+
+		// Reset all controllers
+		msg = 0x79B0 | i;
 		midiEventList.newMidiEvent().assignShortMessage(0, msg);
 	}
 }

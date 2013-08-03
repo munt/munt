@@ -30,7 +30,7 @@ private:
 	volatile bool bpmUpdated;
 	QString fileName;
 
-	static void sendAllNotesOff(SynthRoute *synthRoute);
+	static void sendChannelsReset(SynthRoute *synthRoute);
 	quint32 estimateRemainingTime(const QMidiEventList &midiEvents, int currentEventIx);
 	int seek(SynthRoute *synthRoute, const QMidiEventList &midiEvents, int currentEventIx, MasterClockNanos seekNanos, MasterClockNanos currentEventNanos);
 };

@@ -62,7 +62,7 @@ bool AudioFileWriter::convertMIDIFiles(QString useOutFileName, QStringList midiF
 			emit parsingFailed("Warning", "Error occured while parsing MIDI files. Processing available MIDI events.");
 		}
 	}
-	parsers[parsersCount - 1].addAllNotesOff();
+	parsers[parsersCount - 1].addChannelsReset();
 	if (synth != NULL) {
 		synth->close();
 		delete synth;
