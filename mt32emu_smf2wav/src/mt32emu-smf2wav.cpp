@@ -710,6 +710,8 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Error opening MT32Emu synthesizer.\n");
 	}
 	delete synth;
+	MT32Emu::ROMImage::freeROMImage(controlROMImage);
+	MT32Emu::ROMImage::freeROMImage(pcmROMImage);
 
 	if(options.outputFilename == NULL && outputFilename != NULL) {
 		free(outputFilename);
