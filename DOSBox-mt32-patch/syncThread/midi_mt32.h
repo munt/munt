@@ -1,46 +1,14 @@
 #include <mt32emu/mt32emu.h>
 #include <SDL_thread.h>
+#include <SDL_endian.h>
 #include "mixer.h"
 #include "control.h"
-
-class RingBuffer {
-private:
-	static const unsigned int bufferSize = 1024;
-	volatile unsigned int startpos;
-	volatile unsigned int endpos;
-	Bit32u ringBuffer[bufferSize];
-
-public:
-	RingBuffer() {
-		startpos = 0;
-		endpos = 0;
-	}
-
-	bool put(Bit32u data) {
-		unsigned int newEndpos = endpos;
-		newEndpos++;
-		if (newEndpos == bufferSize) newEndpos = 0;
-		if (startpos == newEndpos) return false;
-		ringBuffer[endpos] = data;
-		endpos = newEndpos;
-		return true;
-	}
-
-	Bit32u get() {
-		if (startpos == endpos) return 0;
-		Bit32u data = ringBuffer[startpos];
-		startpos++;
-		if (startpos == bufferSize) startpos = 0;
-		return data;
-	}
-};
 
 static class MidiHandler_mt32 : public MidiHandler {
 private:
 	static const Bitu MIXER_BUFFER_SIZE = MIXER_BUFSIZE >> 2;
 	MixerChannel *chan;
 	MT32Emu::Synth *synth;
-	RingBuffer midiBuffer;
 	SDL_Thread *thread;
 	SDL_mutex *synthMutex;
 	SDL_semaphore *procIdleSem, *mixerReqSem;
@@ -166,19 +134,15 @@ public:
 	}
 
 	void PlayMsg(Bit8u *msg) {
-		if (!midiBuffer.put(*(Bit32u *)msg)) LOG_MSG("MT32: Playback buffer full!");
+		synth->playMsg(SDL_SwapLE32(*(Bit32u *)msg));
 	}
 
 	void PlaySysex(Bit8u *sysex, Bitu len) {
-		if (renderInThread) SDL_LockMutex(synthMutex);
 		synth->playSysex(sysex, len);
-		if (renderInThread) SDL_UnlockMutex(synthMutex);
 	}
 
 private:
 	void render(Bitu len, Bit16s *buf) {
-		Bit32u msg = midiBuffer.get();
-		if (msg != 0) synth->playMsg(msg);
 		synth->render(buf, len);
 		if (reverseStereo) {
 			Bit16s *revBuf = buf;
