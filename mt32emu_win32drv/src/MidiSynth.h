@@ -58,6 +58,7 @@ public:
 	static MidiSynth &getInstance();
 	int Init();
 	void Close();
+	void FreeROMImages();
 	int Reset();
 	void RenderAvailableSpace();
 	void Render(Bit16s *bufpos, DWORD totalFrames);

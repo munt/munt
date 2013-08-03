@@ -371,6 +371,8 @@ void MidiSynth::LoadSettings() {
 		bufferSize = chunks * chunkSize;
 		std::cout << "MT32: Using " << chunks << " chunks, chunk size: " << chunkSize << " frames, buffer size: " << bufferSize << " frames." << std::endl;
 	}
+	synth = NULL;
+	controlROM = pcmROM = NULL;
 	ReloadSettings();
 }
 
@@ -424,6 +426,7 @@ void MidiSynth::ReloadSettings() {
 
 	emuDACInputMode = (DACInputMode)LoadIntValue(hRegProfile, "emuDACInputMode", DACInputMode_NICE);
 
+	if (!resetEnabled && synth != NULL) return;
 	char romDir[256];
 	char controlROMFileName[256];
 	char pcmROMFileName[256];
@@ -444,6 +447,7 @@ void MidiSynth::ReloadSettings() {
 	lstrcatA(pathName, pcmROMFileName);
 	FileStream *pcmROMFile = new FileStream;
 	pcmROMFile->open(pathName);
+	FreeROMImages();
 	controlROM = ROMImage::makeROMImage(controlROMFile);
 	pcmROM = ROMImage::makeROMImage(pcmROMFile);
 }
@@ -475,7 +479,7 @@ int MidiSynth::Init() {
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
 	}
-
+	FreeROMImages();
 	ApplySettings();
 
 	UINT wResult = waveOut.Init(buffer, bufferSize, chunkSize, useRingBuffer, sampleRate);
@@ -506,6 +510,7 @@ int MidiSynth::Reset() {
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
 	}
+	FreeROMImages();
 	ApplySettings();
 	synthEvent.Release();
 
@@ -530,6 +535,21 @@ void MidiSynth::PlaySysex(const Bit8u *bufpos, DWORD len) {
 	synth->playSysex(bufpos, len, getMIDIEventTimestamp());
 }
 
+void MidiSynth::FreeROMImages() {
+	if (controlROM != NULL) {
+		controlROM->getFile()->close();
+		delete controlROM->getFile();
+		ROMImage::freeROMImage(controlROM);
+		controlROM = NULL;
+	}
+	if (pcmROM != NULL) {
+		pcmROM->getFile()->close();
+		delete pcmROM->getFile();
+		ROMImage::freeROMImage(pcmROM);
+		pcmROM = NULL;
+	}
+}
+
 void MidiSynth::Close() {
 	waveOut.Pause();
 	waveOut.Close();
@@ -539,12 +559,7 @@ void MidiSynth::Close() {
 	// Cleanup memory
 	delete synth;
 	delete buffer;
-	controlROM->getFile()->close();
-	delete controlROM->getFile();
-	ROMImage::freeROMImage(controlROM);
-	pcmROM->getFile()->close();
-	delete pcmROM->getFile();
-	ROMImage::freeROMImage(pcmROM);
+	FreeROMImages();
 
 	synthEvent.Close();
 }
