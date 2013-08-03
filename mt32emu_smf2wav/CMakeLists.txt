@@ -30,6 +30,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor -Wshadow -ansi -pedantic)
 endif()
 
+if(MSVC)
+  add_definitions(-D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1)
+endif()
+
 add_executable(mt32emu-smf2wav
   src/mt32emu-smf2wav.cpp
 )
