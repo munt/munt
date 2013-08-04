@@ -38,8 +38,15 @@ void Poly::setPart(Part *usePart) {
 
 void Poly::reset(unsigned int newKey, unsigned int newVelocity, bool newSustain, Partial **newPartials) {
 	if (isActive()) {
-		// FIXME: Throw out some big ugly debug output with a lot of exclamation marks - we should never get here
-		terminate();
+		// This should never happen
+		part->getSynth()->printDebug("Resetting active poly. Active partial count: %i\n", activePartialCount);
+		for (int i = 0; i < 4; i++) {
+			if (partials[i] != NULL && partials[i]->isActive()) {
+				partials[i]->deactivate();
+				activePartialCount--;
+			}
+		}
+		state = POLY_Inactive;
 	}
 
 	key = newKey;

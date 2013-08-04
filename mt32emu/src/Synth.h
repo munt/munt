@@ -280,7 +280,7 @@ public:
 	bool pushShortMessage(Bit32u shortMessageData, Bit32u timestamp);
 	bool pushSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
 	const MidiEvent *peekMidiEvent();
-	const void dropMidiEvent();
+	void dropMidiEvent();
 };
 
 class Synth {

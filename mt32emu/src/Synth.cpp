@@ -1292,10 +1292,9 @@ void MidiEvent::setSysex(const Bit8u *useSysexData, Bit32u useSysexLength, Bit32
 	memcpy(dstSysexData, useSysexData, sysexLength);
 }
 
-MidiEventQueue::MidiEventQueue(Bit32u ringBufferSize) : ringBufferSize(ringBufferSize) {
+MidiEventQueue::MidiEventQueue(Bit32u useRingBufferSize) : ringBufferSize(useRingBufferSize) {
 	ringBuffer = new MidiEvent[ringBufferSize];
 	memset(ringBuffer, 0, ringBufferSize * sizeof(MidiEvent));
-	ringBuffer[ringBufferSize];
 	reset();
 }
 
@@ -1330,7 +1329,7 @@ const MidiEvent *MidiEventQueue::peekMidiEvent() {
 	return (startPosition == endPosition) ? NULL : &ringBuffer[startPosition];
 }
 
-const void MidiEventQueue::dropMidiEvent() {
+void MidiEventQueue::dropMidiEvent() {
 	// Is ring buffer empty?
 	if (startPosition != endPosition) {
 		startPosition = (startPosition + 1) % ringBufferSize;
@@ -1434,6 +1433,8 @@ void Synth::convertSamplesToOutput(Sample *target, const Sample *source, Bit32u 
 				target++;
 			}
 			return;
+		default:
+			break;
 		}
 	}
 	while (len--) {
