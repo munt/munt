@@ -131,7 +131,8 @@ void LA32WaveGenerator::advancePosition() {
 	computePositions(highLinearLength, lowLinearLength, resonanceWaveLengthFactor);
 
 	// resonancePhase computation hack
-	*(int*)&resonancePhase = ((resonanceSinePosition >> 18) + (phase > POSITIVE_FALLING_SINE_SEGMENT ? 2 : 0)) & 3;
+	int *resonancePhaseAlias = (int *)&resonancePhase;
+	*resonancePhaseAlias = ((resonanceSinePosition >> 18) + (phase > POSITIVE_FALLING_SINE_SEGMENT ? 2 : 0)) & 3;
 }
 
 void LA32WaveGenerator::generateNextSquareWaveLogSample() {
