@@ -319,8 +319,8 @@ private:
 	Bit8s chantable[32]; // FIXME: Need explanation why 32 is set, obviously it should be 16
 
 	MidiEventQueue *midiQueue;
-	Bit32u lastReceivedMIDIEventTimestamp;
-	Bit32u renderedSampleCount;
+	volatile Bit32u lastReceivedMIDIEventTimestamp;
+	volatile Bit32u renderedSampleCount;
 
 	MemParams mt32ram, mt32default;
 

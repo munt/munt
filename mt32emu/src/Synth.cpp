@@ -535,6 +535,7 @@ bool Synth::playMsg(Bit32u msg) {
 }
 
 bool Synth::playMsg(Bit32u msg, Bit32u timestamp) {
+	if (midiQueue == NULL) return false;
 	return midiQueue->pushShortMessage(msg, addMIDIInterfaceDelay(getShortMessageLength(msg), timestamp));
 }
 
@@ -543,6 +544,7 @@ bool Synth::playSysex(const Bit8u *sysex, Bit32u len) {
 }
 
 bool Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
+	if (midiQueue == NULL) return false;
 #if MT32EMU_EMULATE_MIDI_DELAYS == 2
 	timestamp = addMIDIInterfaceDelay(len, timestamp);
 #endif
