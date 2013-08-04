@@ -128,10 +128,6 @@ public:
 		open = false;
 	}
 
-	Bit32u getMidiEventTimestamp() {
-		return playedBuffers * FRAMES_PER_AUDIO_BUFFER + (playPos >> 1);
-	}
-
 	void PlayMsg(Bit8u *msg) {
 		if (renderInThread) {
 			synth->playMsg(SDL_SwapLE32(*(Bit32u *)msg), getMidiEventTimestamp());
@@ -149,6 +145,10 @@ public:
 	}
 
 private:
+	Bit32u inline getMidiEventTimestamp() {
+		return playedBuffers * FRAMES_PER_AUDIO_BUFFER + (playPos >> 1);
+	}
+
 	void render(const Bitu len, Bit16s *buf) {
 		Bit16s *revBuf = &buf[renderPos];
 		synth->render(revBuf, len);
