@@ -191,7 +191,7 @@ void MidiHandler_mt32::mixerCallBack(Bitu len) {
 		}
 		midiHandler_mt32.chan->AddSamples_s16(len, &midiHandler_mt32.audioBuffer[playPos]);
 		playPos += (len << 1);
-		while (AUDIO_BUFFER_SIZE < playPos) {
+		while (AUDIO_BUFFER_SIZE <= playPos) {
 			playPos -= AUDIO_BUFFER_SIZE;
 			midiHandler_mt32.playedBuffers++;
 		}
