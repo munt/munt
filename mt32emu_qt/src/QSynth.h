@@ -1,7 +1,6 @@
 #ifndef QSYNTH_H
 #define QSYNTH_H
 
-#include <ctime>
 #include <QtCore>
 #include <mt32emu/mt32emu.h>
 
@@ -69,20 +68,16 @@ class QSynth : public QObject {
 friend class QReportHandler;
 
 private:
-	SynthState state;
+	volatile SynthState state;
 
 	QMutex *synthMutex;
 	QMidiEventQueue *midiEventQueue;
 
-	volatile bool isOpen;
 	QDir romDir;
 	QString controlROMFileName;
 	QString pcmROMFileName;
 	const MT32Emu::ROMImage *controlROMImage;
 	const MT32Emu::ROMImage *pcmROMImage;
-	MT32Emu::DACInputMode emuDACInputMode;
-	float outputGain;
-	float reverbOutputGain;
 	int reverbMode;
 	int reverbTime;
 	int reverbLevel;
@@ -92,7 +87,7 @@ private:
 	quint64 debugLastEventSampleIx;
 
 	MT32Emu::Synth *synth;
-	QReportHandler *reportHandler;
+	QReportHandler reportHandler;
 	QString synthProfileName;
 
 	void setState(SynthState newState);
@@ -103,6 +98,7 @@ public:
 
 	QSynth(QObject *parent = NULL);
 	~QSynth();
+	bool isOpen() const;
 	bool open(const QString useSynthProfileName = "");
 	void close();
 	bool reset();

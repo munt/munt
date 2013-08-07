@@ -6,6 +6,8 @@
 
 #include <mt32emu/mt32emu.h>
 
+#include "MasterClock.h"
+
 enum MidiEventType {
 	SHORT_MESSAGE,
 	SYSEX,
@@ -13,7 +15,7 @@ enum MidiEventType {
 	SYNC
 };
 
-typedef qint64 SynthTimestamp;
+typedef MasterClockNanos SynthTimestamp;
 
 class QMidiEvent {
 private:

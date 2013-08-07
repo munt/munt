@@ -169,12 +169,12 @@ const MT32Emu::Partial *SynthRoute::getPartial(int partialNum) const {
 	return qSynth.getPartial(partialNum);
 }
 
-bool SynthRoute::pushMIDIShortMessage(Bit32u msg, qint64 refNanos) {
+bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
 	recorder.recordShortMessage(msg, refNanos);
 	return qSynth.pushMIDIShortMessage(msg, refNanos);
 }
 
-bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, qint64 refNanos) {
+bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, MasterClockNanos refNanos) {
 	recorder.recordSysex(sysexData, sysexLen, refNanos);
 	return qSynth.pushMIDISysex(sysexData, sysexLen, refNanos);
 }

@@ -6,6 +6,7 @@
 #include <mt32emu/mt32emu.h>
 
 #include "QSynth.h"
+#include "MasterClock.h"
 #include "MidiRecorder.h"
 
 class MidiSession;
@@ -44,8 +45,8 @@ public:
 	const MT32Emu::Poly *getFirstActivePolyOnPart(unsigned int partNum) const;
 	unsigned int getPartialCount() const;
 
-	bool pushMIDIShortMessage(MT32Emu::Bit32u msg, qint64 midiNanos);
-	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, qint64 midiNanos);
+	bool pushMIDIShortMessage(MT32Emu::Bit32u msg, MasterClockNanos midiNanos);
+	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, MasterClockNanos midiNanos);
 	void setMasterVolume(int masterVolume);
 	void setOutputGain(float outputGain);
 	void setReverbOutputGain(float reverbOutputGain);
