@@ -118,7 +118,6 @@ bool QSynth::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, SynthTimesta
 unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstSampleTimestamp, double actualSampleRate) {
 	unsigned int renderedLen = 0;
 
-//	qDebug() << "P" << debugSampleIx << firstSampleTimestamp << actualSampleRate << len;
 	while (renderedLen < len) {
 		unsigned int renderThisPass = len - renderedLen;
 		// This loop processes any events that are due before or at this sample position,
@@ -129,7 +128,6 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 			const QMidiEvent *event = midiEventQueue->peekEvent();
 			if (event == NULL) {
 				// Queue empty
-//				qDebug() << "Q" << debugSampleIx;
 				break;
 			}
 			if (event->getTimestamp() <= nanosNow) {
