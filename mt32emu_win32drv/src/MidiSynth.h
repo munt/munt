@@ -40,8 +40,7 @@ private:
 	Bit8u reverbLevel;
 
 	Bit16s *buffer;
-	DWORD renderedBufferCount;
-	DWORD framesRendered;
+	volatile UINT64 renderedFramesCount;
 
 	Synth *synth;
 	const ROMImage *controlROM;

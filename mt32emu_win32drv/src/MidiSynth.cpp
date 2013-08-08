@@ -18,12 +18,13 @@
 
 namespace MT32Emu {
 
-#define	SUPPRESS_DEBUG_OUTPUT
-
 static const char MT32EMU_REGISTRY_PATH[] = "Software\\muntemu.org\\Munt mt32emu-qt";
 static const char MT32EMU_REGISTRY_DRIVER_SUBKEY[] = "waveout";
 static const char MT32EMU_REGISTRY_MASTER_SUBKEY[] = "Master";
 static const char MT32EMU_REGISTRY_PROFILES_SUBKEY[] = "Profiles";
+
+// Each frame consists of two samples for both the Left and Right channels
+static const unsigned int SAMPLES_PER_FRAME = 2;
 
 static MidiSynth &midiSynth = MidiSynth::getInstance();
 
@@ -60,9 +61,9 @@ private:
 	WAVEHDR		*WaveHdr;
 	HANDLE		hEvent;
 	DWORD		chunks;
-	DWORD		prevPlayPos;
-	DWORD		getPosWraps;
-	bool		stopProcessing;
+
+	volatile UINT64 prevPlayPosition;
+	volatile bool stopProcessing;
 
 public:
 	int Init(Bit16s *buffer, unsigned int bufferSize, unsigned int chunkSize, bool useRingBuffer, unsigned int sampleRate) {
@@ -144,8 +145,7 @@ public:
 	}
 
 	int Start() {
-		getPosWraps = 0;
-		prevPlayPos = 0;
+		prevPlayPosition = 0;
 		for (UINT i = 0; i < chunks; i++) {
 			if (waveOutWrite(hWaveOut, &WaveHdr[i], sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
 				MessageBox(NULL, L"Failed to write block to device", L"MT32", MB_OK | MB_ICONEXCLAMATION);
@@ -173,6 +173,15 @@ public:
 	}
 
 	UINT64 GetPos() {
+		static const DWORD WRAP_BITS = 27;
+		static const UINT64 WRAP_MASK = (1 << 27) - 1;
+		static const int WRAP_THRESHOLD = 1 << (WRAP_BITS - 1);
+
+		// Taking a snapshot to avoid possible thread interference
+		UINT64 playPositionSnapshot = prevPlayPosition;
+		DWORD wrapCount = DWORD(playPositionSnapshot >> WRAP_BITS);
+		DWORD wrappedPosition = DWORD(playPositionSnapshot & WRAP_MASK);
+
 		MMTIME mmTime;
 		mmTime.wType = TIME_SAMPLES;
 
@@ -189,19 +198,21 @@ public:
 		// presumably caused by the internal 32-bit counter of bits played.
 		// The output of that nasty waveOutGetPosition() isn't monotonically increasing
 		// even during 2^27 samples playback, so we have to ensure the difference is big enough...
-		int delta = mmTime.u.sample - prevPlayPos;
-		if (delta < -(1 << 26)) {
+		int delta = mmTime.u.sample - wrappedPosition;
+		if (delta < -WRAP_THRESHOLD) {
+#ifdef ENABLE_DEBUG_OUTPUT
 			std::cout << "MT32: GetPos() wrap: " << delta << "\n";
-			++getPosWraps;
-/*
+#endif
+			++wrapCount;
 		} else if (delta < 0) {
 			// This ensures the return is monotonically increased
+#ifdef ENABLE_DEBUG_OUTPUT
 			std::cout << "MT32: GetPos() went back by " << delta << " samples\n";
-			return prevPlayPos + getPosWraps * (1 << 27);
-*/
+#endif
+			return playPositionSnapshot;
 		}
-		prevPlayPos = mmTime.u.sample;
-		return mmTime.u.sample + getPosWraps * (1 << 27);
+		prevPlayPosition = playPositionSnapshot = mmTime.u.sample + (wrapCount << WRAP_BITS);
+		return playPositionSnapshot;
 	}
 
 	static void RenderingThread(void *) {
@@ -223,6 +234,8 @@ public:
 					}
 				}
 				if (allBuffersRendered) {
+					// Ensure the playback position is monitored frequently enough in order not to miss a wraparound
+					waveOut.GetPos();
 					WaitForSingleObject(waveOut.hEvent, INFINITE);
 				}
 			}
@@ -244,7 +257,7 @@ protected:
 		std::cout << "MT32: LCD-Message: " << message << "\n";
 	}
 
-#ifdef SUPPRESS_DEBUG_OUTPUT
+#ifndef ENABLE_DEBUG_OUTPUT
 	void printDebug(const char *fmt, va_list list) {}
 #endif
 } reportHandler;
@@ -258,20 +271,21 @@ MidiSynth &MidiSynth::getInstance() {
 
 // Renders all the available space in the single looped ring buffer
 void MidiSynth::RenderAvailableSpace() {
-	DWORD playPos = waveOut.GetPos() % bufferSize;
+	DWORD playPosition = waveOut.GetPos() % bufferSize;
+	DWORD renderPosition = DWORD(renderedFramesCount % bufferSize);
 	DWORD framesToRender;
 
-	if (playPos < framesRendered) {
+	if (playPosition < renderPosition) {
 		// Buffer wrap, render 'till the end of the buffer
-		framesToRender = bufferSize - framesRendered;
+		framesToRender = bufferSize - renderPosition;
 	} else {
-		framesToRender = playPos - framesRendered;
+		framesToRender = playPosition - renderPosition;
 		if (framesToRender < chunkSize) {
 			Sleep(1 + (chunkSize - framesToRender) * 1000 / sampleRate);
 			return;
 		}
 	}
-	midiSynth.Render(buffer + 2 * framesRendered, framesToRender);
+	midiSynth.Render(buffer + SAMPLES_PER_FRAME * renderPosition, framesToRender);
 }
 
 // Renders totalFrames frames starting from bufpos
@@ -280,13 +294,7 @@ void MidiSynth::Render(Bit16s *bufpos, DWORD framesToRender) {
 	synthEvent.Wait();
 	synth->render(bufpos, framesToRender);
 	synthEvent.Release();
-	framesRendered += framesToRender;
-
-	// Wrap framesRendered counter
-	if (framesRendered >= bufferSize) {
-		framesRendered -= bufferSize;
-		renderedBufferCount++;
-	}
+	renderedFramesCount += framesToRender;
 }
 
 static bool LoadBoolValue(HKEY hReg, const char *name, const bool nDefault) {
@@ -364,7 +372,9 @@ void MidiSynth::LoadSettings() {
 	midiLatency = MillisToFrames(LoadIntValue(hRegDriver, "MidiLatency", 0));
 	useRingBuffer = LoadBoolValue(hRegDriver, "UseRingBuffer", false);
 	RegCloseKey(hRegDriver);
-	if (!useRingBuffer) {
+	if (useRingBuffer) {
+		std::cout << "MT32: Using looped ring buffer, buffer size: " << bufferSize << " frames, min. rendering interval: " << chunkSize <<" frames." << std::endl;
+	} else {
 		// Number of chunks should be ceil(bufferSize / chunkSize)
 		DWORD chunks = (bufferSize + chunkSize - 1) / chunkSize;
 		// Refine bufferSize as chunkSize * number of chunks, no less then the specified value
@@ -468,7 +478,7 @@ void MidiSynth::ApplySettings() {
 int MidiSynth::Init() {
 	LoadSettings();
 
-	buffer = new Bit16s[2 * bufferSize]; // each frame consists of two samples for both the Left and Right channels
+	buffer = new Bit16s[SAMPLES_PER_FRAME * bufferSize];
 
 	// Init synth
 	if (synthEvent.Init()) {
@@ -487,8 +497,7 @@ int MidiSynth::Init() {
 
 	// Start playing stream
 	synth->render(buffer, bufferSize);
-	renderedBufferCount = 1;
-	framesRendered = 0;
+	renderedFramesCount = bufferSize;
 
 	wResult = waveOut.Start();
 	return wResult;
@@ -519,12 +528,16 @@ int MidiSynth::Reset() {
 }
 
 Bit32u MidiSynth::getMIDIEventTimestamp() {
+	// Taking a snapshot to avoid interference with the rendering thread
+	UINT64 renderedFramesCountSnapshot = renderedFramesCount;
+	Bit32u renderPosition = Bit32u(renderedFramesCountSnapshot % bufferSize);
+
 	// Using relative play position helps to keep correct timing after underruns
 	Bit32u playPosition = Bit32u(waveOut.GetPos() % bufferSize);
-	if (playPosition < framesRendered) {
+	if (playPosition < renderPosition) {
 		playPosition += bufferSize;
 	}
-	return renderedBufferCount * bufferSize + playPosition + midiLatency;
+	return Bit32u(renderedFramesCountSnapshot - renderPosition) + playPosition + midiLatency;
 }
 
 void MidiSynth::PlayMIDI(DWORD msg) {
