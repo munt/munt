@@ -25,6 +25,7 @@
 static const MasterClockNanos MAX_SLEEP_TIME = 200 * MasterClock::NANOS_PER_MILLISECOND;
 
 void SMFProcessor::sendChannelsReset(SynthRoute *synthRoute) {
+	if (synthRoute->getState() != SynthRouteState_OPEN) return;
 	MasterClockNanos nanosNow = MasterClock::getClockNanos();
 	for (quint8 i = 0; i < 16; i++) {
 		// All notes off
