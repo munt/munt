@@ -140,17 +140,24 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 					synthMutex->unlock();
 					break;
 				}
+				bool eventPushed = true;
 				if (sysexData != NULL) {
-					synth->playSysex(sysexData, event->getSysexLen());
+					eventPushed = synth->playSysex(sysexData, event->getSysexLen());
 				} else {
 					if(event->getShortMessage() == 0) {
 						// This is a special event sent by the test driver
 						debugSpecialEvent = true;
 					} else {
-						synth->playMsg(event->getShortMessage());
+						eventPushed = synth->playMsg(event->getShortMessage());
 					}
 				}
 				synthMutex->unlock();
+				if (!eventPushed) {
+					// Internal synth's queue is full.
+					// Rendering 1 ms looks reasonable in this case as we don't break timing too much and have no performance penalty.
+					if (renderThisPass > 32) renderThisPass = 32;
+					break;
+				}
 				if (debugSpecialEvent) {
 					quint64 delta = (debugSampleIx - debugLastEventSampleIx);
 					if (delta < 253 || 259 < delta || debugEventOffset < -1000000)
