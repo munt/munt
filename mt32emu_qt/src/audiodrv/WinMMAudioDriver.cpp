@@ -47,7 +47,7 @@ WinMMAudioStream::WinMMAudioStream(const WinMMAudioDevice *device, QSynth *useSy
 	useRingBuffer = driverSettings.advancedTiming;
 	if (useRingBuffer) {
 		numberOfChunks = 1;
-		qDebug() << "WinMMAudioDriver: Using looped ring buffer, buffer size:" << bufferSize << "frames.";
+		qDebug() << "WinMMAudioDriver: Using looped ring buffer, buffer size:" << bufferSize << "frames, min. rendering interval:" << driverSettings.chunkLen << "ms.";
 	} else {
 		// Number of chunks should be ceil(bufferSize / chunkSize)
 		numberOfChunks = (bufferSize + chunkSize - 1) / chunkSize;
@@ -95,8 +95,10 @@ void WinMMAudioStream::processingThread(void *userData) {
 		// even during 2^27 samples playback, so we have to ensure the difference is big enough...
 		int delta = mmTime.u.sample - prevPlayPos;
 		if (delta < -(1 << 26)) {
-			qDebug() << "WinMMAudioDriver: GetPos() wrap: " << delta << "\n";
+			qDebug() << "WinMMAudioDriver: GetPos() wrap:" << delta << "\n";
 			++getPosWraps;
+		} else if (delta < 0) {
+			qDebug() << "WinMMAudioDriver: GetPos() went backwards by:" << delta << "\n";
 		}
 		prevPlayPos = mmTime.u.sample;
 		playCursor = (mmTime.u.sample + (quint64)getPosWraps * (1 << 27)) % stream.bufferSize;
