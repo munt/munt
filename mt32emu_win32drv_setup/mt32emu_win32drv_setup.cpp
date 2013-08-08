@@ -188,8 +188,9 @@ int main(int argc, char *argv[]) {
 		unregisterDriver();
 		return 0;
 	}
-	int setupPathLen = strrchr(argv[0], '\\') - argv[0];
-	if (setupPathLen > MAX_PATH - sizeof(MT32EMU_DRIVER_NAME) - 2) {
+	const char *pathDelimPosition = strrchr(argv[0], '\\');
+	int setupPathLen = pathDelimPosition - argv[0];
+	if (pathDelimPosition != NULL && setupPathLen > MAX_PATH - sizeof(MT32EMU_DRIVER_NAME) - 2) {
 		MessageBoxA(NULL, CANNOT_INSTALL_PATH_TOO_LONG_ERR, ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		return 2;
 	}
@@ -201,8 +202,12 @@ int main(int argc, char *argv[]) {
 	constructDriverPathName(driverPathName);
 	deleteFileReliably(driverPathName);
 	char setupPathName[MAX_PATH + 1];
-	strncpy(setupPathName, argv[0], setupPathLen);
-	setupPathName[setupPathLen] = 0;
+	if (pathDelimPosition == NULL) {
+		GetCurrentDirectoryA(sizeof(setupPathName), setupPathName);
+	} else {
+		strncpy(setupPathName, argv[0], setupPathLen);
+		setupPathName[setupPathLen] = 0;
+	}
 	strncat(setupPathName, PATH_SEPARATOR, MAX_PATH - strlen(setupPathName));
 	strncat(setupPathName, MT32EMU_DRIVER_NAME, MAX_PATH - strlen(setupPathName));
 	if (!CopyFileA(setupPathName, driverPathName, FALSE)) {
