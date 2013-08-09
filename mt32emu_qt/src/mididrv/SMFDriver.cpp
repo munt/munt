@@ -26,15 +26,15 @@ static const MasterClockNanos MAX_SLEEP_TIME = 200 * MasterClock::NANOS_PER_MILL
 
 void SMFProcessor::sendChannelsReset(SynthRoute *synthRoute) {
 	if (synthRoute->getState() != SynthRouteState_OPEN) return;
-	MasterClockNanos nanosNow = MasterClock::getClockNanos();
+	synthRoute->flushMIDIQueue();
 	for (quint8 i = 0; i < 16; i++) {
 		// All notes off
 		quint32 msg = 0x7FB0 | i;
-		synthRoute->pushMIDIShortMessage(msg, nanosNow);
+		synthRoute->playMIDIShortMessageNow(msg);
 
 		// Reset all controllers
 		msg = 0x79B0 | i;
-		synthRoute->pushMIDIShortMessage(msg, nanosNow);
+		synthRoute->playMIDIShortMessageNow(msg);
 	}
 }
 

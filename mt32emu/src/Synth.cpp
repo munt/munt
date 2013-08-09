@@ -509,8 +509,25 @@ void Synth::close() {
 	isOpen = false;
 }
 
+void Synth::flushMIDIQueue() {
+	if (midiQueue != NULL) {
+		for (;;) {
+			const MidiEvent *midiEvent = midiQueue->peekMidiEvent();
+			if (midiEvent == NULL) break;
+			if (midiEvent->sysexData == NULL) {
+				playMsgNow(midiEvent->shortMessageData);
+			} else {
+				playSysexNow(midiEvent->sysexData, midiEvent->sysexLength);
+			}
+			midiQueue->dropMidiEvent();
+		}
+		lastReceivedMIDIEventTimestamp = renderedSampleCount;
+	}
+}
+
 void Synth::setMIDIEventQueueSize(Bit32u useSize) {
 	if (midiQueue != NULL) {
+		flushMIDIQueue();
 		delete midiQueue;
 		midiQueue = new MidiEventQueue(useSize);
 	}

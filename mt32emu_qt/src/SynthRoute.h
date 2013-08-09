@@ -45,6 +45,11 @@ public:
 	const MT32Emu::Poly *getFirstActivePolyOnPart(unsigned int partNum) const;
 	unsigned int getPartialCount() const;
 
+	void flushMIDIQueue();
+	void playMIDIShortMessageNow(MT32Emu::Bit32u msg);
+	void playMIDISysexNow(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen);
+	bool playMIDIShortMessage(MT32Emu::Bit32u msg, MT32Emu::Bit32u timestamp);
+	bool playMIDISysex(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, MT32Emu::Bit32u timestamp);
 	bool pushMIDIShortMessage(MT32Emu::Bit32u msg, MasterClockNanos midiNanos);
 	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, MasterClockNanos midiNanos);
 	void setMasterVolume(int masterVolume);

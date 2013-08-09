@@ -419,8 +419,11 @@ public:
 	// Closes the MT-32 and deallocates any memory used by the synthesizer
 	void close(void);
 
+	// All the enqueued events are processed by the synth immediately.
+	void flushMIDIQueue();
+
 	// Sets size of the internal MIDI event queue.
-	// When a new size of the queue is set all the enqueued events are lost.
+	// The queue is flushed before reallocation.
 	void setMIDIEventQueueSize(Bit32u);
 
 	// Enqueues a MIDI event for subsequent playback.

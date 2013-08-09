@@ -161,13 +161,19 @@ void SynthRoute::handleQSynthState(SynthState synthState) {
 	}
 }
 
-const QString SynthRoute::getPatchName(int partNum) const {
-	return qSynth.getPatchName(partNum);
+MidiRecorder *SynthRoute::getMidiRecorder() {
+	return &recorder;
 }
 
-const MT32Emu::Partial *SynthRoute::getPartial(int partialNum) const {
-	return qSynth.getPartial(partialNum);
+bool SynthRoute::connectSynth(const char *signal, const QObject *receiver, const char *slot) const {
+	return QObject::connect(&qSynth, signal, receiver, slot);
 }
+
+bool SynthRoute::connectReportHandler(const char *signal, const QObject *receiver, const char *slot) const {
+	return QObject::connect(qSynth.getReportHandler(), signal, receiver, slot);
+}
+
+// QSynth delegation
 
 bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
 	recorder.recordShortMessage(msg, refNanos);
@@ -177,6 +183,26 @@ bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
 bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, MasterClockNanos refNanos) {
 	recorder.recordSysex(sysexData, sysexLen, refNanos);
 	return qSynth.pushMIDISysex(sysexData, sysexLen, refNanos);
+}
+
+void SynthRoute::flushMIDIQueue() {
+	qSynth.flushMIDIQueue();
+}
+
+void SynthRoute::playMIDIShortMessageNow(Bit32u msg) {
+	qSynth.playMIDIShortMessageNow(msg);
+}
+
+void SynthRoute::playMIDISysexNow(Bit8u *sysex, Bit32u sysexLen) {
+	qSynth.playMIDISysexNow(sysex, sysexLen);
+}
+
+bool SynthRoute::playMIDIShortMessage(Bit32u msg, Bit32u timestamp) {
+	return qSynth.playMIDIShortMessage(msg, timestamp);
+}
+
+bool SynthRoute::playMIDISysex(Bit8u *sysex, Bit32u sysexLen, Bit32u timestamp) {
+	return qSynth.playMIDISysex(sysex, sysexLen, timestamp);
 }
 
 void SynthRoute::setMasterVolume(int masterVolume) {
@@ -207,10 +233,6 @@ void SynthRoute::setDACInputMode(DACInputMode emuDACInputMode) {
 	qSynth.setDACInputMode(emuDACInputMode);
 }
 
-MidiRecorder *SynthRoute::getMidiRecorder() {
-	return &recorder;
-}
-
 void SynthRoute::getSynthProfile(SynthProfile &synthProfile) const {
 	qSynth.getSynthProfile(synthProfile);
 }
@@ -219,18 +241,18 @@ void SynthRoute::setSynthProfile(const SynthProfile &synthProfile, QString useSy
 	qSynth.setSynthProfile(synthProfile, useSynthProfileName);
 }
 
-bool SynthRoute::connectSynth(const char *signal, const QObject *receiver, const char *slot) const {
-	return QObject::connect(&qSynth, signal, receiver, slot);
-}
-
-bool SynthRoute::connectReportHandler(const char *signal, const QObject *receiver, const char *slot) const {
-	return QObject::connect(qSynth.getReportHandler(), signal, receiver, slot);
-}
-
 unsigned int SynthRoute::getPartialCount() const {
 	return qSynth.getPartialCount();
 }
 
-const MT32Emu::Poly *SynthRoute::getFirstActivePolyOnPart(unsigned int partNum) const {
+const QString SynthRoute::getPatchName(int partNum) const {
+	return qSynth.getPatchName(partNum);
+}
+
+const Partial *SynthRoute::getPartial(int partialNum) const {
+	return qSynth.getPartial(partialNum);
+}
+
+const Poly *SynthRoute::getFirstActivePolyOnPart(unsigned int partNum) const {
 	return qSynth.getFirstActivePolyOnPart(partNum);
 }

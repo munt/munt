@@ -91,7 +91,9 @@ void QReportHandler::onProgramChanged(int partNum, int timbreGroup, const char p
 }
 
 QSynth::QSynth(QObject *parent) :
-	QObject(parent), state(SynthState_CLOSED), controlROMImage(NULL), pcmROMImage(NULL), reportHandler(this) {
+	QObject(parent), state(SynthState_CLOSED), midiMutex(QMutex::Recursive),
+	controlROMImage(NULL), pcmROMImage(NULL), reportHandler(this)
+{
 	synthMutex = new QMutex(QMutex::Recursive);
 	midiEventQueue = new QMidiEventQueue;
 	synth = new Synth(&reportHandler);
@@ -106,6 +108,69 @@ QSynth::~QSynth() {
 
 bool QSynth::isOpen() const {
 	return state == SynthState_OPEN;
+}
+
+void QSynth::flushMIDIQueue() {
+	midiMutex.lock();
+	synthMutex->lock();
+	// Drain synth's queue first
+	synth->flushMIDIQueue();
+	// Then drain our queue
+	forever {
+		const QMidiEvent *midiEvent = midiEventQueue->popEvent();
+		if (midiEvent == NULL) break;
+		if (midiEvent->getType() == SYSEX) {
+			synth->playSysexNow(midiEvent->getSysexData(), midiEvent->getSysexLen());
+		} else if (midiEvent->getType() == SHORT_MESSAGE) {
+			synth->playMsgNow(midiEvent->getShortMessage());
+		} else {
+			// Special event attempted to play, ignore
+		}
+	}
+	synthMutex->unlock();
+	midiMutex.unlock();
+}
+
+void QSynth::playMIDIShortMessageNow(Bit32u msg) {
+	synthMutex->lock();
+	if (!isOpen()) {
+		synthMutex->unlock();
+		return;
+	}
+	synth->playMsgNow(msg);
+	synthMutex->unlock();
+}
+
+void QSynth::playMIDISysexNow(Bit8u *sysex, Bit32u sysexLen) {
+	synthMutex->lock();
+	if (!isOpen()) {
+		synthMutex->unlock();
+		return;
+	}
+	synth->playSysexNow(sysex, sysexLen);
+	synthMutex->unlock();
+}
+
+bool QSynth::playMIDIShortMessage(Bit32u msg, Bit32u timestamp) {
+	midiMutex.lock();
+	if (!isOpen()) {
+		midiMutex.unlock();
+		return false;
+	}
+	bool eventPushed = synth->playMsg(msg, timestamp);
+	midiMutex.unlock();
+	return eventPushed;
+}
+
+bool QSynth::playMIDISysex(Bit8u *sysex, Bit32u sysexLen, Bit32u timestamp) {
+	midiMutex.lock();
+	if (!isOpen()) {
+		midiMutex.unlock();
+		return false;
+	}
+	bool eventPushed = synth->playSysex(sysex, sysexLen, timestamp);
+	midiMutex.unlock();
+	return eventPushed;
 }
 
 bool QSynth::pushMIDIShortMessage(Bit32u msg, SynthTimestamp timestamp) {
@@ -144,15 +209,19 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 					break;
 				}
 				bool eventPushed = true;
-				if (sysexData != NULL) {
+				if (event->getType() == SYSEX) {
 					eventPushed = synth->playSysex(sysexData, event->getSysexLen());
-				} else {
+				} else if (event->getType() == SHORT_MESSAGE) {
 					if(event->getShortMessage() == 0) {
 						// This is a special event sent by the test driver
 						debugSpecialEvent = true;
 					} else {
 						eventPushed = synth->playMsg(event->getShortMessage());
 					}
+				} else {
+					// Special event attempted to play, ignore
+					midiEventQueue->popEvent();
+					continue;
 				}
 				synthMutex->unlock();
 				if (!eventPushed) {
@@ -357,6 +426,7 @@ bool QSynth::reset() {
 
 	setState(SynthState_CLOSING);
 
+	midiMutex.lock();
 	synthMutex->lock();
 	synth->close();
 	if (!synth->open(*controlROMImage, *pcmROMImage)) {
@@ -364,10 +434,12 @@ bool QSynth::reset() {
 		delete synth;
 		synth = new Synth(&reportHandler);
 		synthMutex->unlock();
+		midiMutex.unlock();
 		setState(SynthState_CLOSED);
 		return false;
 	}
 	synthMutex->unlock();
+	midiMutex.unlock();
 	reportHandler.onDeviceReconfig();
 
 	setState(SynthState_OPEN);
@@ -385,14 +457,17 @@ void QSynth::setState(SynthState newState) {
 
 void QSynth::close() {
 	setState(SynthState_CLOSING);
+	midiMutex.lock();
 	synthMutex->lock();
 	synth->close();
 	synthMutex->unlock();
+	midiMutex.unlock();
 	setState(SynthState_CLOSED);
 	freeROMImages();
 }
 
 void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
+	synthMutex->lock();
 	synthProfile.romDir = romDir;
 	synthProfile.controlROMFileName = controlROMFileName;
 	synthProfile.pcmROMFileName = pcmROMFileName;
@@ -406,6 +481,7 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.reverbMode = reverbMode;
 	synthProfile.reverbTime = reverbTime;
 	synthProfile.reverbLevel = reverbLevel;
+	synthMutex->unlock();
 }
 
 void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName) {

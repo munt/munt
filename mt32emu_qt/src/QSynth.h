@@ -72,6 +72,7 @@ friend class QReportHandler;
 private:
 	volatile SynthState state;
 
+	QMutex midiMutex;
 	QMutex *synthMutex;
 	QMidiEventQueue *midiEventQueue;
 
@@ -104,6 +105,12 @@ public:
 	bool open(const QString useSynthProfileName = "");
 	void close();
 	bool reset();
+
+	void flushMIDIQueue();
+	void playMIDIShortMessageNow(MT32Emu::Bit32u msg);
+	void playMIDISysexNow(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen);
+	bool playMIDIShortMessage(MT32Emu::Bit32u msg, MT32Emu::Bit32u timestamp);
+	bool playMIDISysex(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, MT32Emu::Bit32u timestamp);
 	bool pushMIDIShortMessage(MT32Emu::Bit32u msg, SynthTimestamp timestamp);
 	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, SynthTimestamp timestamp);
 	unsigned int render(MT32Emu::Bit16s *buf, unsigned int len, SynthTimestamp firstSampleTimestamp, double actualSampleRate);
