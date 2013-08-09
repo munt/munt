@@ -89,6 +89,7 @@ Synth::Synth(ReportHandler *useReportHandler) {
 
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
+	setMIDIDelayMode(MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY);
 	setOutputGain(1.0f);
 	setReverbOutputGain(1.0f);
 	partialManager = NULL;
@@ -158,6 +159,14 @@ void Synth::setDACInputMode(DACInputMode mode) {
 
 DACInputMode Synth::getDACInputMode() const {
 	return dacInputMode;
+}
+
+void Synth::setMIDIDelayMode(MIDIDelayMode mode) {
+	midiDelayMode = mode;
+}
+
+MIDIDelayMode Synth::getMIDIDelayMode() const {
+	return midiDelayMode;
 }
 
 void Synth::setOutputGain(float newOutputGain) {
@@ -515,12 +524,7 @@ Bit32u Synth::getShortMessageLength(Bit32u msg) {
 }
 
 Bit32u Synth::addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp) {
-#if MT32EMU_EMULATE_MIDI_DELAYS
-	Bit32u transferTime = Bit32u((double)len * MIDI_DATA_TRANSFER_RATE);
-#else
-	// We need to ensure zero-duration notes will play so add 1-sample delay.
-	Bit32u transferTime = 1;
-#endif
+	Bit32u transferTime =  Bit32u((double)len * MIDI_DATA_TRANSFER_RATE);
 	// Dealing with wrapping
 	if (Bit32s(timestamp - lastReceivedMIDIEventTimestamp) < 0) {
 		timestamp = lastReceivedMIDIEventTimestamp;
@@ -536,7 +540,10 @@ bool Synth::playMsg(Bit32u msg) {
 
 bool Synth::playMsg(Bit32u msg, Bit32u timestamp) {
 	if (midiQueue == NULL) return false;
-	return midiQueue->pushShortMessage(msg, addMIDIInterfaceDelay(getShortMessageLength(msg), timestamp));
+	if (midiDelayMode != MIDIDelayMode_IMMEDIATE) {
+		timestamp = addMIDIInterfaceDelay(getShortMessageLength(msg), timestamp);
+	}
+	return midiQueue->pushShortMessage(msg, timestamp);
 }
 
 bool Synth::playSysex(const Bit8u *sysex, Bit32u len) {
@@ -545,9 +552,9 @@ bool Synth::playSysex(const Bit8u *sysex, Bit32u len) {
 
 bool Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
 	if (midiQueue == NULL) return false;
-#if MT32EMU_EMULATE_MIDI_DELAYS == 2
-	timestamp = addMIDIInterfaceDelay(len, timestamp);
-#endif
+	if (midiDelayMode == MIDIDelayMode_DELAY_ALL) {
+		timestamp = addMIDIInterfaceDelay(len, timestamp);
+	}
 	return midiQueue->pushSysex(sysex, len, timestamp);
 }
 
@@ -1364,6 +1371,7 @@ void Synth::render(Sample *stream, Bit32u len) {
 
 void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len) {
 	while (len > 0) {
+		// We need to ensure zero-duration notes will play so add minimum 1-sample delay.
 		Bit32u thisLen = 1;
 		if (!isAbortingPoly()) {
 			const MidiEvent *nextEvent = midiQueue->peekMidiEvent();

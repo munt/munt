@@ -61,6 +61,18 @@ enum DACInputMode {
 	DACInputMode_GENERATION2
 };
 
+enum MIDIDelayMode {
+	// Process incoming MIDI events immediately.
+	MIDIDelayMode_IMMEDIATE,
+
+	// Delay incoming short MIDI messages as if they where transferred via a MIDI cable to a real hardware unit and immediate sysex processing.
+	// This ensures more accurate timing of simultaneous NoteOn messages.
+	MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY,
+
+	// Delay all incoming MIDI events as if they where transferred via a MIDI cable to a real hardware unit.
+	MIDIDelayMode_DELAY_ALL
+};
+
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
 
 const Bit8u SYSEX_MDL_MT32 = 0x16;
@@ -330,6 +342,7 @@ private:
 	bool reverbEnabled;
 	bool reverbOverridden;
 
+	MIDIDelayMode midiDelayMode;
 	DACInputMode dacInputMode;
 	float outputGain;
 	float reverbOutputGain;
@@ -445,6 +458,8 @@ public:
 	bool isReverbOverridden() const;
 	void setDACInputMode(DACInputMode mode);
 	DACInputMode getDACInputMode() const;
+	void setMIDIDelayMode(MIDIDelayMode mode);
+	MIDIDelayMode getMIDIDelayMode() const;
 
 	// Sets output gain factor. Applied to all output samples and unrelated with the synth's Master volume.
 	// Ignored in DACInputMode_PURE
