@@ -36,6 +36,7 @@ QReportHandler::QReportHandler(QObject *parent) : QObject(parent) {
 }
 
 void QReportHandler::showLCDMessage(const char *message) {
+	qDebug() << "LCD-Message:" << message;
 	if (Master::getInstance()->getSettings()->value("Master/showLCDBalloons", "1").toBool()) {
 		emit balloonMessageAppeared("LCD-Message:", message);
 	}
@@ -156,6 +157,7 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 					// Internal synth's queue is full.
 					// Rendering 1 ms looks reasonable in this case as we don't break timing too much and have no performance penalty.
 					if (renderThisPass > 32) renderThisPass = 32;
+					qDebug() << "QSynth: Synth's internal MIDI queue overflow, subsequent events will be delayed.";
 					break;
 				}
 				if (debugSpecialEvent) {
