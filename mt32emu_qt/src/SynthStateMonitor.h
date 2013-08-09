@@ -98,6 +98,8 @@ private:
 	QLabel *patchNameLabel[9];
 	PartStateWidget *partStateWidget[9];
 
+	MasterClockNanos midiMessageLEDStartNanos;
+
 private slots:
 	void handleUpdate();
 	void handleReset();

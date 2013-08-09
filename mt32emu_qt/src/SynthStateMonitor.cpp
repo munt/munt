@@ -25,6 +25,7 @@
 static const int SYNTH_MONITOR_UPDATE_MILLIS = 30;
 static const MasterClockNanos LCD_MESSAGE_DISPLAYING_NANOS = 2 * MasterClock::NANOS_PER_SECOND;
 static const MasterClockNanos LCD_TIMBRE_NAME_DISPLAYING_NANOS = 1 * MasterClock::NANOS_PER_SECOND;
+static const MasterClockNanos MIDI_MESSAGE_LED_MINIMUM_NANOS = 60 * MasterClock::NANOS_PER_MILLISECOND;
 
 static const QString BANK_NAMES[] = {"Synth-1", "Synth-2", "Memory ", "Rhythm "};
 static const QColor COLOR_GRAY = QColor(100, 100, 100);
@@ -106,6 +107,7 @@ void SynthStateMonitor::handleReset() {
 void SynthStateMonitor::handleMIDIMessagePlayed() {
 	if (ui->synthFrame->isVisible() && synthRoute->getState() == SynthRouteState_OPEN) {
 		midiMessageLED.setColor(&COLOR_GREEN);
+		midiMessageLEDStartNanos = MasterClock::getClockNanos();
 	}
 }
 
@@ -135,8 +137,10 @@ void SynthStateMonitor::handleUpdate() {
 			midiMessageOn = midiMessageOn || polyActiveNonReleasing;
 		}
 	}
-	if (((lcdWidget.lcdState == LCDWidget::DISPLAYING_MESSAGE) && (MasterClock::getClockNanos() - lcdWidget.lcdStateStartNanos > LCD_MESSAGE_DISPLAYING_NANOS))
-		|| ((lcdWidget.lcdState == LCDWidget::DISPLAYING_TIMBRE_NAME) && (MasterClock::getClockNanos() - lcdWidget.lcdStateStartNanos > LCD_TIMBRE_NAME_DISPLAYING_NANOS)))
+	MasterClockNanos nanosNow = MasterClock::getClockNanos();
+	MasterClockNanos nanosSinceLastLCDStateChange = nanosNow - lcdWidget.lcdStateStartNanos;
+	if (((lcdWidget.lcdState == LCDWidget::DISPLAYING_MESSAGE) && (nanosSinceLastLCDStateChange > LCD_MESSAGE_DISPLAYING_NANOS))
+		|| ((lcdWidget.lcdState == LCDWidget::DISPLAYING_TIMBRE_NAME) && (nanosSinceLastLCDStateChange > LCD_TIMBRE_NAME_DISPLAYING_NANOS)))
 	{
 		lcdWidget.setPartStateLCDText();
 	}
@@ -148,7 +152,12 @@ void SynthStateMonitor::handleUpdate() {
 		lcdWidget.update();
 	}
 
-	midiMessageLED.setColor(midiMessageOn ? &COLOR_GREEN : &COLOR_GRAY);
+	if (midiMessageOn) {
+		midiMessageLED.setColor(&COLOR_GREEN);
+		midiMessageLEDStartNanos = nanosNow;
+	} else if ((nanosNow - midiMessageLEDStartNanos) > MIDI_MESSAGE_LED_MINIMUM_NANOS) {
+		midiMessageLED.setColor(&COLOR_GRAY);
+	}
 }
 
 LEDWidget::LEDWidget(const QColor *color, QWidget *parent) : QWidget(parent), colorProperty(color) {}
