@@ -43,6 +43,7 @@ public:
 	void showLCDMessage(const char *message);
 	void onErrorControlROM();
 	void onErrorPCMROM();
+	void onMIDIMessagePlayed();
 	void onDeviceReconfig();
 	void onDeviceReset();
 	void onNewReverbMode(MT32Emu::Bit8u mode);
@@ -54,6 +55,7 @@ public:
 signals:
 	void balloonMessageAppeared(const QString &title, const QString &text);
 	void lcdMessageDisplayed(const QString);
+	void midiMessagePlayed();
 	void masterVolumeChanged(int);
 	void reverbModeChanged(int);
 	void reverbTimeChanged(int);
@@ -127,7 +129,6 @@ public:
 signals:
 	void stateChanged(SynthState state);
 	void partStateReset();
-	void midiMessagePushed();
 };
 
 #endif

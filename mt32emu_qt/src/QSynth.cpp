@@ -51,6 +51,10 @@ void QReportHandler::onErrorPCMROM() {
 	QMessageBox::critical(NULL, "Cannot open Synth", "PCM ROM file cannot be opened.");
 }
 
+void QReportHandler::onMIDIMessagePlayed() {
+	emit midiMessagePlayed();
+}
+
 void QReportHandler::onDeviceReconfig() {
 	QSynth *qsynth = (QSynth *)parent();
 	Bit8u currentMasterVolume = 0;
@@ -105,12 +109,10 @@ bool QSynth::isOpen() const {
 }
 
 bool QSynth::pushMIDIShortMessage(Bit32u msg, SynthTimestamp timestamp) {
-	emit midiMessagePushed();
 	return isOpen() && midiEventQueue->pushEvent(timestamp, msg, NULL, 0);
 }
 
 bool QSynth::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, SynthTimestamp timestamp) {
-	emit midiMessagePushed();
 	return isOpen() && midiEventQueue->pushEvent(timestamp, 0, sysexData, sysexLen);
 }
 

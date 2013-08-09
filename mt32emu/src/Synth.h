@@ -233,6 +233,7 @@ protected:
 	virtual void onErrorControlROM() {}
 	virtual void onErrorPCMROM() {}
 	virtual void showLCDMessage(const char *message);
+	virtual void onMIDIMessagePlayed() {}
 	virtual void onDeviceReset() {}
 	virtual void onDeviceReconfig() {}
 	virtual void onNewReverbMode(Bit8u /* mode */) {}

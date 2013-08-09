@@ -64,10 +64,10 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 
 	handleReset();
 	synthRoute->connectSynth(SIGNAL(partStateReset()), this, SLOT(handleReset()));
-	synthRoute->connectSynth(SIGNAL(midiMessagePushed()), this, SLOT(handleMIDIMessagePushed()));
 	synthRoute->connectReportHandler(SIGNAL(programChanged(int, int, QString)), this, SLOT(handleProgramChanged(int, int, QString)));
 	synthRoute->connectReportHandler(SIGNAL(polyStateChanged(int)), this, SLOT(handlePolyStateChanged(int)));
 	synthRoute->connectReportHandler(SIGNAL(lcdMessageDisplayed(const QString)), &lcdWidget, SLOT(handleLCDMessageDisplayed(const QString)));
+	synthRoute->connectReportHandler(SIGNAL(midiMessagePlayed()), this, SLOT(handleMIDIMessagePlayed()));
 	synthRoute->connectReportHandler(SIGNAL(masterVolumeChanged(int)), &lcdWidget, SLOT(handleMasterVolumeChanged(int)));
 	connect(&timer, SIGNAL(timeout()), SLOT(handleUpdate()));
 }
@@ -103,7 +103,7 @@ void SynthStateMonitor::handleReset() {
 	}
 }
 
-void SynthStateMonitor::handleMIDIMessagePushed() {
+void SynthStateMonitor::handleMIDIMessagePlayed() {
 	if (ui->synthFrame->isVisible() && synthRoute->getState() == SynthRouteState_OPEN) {
 		midiMessageLED.setColor(&COLOR_GREEN);
 	}

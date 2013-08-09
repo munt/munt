@@ -650,7 +650,7 @@ void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char 
 #if MT32EMU_MONITOR_MIDI > 0
 			printDebug("Unknown MIDI Control code: 0x%02x - vel 0x%02x", note, velocity);
 #endif
-			break;
+			return;
 		}
 
 		break;
@@ -667,8 +667,9 @@ void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char 
 #if MT32EMU_MONITOR_MIDI > 0
 		printDebug("Unknown Midi code: 0x%01x - %02x - %02x", code, note, velocity);
 #endif
-		break;
+		return;
 	}
+	reportHandler->onMIDIMessagePlayed();
 }
 
 void Synth::playSysexNow(const Bit8u *sysex, Bit32u len) {
@@ -766,6 +767,7 @@ void Synth::readSysex(unsigned char /*device*/, const Bit8u * /*sysex*/, Bit32u 
 }
 
 void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
+	reportHandler->onMIDIMessagePlayed();
 	Bit32u addr = (sysex[0] << 16) | (sysex[1] << 8) | (sysex[2]);
 	addr = MT32EMU_MEMADDR(addr);
 	sysex += 3;
