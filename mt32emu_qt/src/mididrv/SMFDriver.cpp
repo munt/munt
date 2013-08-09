@@ -75,31 +75,33 @@ void SMFProcessor::run() {
 	quint32 totalSeconds = estimateRemainingTime(midiEvents, 0);
 	MasterClockNanos startNanos = MasterClock::getClockNanos();
 	MasterClockNanos currentNanos = startNanos;
-	for (int i = 0; i < midiEvents.count(); i++) {
-		const QMidiEvent &e = midiEvents.at(i);
-		currentNanos += e.getTimestamp() * midiTick;
+	for (int currentEventIx = 0; currentEventIx < midiEvents.count(); currentEventIx++) {
+		currentNanos += midiEvents.at(currentEventIx).getTimestamp() * midiTick;
 		while (!stopProcessing && synthRoute->getState() == SynthRouteState_OPEN) {
 			if (bpmUpdated) {
 				bpmUpdated = false;
-				totalSeconds = (currentNanos - startNanos) / MasterClock::NANOS_PER_SECOND + estimateRemainingTime(midiEvents, i + 1);
+				totalSeconds = (currentNanos - startNanos) / MasterClock::NANOS_PER_SECOND + estimateRemainingTime(midiEvents, currentEventIx + 1);
 			}
+			MasterClockNanos nanosNow = MasterClock::getClockNanos();
 			if (driver->seekPosition > -1) {
 				SMFProcessor::sendChannelsReset(synthRoute);
-				MasterClockNanos seekNanos = totalSeconds * driver->seekPosition * MasterClock::NANOS_PER_MILLISECOND;
-				MasterClockNanos eventNanos = currentNanos - e.getTimestamp() * midiTick - startNanos;
-				if (seekNanos < eventNanos) {
-					i = 0;
-					eventNanos = 0;
+				MasterClockNanos seekNanosSinceStart = totalSeconds * driver->seekPosition * MasterClock::NANOS_PER_MILLISECOND;
+				MasterClockNanos currentNanosSinceStart = currentNanos - startNanos;
+				MasterClockNanos lastEventNanosSinceStart = currentNanosSinceStart - midiEvents.at(currentEventIx).getTimestamp() * midiTick;
+				if (seekNanosSinceStart < lastEventNanosSinceStart || seekNanosSinceStart == 0) {
 					midiTick = parser.getMidiTick();
 					emit driver->tempoUpdated(0);
+					currentEventIx = 0;
+					currentNanosSinceStart = midiEvents.at(currentEventIx).getTimestamp() * midiTick;
 				}
-				i = seek(synthRoute, midiEvents, i, seekNanos, eventNanos) - 1;
-				currentNanos = MasterClock::getClockNanos();
-				startNanos = currentNanos - seekNanos;
-				break;
+				seek(synthRoute, midiEvents, currentEventIx, currentNanosSinceStart, seekNanosSinceStart);
+				nanosNow = MasterClock::getClockNanos();
+				startNanos = nanosNow - seekNanosSinceStart;
+				currentNanos = currentNanosSinceStart + startNanos;
+				driver->seekPosition = -1;
 			}
-			emit driver->playbackTimeChanged(MasterClock::getClockNanos() - startNanos, totalSeconds);
-			MasterClockNanos delay = currentNanos - MasterClock::getClockNanos();
+			emit driver->playbackTimeChanged(nanosNow - startNanos, totalSeconds);
+			MasterClockNanos delay = currentNanos - nanosNow;
 			if (driver->fastForwardingFactor > 1) {
 				MasterClockNanos timeShift = delay - (delay / driver->fastForwardingFactor);
 				delay -= timeShift;
@@ -109,11 +111,8 @@ void SMFProcessor::run() {
 			if (delay < MasterClock::NANOS_PER_MILLISECOND) break;
 			usleep(((delay < MAX_SLEEP_TIME ? delay : MAX_SLEEP_TIME) - MasterClock::NANOS_PER_MILLISECOND) / MasterClock::NANOS_PER_MICROSECOND);
 		}
+		const QMidiEvent &e = midiEvents.at(currentEventIx);
 		if (stopProcessing || synthRoute->getState() != SynthRouteState_OPEN) break;
-		if (driver->seekPosition > -1) {
-			driver->seekPosition = -1;
-			continue;
-		}
 		switch (e.getType()) {
 			case SHORT_MESSAGE:
 				synthRoute->pushMIDIShortMessage(e.getShortMessage(), currentNanos);
@@ -149,39 +148,33 @@ quint32 SMFProcessor::estimateRemainingTime(const QMidiEventList &midiEvents, in
 	return quint32(totalNanos / MasterClock::NANOS_PER_SECOND);
 }
 
-int SMFProcessor::seek(SynthRoute *synthRoute, const QMidiEventList &midiEvents, int currentEventIx, MasterClockNanos seekNanos, MasterClockNanos currentEventNanos) {
-	MasterClockNanos nanosNow = MasterClock::getClockNanos();
-	while (!stopProcessing && currentEventNanos < seekNanos && currentEventIx < midiEvents.size()) {
+void SMFProcessor::seek(SynthRoute *synthRoute, const QMidiEventList &midiEvents, int &currentEventIx, MasterClockNanos &currentEventNanos, const MasterClockNanos seekNanos) {
+	while (!stopProcessing && synthRoute->getState() == SynthRouteState_OPEN && currentEventNanos < seekNanos) {
 		const QMidiEvent &e = midiEvents.at(currentEventIx);
-		while (!stopProcessing && synthRoute->getState() == SynthRouteState_OPEN) {
-			bool res = true;
-			switch (e.getType()) {
-				case SHORT_MESSAGE: {
-						quint32 msg = e.getShortMessage();
-						if ((msg & 0xE0) != 0x80) res = synthRoute->pushMIDIShortMessage(msg, nanosNow);
-						break;
-					}
-				case SYSEX:
-					res = synthRoute->pushMIDISysex(e.getSysexData(), e.getSysexLen(), nanosNow);
-					break;
-				case SET_TEMPO: {
-					uint tempo = e.getShortMessage();
-					midiTick = parser.getMidiTick(tempo);
-					emit driver->tempoUpdated(MidiParser::MICROSECONDS_PER_MINUTE / tempo);
-					break;
-				}
-				default:
-					break;
+		switch (e.getType()) {
+			case SHORT_MESSAGE: {
+				quint32 msg = e.getShortMessage();
+				// Ignore NoteOn & NoteOff while seeking
+				if ((msg & 0xE0) != 0x80) synthRoute->playMIDIShortMessageNow(msg);
+				break;
 			}
-			if (res) break;
-			qDebug() << "SMFProcessor: MIDI buffer became full while seeking, taking a nap";
-			usleep(MAX_SLEEP_TIME / MasterClock::NANOS_PER_MICROSECOND);
-			nanosNow = MasterClock::getClockNanos();
+			case SYSEX:
+				synthRoute->playMIDISysexNow(e.getSysexData(), e.getSysexLen());
+				break;
+			case SET_TEMPO: {
+				uint tempo = e.getShortMessage();
+				midiTick = parser.getMidiTick(tempo);
+				emit driver->tempoUpdated(MidiParser::MICROSECONDS_PER_MINUTE / tempo);
+				break;
+			}
+			default:
+				break;
 		}
-		currentEventIx++;
-		currentEventNanos += e.getTimestamp() * midiTick;
+		int nextEventIx = currentEventIx + 1;
+		if (midiEvents.size() <= nextEventIx) break;
+		currentEventIx = nextEventIx;
+		currentEventNanos += midiEvents.at(currentEventIx).getTimestamp() * midiTick;
 	}
-	return currentEventIx;
 }
 
 SMFDriver::SMFDriver(Master *useMaster) : MidiDriver(useMaster), processor(this) {

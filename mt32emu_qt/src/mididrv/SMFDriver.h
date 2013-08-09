@@ -32,7 +32,7 @@ private:
 
 	static void sendChannelsReset(SynthRoute *synthRoute);
 	quint32 estimateRemainingTime(const QMidiEventList &midiEvents, int currentEventIx);
-	int seek(SynthRoute *synthRoute, const QMidiEventList &midiEvents, int currentEventIx, MasterClockNanos seekNanos, MasterClockNanos currentEventNanos);
+	void seek(SynthRoute *synthRoute, const QMidiEventList &midiEvents, int &currentEventIx, MasterClockNanos &currentEventNanos, const MasterClockNanos seekNanos);
 };
 
 class SMFDriver : public MidiDriver {
