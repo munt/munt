@@ -447,12 +447,10 @@ bool QSynth::reset() {
 }
 
 void QSynth::setState(SynthState newState) {
-	if (state == newState) {
-		return;
-	}
+	if (state == newState) return;
 	state = newState;
+	emit partStateReset();
 	emit stateChanged(newState);
-	if (isOpen()) emit partStateReset();
 }
 
 void QSynth::close() {
