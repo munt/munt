@@ -244,7 +244,7 @@ unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstS
 				continue;
 			} else {
 				SynthTimestamp nanosUntilNextEvent = event->getTimestamp() - nanosNow;
-				unsigned int samplesUntilNextEvent = qMax((unsigned int)1, unsigned int(nanosUntilNextEvent * actualSampleRate / MasterClock::NANOS_PER_SECOND));
+				unsigned int samplesUntilNextEvent = qMax((uint)1, uint(nanosUntilNextEvent * actualSampleRate / MasterClock::NANOS_PER_SECOND));
 				if (renderThisPass > samplesUntilNextEvent)
 					renderThisPass = samplesUntilNextEvent;
 				break;
