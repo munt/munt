@@ -312,6 +312,20 @@ Incoming MIDI events will be delayed as if they are transferred via a real MIDI 
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>changeROMSetButton</tabstop>
+  <tabstop>midiDelayEmuComboBox</tabstop>
+  <tabstop>dacEmuComboBox</tabstop>
+  <tabstop>reverbCheckBox</tabstop>
+  <tabstop>reverbModeComboBox</tabstop>
+  <tabstop>reverbTimeSlider</tabstop>
+  <tabstop>reverbLevelSlider</tabstop>
+  <tabstop>outputGainSlider</tabstop>
+  <tabstop>reverbOutputGainSlider</tabstop>
+  <tabstop>profileComboBox</tabstop>
+  <tabstop>profileCheckBox</tabstop>
+  <tabstop>buttonBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
