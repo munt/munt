@@ -229,6 +229,10 @@ void SynthRoute::setReverbSettings(int reverbMode, int reverbTime, int reverbLev
 	qSynth.setReverbSettings(reverbMode, reverbTime, reverbLevel);
 }
 
+void SynthRoute::setMIDIDelayMode(MIDIDelayMode midiDelayMode) {
+	qSynth.setMIDIDelayMode(midiDelayMode);
+}
+
 void SynthRoute::setDACInputMode(DACInputMode emuDACInputMode) {
 	qSynth.setDACInputMode(emuDACInputMode);
 }

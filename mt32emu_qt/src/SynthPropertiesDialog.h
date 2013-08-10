@@ -32,6 +32,7 @@ private:
 
 private slots:
 	void on_changeROMSetButton_clicked();
+	void on_midiDelayEmuComboBox_currentIndexChanged(int);
 	void on_dacEmuComboBox_currentIndexChanged(int);
 	void on_buttonBox_clicked(QAbstractButton *button);
 	void on_profileComboBox_currentIndexChanged(int);

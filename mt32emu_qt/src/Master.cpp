@@ -330,6 +330,7 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	synthProfile.controlROMFileName = settings->value("controlROM", "MT32_CONTROL.ROM").toString();
 	synthProfile.pcmROMFileName = settings->value("pcmROM", "MT32_PCM.ROM").toString();
 	synthProfile.emuDACInputMode = (MT32Emu::DACInputMode)settings->value("emuDACInputMode", 0).toInt();
+	synthProfile.midiDelayMode = (MT32Emu::MIDIDelayMode)settings->value("midiDelayMode", 1).toInt();
 	synthProfile.reverbEnabled = settings->value("reverbEnabled", true).toBool();
 	synthProfile.reverbOverridden = settings->value("reverbOverridden", false).toBool();
 	synthProfile.reverbMode = settings->value("reverbMode", 0).toInt();
@@ -356,6 +357,7 @@ void Master::storeSynthProfile(const SynthProfile &synthProfile, QString name) c
 	settings->setValue("controlROM", synthProfile.controlROMFileName);
 	settings->setValue("pcmROM", synthProfile.pcmROMFileName);
 	settings->setValue("emuDACInputMode", synthProfile.emuDACInputMode);
+	settings->setValue("midiDelayMode", synthProfile.midiDelayMode);
 	settings->setValue("reverbEnabled", synthProfile.reverbEnabled);
 	settings->setValue("reverbOverridden", synthProfile.reverbOverridden);
 	settings->setValue("reverbMode", synthProfile.reverbMode);
@@ -372,13 +374,13 @@ bool Master::isPinned(const SynthRoute *synthRoute) const {
 
 void Master::setPinned(SynthRoute *synthRoute) {
 	if (pinnedSynthRoute == synthRoute) return;
-	settings->setValue("Master/startPinnedSynthRoute", QString().setNum(synthRoute != NULL));
+	settings->setValue("Master/startPinnedSynthRoute", synthRoute != NULL);
 	pinnedSynthRoute = synthRoute;
 	emit synthRoutePinned();
 }
 
 void Master::startPinnedSynthRoute() {
-	if (settings->value("Master/startPinnedSynthRoute", "0").toBool())
+	if (settings->value("Master/startPinnedSynthRoute", false).toBool())
 		setPinned(startSynthRoute());
 }
 

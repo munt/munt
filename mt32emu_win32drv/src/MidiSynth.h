@@ -31,6 +31,7 @@ private:
 	bool resetEnabled;
 
 	DACInputMode emuDACInputMode;
+	MIDIDelayMode midiDelayMode;
 	float outputGain;
 	float reverbOutputGain;
 	bool reverbEnabled;

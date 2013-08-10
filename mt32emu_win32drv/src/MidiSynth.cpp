@@ -435,6 +435,7 @@ void MidiSynth::ReloadSettings() {
 	}
 
 	emuDACInputMode = (DACInputMode)LoadIntValue(hRegProfile, "emuDACInputMode", DACInputMode_NICE);
+	midiDelayMode = (MIDIDelayMode)LoadIntValue(hRegProfile, "midiDelayMode", MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY);
 
 	if (!resetEnabled && synth != NULL) return;
 	char romDir[256];
@@ -465,6 +466,7 @@ void MidiSynth::ReloadSettings() {
 void MidiSynth::ApplySettings() {
 	synth->setReverbEnabled(reverbEnabled);
 	synth->setDACInputMode(emuDACInputMode);
+	synth->setMIDIDelayMode(midiDelayMode);
 	synth->setOutputGain(outputGain);
 	synth->setReverbOutputGain(reverbOutputGain);
 	if (reverbOverridden) {

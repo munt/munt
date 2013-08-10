@@ -41,13 +41,16 @@ SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent, SynthRoute *useSyn
 	synthRoute->connectReportHandler(SIGNAL(reverbLevelChanged(int)), this, SLOT(handleReverbLevelChanged(int)));
 }
 
-SynthPropertiesDialog::~SynthPropertiesDialog()
-{
+SynthPropertiesDialog::~SynthPropertiesDialog() {
 	delete ui;
 }
 
 void SynthPropertiesDialog::on_changeROMSetButton_clicked() {
 	rsd.exec();
+}
+
+void SynthPropertiesDialog::on_midiDelayEmuComboBox_currentIndexChanged(int index) {
+	synthRoute->setMIDIDelayMode((MT32Emu::MIDIDelayMode)index);
 }
 
 void SynthPropertiesDialog::on_dacEmuComboBox_currentIndexChanged(int index) {
@@ -151,6 +154,7 @@ void SynthPropertiesDialog::resetSynth() {
 	int reverbTime = ui->reverbTimeSlider->value();
 	int reverbLevel = ui->reverbLevelSlider->value();
 	synthRoute->reset();
+	on_midiDelayEmuComboBox_currentIndexChanged(ui->midiDelayEmuComboBox->currentIndex());
 	on_dacEmuComboBox_currentIndexChanged(ui->dacEmuComboBox->currentIndex());
 	Qt::CheckState reverbState = ui->reverbCheckBox->checkState();
 	on_reverbCheckBox_stateChanged(reverbState);
@@ -164,6 +168,7 @@ void SynthPropertiesDialog::resetSynth() {
 }
 
 void SynthPropertiesDialog::restoreDefaults() {
+	ui->midiDelayEmuComboBox->setCurrentIndex(1);
 	ui->dacEmuComboBox->setCurrentIndex(0);
 	ui->reverbCheckBox->setCheckState(Qt::Checked);
 	ui->reverbModeComboBox->setCurrentIndex(0);
@@ -178,6 +183,7 @@ void SynthPropertiesDialog::loadSynthProfile() {
 	synthRoute->getSynthProfile(synthProfile);
 	ui->romSetLabel->setText(getROMSetDescription());
 	rsd.loadROMInfos();
+	ui->midiDelayEmuComboBox->setCurrentIndex(synthProfile.midiDelayMode);
 	ui->dacEmuComboBox->setCurrentIndex(synthProfile.emuDACInputMode == MT32Emu::DACInputMode_NICE ? MT32Emu::DACInputMode_NICE : synthProfile.emuDACInputMode - 1);
 	ui->reverbCheckBox->setCheckState(Qt::Checked);
 	ui->reverbModeComboBox->setCurrentIndex(synthProfile.reverbMode);

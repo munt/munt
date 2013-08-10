@@ -37,7 +37,7 @@ QReportHandler::QReportHandler(QObject *parent) : QObject(parent) {
 
 void QReportHandler::showLCDMessage(const char *message) {
 	qDebug() << "LCD-Message:" << message;
-	if (Master::getInstance()->getSettings()->value("Master/showLCDBalloons", "1").toBool()) {
+	if (Master::getInstance()->getSettings()->value("Master/showLCDBalloons", true).toBool()) {
 		emit balloonMessageAppeared("LCD-Message:", message);
 	}
 	emit lcdMessageDisplayed(message);
@@ -362,6 +362,16 @@ void QSynth::setReverbSettings(int reverbMode, int reverbTime, int reverbLevel) 
 	synthMutex->unlock();
 }
 
+void QSynth::setMIDIDelayMode(MIDIDelayMode midiDelayMode) {
+	synthMutex->lock();
+	if (!isOpen()) {
+		synthMutex->unlock();
+		return;
+	}
+	synth->setMIDIDelayMode(midiDelayMode);
+	synthMutex->unlock();
+}
+
 void QSynth::setDACInputMode(DACInputMode emuDACInputMode) {
 	synthMutex->lock();
 	if (!isOpen()) {
@@ -472,6 +482,7 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.controlROMImage = controlROMImage;
 	synthProfile.pcmROMImage = pcmROMImage;
 	synthProfile.emuDACInputMode = synth->getDACInputMode();
+	synthProfile.midiDelayMode = synth->getMIDIDelayMode();
 	synthProfile.outputGain = synth->getOutputGain();
 	synthProfile.reverbOutputGain = synth->getReverbOutputGain();
 	synthProfile.reverbEnabled = synth->isReverbEnabled();
@@ -506,6 +517,7 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 			reset();
 		}
 	}
+	setMIDIDelayMode(synthProfile.midiDelayMode);
 	setDACInputMode(synthProfile.emuDACInputMode);
 	setOutputGain(synthProfile.outputGain);
 	setReverbOutputGain(synthProfile.reverbOutputGain);

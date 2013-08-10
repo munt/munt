@@ -58,6 +58,7 @@ public:
 	void setReverbEnabled(bool reverbEnabled);
 	void setReverbOverridden(bool reverbOverridden);
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
+	void setMIDIDelayMode(MT32Emu::MIDIDelayMode midiDelayMode);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 
 	void addMidiSession(MidiSession *midiSession);

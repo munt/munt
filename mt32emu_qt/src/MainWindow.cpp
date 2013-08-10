@@ -75,7 +75,7 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	}
 
 #ifdef WITH_WINCONSOLE
-	if (!master->getSettings()->value("Master/showConsole", "0").toBool())
+	if (!master->getSettings()->value("Master/showConsole", false).toBool())
 		ShowWindow(GetConsoleWindow(), SW_HIDE);
 #endif
 }
@@ -203,21 +203,21 @@ void MainWindow::on_actionConvert_MIDI_to_Wave_triggered() {
 }
 
 void MainWindow::on_menuOptions_aboutToShow() {
-	ui->actionStart_iconized->setChecked(master->getSettings()->value("Master/startIconized", "0").toBool());
-	ui->actionShow_LCD_balloons->setChecked(master->getSettings()->value("Master/showLCDBalloons", "1").toBool());
-	ui->actionShow_connection_balloons->setChecked(master->getSettings()->value("Master/showConnectionBalloons", "1").toBool());
+	ui->actionStart_iconized->setChecked(master->getSettings()->value("Master/startIconized", false).toBool());
+	ui->actionShow_LCD_balloons->setChecked(master->getSettings()->value("Master/showLCDBalloons", true).toBool());
+	ui->actionShow_connection_balloons->setChecked(master->getSettings()->value("Master/showConnectionBalloons", true).toBool());
 }
 
 void MainWindow::on_actionStart_iconized_toggled(bool checked) {
-	master->getSettings()->setValue("Master/startIconized", QString().setNum(checked));
+	master->getSettings()->setValue("Master/startIconized", checked);
 }
 
 void MainWindow::on_actionShow_LCD_balloons_toggled(bool checked) {
-	master->getSettings()->setValue("Master/showLCDBalloons", QString().setNum(checked));
+	master->getSettings()->setValue("Master/showLCDBalloons", checked);
 }
 
 void MainWindow::on_actionShow_connection_balloons_toggled(bool checked) {
-	master->getSettings()->setValue("Master/showConnectionBalloons", QString().setNum(checked));
+	master->getSettings()->setValue("Master/showConnectionBalloons", checked);
 }
 
 void MainWindow::on_actionROM_Configuration_triggered() {
@@ -245,7 +245,7 @@ void MainWindow::trayIconContextMenu() {
 #ifdef WITH_WINCONSOLE
 	QAction *a = menu->addAction("Show console", this, SLOT(toggleShowConsole()));
 	a->setCheckable(true);
-	a->setChecked(master->getSettings()->value("Master/showConsole", "0").toBool());
+	a->setChecked(master->getSettings()->value("Master/showConsole", false).toBool());
 #endif
 	menu->addAction("Exit", this, SLOT(close()));
 	master->getTrayIcon()->setContextMenu(menu);
@@ -254,8 +254,8 @@ void MainWindow::trayIconContextMenu() {
 void MainWindow::toggleShowConsole() {
 #ifdef WITH_WINCONSOLE
 	QSettings *s = master->getSettings();
-	bool b = !s->value("Master/showConsole", "0").toBool();
-	s->setValue("Master/showConsole", QString().setNum(b));
+	bool b = !s->value("Master/showConsole", false).toBool();
+	s->setValue("Master/showConsole", b);
 	ShowWindow(GetConsoleWindow(), b ? SW_NORMAL : SW_HIDE);
 #endif
 }

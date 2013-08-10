@@ -26,6 +26,7 @@ struct SynthProfile {
 	const MT32Emu::ROMImage *controlROMImage;
 	const MT32Emu::ROMImage *pcmROMImage;
 	MT32Emu::DACInputMode emuDACInputMode;
+	MT32Emu::MIDIDelayMode midiDelayMode;
 	float outputGain;
 	float reverbOutputGain;
 	bool reverbEnabled;
@@ -126,6 +127,7 @@ public:
 	void setReverbEnabled(bool reverbEnabled);
 	void setReverbOverridden(bool reverbOverridden);
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
+	void setMIDIDelayMode(MT32Emu::MIDIDelayMode midiDelayMode);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 	const QString getPatchName(int partNum) const;
 	const MT32Emu::Partial *getPartial(int partialNum) const;

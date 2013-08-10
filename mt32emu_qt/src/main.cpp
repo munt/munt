@@ -36,7 +36,7 @@ int main(int argv, char **args)
 		master->setTrayIcon(trayIcon);
 	}
 	MainWindow mainWindow(master);
-	if (trayIcon == NULL || !master->getSettings()->value("Master/startIconized", "0").toBool()) mainWindow.show();
+	if (trayIcon == NULL || !master->getSettings()->value("Master/startIconized", false).toBool()) mainWindow.show();
 	master->startPinnedSynthRoute();
 	master->startMidiProcessing();
 	master->processCommandLine(app.arguments());

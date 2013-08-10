@@ -53,7 +53,7 @@ void MidiDriver::deleteMidiSession(MidiSession *midiSession) {
 }
 
 void MidiDriver::showBalloon(const QString &title, const QString &text) {
-	if (master->getSettings()->value("Master/showConnectionBalloons", "1").toBool()) {
+	if (master->getSettings()->value("Master/showConnectionBalloons", true).toBool()) {
 		emit balloonMessageAppeared(title, text);
 	}
 }
