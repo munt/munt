@@ -40,7 +40,7 @@ static const MasterClockNanos MIN_XRUN_WARNING_NANOS = 3 * MasterClock::NANOS_PE
 WinMMAudioStream::WinMMAudioStream(const WinMMAudioDevice *device, QSynth *useSynth,
 	unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate),
 	hWaveOut(NULL), waveHdr(NULL), hEvent(NULL), stopProcessing(false),
-	processingThreadHandle(0L), prevPlayPosition(0L)
+	processingThreadHandle(0L), prevPlayPosition(0L), renderedFramesCount(0L)
 {
 	const AudioDriverSettings &driverSettings = device->driver->getAudioSettings();
 	chunkSize = driverSettings.chunkLen * sampleRate / 1000 /* ms per sec*/;
@@ -103,7 +103,7 @@ DWORD WinMMAudioStream::getCurrentPlayPosition() {
 		return playPositionSnapshot;
 	}
 	prevPlayPosition = playPositionSnapshot = mmTime.u.sample + (wrapCount << WRAP_BITS);
-	return playPositionSnapshot % bufferSize;
+	return DWORD(playPositionSnapshot % bufferSize);
 }
 
 void WinMMAudioStream::processingThread(void *userData) {
@@ -162,6 +162,7 @@ void WinMMAudioStream::processingThread(void *userData) {
 		}
 		double actualSampleRate = estimateActualSampleRate(stream.sampleRate, firstSampleNanos, lastSampleNanos, audioLatency, frameCount);
 		unsigned int rendered = stream.synth->render(buf, frameCount, firstSampleNanos, actualSampleRate);
+		stream.renderedFramesCount += frameCount;
 		if (!stream.useRingBuffer && waveOutWrite(stream.hWaveOut, waveHdr, sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
 			qDebug() << "WinMMAudioDriver: waveOutWrite failed, thread stopped";
 			stream.stopProcessing = true;
@@ -318,6 +319,25 @@ void WinMMAudioStream::close() {
 		hWaveOut = NULL;
 	}
 	return;
+}
+
+// Intended to be called from MIDI receiving thread
+quint32 WinMMAudioStream::estimateMIDITimestamp(MasterClockNanos refNanos) {
+	// Taking a snapshot to avoid interference with the rendering thread
+	quint64 renderedFramesCountSnapshot = renderedFramesCount;
+	quint32 renderPosition = quint32(renderedFramesCountSnapshot % bufferSize);
+
+	// Using relative play position helps to keep correct timing after underruns
+	quint32 playPosition = getCurrentPlayPosition();
+	if (playPosition < renderPosition) {
+		playPosition += bufferSize;
+	}
+	MasterClockNanos midiDelayNanos = midiLatency - (MasterClock::getClockNanos() - refNanos);
+	if (midiDelayNanos < 0) {
+		midiDelayNanos = 0;
+	}
+	quint32 midiDelayFrames = quint32((midiDelayNanos * sampleRate) / MasterClock::NANOS_PER_SECOND);
+	return quint32(renderedFramesCountSnapshot - renderPosition) + playPosition + midiDelayFrames;
 }
 
 WinMMAudioDevice::WinMMAudioDevice(WinMMAudioDriver * const driver, int useDeviceIndex, QString useDeviceName) :

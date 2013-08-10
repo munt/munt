@@ -28,6 +28,7 @@ private:
 	uintptr_t processingThreadHandle;
 	bool useRingBuffer;
 	quint64 volatile prevPlayPosition;
+	quint64 volatile renderedFramesCount;
 
 	static void processingThread(void *);
 
@@ -38,6 +39,7 @@ public:
 	~WinMMAudioStream();
 	bool start(int deviceIndex);
 	void close();
+	quint32 estimateMIDITimestamp(MasterClockNanos refNanos);
 };
 
 class WinMMAudioDevice : public AudioDevice {

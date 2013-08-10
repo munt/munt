@@ -20,6 +20,7 @@ public:
 	//virtual void suspend() = 0;
 	//virtual void unsuspend() = 0;
 	virtual ~AudioStream() {};
+	virtual quint32 estimateMIDITimestamp(MasterClockNanos refNanos) {return 0;}
 };
 
 class AudioDevice {
