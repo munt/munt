@@ -283,29 +283,16 @@ bool WinMMAudioStream::start(int deviceIndex) {
 
 void WinMMAudioStream::close() {
 	if (hWaveOut != NULL) {
-		if (hEvent != NULL) SetEvent(hEvent);
 
 		// stopProcessing == true means the processing thread has already exited upon a failure
 		if ((stopProcessing == false) && (processingThreadHandle != 0L)) {
-			qDebug() << "WinMMAudioDriver: Waiting for processing thread to terminate...";
-			MasterClockNanos startNanos = MasterClock::getClockNanos();
 			stopProcessing = true;
-			while (stopProcessing) {
-				DWORD result = WaitForSingleObject((HANDLE)processingThreadHandle, (1000 * bufferSize) / sampleRate);
-				MasterClockNanos delay = MasterClock::getClockNanos() - startNanos;
-				if (result == WAIT_TIMEOUT) {
-					qDebug() << "WinMMAudioDriver: Timed out stopping processing thread after" << delay * 1e-6 << "ms, deadlock?";
-					Sleep(1000);
-					continue;
-				} else if (result == WAIT_FAILED) {
-					qDebug() << "WinMMAudioDriver: Failed to stop processing thread after" << delay * 1e-6 << "ms, already dead? stopProcessing =" << stopProcessing;
-					break;
-				}
-				qDebug() << "WinMMAudioDriver: Processing thread exited normally after" << delay * 1e-6 << "ms";
-			}
+			if (hEvent != NULL) SetEvent(hEvent);
+			WaitForSingleObject((HANDLE)processingThreadHandle, INFINITE);
 		}
 		processingThreadHandle = 0L;
 		stopProcessing = false;
+		qDebug() << "WinMMAudioDriver: Processing thread stopped";
 
 		waveOutReset(hWaveOut);
 		for (unsigned int i = 0; i < numberOfChunks; i++) {
