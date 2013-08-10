@@ -25,9 +25,13 @@ private:
 	unsigned int numberOfChunks;
 	MT32Emu::Bit16s *buffer;
 	bool volatile stopProcessing;
+	uintptr_t processingThreadHandle;
 	bool useRingBuffer;
+	quint64 volatile prevPlayPosition;
 
 	static void processingThread(void *);
+
+	DWORD getCurrentPlayPosition();
 
 public:
 	WinMMAudioStream(const WinMMAudioDevice *device, QSynth *useSynth, unsigned int useSampleRate);

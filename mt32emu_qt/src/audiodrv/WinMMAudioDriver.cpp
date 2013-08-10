@@ -39,7 +39,8 @@ static const MasterClockNanos MIN_XRUN_WARNING_NANOS = 3 * MasterClock::NANOS_PE
 
 WinMMAudioStream::WinMMAudioStream(const WinMMAudioDevice *device, QSynth *useSynth,
 	unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate),
-	hWaveOut(NULL), waveHdr(NULL), hEvent(NULL), stopProcessing(false)
+	hWaveOut(NULL), waveHdr(NULL), hEvent(NULL), stopProcessing(false),
+	processingThreadHandle(0L), prevPlayPosition(0L)
 {
 	const AudioDriverSettings &driverSettings = device->driver->getAudioSettings();
 	chunkSize = driverSettings.chunkLen * sampleRate / 1000 /* ms per sec*/;
@@ -66,44 +67,63 @@ WinMMAudioStream::~WinMMAudioStream() {
 	delete[] buffer;
 }
 
+DWORD WinMMAudioStream::getCurrentPlayPosition() {
+	static const uint WRAP_BITS = 27;
+	static const quint64 WRAP_MASK = (1 << 27) - 1;
+	static const int WRAP_THRESHOLD = 1 << (WRAP_BITS - 1);
+
+	// Taking a snapshot to avoid possible thread interference
+	quint64 playPositionSnapshot = prevPlayPosition;
+	DWORD wrapCount = DWORD(playPositionSnapshot >> WRAP_BITS);
+	DWORD wrappedPosition = DWORD(playPositionSnapshot & WRAP_MASK);
+
+	MMTIME mmTime;
+	mmTime.wType = TIME_SAMPLES;
+
+	if (waveOutGetPosition(hWaveOut, &mmTime, sizeof MMTIME) != MMSYSERR_NOERROR) {
+		qDebug() << "WinMMAudioDriver: waveOutGetPosition failed, thread stopped";
+		return (DWORD)-1;
+	}
+	if (mmTime.wType != TIME_SAMPLES) {
+		qDebug() << "WinMMAudioDriver: Failed to get # of samples played";
+		return (DWORD)-1;
+	}
+
+	// Deal with waveOutGetPosition() wraparound. For 16-bit stereo output, it equals 2^27,
+	// presumably caused by the internal 32-bit counter of bits played.
+	// The output of that nasty waveOutGetPosition() isn't monotonically increasing
+	// even during 2^27 samples playback, so we have to ensure the difference is big enough...
+	int delta = mmTime.u.sample - wrappedPosition;
+	if (delta < -WRAP_THRESHOLD) {
+		qDebug() << "WinMMAudioDriver: GetPos() wrap:" << delta;
+		++wrapCount;
+	} else if (delta < 0) {
+		// This ensures the return is monotonically increased
+		qDebug() << "WinMMAudioDriver: GetPos() went back by:" << delta << "samples";
+		return playPositionSnapshot;
+	}
+	prevPlayPosition = playPositionSnapshot = mmTime.u.sample + (wrapCount << WRAP_BITS);
+	return playPositionSnapshot % bufferSize;
+}
+
 void WinMMAudioStream::processingThread(void *userData) {
 	DWORD renderPos = 0;
-	DWORD frameCount = 0;
-	DWORD playCursor;
-	MMTIME mmTime;
 	WinMMAudioStream &stream = *(WinMMAudioStream *)userData;
-	MasterClockNanos nanosNow;
 	MasterClockNanos firstSampleNanos = MasterClock::getClockNanos() - stream.midiLatency;
 	MasterClockNanos lastSampleNanos = firstSampleNanos;
-	MasterClockNanos audioLatency = stream.bufferSize * MasterClock::NANOS_PER_SECOND / stream.sampleRate;
+	const MasterClockNanos audioLatency = stream.bufferSize * MasterClock::NANOS_PER_SECOND / stream.sampleRate;
 	MasterClockNanos lastXRunWarningNanos = firstSampleNanos - MIN_XRUN_WARNING_NANOS;
-	double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / stream.sampleRate;
-	DWORD prevPlayPos = 0;
-	DWORD getPosWraps = 0;
+	const double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / MasterClock::NANOS_PER_MILLISECOND / stream.sampleRate;
 	while (!stream.stopProcessing) {
-		mmTime.wType = TIME_SAMPLES;
-		if (waveOutGetPosition(stream.hWaveOut, &mmTime, sizeof (MMTIME)) != MMSYSERR_NOERROR) {
-			qDebug() << "WinMMAudioDriver: waveOutGetPosition failed, thread stopped";
+		const DWORD playCursor = stream.getCurrentPlayPosition();
+		if (playCursor == (DWORD)-1) {
 			stream.stopProcessing = true;
 			stream.synth->close();
 			return;
 		}
 
-		// Deal with waveOutGetPosition() wraparound. For 16-bit stereo output, it equals 2^27,
-		// presumably caused by the internal 32-bit counter of bits played.
-		// The output of that nasty waveOutGetPosition() isn't monotonically increasing
-		// even during 2^27 samples playback, so we have to ensure the difference is big enough...
-		int delta = mmTime.u.sample - prevPlayPos;
-		if (delta < -(1 << 26)) {
-			qDebug() << "WinMMAudioDriver: GetPos() wrap:" << delta << "\n";
-			++getPosWraps;
-		} else if (delta < 0) {
-			qDebug() << "WinMMAudioDriver: GetPos() went backwards by:" << delta << "\n";
-		}
-		prevPlayPos = mmTime.u.sample;
-		playCursor = (mmTime.u.sample + (quint64)getPosWraps * (1 << 27)) % stream.bufferSize;
-
-		nanosNow = MasterClock::getClockNanos() - stream.midiLatency;
+		MasterClockNanos nanosNow = MasterClock::getClockNanos() - stream.midiLatency;
+		DWORD frameCount = 0;
 		Bit16s *buf = NULL;
 		WAVEHDR *waveHdr = NULL;
 		if (stream.useRingBuffer) {
@@ -249,7 +269,14 @@ bool WinMMAudioStream::start(int deviceIndex) {
 			return false;
 		}
 	}
-	_beginthread(processingThread, 1024*1024, this);
+	processingThreadHandle = _beginthread(processingThread, 1024*1024, this);
+	if (processingThreadHandle == (uintptr_t)-1L) {
+		qDebug() << "WinMMAudioDriver: Cannot start processing thread";
+		stopProcessing = true;
+		processingThreadHandle = 0L;
+		close();
+		return false;
+	}
 	return true;
 }
 
@@ -257,15 +284,28 @@ void WinMMAudioStream::close() {
 	if (hWaveOut != NULL) {
 		if (hEvent != NULL) SetEvent(hEvent);
 
-		// pendingClose == true means the thread has already exited upon a failure
-		if (stopProcessing == false) {
+		// stopProcessing == true means the processing thread has already exited upon a failure
+		if ((stopProcessing == false) && (processingThreadHandle != 0L)) {
+			qDebug() << "WinMMAudioDriver: Waiting for processing thread to terminate...";
+			MasterClockNanos startNanos = MasterClock::getClockNanos();
 			stopProcessing = true;
 			while (stopProcessing) {
-				Sleep(10);
+				DWORD result = WaitForSingleObject((HANDLE)processingThreadHandle, (1000 * bufferSize) / sampleRate);
+				MasterClockNanos delay = MasterClock::getClockNanos() - startNanos;
+				if (result == WAIT_TIMEOUT) {
+					qDebug() << "WinMMAudioDriver: Timed out stopping processing thread after" << delay * 1e-6 << "ms, deadlock?";
+					Sleep(1000);
+					continue;
+				} else if (result == WAIT_FAILED) {
+					qDebug() << "WinMMAudioDriver: Failed to stop processing thread after" << delay * 1e-6 << "ms, already dead? stopProcessing =" << stopProcessing;
+					break;
+				}
+				qDebug() << "WinMMAudioDriver: Processing thread exited normally after" << delay * 1e-6 << "ms";
 			}
-		} else {
-			stopProcessing = false;
 		}
+		processingThreadHandle = 0L;
+		stopProcessing = false;
+
 		waveOutReset(hWaveOut);
 		for (unsigned int i = 0; i < numberOfChunks; i++) {
 			waveOutUnprepareHeader(hWaveOut, &waveHdr[i], sizeof(WAVEHDR));
