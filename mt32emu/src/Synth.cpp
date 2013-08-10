@@ -73,6 +73,7 @@ Synth::Synth(ReportHandler *useReportHandler) {
 	isOpen = false;
 	reverbEnabled = true;
 	reverbOverridden = false;
+	partialCount = DEFAULT_MAX_PARTIALS;
 
 	if (useReportHandler == NULL) {
 		reportHandler = new ReportHandler;

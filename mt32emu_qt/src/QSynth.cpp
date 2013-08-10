@@ -416,7 +416,10 @@ const Poly *QSynth::getFirstActivePolyOnPart(unsigned int partNum) const {
 }
 
 unsigned int QSynth::getPartialCount() const {
-	return synth->getPartialCount();
+	synthMutex->lock();
+	unsigned int partialCount = synth->getPartialCount();
+	synthMutex->unlock();
+	return partialCount;
 }
 
 bool QSynth::isActive() const {
@@ -439,6 +442,7 @@ bool QSynth::reset() {
 	midiMutex.lock();
 	synthMutex->lock();
 	synth->close();
+	// Do not delete synth here to keep the rendered frame counter value, audioStream is also alive during reset
 	if (!synth->open(*controlROMImage, *pcmROMImage)) {
 		// We're now in a partially-open state - better to properly close.
 		delete synth;
@@ -468,6 +472,9 @@ void QSynth::close() {
 	midiMutex.lock();
 	synthMutex->lock();
 	synth->close();
+	// This effectively resets rendered frame counter, audioStream is also going down
+	delete synth;
+	synth = new Synth(&reportHandler);
 	synthMutex->unlock();
 	midiMutex.unlock();
 	setState(SynthState_CLOSED);
