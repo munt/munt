@@ -309,7 +309,7 @@ void WinMMAudioStream::close() {
 }
 
 // Intended to be called from MIDI receiving thread
-quint32 WinMMAudioStream::estimateMIDITimestamp(MasterClockNanos refNanos) {
+bool WinMMAudioStream::estimateMIDITimestamp(quint32 &timestamp, const MasterClockNanos refNanos) {
 	// Taking a snapshot to avoid interference with the rendering thread
 	quint64 renderedFramesCountSnapshot = renderedFramesCount;
 	quint32 renderPosition = quint32(renderedFramesCountSnapshot % bufferSize);
@@ -320,11 +320,12 @@ quint32 WinMMAudioStream::estimateMIDITimestamp(MasterClockNanos refNanos) {
 		playPosition += bufferSize;
 	}
 	MasterClockNanos midiDelayNanos = midiLatency - (MasterClock::getClockNanos() - refNanos);
-	if (midiDelayNanos < 0) {
+	if (refNanos == 0 || midiDelayNanos < 0) {
 		midiDelayNanos = 0;
 	}
 	quint32 midiDelayFrames = quint32((midiDelayNanos * sampleRate) / MasterClock::NANOS_PER_SECOND);
-	return quint32(renderedFramesCountSnapshot - renderPosition) + playPosition + midiDelayFrames;
+	timestamp = quint32(renderedFramesCountSnapshot - renderPosition) + playPosition + midiDelayFrames;
+	return true;
 }
 
 WinMMAudioDevice::WinMMAudioDevice(WinMMAudioDriver * const driver, int useDeviceIndex, QString useDeviceName) :

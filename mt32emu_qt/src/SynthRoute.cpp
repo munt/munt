@@ -34,7 +34,8 @@ SynthRoute::SynthRoute(QObject *parent) :
 	state(SynthRouteState_CLOSED),
 	qSynth(this),
 	audioDevice(NULL),
-	audioStream(NULL)
+	audioStream(NULL),
+	lastDebugEventTimestamp(0)
 {
 	connect(&qSynth, SIGNAL(stateChanged(SynthState)), SLOT(handleQSynthState(SynthState)));
 }
@@ -177,11 +178,28 @@ bool SynthRoute::connectReportHandler(const char *signal, const QObject *receive
 
 bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
 	recorder.recordShortMessage(msg, refNanos);
+	quint32 timestamp;
+	if (audioStream->estimateMIDITimestamp(timestamp, refNanos)) {
+		if(msg == 0) {
+			// This is a special event sent by the test driver
+			quint32 delta = timestamp - lastDebugEventTimestamp;
+			MasterClockNanos debugEventNanoOffset = (refNanos == 0) ? 0 : MasterClock::getClockNanos() - refNanos;
+			if ((delta < 253) || (259 < delta) || ((15 * MasterClock::NANOS_PER_MILLISECOND) < debugEventNanoOffset)) {
+				qDebug() << "M" << timestamp << 1e-6 * debugEventNanoOffset << delta;
+			}
+			lastDebugEventTimestamp = timestamp;
+		}
+		return qSynth.playMIDIShortMessage(msg, timestamp);
+	}
 	return qSynth.pushMIDIShortMessage(msg, refNanos);
 }
 
 bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, MasterClockNanos refNanos) {
 	recorder.recordSysex(sysexData, sysexLen, refNanos);
+	quint32 timestamp;
+	if (audioStream->estimateMIDITimestamp(timestamp, refNanos)) {
+		return qSynth.playMIDISysex(sysexData, sysexLen, timestamp);
+	}
 	return qSynth.pushMIDISysex(sysexData, sysexLen, refNanos);
 }
 

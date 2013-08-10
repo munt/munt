@@ -39,7 +39,7 @@ public:
 	~WinMMAudioStream();
 	bool start(int deviceIndex);
 	void close();
-	quint32 estimateMIDITimestamp(MasterClockNanos refNanos);
+	bool estimateMIDITimestamp(quint32 &timestamp, const MasterClockNanos refNanos);
 };
 
 class WinMMAudioDevice : public AudioDevice {
