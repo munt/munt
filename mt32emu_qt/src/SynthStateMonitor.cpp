@@ -40,13 +40,14 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 	lcdWidget(*this, ui->synthFrame),
 	midiMessageLED(&COLOR_GRAY, ui->midiMessageFrame)
 {
+	partialCount = useSynthRoute->getPartialCount();
 	lcdWidget.setMinimumSize(254, 40);
 	ui->synthFrameLayout->insertWidget(1, &lcdWidget);
 	midiMessageLED.setMinimumSize(10, 2);
 	ui->midiMessageLayout->addWidget(&midiMessageLED, 0, Qt::AlignHCenter);
 
-	partialStateLED = new LEDWidget*[synthRoute->getPartialCount()];
-	for (unsigned int i = 0; i < synthRoute->getPartialCount(); i++) {
+	partialStateLED = new LEDWidget*[partialCount];
+	for (unsigned int i = 0; i < partialCount; i++) {
 		partialStateLED[i] = new LEDWidget(&COLOR_GRAY, ui->partialStateGrid->widget());
 		partialStateLED[i]->setMinimumSize(16, 16);
 		partialStateLED[i]->setMaximumSize(16, 16);
@@ -78,7 +79,7 @@ SynthStateMonitor::~SynthStateMonitor() {
 		delete partStateWidget[i];
 		delete patchNameLabel[i];
 	}
-	for (unsigned int i = 0; i < synthRoute->getPartialCount(); i++) delete partialStateLED[i];
+	for (unsigned int i = 0; i < partialCount; i++) delete partialStateLED[i];
 	delete[] partialStateLED;
 }
 
@@ -94,7 +95,7 @@ void SynthStateMonitor::handleReset() {
 	lcdWidget.reset();
 	midiMessageLED.setColor(&COLOR_GRAY);
 
-	for (unsigned int i = 0; i < synthRoute->getPartialCount(); i++) {
+	for (unsigned int i = 0; i < partialCount; i++) {
 		partialStateLED[i]->setColor(&partialStateColor[PartialState_DEAD]);
 	}
 
@@ -124,7 +125,7 @@ void SynthStateMonitor::handleUpdate() {
 	if (synthRoute->getState() != SynthRouteState_OPEN) return;
 	bool partActiveNonReleasing[9] = {false};
 	bool midiMessageOn = false;
-	for (unsigned int partialNum = 0; partialNum < synthRoute->getPartialCount(); partialNum++) {
+	for (unsigned int partialNum = 0; partialNum < partialCount; partialNum++) {
 		const MT32Emu::Partial *partial = synthRoute->getPartial(partialNum);
 		int partNum = partial->getOwnerPart();
 		bool partialActive = partNum > -1;

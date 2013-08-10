@@ -99,6 +99,7 @@ private:
 	PartStateWidget *partStateWidget[9];
 
 	MasterClockNanos midiMessageLEDStartNanos;
+	uint partialCount;
 
 private slots:
 	void handleUpdate();
