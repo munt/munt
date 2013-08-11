@@ -186,7 +186,7 @@ bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
 			quint32 delta = timestamp - lastDebugEventTimestamp;
 			MasterClockNanos debugEventNanoOffset = (refNanos == 0) ? 0 : MasterClock::getClockNanos() - refNanos;
 			if ((delta < 253) || (259 < delta) || ((15 * MasterClock::NANOS_PER_MILLISECOND) < debugEventNanoOffset)) {
-				qDebug() << "M" << timestamp << 1e-6 * debugEventNanoOffset << delta;
+				qDebug() << "M" << delta << timestamp << 1e-6 * debugEventNanoOffset;
 			}
 			lastDebugEventTimestamp = timestamp;
 			return false;
