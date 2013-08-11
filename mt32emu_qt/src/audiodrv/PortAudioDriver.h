@@ -25,16 +25,26 @@ private:
 	// The total latency of audio stream buffers
 	// Special value of 0 indicates PortAudio to use its own recommended latency value
 	qint64 audioLatency;
+	quint32 audioBufferSize;
 	// The number of nanos by which to delay MIDI events to help ensure accurate relative timing.
 	qint64 midiLatency;
 	quint32 midiLatencyFrames;
 	qint64 sampleCount;
 	MasterClockNanos lastSampleMasterClockNanos;
-	volatile MasterClockNanos lastRenderedFramesNanos;
+
+	struct {
+		MasterClockNanos lastPlayedNanos;
+		quint32 lastPlayedFramesCount;
+		double actualSampleRate;
+	} timeInfo[2];
+	volatile uint timeInfoIx;
+
+	volatile MasterClockNanos lastRenderedNanos;
 	volatile quint64 lastRenderedFramesCount;
 	bool useAdvancedTiming;
 
 	static int paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData);
+	void updateTimeInfo(const quint32 framesInAudioBuffer, const MasterClockNanos measuredNanos);
 
 public:
 	PortAudioStream(const PortAudioDevice *device, QSynth *useSynth, unsigned int useSampleRate);
