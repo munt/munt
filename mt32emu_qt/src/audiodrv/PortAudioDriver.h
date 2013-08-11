@@ -27,8 +27,11 @@ private:
 	qint64 audioLatency;
 	// The number of nanos by which to delay MIDI events to help ensure accurate relative timing.
 	qint64 midiLatency;
+	quint32 midiLatencyFrames;
 	qint64 sampleCount;
 	MasterClockNanos lastSampleMasterClockNanos;
+	volatile MasterClockNanos lastRenderedFramesNanos;
+	volatile quint64 lastRenderedFramesCount;
 	bool useAdvancedTiming;
 
 	static int paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData);
@@ -38,6 +41,7 @@ public:
 	~PortAudioStream();
 	bool start(PaDeviceIndex deviceIndex);
 	void close();
+	bool estimateMIDITimestamp(quint32 &timestamp, const MasterClockNanos refNanos);
 };
 
 class PortAudioDevice : public AudioDevice {

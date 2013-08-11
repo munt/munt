@@ -126,6 +126,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatency / MasterClock::NANOS_PER_SECOND;
 	clockSync.setThresholds(audioLatency, audioLatency, -midiLatency);
 	lastSampleMasterClockNanos = MasterClock::getClockNanos() - audioLatency - midiLatency;
+	midiLatencyFrames = quint32((midiLatency * sampleRate) / MasterClock::NANOS_PER_SECOND);
 	return true;
 }
 
@@ -143,7 +144,9 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 		realSampleRate = AudioStream::estimateActualSampleRate(Pa_GetStreamInfo(stream->stream)->sampleRate, firstSampleMasterClockNanos, stream->lastSampleMasterClockNanos, stream->audioLatency, (quint32)frameCount);
 	} else {
 		MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
-		firstSampleMasterClockNanos = stream->clockSync.sync(realSampleTime) - stream->midiLatency;
+		stream->lastRenderedFramesNanos = stream->clockSync.sync(realSampleTime);
+		stream->lastRenderedFramesCount = stream->sampleCount;
+		firstSampleMasterClockNanos = stream->lastRenderedFramesNanos - stream->midiLatency;
 		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate / stream->clockSync.getDrift();
 	}
 	unsigned int rendered = stream->synth->render((Bit16s *)outputBuffer, frameCount, firstSampleMasterClockNanos, realSampleRate);
@@ -154,6 +157,23 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	}
 	stream->sampleCount += frameCount;
 	return paContinue;
+}
+
+// Intended to be called from MIDI receiving thread
+bool PortAudioStream::estimateMIDITimestamp(quint32 &timestamp, const MasterClockNanos refNanos) {
+	if (useAdvancedTiming) {
+		// NYI
+		return false;
+	}
+
+	// Taking snapshots in reverse order to avoid interference with the rendering thread
+	quint32 lastRenderedFramesCountSnapshot = (quint32)lastRenderedFramesCount;
+	MasterClockNanos lastRenderedFramesNanosSnapshot = lastRenderedFramesNanos;
+
+	MasterClockNanos refNanoOffset = refNanos - lastRenderedFramesNanosSnapshot;
+	quint32 refFrameOffset = quint32((refNanoOffset * sampleRate) / clockSync.getDrift() / MasterClock::NANOS_PER_SECOND);
+	timestamp = lastRenderedFramesCountSnapshot + refFrameOffset + midiLatencyFrames;
+	return true;
 }
 
 void PortAudioStream::close() {
