@@ -19,96 +19,60 @@
 #include "ClockSync.h"
 #include "MasterClock.h"
 
-ClockSync::ClockSync(double initDrift) : offsetValid(false), drift(initDrift) {
-	periodicResetNanos = 5 * MasterClock::NANOS_PER_SECOND;
-	periodicDampFactor = 0.1;
-	emergencyResetThresholdNanos = 500 * MasterClock::NANOS_PER_MILLISECOND;
-	highJitterThresholdNanos = 100 * MasterClock::NANOS_PER_MILLISECOND;
-	lowJitterThresholdNanos = -100 * MasterClock::NANOS_PER_MILLISECOND;
-	shiftFactor = 0.1;
+ClockSync::ClockSync(double initDrift) : performResetOnNextSync(true), drift(initDrift) {
+	periodicResetNanos = 2 * MasterClock::NANOS_PER_SECOND;
+	emergencyResetThresholdNanos = 200 * MasterClock::NANOS_PER_MILLISECOND;
+}
+
+void ClockSync::scheduleReset() {
+	performResetOnNextSync = true;
 }
 
 double ClockSync::getDrift() {
 	return drift;
 }
 
-void ClockSync::setThresholds(MasterClockNanos useEmergencyResetThresholdNanos,
-			MasterClockNanos useHighJitterThresholdNanos, MasterClockNanos useLowJitterThresholdNanos) {
-	emergencyResetThresholdNanos = useEmergencyResetThresholdNanos;
-	highJitterThresholdNanos = useHighJitterThresholdNanos;
-	lowJitterThresholdNanos = useLowJitterThresholdNanos;
-}
-
-void ClockSync::setParams(MasterClockNanos usePeriodicResetNanos, double usePeriodicDampFactor,
-			MasterClockNanos useEmergencyResetThresholdNanos, MasterClockNanos useHighJitterThresholdNanos,
-			MasterClockNanos useLowJitterThresholdNanos, double useShiftFactor) {
+void ClockSync::setParams(MasterClockNanos useEmergencyResetThresholdNanos, MasterClockNanos usePeriodicResetNanos) {
 	periodicResetNanos = usePeriodicResetNanos;
-	periodicDampFactor = usePeriodicDampFactor;
 	emergencyResetThresholdNanos = useEmergencyResetThresholdNanos;
-	highJitterThresholdNanos = useHighJitterThresholdNanos;
-	lowJitterThresholdNanos = useLowJitterThresholdNanos;
-	shiftFactor = useShiftFactor;
 }
 
-MasterClockNanos ClockSync::sync(MasterClockNanos externalNow) {
-	MasterClockNanos masterNow = MasterClock::getClockNanos();
-	if (externalNow == 0) {
-		// Special value meaning "no timestamp, play immediately"
-		return masterNow;
-	}
-	if (!offsetValid) {
+MasterClockNanos ClockSync::sync(MasterClockNanos masterNow, MasterClockNanos externalNow) {
+	if (performResetOnNextSync) {
 		masterStart = masterNow;
 		externalStart = externalNow;
-		offset = 0;
-		offsetShift = 0;
-		qDebug() << "ClockSync: init:" << externalNow << masterNow << offset << drift;
-		offsetValid = true;
+		baseOffset = 0;
+		offsetSum = 0;
+		syncCount = 0;
+		drift = rdrift = 1;
+		qDebug() << "ClockSync: init:" << externalNow << masterNow << baseOffset << drift;
+		performResetOnNextSync = false;
 		return masterNow;
 	}
 	MasterClockNanos masterElapsed = masterNow - masterStart;
 	MasterClockNanos externalElapsed = externalNow - externalStart;
-	MasterClockNanos offsetNow = masterElapsed - drift * externalElapsed;
+	MasterClockNanos offsetNow = rdrift * externalElapsed - masterElapsed;
+	offsetSum += offsetNow;
+	syncCount++;
+	if (qAbs(offsetNow) > emergencyResetThresholdNanos) {
+		qDebug() << "ClockSync: Synchronisation lost:" << externalNow << masterNow << baseOffset << drift << "reset scheduled";
+		scheduleReset();
+	}
 	if (masterElapsed > periodicResetNanos) {
-		masterStart = masterNow;
-		externalStart = externalNow;
-		offset -= offsetNow;
-		offsetShift = 0;	// we don't want here to shift
-		// we rather add a compensation for the offset we have now to the new drift value
-		drift = (masterElapsed - offset * periodicDampFactor) / externalElapsed;
-		qDebug() << "ClockSync: offset:" << 1e-6 * offset << "drift:" << drift;
-		return masterNow + offset;
-	}
-	if(qAbs(offsetNow - offset) > emergencyResetThresholdNanos) {
-		qDebug() << "ClockSync: emergency reset:" << externalNow << masterNow << offset << offsetNow;
-		masterStart = masterNow;
-		externalStart = externalNow;
-		offset = 0;
-		offsetShift = 0;
-		drift = 1.0;
-		return masterNow;
-	}
-	if (((offsetNow - offset) < lowJitterThresholdNanos) ||
-		((offsetNow - offset) > highJitterThresholdNanos)) {
-		qDebug() << "ClockSync: Latency resync offset diff:" << 1e-6 * (offsetNow - offset) << "drift:" << drift;
-		// start moving offset towards 0 by steps of shiftFactor * offset
-		offsetShift = MasterClockNanos(shiftFactor * (offset - offsetNow));
-	}
-	if (qAbs(offsetShift) > qAbs(offset - offsetNow)) {
-		// resync's done
-		masterStart = masterNow;
-		externalStart = externalNow;
-		offset = 0;
-		offsetShift = 0;
-		drift = 1.0;
-		return masterNow;
-	}
-	offset -= offsetShift;
-	if (offsetShift != 0) {
-		qDebug() << "ClockSync: offset:" << 1e-6 * offset << "shift:" << 1e-6 * offsetShift;
-	}
-	return masterStart + offset + drift * externalElapsed;
-}
+		double offsetAverage = offsetSum / (double)syncCount;
+		drift = (externalElapsed + 0.5 * (baseOffset + offsetAverage)) / (double)masterElapsed;
+		rdrift = 1 / drift;
 
-void ClockSync::reset() {
-	offsetValid = false;
+		masterStart = masterNow;
+		externalStart = externalNow;
+		// Ensure the clock won't jump
+		baseOffset += offsetNow;
+		offsetSum = 0;
+		syncCount = 0;
+		offsetAverage = 0;
+
+		qDebug() << "ClockSync: baseOffset:" << 1e-6 * baseOffset << "drift:" << drift;
+		return masterNow + baseOffset;
+	}
+	return masterStart + baseOffset + rdrift * externalElapsed;
 }

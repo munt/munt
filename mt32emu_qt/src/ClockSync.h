@@ -7,40 +7,35 @@
 
 class ClockSync {
 private:
-	bool offsetValid;
-	// Multiplier for externalElapsed
+	bool performResetOnNextSync;
+
+	// External to master clock rate
 	double drift;
-	// offset is the difference between the master clock and the scaled external clock
-	MasterClockNanos offset;
-	// While resyncing, we move offset towards 0 by offsetShift steps
-	MasterClockNanos offsetShift;
+	// Reciprocal drift, for convenience and speed
+	double rdrift;
+	// The difference between the scaled external clock and the master clock
+	MasterClockNanos baseOffset;
+
+	// Variables below intended to find average clock offset we really want to get rid of
+	MasterClockNanos offsetSum;
+	uint syncCount;
+
 	// Start is the moment when we start time measurement
 	// (the first call to sync() after either init or reset)
 	MasterClockNanos masterStart, externalStart;
 	// Time interval for measuring the current drift
 	MasterClockNanos periodicResetNanos;
-	// The part of the external clock's offset to compensate when computing new drift
-	double periodicDampFactor;
-	// The maximum acceptable external clock's offset which can be absorbed by buffers (should be <= MIDI latency)
+
 	MasterClockNanos emergencyResetThresholdNanos;
-	// For offset shifting algorithm, the highest value of the external clock's offset to be shifted down to 0
-	MasterClockNanos highJitterThresholdNanos;
-	// For offset shifting algorithm, the lowest value of the external clock's offset to be shifted up to 0
-	MasterClockNanos lowJitterThresholdNanos;
-	// For offset shifting algorithm, the part of the external clock's offset to use as a single shift step
-	double shiftFactor;
 
 public:
 	ClockSync(double initDrift = 1.0);
 
+	void scheduleReset();
+	MasterClockNanos sync(MasterClockNanos masterNow, MasterClockNanos externalNanos);
 	double getDrift();
-	MasterClockNanos sync(MasterClockNanos externalNanos);
-	void reset();
-	void setThresholds(MasterClockNanos useEmergencyResetThresholdNanos, MasterClockNanos useHighJitterThresholdNanos,
-		MasterClockNanos useLowJitterThresholdNanos);
-	void setParams(MasterClockNanos usePeriodicResetNanos, double usePeriodicDampFactor,
-		MasterClockNanos useEmergencyResetThresholdNanos, MasterClockNanos useHighJitterThresholdNanos,
-		MasterClockNanos useLowJitterThresholdNanos, double useShiftFactor);
+
+	void setParams(MasterClockNanos useEmergencyResetThresholdNanos, MasterClockNanos usePeriodicResetNanos);
 };
 
 #endif

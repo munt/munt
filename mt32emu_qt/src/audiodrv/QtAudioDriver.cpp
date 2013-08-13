@@ -56,7 +56,7 @@ public:
 		else
 			midiLatency = useMIDILatency;
 		qDebug() << "QAudioDriver: MIDI latency set to:" << (double)midiLatency / MasterClock::NANOS_PER_SECOND << "sec";
-		clockSync.setThresholds(audioLatency, audioLatency, -midiLatency);
+		clockSync.setParams(audioLatency, 10 * audioLatency);
 		lastSampleMasterClockNanos = MasterClock::getClockNanos() - audioLatency - midiLatency;
 	}
 
@@ -64,14 +64,15 @@ public:
 		MasterClockNanos firstSampleMasterClockNanos;
 		double realSampleRate;
 		unsigned int framesToRender = (unsigned int)(len >> 2);
+		MasterClockNanos nanosNow = MasterClock::getClockNanos();
 		if (advancedTiming) {
 			MasterClockNanos nanosInBuffer = MasterClock::NANOS_PER_SECOND * (audioOutput->bufferSize() - audioOutput->bytesFree()) / (4 * sampleRate);
-			firstSampleMasterClockNanos = MasterClock::getClockNanos() + nanosInBuffer - audioLatency - midiLatency;
+			firstSampleMasterClockNanos = nanosNow + nanosInBuffer - audioLatency - midiLatency;
 			realSampleRate = AudioStream::estimateActualSampleRate(sampleRate, firstSampleMasterClockNanos, lastSampleMasterClockNanos, audioLatency, framesToRender);
 		} else {
 			MasterClockNanos firstSampleAudioNanos = MasterClock::NANOS_PER_SECOND * samplesCount / sampleRate;
-			firstSampleMasterClockNanos = clockSync.sync(firstSampleAudioNanos) - midiLatency;
-			realSampleRate = sampleRate / clockSync.getDrift();
+			firstSampleMasterClockNanos = clockSync.sync(nanosNow, firstSampleAudioNanos) - midiLatency;
+			realSampleRate = sampleRate * clockSync.getDrift();
 			samplesCount += len >> 2;
 		}
 		return synth->render((Bit16s *)data, framesToRender, firstSampleMasterClockNanos, realSampleRate) << 2;

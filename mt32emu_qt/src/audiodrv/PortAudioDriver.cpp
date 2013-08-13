@@ -107,7 +107,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		return false;
 	}
 	sampleCount = 0;
-	clockSync.reset();
+	clockSync.scheduleReset();
 	err = Pa_StartStream(stream);
 	if(err != paNoError) {
 		qDebug() << "Pa_StartStream() returned PaError" << err;
@@ -124,7 +124,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		midiLatency = audioLatency / 2;
 	}
 	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatency / MasterClock::NANOS_PER_SECOND;
-	clockSync.setThresholds(audioLatency, audioLatency, -midiLatency);
+	clockSync.setParams(audioLatency, 10 * audioLatency);
 	lastSampleMasterClockNanos = MasterClock::getClockNanos() - audioLatency - midiLatency;
 	audioBufferSize = quint32((audioLatency * sampleRate) / MasterClock::NANOS_PER_SECOND);
 	midiLatencyFrames = quint32((midiLatency * sampleRate) / MasterClock::NANOS_PER_SECOND);
@@ -144,8 +144,8 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	MasterClockNanos firstSampleMasterClockNanos;
 	// Set this variable to false if PortAudio doesn't provide correct timing information.
 	// As for V19, this should be used for OSS (still not implemented, though OSS allows _really_ low latencies) and for PulseAudio + ALSA setup.
+	MasterClockNanos nanosNow = MasterClock::getClockNanos();
 	if (stream->useAdvancedTiming) {
-		MasterClockNanos nanosNow = MasterClock::getClockNanos();
 		MasterClockNanos nanosInAudioBuffer = MasterClockNanos(MasterClock::NANOS_PER_SECOND * (timeInfo->outputBufferDacTime - Pa_GetStreamTime(stream->stream)));
 		firstSampleMasterClockNanos = nanosNow + nanosInAudioBuffer - stream->audioLatency - stream->midiLatency;
 		realSampleRate = AudioStream::estimateActualSampleRate(Pa_GetStreamInfo(stream->stream)->sampleRate, firstSampleMasterClockNanos, stream->lastSampleMasterClockNanos, stream->audioLatency, (quint32)frameCount);
@@ -154,10 +154,10 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 		stream->updateTimeInfo(framesInAudioBuffer, nanosNow);
 	} else {
 		MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
-		stream->lastRenderedNanos = stream->clockSync.sync(realSampleTime);
+		stream->lastRenderedNanos = stream->clockSync.sync(nanosNow, realSampleTime);
 		stream->lastRenderedFramesCount = stream->sampleCount;
 		firstSampleMasterClockNanos = stream->lastRenderedNanos - stream->midiLatency;
-		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate / stream->clockSync.getDrift();
+		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate * stream->clockSync.getDrift();
 	}
 	unsigned int rendered = stream->synth->render((Bit16s *)outputBuffer, frameCount, firstSampleMasterClockNanos, realSampleRate);
 	if (rendered < frameCount) {
@@ -221,7 +221,7 @@ bool PortAudioStream::estimateMIDITimestamp(quint32 &timestamp, const MasterCloc
 	MasterClockNanos lastRenderedNanosSnapshot = lastRenderedNanos;
 
 	MasterClockNanos refNanoOffset = refNanos - lastRenderedNanosSnapshot;
-	quint32 refFrameOffset = quint32((refNanoOffset * sampleRate) / clockSync.getDrift() / MasterClock::NANOS_PER_SECOND);
+	quint32 refFrameOffset = quint32((refNanoOffset * sampleRate) * clockSync.getDrift() / MasterClock::NANOS_PER_SECOND);
 	timestamp = lastRenderedFramesCountSnapshot + refFrameOffset + midiLatencyFrames;
 	return true;
 }
