@@ -108,13 +108,6 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	}
 	sampleCount = 0;
 	clockSync.scheduleReset();
-	err = Pa_StartStream(stream);
-	if(err != paNoError) {
-		qDebug() << "Pa_StartStream() returned PaError" << err;
-		Pa_CloseStream(stream);
-		stream = NULL;
-		return false;
-	}
 	const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
 	if (streamInfo->outputLatency != 0) { // Quick fix for Mac
 		audioLatency = streamInfo->outputLatency * MasterClock::NANOS_PER_SECOND;
@@ -133,6 +126,14 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
 	timeInfo[0].lastPlayedFramesCount = 0;
 	timeInfo[0].actualSampleRate = Pa_GetStreamInfo(stream)->sampleRate;
+
+	err = Pa_StartStream(stream);
+	if(err != paNoError) {
+		qDebug() << "Pa_StartStream() returned PaError" << err;
+		Pa_CloseStream(stream);
+		stream = NULL;
+		return false;
+	}
 	return true;
 }
 
