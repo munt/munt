@@ -210,9 +210,14 @@ void PortAudioStream::updateTimeInfo(const quint32 framesInAudioBuffer, const Ma
 
 // Intended to be called from MIDI receiving thread
 bool PortAudioStream::estimateMIDITimestamp(quint32 &timestamp, const MasterClockNanos refNanos) {
+	MasterClockNanos midiNanos = (refNanos == 0) ? MasterClock::getClockNanos() : refNanos;
 	if (useAdvancedTiming) {
 		uint i = timeInfoIx;
-		quint32 refFrameOffset = quint32(((refNanos - timeInfo[i].lastPlayedNanos) * timeInfo[i].actualSampleRate) / MasterClock::NANOS_PER_SECOND);
+		if (midiNanos < timeInfo[i].lastPlayedNanos) {
+			// Cross-boundary case, use previous time info for late events
+			i = 1 - i;
+		}
+		quint32 refFrameOffset = quint32(((midiNanos - timeInfo[i].lastPlayedNanos) * timeInfo[i].actualSampleRate) / MasterClock::NANOS_PER_SECOND);
 		timestamp = timeInfo[i].lastPlayedFramesCount + refFrameOffset + audioBufferSize + midiLatencyFrames;
 		return true;
 	}
@@ -221,7 +226,7 @@ bool PortAudioStream::estimateMIDITimestamp(quint32 &timestamp, const MasterCloc
 	quint32 lastRenderedFramesCountSnapshot = (quint32)lastRenderedFramesCount;
 	MasterClockNanos lastRenderedNanosSnapshot = lastRenderedNanos;
 
-	MasterClockNanos refNanoOffset = refNanos - lastRenderedNanosSnapshot;
+	MasterClockNanos refNanoOffset = midiNanos - lastRenderedNanosSnapshot;
 	quint32 refFrameOffset = quint32((refNanoOffset * sampleRate) * clockSync.getDrift() / MasterClock::NANOS_PER_SECOND);
 	timestamp = lastRenderedFramesCountSnapshot + refFrameOffset + midiLatencyFrames;
 	return true;
