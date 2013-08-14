@@ -80,7 +80,7 @@ DWORD WinMMAudioStream::getCurrentPlayPosition() {
 	MMTIME mmTime;
 	mmTime.wType = TIME_SAMPLES;
 
-	if (waveOutGetPosition(hWaveOut, &mmTime, sizeof MMTIME) != MMSYSERR_NOERROR) {
+	if (waveOutGetPosition(hWaveOut, &mmTime, sizeof(MMTIME)) != MMSYSERR_NOERROR) {
 		qDebug() << "WinMMAudioDriver: waveOutGetPosition failed, thread stopped";
 		return (DWORD)-1;
 	}

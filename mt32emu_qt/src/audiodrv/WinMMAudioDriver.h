@@ -7,6 +7,11 @@
 #include "AudioDriver.h"
 #include "../MasterClock.h"
 
+#ifndef _UINTPTR_T_DEFINED
+// For MinGW
+#include <stdint.h>
+#endif
+
 class Master;
 class QSynth;
 class WinMMAudioDriver;
