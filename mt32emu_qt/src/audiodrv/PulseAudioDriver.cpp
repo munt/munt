@@ -119,98 +119,82 @@ static bool loadLibrary(bool loadNeeded) {
 	return true;
 }
 
-PulseAudioStream::PulseAudioStream(const AudioDevice *device, QSynth *useSynth,
-	unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate), stream(NULL),
-	sampleCount(0), pendingClose(false)
+PulseAudioStream::PulseAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
+	AudioStream(useSettings, useSynth, useSampleRate), stream(NULL), pendingClose(false)
 {
-	const AudioDriverSettings &driverSettings = device->driver->getAudioSettings();
-	bufferSize = driverSettings.chunkLen * sampleRate / 1000 /* ms per sec*/;
-	audioLatency = driverSettings.audioLatency;
-	midiLatency = driverSettings.midiLatency;
-	useAdvancedTiming = driverSettings.advancedTiming;
-	buffer = new Bit16s[2 * bufferSize];
+	bufferSize = settings.chunkLen * sampleRate / MasterClock::MILLIS_PER_SECOND;
+	buffer = new Bit16s[/* channels */ 2 * bufferSize];
 }
 
 PulseAudioStream::~PulseAudioStream() {
-	if (stream != NULL) {
-		close();
-	}
+	if (stream != NULL) close();
 	delete[] buffer;
 }
 
-void* PulseAudioStream::processingThread(void *userData) {
+void *PulseAudioStream::processingThread(void *userData) {
 	int error;
-	PulseAudioStream *driver = (PulseAudioStream *)userData;
-	MasterClockNanos lastSampleNanos = MasterClock::getClockNanos() - (driver->audioLatency + driver->midiLatency) * MasterClock::NANOS_PER_MILLISECOND;
+	PulseAudioStream &audioStream = *(PulseAudioStream *)userData;
 	qDebug() << "PulseAudio: Processing thread started";
-	while (!driver->pendingClose) {
-		double realSampleRate;
-		MasterClockNanos realSampleTime;
-		MasterClockNanos firstSampleNanos;
-		if (driver->useAdvancedTiming) {
-			realSampleRate = driver->sampleRate;
-			realSampleTime = MasterClock::getClockNanos() + _pa_simple_get_latency(driver->stream, &error) * MasterClock::NANOS_PER_MICROSECOND;
-			firstSampleNanos = realSampleTime - (driver->audioLatency + driver->midiLatency) * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream latency
-			realSampleRate = AudioStream::estimateActualSampleRate(driver->sampleRate, firstSampleNanos, lastSampleNanos,
-				driver->audioLatency * MasterClock::NANOS_PER_MILLISECOND, driver->bufferSize);
+	while (!audioStream.pendingClose) {
+		MasterClockNanos nanosNow = MasterClock::getClockNanos();
+		quint32 framesInAudioBuffer;
+		if (audioStream.settings.advancedTiming) {
+			framesInAudioBuffer = quint32(audioStream.sampleRate * ((double)_pa_simple_get_latency(audioStream.stream, &error) / MasterClock::MICROS_PER_SECOND));
 		} else {
-			realSampleTime = MasterClockNanos(driver->sampleCount / (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
-			firstSampleNanos = driver->clockSync.sync(realSampleTime) - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
-			realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
+			framesInAudioBuffer = 0;
 		}
-		driver->synth->render(driver->buffer, driver->bufferSize,
-			firstSampleNanos, realSampleRate);
-		if (_pa_simple_write(driver->stream, driver->buffer, driver->bufferSize * FRAME_SIZE, &error) < 0) {
+		audioStream.updateTimeInfo(nanosNow, framesInAudioBuffer);
+		if (!audioStream.synth.render(audioStream.buffer, audioStream.bufferSize)) {
+			memset(audioStream.buffer, 0, audioStream.bufferSize);
+		}
+		if (_pa_simple_write(audioStream.stream, audioStream.buffer, audioStream.bufferSize * FRAME_SIZE, &error) < 0) {
 			qDebug() << "pa_simple_write() failed:" << _pa_strerror(error);
-			_pa_simple_free(driver->stream);
-			driver->stream = NULL;
+			_pa_simple_free(audioStream.stream);
+			audioStream.stream = NULL;
 			qDebug() << "PulseAudio: Processing thread stopped";
-			driver->synth->close();
+			audioStream.synth.close();
 			return NULL;
 		}
-		driver->sampleCount += driver->bufferSize;
+		audioStream.renderedFramesCount += audioStream.bufferSize;
 	}
-	driver->pendingClose = false;
+	audioStream.pendingClose = false;
 	return NULL;
 }
 
 bool PulseAudioStream::start() {
 	int error;
-	if (buffer == NULL) {
-		return false;
-	}
+	if (buffer == NULL) return false;
 	memset(buffer, 0, FRAME_SIZE * bufferSize);
-	if (stream != NULL) {
-		close();
-	}
+	if (stream != NULL) close();
 
 	qDebug() << "Using PulseAudio default device";
 
 	// The Sample format to use
 	static const pa_sample_spec ss = {
-			PA_SAMPLE_S16LE, // format
-			sampleRate,
-			2 // channels
+		PA_SAMPLE_S16LE, // format
+		sampleRate,
+		2 // channels
 	};
 
 	// Configuring desired audio latency
-	qDebug() << "Using audio latency:" << audioLatency;
+	qDebug() << "Using audio latency:" << settings.audioLatency;
 	static const pa_buffer_attr ba = {
 		(uint32_t)-1, // uint32_t maxlength;
-		audioLatency * FRAME_SIZE * sampleRate / 1000, // uint32_t tlength;
+		audioLatencyFrames * FRAME_SIZE, // uint32_t tlength;
 		(uint32_t)-1, // uint32_t prebuf;
 		(uint32_t)-1, // uint32_t minreq;
 		(uint32_t)-1 // uint32_t fragsize;
 	};
 
 	// Create a new playback stream
-	if (!(stream = _pa_simple_new(NULL, "mt32emu-qt", PA_STREAM_PLAYBACK, NULL, "playback", &ss, NULL, &ba, &error))) {
+	stream = _pa_simple_new(NULL, "mt32emu-qt", PA_STREAM_PLAYBACK, NULL, "playback", &ss, NULL, &ba, &error);
+	if (stream == NULL) {
 		qDebug() << "pa_simple_new() failed:" << _pa_strerror(error);
 		return false;
 	}
 
-	// Start playing 1 sec to fill PulseAudio buffers
-	int initFrames = sampleRate;
+	// Start playing to fill audio buffers
+	int initFrames = audioLatencyFrames;
 	while (initFrames > 0) {
 		if (_pa_simple_write(stream, buffer, FRAME_SIZE * bufferSize, &error) < 0) {
 			qDebug() << "pa_simple_write() failed:" << _pa_strerror(error);
@@ -221,8 +205,12 @@ bool PulseAudioStream::start() {
 		initFrames -= bufferSize;
 	}
 	pthread_t threadID;
-	if((error = pthread_create(&threadID, NULL, processingThread, this))) {
+	error = pthread_create(&threadID, NULL, processingThread, this);
+	if (error != 0) {
 		qDebug() << "PulseAudio: Processing Thread creation failed:" << error;
+		_pa_simple_free(stream);
+		stream = NULL;
+		return false;
 	}
 	return true;
 }
@@ -236,7 +224,7 @@ void PulseAudioStream::close() {
 		}
 		qDebug() << "PulseAudio: Stopping processing thread...";
 		while (pendingClose) {
-			sleep(1);
+			MasterClock::sleepForNanos(100 * MasterClock::NANOS_PER_MILLISECOND);
 		}
 		qDebug() << "PulseAudio: Processing thread stopped";
 		_pa_simple_free(stream); 
@@ -245,14 +233,11 @@ void PulseAudioStream::close() {
 	return;
 }
 
-PulseAudioDefaultDevice::PulseAudioDefaultDevice(PulseAudioDriver * const driver) : AudioDevice(driver, "default", "Default") {
-}
+PulseAudioDefaultDevice::PulseAudioDefaultDevice(PulseAudioDriver &driver) : AudioDevice(driver, "Default") {}
 
-PulseAudioStream *PulseAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
-	PulseAudioStream *stream = new PulseAudioStream(this, synth, sampleRate);
-	if (stream->start()) {
-		return stream;
-	}
+AudioStream *PulseAudioDefaultDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
+	PulseAudioStream *stream = new PulseAudioStream(driver.getAudioSettings(), synth, sampleRate);
+	if (stream->start()) return stream;
 	delete stream;
 	return NULL;
 }
@@ -273,7 +258,7 @@ PulseAudioDriver::~PulseAudioDriver() {
 const QList<const AudioDevice *> PulseAudioDriver::createDeviceList() {
 	QList<const AudioDevice *> deviceList;
 	if (isLibraryFound) {
-		deviceList.append(new PulseAudioDefaultDevice(this));
+		deviceList.append(new PulseAudioDefaultDevice(*this));
 	}
 	return deviceList;
 }
@@ -287,5 +272,8 @@ void PulseAudioDriver::validateAudioSettings(AudioDriverSettings &settings) cons
 	}
 	if (settings.chunkLen == 0) {
 		settings.chunkLen = DEFAULT_CHUNK_MS;
+	}
+	if (settings.chunkLen > settings.audioLatency) {
+		settings.chunkLen = settings.audioLatency;
 	}
 }

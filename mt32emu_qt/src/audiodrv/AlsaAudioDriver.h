@@ -16,22 +16,15 @@ class AlsaAudioDriver;
 
 class AlsaAudioStream : public AudioStream {
 private:
-	unsigned int bufferSize;
-	unsigned int audioLatency;
-	unsigned int midiLatency;
-	ClockSync clockSync;
-	QSynth *synth;
-	unsigned int sampleRate;
 	MT32Emu::Bit16s *buffer;
 	snd_pcm_t *stream;
-	qint64 sampleCount;
+	uint bufferSize;
 	bool pendingClose;
-	bool useAdvancedTiming;
 
-	static void* processingThread(void *);
+	static void *processingThread(void *);
 
 public:
-	AlsaAudioStream(const AudioDevice *device, QSynth *useSynth, unsigned int useSampleRate);
+	AlsaAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
 	~AlsaAudioStream();
 	bool start();
 	void close();
@@ -39,9 +32,9 @@ public:
 
 class AlsaAudioDefaultDevice : public AudioDevice {
 friend class AlsaAudioDriver;
-	AlsaAudioDefaultDevice(AlsaAudioDriver * const driver);
+	AlsaAudioDefaultDevice(AlsaAudioDriver &driver);
 public:
-	AlsaAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
+	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
 };
 
 class AlsaAudioDriver : public AudioDriver {
@@ -49,7 +42,6 @@ private:
 	void validateAudioSettings(AudioDriverSettings &settings) const;
 public:
 	AlsaAudioDriver(Master *useMaster);
-	~AlsaAudioDriver();
 	const QList<const AudioDevice *> createDeviceList();
 };
 

@@ -19,8 +19,7 @@
 
 using namespace MT32Emu;
 
-int main(int argv, char **args)
-{
+int main(int argv, char **args) {
 	QApplication app(argv, args);
 	app.setApplicationName("Munt mt32emu-qt");
 	app.setQuitOnLastWindowClosed(false);

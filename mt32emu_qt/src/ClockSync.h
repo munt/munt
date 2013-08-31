@@ -23,13 +23,16 @@ private:
 	// Start is the moment when we start time measurement
 	// (the first call to sync() after either init or reset)
 	MasterClockNanos masterStart, externalStart;
+
 	// Time interval for measuring the current drift
 	MasterClockNanos periodicResetNanos;
 
+	// When the clock offset exceeds this threshold, a reset is scheduled upon the next sync
+	// The reset isn't performed immediately to avoid syncing on a random fluctuation
 	MasterClockNanos emergencyResetThresholdNanos;
 
 public:
-	ClockSync(double initDrift = 1.0);
+	ClockSync();
 
 	void scheduleReset();
 	MasterClockNanos sync(MasterClockNanos masterNow, MasterClockNanos externalNanos);

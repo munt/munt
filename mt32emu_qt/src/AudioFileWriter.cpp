@@ -26,13 +26,9 @@ static const unsigned char WAVE_HEADER[] = {
 	0x04, 0x00, 0x10, 0x00, 0x64, 0x61, 0x74, 0x61, 0x00, 0x00, 0x00, 0x00
 };
 
-AudioFileWriter::AudioFileWriter() :
-	synth(NULL),
-	buffer(NULL),
-	parsers(NULL)
-	{
-		connect(this, SIGNAL(parsingFailed(const QString &, const QString &)), Master::getInstance(), SLOT(showBalloon(const QString &, const QString &)));
-	}
+AudioFileWriter::AudioFileWriter() : synth(NULL), buffer(NULL), parsers(NULL) {
+	connect(this, SIGNAL(parsingFailed(const QString &, const QString &)), Master::getInstance(), SLOT(showBalloon(const QString &, const QString &)));
+}
 
 AudioFileWriter::~AudioFileWriter() {
 	stop();
@@ -81,7 +77,6 @@ bool AudioFileWriter::convertMIDIFiles(QString useOutFileName, QStringList midiF
 	Master::getInstance()->setAudioFileWriterSynth(synth);
 	sampleRate = MT32Emu::SAMPLE_RATE;
 	bufferSize = useBufferSize;
-	latency = 0;
 	outFileName = useOutFileName;
 	realtimeMode = false;
 	stopProcessing = false;
@@ -91,12 +86,11 @@ bool AudioFileWriter::convertMIDIFiles(QString useOutFileName, QStringList midiF
 	return true;
 }
 
-void AudioFileWriter::startRealtimeProcessing(QSynth *useSynth, unsigned int useSampleRate, QString useOutFileName, unsigned int useBufferSize, MasterClockNanos useLatency) {
+void AudioFileWriter::startRealtimeProcessing(QSynth *useSynth, unsigned int useSampleRate, QString useOutFileName, unsigned int useBufferSize) {
 	if (useOutFileName.isEmpty()) return;
 	synth = useSynth;
 	sampleRate = useSampleRate;
 	bufferSize = useBufferSize;
-	latency = useLatency;
 	outFileName = useOutFileName;
 	delete[] buffer;
 	buffer = new qint16[2 * bufferSize];
@@ -140,11 +134,11 @@ void AudioFileWriter::run() {
 	}
 	qDebug() << "AudioFileWriter: Rendering started";
 	while (!stopProcessing) {
-		unsigned int frameCount = 0;
+		uint frameCount = 0;
 		if (realtimeMode) {
-			frameCount = sampleRate * (MasterClock::getClockNanos() - firstSampleNanos) / MasterClock::NANOS_PER_SECOND;
+			frameCount = uint((sampleRate * (MasterClock::getClockNanos() - firstSampleNanos)) / MasterClock::NANOS_PER_SECOND);
 			if (frameCount < bufferSize) {
-				usleep(1000000 * (bufferSize - frameCount) / sampleRate);
+				usleep(ulong((MasterClock::MICROS_PER_SECOND * (bufferSize - frameCount)) / sampleRate));
 				continue;
 			} else {
 				frameCount = bufferSize;
@@ -154,17 +148,18 @@ void AudioFileWriter::run() {
 				const QMidiEvent &e = midiEvents.at(midiEventIx);
 				bool eventPushed = true;
 				MasterClockNanos nextEventNanos = midiNanos + e.getTimestamp() * midiTick;
-				frameCount = (uint)(sampleRate * (nextEventNanos - firstSampleNanos) / MasterClock::NANOS_PER_SECOND);
+				quint32 nextEventFrames = quint32(((double)sampleRate * nextEventNanos) / MasterClock::NANOS_PER_SECOND);
+				frameCount = uint((sampleRate * (nextEventNanos - firstSampleNanos)) / MasterClock::NANOS_PER_SECOND);
 				if (bufferSize < frameCount) {
 					frameCount = bufferSize;
 					break;
 				}
 				switch (e.getType()) {
 					case SHORT_MESSAGE:
-						eventPushed = synth->pushMIDIShortMessage(e.getShortMessage(), nextEventNanos);
+						eventPushed = synth->playMIDIShortMessage(e.getShortMessage(), nextEventFrames);
 						break;
 					case SYSEX:
-						eventPushed = synth->pushMIDISysex(e.getSysexData(), e.getSysexLen(), nextEventNanos);
+						eventPushed = synth->playMIDISysex(e.getSysexData(), e.getSysexLen(), nextEventFrames);
 						break;
 					case SET_TEMPO:
 						midiTick = parsers[parserIx].getMidiTick(e.getShortMessage());
@@ -194,13 +189,13 @@ void AudioFileWriter::run() {
 			}
 		}
 		while (frameCount > 0) {
-			unsigned int framesToRender = qMin(bufferSize, frameCount);
-			unsigned int framesRendered = synth->render(buffer, framesToRender, firstSampleNanos - latency, sampleRate);
-			qint64 bytesToWrite = framesRendered * FRAME_SIZE;
+			uint framesToRender = qMin(bufferSize, frameCount);
+			if (!synth->render(buffer, framesToRender)) break;
+			qint64 bytesToWrite = framesToRender * FRAME_SIZE;
 			char *bufferPos = (char *)buffer;
 			if (skipSilence) {
 				qint32 *startPos = (qint32 *)buffer;
-				qint32 *endPos = startPos + framesRendered;
+				qint32 *endPos = startPos + framesToRender;
 				bytesToWrite = 0;
 				for (qint32 *p = startPos; p < endPos; p++) {
 					if (*p != 0) {
@@ -221,8 +216,8 @@ void AudioFileWriter::run() {
 				bytesToWrite -= bytesWritten;
 				bufferPos += bytesWritten;
 			}
-			firstSampleNanos += MasterClock::NANOS_PER_SECOND * framesRendered / sampleRate;
-			frameCount -= framesRendered;
+			firstSampleNanos += MasterClock::NANOS_PER_SECOND * framesToRender / sampleRate;
+			frameCount -= framesToRender;
 			if (!realtimeMode) qDebug() << "AudioFileWriter: Rendering time:" << (double)firstSampleNanos / MasterClock::NANOS_PER_SECOND;
 		}
 	}

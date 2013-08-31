@@ -11,28 +11,44 @@
 
 class AudioDriver;
 class QSynth;
+class ClockSync;
+struct AudioDriverSettings;
 
 class AudioStream {
 protected:
-	static double estimateActualSampleRate(const double sampleRate, MasterClockNanos &firstSampleMasterClockNanos, MasterClockNanos &lastSampleMasterClockNanos, const MasterClockNanos audioLatency, const quint32 frameCount);
+	QSynth &synth;
+	const quint32 sampleRate;
+	const AudioDriverSettings &settings;
+	quint32 audioLatencyFrames;
+	quint32 midiLatencyFrames;
+
+	quint64 renderedFramesCount;
+	ClockSync *clockSync;
+
+	struct {
+		MasterClockNanos lastPlayedNanos;
+		quint32 lastPlayedFramesCount;
+		double actualSampleRate;
+	} timeInfo[2];
+	volatile uint timeInfoIx;
+
+	void updateTimeInfo(const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer);
 
 public:
+	AudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
 	//virtual void suspend() = 0;
 	//virtual void unsuspend() = 0;
-	virtual ~AudioStream() {};
-	virtual bool estimateMIDITimestamp(quint32 &timestamp, const MasterClockNanos refNanos = 0) {return false;}
+	virtual ~AudioStream();
+	virtual quint32 estimateMIDITimestamp(const MasterClockNanos refNanos = 0);
 };
 
 class AudioDevice {
 public:
-	AudioDriver * const driver;
-	// id must be unique within the driver and as permanent as possible -
-	// it will be stored and retrieved from settings.
-	const QString id;
+	AudioDriver &driver;
 	const QString name;
-	AudioDevice(AudioDriver *driver, QString id, QString name);
+	AudioDevice(AudioDriver &driver, const QString name);
 	virtual ~AudioDevice() {};
-	virtual AudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const = 0;
+	virtual AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const = 0;
 };
 
 Q_DECLARE_METATYPE(const AudioDevice *);

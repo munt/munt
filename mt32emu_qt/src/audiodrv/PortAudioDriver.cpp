@@ -36,7 +36,7 @@ static void dumpPortAudioDevices() {
 		qDebug() << "Pa_GetDeviceCount() returned error" << deviceCount;
 		deviceCount = 0;
 	}
-	for(PaHostApiIndex hostApiIndex = 0; hostApiIndex < hostApiCount; hostApiIndex++) {
+	for (PaHostApiIndex hostApiIndex = 0; hostApiIndex < hostApiCount; hostApiIndex++) {
 		const PaHostApiInfo *hostApiInfo = Pa_GetHostApiInfo(hostApiIndex);
 		if (hostApiInfo == NULL) {
 			qDebug() << "Pa_GetHostApiInfo() returned NULL for" << hostApiIndex;
@@ -47,7 +47,7 @@ static void dumpPortAudioDevices() {
 		qDebug() << " deviceCount =" << hostApiInfo->deviceCount;
 		qDebug() << " defaultInputDevice =" << hostApiInfo->defaultInputDevice;
 		qDebug() << " defaultOutputDevice =" << hostApiInfo->defaultOutputDevice;
-		for(PaDeviceIndex deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
+		for (PaDeviceIndex deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
 			const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(deviceIndex);
 			if (deviceInfo == NULL) {
 				qDebug() << "Pa_GetDeviceInfo() returned NULL for" << deviceIndex;
@@ -60,14 +60,8 @@ static void dumpPortAudioDevices() {
 	}
 }
 
-PortAudioStream::PortAudioStream(const PortAudioDevice *device, QSynth *useSynth, unsigned int useSampleRate) :
-	synth(useSynth), sampleRate(useSampleRate), stream(NULL), sampleCount(0)
-{
-	const AudioDriverSettings &driverSettings = device->driver->getAudioSettings();
-	audioLatency = driverSettings.audioLatency * MasterClock::NANOS_PER_MILLISECOND;
-	midiLatency = driverSettings.midiLatency * MasterClock::NANOS_PER_MILLISECOND;
-	useAdvancedTiming = driverSettings.advancedTiming;
-}
+PortAudioStream::PortAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, quint32 useSampleRate) :
+	AudioStream(useSettings, useSynth, useSampleRate), stream(NULL) {}
 
 PortAudioStream::~PortAudioStream() {
 	close();
@@ -97,7 +91,8 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	}
 	*/
 
-	if (!audioLatency) {
+	MasterClockNanos audioLatency = settings.audioLatency;
+	if (audioLatency == 0) {
 		audioLatency = deviceInfo->defaultHighOutputLatency * MasterClock::NANOS_PER_SECOND;
 	}
 	PaStreamParameters outStreamParameters = {deviceIndex, 2, paInt16, (double)audioLatency / MasterClock::NANOS_PER_SECOND, NULL};
@@ -106,26 +101,29 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		qDebug() << "Pa_OpenStream() returned PaError" << err;
 		return false;
 	}
-	sampleCount = 0;
-	clockSync.scheduleReset();
 	const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
 	if (streamInfo->outputLatency != 0) { // Quick fix for Mac
 		audioLatency = streamInfo->outputLatency * MasterClock::NANOS_PER_SECOND;
 	}
+	audioLatencyFrames = quint32((audioLatency * sampleRate) / MasterClock::NANOS_PER_SECOND);
 	qDebug() << "PortAudio: audio latency (s):" << (double)audioLatency / MasterClock::NANOS_PER_SECOND;
-	if (!midiLatency) {
+
+	MasterClockNanos midiLatency = settings.midiLatency;
+	if (midiLatency == 0) {
 		midiLatency = audioLatency / 2;
 	}
-	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatency / MasterClock::NANOS_PER_SECOND;
-	clockSync.setParams(audioLatency, 10 * audioLatency);
-	lastSampleMasterClockNanos = MasterClock::getClockNanos() - audioLatency - midiLatency;
-	audioBufferSize = quint32((audioLatency * sampleRate) / MasterClock::NANOS_PER_SECOND);
 	midiLatencyFrames = quint32((midiLatency * sampleRate) / MasterClock::NANOS_PER_SECOND);
+	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatency / MasterClock::NANOS_PER_SECOND;
+	if (clockSync != NULL) {
+		clockSync->setParams(audioLatency, 10 * audioLatency);
+	} else {
+		midiLatencyFrames += audioLatencyFrames;
+	}
 
-	timeInfoIx = 0;
 	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
-	timeInfo[0].lastPlayedFramesCount = 0;
 	timeInfo[0].actualSampleRate = Pa_GetStreamInfo(stream)->sampleRate;
+	timeInfo[1] = timeInfo[0];
+	renderedFramesCount = audioLatencyFrames;
 
 	err = Pa_StartStream(stream);
 	if(err != paNoError) {
@@ -140,114 +138,37 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) {
 	Q_UNUSED(inputBuffer);
 	Q_UNUSED(statusFlags);
-	PortAudioStream *stream = (PortAudioStream *)userData;
-	double realSampleRate;
-	MasterClockNanos firstSampleMasterClockNanos;
-	// Set this variable to false if PortAudio doesn't provide correct timing information.
-	// As for V19, this should be used for OSS (still not implemented, though OSS allows _really_ low latencies) and for PulseAudio + ALSA setup.
-	MasterClockNanos nanosNow = MasterClock::getClockNanos();
-	if (stream->useAdvancedTiming) {
-		MasterClockNanos nanosInAudioBuffer = MasterClockNanos(MasterClock::NANOS_PER_SECOND * (timeInfo->outputBufferDacTime - Pa_GetStreamTime(stream->stream)));
-		firstSampleMasterClockNanos = nanosNow + nanosInAudioBuffer - stream->audioLatency - stream->midiLatency;
-		realSampleRate = AudioStream::estimateActualSampleRate(Pa_GetStreamInfo(stream->stream)->sampleRate, firstSampleMasterClockNanos, stream->lastSampleMasterClockNanos, stream->audioLatency, (quint32)frameCount);
 
-		quint32 framesInAudioBuffer = quint32((timeInfo->outputBufferDacTime - Pa_GetStreamTime(stream->stream)) * Pa_GetStreamInfo(stream->stream)->sampleRate);
-		stream->updateTimeInfo(framesInAudioBuffer, nanosNow);
+	PortAudioStream *stream = (PortAudioStream *)userData;
+	MasterClockNanos nanosNow = MasterClock::getClockNanos();
+	quint32 framesInAudioBuffer;
+	if (stream->settings.advancedTiming) {
+		framesInAudioBuffer = quint32((timeInfo->outputBufferDacTime - Pa_GetStreamTime(stream->stream)) * Pa_GetStreamInfo(stream->stream)->sampleRate);
 	} else {
-		MasterClockNanos realSampleTime = MasterClockNanos((stream->sampleCount / Pa_GetStreamInfo(stream->stream)->sampleRate) * MasterClock::NANOS_PER_SECOND);
-		stream->lastRenderedNanos = stream->clockSync.sync(nanosNow, realSampleTime);
-		stream->lastRenderedFramesCount = stream->sampleCount;
-		firstSampleMasterClockNanos = stream->lastRenderedNanos - stream->midiLatency;
-		realSampleRate = Pa_GetStreamInfo(stream->stream)->sampleRate * stream->clockSync.getDrift();
+		framesInAudioBuffer = 0;
 	}
-	unsigned int rendered = stream->synth->render((Bit16s *)outputBuffer, frameCount, firstSampleMasterClockNanos, realSampleRate);
-	if (rendered < frameCount) {
-		char *out = (char *)outputBuffer;
+	stream->updateTimeInfo(nanosNow, framesInAudioBuffer);
+
+	if (!stream->synth.render((Bit16s *)outputBuffer, frameCount)) {
 		// PortAudio requires that the buffer is filled no matter what
-		memset(out + rendered * FRAME_SIZE, 0, (frameCount - rendered) * FRAME_SIZE);
+		memset((char *)outputBuffer, 0, frameCount * FRAME_SIZE);
 	}
-	stream->sampleCount += frameCount;
+	stream->renderedFramesCount += frameCount;
 	return paContinue;
 }
 
-void PortAudioStream::updateTimeInfo(const quint32 framesInAudioBuffer, const MasterClockNanos measuredNanos) {
-	// Count of played frames (assuming no x-runs happend)
-	quint32 estimatedNewPlayedFramesCount = quint32(sampleCount - framesInAudioBuffer);
-	double secondsElapsed = double(measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) / MasterClock::NANOS_PER_SECOND;
-
-	// Ensure lastPlayedFramesCount is monotonically increasing and has no jumps
-	quint32 newPlayedFramesCount = timeInfo[timeInfoIx].lastPlayedFramesCount + quint32(timeInfo[timeInfoIx].actualSampleRate * secondsElapsed);
-
-	// If the estimation goes too far - do reset
-	if (qAbs(qint32(estimatedNewPlayedFramesCount - newPlayedFramesCount)) > (qint32)audioBufferSize) {
-		qDebug() << "PortAudio: Estimated play position is way off:" << qint32(estimatedNewPlayedFramesCount - newPlayedFramesCount) << "-> resetting...";
-		uint i = 1 - timeInfoIx;
-		timeInfo[i].lastPlayedNanos = measuredNanos;
-		timeInfo[i].lastPlayedFramesCount = estimatedNewPlayedFramesCount;
-		timeInfo[i].actualSampleRate = Pa_GetStreamInfo(stream)->sampleRate;
-		timeInfoIx = i;
-		return;
-	}
-
-	double estimatedNewActualSampleRate = ((double)estimatedNewPlayedFramesCount - timeInfo[timeInfoIx].lastPlayedFramesCount) / secondsElapsed;
-
-	// Now fixup sample rate estimation
-	double nominalSampleRate = Pa_GetStreamInfo(stream)->sampleRate;
-	double relativeError = estimatedNewActualSampleRate / nominalSampleRate;
-	if (relativeError < 0.99) {
-		estimatedNewActualSampleRate = 0.99 * nominalSampleRate;
-	}
-	if (relativeError > 1.01) {
-		estimatedNewActualSampleRate = 1.01 * nominalSampleRate;
-	}
-
-	uint i = 1 - timeInfoIx;
-	timeInfo[i].lastPlayedNanos = measuredNanos;
-	timeInfo[i].lastPlayedFramesCount = newPlayedFramesCount;
-	timeInfo[i].actualSampleRate = estimatedNewActualSampleRate;
-	timeInfoIx = i;
-}
-
-// Intended to be called from MIDI receiving thread
-bool PortAudioStream::estimateMIDITimestamp(quint32 &timestamp, const MasterClockNanos refNanos) {
-	MasterClockNanos midiNanos = (refNanos == 0) ? MasterClock::getClockNanos() : refNanos;
-	if (useAdvancedTiming) {
-		uint i = timeInfoIx;
-		if (midiNanos < timeInfo[i].lastPlayedNanos) {
-			// Cross-boundary case, use previous time info for late events
-			i = 1 - i;
-		}
-		quint32 refFrameOffset = quint32(((midiNanos - timeInfo[i].lastPlayedNanos) * timeInfo[i].actualSampleRate) / MasterClock::NANOS_PER_SECOND);
-		timestamp = timeInfo[i].lastPlayedFramesCount + refFrameOffset + audioBufferSize + midiLatencyFrames;
-		return true;
-	}
-
-	// Taking snapshots in reverse order to avoid interference with the rendering thread
-	quint32 lastRenderedFramesCountSnapshot = (quint32)lastRenderedFramesCount;
-	MasterClockNanos lastRenderedNanosSnapshot = lastRenderedNanos;
-
-	MasterClockNanos refNanoOffset = midiNanos - lastRenderedNanosSnapshot;
-	quint32 refFrameOffset = quint32((refNanoOffset * sampleRate) * clockSync.getDrift() / MasterClock::NANOS_PER_SECOND);
-	timestamp = lastRenderedFramesCountSnapshot + refFrameOffset + midiLatencyFrames;
-	return true;
-}
-
 void PortAudioStream::close() {
-	if(stream == NULL)
-		return;
+	if (stream == NULL) return;
 	Pa_StopStream(stream);
 	Pa_CloseStream(stream);
 	stream = NULL;
 }
 
-// FIXME: The device index isn't permanent enough for the intended purpose of ID.
-// Instead a QString should be constructed that will let us find the same device later
-// (e.g. a combination hostAPI/device name/index as last resort).
-PortAudioDevice::PortAudioDevice(PortAudioDriver * const driver, int useDeviceIndex, QString useDeviceName) : AudioDevice(driver, QString::number(useDeviceIndex), useDeviceName), deviceIndex(useDeviceIndex) {
-}
+PortAudioDevice::PortAudioDevice(PortAudioDriver &driver, int useDeviceIndex, QString useDeviceName) :
+	AudioDevice(driver, useDeviceName), deviceIndex(useDeviceIndex) {}
 
-PortAudioStream *PortAudioDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
-	PortAudioStream *stream = new PortAudioStream(this, synth, sampleRate);
+AudioStream *PortAudioDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
+	PortAudioStream *stream = new PortAudioStream(driver.getAudioSettings(), synth, sampleRate);
 	if (stream->start(deviceIndex)) {
 		return stream;
 	}
@@ -255,9 +176,7 @@ PortAudioStream *PortAudioDevice::startAudioStream(QSynth *synth, unsigned int s
 	return NULL;
 }
 
-PortAudioDriver::PortAudioDriver(Master *useMaster) :
-	AudioDriver("portaudio", "PortAudio")
-{
+PortAudioDriver::PortAudioDriver(Master *useMaster) : AudioDriver("portaudio", "PortAudio") {
 	Q_UNUSED(useMaster);
 
 	if (!paInitialised) {
@@ -286,12 +205,12 @@ PortAudioDriver::~PortAudioDriver() {
 
 const QList<const AudioDevice *> PortAudioDriver::createDeviceList() {
 	QList<const AudioDevice *> deviceList;
-	PaDeviceIndex deviceCount = Pa_GetDeviceCount();
+	PaDeviceIndex deviceCount = paInitialised ? Pa_GetDeviceCount() : 0;
 	if (deviceCount < 0) {
 		qDebug() << "Pa_GetDeviceCount() returned error" << deviceCount;
 		deviceCount = 0;
 	}
-	for(int deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
+	for (int deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
 		const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(deviceIndex);
 		if (deviceInfo == NULL) {
 			qDebug() << "Pa_GetDeviceInfo() returned NULL for" << deviceIndex;
@@ -307,7 +226,7 @@ const QList<const AudioDevice *> PortAudioDriver::createDeviceList() {
 			QString().setNum(deviceInfo->hostApi);
 		}
 		QString deviceName = "(" + QString(hostApiInfo->name) + ") " + QString().fromLocal8Bit(deviceInfo->name);
-		deviceList.append(new PortAudioDevice(this, deviceIndex, deviceName));
+		deviceList.append(new PortAudioDevice(*this, deviceIndex, deviceName));
 	}
 	return deviceList;
 }

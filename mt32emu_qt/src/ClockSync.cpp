@@ -19,7 +19,7 @@
 #include "ClockSync.h"
 #include "MasterClock.h"
 
-ClockSync::ClockSync(double initDrift) : performResetOnNextSync(true), drift(initDrift) {
+ClockSync::ClockSync() : performResetOnNextSync(true) {
 	periodicResetNanos = 2 * MasterClock::NANOS_PER_SECOND;
 	emergencyResetThresholdNanos = 200 * MasterClock::NANOS_PER_MILLISECOND;
 }

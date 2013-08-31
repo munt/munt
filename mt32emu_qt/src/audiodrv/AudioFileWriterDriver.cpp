@@ -23,20 +23,15 @@
 static const unsigned int DEFAULT_AUDIO_LATENCY = 150;
 static const unsigned int DEFAULT_MIDI_LATENCY = 50;
 
-AudioFileWriterStream::AudioFileWriterStream(const AudioFileWriterDevice *device, QSynth *useSynth, unsigned int useSampleRate)	{
-	synth = useSynth;
-	sampleRate = useSampleRate;
-	const AudioDriverSettings driveSettings = device->driver->getAudioSettings();
-	bufferSize = sampleRate * driveSettings.audioLatency / 1000;
-	latency = MasterClock::NANOS_PER_MILLISECOND * driveSettings.midiLatency;
-}
+AudioFileWriterStream::AudioFileWriterStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate)	:
+	AudioStream(useSettings, useSynth, useSampleRate) {}
 
 bool AudioFileWriterStream::start() {
 	static QString currentDir = NULL;
 	QString fileName = QFileDialog::getSaveFileName(NULL, NULL, currentDir, "*.wav *.raw;;*.wav;;*.raw;;*.*");
 	if (fileName.isEmpty()) return false;
 	currentDir = QDir(fileName).absolutePath();
-	writer.startRealtimeProcessing(synth, sampleRate, fileName, bufferSize, latency);
+	writer.startRealtimeProcessing(&synth, sampleRate, fileName, audioLatencyFrames);
 	return true;
 }
 
@@ -44,12 +39,16 @@ void AudioFileWriterStream::close() {
 	writer.stop();
 }
 
-AudioFileWriterDevice::AudioFileWriterDevice(AudioFileWriterDriver * const driver, QString useDeviceIndex, QString useDeviceName) :
-	AudioDevice(driver, useDeviceIndex, useDeviceName) {
+quint32 AudioFileWriterStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
+	MasterClockNanos midiNanos = (refNanos == 0) ? MasterClock::getClockNanos() : refNanos;
+	return quint32(((midiNanos - timeInfo[0].lastPlayedNanos) * sampleRate) / MasterClock::NANOS_PER_SECOND) + midiLatencyFrames;
 }
 
-AudioFileWriterStream *AudioFileWriterDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
-	AudioFileWriterStream *stream = new AudioFileWriterStream(this, synth, sampleRate);
+AudioFileWriterDevice::AudioFileWriterDevice(AudioFileWriterDriver &driver, QString useDeviceName) :
+	AudioDevice(driver, useDeviceName) {}
+
+AudioStream *AudioFileWriterDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
+	AudioFileWriterStream *stream = new AudioFileWriterStream(driver.getAudioSettings(), synth, sampleRate);
 	if (stream->start()) {
 		return stream;
 	}
@@ -63,12 +62,9 @@ AudioFileWriterDriver::AudioFileWriterDriver(Master *master) : AudioDriver("file
 	loadAudioSettings();
 }
 
-AudioFileWriterDriver::~AudioFileWriterDriver() {
-}
-
 const QList<const AudioDevice *> AudioFileWriterDriver::createDeviceList() {
 	QList<const AudioDevice *> deviceList;
-	deviceList.append(new AudioFileWriterDevice(this, "fileWriter", "Audio file writer"));
+	deviceList.append(new AudioFileWriterDevice(*this, "Audio file writer"));
 	return deviceList;
 }
 
@@ -78,9 +74,6 @@ void AudioFileWriterDriver::validateAudioSettings(AudioDriverSettings &settings)
 	}
 	if (settings.audioLatency == 0) {
 		settings.audioLatency = DEFAULT_AUDIO_LATENCY;
-	}
-	if (settings.chunkLen > settings.audioLatency) {
-		settings.chunkLen = settings.audioLatency;
 	}
 	settings.chunkLen = 0;
 	settings.advancedTiming = true;

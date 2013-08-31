@@ -13,58 +13,55 @@
 #endif
 
 class Master;
-class QSynth;
 class WinMMAudioDriver;
 class WinMMAudioDevice;
 
 class WinMMAudioStream : public AudioStream {
 private:
-	unsigned int chunkSize;
-	unsigned int bufferSize;
-	MasterClockNanos midiLatency; // the delay for MIDI events to damp timing deviations and ensure accurate rendering
-	QSynth *synth;
-	const unsigned int sampleRate;
 	HWAVEOUT hWaveOut;
 	WAVEHDR	 *waveHdr;
 	HANDLE hEvent;
-	unsigned int numberOfChunks;
+	uint numberOfChunks;
+	uint chunkSize;
 	MT32Emu::Bit16s *buffer;
 	bool volatile stopProcessing;
 	uintptr_t processingThreadHandle;
-	bool useRingBuffer;
-	quint64 volatile prevPlayPosition;
-	quint64 volatile renderedFramesCount;
+	bool ringBufferMode;
+	quint64 prevPlayPosition;
 
 	static void processingThread(void *);
 
 	DWORD getCurrentPlayPosition();
 
 public:
-	WinMMAudioStream(const WinMMAudioDevice *device, QSynth *useSynth, unsigned int useSampleRate);
+	WinMMAudioStream(const AudioDriverSettings &useSettings, bool ringBufferMode, QSynth &useSynth, uint useSampleRate);
 	~WinMMAudioStream();
 	bool start(int deviceIndex);
 	void close();
-	bool estimateMIDITimestamp(quint32 &timestamp, const MasterClockNanos refNanos);
 };
 
 class WinMMAudioDevice : public AudioDevice {
 friend class WinMMAudioDriver;
 private:
 	UINT deviceIndex;
-	WinMMAudioDevice(WinMMAudioDriver * const driver, int useDeviceIndex, QString useDeviceName);
+	WinMMAudioDevice(WinMMAudioDriver &driver, int useDeviceIndex, QString useDeviceName);
 public:
-	WinMMAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
+	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
 };
 
 class WinMMAudioDriver : public AudioDriver {
 private:
+	AudioDriverSettings streamSettings;
+	bool ringBufferMode;
+
 	void validateAudioSettings(AudioDriverSettings &useSettings) const;
 	void loadAudioSettings();
 public:
 	WinMMAudioDriver(Master *useMaster);
-	~WinMMAudioDriver();
 	const QList<const AudioDevice *> createDeviceList();
 	void setAudioSettings(AudioDriverSettings &useSettings);
+	const AudioDriverSettings &getAudioStreamSettings();
+	bool isRingBufferMode();
 };
 
 #endif

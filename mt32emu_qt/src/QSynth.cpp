@@ -95,14 +95,12 @@ QSynth::QSynth(QObject *parent) :
 	controlROMImage(NULL), pcmROMImage(NULL), reportHandler(this)
 {
 	synthMutex = new QMutex(QMutex::Recursive);
-	midiEventQueue = new QMidiEventQueue;
 	synth = new Synth(&reportHandler);
 }
 
 QSynth::~QSynth() {
 	freeROMImages();
 	delete synth;
-	delete midiEventQueue;
 	delete synthMutex;
 }
 
@@ -115,18 +113,6 @@ void QSynth::flushMIDIQueue() {
 	synthMutex->lock();
 	// Drain synth's queue first
 	synth->flushMIDIQueue();
-	// Then drain our queue
-	forever {
-		const QMidiEvent *midiEvent = midiEventQueue->popEvent();
-		if (midiEvent == NULL) break;
-		if (midiEvent->getType() == SYSEX) {
-			synth->playSysexNow(midiEvent->getSysexData(), midiEvent->getSysexLen());
-		} else if (midiEvent->getType() == SHORT_MESSAGE) {
-			synth->playMsgNow(midiEvent->getShortMessage());
-		} else {
-			// Special event attempted to play, ignore
-		}
-	}
 	synthMutex->unlock();
 	midiMutex.unlock();
 }
@@ -173,99 +159,15 @@ bool QSynth::playMIDISysex(Bit8u *sysex, Bit32u sysexLen, Bit32u timestamp) {
 	return eventPushed;
 }
 
-bool QSynth::pushMIDIShortMessage(Bit32u msg, SynthTimestamp timestamp) {
-	return isOpen() && midiEventQueue->pushEvent(timestamp, msg, NULL, 0);
-}
-
-bool QSynth::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, SynthTimestamp timestamp) {
-	return isOpen() && midiEventQueue->pushEvent(timestamp, 0, sysexData, sysexLen);
-}
-
-// Note that the actualSampleRate given here only affects the timing of MIDI messages.
-// It does not affect the emulator's internal rendering sample rate, which is fixed at the nominal sample rate.
-unsigned int QSynth::render(Bit16s *buf, unsigned int len, SynthTimestamp firstSampleTimestamp, double actualSampleRate) {
-	unsigned int renderedLen = 0;
-
-	while (renderedLen < len) {
-		unsigned int renderThisPass = len - renderedLen;
-		// This loop processes any events that are due before or at this sample position,
-		// and potentially reduces the renderThisPass length so that the next event can occur on time on the next pass.
-		bool closed = false;
-		SynthTimestamp nanosNow = firstSampleTimestamp + SynthTimestamp(renderedLen * MasterClock::NANOS_PER_SECOND / actualSampleRate);
-		for (;;) {
-			const QMidiEvent *event = midiEventQueue->peekEvent();
-			if (event == NULL) {
-				// Queue empty
-				break;
-			}
-			if (event->getTimestamp() <= nanosNow) {
-				SynthTimestamp debugEventOffset = event->getTimestamp() - nanosNow;
-				bool debugSpecialEvent = false;
-				unsigned char *sysexData = event->getSysexData();
-				synthMutex->lock();
-				if (!isOpen()) {
-					closed = true;
-					synthMutex->unlock();
-					break;
-				}
-				bool eventPushed = true;
-				if (event->getType() == SYSEX) {
-					eventPushed = synth->playSysex(sysexData, event->getSysexLen());
-				} else if (event->getType() == SHORT_MESSAGE) {
-					if(event->getShortMessage() == 0) {
-						// This is a special event sent by the test driver
-						debugSpecialEvent = true;
-					} else {
-						eventPushed = synth->playMsg(event->getShortMessage());
-					}
-				} else {
-					// Special event attempted to play, ignore
-					midiEventQueue->popEvent();
-					continue;
-				}
-				synthMutex->unlock();
-				if (!eventPushed) {
-					// Internal synth's queue is full.
-					// Rendering 1 ms looks reasonable in this case as we don't break timing too much and have no performance penalty.
-					if (renderThisPass > 32) renderThisPass = 32;
-					qDebug() << "QSynth: Synth's internal MIDI queue overflow, subsequent events will be delayed.";
-					break;
-				}
-				if (debugSpecialEvent) {
-					quint64 delta = (debugSampleIx - debugLastEventSampleIx);
-					if (delta < 253 || 259 < delta || debugEventOffset < -1000000)
-						qDebug() << "M" << debugSampleIx << 1e-6 * debugEventOffset << delta;
-					debugLastEventSampleIx = debugSampleIx;
-				} else if (debugEventOffset < -1000000) {
-					// The MIDI event is playing significantly later than it was scheduled to play.
-					qDebug() << "L" << debugSampleIx << 1e-6 * debugEventOffset;
-				}
-				midiEventQueue->popEvent();
-				continue;
-			} else {
-				SynthTimestamp nanosUntilNextEvent = event->getTimestamp() - nanosNow;
-				unsigned int samplesUntilNextEvent = qMax((uint)1, uint(nanosUntilNextEvent * actualSampleRate / MasterClock::NANOS_PER_SECOND));
-				if (renderThisPass > samplesUntilNextEvent)
-					renderThisPass = samplesUntilNextEvent;
-				break;
-			}
-		}
-		if (closed) {
-			// The synth was found to be closed when processing events, so we break out.
-			break;
-		}
-		synthMutex->lock();
-		if (!isOpen()) {
-			synthMutex->unlock();
-			break;
-		}
-		synth->render(buf, renderThisPass);
+bool QSynth::render(Bit16s *buffer, uint length) {
+	synthMutex->lock();
+	if (!isOpen()) {
 		synthMutex->unlock();
-		renderedLen += renderThisPass;
-		debugSampleIx += renderThisPass;
-		buf += 2 * renderThisPass;
+		return false;
 	}
-	return renderedLen;
+	synth->render(buffer, length);
+	synthMutex->unlock();
+	return true;
 }
 
 bool QSynth::open(const QString useSynthProfileName) {
@@ -283,8 +185,6 @@ bool QSynth::open(const QString useSynthProfileName) {
 		return false;
 	}
 	if (synth->open(*controlROMImage, *pcmROMImage)) {
-		debugSampleIx = 0;
-		debugLastEventSampleIx = 0;
 		setState(SynthState_OPEN);
 		reportHandler.onDeviceReconfig();
 		setSynthProfile(synthProfile, synthProfileName);
@@ -434,8 +334,7 @@ bool QSynth::isActive() const {
 }
 
 bool QSynth::reset() {
-	if (!isOpen())
-		return true;
+	if (!isOpen()) return true;
 
 	setState(SynthState_CLOSING);
 
@@ -468,6 +367,7 @@ void QSynth::setState(SynthState newState) {
 }
 
 void QSynth::close() {
+	if (!isOpen()) return;
 	setState(SynthState_CLOSING);
 	midiMutex.lock();
 	synthMutex->lock();

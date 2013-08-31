@@ -4,8 +4,6 @@
 #include <QtCore>
 #include <mt32emu/mt32emu.h>
 
-#include "QMidiEventQueue.h"
-
 enum SynthState {
 	SynthState_CLOSED,
 	SynthState_OPEN,
@@ -75,7 +73,6 @@ private:
 
 	QMutex midiMutex;
 	QMutex *synthMutex;
-	QMidiEventQueue *midiEventQueue;
 
 	QDir romDir;
 	QString controlROMFileName;
@@ -85,10 +82,6 @@ private:
 	int reverbMode;
 	int reverbTime;
 	int reverbLevel;
-
-	// For debugging
-	quint64 debugSampleIx;
-	quint64 debugLastEventSampleIx;
 
 	MT32Emu::Synth *synth;
 	QReportHandler reportHandler;
@@ -112,9 +105,7 @@ public:
 	void playMIDISysexNow(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen);
 	bool playMIDIShortMessage(MT32Emu::Bit32u msg, MT32Emu::Bit32u timestamp);
 	bool playMIDISysex(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, MT32Emu::Bit32u timestamp);
-	bool pushMIDIShortMessage(MT32Emu::Bit32u msg, SynthTimestamp timestamp);
-	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, SynthTimestamp timestamp);
-	unsigned int render(MT32Emu::Bit16s *buf, unsigned int len, SynthTimestamp firstSampleTimestamp, double actualSampleRate);
+	bool render(MT32Emu::Bit16s *buffer, uint length);
 
 	const QReportHandler *getReportHandler() const;
 

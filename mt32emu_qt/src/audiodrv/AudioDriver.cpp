@@ -15,43 +15,104 @@
  */
 
 #include "AudioDriver.h"
-#include "../Master.h"
 #include <QSettings>
+#include "../Master.h"
+#include "../ClockSync.h"
 
-AudioDevice::AudioDevice(AudioDriver * const useDriver, QString useID, QString useName) : driver(useDriver), id(useID), name(useName) {
+AudioStream::AudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
+	synth(useSynth), sampleRate(useSampleRate), settings(useSettings), renderedFramesCount(0)
+{
+	audioLatencyFrames = settings.audioLatency * sampleRate / MasterClock::MILLIS_PER_SECOND;
+	midiLatencyFrames = settings.midiLatency * sampleRate / MasterClock::MILLIS_PER_SECOND;
+	if (settings.advancedTiming) {
+		clockSync = NULL;
+		midiLatencyFrames += audioLatencyFrames;
+	} else {
+		clockSync = new ClockSync;
+	}
+	timeInfoIx = 0;
+	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
+	timeInfo[0].lastPlayedFramesCount = renderedFramesCount;
+	timeInfo[0].actualSampleRate = sampleRate;
+	timeInfo[1] = timeInfo[0];
 }
 
-AudioDriver::AudioDriver(QString useID, QString useName) : id(useID), name(useName) {
+AudioStream::~AudioStream() {
+	if (clockSync != NULL) {
+		delete clockSync;
+	}
 }
 
-double AudioStream::estimateActualSampleRate(const double sampleRate, MasterClockNanos &firstSampleMasterClockNanos, MasterClockNanos &lastSampleMasterClockNanos, const MasterClockNanos audioLatency, const quint32 frameCount) {
-	MasterClockNanos newFirstSampleMasterClockNanos = firstSampleMasterClockNanos;
-	// Ensure rendering time function has no breaks while no x-runs happen
-	if (qAbs(firstSampleMasterClockNanos - lastSampleMasterClockNanos) < audioLatency) {
-		firstSampleMasterClockNanos = lastSampleMasterClockNanos;
+// Intended to be called from MIDI receiving thread
+quint32 AudioStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
+	MasterClockNanos midiNanos = (refNanos == 0) ? MasterClock::getClockNanos() : refNanos;
+	uint i = timeInfoIx;
+	if (midiNanos < timeInfo[i].lastPlayedNanos) {
+		// Cross-boundary case, use previous time info for late events
+		i = 1 - i;
 	}
-	// Estimate rendering time using nominal sample rate
-	MasterClockNanos nominalNanosToRender = MasterClockNanos(MasterClock::NANOS_PER_SECOND * frameCount / sampleRate);
-	// Ensure outputBufferDacTime estimation doesn't go too far from expected.
-	// Assume the real sample rate differs from nominal one no more than by 1%.
-	// Actual hardware sample rates tend to be even more accurate as noted,
-	// for example, in the paper http://www.portaudio.com/docs/portaudio_sync_acmc2003.pdf.
-	// Although, software resampling can introduce more significant inaccuracies,
-	// e.g. WinMME on my WinXP system works at about 32100Hz instead, while WASAPI, OSS, PulseAudio and ALSA perform much better.
-	// Setting 1% as the maximum relative error provides for superior rendering accuracy, and sample rate deviations should now be inaudible.
-	// In case there are nasty environments with greater deviations in sample rate, we should make this configurable.
-	MasterClockNanos nanosToRender = (newFirstSampleMasterClockNanos + nominalNanosToRender) - firstSampleMasterClockNanos;
-	double relativeError = (double)nanosToRender / nominalNanosToRender;
-	if (relativeError < 0.99) {
-		nanosToRender = 0.99 * nominalNanosToRender;
+	quint32 refFrameOffset = quint32(((midiNanos - timeInfo[i].lastPlayedNanos) * timeInfo[i].actualSampleRate) / MasterClock::NANOS_PER_SECOND);
+	quint32 timestamp = timeInfo[i].lastPlayedFramesCount + refFrameOffset + midiLatencyFrames;
+	qint32 delay = qint32(timestamp - renderedFramesCount);
+	if (delay < 0) {
+		qDebug() << "L" << renderedFramesCount << timestamp << delay;
 	}
-	if (relativeError > 1.01) {
-		nanosToRender = 1.01 * nominalNanosToRender;
-	}
-	lastSampleMasterClockNanos = firstSampleMasterClockNanos + nanosToRender;
-	// Compute actual sample rate so that the actual rendering time interval ends exactly in lastSampleMasterClockNanos point
-	return MasterClock::NANOS_PER_SECOND * (double)frameCount / (double)nanosToRender;
+	return timestamp;
 }
+
+void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer) {
+	uint nextTimeInfoIx = 1 - timeInfoIx;
+	if (clockSync != NULL) {
+		MasterClockNanos renderedNanos = MasterClockNanos(renderedFramesCount / (double)sampleRate * MasterClock::NANOS_PER_SECOND);
+		timeInfo[nextTimeInfoIx].lastPlayedNanos = clockSync->sync(measuredNanos, renderedNanos);
+		timeInfo[nextTimeInfoIx].lastPlayedFramesCount = renderedFramesCount;
+		timeInfo[nextTimeInfoIx].actualSampleRate = sampleRate * clockSync->getDrift();
+	} else {
+
+		// Number of played frames (assuming no x-runs happend)
+		quint32 estimatedNewPlayedFramesCount = quint32(renderedFramesCount - framesInAudioBuffer);
+		double secondsElapsed = double(measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) / MasterClock::NANOS_PER_SECOND;
+
+		// Ensure lastPlayedFramesCount is monotonically increasing and has no jumps
+		quint32 newPlayedFramesCount = timeInfo[timeInfoIx].lastPlayedFramesCount + quint32(timeInfo[timeInfoIx].actualSampleRate * secondsElapsed + 0.5);
+
+		// If the estimation goes too far - do reset
+		if (qAbs(qint32(estimatedNewPlayedFramesCount - newPlayedFramesCount)) > (qint32)audioLatencyFrames) {
+			qDebug() << "AudioStream: Estimated play position is way off:" << qint32(estimatedNewPlayedFramesCount - newPlayedFramesCount) << "-> resetting...";
+			timeInfo[nextTimeInfoIx].lastPlayedNanos = measuredNanos;
+			timeInfo[nextTimeInfoIx].lastPlayedFramesCount = estimatedNewPlayedFramesCount;
+			timeInfo[nextTimeInfoIx].actualSampleRate = sampleRate;
+			timeInfoIx = nextTimeInfoIx;
+			return;
+		}
+
+		double estimatedNewActualSampleRate = ((double)estimatedNewPlayedFramesCount - timeInfo[timeInfoIx].lastPlayedFramesCount) / secondsElapsed;
+
+		// Now fixup sample rate estimation. It shouldn't go too far from expected.
+		// Assume the actual sample rate differs from nominal one within 1% range.
+		// Actual hardware sample rates tend to be even more accurate as noted,
+		// for example, in the paper http://www.portaudio.com/docs/portaudio_sync_acmc2003.pdf.
+		// Although, software resampling can introduce more significant inaccuracies,
+		// e.g. WinMME on my WinXP system works at about 32100Hz instead, while WASAPI, OSS, PulseAudio and ALSA perform much better.
+		// Setting 1% as the maximum permitted relative error provides for superior rendering accuracy, and sample rate deviations should now be inaudible.
+		// In case there are nasty environments with greater deviations in sample rate, we should make this configurable.
+		double nominalSampleRate = sampleRate;
+		double relativeError = estimatedNewActualSampleRate / nominalSampleRate;
+		if (relativeError < 0.995) {
+			estimatedNewActualSampleRate = 0.995 * nominalSampleRate;
+		} else if (relativeError > 1.005) {
+			estimatedNewActualSampleRate = 1.005 * nominalSampleRate;
+		}
+		timeInfo[nextTimeInfoIx].lastPlayedNanos = measuredNanos;
+		timeInfo[nextTimeInfoIx].lastPlayedFramesCount = newPlayedFramesCount;
+		timeInfo[nextTimeInfoIx].actualSampleRate = estimatedNewActualSampleRate;
+	}
+	timeInfoIx = nextTimeInfoIx;
+}
+
+AudioDevice::AudioDevice(AudioDriver &useDriver, QString useName) : driver(useDriver), name(useName) {}
+
+AudioDriver::AudioDriver(QString useID, QString useName) : id(useID), name(useName) {}
 
 void AudioDriver::loadAudioSettings() {
 	QSettings *qSettings = Master::getInstance()->getSettings();

@@ -209,7 +209,7 @@ const AudioDevice *Master::findAudioDevice(QString driverId, QString name) const
 	QListIterator<const AudioDevice *> audioDeviceIt(audioDevices);
 	while(audioDeviceIt.hasNext()) {
 		const AudioDevice *audioDevice = audioDeviceIt.next();
-		if (driverId == audioDevice->driver->id && name == audioDevice->name) {
+		if (driverId == audioDevice->driver.id && name == audioDevice->name) {
 			return audioDevice;
 		}
 	}

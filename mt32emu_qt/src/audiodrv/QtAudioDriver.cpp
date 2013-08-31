@@ -32,50 +32,28 @@ using namespace MT32Emu;
 
 class WaveGenerator : public QIODevice {
 private:
-	ClockSync clockSync;
-	QSynth *synth;
-	QAudioOutput *audioOutput;
-	double sampleRate;
-	qint64 samplesCount;
-	MasterClockNanos audioLatency;
-	MasterClockNanos midiLatency;
-	MasterClockNanos lastSampleMasterClockNanos;
-	bool advancedTiming;
+	QtAudioStream &stream;
 
 public:
-	WaveGenerator(QSynth *useSynth, QAudioOutput *useAudioOutput, double sampleRate, bool useAdvancedTiming) : synth(useSynth), audioOutput(useAudioOutput), sampleRate(sampleRate), samplesCount(0), audioLatency(0), midiLatency(0), advancedTiming(useAdvancedTiming) {
+	WaveGenerator(QtAudioStream &useStream) : stream(useStream) {
 		open(QIODevice::ReadOnly | QIODevice::Unbuffered);
 	}
 
-	void setLatency(MasterClockNanos useMIDILatency) {
-		audioLatency = MasterClock::NANOS_PER_SECOND * audioOutput->bufferSize() / (4 * sampleRate);
-		MasterClockNanos chunkSize = MasterClock::NANOS_PER_SECOND * audioOutput->periodSize() / (4 * sampleRate);
-		qDebug() << "QAudioDriver: Latency set to:" << (double)audioLatency / MasterClock::NANOS_PER_SECOND << "sec." << "Chunk size:" << (double)chunkSize / MasterClock::NANOS_PER_SECOND;
-		if (useMIDILatency == 0)
-			midiLatency = 2 * chunkSize;
-		else
-			midiLatency = useMIDILatency;
-		qDebug() << "QAudioDriver: MIDI latency set to:" << (double)midiLatency / MasterClock::NANOS_PER_SECOND << "sec";
-		clockSync.setParams(audioLatency, 10 * audioLatency);
-		lastSampleMasterClockNanos = MasterClock::getClockNanos() - audioLatency - midiLatency;
-	}
-
 	qint64 readData(char *data, qint64 len) {
-		MasterClockNanos firstSampleMasterClockNanos;
-		double realSampleRate;
-		unsigned int framesToRender = (unsigned int)(len >> 2);
 		MasterClockNanos nanosNow = MasterClock::getClockNanos();
-		if (advancedTiming) {
-			MasterClockNanos nanosInBuffer = MasterClock::NANOS_PER_SECOND * (audioOutput->bufferSize() - audioOutput->bytesFree()) / (4 * sampleRate);
-			firstSampleMasterClockNanos = nanosNow + nanosInBuffer - audioLatency - midiLatency;
-			realSampleRate = AudioStream::estimateActualSampleRate(sampleRate, firstSampleMasterClockNanos, lastSampleMasterClockNanos, audioLatency, framesToRender);
+		quint32 framesInAudioBuffer;
+		if (stream.settings.advancedTiming) {
+			framesInAudioBuffer = (stream.audioOutput->bufferSize() - stream.audioOutput->bytesFree()) >> 2;
 		} else {
-			MasterClockNanos firstSampleAudioNanos = MasterClock::NANOS_PER_SECOND * samplesCount / sampleRate;
-			firstSampleMasterClockNanos = clockSync.sync(nanosNow, firstSampleAudioNanos) - midiLatency;
-			realSampleRate = sampleRate * clockSync.getDrift();
-			samplesCount += len >> 2;
+			framesInAudioBuffer = 0;
 		}
-		return synth->render((Bit16s *)data, framesToRender, firstSampleMasterClockNanos, realSampleRate) << 2;
+		stream.updateTimeInfo(nanosNow, framesInAudioBuffer);
+		uint framesToRender = uint(len >> 2);
+		if (!stream.synth.render((Bit16s *)data, framesToRender)) {
+			memset(data, 0, len);
+		}
+		stream.renderedFramesCount += framesToRender;
+		return len;
 	}
 
 	qint64 writeData(const char *data, qint64 len) {
@@ -85,7 +63,9 @@ public:
 	}
 };
 
-QtAudioStream::QtAudioStream(const AudioDevice *device, QSynth *useSynth, unsigned int useSampleRate) : sampleRate(useSampleRate) {
+QtAudioStream::QtAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
+	AudioStream(useSettings, useSynth, useSampleRate)
+{
 	QAudioFormat format;
 	format.setFrequency(sampleRate);
 	format.setChannels(2);
@@ -99,13 +79,8 @@ QtAudioStream::QtAudioStream(const AudioDevice *device, QSynth *useSynth, unsign
 #endif
 	format.setSampleType(QAudioFormat::SignedInt);
 
-	const AudioDriverSettings &driverSettings = device->driver->getAudioSettings();
-	audioLatency = driverSettings.audioLatency;
-	midiLatency = driverSettings.midiLatency;
-	advancedTiming = driverSettings.advancedTiming;
-
 	audioOutput = new QAudioOutput(format);
-	waveGenerator = new WaveGenerator(useSynth, audioOutput, sampleRate, advancedTiming);
+	waveGenerator = new WaveGenerator(*this);
 }
 
 QtAudioStream::~QtAudioStream() {
@@ -114,9 +89,29 @@ QtAudioStream::~QtAudioStream() {
 }
 
 bool QtAudioStream::start() {
-	if (audioLatency != 0) audioOutput->setBufferSize(0.004 * sampleRate * audioLatency);
+	if (settings.audioLatency != 0) {
+		audioOutput->setBufferSize((sampleRate * settings.audioLatency << 2) / MasterClock::MILLIS_PER_SECOND);
+	}
 	audioOutput->start(waveGenerator);
-	waveGenerator->setLatency(midiLatency * MasterClock::NANOS_PER_MILLISECOND);
+	MasterClockNanos audioLatency = MasterClock::NANOS_PER_SECOND * audioOutput->bufferSize() / (sampleRate << 2);
+	MasterClockNanos chunkSize = MasterClock::NANOS_PER_SECOND * audioOutput->periodSize() / (sampleRate << 2);
+	audioLatencyFrames = quint32(audioOutput->bufferSize() >> 2);
+	qDebug() << "QAudioDriver: Latency set to:" << (double)audioLatency / MasterClock::NANOS_PER_SECOND << "sec." << "Chunk size:" << (double)chunkSize / MasterClock::NANOS_PER_SECOND;
+	MasterClockNanos midiLatency;
+	if (settings.midiLatency == 0) {
+		midiLatency = 2 * chunkSize;
+	} else {
+		midiLatency = settings.midiLatency * MasterClock::NANOS_PER_MILLISECOND;
+	}
+	midiLatencyFrames = quint32((midiLatency * sampleRate) / MasterClock::NANOS_PER_SECOND);
+	qDebug() << "QAudioDriver: MIDI latency set to:" << (double)midiLatency / MasterClock::NANOS_PER_SECOND << "sec";
+	if (clockSync != NULL) {
+		clockSync->setParams(audioLatency, 10 * audioLatency);
+	} else {
+		midiLatencyFrames += audioLatencyFrames;
+	}
+	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
+	renderedFramesCount = 0;
 	return true;
 }
 
@@ -124,11 +119,10 @@ void QtAudioStream::close() {
 	audioOutput->stop();
 }
 
-QtAudioDefaultDevice::QtAudioDefaultDevice(QtAudioDriver * const driver) : AudioDevice(driver, "default", "Default") {
-}
+QtAudioDefaultDevice::QtAudioDefaultDevice(QtAudioDriver &driver) : AudioDevice(driver, "Default") {}
 
-QtAudioStream *QtAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned int sampleRate) const {
-	QtAudioStream *stream = new QtAudioStream(this, synth, sampleRate);
+QtAudioStream *QtAudioDefaultDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
+	QtAudioStream *stream = new QtAudioStream(driver.getAudioSettings(), synth, sampleRate);
 	if (stream->start()) {
 		return stream;
 	}
@@ -138,15 +132,13 @@ QtAudioStream *QtAudioDefaultDevice::startAudioStream(QSynth *synth, unsigned in
 
 QtAudioDriver::QtAudioDriver(Master *useMaster) : AudioDriver("qtaudio", "QtAudio") {
 	Q_UNUSED(useMaster);
-	loadAudioSettings();
-}
 
-QtAudioDriver::~QtAudioDriver() {
+	loadAudioSettings();
 }
 
 const QList<const AudioDevice *> QtAudioDriver::createDeviceList() {
 	QList<const AudioDevice *> deviceList;
-	deviceList.append(new QtAudioDefaultDevice(this));
+	deviceList.append(new QtAudioDefaultDevice(*this));
 	return deviceList;
 }
 

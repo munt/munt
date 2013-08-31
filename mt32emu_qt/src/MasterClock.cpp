@@ -75,7 +75,7 @@ MasterClock::~MasterClock() {}
 // Why it's protected in QThread is a bit of a mystery...
 class QtSucks : public QThread {
 public:
-	static void usleep(int usecs) {
+	static void usleep(ulong usecs) {
 		QThread::usleep(usecs);
 	}
 };

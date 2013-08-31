@@ -17,51 +17,25 @@ class PortAudioDevice;
 
 class PortAudioStream : public AudioStream {
 private:
-	QSynth *synth;
-	unsigned int sampleRate;
 	PaStream *stream;
 
-	ClockSync clockSync;
-	// The total latency of audio stream buffers
-	// Special value of 0 indicates PortAudio to use its own recommended latency value
-	qint64 audioLatency;
-	quint32 audioBufferSize;
-	// The number of nanos by which to delay MIDI events to help ensure accurate relative timing.
-	qint64 midiLatency;
-	quint32 midiLatencyFrames;
-	qint64 sampleCount;
-	MasterClockNanos lastSampleMasterClockNanos;
-
-	struct {
-		MasterClockNanos lastPlayedNanos;
-		quint32 lastPlayedFramesCount;
-		double actualSampleRate;
-	} timeInfo[2];
-	volatile uint timeInfoIx;
-
-	volatile MasterClockNanos lastRenderedNanos;
-	volatile quint64 lastRenderedFramesCount;
-	bool useAdvancedTiming;
-
 	static int paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData);
-	void updateTimeInfo(const quint32 framesInAudioBuffer, const MasterClockNanos measuredNanos);
 
 public:
-	PortAudioStream(const PortAudioDevice *device, QSynth *useSynth, unsigned int useSampleRate);
+	PortAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
 	~PortAudioStream();
 	bool start(PaDeviceIndex deviceIndex);
 	void close();
-	bool estimateMIDITimestamp(quint32 &timestamp, const MasterClockNanos refNanos);
 };
 
 class PortAudioDevice : public AudioDevice {
 friend class PortAudioDriver;
 private:
 	PaDeviceIndex deviceIndex;
-	PortAudioDevice(PortAudioDriver * const driver, int useDeviceIndex, QString useDeviceName);
+	PortAudioDevice(PortAudioDriver &driver, int useDeviceIndex, QString useDeviceName);
 
 public:
-	PortAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
+	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
 };
 
 class PortAudioDriver : public AudioDriver {

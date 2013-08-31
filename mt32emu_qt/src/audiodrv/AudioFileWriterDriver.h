@@ -14,13 +14,10 @@ class AudioFileWriterDevice;
 class AudioFileWriterStream : public AudioStream {
 private:
 	AudioFileWriter writer;
-	QSynth *synth;
-	unsigned int sampleRate;
-	unsigned int bufferSize;
-	MasterClockNanos latency;
 
 public:
-	AudioFileWriterStream(const AudioFileWriterDevice *device, QSynth *useSynth, unsigned int useSampleRate);
+	AudioFileWriterStream(const AudioDriverSettings &settings, QSynth &useSynth, const quint32 useSampleRate);
+	quint32 estimateMIDITimestamp(const MasterClockNanos refNanos = 0);
 	bool start();
 	void close();
 };
@@ -28,9 +25,9 @@ public:
 class AudioFileWriterDevice : public AudioDevice {
 friend class AudioFileWriterDriver;
 private:
-	AudioFileWriterDevice(AudioFileWriterDriver * const driver, QString useDeviceIndex, QString useDeviceName);
+	AudioFileWriterDevice(AudioFileWriterDriver &driver, QString useDeviceName);
 public:
-	AudioFileWriterStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
+	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
 };
 
 class AudioFileWriterDriver : public AudioDriver {
@@ -38,7 +35,6 @@ private:
 	void validateAudioSettings(AudioDriverSettings &settings) const;
 public:
 	AudioFileWriterDriver(Master *useMaster);
-	~AudioFileWriterDriver();
 	const QList<const AudioDevice *> createDeviceList();
 };
 

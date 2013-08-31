@@ -34,53 +34,42 @@ static const unsigned int DEFAULT_AUDIO_LATENCY = 32;
 static const unsigned int DEFAULT_MIDI_LATENCY = 16;
 static const char deviceName[] = "/dev/dsp";
 
-OSSAudioStream::OSSAudioStream(const AudioDevice *device, QSynth *useSynth,
-		unsigned int useSampleRate) : synth(useSynth), sampleRate(useSampleRate),
-		buffer(NULL), stream(0), sampleCount(0), pendingClose(false)
+OSSAudioStream::OSSAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
+	AudioStream(useSettings, useSynth, useSampleRate), buffer(NULL), stream(0), pendingClose(false)
 {
-	const AudioDriverSettings &driverSettings = device->driver->getAudioSettings();
-	bufferSize = driverSettings.chunkLen * sampleRate / 1000 /* ms per sec*/;
-	audioLatency = driverSettings.audioLatency;
-	midiLatency = driverSettings.midiLatency;
-	useAdvancedTiming = driverSettings.advancedTiming;
+	bufferSize = settings.chunkLen * sampleRate / MasterClock::MILLIS_PER_SECOND;
 }
 
 OSSAudioStream::~OSSAudioStream() {
-	if (stream != 0) {
-		stop();
-	}
+	if (stream != 0) stop();
 	delete[] buffer;
 }
 
-void* OSSAudioStream::processingThread(void *userData) {
+void *OSSAudioStream::processingThread(void *userData) {
 	int error;
 	bool isErrorOccured = false;
-	OSSAudioStream *driver = (OSSAudioStream *)userData;
-	MasterClockNanos lastSampleNanos = MasterClock::getClockNanos() - (driver->audioLatency + driver->midiLatency) * MasterClock::NANOS_PER_MILLISECOND;
+	OSSAudioStream &audioStream = *(OSSAudioStream *)userData;
 	qDebug() << "OSS audio: Processing thread started";
-	while (!driver->pendingClose) {
-		double realSampleRate;
-		MasterClockNanos realSampleTime;
-		MasterClockNanos firstSampleNanos;
-		if (driver->useAdvancedTiming) {
+	while (!audioStream.pendingClose) {
+		MasterClockNanos nanosNow = MasterClock::getClockNanos();
+		quint32 framesInAudioBuffer;
+		if (audioStream.settings.advancedTiming) {
 			int delay = 0;
-			if (ioctl (driver->stream, SNDCTL_DSP_GETODELAY, &delay) == -1) {
+			if (ioctl(audioStream.stream, SNDCTL_DSP_GETODELAY, &delay) == -1) {
 				qDebug() << "SNDCTL_DSP_GETODELAY failed:" << errno;
 				isErrorOccured = true;
 				break;
 			}
-			realSampleTime = MasterClock::getClockNanos() + MasterClock::NANOS_PER_SECOND * delay / (FRAME_SIZE * driver->sampleRate);
-			firstSampleNanos = realSampleTime - (driver->midiLatency + driver->audioLatency)
-				* MasterClock::NANOS_PER_MILLISECOND; // MIDI latency + total stream audio latency
-			realSampleRate = AudioStream::estimateActualSampleRate(driver->sampleRate, firstSampleNanos, lastSampleNanos,
-				driver->audioLatency * MasterClock::NANOS_PER_MILLISECOND, driver->bufferSize);
+			framesInAudioBuffer = quint32(delay / FRAME_SIZE);
 		} else {
-			realSampleTime = MasterClockNanos(driver->sampleCount / (double)driver->sampleRate * MasterClock::NANOS_PER_SECOND);
-			firstSampleNanos = driver->clockSync.sync(realSampleTime) - driver->midiLatency * MasterClock::NANOS_PER_MILLISECOND; // MIDI latency only
-			realSampleRate = driver->sampleRate / driver->clockSync.getDrift();
+			framesInAudioBuffer = 0;
 		}
-		driver->synth->render(driver->buffer, driver->bufferSize, firstSampleNanos, realSampleRate);
-		if ((error = write(driver->stream, driver->buffer, FRAME_SIZE * driver->bufferSize)) != (int)(FRAME_SIZE * driver->bufferSize)) {
+		audioStream.updateTimeInfo(nanosNow, framesInAudioBuffer);
+		if (!audioStream.synth.render(audioStream.buffer, audioStream.bufferSize)) {
+			memset(audioStream.buffer, 0, audioStream.bufferSize);
+		}
+		error = write(audioStream.stream, audioStream.buffer, FRAME_SIZE * audioStream.bufferSize);
+		if (error != int(FRAME_SIZE * audioStream.bufferSize)) {
 			if (error == -1) {
 				qDebug() << "OSS audio: write failed:" << errno;
 			} else {
@@ -89,114 +78,139 @@ void* OSSAudioStream::processingThread(void *userData) {
 			isErrorOccured = true;
 			break;
 		}
-		driver->sampleCount += driver->bufferSize;
+		audioStream.renderedFramesCount += audioStream.bufferSize;
 	}
 	qDebug() << "OSS audio: Processing thread stopped";
 	if (isErrorOccured) {
-		close(driver->stream);
-		driver->stream = 0;
-		driver->synth->close();
+		close(audioStream.stream);
+		audioStream.stream = 0;
+		audioStream.synth.close();
 	} else {
-		driver->pendingClose = false;
+		audioStream.pendingClose = false;
 	}
 	return NULL;
 }
 
 bool OSSAudioStream::start() {
-	if (stream != 0) {
-		stop();
-	}
+	if (stream != 0) stop();
+
 	qDebug() << "Using OSS default audio device";
 
 	// Open audio device
-	if ((stream = open(deviceName, O_WRONLY, 0)) == -1) {
+	stream = open(deviceName, O_WRONLY, 0);
+	if (stream == -1) {
 		qDebug() << "OSS audio: open failed:" << errno;
 		stream = 0;
 		return false;
 	}
 
 	int tmp = 0;
-	unsigned int fragSize = FRAME_SIZE * sampleRate / 1000 * audioLatency / NUM_OF_FRAGMENTS;
+	uint fragSize = (FRAME_SIZE * audioLatencyFrames) / NUM_OF_FRAGMENTS;
 	while (fragSize > 1) {
 		tmp++;
 		fragSize >>= 1;
 	}
 	tmp |= (NUM_OF_FRAGMENTS << 16);
-	if (ioctl (stream, SNDCTL_DSP_SETFRAGMENT, &tmp) == -1) {
+	if (ioctl(stream, SNDCTL_DSP_SETFRAGMENT, &tmp) == -1) {
 		qDebug() << "OSS audio: SNDCTL_DSP_SETFRAGMENT failed:" << errno;
+		close(stream);
+		stream = 0;
 		return false;
 	}
 	qDebug() << "OSS audio: Set number of fragments:"  << (tmp >> 16) << "Fragment size:" << (tmp & 0xFFFF);
 
 	// Set the sample format
 	tmp = AFMT_S16_NE;/* Native 16 bits */
-	if (ioctl (stream, SNDCTL_DSP_SETFMT, &tmp) == -1) {
+	if (ioctl(stream, SNDCTL_DSP_SETFMT, &tmp) == -1) {
 		qDebug() << "OSS audio: SNDCTL_DSP_SETFMT failed:" << errno;
+		close(stream);
+		stream = 0;
 		return false;
 	}
 
 	if (tmp != AFMT_S16_NE) {
 		qDebug() << "OSS audio: The device doesn't support the 16 bit sample format";
+		close(stream);
+		stream = 0;
 		return false;
 	}
 
 	// Set the number of channels
 	tmp = 2; // Stereo
-	if (ioctl (stream, SNDCTL_DSP_CHANNELS, &tmp) == -1) {
+	if (ioctl(stream, SNDCTL_DSP_CHANNELS, &tmp) == -1) {
 		qDebug() << "OSS audio: SNDCTL_DSP_CHANNELS failed:" << errno;
+		close(stream);
+		stream = 0;
 		return false;
 	}
 
 	if (tmp != 2) {
 		qDebug() << "OSS audio: The device doesn't support stereo mode";
+		close(stream);
+		stream = 0;
 		return false;
 	}
 
 	// Set the sample rate
 	tmp = sampleRate;
-	if (ioctl (stream, SNDCTL_DSP_SPEED, &tmp) == -1) {
+	if (ioctl(stream, SNDCTL_DSP_SPEED, &tmp) == -1) {
 		qDebug() << "OSS audio: SNDCTL_DSP_SPEED failed:" << errno;
+		close(stream);
+		stream = 0;
 		return false;
 	}
 
 	if (tmp != (int)sampleRate) {
 		qDebug() << "OSS audio: Can't set sample rate" << sampleRate << ". Proposed value:" << tmp;
+		close(stream);
+		stream = 0;
 		return false;
 	}
 
 	audio_buf_info bi;
-	if (ioctl (stream, SNDCTL_DSP_GETOSPACE, &bi) == -1)
+	if (ioctl(stream, SNDCTL_DSP_GETOSPACE, &bi) == -1)
 	{
 		qDebug() << "OSS audio: SNDCTL_DSP_GETOSPACE failed:" << errno;
+		close(stream);
+		stream = 0;
 		return false;
 	}
-	audioLatency = 1000 * bi.bytes / (FRAME_SIZE * sampleRate);
+	audioLatencyFrames = bi.bytes / FRAME_SIZE;
 	bufferSize = bi.fragsize / FRAME_SIZE;
-	buffer = new Bit16s[bufferSize * /* number of channels */ 2];
+	buffer = new Bit16s[/* number of channels */ 2 * bufferSize];
 	if (buffer == NULL) {
 		qDebug() << "OSS audio setup: Memory allocation error, driver died";
+		close(stream);
+		stream = 0;
 		return false;
 	}
 	memset(buffer, 0, FRAME_SIZE * bufferSize);
-	qDebug() << "OSS audio setup: Number of fragments:" << bi.fragments << "Audio buffer size:" << bi.bytes << "bytes ("<< audioLatency  << ") ms";
+	qDebug() << "OSS audio setup: Number of fragments:" << bi.fragments << "Audio buffer size:" << bi.bytes << "bytes ("<< audioLatencyFrames << ") frames";
 	qDebug() << "fragsize:" << bi.fragsize << "bufferSize:" << bufferSize;
 
 	// Start playing to fill audio buffers
-	int initFrames = audioLatency * 1e-3 * sampleRate;
+	int initFrames = audioLatencyFrames;
 	while (initFrames > 0) {
-		if ((tmp = write(stream, buffer, FRAME_SIZE * bufferSize)) != (int)(FRAME_SIZE * bufferSize)) {
+		tmp = write(stream, buffer, FRAME_SIZE * bufferSize);
+		if (tmp != int(FRAME_SIZE * bufferSize)) {
 			if (tmp == -1) {
 				qDebug() << "OSS audio: write failed:" << errno;
 			} else {
 				qDebug() << "OSS audio: write failed. Written bytes:" << tmp;
 			}
+			close(stream);
+			stream = 0;
 			return false;
 		}
 		initFrames -= bufferSize;
 	}
 	pthread_t threadID;
-	if((tmp = pthread_create(&threadID, NULL, processingThread, this))) {
+	tmp = pthread_create(&threadID, NULL, processingThread, this);
+	if (tmp != 0) {
 		qDebug() << "OSS audio: Processing Thread creation failed:" << tmp;
+		close(stream);
+		stream = 0;
+		return false;
 	}
 	return true;
 }
@@ -206,7 +220,7 @@ void OSSAudioStream::stop() {
 		pendingClose = true;
 		qDebug() << "OSS audio: Stopping processing thread...";
 		while (pendingClose) {
-			sleep(1);
+			MasterClock::sleepForNanos(100 * MasterClock::NANOS_PER_MILLISECOND);
 		}
 		close(stream);
 		stream = 0;
@@ -214,18 +228,11 @@ void OSSAudioStream::stop() {
 	return;
 }
 
-OSSAudioDefaultDevice::OSSAudioDefaultDevice(OSSAudioDriver * const driver) :
-	AudioDevice(driver, "default", "Default")
-{
-}
+OSSAudioDefaultDevice::OSSAudioDefaultDevice(OSSAudioDriver &driver) : AudioDevice(driver, "Default") {}
 
-OSSAudioStream *OSSAudioDefaultDevice::startAudioStream(QSynth *synth,
-	unsigned int sampleRate) const
-{
-	OSSAudioStream *stream = new OSSAudioStream(this, synth, sampleRate);
-	if (stream->start()) {
-		return stream;
-	}
+AudioStream *OSSAudioDefaultDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
+	OSSAudioStream *stream = new OSSAudioStream(driver.getAudioSettings(), synth, sampleRate);
+	if (stream->start()) return stream;
 	delete stream;
 	return NULL;
 }
@@ -236,12 +243,9 @@ OSSAudioDriver::OSSAudioDriver(Master *master) : AudioDriver("OSS", "OSS") {
 	loadAudioSettings();
 }
 
-OSSAudioDriver::~OSSAudioDriver() {
-}
-
 const QList<const AudioDevice *> OSSAudioDriver::createDeviceList() {
 	QList<const AudioDevice *> deviceList;
-	deviceList.append(new OSSAudioDefaultDevice(this));
+	deviceList.append(new OSSAudioDefaultDevice(*this));
 	return deviceList;
 }
 

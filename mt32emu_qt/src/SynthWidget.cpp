@@ -72,8 +72,8 @@ void SynthWidget::refreshAudioDeviceList(Master *master, const AudioDevice *useA
 	QListIterator<const AudioDevice *> audioDeviceIt(master->getAudioDevices());
 	while(audioDeviceIt.hasNext()) {
 		const AudioDevice *audioDevice = audioDeviceIt.next();
-		ui->audioDeviceComboBox->addItem(audioDevice->driver->name + ": " + audioDevice->name, qVariantFromValue(audioDevice));
-		if (useAudioDevice != NULL && useAudioDevice->driver->id == audioDevice->driver->id
+		ui->audioDeviceComboBox->addItem(audioDevice->driver.name + ": " + audioDevice->name, qVariantFromValue(audioDevice));
+		if (useAudioDevice != NULL && useAudioDevice->driver.id == audioDevice->driver.id
 				&& useAudioDevice->name == audioDevice->name) ui->audioDeviceComboBox->setCurrentIndex(audioDeviceIndex);
 		audioDeviceIndex++;
 	}
@@ -90,7 +90,7 @@ void SynthWidget::on_audioDeviceComboBox_currentIndexChanged(int audioDeviceInde
 	const AudioDevice *currentAudioDevice = ui->audioDeviceComboBox->itemData(audioDeviceIndex).value<const AudioDevice *>();
 	if (currentAudioDevice != NULL) {
 		synthRoute->setAudioDevice(currentAudioDevice);
-		Master::getInstance()->setDefaultAudioDevice(currentAudioDevice->driver->id, currentAudioDevice->name);
+		Master::getInstance()->setDefaultAudioDevice(currentAudioDevice->driver.id, currentAudioDevice->name);
 	}
 }
 
@@ -127,13 +127,13 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 void SynthWidget::on_audioPropertiesButton_clicked()
 {
 	const AudioDevice *device = ui->audioDeviceComboBox->itemData(ui->audioDeviceComboBox->currentIndex()).value<const AudioDevice *>();
-	const AudioDriverSettings &driverSettings = device->driver->getAudioSettings();
-	apd.setCheckText((device->driver->id == "waveout") ? "Use ring buffer renderer" : "Use advanced timing");
+	const AudioDriverSettings &driverSettings = device->driver.getAudioSettings();
+	apd.setCheckText((device->driver.id == "waveout") ? "Use ring buffer renderer" : "Use advanced timing");
 	apd.setData(driverSettings);
 	if (QDialog::Accepted == apd.exec()) {
 		AudioDriverSettings newDriverSettings;
 		apd.getData(newDriverSettings);
-		device->driver->setAudioSettings(newDriverSettings);
+		device->driver.setAudioSettings(newDriverSettings);
 	}
 }
 

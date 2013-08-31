@@ -70,7 +70,7 @@ bool SynthRoute::open() {
 	setState(SynthRouteState_OPENING);
 	if (audioDevice != NULL) {
 		if (qSynth.open()) {
-			audioStream = audioDevice->startAudioStream(&qSynth, SAMPLE_RATE);
+			audioStream = audioDevice->startAudioStream(qSynth, SAMPLE_RATE);
 			if (audioStream != NULL) {
 				setState(SynthRouteState_OPEN);
 				return true;
@@ -178,32 +178,28 @@ bool SynthRoute::connectReportHandler(const char *signal, const QObject *receive
 
 bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
 	recorder.recordShortMessage(msg, refNanos);
-	if (audioStream == NULL) return false;
-	quint32 timestamp;
-	if (audioStream->estimateMIDITimestamp(timestamp, refNanos)) {
-		if(msg == 0) {
-			// This is a special event sent by the test driver
-			quint32 delta = timestamp - lastDebugEventTimestamp;
-			MasterClockNanos debugEventNanoOffset = (refNanos == 0) ? 0 : MasterClock::getClockNanos() - refNanos;
-			if ((delta < 253) || (259 < delta) || ((15 * MasterClock::NANOS_PER_MILLISECOND) < debugEventNanoOffset)) {
-				qDebug() << "M" << delta << timestamp << 1e-6 * debugEventNanoOffset;
-			}
-			lastDebugEventTimestamp = timestamp;
-			return false;
+	AudioStream *stream = audioStream;
+	if (stream == NULL) return false;
+	quint32 timestamp = stream->estimateMIDITimestamp(refNanos);
+	if (msg == 0) {
+		// This is a special event sent by the test driver
+		qint32 delta = qint32(timestamp - lastDebugEventTimestamp);
+		MasterClockNanos debugEventNanoOffset = (refNanos == 0) ? 0 : MasterClock::getClockNanos() - refNanos;
+		if ((delta < 253) || (259 < delta) || ((15 * MasterClock::NANOS_PER_MILLISECOND) < debugEventNanoOffset)) {
+			qDebug() << "M" << delta << timestamp << 1e-6 * debugEventNanoOffset;
 		}
-		return qSynth.playMIDIShortMessage(msg, timestamp);
+		lastDebugEventTimestamp = timestamp;
+		return false;
 	}
-	return qSynth.pushMIDIShortMessage(msg, refNanos);
+	return qSynth.playMIDIShortMessage(msg, timestamp);
 }
 
 bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, MasterClockNanos refNanos) {
 	recorder.recordSysex(sysexData, sysexLen, refNanos);
-	if (audioStream == NULL) return false;
-	quint32 timestamp;
-	if (audioStream->estimateMIDITimestamp(timestamp, refNanos)) {
-		return qSynth.playMIDISysex(sysexData, sysexLen, timestamp);
-	}
-	return qSynth.pushMIDISysex(sysexData, sysexLen, refNanos);
+	AudioStream *stream = audioStream;
+	if (stream == NULL) return false;
+	quint32 timestamp = stream->estimateMIDITimestamp(refNanos);
+	return qSynth.playMIDISysex(sysexData, sysexLen, timestamp);
 }
 
 void SynthRoute::flushMIDIQueue() {

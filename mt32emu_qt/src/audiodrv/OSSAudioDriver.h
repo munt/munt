@@ -14,22 +14,15 @@ class OSSAudioDriver;
 
 class OSSAudioStream : public AudioStream {
 private:
-	unsigned int bufferSize;
-	unsigned int audioLatency;
-	unsigned int midiLatency;
-	ClockSync clockSync;
-	QSynth *synth;
-	unsigned int sampleRate;
 	MT32Emu::Bit16s *buffer;
 	int stream;
-	qint64 sampleCount;
+	uint bufferSize;
 	bool pendingClose;
-	bool useAdvancedTiming;
 
-	static void* processingThread(void *);
+	static void *processingThread(void *);
 
 public:
-	OSSAudioStream(const AudioDevice *device, QSynth *useSynth, unsigned int useSampleRate);
+	OSSAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
 	~OSSAudioStream();
 	bool start();
 	void stop();
@@ -37,9 +30,9 @@ public:
 
 class OSSAudioDefaultDevice : public AudioDevice {
 friend class OSSAudioDriver;
-	OSSAudioDefaultDevice(OSSAudioDriver * const driver);
+	OSSAudioDefaultDevice(OSSAudioDriver &driver);
 public:
-	OSSAudioStream *startAudioStream(QSynth *synth, unsigned int sampleRate) const;
+	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
 };
 
 class OSSAudioDriver : public AudioDriver {
@@ -47,7 +40,6 @@ private:
 	void validateAudioSettings(AudioDriverSettings &settings) const;
 public:
 	OSSAudioDriver(Master *useMaster);
-	~OSSAudioDriver();
 	const QList<const AudioDevice *> createDeviceList();
 };
 
