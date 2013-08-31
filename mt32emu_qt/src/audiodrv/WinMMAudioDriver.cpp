@@ -241,7 +241,19 @@ void WinMMAudioStream::close() {
 		if ((stopProcessing == false) && (processingThreadHandle != 0L)) {
 			stopProcessing = true;
 			if (hEvent != NULL) SetEvent(hEvent);
-			WaitForSingleObject((HANDLE)processingThreadHandle, INFINITE);
+			qDebug() << "WinMMAudioDriver: Waiting for processing thread to stop...";
+			while (stopProcessing == true) {
+				DWORD res = WaitForSingleObject((HANDLE)processingThreadHandle, 10);
+				if (WAIT_TIMEOUT == res) {
+					// The thread is still alive
+					continue;
+				}
+				if (WAIT_OBJECT_0 != res) {
+					// Looks like the thread is already died
+					qDebug() << "WinMMAudioDriver: WaitForSingleObject() returned" << res;
+				}
+				break;
+			}
 		}
 		processingThreadHandle = 0L;
 		stopProcessing = false;
