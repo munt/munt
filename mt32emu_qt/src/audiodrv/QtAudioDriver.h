@@ -17,12 +17,13 @@ class QtAudioStream : public AudioStream {
 	friend class WaveGenerator;
 private:
 	QAudioOutput *audioOutput;
+	QThread *processingThread;
 	WaveGenerator *waveGenerator;
 
 public:
 	QtAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate);
 	~QtAudioStream();
-	bool start();
+	void start();
 	void close();
 };
 
@@ -31,7 +32,7 @@ class QtAudioDefaultDevice : public AudioDevice {
 private:
 	QtAudioDefaultDevice(QtAudioDriver &driver);
 public:
-	QtAudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
+	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
 };
 
 class QtAudioDriver : public AudioDriver {

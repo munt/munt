@@ -40,6 +40,11 @@ public:
 	}
 
 	qint64 readData(char *data, qint64 len) {
+		if ((len == (stream.audioLatencyFrames << 2)) && (stream.clockSync != NULL)) {
+			// Fill empty buffer in clocksync mode to keep correct timing at startup / x-run recovery
+			memset(data, 0, len);
+			return len;
+		}
 		MasterClockNanos nanosNow = MasterClock::getClockNanos();
 		quint32 framesInAudioBuffer;
 		if (stream.settings.advancedTiming) {
@@ -63,9 +68,36 @@ public:
 	}
 };
 
+class ProcessingThread : public QThread {
+private:
+	QtAudioStream &stream;
+
+public:
+	ProcessingThread(QtAudioStream &useStream) : stream(useStream) {}
+
+	void run() {
+		stream.start();
+		exec();
+		stream.close();
+	}
+};
+
 QtAudioStream::QtAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
 	AudioStream(useSettings, useSynth, useSampleRate)
 {
+	// Creating QAudioOutput in a thread leads to smooth rendering
+	// Rendering will be performed in the main thread otherwise
+	processingThread = new ProcessingThread(*this);
+	processingThread->start();
+}
+
+QtAudioStream::~QtAudioStream() {
+	processingThread->exit();
+	processingThread->wait();
+	delete processingThread;
+}
+
+void QtAudioStream::start() {
 	QAudioFormat format;
 	format.setFrequency(sampleRate);
 	format.setChannels(2);
@@ -78,17 +110,8 @@ QtAudioStream::QtAudioStream(const AudioDriverSettings &useSettings, QSynth &use
 	format.setByteOrder(QAudioFormat::BigEndian);
 #endif
 	format.setSampleType(QAudioFormat::SignedInt);
-
 	audioOutput = new QAudioOutput(format);
 	waveGenerator = new WaveGenerator(*this);
-}
-
-QtAudioStream::~QtAudioStream() {
-	delete audioOutput;
-	delete waveGenerator;
-}
-
-bool QtAudioStream::start() {
 	if (settings.audioLatency != 0) {
 		audioOutput->setBufferSize((sampleRate * settings.audioLatency << 2) / MasterClock::MILLIS_PER_SECOND);
 	}
@@ -112,22 +135,18 @@ bool QtAudioStream::start() {
 	}
 	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
 	renderedFramesCount = 0;
-	return true;
 }
 
 void QtAudioStream::close() {
 	audioOutput->stop();
+	delete audioOutput;
+	delete waveGenerator;
 }
 
 QtAudioDefaultDevice::QtAudioDefaultDevice(QtAudioDriver &driver) : AudioDevice(driver, "Default") {}
 
-QtAudioStream *QtAudioDefaultDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
-	QtAudioStream *stream = new QtAudioStream(driver.getAudioSettings(), synth, sampleRate);
-	if (stream->start()) {
-		return stream;
-	}
-	delete stream;
-	return NULL;
+AudioStream *QtAudioDefaultDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
+	return new QtAudioStream(driver.getAudioSettings(), synth, sampleRate);
 }
 
 QtAudioDriver::QtAudioDriver(Master *useMaster) : AudioDriver("qtaudio", "QtAudio") {
