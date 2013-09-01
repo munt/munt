@@ -32,9 +32,9 @@ static const DWORD FRAME_SIZE = 4;
 static const DWORD DEFAULT_MIDI_LATENCY = 15;
 
 WinMMAudioStream::WinMMAudioStream(const AudioDriverSettings &useSettings, bool useRingBufferMode, QSynth &useSynth, const uint useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), ringBufferMode(useRingBufferMode),
+	AudioStream(useSettings, useSynth, useSampleRate),
 	hWaveOut(NULL), waveHdr(NULL), hEvent(NULL), stopProcessing(false),
-	processingThreadHandle(0L), prevPlayPosition(0L)
+	processingThreadHandle(0L), ringBufferMode(useRingBufferMode), prevPlayPosition(0L)
 {
 	chunkSize = (settings.chunkLen * sampleRate) / MasterClock::MILLIS_PER_SECOND;
 	if (ringBufferMode) {
@@ -96,7 +96,6 @@ DWORD WinMMAudioStream::getCurrentPlayPosition() {
 
 void WinMMAudioStream::processingThread(void *userData) {
 	WinMMAudioStream &stream = *(WinMMAudioStream *)userData;
-	const MasterClockNanos audioLatency = (stream.audioLatencyFrames * MasterClock::NANOS_PER_SECOND) / stream.sampleRate;
 	const double samplePeriod = (double)MasterClock::MILLIS_PER_SECOND / (double)stream.sampleRate;
 	while (!stream.stopProcessing) {
 		const DWORD playCursor = stream.getCurrentPlayPosition();
