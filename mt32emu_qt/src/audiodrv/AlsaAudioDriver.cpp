@@ -114,7 +114,6 @@ bool AlsaAudioStream::start() {
 	}
 
 	audioLatencyFrames = snd_pcm_avail(stream);
-	qDebug() << "Using audio latency:" << audioLatencyFrames << "frames";
 
 	midiLatencyFrames = settings.midiLatency * sampleRate / MasterClock::MILLIS_PER_SECOND;
 	if (clockSync == NULL) {
@@ -123,6 +122,12 @@ bool AlsaAudioStream::start() {
 		MasterClockNanos audioLatencyNanos = (MasterClock::NANOS_PER_SECOND * audioLatencyFrames) / sampleRate;
 		clockSync->setParams(audioLatencyNanos, 10 * audioLatencyNanos);
 	}
+
+	if (audioLatencyFrames <= bufferSize) {
+		bufferSize = audioLatencyFrames / 2;
+	}
+
+	qDebug() << "Using audio latency:" << audioLatencyFrames << "frames, chunk size:" << bufferSize << "frames";
 
 	// Start playing to fill audio buffers
 	int initFrames = audioLatencyFrames;
