@@ -1,6 +1,7 @@
 /* Copyright (C) 2003 Tristan
  * Copyright (C) 2004, 2005 Tristan, Jerome Fisher
  * Copyright (C) 2008, 2011 Tristan, Jerome Fisher, Jörg Walter
+ * Copyright (C) 2013 Tristan, Jerome Fisher, Jörg Walter, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -24,7 +25,7 @@ void lcd_setup();
 
 int lcd_age();   /* returns seconds remaining or -1 for none */
 void lcd_redraw();
-void sysex_lcd_message(char *buf);
+void sysex_lcd_message(const char *buf);
 void general_lcd_message(const char *buf);
 
 

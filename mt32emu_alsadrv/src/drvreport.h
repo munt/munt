@@ -1,6 +1,7 @@
 /* Copyright (C) 2003 Tristan
  * Copyright (C) 2004, 2005 Tristan, Jerome Fisher
  * Copyright (C) 2008, 2011 Tristan, Jerome Fisher, Jörg Walter
+ * Copyright (C) 2013 Tristan, Jerome Fisher, Jörg Walter, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -20,8 +21,6 @@
 #define DRIVER_REPORTING_H
 
 void report(int type, ...);
-
-int MT32Emu_Report(void *userData, MT32Emu::ReportType type, const void *reportData);
 
 #define DRIVER_REPORT_START 1
 
@@ -49,9 +48,12 @@ int MT32Emu_Report(void *userData, MT32Emu::ReportType type, const void *reportD
 #define DRV_NEWWAV    DRIVER_REPORT_START + 16
 #define DRV_NEWSYX    DRIVER_REPORT_START + 17
 
+#define DRV_MT32ROMFAIL DRIVER_REPORT_START + 18
 
 /* Commands from the front-end to the alsadrv */
 extern int uicmd_pipe[2];
+
+extern MT32Emu::ReportHandler *mt32ReportHandler;
 
 #define DRVCMD_NONE   0
 #define DRVCMD_CLEAR  1

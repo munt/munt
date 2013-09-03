@@ -1,6 +1,7 @@
 /* Copyright (C) 2003 Tristan
  * Copyright (C) 2004, 2005 Tristan, Jerome Fisher
  * Copyright (C) 2008, 2011 Tristan, Jerome Fisher, Jörg Walter
+ * Copyright (C) 2013 Tristan, Jerome Fisher, Jörg Walter, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -231,41 +232,51 @@ void redraw_display()
 	redraw_keypad();
 }
 
-int MT32Emu_Report(void *userData, MT32Emu::ReportType type, const void *reportData)
-{
-	char c;
-	switch (type)
-	{
-	case MT32Emu::ReportType_errorControlROM:
-		fprintf(stderr, "Unable to open %sMT32_CONTROL.ROM: %d\n", rom_path, *((int *)reportData));
-		break;
-
-	case MT32Emu::ReportType_errorPCMROM:
-		fprintf(stderr, "Unable to open %sMT32_PCM.ROM: %d\n", rom_path, *((int *)reportData));
-		break;
-	
-	case MT32Emu::ReportType_lcdMessage:
-		sysex_lcd_message((char *)reportData);
-		break;
-
-	case MT32Emu::ReportType_newReverbMode:
-		rv_type  = *((MT32Emu::Bit8u *)reportData);
-		redraw_keypad();
-		break;
-	case MT32Emu::ReportType_newReverbTime:
-		rv_time  = *((MT32Emu::Bit8u *)reportData);
-		redraw_keypad();
-		break;
-	case MT32Emu::ReportType_newReverbLevel:
-		rv_level = *((MT32Emu::Bit8u *)reportData);
-		redraw_keypad();
-		break;
+static class : public MT32Emu::ReportHandler {
+protected:
+	virtual void onErrorControlROM() {
+		fprintf(stderr, "Unable to open MT32 Control ROM file");
+		notify();
 	}
-	/* send notification */
-	c = 1;
-	write(reportpipe[1], &c, 1);
-	return 0;
-}
+
+	virtual void onErrorPCMROM() {
+		fprintf(stderr, "Unable to open MT32 PCM ROM file");
+		notify();
+	}
+
+	virtual void showLCDMessage(const char *message) {
+		sysex_lcd_message(message);
+		notify();
+	}
+
+	//virtual void printDebug(const char *fmt, va_list list) {}
+
+	virtual void onNewReverbMode(MT32Emu::Bit8u mode) {
+		rv_type = mode;
+		redraw_keypad();
+		notify();
+	}
+
+	virtual void onNewReverbTime(MT32Emu::Bit8u time) {
+		rv_time = time;
+		redraw_keypad();
+		notify();
+	}
+
+	virtual void onNewReverbLevel(MT32Emu::Bit8u level) {
+		rv_level = level;
+		redraw_keypad();
+		notify();
+	}
+
+private:
+	void notify() {
+		/* send notification */
+		char c = 1;
+		write(reportpipe[1], &c, 1);
+	}
+} mt32ReportHandlerImpl;
+MT32Emu::ReportHandler *mt32ReportHandler = &mt32ReportHandlerImpl;
 
 /* message system */
 void report(int type, ...)
@@ -305,6 +316,10 @@ void report(int type, ...)
 		
 	case DRV_MT32FAIL:
 		fprintf(stderr, "MT-32 failed to load");
+		break;
+
+	case DRV_MT32ROMFAIL:
+		fprintf(stderr, "Unable to open MT32 %s ROM file\n", va_arg(ap, char *));
 		break;
 
 	case DRV_ERRPCM:

@@ -8,3 +8,7 @@ Jerome "KingGuppy" Fisher
 - Adapted to work with the new mt32emu link library.
 
 Jörg Walter
+
+Sergey V. Mikayev
+- Modifications towards compatibility with the new mt32emu link library API (since ver. 1.0.0 of libmt32emu).
+- Finetuned for better MIDI timing accuracy when used with ALSA-Pulse configurations.

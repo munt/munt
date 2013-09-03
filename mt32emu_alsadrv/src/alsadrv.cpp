@@ -1,6 +1,7 @@
 /* Copyright (C) 2003 Tristan
  * Copyright (C) 2004, 2005 Tristan, Jerome Fisher
  * Copyright (C) 2008, 2011 Tristan, Jerome Fisher, Jörg Walter
+ * Copyright (C) 2013 Tristan, Jerome Fisher, Jörg Walter, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -869,9 +870,6 @@ int init_alsadrv()
 
 void reload_mt32_core(int rv)
 {
-	MT32Emu::SynthProperties synthp;
-	memset(&synthp, 0, sizeof(synthp));
-
 	/* delete core if there is already an instance of it */
 	if (mt32 != NULL)
 	{
@@ -881,32 +879,54 @@ void reload_mt32_core(int rv)
 	} else 
 		printf("Starting MT-32 core\n");
 	
-	/* create MT32Synth object */
-	mt32 = new MT32Emu::Synth();
+	// create ROM images
+	MT32Emu::FileStream controlROMFile;
+	MT32Emu::FileStream pcmROMFile;
 
-	/* setup synth params */
-	synthp.sampleRate = MT32Emu::SAMPLE_RATE;
-	
-	if (rv)
-		synthp.useReverb = true;
-	else
-		synthp.useReverb = false;
-	
-	synthp.useDefaultReverb = false;
-	synthp.reverbType = rv_type;
-	synthp.reverbTime = rv_time;
-	synthp.reverbLevel = rv_level;
-	synthp.baseDir = rom_path;
-	synthp.report = MT32Emu_Report;
-	
-	if (mt32->open(synthp) == false) {
+	char controlROMFileName[256];
+	strcpy(controlROMFileName, rom_path);
+	strcat(controlROMFileName, "CM32L_CONTROL.ROM");
+	if (!controlROMFile.open(controlROMFileName)) {
+		strcpy(controlROMFileName, rom_path);
+		strcat(controlROMFileName, "MT32_CONTROL.ROM");
+		if (!controlROMFile.open(controlROMFileName)) {
+			report(DRV_MT32ROMFAIL, "Control");
+			exit(1);
+		}
+	}
+
+	char pcmROMFileName[256];
+	strcpy(pcmROMFileName, rom_path);
+	strcat(pcmROMFileName, "CM32L_PCM.ROM");
+	if (!pcmROMFile.open(pcmROMFileName)) {
+		strcpy(pcmROMFileName, rom_path);
+		strcat(pcmROMFileName, "MT32_PCM.ROM");
+		if (!pcmROMFile.open(pcmROMFileName)) {
+			report(DRV_MT32ROMFAIL, "PCM");
+			exit(1);
+		}
+	}
+
+	const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
+	const MT32Emu::ROMImage *pcmROMImage = MT32Emu::ROMImage::makeROMImage(&pcmROMFile);
+
+	/* create MT32Synth object */
+	mt32 = new MT32Emu::Synth(mt32ReportHandler);
+	if (mt32->open(*controlROMImage, *pcmROMImage) == false) {
 		report(DRV_MT32FAIL);
 		exit(1);
-	}	
+	}
 
+	MT32Emu::ROMImage::freeROMImage(controlROMImage);
+	MT32Emu::ROMImage::freeROMImage(pcmROMImage);
+
+	send_rvmode_sysex(rv_type);
+	send_rvtime_sysex(rv_time);
+	send_rvlevel_sysex(rv_level);
+
+	mt32->setReverbEnabled(rv);
 	mt32->setOutputGain(gain_multiplier);
 	mt32->setReverbOutputGain(gain_multiplier);
-
 }
 
 int process_loop(int rv) 
