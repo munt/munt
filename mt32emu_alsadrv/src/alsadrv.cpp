@@ -75,9 +75,8 @@ snd_seq_t *seq_handle = NULL;
 
 
 /* Buffer infomation */
-#define FRAGMENT_SIZE 1024
-//#define PERIOD_SIZE   1024
-#define PERIOD_SIZE   512
+#define FRAGMENT_SIZE 256 // 2 milliseconds
+#define PERIOD_SIZE   128 // 1 millisecond
 int buffermsec = 100;
 int minimum_msec = 40;
 int maximum_msec = 1500;
@@ -268,7 +267,7 @@ int alsa_init_pcm(unsigned int rate, int channels)
 		return -1;
 	}
 	
-	/* allow the transfer when at least FRAGMENT_SIZE samples can be processed */
+	/* allow the transfer when at least PERIOD_SIZE samples can be processed */
 	err = snd_pcm_sw_params_set_avail_min(pcm_handle, swparams, PERIOD_SIZE >> 2);
 	if (err < 0) {
 		printf("Unable to set avail min for playback: %s\n", snd_strerror(err));
