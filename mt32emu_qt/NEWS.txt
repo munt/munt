@@ -1,7 +1,11 @@
 Next release:
 
+	* Updated for compatibility with new library API. Reworked rendering engine to make use of library internal MIDI event queue.
 	* Removed sysex length limit set in the internal MIDI player and converter.
-	* MIDI file converter now removes leading silence.
+	* Improved ClockSync class for providing better timing accuracy yet being more robust.
+	* Improved QtAudioDriver. Fixed sound dropouts which may occur when using GUI.
+	* MIDI player now sends "Reset all controllers" MIDI events when it stops playing.
+	* MIDI file converter now removes leading silence. MIDI conversion dialog now guesses PCM output file name if the user adds MIDI file first.
 	* Eliminated application hangs on Windows when the application is closed enforcedly,
 	  e.g. when the user closes the application console or shuts down the system.
 	* Fixed deadlock which may happen when the user quickly pushes "Play" button in the MIDI player.
@@ -9,8 +13,12 @@ Next release:
 	  in the current user home directory.
 	* Reworked synth visualisation in order to make our LCD model close the hardware behaviour.
 	  Added emulation of the "MIDI MESSAGE" led.
+	* Fixed display of timbre names which contain null characters.
 	* MIDI files can now be dropped to main window and MIDI file converter dialog.
+	* Main window now restores its geometry when the application starts. Fixed main window geometry when synth details panel changes visibility.
 	* Overall UI layout made more compact. Other UI improvements.
+	* Improved build under POSIX environment.
+	* Code refactoring.
 
 2013-03-24:
 

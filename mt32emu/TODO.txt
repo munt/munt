@@ -6,7 +6,6 @@ Emulation engine:
 
 API:
 - Accurate sample conversion class.
-- Timestamped MIDI event queue and renderer support for simplifying realtime MIDI player implementations.
 
 Code:
 - Adding more comments regarding emulation specifics and used approaches
