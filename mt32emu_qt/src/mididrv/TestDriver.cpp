@@ -33,7 +33,6 @@ void TestProcessor::start() {
 
 void TestProcessor::stop() {
 	stopProcessing = true;
-	MidiDriver::waitForProcessingThread(this, TEST1_EVENT_INTERVAL_NANOS);
 }
 
 void TestProcessor::run() {
@@ -69,6 +68,7 @@ void TestMidiDriver::start() {
 
 void TestMidiDriver::stop() {
 	processor.stop();
+	MidiDriver::waitForProcessingThread(&processor, TEST1_EVENT_INTERVAL_NANOS);
 }
 
 TestMidiDriver::~TestMidiDriver() {
