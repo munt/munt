@@ -15,7 +15,7 @@ protected:
 	QString name;
 	QList<MidiSession *>midiSessions;
 
-	static void waitForProcessingThread(QThread *thread, MasterClockNanos timeout);
+	static void waitForProcessingThread(QThread &thread, MasterClockNanos timeout);
 
 	MidiSession *createMidiSession(QString sessionName);
 	void deleteMidiSession(MidiSession *midiSession);

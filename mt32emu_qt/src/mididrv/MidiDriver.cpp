@@ -88,8 +88,8 @@ QString MidiDriver::getNewPortName(MidiPropertiesDialog *) {
  * On the other hand, stop() is usually called in the main thread - the thread of Master. So, we attempt to unblock
  * by processing posted QEvent::MetaCall events directed to Master.
  */
-void MidiDriver::waitForProcessingThread(QThread *thread, MasterClockNanos timeout) {
-	while (!thread->wait(timeout / MasterClock::NANOS_PER_MILLISECOND)) {
+void MidiDriver::waitForProcessingThread(QThread &thread, MasterClockNanos timeout) {
+	while (!thread.wait(timeout / MasterClock::NANOS_PER_MILLISECOND)) {
 		Master *master = Master::getInstance();
 		if (QThread::currentThread() == master->thread()) {
 			QCoreApplication::sendPostedEvents(master, QEvent::MetaCall);

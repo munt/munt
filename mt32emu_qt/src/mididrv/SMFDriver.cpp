@@ -42,7 +42,6 @@ SMFProcessor::SMFProcessor(SMFDriver *useSMFDriver) : driver(useSMFDriver) {
 }
 
 void SMFProcessor::start(QString useFileName) {
-	stop();
 	stopProcessing = false;
 	bpmUpdated = false;
 	driver->seekPosition = -1;
@@ -59,7 +58,6 @@ void SMFProcessor::start(QString useFileName) {
 
 void SMFProcessor::stop() {
 	stopProcessing = true;
-	MidiDriver::waitForProcessingThread(this, MAX_SLEEP_TIME);
 }
 
 void SMFProcessor::setBPM(quint32 newBPM) {
@@ -186,18 +184,21 @@ void SMFDriver::start() {
 	QString fileName = QFileDialog::getOpenFileName(NULL, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
 	currentDir = QDir(fileName).absolutePath();
 	if (!fileName.isEmpty()) {
+		stop();
 		processor.start(fileName);
 	}
 }
 
 void SMFDriver::start(QString fileName) {
 	if (!fileName.isEmpty()) {
+		stop();
 		processor.start(fileName);
 	}
 }
 
 void SMFDriver::stop() {
 	processor.stop();
+	MidiDriver::waitForProcessingThread(processor, MAX_SLEEP_TIME);
 }
 
 void SMFDriver::setBPM(quint32 newBPM) {
