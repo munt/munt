@@ -9,7 +9,7 @@ diff -Nru dosbox-0.74/src/Makefile.am dosbox-0.74-mt32/src/Makefile.am
 +LIBS +=  -lmt32emu
 diff -Nru dosbox-0.74/src/dosbox.cpp dosbox-0.74-mt32/src/dosbox.cpp
 --- dosbox-0.74/src/dosbox.cpp	2010-05-10 17:43:54 +0000
-+++ dosbox-0.74-mt32/src/dosbox.cpp	2012-04-19 08:26:17 +0000
++++ dosbox-0.74-mt32/src/dosbox.cpp	2013-09-06 18:39:25 +0000
 @@ -467,7 +467,7 @@
  	
  	const char* mputypes[] = { "intelligent", "uart", "none",0};
@@ -19,10 +19,16 @@ diff -Nru dosbox-0.74/src/dosbox.cpp dosbox-0.74-mt32/src/dosbox.cpp
  	Pstring = secprop->Add_string("mpu401",Property::Changeable::WhenIdle,"intelligent");
  	Pstring->Set_values(mputypes);
  	Pstring->Set_help("Type of MPU-401 to emulate.");
-@@ -480,6 +480,62 @@
+@@ -480,6 +480,68 @@
  	Pstring->Set_help("Special configuration options for the device driver. This is usually the id of the device you want to use.\n"
  	                  "  See the README/Manual for more details.");
  
++	Pstring = secprop->Add_string("mt32.romdir",Property::Changeable::WhenIdle,"");
++	Pstring->Set_help("Name of the directory where MT-32 Control and PCM ROM files can be found. Emulation requires these files to work.\n"
++	                  "  Accepted file names are as follows:\n"
++	                  "    MT32_CONTROL.ROM or CM32L_CONTROL.ROM - control ROM file.\n"
++					  "    MT32_PCM.ROM or CM32L_PCM.ROM - PCM ROM file.\n");
++
 +	const char *mt32ReverseStereo[] = {"off", "on",0};
 +	Pstring = secprop->Add_string("mt32.reverse.stereo",Property::Changeable::WhenIdle,"off");
 +	Pstring->Set_values(mt32ReverseStereo);
@@ -106,8 +112,8 @@ diff -Nru dosbox-0.74/src/gui/midi.cpp dosbox-0.74-mt32/src/gui/midi.cpp
  	Bitu cmd_len;
 diff -Nru dosbox-0.74/src/gui/midi_mt32.h dosbox-0.74-mt32/src/gui/midi_mt32.h
 --- dosbox-0.74/src/gui/midi_mt32.h	1970-01-01 00:00:00 +0000
-+++ dosbox-0.74-mt32/src/gui/midi_mt32.h	2013-08-04 09:26:10 +0000
-@@ -0,0 +1,230 @@
++++ dosbox-0.74-mt32/src/gui/midi_mt32.h	2013-09-06 18:25:44 +0000
+@@ -0,0 +1,257 @@
 +#include <mt32emu/mt32emu.h>
 +#include <SDL_thread.h>
 +#include <SDL_timer.h>
@@ -150,6 +156,14 @@ diff -Nru dosbox-0.74/src/gui/midi_mt32.h dosbox-0.74-mt32/src/gui/midi_mt32.h
 +	static void mixerCallBack(Bitu len);
 +	static int processingThread(void *);
 +
++	static void makeROMPathName(char pathName[], const char romDir[], const char fileName[], bool addPathSeparator) {
++		strcpy(pathName, romDir);
++		if (addPathSeparator) {
++			strcat(pathName, "/");
++		}
++		strcat(pathName, fileName);
++	}
++
 +public:
 +	MidiHandler_mt32() : open(false), chan(NULL), synth(NULL), thread(NULL) {}
 +
@@ -162,17 +176,37 @@ diff -Nru dosbox-0.74/src/gui/midi_mt32.h dosbox-0.74-mt32/src/gui/midi_mt32.h
 +	}
 +
 +	bool Open(const char *conf) {
++		Section_prop *section = static_cast<Section_prop *>(control->GetSection("midi"));
++		const char *romDir = section->Get_string("mt32.romdir");
++		if (romDir == NULL) romDir = "./"; // Paranoid NULL-check, should never happen
++		size_t romDirLen = strlen(romDir);
++		bool addPathSeparator = false;
++		if (romDirLen < 1) {
++			romDir = "./";
++		} else if (4080 < romDirLen) {
++			LOG_MSG("MT32: mt32.romdir is too long, using the current dir.");
++			romDir = "./";
++		} else {
++			char lastChar = romDir[strlen(romDir) - 1];
++			addPathSeparator = lastChar != '/' && lastChar != '\\';
++		}
++
++		char pathName[4096];
 +		MT32Emu::FileStream controlROMFile;
 +		MT32Emu::FileStream pcmROMFile;
 +
-+		if (!controlROMFile.open("CM32L_CONTROL.ROM")) {
-+			if (!controlROMFile.open("MT32_CONTROL.ROM")) {
++		makeROMPathName(pathName, romDir, "CM32L_CONTROL.ROM", addPathSeparator);
++		if (!controlROMFile.open(pathName)) {
++			makeROMPathName(pathName, romDir, "MT32_CONTROL.ROM", addPathSeparator);
++			if (!controlROMFile.open(pathName)) {
 +				LOG_MSG("MT32: Control ROM file not found");
 +				return false;
 +			}
 +		}
-+		if (!pcmROMFile.open("CM32L_PCM.ROM")) {
-+			if (!pcmROMFile.open("MT32_PCM.ROM")) {
++		makeROMPathName(pathName, romDir, "CM32L_PCM.ROM", addPathSeparator);
++		if (!pcmROMFile.open(pathName)) {
++			makeROMPathName(pathName, romDir, "MT32_PCM.ROM", addPathSeparator);
++			if (!pcmROMFile.open(pathName)) {
 +				LOG_MSG("MT32: PCM ROM file not found");
 +				return false;
 +			}
@@ -187,7 +221,6 @@ diff -Nru dosbox-0.74/src/gui/midi_mt32.h dosbox-0.74-mt32/src/gui/midi_mt32.h
 +		MT32Emu::ROMImage::freeROMImage(controlROMImage);
 +		MT32Emu::ROMImage::freeROMImage(pcmROMImage);
 +
-+		Section_prop *section = static_cast<Section_prop *>(control->GetSection("midi"));
 +		if (strcmp(section->Get_string("mt32.reverb.mode"), "auto") != 0) {
 +			Bit8u reverbsysex[] = {0x10, 0x00, 0x01, 0x00, 0x05, 0x03};
 +			reverbsysex[3] = (Bit8u)atoi(section->Get_string("mt32.reverb.mode"));

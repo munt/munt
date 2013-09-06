@@ -37,6 +37,14 @@ private:
 	static void mixerCallBack(Bitu len);
 	static int processingThread(void *);
 
+	static void makeROMPathName(char pathName[], const char romDir[], const char fileName[], bool addPathSeparator) {
+		strcpy(pathName, romDir);
+		if (addPathSeparator) {
+			strcat(pathName, "/");
+		}
+		strcat(pathName, fileName);
+	}
+
 public:
 	MidiHandler_mt32() : open(false), chan(NULL), synth(NULL), thread(NULL), synthMutex(NULL), procIdleSem(NULL), mixerReqSem(NULL) {}
 
@@ -49,17 +57,37 @@ public:
 	}
 
 	bool Open(const char *conf) {
+		Section_prop *section = static_cast<Section_prop *>(control->GetSection("midi"));
+		const char *romDir = section->Get_string("mt32.romdir");
+		if (romDir == NULL) romDir = "./"; // Paranoid NULL-check, should never happen
+		size_t romDirLen = strlen(romDir);
+		bool addPathSeparator = false;
+		if (romDirLen < 1) {
+			romDir = "./";
+		} else if (4080 < romDirLen) {
+			LOG_MSG("MT32: mt32.romdir is too long, using the current dir.");
+			romDir = "./";
+		} else {
+			char lastChar = romDir[strlen(romDir) - 1];
+			addPathSeparator = lastChar != '/' && lastChar != '\\';
+		}
+
+		char pathName[4096];
 		MT32Emu::FileStream controlROMFile;
 		MT32Emu::FileStream pcmROMFile;
 
-		if (!controlROMFile.open("CM32L_CONTROL.ROM")) {
-			if (!controlROMFile.open("MT32_CONTROL.ROM")) {
+		makeROMPathName(pathName, romDir, "CM32L_CONTROL.ROM", addPathSeparator);
+		if (!controlROMFile.open(pathName)) {
+			makeROMPathName(pathName, romDir, "MT32_CONTROL.ROM", addPathSeparator);
+			if (!controlROMFile.open(pathName)) {
 				LOG_MSG("MT32: Control ROM file not found");
 				return false;
 			}
 		}
-		if (!pcmROMFile.open("CM32L_PCM.ROM")) {
-			if (!pcmROMFile.open("MT32_PCM.ROM")) {
+		makeROMPathName(pathName, romDir, "CM32L_PCM.ROM", addPathSeparator);
+		if (!pcmROMFile.open(pathName)) {
+			makeROMPathName(pathName, romDir, "MT32_PCM.ROM", addPathSeparator);
+			if (!pcmROMFile.open(pathName)) {
 				LOG_MSG("MT32: PCM ROM file not found");
 				return false;
 			}
@@ -74,7 +102,6 @@ public:
 		MT32Emu::ROMImage::freeROMImage(controlROMImage);
 		MT32Emu::ROMImage::freeROMImage(pcmROMImage);
 
-		Section_prop *section = static_cast<Section_prop *>(control->GetSection("midi"));
 		if (strcmp(section->Get_string("mt32.reverb.mode"), "auto") != 0) {
 			Bit8u reverbsysex[] = {0x10, 0x00, 0x01, 0x00, 0x05, 0x03};
 			reverbsysex[3] = (Bit8u)atoi(section->Get_string("mt32.reverb.mode"));
