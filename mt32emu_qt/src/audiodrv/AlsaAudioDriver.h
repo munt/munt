@@ -26,13 +26,17 @@ private:
 public:
 	AlsaAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
 	~AlsaAudioStream();
-	bool start();
+	bool start(const char *deviceID);
 	void close();
 };
 
-class AlsaAudioDefaultDevice : public AudioDevice {
+class AlsaAudioDevice : public AudioDevice {
 friend class AlsaAudioDriver;
-	AlsaAudioDefaultDevice(AlsaAudioDriver &driver);
+private:
+	const char *deviceID;
+
+	AlsaAudioDevice(AlsaAudioDriver &driver, const char *useDeviceID, const QString name);
+
 public:
 	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
 };
@@ -40,6 +44,7 @@ public:
 class AlsaAudioDriver : public AudioDriver {
 private:
 	void validateAudioSettings(AudioDriverSettings &settings) const;
+
 public:
 	AlsaAudioDriver(Master *useMaster);
 	const QList<const AudioDevice *> createDeviceList();

@@ -87,16 +87,16 @@ void *AlsaAudioStream::processingThread(void *userData) {
 	return NULL;
 }
 
-bool AlsaAudioStream::start() {
+bool AlsaAudioStream::start(const char *deviceID) {
 	int error;
 	if (buffer == NULL) return false;
 	memset(buffer, 0, FRAME_SIZE * bufferSize);
 	if (stream != NULL) close();
 
-	qDebug() << "Using ALSA default audio device";
+	qDebug() << "Using ALSA audio device:" << deviceID;
 
 	// Create a new playback stream
-	error = snd_pcm_open(&stream, "default", SND_PCM_STREAM_PLAYBACK, 0);
+	error = snd_pcm_open(&stream, deviceID, SND_PCM_STREAM_PLAYBACK, 0);
 	if (error < 0) {
 		qDebug() << "snd_pcm_open failed:" << snd_strerror(error);
 		stream = NULL;
@@ -175,11 +175,11 @@ void AlsaAudioStream::close() {
 	return;
 }
 
-AlsaAudioDefaultDevice::AlsaAudioDefaultDevice(AlsaAudioDriver &driver) : AudioDevice(driver, "Default") {}
+AlsaAudioDevice::AlsaAudioDevice(AlsaAudioDriver &driver, const char *useDeviceID, const QString name) : AudioDevice(driver, name), deviceID(useDeviceID) {}
 
-AudioStream *AlsaAudioDefaultDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
+AudioStream *AlsaAudioDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
 	AlsaAudioStream *stream = new AlsaAudioStream(driver.getAudioSettings(), synth, sampleRate);
-	if (stream->start()) return stream;
+	if (stream->start(deviceID)) return stream;
 	delete stream;
 	return NULL;
 }
@@ -192,7 +192,9 @@ AlsaAudioDriver::AlsaAudioDriver(Master *master) : AudioDriver("alsa", "ALSA") {
 
 const QList<const AudioDevice *> AlsaAudioDriver::createDeviceList() {
 	QList<const AudioDevice *> deviceList;
-	deviceList.append(new AlsaAudioDefaultDevice(*this));
+	deviceList.append(new AlsaAudioDevice(*this, "default", "Default"));
+	deviceList.append(new AlsaAudioDevice(*this, "sysdefault", "System default"));
+	deviceList.append(new AlsaAudioDevice(*this, "plug:hw", "Exclusive mode"));
 	return deviceList;
 }
 
