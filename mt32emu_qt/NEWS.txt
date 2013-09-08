@@ -18,6 +18,8 @@ Next release:
 	* Main window now restores its geometry when the application starts. Fixed main window geometry when synth details panel changes visibility.
 	* Overall UI layout made more compact. Other UI improvements.
 	* Improved build under POSIX environment.
+	* ALSA driver can now open "sysdefault" device in order to easily bypass Pulse-ALSA plugin. It can also open "plug:hw" device in exclusive mode
+	  to achieve minimal latency.
 	* Code refactoring.
 
 2013-03-24:
