@@ -31,6 +31,7 @@ bool AudioFileWriterStream::start() {
 	QString fileName = QFileDialog::getSaveFileName(NULL, NULL, currentDir, "*.wav *.raw;;*.wav;;*.raw;;*.*");
 	if (fileName.isEmpty()) return false;
 	currentDir = QDir(fileName).absolutePath();
+	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
 	writer.startRealtimeProcessing(&synth, sampleRate, fileName, audioLatencyFrames);
 	return true;
 }
