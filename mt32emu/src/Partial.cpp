@@ -303,6 +303,12 @@ bool Partial::produceOutput(Sample *leftBuf, Sample *rightBuf, unsigned long len
 		*(rightBuf++) += rightOut;
 #else
 		// FIXME: Dividing by 7 (or by 14 in a Mok-friendly way) looks of course pointless. Need clarification.
+		// FIXME2: LA32 may produce distorted sound in case if the absolute value of maximal amplitude of the input exceeds 8191
+		// when the panning value is non-zero. Most probably the distortion occurs in the same way it does with ring modulation,
+		// and it seems to be caused by limited precision of the common multiplication circuit.
+		// From analysis of this overflow, it is obvious that the right channel output is actually found
+		// by subtraction of the left channel output from the input.
+		// Though, it is unknown whether this overflow is exploited somewhere.
 		Sample leftOut = Sample((sample * leftPanValue) >> 8);
 		Sample rightOut = Sample((sample * rightPanValue) >> 8);
 		*leftBuf = Synth::clipBit16s((Bit32s)*leftBuf + (Bit32s)leftOut);
