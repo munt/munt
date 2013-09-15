@@ -7,6 +7,7 @@ Next release:
 	  - dependent projects updated in accordance.
 	* Partial allocation made dynamic. Preprocessor definition MT32EMU_MAX_PARTIALS removed.
 	* Removed inaccurate reverb models. Preprocessor definition MT32EMU_BOSS_REVERB_PRECISE_MODE added.
+	* More accurate ring modulator model, added emulation of integer overflow (exploited in distortion guitar-like patches)
 	* Added preprocessor definition MT32EMU_USE_FLOAT_SAMPLES to control whether to use float samples throughout the emulation.
 	* Fixed several issues in FileStream which lead to inability to reopen a file.
 	* Fixed memory leaks caused by incorrect memory handling of ROM files (most notable in the Windows driver).
