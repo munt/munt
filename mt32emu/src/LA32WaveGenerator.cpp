@@ -398,10 +398,16 @@ Bit16s LA32PartialPair::nextOutSample() {
 	Bit16s nonOverdrivenMasterSample = unlogAndMixWGOutput(master); // Store master partial sample for further mixing
 	Bit16s masterSample = nonOverdrivenMasterSample << 2;
 	masterSample >>= 2;
+
+	/* SEMI-CONFIRMED from sample analysis:
+	 * We observe that for partial structures with ring modulation the interpolation is not applied to the slave PCM partial.
+	 * It's assumed that the multiplication circuitry intended to perform the interpolation on the slave PCM partial
+	 * is borrowed by the ring modulation circuit (or the LA32 chip has a similar lack of resources assigned to each partial pair).
+	 */
 	Bit16s slaveSample = slave.isPCMWave() ? LA32Utilites::unlog(slave.getOutputLogSample(true)) : unlogAndMixWGOutput(slave);
 	slaveSample <<= 2;
 	slaveSample >>= 2;
-	Bit16s ringModulatedSample = ((Bit32s)masterSample * (Bit32s)slaveSample) >> 13;
+	Bit16s ringModulatedSample = Bit16s(((Bit32s)masterSample * (Bit32s)slaveSample) >> 13);
 	return mixed ? nonOverdrivenMasterSample + ringModulatedSample : ringModulatedSample;
 }
 
