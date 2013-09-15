@@ -179,8 +179,8 @@ bool PulseAudioStream::start() {
 	// Configuring desired audio latency
 	qDebug() << "Using audio latency:" << settings.audioLatency;
 	static const pa_buffer_attr ba = {
-		(uint32_t)-1, // uint32_t maxlength;
-		audioLatencyFrames * FRAME_SIZE, // uint32_t tlength;
+		audioLatencyFrames * FRAME_SIZE, // uint32_t maxlength;
+		(uint32_t)-1, // uint32_t tlength;
 		(uint32_t)-1, // uint32_t prebuf;
 		(uint32_t)-1, // uint32_t minreq;
 		(uint32_t)-1 // uint32_t fragsize;
