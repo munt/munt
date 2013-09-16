@@ -158,7 +158,11 @@ MasterClock::~MasterClock() {
 static QElapsedTimer *elapsedTimer = NULL;
 
 MasterClockNanos MasterClock::getClockNanos() {
+#if (QT_VERSION < QT_VERSION_CHECK(4, 8, 0))
 	return (MasterClockNanos)elapsedTimer->elapsed() * NANOS_PER_MILLISECOND;
+#else
+	return (MasterClockNanos)elapsedTimer->nsecsElapsed();
+#endif
 }
 
 MasterClock::MasterClock() {
