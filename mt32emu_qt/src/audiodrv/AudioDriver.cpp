@@ -61,6 +61,10 @@ quint32 AudioStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
 }
 
 void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer) {
+#if 0
+	qDebug() << "R" << renderedFramesCount - timeInfo[timeInfoIx].lastPlayedFramesCount
+					<< (measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) * 1e-6;
+#endif
 	uint nextTimeInfoIx = 1 - timeInfoIx;
 	if (clockSync != NULL) {
 		MasterClockNanos renderedNanos = MasterClockNanos(renderedFramesCount / (double)sampleRate * MasterClock::NANOS_PER_SECOND);
