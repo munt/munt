@@ -11,12 +11,11 @@ private:
 
 	// External to master clock rate
 	double drift;
-	// Reciprocal drift, for convenience and speed
-	double rdrift;
-	// The difference between the scaled external clock and the master clock
+
+	// The average difference between the external clock and the master clock
 	MasterClockNanos baseOffset;
 
-	// Variables below intended to find average clock offset we really want to get rid of
+	// Variables below intended to find average clock offset to reduce jitter and make drift smoother
 	MasterClockNanos offsetSum;
 	uint syncCount;
 

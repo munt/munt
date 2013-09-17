@@ -29,7 +29,7 @@ void ClockSync::scheduleReset() {
 }
 
 double ClockSync::getDrift() {
-	return drift;
+	return 1.0 + drift;
 }
 
 void ClockSync::setParams(MasterClockNanos useEmergencyResetThresholdNanos, MasterClockNanos usePeriodicResetNanos) {
@@ -41,38 +41,36 @@ MasterClockNanos ClockSync::sync(MasterClockNanos masterNow, MasterClockNanos ex
 	if (performResetOnNextSync) {
 		masterStart = masterNow;
 		externalStart = externalNow;
-		baseOffset = 0;
+		baseOffset = externalNow - masterNow;
 		offsetSum = 0;
 		syncCount = 0;
-		drift = rdrift = 1;
-		qDebug() << "ClockSync: init:" << externalNow << masterNow << baseOffset << drift;
+		drift = 0;
+		qDebug() << "ClockSync: reset" << externalNow * 1e-6 << masterNow * 1e-6 << baseOffset * 1e-6 << getDrift();
 		performResetOnNextSync = false;
 		return masterNow;
 	}
 	MasterClockNanos masterElapsed = masterNow - masterStart;
 	MasterClockNanos externalElapsed = externalNow - externalStart;
-	MasterClockNanos offsetNow = rdrift * externalElapsed - masterElapsed;
-	offsetSum += offsetNow;
-	syncCount++;
-	if (qAbs(offsetNow) > emergencyResetThresholdNanos) {
-		qDebug() << "ClockSync: Synchronisation lost:" << externalNow << masterNow << baseOffset << drift << "reset scheduled";
+
+	// Use deltas in average offset calculation to avoid overflow
+	MasterClockNanos deltaOffset = (externalNow - masterNow) - baseOffset;
+	offsetSum += deltaOffset;
+	++syncCount;
+	MasterClockNanos currentOffset = baseOffset + MasterClockNanos(externalElapsed * drift);
+	if (emergencyResetThresholdNanos < qAbs(deltaOffset)) {
 		scheduleReset();
 	}
-	if (masterElapsed > periodicResetNanos) {
-		double offsetAverage = offsetSum / (double)syncCount;
-		drift = (externalElapsed + 0.5 * (baseOffset + offsetAverage)) / (double)masterElapsed;
-		rdrift = 1 / drift;
-
+	if (periodicResetNanos < masterElapsed) {
+		MasterClockNanos newBaseOffset = baseOffset + offsetSum / syncCount;
+		drift = (newBaseOffset - currentOffset) / (double)periodicResetNanos;
 		masterStart = masterNow;
 		externalStart = externalNow;
-		// Ensure the clock won't jump
-		baseOffset += offsetNow;
+		baseOffset = currentOffset;
 		offsetSum = 0;
 		syncCount = 0;
-		offsetAverage = 0;
-
-		qDebug() << "ClockSync: baseOffset:" << 1e-6 * baseOffset << "drift:" << drift;
-		return masterNow + baseOffset;
+#if 0
+		qDebug() << "ClockSync: offset delta" << (newBaseOffset - baseOffset) * 1e-6 << "drift" << getDrift();
+#endif
 	}
-	return masterStart + baseOffset + rdrift * externalElapsed;
+	return externalNow - currentOffset;
 }
