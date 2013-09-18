@@ -19,6 +19,8 @@
 #include "../Master.h"
 #include "../ClockSync.h"
 
+static const MasterClockNanos MINIMUM_TIMEINFO_UPDATE_NANOS = 10 * MasterClock::NANOS_PER_MILLISECOND;
+
 AudioStream::AudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
 	synth(useSynth), sampleRate(useSampleRate), settings(useSettings), renderedFramesCount(0)
 {
@@ -65,6 +67,11 @@ void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const qui
 	qDebug() << "R" << renderedFramesCount - timeInfo[timeInfoIx].lastPlayedFramesCount
 					<< (measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) * 1e-6;
 #endif
+	if ((measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) < MINIMUM_TIMEINFO_UPDATE_NANOS) {
+		// If callbacks are coming too quickly, we cannot benefit from that, it just makes our timing estimation worse...
+		// Moreover, we should be able to adjust lastPlayedFramesCount increasing speed as it counts in samples
+		return;
+	}
 	uint nextTimeInfoIx = 1 - timeInfoIx;
 	if (clockSync != NULL) {
 		MasterClockNanos renderedNanos = MasterClockNanos(renderedFramesCount / (double)sampleRate * MasterClock::NANOS_PER_SECOND);
@@ -110,6 +117,9 @@ void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const qui
 		timeInfo[nextTimeInfoIx].lastPlayedNanos = measuredNanos;
 		timeInfo[nextTimeInfoIx].lastPlayedFramesCount = newPlayedFramesCount;
 		timeInfo[nextTimeInfoIx].actualSampleRate = estimatedNewActualSampleRate;
+#if 0
+		qDebug() << "S" << estimatedNewActualSampleRate << int(newPlayedFramesCount - estimatedNewPlayedFramesCount);
+#endif
 	}
 	timeInfoIx = nextTimeInfoIx;
 }

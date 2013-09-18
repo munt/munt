@@ -3,6 +3,7 @@ Next release:
 	* Updated for compatibility with new library API. Reworked rendering engine to make use of library internal MIDI event queue.
 	* Removed sysex length limit set in the internal MIDI player and converter.
 	* Improved ClockSync class for providing better timing accuracy yet being more robust.
+	* Improved timing accuracy in the "advanced timing" mode.
 	* Improved QtAudioDriver. Fixed sound dropouts which may occur when using GUI.
 	* MIDI player now sends "Reset all controllers" MIDI events when it stops playing.
 	* MIDI file converter now removes leading silence. MIDI conversion dialog now guesses PCM output file name if the user adds MIDI file first.
