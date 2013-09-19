@@ -487,7 +487,7 @@ public:
 	float getReverbOutputGain() const;
 
 	void setReversedStereoEnabled(bool enabled);
-	bool getReversedStereoEnabled();
+	bool isReversedStereoEnabled();
 
 	// Renders samples to the specified output stream.
 	// The length is in frames, not bytes (in 16-bit stereo,

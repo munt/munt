@@ -218,7 +218,7 @@ void Synth::setReversedStereoEnabled(bool enabled) {
 	reversedStereoEnabled = enabled;
 }
 
-bool Synth::getReversedStereoEnabled() {
+bool Synth::isReversedStereoEnabled() {
 	return reversedStereoEnabled;
 }
 
