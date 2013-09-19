@@ -170,6 +170,8 @@ MIDIDelayMode Synth::getMIDIDelayMode() const {
 	return midiDelayMode;
 }
 
+#if MT32EMU_USE_FLOAT_SAMPLES
+
 void Synth::setOutputGain(float newOutputGain) {
 	outputGain = newOutputGain;
 }
@@ -185,6 +187,31 @@ void Synth::setReverbOutputGain(float newReverbOutputGain) {
 float Synth::getReverbOutputGain() const {
 	return reverbOutputGain;
 }
+
+#else // #if MT32EMU_USE_FLOAT_SAMPLES
+
+void Synth::setOutputGain(float newOutputGain) {
+	if (newOutputGain < 0.0f) newOutputGain = -newOutputGain;
+	if (256.0f < newOutputGain) newOutputGain = 256.0f;
+	outputGain = int(newOutputGain * 256.0f);
+}
+
+float Synth::getOutputGain() const {
+	return outputGain / 256.0f;
+}
+
+void Synth::setReverbOutputGain(float newReverbOutputGain) {
+	if (newReverbOutputGain < 0.0f) newReverbOutputGain = -newReverbOutputGain;
+	float maxValue = 256.0f / CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR;
+	if (maxValue < newReverbOutputGain) newReverbOutputGain = maxValue;
+	reverbOutputGain = int(newReverbOutputGain * 256.0f);
+}
+
+float Synth::getReverbOutputGain() const {
+	return reverbOutputGain / 256.0f;
+}
+
+#endif // #if MT32EMU_USE_FLOAT_SAMPLES
 
 bool Synth::loadControlROM(const ROMImage &controlROMImage) {
 	if (&controlROMImage == NULL) return false;
@@ -1438,16 +1465,19 @@ void Synth::convertSamplesToOutput(Sample *target, const Sample *source, Bit32u 
 		*(target++) = *(source++) * gain;
 	}
 #else
-	float gain = reverb ? reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR : outputGain;
-	if (!reverb) {
+	int gain;
+	if (reverb) {
+		gain = int(reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR);
+	} else {
+		gain = outputGain;
 		switch (dacInputMode) {
 		case DACInputMode_NICE:
 			// Since we're not shooting for accuracy here, don't worry about the rounding mode.
-			gain *= 2.0f;
+			gain <<= 1;
 			break;
 		case DACInputMode_GENERATION1:
 			while (len--) {
-				*target = clipBit16s(Bit32s(*source * gain));
+				*target = clipBit16s(Bit32s((*source * gain) >> 8));
 				*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE);
 				source++;
 				target++;
@@ -1455,7 +1485,7 @@ void Synth::convertSamplesToOutput(Sample *target, const Sample *source, Bit32u 
 			return;
 		case DACInputMode_GENERATION2:
 			while (len--) {
-				*target = clipBit16s(Bit32s(*source * gain));
+				*target = clipBit16s(Bit32s((*source * gain) >> 8));
 				*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE) | ((*target >> 14) & 0x0001);
 				source++;
 				target++;
@@ -1466,7 +1496,7 @@ void Synth::convertSamplesToOutput(Sample *target, const Sample *source, Bit32u 
 		}
 	}
 	while (len--) {
-		*(target++) = clipBit16s(Bit32s(*(source++) * gain));
+		*(target++) = clipBit16s(Bit32s((*(source++) * gain) >> 8));
 	}
 #endif
 }

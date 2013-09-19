@@ -344,8 +344,14 @@ private:
 
 	MIDIDelayMode midiDelayMode;
 	DACInputMode dacInputMode;
+
+#if MT32EMU_USE_FLOAT_SAMPLES
 	float outputGain;
 	float reverbOutputGain;
+#else
+	int outputGain;
+	int reverbOutputGain;
+#endif
 
 	bool isOpen;
 
