@@ -12,6 +12,7 @@ Next release:
 	* Fixed several issues in FileStream which lead to inability to reopen a file.
 	* Fixed memory leaks caused by incorrect memory handling of ROM files (most notable in the Windows driver).
 	* Minor change in panning. It is implemented without floats and divisions in the accurate emulation mode.
+	* Added reverse stereo option which inverts MIDI panning. Reverb remains unchanged.
 	* Code refactoring.
 	* Revived ALSA driver as a light-weight emulation facility, mainly for consistency with Windows driver being self-contained.
 	  The rendering engine left untouched, so it may still sound wrong with PulseAudio.

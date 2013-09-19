@@ -127,12 +127,13 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 		panSetting &= 0x0E;
 #endif
 	}
-#if MT32EMU_USE_FLOAT_SAMPLES
-	leftPanValue = panSetting;
-	rightPanValue = 14 - panSetting;
-#else
-	leftPanValue = PAN_FACTORS[panSetting];
-	rightPanValue = PAN_FACTORS[14 - panSetting];
+
+	leftPanValue = synth->reversedStereoEnabled ? 14 - panSetting : panSetting;
+	rightPanValue = 14 - leftPanValue;
+
+#if !MT32EMU_USE_FLOAT_SAMPLES
+	leftPanValue = PAN_FACTORS[leftPanValue];
+	rightPanValue = PAN_FACTORS[rightPanValue];
 #endif
 
 	// SEMI-CONFIRMED: From sample analysis:

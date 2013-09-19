@@ -93,6 +93,7 @@ Synth::Synth(ReportHandler *useReportHandler) {
 	setMIDIDelayMode(MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY);
 	setOutputGain(1.0f);
 	setReverbOutputGain(1.0f);
+	setReversedStereoEnabled(false);
 	partialManager = NULL;
 	midiQueue = NULL;
 	lastReceivedMIDIEventTimestamp = 0;
@@ -212,6 +213,14 @@ float Synth::getReverbOutputGain() const {
 }
 
 #endif // #if MT32EMU_USE_FLOAT_SAMPLES
+
+void Synth::setReversedStereoEnabled(bool enabled) {
+	reversedStereoEnabled = enabled;
+}
+
+bool Synth::getReversedStereoEnabled() {
+	return reversedStereoEnabled;
+}
 
 bool Synth::loadControlROM(const ROMImage &controlROMImage) {
 	if (&controlROMImage == NULL) return false;

@@ -353,6 +353,8 @@ private:
 	int reverbOutputGain;
 #endif
 
+	bool reversedStereoEnabled;
+
 	bool isOpen;
 
 	bool isDefaultReportHandler;
@@ -483,6 +485,9 @@ public:
 	// Ignored in DACInputMode_PURE
 	void setReverbOutputGain(float);
 	float getReverbOutputGain() const;
+
+	void setReversedStereoEnabled(bool enabled);
+	bool getReversedStereoEnabled();
 
 	// Renders samples to the specified output stream.
 	// The length is in frames, not bytes (in 16-bit stereo,
