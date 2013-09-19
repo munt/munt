@@ -129,6 +129,9 @@ void SynthPropertiesDialog::on_outputGainSlider_valueChanged(int value) {
 void SynthPropertiesDialog::on_reverbOutputGainSlider_valueChanged(int value) {
 	synthRoute->setReverbOutputGain((float)value / 100.0f);
 }
+void SynthPropertiesDialog::on_reverseStereoCheckBox_stateChanged(int state) {
+	synthRoute->setReversedStereoEnabled(state == Qt::Checked);
+}
 
 void SynthPropertiesDialog::updateReverbSettings() {
 	if (ui->reverbCheckBox->checkState() == Qt::PartiallyChecked) return;
@@ -165,6 +168,7 @@ void SynthPropertiesDialog::resetSynth() {
 	}
 	on_outputGainSlider_valueChanged(ui->outputGainSlider->value());
 	on_reverbOutputGainSlider_valueChanged(ui->reverbOutputGainSlider->value());
+	on_reverseStereoCheckBox_stateChanged(ui->reverseStereoCheckBox->checkState());
 }
 
 void SynthPropertiesDialog::restoreDefaults() {
@@ -177,6 +181,7 @@ void SynthPropertiesDialog::restoreDefaults() {
 	ui->reverbCheckBox->setCheckState(Qt::PartiallyChecked);
 	ui->outputGainSlider->setValue(100);
 	ui->reverbOutputGainSlider->setValue(100);
+	ui->reverseStereoCheckBox->setCheckState(Qt::Unchecked);
 }
 
 void SynthPropertiesDialog::loadSynthProfile() {
@@ -196,6 +201,7 @@ void SynthPropertiesDialog::loadSynthProfile() {
 	}
 	ui->outputGainSlider->setValue(synthProfile.outputGain * 100);
 	ui->reverbOutputGainSlider->setValue(synthProfile.reverbOutputGain * 100);
+	ui->reverseStereoCheckBox->setCheckState(synthProfile.reversedStereoEnabled ? Qt::Checked : Qt::Unchecked);
 }
 
 void SynthPropertiesDialog::saveSynthProfile() {

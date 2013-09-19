@@ -338,6 +338,7 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	synthProfile.reverbLevel = settings->value("reverbLevel", 3).toInt();
 	synthProfile.outputGain = settings->value("outputGain", 1.0f).toFloat();
 	synthProfile.reverbOutputGain = settings->value("reverbOutputGain", 1.0f).toFloat();
+	synthProfile.reversedStereoEnabled = settings->value("reversedStereoEnabled", false).toBool();
 	settings->endGroup();
 
 	makeROMImages(synthProfile);
@@ -365,6 +366,7 @@ void Master::storeSynthProfile(const SynthProfile &synthProfile, QString name) c
 	settings->setValue("reverbLevel", synthProfile.reverbLevel);
 	settings->setValue("outputGain", QString().setNum(synthProfile.outputGain));
 	settings->setValue("reverbOutputGain", QString().setNum(synthProfile.reverbOutputGain));
+	settings->setValue("reversedStereoEnabled", synthProfile.reversedStereoEnabled);
 	settings->endGroup();
 }
 

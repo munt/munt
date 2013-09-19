@@ -39,6 +39,7 @@ private slots:
 	void on_reverbCheckBox_stateChanged(int state);
 	void on_outputGainSlider_valueChanged(int value);
 	void on_reverbOutputGainSlider_valueChanged(int value);
+	void on_reverseStereoCheckBox_stateChanged(int state);
 	void updateReverbSettings();
 	void handleReverbModeChanged(int mode);
 	void handleReverbTimeChanged(int time);

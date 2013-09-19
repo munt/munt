@@ -2,6 +2,7 @@ Next release:
 
 	* Updated for compatibility with new library API. Reworked rendering engine to make use of library internal MIDI event queue.
 	* Removed sysex length limit set in the internal MIDI player and converter.
+	* Added reverse stereo option to the synth properties dialog.
 	* Improved ClockSync class for providing better timing accuracy yet being more robust.
 	* Improved timing accuracy in the "advanced timing" mode.
 	* Improved QtAudioDriver. Fixed sound dropouts which may occur when using GUI.

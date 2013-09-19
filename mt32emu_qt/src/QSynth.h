@@ -32,6 +32,7 @@ struct SynthProfile {
 	int reverbMode;
 	int reverbTime;
 	int reverbLevel;
+	bool reversedStereoEnabled;
 };
 
 class QReportHandler : public QObject, public MT32Emu::ReportHandler {
@@ -118,6 +119,7 @@ public:
 	void setReverbEnabled(bool reverbEnabled);
 	void setReverbOverridden(bool reverbOverridden);
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
+	void setReversedStereoEnabled(bool enabled);
 	void setMIDIDelayMode(MT32Emu::MIDIDelayMode midiDelayMode);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 	const QString getPatchName(int partNum) const;

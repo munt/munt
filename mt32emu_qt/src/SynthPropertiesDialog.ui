@@ -261,6 +261,16 @@ Incoming MIDI events will be delayed as if they are transferred via a real MIDI 
        </item>
       </widget>
      </item>
+     <item row="9" column="0">
+      <widget class="QCheckBox" name="reverseStereoCheckBox">
+       <property name="text">
+        <string>Reverse Stereo</string>
+       </property>
+       <property name="tristate">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
@@ -322,6 +332,7 @@ Incoming MIDI events will be delayed as if they are transferred via a real MIDI 
   <tabstop>reverbLevelSlider</tabstop>
   <tabstop>outputGainSlider</tabstop>
   <tabstop>reverbOutputGainSlider</tabstop>
+  <tabstop>reverseStereoCheckBox</tabstop>
   <tabstop>profileComboBox</tabstop>
   <tabstop>profileCheckBox</tabstop>
   <tabstop>buttonBox</tabstop>

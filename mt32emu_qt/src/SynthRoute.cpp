@@ -246,6 +246,10 @@ void SynthRoute::setReverbSettings(int reverbMode, int reverbTime, int reverbLev
 	qSynth.setReverbSettings(reverbMode, reverbTime, reverbLevel);
 }
 
+void SynthRoute::setReversedStereoEnabled(bool enabled) {
+	qSynth.setReversedStereoEnabled(enabled);
+}
+
 void SynthRoute::setMIDIDelayMode(MIDIDelayMode midiDelayMode) {
 	qSynth.setMIDIDelayMode(midiDelayMode);
 }

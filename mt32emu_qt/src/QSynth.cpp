@@ -262,6 +262,16 @@ void QSynth::setReverbSettings(int reverbMode, int reverbTime, int reverbLevel) 
 	synthMutex->unlock();
 }
 
+void QSynth::setReversedStereoEnabled(bool enabled) {
+	synthMutex->lock();
+	if (!isOpen()) {
+		synthMutex->unlock();
+		return;
+	}
+	synth->setReversedStereoEnabled(enabled);
+	synthMutex->unlock();
+}
+
 void QSynth::setMIDIDelayMode(MIDIDelayMode midiDelayMode) {
 	synthMutex->lock();
 	if (!isOpen()) {
@@ -397,6 +407,7 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.reverbMode = reverbMode;
 	synthProfile.reverbTime = reverbTime;
 	synthProfile.reverbLevel = reverbLevel;
+	synthProfile.reversedStereoEnabled = synth->isReversedStereoEnabled();
 	synthMutex->unlock();
 }
 
@@ -431,6 +442,7 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	setReverbSettings(synthProfile.reverbMode, synthProfile.reverbTime, synthProfile.reverbLevel);
 	setReverbEnabled(synthProfile.reverbEnabled);
 	setReverbOverridden(synthProfile.reverbOverridden);
+	setReversedStereoEnabled(synthProfile.reversedStereoEnabled);
 }
 
 void QSynth::freeROMImages() {
