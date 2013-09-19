@@ -15,7 +15,7 @@ private:
 	Bit16s mixerBuffer[2 * MIXER_BUFFER_SIZE];
 	volatile Bitu mixerBufferSize;
 	volatile bool stopProcessing;
-	bool open, noise, reverseStereo, renderInThread;
+	bool open, noise, renderInThread;
 
 	class MT32ReportHandler : public MT32Emu::ReportHandler {
 		protected:
@@ -117,7 +117,7 @@ public:
 			synth->setDACInputMode((MT32Emu::DACInputMode)atoi(section->Get_string("mt32.dac")));
 		}
 
-		reverseStereo = strcmp(section->Get_string("mt32.reverse.stereo"), "on") == 0;
+		synth->setReversedStereoEnabled(strcmp(section->Get_string("mt32.reverse.stereo"), "on") == 0);
 		noise = strcmp(section->Get_string("mt32.verbose"), "on") == 0;
 		renderInThread = strcmp(section->Get_string("mt32.thread"), "on") == 0;
 
@@ -171,15 +171,6 @@ public:
 private:
 	void render(Bitu len, Bit16s *buf) {
 		synth->render(buf, len);
-		if (reverseStereo) {
-			Bit16s *revBuf = buf;
-			for(Bitu i = 0; i < len; i++) {
-				Bit16s left = revBuf[0];
-				Bit16s right = revBuf[1];
-				*revBuf++ = right;
-				*revBuf++ = left;
-			}
-		}
 		chan->AddSamples_s16(len, buf);
 	}
 } midiHandler_mt32;
