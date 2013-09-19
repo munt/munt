@@ -39,6 +39,7 @@ private:
 	Bit8u reverbMode;
 	Bit8u reverbTime;
 	Bit8u reverbLevel;
+	bool reversedStereoEnabled;
 
 	Bit16s *buffer;
 	volatile UINT64 renderedFramesCount;

@@ -434,6 +434,8 @@ void MidiSynth::ReloadSettings() {
 		reverbOutputGain = 1000.0f;
 	}
 
+	reversedStereoEnabled = LoadBoolValue(hRegProfile, "reversedStereoEnabled", false);
+
 	emuDACInputMode = (DACInputMode)LoadIntValue(hRegProfile, "emuDACInputMode", DACInputMode_NICE);
 	midiDelayMode = (MIDIDelayMode)LoadIntValue(hRegProfile, "midiDelayMode", MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY);
 
@@ -475,6 +477,7 @@ void MidiSynth::ApplySettings() {
 		synth->writeSysex(16, sysex, 6);
 		synth->setReverbOverridden(true);
 	}
+	synth->setReversedStereoEnabled(reversedStereoEnabled);
 }
 
 int MidiSynth::Init() {
