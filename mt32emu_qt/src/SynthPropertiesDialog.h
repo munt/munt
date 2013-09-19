@@ -18,6 +18,9 @@ public:
 	explicit SynthPropertiesDialog(QWidget *parent = 0, SynthRoute *useSynthRoute = NULL);
 	~SynthPropertiesDialog();
 
+protected:
+	void showEvent(QShowEvent *showEvent);
+
 private:
 	Ui::SynthPropertiesDialog *ui;
 	SynthRoute *synthRoute;

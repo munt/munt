@@ -45,6 +45,10 @@ SynthPropertiesDialog::~SynthPropertiesDialog() {
 	delete ui;
 }
 
+void SynthPropertiesDialog::showEvent(QShowEvent *) {
+	loadSynthProfile();
+}
+
 void SynthPropertiesDialog::on_changeROMSetButton_clicked() {
 	rsd.exec();
 }
