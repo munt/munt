@@ -67,33 +67,17 @@ MasterClock::MasterClock() {}
 
 MasterClock::~MasterClock() {}
 
-#else
+#elif defined WITH_WINMMTIMER
 
-#include <QThread>
-
-// This class exists solely to expose usleep() publicly.
-// Why it's protected in QThread is a bit of a mystery...
-class QtSucks : public QThread {
-public:
-	static void usleep(ulong usecs) {
-		QThread::usleep(usecs);
-	}
-};
+#include <Windows.h>
 
 void MasterClock::sleepForNanos(qint64 nanos) {
-	if (nanos <= 0) {
-		return;
-	}
-	QtSucks::usleep(nanos / NANOS_PER_MICROSECOND);
+	Sleep(qMax(1LL, nanos / NANOS_PER_MILLISECOND));
 }
 
 void MasterClock::sleepUntilClockNanos(MasterClockNanos clockNanos) {
 	sleepForNanos(clockNanos - getClockNanos());
 }
-
-#ifdef WITH_WINMMTIMER
-
-#include <Windows.h>
 
 static bool hrTimerAvailable;
 
@@ -153,27 +137,43 @@ MasterClock::~MasterClock() {
 
 #else
 
+#include <QThread>
 #include <QElapsedTimer>
 
-static QElapsedTimer *elapsedTimer = NULL;
+// This class exists solely to expose usleep() publicly.
+// Why it's protected in QThread is a bit of a mystery...
+class QtSucks : public QThread {
+public:
+	static void usleep(ulong usecs) {
+		QThread::usleep(usecs);
+	}
+};
+
+void MasterClock::sleepForNanos(qint64 nanos) {
+	if (nanos <= 0) {
+		return;
+	}
+	QtSucks::usleep(nanos / NANOS_PER_MICROSECOND);
+}
+
+void MasterClock::sleepUntilClockNanos(MasterClockNanos clockNanos) {
+	sleepForNanos(clockNanos - getClockNanos());
+}
+
+static QElapsedTimer elapsedTimer;
 
 MasterClockNanos MasterClock::getClockNanos() {
 #if (QT_VERSION < QT_VERSION_CHECK(4, 8, 0))
-	return (MasterClockNanos)elapsedTimer->elapsed() * NANOS_PER_MILLISECOND;
+	return (MasterClockNanos)elapsedTimer.elapsed() * NANOS_PER_MILLISECOND;
 #else
-	return (MasterClockNanos)elapsedTimer->nsecsElapsed();
+	return (MasterClockNanos)elapsedTimer.nsecsElapsed();
 #endif
 }
 
 MasterClock::MasterClock() {
-	elapsedTimer = new QElapsedTimer();
-	elapsedTimer->start();
+	elapsedTimer.start();
 }
 
-MasterClock::~MasterClock() {
-	delete elapsedTimer;
-	elapsedTimer = NULL;
-}
+MasterClock::~MasterClock() {}
 
-#endif
 #endif
