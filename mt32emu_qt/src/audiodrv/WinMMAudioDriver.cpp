@@ -96,7 +96,7 @@ DWORD WinMMAudioStream::getCurrentPlayPosition() {
 
 void WinMMAudioStream::processingThread(void *userData) {
 	WinMMAudioStream &stream = *(WinMMAudioStream *)userData;
-	const double samplePeriod = (double)MasterClock::MILLIS_PER_SECOND / (double)stream.sampleRate;
+	const double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / (double)stream.sampleRate;
 	while (!stream.stopProcessing) {
 		const DWORD playCursor = stream.getCurrentPlayPosition();
 		if (playCursor == (DWORD)-1) {
@@ -117,7 +117,7 @@ void WinMMAudioStream::processingThread(void *userData) {
 			} else {
 				frameCount = playCursor - renderPos;
 				if (frameCount < stream.chunkSize) {
-					Sleep(1 + DWORD((stream.chunkSize - frameCount) * samplePeriod));
+					MasterClock::sleepForNanos(MasterClockNanos((stream.chunkSize - frameCount) * samplePeriod));
 					continue;
 				}
 			}
