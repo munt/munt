@@ -28,7 +28,7 @@ TestProcessor::TestProcessor(TestMidiDriver *useTestMidiDriver) : testMidiDriver
 
 void TestProcessor::start() {
 	stopProcessing = false;
-	QThread::start();
+	QThread::start(QThread::TimeCriticalPriority);
 }
 
 void TestProcessor::stop() {

@@ -243,6 +243,7 @@ bool WinMMAudioStream::start(int deviceIndex) {
 		close();
 		return false;
 	}
+	SetThreadPriority((HANDLE)processingThreadHandle, THREAD_PRIORITY_TIME_CRITICAL);
 	return true;
 }
 

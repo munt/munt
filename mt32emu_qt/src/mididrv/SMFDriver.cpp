@@ -53,7 +53,7 @@ void SMFProcessor::start(QString useFileName) {
 		emit driver->playbackFinished();
 		return;
 	}
-	QThread::start();
+	QThread::start(QThread::TimeCriticalPriority);
 }
 
 void SMFProcessor::stop() {

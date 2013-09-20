@@ -88,7 +88,7 @@ QtAudioStream::QtAudioStream(const AudioDriverSettings &useSettings, QSynth &use
 	// Creating QAudioOutput in a thread leads to smooth rendering
 	// Rendering will be performed in the main thread otherwise
 	processingThread = new ProcessingThread(*this);
-	processingThread->start();
+	processingThread->start(QThread::TimeCriticalPriority);
 }
 
 QtAudioStream::~QtAudioStream() {
