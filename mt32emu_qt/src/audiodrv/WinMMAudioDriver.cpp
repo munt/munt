@@ -33,7 +33,7 @@ static const DWORD DEFAULT_MIDI_LATENCY = 15;
 
 WinMMAudioStream::WinMMAudioStream(const AudioDriverSettings &useSettings, bool useRingBufferMode, QSynth &useSynth, const uint useSampleRate) :
 	AudioStream(useSettings, useSynth, useSampleRate),
-	hWaveOut(NULL), waveHdr(NULL), hEvent(NULL), stopProcessing(false),
+	hWaveOut(NULL), waveHdr(NULL), hEvent(NULL), hWaitableTimer(NULL), stopProcessing(false),
 	processingThreadHandle(0L), ringBufferMode(useRingBufferMode), prevPlayPosition(0L)
 {
 	chunkSize = (settings.chunkLen * sampleRate) / MasterClock::MILLIS_PER_SECOND;
@@ -117,7 +117,18 @@ void WinMMAudioStream::processingThread(void *userData) {
 			} else {
 				frameCount = playCursor - renderPos;
 				if (frameCount < stream.chunkSize) {
-					MasterClock::sleepForNanos(MasterClockNanos((stream.chunkSize - frameCount) * samplePeriod));
+					MasterClockNanos nanos = MasterClockNanos((stream.chunkSize - frameCount) * samplePeriod);
+					if (NULL != stream.hWaitableTimer) {
+						LARGE_INTEGER dueTime;
+						dueTime.QuadPart = -qMax(1LL, nanos / 100LL);
+						if (SetWaitableTimer(stream.hWaitableTimer, &dueTime, 0, NULL, NULL, 0) != FALSE) {
+							if (WaitForSingleObject(stream.hWaitableTimer, INFINITE) == WAIT_OBJECT_0) continue;
+						}
+						qDebug() << "Waitable timer failed, falling back to Sleep()" << GetLastError();
+						CloseHandle(stream.hWaitableTimer);
+						stream.hWaitableTimer = NULL;
+					}
+					MasterClock::sleepForNanos(nanos);
 					continue;
 				}
 			}
@@ -174,7 +185,9 @@ bool WinMMAudioStream::start(int deviceIndex) {
 
 	DWORD callbackType = CALLBACK_NULL;
 	DWORD_PTR callback = NULL;
-	if (!ringBufferMode) {
+	if (ringBufferMode) {
+		hWaitableTimer = CreateWaitableTimer(NULL, TRUE, NULL);
+	} else {
 		hEvent = CreateEvent(NULL, false, true, NULL);
 		callback = (DWORD_PTR)hEvent;
 		callbackType = CALLBACK_EVENT;
@@ -264,6 +277,8 @@ void WinMMAudioStream::close() {
 		}
 		delete[] waveHdr;
 		waveHdr = NULL;
+		CloseHandle(hWaitableTimer);
+		hWaitableTimer = NULL;
 		CloseHandle(hEvent);
 		hEvent = NULL;
 		waveOutClose(hWaveOut);

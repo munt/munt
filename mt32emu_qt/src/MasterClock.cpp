@@ -71,20 +71,8 @@ MasterClock::~MasterClock() {}
 
 #include <Windows.h>
 
-static HANDLE hWaitableTimer = NULL;
-
 void MasterClock::sleepForNanos(qint64 nanos) {
-	if (NULL != hWaitableTimer) {
-		LARGE_INTEGER dueTime;
-		dueTime.QuadPart = -qMax(1LL, nanos / 100LL);
-		if (SetWaitableTimer(hWaitableTimer, &dueTime, 0, NULL, NULL, 0) != 0) {
-			if (WaitForSingleObject(hWaitableTimer, INFINITE) == WAIT_OBJECT_0) return;
-		}
-		qDebug() << "Waitable timer failed, falling back to Sleep()" << GetLastError();
-		CloseHandle(hWaitableTimer);
-		hWaitableTimer = NULL;
-	}
-	Sleep(qMax(1LL, nanos / NANOS_PER_MILLISECOND));
+	Sleep(DWORD(qMax(1LL, nanos / NANOS_PER_MILLISECOND)));
 }
 
 void MasterClock::sleepUntilClockNanos(MasterClockNanos clockNanos) {
@@ -138,11 +126,6 @@ MasterClock::MasterClock() {
 		qDebug() << "High resolution timer unavailable on the system. Falling back to multimedia timer.";
 		startTime.QuadPart = timeGetTime();
 	}
-	hWaitableTimer = CreateWaitableTimer(NULL, TRUE, NULL);
-	if (NULL == hWaitableTimer) {
-		qDebug() << "Unable to use waitable timer:" << GetLastError();
-		return;
-	}
 }
 
 MasterClock::~MasterClock() {
@@ -150,7 +133,6 @@ MasterClock::~MasterClock() {
 		qDebug() << "Restoring default multimedia timer resolution.";;
 		timeEndPeriod(mmTimerResolution);
 	}
-	CloseHandle(hWaitableTimer);
 }
 
 #else

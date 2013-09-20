@@ -21,6 +21,8 @@ private:
 	HWAVEOUT hWaveOut;
 	WAVEHDR	 *waveHdr;
 	HANDLE hEvent;
+	HANDLE hWaitableTimer;
+
 	uint numberOfChunks;
 	uint chunkSize;
 	MT32Emu::Bit16s *buffer;
