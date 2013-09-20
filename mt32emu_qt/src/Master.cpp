@@ -77,20 +77,8 @@ void Master::init() {
 }
 
 void Master::aboutToQuit() {
-	qDebug() << "Got Master::aboutToQuit()";
+	qDebug() << "Got Master::aboutToQuit(), shutting down...";
 	stopping = true;
-	return;
-}
-
-Master::~Master() {
-	if (!stopping) {
-		// Emergency exit
-		fprintf(stderr, "Master is going down but haven't got Master::aboutToQuit(), exiting immediately!\n");
-		if (trayIcon != NULL) {
-			trayIcon->hide();
-		}
-		exit(1);
-	}
 
 	delete settings;
 
@@ -116,6 +104,18 @@ Master::~Master() {
 	while(audioDriverIt.hasNext()) {
 		delete audioDriverIt.next();
 		audioDriverIt.remove();
+	}
+	return;
+}
+
+Master::~Master() {
+	if (!stopping) {
+		// Emergency exit
+		fprintf(stderr, "Master is going down but haven't got Master::aboutToQuit(), exiting immediately!\n");
+		if (trayIcon != NULL) {
+			trayIcon->hide();
+		}
+		exit(1);
 	}
 }
 
