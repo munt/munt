@@ -1,6 +1,8 @@
-Next release:
+2013-09-21:
 
-	* Updated for compatibility with new library API. Reworked rendering engine to make use of library internal MIDI event queue.
+	1.1.0 released.
+
+	* Updated for compatibility with new library v.1.3.0 API. Reworked rendering engine to make use of library internal MIDI event queue.
 	* Removed sysex length limit set in the internal MIDI player and converter.
 	* Added reverse stereo option to the synth properties dialog.
 	* Improved ClockSync class for providing better timing accuracy yet being more robust.

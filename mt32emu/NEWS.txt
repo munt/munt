@@ -1,4 +1,6 @@
-Next release:
+2013-09-21:
+
+	1.3.0 released.
 
 	* Incorporated a timestamped MIDI event queue and renderer support:
 	  - nuked prerenderer while retaining graceful partial abortion;
