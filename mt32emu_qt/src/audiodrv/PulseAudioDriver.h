@@ -19,7 +19,8 @@ private:
 	MT32Emu::Bit16s *buffer;
 	pa_simple *stream;
 	uint bufferSize;
-	bool pendingClose;
+	pthread_t processingThreadID;
+	volatile bool stopProcessing;
 
 	static void *processingThread(void *);
 

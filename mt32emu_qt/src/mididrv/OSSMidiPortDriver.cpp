@@ -47,7 +47,7 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 	SynthRoute *synthRoute = data->midiSession->getSynthRoute();
 	qDebug() << "OSSMidiPortDriver: Processing thread started. Port: " << data->midiPortName;
 
-	while (!data->pendingClose) {
+	while (!data->stopProcessing) {
 		if (fd == -1) {
 			fd = open(data->midiPortName.toAscii().constData(), O_RDONLY | O_NONBLOCK);
 			if (fd == -1) {
@@ -133,7 +133,9 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 		}
 	}
 	qDebug() << "OSSMidiPortDriver: Processing thread stopped. Port: " << data->midiPortName;
-	if (!data->pendingClose) driver->deleteMidiSession(data->midiSession);
+	if (!data->stopProcessing) driver->deleteMidiSession(data->midiSession);
+	data->stopProcessing = false;
+	data->processingThreadID = 0;
 	driver->sessions.removeOne(data);
 	delete data;
 	return NULL;
@@ -177,9 +179,8 @@ bool OSSMidiPortDriver::startSession(MidiSession *midiSession, const QString mid
 		data->midiPortName = devDirName + midiPortName;
 	}
 	data->sequencerMode = sequencerMode;
-	data->pendingClose = false;
-	pthread_t threadID;
-	int error = pthread_create(&threadID, NULL, processingThread, data);
+	data->stopProcessing = false;
+	int error = pthread_create(&data->processingThreadID, NULL, processingThread, data);
 	if (error != 0) {
 		qDebug() << "OSSMidiPortDriver: Processing Thread creation failed:" << error;
 		delete data;
@@ -190,11 +191,10 @@ bool OSSMidiPortDriver::startSession(MidiSession *midiSession, const QString mid
 }
 
 void OSSMidiPortDriver::stopSession(OSSMidiPortData *data) {
-	data->pendingClose = true;
+	if (data->processingThreadID == 0) return;
 	qDebug() << "OSSMidiPortDriver: Stopping processing thread for Port: " << data->midiPortName << "...";
-	while (sessions.indexOf(data) >= 0) {
-		sleep(1);
-	}
+	data->stopProcessing = true;
+	pthread_join(data->processingThreadID, NULL);
 }
 
 bool OSSMidiPortDriver::canCreatePort() {

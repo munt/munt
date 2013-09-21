@@ -29,7 +29,7 @@ static const unsigned int DEFAULT_AUDIO_LATENCY = 64;
 static const unsigned int DEFAULT_MIDI_LATENCY = 32;
 
 AlsaAudioStream::AlsaAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), stream(NULL), pendingClose(false)
+	AudioStream(useSettings, useSynth, useSampleRate), stream(NULL), processingThreadID(0), stopProcessing(false)
 {
 	bufferSize = settings.chunkLen * sampleRate / MasterClock::MILLIS_PER_SECOND;
 	buffer = new Bit16s[/* channels */ 2 * bufferSize];
@@ -45,7 +45,7 @@ void *AlsaAudioStream::processingThread(void *userData) {
 	bool isErrorOccured = false;
 	AlsaAudioStream &audioStream = *(AlsaAudioStream *)userData;
 	qDebug() << "ALSA audio: Processing thread started";
-	while (!audioStream.pendingClose) {
+	while (!audioStream.stopProcessing) {
 		MasterClockNanos nanosNow = MasterClock::getClockNanos();
 		quint32 framesInAudioBuffer;
 		if (audioStream.settings.advancedTiming) {
@@ -64,12 +64,12 @@ void *AlsaAudioStream::processingThread(void *userData) {
 		if (!audioStream.synth.render(audioStream.buffer, audioStream.bufferSize)) {
 			memset(audioStream.buffer, 0, audioStream.bufferSize);
 		}
-		if ((error = snd_pcm_writei(audioStream.stream, audioStream.buffer, audioStream.bufferSize)) < 0) {
+		error = snd_pcm_writei(audioStream.stream, audioStream.buffer, audioStream.bufferSize);
+		if (error < 0) {
 			qDebug() << "snd_pcm_writei failed:" << snd_strerror(error);
 			isErrorOccured = true;
 			break;
-		}
-		if (error != (int)audioStream.bufferSize) {
+		} else if (error != (int)audioStream.bufferSize) {
 			qDebug() << "snd_pcm_writei failed. Written frames:" << error;
 			isErrorOccured = true;
 			break;
@@ -82,8 +82,9 @@ void *AlsaAudioStream::processingThread(void *userData) {
 		audioStream.stream = NULL;
 		audioStream.synth.close();
 	} else {
-		audioStream.pendingClose = false;
+		audioStream.stopProcessing = false;
 	}
+	audioStream.processingThreadID = 0;
 	return NULL;
 }
 
@@ -147,9 +148,9 @@ bool AlsaAudioStream::start(const char *deviceID) {
 		}
 		initFrames -= bufferSize;
 	}
-	pthread_t threadID;
-	error = pthread_create(&threadID, NULL, processingThread, this);
+	error = pthread_create(&processingThreadID, NULL, processingThread, this);
 	if (error != 0) {
+		processingThreadID = 0;
 		qDebug() << "ALSA audio: Processing Thread creation failed:" << error;
 		snd_pcm_close(stream);
 		stream = NULL;
@@ -161,10 +162,12 @@ bool AlsaAudioStream::start(const char *deviceID) {
 void AlsaAudioStream::close() {
 	int error;
 	if (stream != NULL) {
-		pendingClose = true;
-		qDebug() << "ALSA audio: Stopping processing thread...";
-		while (pendingClose) {
-			MasterClock::sleepForNanos(100 * MasterClock::NANOS_PER_MILLISECOND);
+		if (processingThreadID != 0) {
+			qDebug() << "ALSA audio: Stopping processing thread...";
+			stopProcessing = true;
+			pthread_join(processingThreadID, NULL);
+			stopProcessing = false;
+			processingThreadID = 0;
 		}
 		error = snd_pcm_close(stream);
 		stream = NULL;

@@ -120,7 +120,7 @@ static bool loadLibrary(bool loadNeeded) {
 }
 
 PulseAudioStream::PulseAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), stream(NULL), pendingClose(false)
+	AudioStream(useSettings, useSynth, useSampleRate), stream(NULL), processingThreadID(0), stopProcessing(false)
 {
 	bufferSize = settings.chunkLen * sampleRate / MasterClock::MILLIS_PER_SECOND;
 	buffer = new Bit16s[/* channels */ 2 * bufferSize];
@@ -135,7 +135,7 @@ void *PulseAudioStream::processingThread(void *userData) {
 	int error;
 	PulseAudioStream &audioStream = *(PulseAudioStream *)userData;
 	qDebug() << "PulseAudio: Processing thread started";
-	while (!audioStream.pendingClose) {
+	while (!audioStream.stopProcessing) {
 		MasterClockNanos nanosNow = MasterClock::getClockNanos();
 		quint32 framesInAudioBuffer;
 		if (audioStream.settings.advancedTiming) {
@@ -153,11 +153,13 @@ void *PulseAudioStream::processingThread(void *userData) {
 			audioStream.stream = NULL;
 			qDebug() << "PulseAudio: Processing thread stopped";
 			audioStream.synth.close();
+			audioStream.processingThreadID = 0;
 			return NULL;
 		}
 		audioStream.renderedFramesCount += audioStream.bufferSize;
 	}
-	audioStream.pendingClose = false;
+	audioStream.stopProcessing = false;
+	audioStream.processingThreadID = 0;
 	return NULL;
 }
 
@@ -180,7 +182,7 @@ bool PulseAudioStream::start() {
 	qDebug() << "Using audio latency:" << settings.audioLatency;
 	static const pa_buffer_attr ba = {
 		audioLatencyFrames * FRAME_SIZE, // uint32_t maxlength;
-		(uint32_t)-1, // uint32_t tlength;
+		audioLatencyFrames * FRAME_SIZE, // uint32_t tlength;
 		(uint32_t)-1, // uint32_t prebuf;
 		(uint32_t)-1, // uint32_t minreq;
 		(uint32_t)-1 // uint32_t fragsize;
@@ -204,9 +206,9 @@ bool PulseAudioStream::start() {
 		}
 		initFrames -= bufferSize;
 	}
-	pthread_t threadID;
-	error = pthread_create(&threadID, NULL, processingThread, this);
+	error = pthread_create(&processingThreadID, NULL, processingThread, this);
 	if (error != 0) {
+		processingThreadID = 0;
 		qDebug() << "PulseAudio: Processing Thread creation failed:" << error;
 		_pa_simple_free(stream);
 		stream = NULL;
@@ -218,15 +220,17 @@ bool PulseAudioStream::start() {
 void PulseAudioStream::close() {
 	int error;
 	if (stream != NULL) {
-		pendingClose = true;
+		if (processingThreadID != 0) {
+			qDebug() << "PulseAudio: Stopping processing thread...";
+			stopProcessing = true;
+			pthread_join(processingThreadID, NULL);
+			stopProcessing = false;
+			processingThreadID = 0;
+			qDebug() << "PulseAudio: Processing thread stopped";
+		}
 		if (_pa_simple_drain(stream, &error) < 0) {
 			qDebug() << "pa_simple_drain() failed:" << _pa_strerror(error);
 		}
-		qDebug() << "PulseAudio: Stopping processing thread...";
-		while (pendingClose) {
-			MasterClock::sleepForNanos(100 * MasterClock::NANOS_PER_MILLISECOND);
-		}
-		qDebug() << "PulseAudio: Processing thread stopped";
 		_pa_simple_free(stream); 
 		stream = NULL;
 	}

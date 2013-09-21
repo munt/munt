@@ -35,7 +35,7 @@ static const unsigned int DEFAULT_MIDI_LATENCY = 16;
 static const char deviceName[] = "/dev/dsp";
 
 OSSAudioStream::OSSAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), buffer(NULL), stream(0), pendingClose(false)
+	AudioStream(useSettings, useSynth, useSampleRate), buffer(NULL), stream(0), processingThreadID(0), stopProcessing(false)
 {
 	bufferSize = settings.chunkLen * sampleRate / MasterClock::MILLIS_PER_SECOND;
 }
@@ -50,7 +50,7 @@ void *OSSAudioStream::processingThread(void *userData) {
 	bool isErrorOccured = false;
 	OSSAudioStream &audioStream = *(OSSAudioStream *)userData;
 	qDebug() << "OSS audio: Processing thread started";
-	while (!audioStream.pendingClose) {
+	while (!audioStream.stopProcessing) {
 		MasterClockNanos nanosNow = MasterClock::getClockNanos();
 		quint32 framesInAudioBuffer;
 		if (audioStream.settings.advancedTiming) {
@@ -86,8 +86,9 @@ void *OSSAudioStream::processingThread(void *userData) {
 		audioStream.stream = 0;
 		audioStream.synth.close();
 	} else {
-		audioStream.pendingClose = false;
+		audioStream.stopProcessing = false;
 	}
+	audioStream.processingThreadID = 0;
 	return NULL;
 }
 
@@ -204,9 +205,9 @@ bool OSSAudioStream::start() {
 		}
 		initFrames -= bufferSize;
 	}
-	pthread_t threadID;
-	tmp = pthread_create(&threadID, NULL, processingThread, this);
+	tmp = pthread_create(&processingThreadID, NULL, processingThread, this);
 	if (tmp != 0) {
+		processingThreadID = 0;
 		qDebug() << "OSS audio: Processing Thread creation failed:" << tmp;
 		close(stream);
 		stream = 0;
@@ -217,11 +218,11 @@ bool OSSAudioStream::start() {
 
 void OSSAudioStream::stop() {
 	if (stream != 0) {
-		pendingClose = true;
 		qDebug() << "OSS audio: Stopping processing thread...";
-		while (pendingClose) {
-			MasterClock::sleepForNanos(100 * MasterClock::NANOS_PER_MILLISECOND);
-		}
+		stopProcessing = true;
+		pthread_join(processingThreadID, NULL);
+		processingThreadID = 0;
+		stopProcessing = false;
 		close(stream);
 		stream = 0;
 	}
