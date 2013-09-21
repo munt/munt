@@ -113,7 +113,8 @@ void MainWindow::on_actionAbout_triggered()
 	QMessageBox::about(this, "About",
 					   "Munt - Roland (R) MT-32 sound module emulator\n"
 					   "\n"
-					   "Version " VERSION "\n"
+					   "Munt Package Version " PACKAGE_VERSION "\n"
+					   "Munt mt32emu_qt GUI Application Version " APP_VERSION "\n"
 					   "\n"
 					   "Build " GIT_HASH "\n"
 					   "Date " BUILD_DATE "\n"
