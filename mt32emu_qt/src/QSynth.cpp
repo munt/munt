@@ -176,7 +176,7 @@ bool QSynth::render(Bit16s *buffer, uint length) {
 		length -= framesToRender;
 	}
 #else
-	synth->render(buffer, framesToRender);
+	synth->render(buffer, length);
 #endif
 	synthMutex->unlock();
 	return true;
