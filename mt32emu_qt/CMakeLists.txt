@@ -7,7 +7,8 @@ set(mt32emu_qt_VERSION_MAJOR 1)
 set(mt32emu_qt_VERSION_MINOR 0)
 set(mt32emu_qt_VERSION_PATCH 2)
 
-add_definitions(-DVERSION="${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
+add_definitions(-DPACKAGE_VERSION="${munt_VERSION_MAJOR}.${munt_VERSION_MINOR}.${munt_VERSION_PATCH}")
+add_definitions(-DAPP_VERSION="${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
 
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
@@ -210,9 +211,9 @@ install(TARGETS
 
 # build a CPack driven installer package
 include(InstallRequiredSystemLibraries)
-set(CPACK_PACKAGE_VERSION_MAJOR "${mt32emu_qt_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${mt32emu_qt_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "${mt32emu_qt_VERSION_PATCH}")
+set(CPACK_PACKAGE_VERSION_MAJOR "${munt_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${munt_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${munt_VERSION_PATCH}")
 set(CPACK_PACKAGE_VENDOR "muntemu.org")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.txt")
