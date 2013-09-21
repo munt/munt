@@ -165,7 +165,19 @@ bool QSynth::render(Bit16s *buffer, uint length) {
 		synthMutex->unlock();
 		return false;
 	}
-	synth->render(buffer, length);
+#if MT32EMU_USE_FLOAT_SAMPLES
+	float fBuf[2 * MAX_SAMPLES_PER_RUN];
+	while (0 < length) {
+		uint framesToRender = qMin(length, MAX_SAMPLES_PER_RUN);
+		synth->render(fBuf, framesToRender);
+		for (uint i = 0; i < 2 * framesToRender; i++) {
+			*(buffer++) = (Bit16s)qBound(-32768.0f, fBuf[i] * 8192.0f, 32767.0f);
+		}
+		length -= framesToRender;
+	}
+#else
+	synth->render(buffer, framesToRender);
+#endif
 	synthMutex->unlock();
 	return true;
 }
