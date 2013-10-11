@@ -1461,6 +1461,8 @@ void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample 
 }
 
 void Synth::convertSamplesToOutput(Sample *target, const Sample *source, Bit32u len, bool reverb) {
+	// FIXME: In GENERATION2 units, the output from LA32 goes to the Boss chip bit-shifted.
+	// This should be properly emulated and the BReverb model appropriately fixed.
 	if (target == NULL) return;
 
 	if (dacInputMode == DACInputMode_PURE) {
