@@ -152,7 +152,8 @@ public:
 				return 4;
 			}
 		}
-		_beginthread(RenderingThread, 16384, this);
+		HANDLE hThread = (HANDLE)_beginthread(RenderingThread, 16384, this);
+		SetThreadPriority(hThread, THREAD_PRIORITY_TIME_CRITICAL);
 		return 0;
 	}
 
