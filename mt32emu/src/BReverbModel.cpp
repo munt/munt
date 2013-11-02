@@ -34,70 +34,143 @@ static const Bit32u PROCESS_DELAY = 1;
 static const Bit32u MODE_3_ADDITIONAL_DELAY = 1;
 static const Bit32u MODE_3_FEEDBACK_DELAY = 1;
 
-// Default reverb settings for modes 0-2. These correspond to CM-32L / LAPC-I "new" reverb settings. MT-32 reverb is a bit different.
+// Default reverb settings for "new" reverb model implemented in CM-32L / LAPC-I.
 // Found by tracing reverb RAM data lines (thanks go to Lord_Nightmare & balrog).
+const BReverbSettings &BReverbModel::getCM32L_LAPCSettings(const ReverbMode mode) {
+	static const Bit32u MODE_0_NUMBER_OF_ALLPASSES = 3;
+	static const Bit32u MODE_0_ALLPASSES[] = {994, 729, 78};
+	static const Bit32u MODE_0_NUMBER_OF_COMBS = 4; // Well, actually there are 3 comb filters, but the entrance LPF + delay can be processed via a hacked comb.
+	static const Bit32u MODE_0_COMBS[] = {705 + PROCESS_DELAY, 2349, 2839, 3632};
+	static const Bit32u MODE_0_OUTL[] = {2349, 141, 1960};
+	static const Bit32u MODE_0_OUTR[] = {1174, 1570, 145};
+	static const Bit32u MODE_0_COMB_FACTOR[] = {0xA0, 0x60, 0x60, 0x60};
+	static const Bit32u MODE_0_COMB_FEEDBACK[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
+	                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
+	                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98};
+	static const Bit32u MODE_0_DRY_AMP[] = {0xA0, 0xA0, 0xA0, 0xA0, 0xB0, 0xB0, 0xB0, 0xD0};
+	static const Bit32u MODE_0_WET_AMP[] = {0x10, 0x30, 0x50, 0x70, 0x90, 0xC0, 0xF0, 0xF0};
+	static const Bit32u MODE_0_LPF_AMP = 0x60;
 
-static const Bit32u MODE_0_NUMBER_OF_ALLPASSES = 3;
-static const Bit32u MODE_0_ALLPASSES[] = {994, 729, 78};
-static const Bit32u MODE_0_NUMBER_OF_COMBS = 4; // Well, actually there are 3 comb filters, but the entrance LPF + delay can be processed via a hacked comb.
-static const Bit32u MODE_0_COMBS[] = {705 + PROCESS_DELAY, 2349, 2839, 3632};
-static const Bit32u MODE_0_OUTL[] = {2349, 141, 1960};
-static const Bit32u MODE_0_OUTR[] = {1174, 1570, 145};
-static const Bit32u MODE_0_COMB_FACTOR[] = {0xA0, 0x60, 0x60, 0x60};
-static const Bit32u MODE_0_COMB_FEEDBACK[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
-                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
-                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98};
-static const Bit32u MODE_0_DRY_AMP[] = {0xA0, 0xA0, 0xA0, 0xA0, 0xB0, 0xB0, 0xB0, 0xD0};
-static const Bit32u MODE_0_WET_AMP[] = {0x10, 0x30, 0x50, 0x70, 0x90, 0xC0, 0xF0, 0xF0};
-static const Bit32u MODE_0_LPF_AMP = 0x60;
+	static const Bit32u MODE_1_NUMBER_OF_ALLPASSES = 3;
+	static const Bit32u MODE_1_ALLPASSES[] = {1324, 809, 176};
+	static const Bit32u MODE_1_NUMBER_OF_COMBS = 4; // Same as for mode 0 above
+	static const Bit32u MODE_1_COMBS[] = {961 + PROCESS_DELAY, 2619, 3545, 4519};
+	static const Bit32u MODE_1_OUTL[] = {2618, 1760, 4518};
+	static const Bit32u MODE_1_OUTR[] = {1300, 3532, 2274};
+	static const Bit32u MODE_1_COMB_FACTOR[] = {0x80, 0x60, 0x60, 0x60};
+	static const Bit32u MODE_1_COMB_FEEDBACK[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	                                              0x28, 0x48, 0x60, 0x70, 0x78, 0x80, 0x90, 0x98,
+	                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
+	                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98};
+	static const Bit32u MODE_1_DRY_AMP[] = {0xA0, 0xA0, 0xB0, 0xB0, 0xB0, 0xB0, 0xB0, 0xE0};
+	static const Bit32u MODE_1_WET_AMP[] = {0x10, 0x30, 0x50, 0x70, 0x90, 0xC0, 0xF0, 0xF0};
+	static const Bit32u MODE_1_LPF_AMP = 0x60;
 
-static const Bit32u MODE_1_NUMBER_OF_ALLPASSES = 3;
-static const Bit32u MODE_1_ALLPASSES[] = {1324, 809, 176};
-static const Bit32u MODE_1_NUMBER_OF_COMBS = 4; // Same as for mode 0 above
-static const Bit32u MODE_1_COMBS[] = {961 + PROCESS_DELAY, 2619, 3545, 4519};
-static const Bit32u MODE_1_OUTL[] = {2618, 1760, 4518};
-static const Bit32u MODE_1_OUTR[] = {1300, 3532, 2274};
-static const Bit32u MODE_1_COMB_FACTOR[] = {0x80, 0x60, 0x60, 0x60};
-static const Bit32u MODE_1_COMB_FEEDBACK[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                              0x28, 0x48, 0x60, 0x70, 0x78, 0x80, 0x90, 0x98,
-                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
-                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98};
-static const Bit32u MODE_1_DRY_AMP[] = {0xA0, 0xA0, 0xB0, 0xB0, 0xB0, 0xB0, 0xB0, 0xE0};
-static const Bit32u MODE_1_WET_AMP[] = {0x10, 0x30, 0x50, 0x70, 0x90, 0xC0, 0xF0, 0xF0};
-static const Bit32u MODE_1_LPF_AMP = 0x60;
+	static const Bit32u MODE_2_NUMBER_OF_ALLPASSES = 3;
+	static const Bit32u MODE_2_ALLPASSES[] = {969, 644, 157};
+	static const Bit32u MODE_2_NUMBER_OF_COMBS = 4; // Same as for mode 0 above
+	static const Bit32u MODE_2_COMBS[] = {116 + PROCESS_DELAY, 2259, 2839, 3539};
+	static const Bit32u MODE_2_OUTL[] = {2259, 718, 1769};
+	static const Bit32u MODE_2_OUTR[] = {1136, 2128, 1};
+	static const Bit32u MODE_2_COMB_FACTOR[] = {0, 0x20, 0x20, 0x20};
+	static const Bit32u MODE_2_COMB_FEEDBACK[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	                                              0x30, 0x58, 0x78, 0x88, 0xA0, 0xB8, 0xC0, 0xD0,
+	                                              0x30, 0x58, 0x78, 0x88, 0xA0, 0xB8, 0xC0, 0xD0,
+	                                              0x30, 0x58, 0x78, 0x88, 0xA0, 0xB8, 0xC0, 0xD0};
+	static const Bit32u MODE_2_DRY_AMP[] = {0xA0, 0xA0, 0xB0, 0xB0, 0xB0, 0xB0, 0xC0, 0xE0};
+	static const Bit32u MODE_2_WET_AMP[] = {0x10, 0x30, 0x50, 0x70, 0x90, 0xC0, 0xF0, 0xF0};
+	static const Bit32u MODE_2_LPF_AMP = 0x80;
 
-static const Bit32u MODE_2_NUMBER_OF_ALLPASSES = 3;
-static const Bit32u MODE_2_ALLPASSES[] = {969, 644, 157};
-static const Bit32u MODE_2_NUMBER_OF_COMBS = 4; // Same as for mode 0 above
-static const Bit32u MODE_2_COMBS[] = {116 + PROCESS_DELAY, 2259, 2839, 3539};
-static const Bit32u MODE_2_OUTL[] = {2259, 718, 1769};
-static const Bit32u MODE_2_OUTR[] = {1136, 2128, 1};
-static const Bit32u MODE_2_COMB_FACTOR[] = {0, 0x20, 0x20, 0x20};
-static const Bit32u MODE_2_COMB_FEEDBACK[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                              0x30, 0x58, 0x78, 0x88, 0xA0, 0xB8, 0xC0, 0xD0,
-                                              0x30, 0x58, 0x78, 0x88, 0xA0, 0xB8, 0xC0, 0xD0,
-                                              0x30, 0x58, 0x78, 0x88, 0xA0, 0xB8, 0xC0, 0xD0};
-static const Bit32u MODE_2_DRY_AMP[] = {0xA0, 0xA0, 0xB0, 0xB0, 0xB0, 0xB0, 0xC0, 0xE0};
-static const Bit32u MODE_2_WET_AMP[] = {0x10, 0x30, 0x50, 0x70, 0x90, 0xC0, 0xF0, 0xF0};
-static const Bit32u MODE_2_LPF_AMP = 0x80;
+	static const Bit32u MODE_3_NUMBER_OF_ALLPASSES = 0;
+	static const Bit32u MODE_3_NUMBER_OF_COMBS = 1;
+	static const Bit32u MODE_3_DELAY[] = {16000 + MODE_3_FEEDBACK_DELAY + PROCESS_DELAY + MODE_3_ADDITIONAL_DELAY};
+	static const Bit32u MODE_3_OUTL[] = {400, 624, 960, 1488, 2256, 3472, 5280, 8000};
+	static const Bit32u MODE_3_OUTR[] = {800, 1248, 1920, 2976, 4512, 6944, 10560, 16000};
+	static const Bit32u MODE_3_COMB_FACTOR[] = {0x68};
+	static const Bit32u MODE_3_COMB_FEEDBACK[] = {0x68, 0x60};
+	static const Bit32u MODE_3_DRY_AMP[] = {0x20, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50,
+	                                        0x20, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50};
+	static const Bit32u MODE_3_WET_AMP[] = {0x18, 0x18, 0x28, 0x40, 0x60, 0x80, 0xA8, 0xF8};
 
-static const Bit32u MODE_3_NUMBER_OF_ALLPASSES = 0;
-static const Bit32u MODE_3_NUMBER_OF_COMBS = 1;
-static const Bit32u MODE_3_DELAY[] = {16000 + MODE_3_FEEDBACK_DELAY + PROCESS_DELAY + MODE_3_ADDITIONAL_DELAY};
-static const Bit32u MODE_3_OUTL[] = {400, 624, 960, 1488, 2256, 3472, 5280, 8000};
-static const Bit32u MODE_3_OUTR[] = {800, 1248, 1920, 2976, 4512, 6944, 10560, 16000};
-static const Bit32u MODE_3_COMB_FACTOR[] = {0x68};
-static const Bit32u MODE_3_COMB_FEEDBACK[] = {0x68, 0x60};
-static const Bit32u MODE_3_DRY_AMP[] = {0x20, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50};
-static const Bit32u MODE_3_WET_AMP[] = {0x18, 0x18, 0x28, 0x40, 0x60, 0x80, 0xA8, 0xF8};
+	static const BReverbSettings REVERB_MODE_0_SETTINGS = {MODE_0_NUMBER_OF_ALLPASSES, MODE_0_ALLPASSES, MODE_0_NUMBER_OF_COMBS, MODE_0_COMBS, MODE_0_OUTL, MODE_0_OUTR, MODE_0_COMB_FACTOR, MODE_0_COMB_FEEDBACK, MODE_0_DRY_AMP, MODE_0_WET_AMP, MODE_0_LPF_AMP};
+	static const BReverbSettings REVERB_MODE_1_SETTINGS = {MODE_1_NUMBER_OF_ALLPASSES, MODE_1_ALLPASSES, MODE_1_NUMBER_OF_COMBS, MODE_1_COMBS, MODE_1_OUTL, MODE_1_OUTR, MODE_1_COMB_FACTOR, MODE_1_COMB_FEEDBACK, MODE_1_DRY_AMP, MODE_1_WET_AMP, MODE_1_LPF_AMP};
+	static const BReverbSettings REVERB_MODE_2_SETTINGS = {MODE_2_NUMBER_OF_ALLPASSES, MODE_2_ALLPASSES, MODE_2_NUMBER_OF_COMBS, MODE_2_COMBS, MODE_2_OUTL, MODE_2_OUTR, MODE_2_COMB_FACTOR, MODE_2_COMB_FEEDBACK, MODE_2_DRY_AMP, MODE_2_WET_AMP, MODE_2_LPF_AMP};
+	static const BReverbSettings REVERB_MODE_3_SETTINGS = {MODE_3_NUMBER_OF_ALLPASSES, NULL, MODE_3_NUMBER_OF_COMBS, MODE_3_DELAY, MODE_3_OUTL, MODE_3_OUTR, MODE_3_COMB_FACTOR, MODE_3_COMB_FEEDBACK, MODE_3_DRY_AMP, MODE_3_WET_AMP, 0};
 
-static const BReverbSettings REVERB_MODE_0_SETTINGS = {MODE_0_NUMBER_OF_ALLPASSES, MODE_0_ALLPASSES, MODE_0_NUMBER_OF_COMBS, MODE_0_COMBS, MODE_0_OUTL, MODE_0_OUTR, MODE_0_COMB_FACTOR, MODE_0_COMB_FEEDBACK, MODE_0_DRY_AMP, MODE_0_WET_AMP, MODE_0_LPF_AMP};
-static const BReverbSettings REVERB_MODE_1_SETTINGS = {MODE_1_NUMBER_OF_ALLPASSES, MODE_1_ALLPASSES, MODE_1_NUMBER_OF_COMBS, MODE_1_COMBS, MODE_1_OUTL, MODE_1_OUTR, MODE_1_COMB_FACTOR, MODE_1_COMB_FEEDBACK, MODE_1_DRY_AMP, MODE_1_WET_AMP, MODE_1_LPF_AMP};
-static const BReverbSettings REVERB_MODE_2_SETTINGS = {MODE_2_NUMBER_OF_ALLPASSES, MODE_2_ALLPASSES, MODE_2_NUMBER_OF_COMBS, MODE_2_COMBS, MODE_2_OUTL, MODE_2_OUTR, MODE_2_COMB_FACTOR, MODE_2_COMB_FEEDBACK, MODE_2_DRY_AMP, MODE_2_WET_AMP, MODE_2_LPF_AMP};
-static const BReverbSettings REVERB_MODE_3_SETTINGS = {MODE_3_NUMBER_OF_ALLPASSES, NULL, MODE_3_NUMBER_OF_COMBS, MODE_3_DELAY, MODE_3_OUTL, MODE_3_OUTR, MODE_3_COMB_FACTOR, MODE_3_COMB_FEEDBACK, MODE_3_DRY_AMP, MODE_3_WET_AMP, 0};
+	static const BReverbSettings * const REVERB_SETTINGS[] = {&REVERB_MODE_0_SETTINGS, &REVERB_MODE_1_SETTINGS, &REVERB_MODE_2_SETTINGS, &REVERB_MODE_3_SETTINGS};
 
-static const BReverbSettings * const REVERB_SETTINGS[] = {&REVERB_MODE_0_SETTINGS, &REVERB_MODE_1_SETTINGS, &REVERB_MODE_2_SETTINGS, &REVERB_MODE_3_SETTINGS};
+	return *REVERB_SETTINGS[mode];
+}
+
+// Default reverb settings for "old" reverb model implemented in MT-32.
+// Found by tracing reverb RAM data lines (thanks go to Lord_Nightmare & balrog).
+const BReverbSettings &BReverbModel::getMT32Settings(const ReverbMode mode) {
+	static const Bit32u MODE_0_NUMBER_OF_ALLPASSES = 3;
+	static const Bit32u MODE_0_ALLPASSES[] = {994, 729, 78};
+	static const Bit32u MODE_0_NUMBER_OF_COMBS = 4; // Same as above in the new model implementation
+	static const Bit32u MODE_0_COMBS[] = {575 + PROCESS_DELAY, 2040, 2752, 3629};
+	static const Bit32u MODE_0_OUTL[] = {2040, 687, 1814};
+	static const Bit32u MODE_0_OUTR[] = {1019, 2072, 1};
+	static const Bit32u MODE_0_COMB_FACTOR[] = {0xB0, 0x60, 0x60, 0x60};
+	static const Bit32u MODE_0_COMB_FEEDBACK[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	                                              0x28, 0x48, 0x60, 0x70, 0x78, 0x80, 0x90, 0x98,
+	                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
+	                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98};
+	static const Bit32u MODE_0_DRY_AMP[] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
+	static const Bit32u MODE_0_WET_AMP[] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x70, 0xA0, 0xE0};
+	static const Bit32u MODE_0_LPF_AMP = 0x80;
+
+	static const Bit32u MODE_1_NUMBER_OF_ALLPASSES = 3;
+	static const Bit32u MODE_1_ALLPASSES[] = {1324, 809, 176};
+	static const Bit32u MODE_1_NUMBER_OF_COMBS = 4; // Same as above in the new model implementation
+	static const Bit32u MODE_1_COMBS[] = {961 + PROCESS_DELAY, 2619, 3545, 4519};
+	static const Bit32u MODE_1_OUTL[] = {2618, 1760, 4518};
+	static const Bit32u MODE_1_OUTR[] = {1300, 3532, 2274};
+	static const Bit32u MODE_1_COMB_FACTOR[] = {0x90, 0x60, 0x60, 0x60};
+	static const Bit32u MODE_1_COMB_FEEDBACK[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	                                              0x28, 0x48, 0x60, 0x70, 0x78, 0x80, 0x90, 0x98,
+	                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
+	                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98};
+	static const Bit32u MODE_1_DRY_AMP[] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
+	static const Bit32u MODE_1_WET_AMP[] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x70, 0xA0, 0xE0};
+	static const Bit32u MODE_1_LPF_AMP = 0x80;
+
+	static const Bit32u MODE_2_NUMBER_OF_ALLPASSES = 3;
+	static const Bit32u MODE_2_ALLPASSES[] = {969, 644, 157};
+	static const Bit32u MODE_2_NUMBER_OF_COMBS = 4; // Same as above in the new model implementation
+	static const Bit32u MODE_2_COMBS[] = {116 + PROCESS_DELAY, 2259, 2839, 3539};
+	static const Bit32u MODE_2_OUTL[] = {2259, 718, 1769};
+	static const Bit32u MODE_2_OUTR[] = {1136, 2128, 1};
+	static const Bit32u MODE_2_COMB_FACTOR[] = {0, 0x60, 0x60, 0x60};
+	static const Bit32u MODE_2_COMB_FEEDBACK[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	                                              0x28, 0x48, 0x60, 0x70, 0x78, 0x80, 0x90, 0x98,
+	                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98,
+	                                              0x28, 0x48, 0x60, 0x78, 0x80, 0x88, 0x90, 0x98};
+	static const Bit32u MODE_2_DRY_AMP[] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
+	static const Bit32u MODE_2_WET_AMP[] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x70, 0xA0, 0xE0};
+	static const Bit32u MODE_2_LPF_AMP = 0x80;
+
+	static const Bit32u MODE_3_NUMBER_OF_ALLPASSES = 0;
+	static const Bit32u MODE_3_NUMBER_OF_COMBS = 1;
+	static const Bit32u MODE_3_DELAY[] = {16000 + MODE_3_FEEDBACK_DELAY + PROCESS_DELAY + MODE_3_ADDITIONAL_DELAY};
+	static const Bit32u MODE_3_OUTL[] = {400, 624, 960, 1488, 2256, 3472, 5280, 8000};
+	static const Bit32u MODE_3_OUTR[] = {800, 1248, 1920, 2976, 4512, 6944, 10560, 16000};
+	static const Bit32u MODE_3_COMB_FACTOR[] = {0x68};
+	static const Bit32u MODE_3_COMB_FEEDBACK[] = {0x68, 0x60};
+	static const Bit32u MODE_3_DRY_AMP[] = {0x10, 0x10, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+	                                        0x10, 0x20, 0x20, 0x10, 0x20, 0x10, 0x20, 0x10};
+	static const Bit32u MODE_3_WET_AMP[] = {0x08, 0x18, 0x28, 0x40, 0x60, 0x80, 0xA8, 0xF8};
+
+	static const BReverbSettings REVERB_MODE_0_SETTINGS = {MODE_0_NUMBER_OF_ALLPASSES, MODE_0_ALLPASSES, MODE_0_NUMBER_OF_COMBS, MODE_0_COMBS, MODE_0_OUTL, MODE_0_OUTR, MODE_0_COMB_FACTOR, MODE_0_COMB_FEEDBACK, MODE_0_DRY_AMP, MODE_0_WET_AMP, MODE_0_LPF_AMP};
+	static const BReverbSettings REVERB_MODE_1_SETTINGS = {MODE_1_NUMBER_OF_ALLPASSES, MODE_1_ALLPASSES, MODE_1_NUMBER_OF_COMBS, MODE_1_COMBS, MODE_1_OUTL, MODE_1_OUTR, MODE_1_COMB_FACTOR, MODE_1_COMB_FEEDBACK, MODE_1_DRY_AMP, MODE_1_WET_AMP, MODE_1_LPF_AMP};
+	static const BReverbSettings REVERB_MODE_2_SETTINGS = {MODE_2_NUMBER_OF_ALLPASSES, MODE_2_ALLPASSES, MODE_2_NUMBER_OF_COMBS, MODE_2_COMBS, MODE_2_OUTL, MODE_2_OUTR, MODE_2_COMB_FACTOR, MODE_2_COMB_FEEDBACK, MODE_2_DRY_AMP, MODE_2_WET_AMP, MODE_2_LPF_AMP};
+	static const BReverbSettings REVERB_MODE_3_SETTINGS = {MODE_3_NUMBER_OF_ALLPASSES, NULL, MODE_3_NUMBER_OF_COMBS, MODE_3_DELAY, MODE_3_OUTL, MODE_3_OUTR, MODE_3_COMB_FACTOR, MODE_3_COMB_FEEDBACK, MODE_3_DRY_AMP, MODE_3_WET_AMP, 0};
+
+	static const BReverbSettings * const REVERB_SETTINGS[] = {&REVERB_MODE_0_SETTINGS, &REVERB_MODE_1_SETTINGS, &REVERB_MODE_2_SETTINGS, &REVERB_MODE_3_SETTINGS};
+
+	return *REVERB_SETTINGS[mode];
+}
 
 // This algorithm tries to emulate exactly Boss multiplication operation (at least this is what we see on reverb RAM data lines).
 // Also LA32 is suspected to use the similar one to perform PCM interpolation and ring modulation.
@@ -256,8 +329,10 @@ void TapDelayCombFilter::setOutputPositions(const Bit32u useOutL, const Bit32u u
 	outR = useOutR;
 }
 
-BReverbModel::BReverbModel(const ReverbMode mode)
-	: allpasses(NULL), combs(NULL), currentSettings(*REVERB_SETTINGS[mode]), tapDelayMode(mode == REVERB_MODE_TAP_DELAY) {}
+BReverbModel::BReverbModel(const ReverbMode mode, const bool mt32CompatibleModel) :
+	allpasses(NULL), combs(NULL),
+	currentSettings(mt32CompatibleModel ? getMT32Settings(mode) : getCM32L_LAPCSettings(mode)),
+	tapDelayMode(mode == REVERB_MODE_TAP_DELAY) {}
 
 BReverbModel::~BReverbModel() {
 	close();
@@ -334,7 +409,13 @@ void BReverbModel::setParameters(Bit8u time, Bit8u level) {
 	if (time == 0 && level == 0) {
 		dryAmp = wetLevel = 0;
 	} else {
-		dryAmp = currentSettings.dryAmps[level];
+		if (tapDelayMode && ((time == 0) || (time == 1 && level == 1))) {
+			// Looks like MT-32 implementation has some minor quirks in this mode:
+			// for odd level values, the output level changes sometimes depending on the time value which doesn't seem right.
+			dryAmp = currentSettings.dryAmps[level + 8];
+		} else {
+			dryAmp = currentSettings.dryAmps[level];
+		}
 		wetLevel = currentSettings.wetLevels[level];
 	}
 }
