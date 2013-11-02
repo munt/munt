@@ -195,10 +195,10 @@ void CombFilter::process(const Sample in) {
 	const Sample last = buffer[index];
 
 	// prepare input + feedback
-	const Sample filterIn = in + weirdMul(next(), feedbackFactor, 0xF0 /* Maybe 0x80 ? */);
+	const Sample filterIn = in + weirdMul(next(), feedbackFactor, 0xF0);
 
 	// store input + feedback processed by a low-pass filter
-	buffer[index] = weirdMul(last, filterFactor, 0x40) - filterIn;
+	buffer[index] = weirdMul(last, filterFactor, 0xC0) - filterIn;
 }
 
 Sample CombFilter::getOutputAt(const Bit32u outIndex) const {
