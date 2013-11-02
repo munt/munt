@@ -71,7 +71,6 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
 
 Synth::Synth(ReportHandler *useReportHandler) {
 	isOpen = false;
-	reverbEnabled = true;
 	reverbOverridden = false;
 	partialCount = DEFAULT_MAX_PARTIALS;
 
@@ -140,11 +139,19 @@ void Synth::printDebug(const char *fmt, ...) {
 }
 
 void Synth::setReverbEnabled(bool newReverbEnabled) {
-	reverbEnabled = newReverbEnabled;
+	if (isReverbEnabled() == newReverbEnabled) return;
+	if (newReverbEnabled) {
+		refreshSystemReverbParameters();
+	} else {
+#if MT32EMU_REDUCE_REVERB_MEMORY
+		reverbModel->close();
+#endif
+		reverbModel = NULL;
+	}
 }
 
 bool Synth::isReverbEnabled() const {
-	return reverbEnabled;
+	return reverbModel != NULL;
 }
 
 void Synth::setReverbOverridden(bool newReverbOverridden) {
@@ -1265,6 +1272,8 @@ void Synth::refreshSystemReverbParameters() {
 		}
 		newReverbModel->open();
 	}
+#elif
+	newReverbModel->mute();
 #endif
 	reverbModel = newReverbModel;
 	reverbModel->setParameters(mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
@@ -1591,7 +1600,7 @@ bool Synth::isActive() const {
 	if (hasActivePartials()) {
 		return true;
 	}
-	if (reverbEnabled) {
+	if (isReverbEnabled()) {
 		return reverbModel->isActive();
 	}
 	return false;

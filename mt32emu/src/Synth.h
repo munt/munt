@@ -339,7 +339,6 @@ private:
 
 	BReverbModel *reverbModels[4];
 	BReverbModel *reverbModel;
-	bool reverbEnabled;
 	bool reverbOverridden;
 
 	MIDIDelayMode midiDelayMode;
