@@ -1254,7 +1254,7 @@ void Synth::refreshSystemReverbParameters() {
 #if MT32EMU_MONITOR_SYSEX > 0
 	printDebug(" Reverb: mode=%d, time=%d, level=%d", mt32ram.system.reverbMode, mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
 #endif
-	if (reverbOverridden && reverbModel != NULL) {
+	if (reverbOverridden) {
 #if MT32EMU_MONITOR_SYSEX > 0
 		printDebug(" (Reverb overridden - ignoring)");
 #endif
