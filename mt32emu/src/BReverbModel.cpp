@@ -354,9 +354,9 @@ void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *
 
 	while (numSamples > 0) {
 		if (tapDelayMode) {
-			dry = *inLeft + *inRight;
-		} else {
 			dry = *inLeft / 2 + *inRight / 2;
+		} else {
+			dry = *inLeft / 4 + *inRight / 4;
 		}
 
 		// Looks like dryAmp doesn't change in MT-32 but it does in CM-32L / LAPC-I

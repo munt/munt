@@ -156,6 +156,12 @@ bool Synth::isReverbOverridden() const {
 }
 
 void Synth::setDACInputMode(DACInputMode mode) {
+#if MT32EMU_USE_FLOAT_SAMPLES
+	// We aren't emulating these in float mode, so better to inform the invoker
+	if ((mode == DACInputMode_GENERATION1) || (mode == DACInputMode_GENERATION2)) {
+		mode = DACInputMode_NICE;
+	}
+#endif
 	dacInputMode = mode;
 }
 
@@ -1460,94 +1466,96 @@ void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample 
 	}
 }
 
-void Synth::convertSamplesToOutput(Sample *target, const Sample *source, Bit32u len, bool reverb) {
-	// FIXME: In GENERATION2 units, the output from LA32 goes to the Boss chip bit-shifted.
-	// This should be properly emulated and the BReverb model appropriately fixed.
-	if (target == NULL) return;
-
-	if (dacInputMode == DACInputMode_PURE) {
-		memcpy(target, source, len * sizeof(Sample));
-		return;
-	}
+void Synth::convertSamplesToOutput(Sample *buffer, Bit32u len, bool reverb) {
+	if (dacInputMode == DACInputMode_PURE) return;
 
 #if MT32EMU_USE_FLOAT_SAMPLES
 	float gain = reverb ? reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR : 2.0f * outputGain;
 	while (len--) {
-		*(target++) = *(source++) * gain;
+		*(buffer++) *= gain;
 	}
 #else
-	int gain;
-	if (reverb) {
-		gain = int(reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR);
-	} else {
-		gain = outputGain;
-		switch (dacInputMode) {
-		case DACInputMode_NICE:
-			// Since we're not shooting for accuracy here, don't worry about the rounding mode.
-			gain <<= 1;
-			break;
-		case DACInputMode_GENERATION1:
-			while (len--) {
-				*target = clipBit16s(Bit32s((*source * gain) >> 8));
-				*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE);
-				source++;
-				target++;
-			}
-			return;
-		case DACInputMode_GENERATION2:
-			while (len--) {
-				*target = clipBit16s(Bit32s((*source * gain) >> 8));
-				*target = (*target & 0x8000) | ((*target << 1) & 0x7FFE) | ((*target >> 14) & 0x0001);
-				source++;
-				target++;
-			}
-			return;
-		default:
-			break;
+	int gain = reverb ? int(reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR) : outputGain;
+	if (dacInputMode == DACInputMode_GENERATION1) {
+		while (len--) {
+			Bit16s target = clipBit16s(Bit32s((*buffer * gain) >> 8));
+			*(buffer++) = (target & 0x8000) | ((target << 1) & 0x7FFE);
 		}
+		return;
+	}
+	if (!reverb) {
+		if (dacInputMode == DACInputMode_GENERATION2) {
+			while (len--) {
+				Bit16s target = clipBit16s(Bit32s((*buffer * gain) >> 8));
+				*(buffer++) = (target & 0x8000) | ((target << 1) & 0x7FFE) | ((target >> 14) & 0x0001);
+			}
+			return;
+		}
+		// dacInputMode == DACInputMode_NICE
+		// Since we're not shooting for accuracy here, don't worry about the rounding mode.
+		gain <<= 1;
 	}
 	while (len--) {
-		*(target++) = clipBit16s(Bit32s((*(source++) * gain) >> 8));
+		*(buffer++) = clipBit16s((Bit32s(*buffer) * gain) >> 8);
 	}
 #endif
 }
 
 void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len) {
-	if (isEnabled) {
-		Sample tmpBufMixLeft[MAX_SAMPLES_PER_RUN], tmpBufMixRight[MAX_SAMPLES_PER_RUN];
-		muteStream(tmpBufMixLeft, len);
-		muteStream(tmpBufMixRight, len);
-		for (unsigned int i = 0; i < getPartialCount(); i++) {
-			if (!reverbEnabled || !partialManager->shouldReverb(i)) {
-				partialManager->produceOutput(i, tmpBufMixLeft, tmpBufMixRight, len);
-			}
-		}
-		convertSamplesToOutput(nonReverbLeft, tmpBufMixLeft, len, false);
-		convertSamplesToOutput(nonReverbRight, tmpBufMixRight, len, false);
-	} else {
-		muteStream(nonReverbLeft, len);
-		muteStream(nonReverbRight, len);
-	}
+	// Even if LA32 output isn't desired, we proceed anyway with temp buffers
+	Sample tmpBufNonReverbLeft[MAX_SAMPLES_PER_RUN], tmpBufNonReverbRight[MAX_SAMPLES_PER_RUN];
+	if (nonReverbLeft == NULL) nonReverbLeft = tmpBufNonReverbLeft;
+	if (nonReverbLeft == NULL) nonReverbRight = tmpBufNonReverbRight;
 
-	if (isEnabled && reverbEnabled) {
-		Sample tmpBufMixLeft[MAX_SAMPLES_PER_RUN], tmpBufMixRight[MAX_SAMPLES_PER_RUN];
-		muteStream(tmpBufMixLeft, len);
-		muteStream(tmpBufMixRight, len);
+	Sample tmpBufReverbDryLeft[MAX_SAMPLES_PER_RUN], tmpBufReverbDryRight[MAX_SAMPLES_PER_RUN];
+	if (reverbDryLeft == NULL) reverbDryLeft = tmpBufReverbDryLeft;
+	if (reverbDryRight == NULL) reverbDryRight = tmpBufReverbDryRight;
+
+	muteStream(nonReverbLeft, len);
+	muteStream(nonReverbRight, len);
+	muteStream(reverbDryLeft, len);
+	muteStream(reverbDryRight, len);
+
+	if (isEnabled) {
 		for (unsigned int i = 0; i < getPartialCount(); i++) {
 			if (partialManager->shouldReverb(i)) {
-				partialManager->produceOutput(i, tmpBufMixLeft, tmpBufMixRight, len);
+				partialManager->produceOutput(i, reverbDryLeft, reverbDryRight, len);
+			} else {
+				partialManager->produceOutput(i, nonReverbLeft, nonReverbRight, len);
 			}
 		}
-		convertSamplesToOutput(reverbDryLeft, tmpBufMixLeft, len, false);
-		convertSamplesToOutput(reverbDryRight, tmpBufMixRight, len, false);
 
-		Sample tmpBufReverbOutLeft[MAX_SAMPLES_PER_RUN], tmpBufReverbOutRight[MAX_SAMPLES_PER_RUN];
-		reverbModel->process(tmpBufMixLeft, tmpBufMixRight, tmpBufReverbOutLeft, tmpBufReverbOutRight, len);
-		convertSamplesToOutput(reverbWetLeft, tmpBufReverbOutLeft, len, true);
-		convertSamplesToOutput(reverbWetRight, tmpBufReverbOutRight, len, true);
+		// In GENERATION2 units, the output from LA32 goes to the Boss chip already bit-shifted.
+		// In NICE mode, it's also better to increase volume before the reverb processing to preserve accuracy.
+		if (dacInputMode != DACInputMode_GENERATION1) {
+			convertSamplesToOutput(reverbDryLeft, len, false);
+			convertSamplesToOutput(reverbDryRight, len, false);
+		}
+
+		if (isReverbEnabled()) {
+			// In theory, the invoker may omit both reverb buffers for some time and then provide them again.
+			// We need to ensure the reverb wet stream is consistent in this case so proceed anyway.
+			Sample tmpBufReverbWetLeft[MAX_SAMPLES_PER_RUN], tmpBufReverbWetRight[MAX_SAMPLES_PER_RUN];
+			if (reverbWetLeft == NULL) reverbWetLeft = tmpBufReverbWetLeft;
+			if (reverbWetRight == NULL) reverbWetRight = tmpBufReverbWetRight;
+			reverbModel->process(reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, len);
+
+			// Don't bother with conversion if the output is going to be unused
+			if (reverbWetLeft != tmpBufReverbWetLeft) convertSamplesToOutput(reverbWetLeft, len, true);
+			if (reverbWetRight != tmpBufReverbWetRight) convertSamplesToOutput(reverbWetRight, len, true);
+		} else {
+			muteStream(reverbWetLeft, len);
+			muteStream(reverbWetRight, len);
+		}
+
+		// Don't bother with conversion if the output is going to be unused
+		if (nonReverbLeft != tmpBufNonReverbLeft) convertSamplesToOutput(nonReverbLeft, len, false);
+		if (nonReverbRight != tmpBufNonReverbRight) convertSamplesToOutput(nonReverbRight, len, false);
+		if (dacInputMode == DACInputMode_GENERATION1) {
+			if (reverbDryLeft != tmpBufReverbDryLeft) convertSamplesToOutput(reverbDryLeft, len, false);
+			if (reverbDryRight != tmpBufReverbDryRight) convertSamplesToOutput(reverbDryRight, len, false);
+		}
 	} else {
-		muteStream(reverbDryLeft, len);
-		muteStream(reverbDryRight, len);
 		muteStream(reverbWetLeft, len);
 		muteStream(reverbWetRight, len);
 	}
