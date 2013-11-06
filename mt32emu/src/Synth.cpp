@@ -141,7 +141,10 @@ void Synth::printDebug(const char *fmt, ...) {
 void Synth::setReverbEnabled(bool newReverbEnabled) {
 	if (isReverbEnabled() == newReverbEnabled) return;
 	if (newReverbEnabled) {
+		bool oldReverbOverridden = reverbOverridden;
+		reverbOverridden = false;
 		refreshSystemReverbParameters();
+		reverbOverridden = oldReverbOverridden;
 	} else {
 #if MT32EMU_REDUCE_REVERB_MEMORY
 		reverbModel->close();
@@ -1264,19 +1267,31 @@ void Synth::refreshSystemReverbParameters() {
 	reportHandler->onNewReverbTime(mt32ram.system.reverbTime);
 	reportHandler->onNewReverbLevel(mt32ram.system.reverbLevel);
 
-	BReverbModel *newReverbModel = reverbModels[mt32ram.system.reverbMode];
-#if MT32EMU_REDUCE_REVERB_MEMORY
-	if (reverbModel != newReverbModel) {
-		if (reverbModel != NULL) {
-			reverbModel->close();
-		}
-		newReverbModel->open();
+	BReverbModel *oldReverbModel = reverbModel;
+	if (mt32ram.system.reverbTime == 0 && mt32ram.system.reverbLevel == 0) {
+		// Setting both time and level to 0 effectively disables wet reverb output on real devices.
+		// Take a shortcut in this case to reduce CPU load.
+		reverbModel = NULL;
+	} else {
+		reverbModel = reverbModels[mt32ram.system.reverbMode];
 	}
+	if (reverbModel != oldReverbModel) {
+#if MT32EMU_REDUCE_REVERB_MEMORY
+		if (oldReverbModel != NULL) {
+			oldReverbModel->close();
+		}
+		if (isReverbEnabled()) {
+			reverbModel->open();
+		}
 #elif
-	newReverbModel->mute();
+		if (isReverbEnabled()) {
+			reverbModel->mute();
+		}
 #endif
-	reverbModel = newReverbModel;
-	reverbModel->setParameters(mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
+	}
+	if (isReverbEnabled()) {
+		reverbModel->setParameters(mt32ram.system.reverbTime, mt32ram.system.reverbLevel);
+	}
 }
 
 void Synth::refreshSystemReserveSettings() {
