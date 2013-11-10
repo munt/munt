@@ -39,19 +39,6 @@ static const ControlROMMap ControlROMMaps[7] = {
 	// (Note that all but CM-32L ROM actually have 86 entries for rhythmTemp)
 };
 
-static inline void muteStream(Sample *stream, Bit32u len) {
-	if (stream == NULL) return;
-
-#if MT32EMU_USE_FLOAT_SAMPLES
-	// FIXME: Use memset() where compatibility is guaranteed (if this turns out to be a win)
-	while (len--) {
-		*stream++ = 0.0f;
-	}
-#else
-	memset(stream, 0, len * sizeof(Sample));
-#endif
-}
-
 static inline void advanceStreamPosition(Sample *&stream, Bit32u posDelta) {
 	if (stream != NULL) {
 		stream += posDelta;
@@ -1535,10 +1522,10 @@ void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sampl
 	if (reverbDryLeft == NULL) reverbDryLeft = tmpBufReverbDryLeft;
 	if (reverbDryRight == NULL) reverbDryRight = tmpBufReverbDryRight;
 
-	muteStream(nonReverbLeft, len);
-	muteStream(nonReverbRight, len);
-	muteStream(reverbDryLeft, len);
-	muteStream(reverbDryRight, len);
+	muteSampleBuffer(nonReverbLeft, len);
+	muteSampleBuffer(nonReverbRight, len);
+	muteSampleBuffer(reverbDryLeft, len);
+	muteSampleBuffer(reverbDryRight, len);
 
 	if (isEnabled) {
 		for (unsigned int i = 0; i < getPartialCount(); i++) {
@@ -1557,19 +1544,12 @@ void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sampl
 		}
 
 		if (isReverbEnabled()) {
-			// In theory, the invoker may omit both reverb buffers for some time and then provide them again.
-			// We need to ensure the reverb wet stream is consistent in this case so proceed anyway.
-			Sample tmpBufReverbWetLeft[MAX_SAMPLES_PER_RUN], tmpBufReverbWetRight[MAX_SAMPLES_PER_RUN];
-			if (reverbWetLeft == NULL) reverbWetLeft = tmpBufReverbWetLeft;
-			if (reverbWetRight == NULL) reverbWetRight = tmpBufReverbWetRight;
 			reverbModel->process(reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, len);
-
-			// Don't bother with conversion if the output is going to be unused
-			if (reverbWetLeft != tmpBufReverbWetLeft) convertSamplesToOutput(reverbWetLeft, len, true);
-			if (reverbWetRight != tmpBufReverbWetRight) convertSamplesToOutput(reverbWetRight, len, true);
+			if (reverbWetLeft != NULL) convertSamplesToOutput(reverbWetLeft, len, true);
+			if (reverbWetRight != NULL) convertSamplesToOutput(reverbWetRight, len, true);
 		} else {
-			muteStream(reverbWetLeft, len);
-			muteStream(reverbWetRight, len);
+			muteSampleBuffer(reverbWetLeft, len);
+			muteSampleBuffer(reverbWetRight, len);
 		}
 
 		// Don't bother with conversion if the output is going to be unused
@@ -1580,8 +1560,8 @@ void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sampl
 			if (reverbDryRight != tmpBufReverbDryRight) convertSamplesToOutput(reverbDryRight, len, false);
 		}
 	} else {
-		muteStream(reverbWetLeft, len);
-		muteStream(reverbWetRight, len);
+		muteSampleBuffer(reverbWetLeft, len);
+		muteSampleBuffer(reverbWetRight, len);
 	}
 
 	partialManager->clearAlreadyOutputed();

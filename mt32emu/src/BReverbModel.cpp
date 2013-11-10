@@ -226,14 +226,7 @@ bool RingBuffer::isEmpty() const {
 }
 
 void RingBuffer::mute() {
-#if MT32EMU_USE_FLOAT_SAMPLES
-	Sample *buf = buffer;
-	for (Bit32u i = 0; i < size; i++) {
-		*buf++ = 0;
-	}
-#else
-	memset(buffer, 0, size * sizeof(Sample));
-#endif
+	Synth::muteSampleBuffer(buffer, size);
 }
 
 AllpassFilter::AllpassFilter(const Bit32u useSize) : RingBuffer(useSize) {}
@@ -434,13 +427,19 @@ bool BReverbModel::isActive() const {
 }
 
 void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *outLeft, Sample *outRight, unsigned long numSamples) {
+	if (combs == NULL) {
+		Synth::muteSampleBuffer(outLeft, numSamples);
+		Synth::muteSampleBuffer(outRight, numSamples);
+		return;
+	}
+
 	Sample dry;
 
-	while (numSamples > 0) {
+	while ((numSamples--) > 0) {
 		if (tapDelayMode) {
-			dry = *inLeft / 2 + *inRight / 2;
+			dry = *(inLeft++) / 2 + *(inRight++) / 2;
 		} else {
-			dry = *inLeft / 4 + *inRight / 4;
+			dry = *(inLeft++) / 4 + *(inRight++) / 4;
 		}
 
 		// Looks like dryAmp doesn't change in MT-32 but it does in CM-32L / LAPC-I
@@ -449,8 +448,12 @@ void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *
 		if (tapDelayMode) {
 			TapDelayCombFilter *comb = static_cast<TapDelayCombFilter *> (*combs);
 			comb->process(dry);
-			*outLeft = weirdMul(comb->getLeftOutput(), wetLevel, 0xFF);
-			*outRight = weirdMul(comb->getRightOutput(), wetLevel, 0xFF);
+			if (outLeft != NULL) {
+				*(outLeft++) = weirdMul(comb->getLeftOutput(), wetLevel, 0xFF);
+			}
+			if (outRight != NULL) {
+				*(outRight++) = weirdMul(comb->getRightOutput(), wetLevel, 0xFF);
+			}
 		} else {
 			// If the output position is equal to the comb size, get it now in order not to loose it
 			Sample link = combs[0]->getOutputAt(currentSettings.combSizes[0] - 1);
@@ -473,33 +476,32 @@ void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *
 			combs[2]->process(link);
 			combs[3]->process(link);
 
-			Sample outL2 = combs[2]->getOutputAt(currentSettings.outLPositions[1]);
-			Sample outL3 = combs[3]->getOutputAt(currentSettings.outLPositions[2]);
-			Sample outR1 = combs[1]->getOutputAt(currentSettings.outRPositions[0]);
-			Sample outR2 = combs[2]->getOutputAt(currentSettings.outRPositions[1]);
-			Sample outR3 = combs[3]->getOutputAt(currentSettings.outRPositions[2]);
-
+			if (outLeft != NULL) {
+				Sample outL2 = combs[2]->getOutputAt(currentSettings.outLPositions[1]);
+				Sample outL3 = combs[3]->getOutputAt(currentSettings.outLPositions[2]);
 #if MT32EMU_USE_FLOAT_SAMPLES
-			*outLeft = 1.5f * (outL1 + outL2) + outL3;
-			*outRight = 1.5f * (outR1 + outR2) + outR3;
+				Sample outSample = 1.5f * (outL1 + outL2) + outL3;
 #else
-			outL1 += outL1 >> 1;
-			outL2 += outL2 >> 1;
-			*outLeft = outL1 + outL2 + outL3;
-
-			outR1 += outR1 >> 1;
-			outR2 += outR2 >> 1;
-			*outRight = outR1 + outR2 + outR3;
+				outL1 += outL1 >> 1;
+				outL2 += outL2 >> 1;
+				Sample outSample = outL1 + outL2 + outL3;
 #endif
-			*outLeft = weirdMul(*outLeft, wetLevel, 0xFF);
-			*outRight = weirdMul(*outRight, wetLevel, 0xFF);
+				*(outLeft++) = weirdMul(outSample, wetLevel, 0xFF);
+			}
+			if (outRight != NULL) {
+				Sample outR1 = combs[1]->getOutputAt(currentSettings.outRPositions[0]);
+				Sample outR2 = combs[2]->getOutputAt(currentSettings.outRPositions[1]);
+				Sample outR3 = combs[3]->getOutputAt(currentSettings.outRPositions[2]);
+#if MT32EMU_USE_FLOAT_SAMPLES
+				Sample outSample = 1.5f * (outR1 + outR2) + outR3;
+#else
+				outR1 += outR1 >> 1;
+				outR2 += outR2 >> 1;
+				Sample outSample = outR1 + outR2 + outR3;
+#endif
+				*(outRight++) = weirdMul(outSample, wetLevel, 0xFF);
+			}
 		}
-
-		numSamples--;
-		inLeft++;
-		inRight++;
-		outLeft++;
-		outRight++;
 	}
 }
 

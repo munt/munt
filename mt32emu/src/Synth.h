@@ -411,6 +411,19 @@ public:
 		return (Bit16s)sample;
 	}
 
+	static inline void muteSampleBuffer(Sample *buffer, Bit32u len) {
+		if (buffer == NULL) return;
+
+#if MT32EMU_USE_FLOAT_SAMPLES
+		// FIXME: Use memset() where compatibility is guaranteed (if this turns out to be a win)
+		while (len--) {
+			*(buffer++) = 0.0f;
+		}
+#else
+		memset(buffer, 0, len * sizeof(Sample));
+#endif
+	}
+
 	static Bit8u calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum);
 
 	// Optionally sets callbacks for reporting various errors, information and debug messages
