@@ -421,6 +421,9 @@ void BReverbModel::setParameters(Bit8u time, Bit8u level) {
 }
 
 bool BReverbModel::isActive() const {
+	if (combs == NULL) {
+		return false;
+	}
 	for (Bit32u i = 0; i < currentSettings.numberOfAllpasses; i++) {
 		if (!allpasses[i]->isEmpty()) return true;
 	}
