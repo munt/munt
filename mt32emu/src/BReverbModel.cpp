@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <memory.h>
+#include <cstring>
 #include "mt32emu.h"
 #include "BReverbModel.h"
 
