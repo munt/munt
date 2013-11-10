@@ -405,10 +405,10 @@ private:
 public:
 	static inline Bit16s clipBit16s(Bit32s sample) {
 		// Clamp values above 32767 to 32767, and values below -32768 to -32768
-		if ((sample + 32768) & ~65535) {
-			return (sample >> 31) ^ 32767;
-		}
-		return (Bit16s)sample;
+		// FIXME: Do we really need this stuff? I think these branches are very well predicted. Instead, this introduces a chain.
+		// The version below is actually a bit faster on my system...
+		//return ((sample + 0x8000) & ~0xFFFF) ? (sample >> 31) ^ 0x7FFF : (Bit16s)sample;
+		return ((-0x8000 <= sample) && (sample <= 0x7FFF)) ? (Bit16s)sample : (sample >> 31) ^ 0x7FFF;
 	}
 
 	static inline void muteSampleBuffer(Sample *buffer, Bit32u len) {
