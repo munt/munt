@@ -370,6 +370,7 @@ private:
 	Bit32u getShortMessageLength(Bit32u msg);
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
 
+	void produceLA32Output(Sample *buffer, Bit32u len);
 	void convertSamplesToOutput(Sample *buffer, Bit32u len, bool reverb);
 	bool isAbortingPoly() const;
 	void doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);

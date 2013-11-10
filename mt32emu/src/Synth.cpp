@@ -1477,11 +1477,32 @@ void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample 
 	}
 }
 
+// In GENERATION2 units, the output from LA32 goes to the Boss chip already bit-shifted.
+// In NICE mode, it's also better to increase volume before the reverb processing to preserve accuracy.
+void Synth::produceLA32Output(Sample *buffer, Bit32u len) {
+#if !MT32EMU_USE_FLOAT_SAMPLES
+	switch (dacInputMode) {
+		case DACInputMode_GENERATION2:
+			while (len--) {
+				*(buffer++) = (*buffer & 0x8000) | ((*buffer << 1) & 0x7FFE) | ((*buffer >> 14) & 0x0001);
+			}
+			break;
+		case DACInputMode_NICE:
+			while (len--) {
+				*(buffer++) = clipBit16s(Bit32s(*buffer) << 1);
+			}
+			break;
+		default:
+			break;
+	}
+#endif
+}
+
 void Synth::convertSamplesToOutput(Sample *buffer, Bit32u len, bool reverb) {
 	if (dacInputMode == DACInputMode_PURE) return;
 
 #if MT32EMU_USE_FLOAT_SAMPLES
-	float gain = reverb ? reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR : 2.0f * outputGain;
+	float gain = reverb ? reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR : outputGain;
 	while (len--) {
 		*(buffer++) *= gain;
 	}
@@ -1489,22 +1510,10 @@ void Synth::convertSamplesToOutput(Sample *buffer, Bit32u len, bool reverb) {
 	int gain = reverb ? int(reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR) : outputGain;
 	if (dacInputMode == DACInputMode_GENERATION1) {
 		while (len--) {
-			Bit16s target = clipBit16s(Bit32s((*buffer * gain) >> 8));
-			*(buffer++) = (target & 0x8000) | ((target << 1) & 0x7FFE);
+			Bit32s target = Bit16s((*buffer & 0x8000) | ((*buffer << 1) & 0x7FFE));
+			*(buffer++) = clipBit16s((target * gain) >> 8);
 		}
 		return;
-	}
-	if (!reverb) {
-		if (dacInputMode == DACInputMode_GENERATION2) {
-			while (len--) {
-				Bit16s target = clipBit16s(Bit32s((*buffer * gain) >> 8));
-				*(buffer++) = (target & 0x8000) | ((target << 1) & 0x7FFE) | ((target >> 14) & 0x0001);
-			}
-			return;
-		}
-		// dacInputMode == DACInputMode_NICE
-		// Since we're not shooting for accuracy here, don't worry about the rounding mode.
-		gain <<= 1;
 	}
 	while (len--) {
 		*(buffer++) = clipBit16s((Bit32s(*buffer) * gain) >> 8);
@@ -1536,12 +1545,8 @@ void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sampl
 			}
 		}
 
-		// In GENERATION2 units, the output from LA32 goes to the Boss chip already bit-shifted.
-		// In NICE mode, it's also better to increase volume before the reverb processing to preserve accuracy.
-		if (dacInputMode != DACInputMode_GENERATION1) {
-			convertSamplesToOutput(reverbDryLeft, len, false);
-			convertSamplesToOutput(reverbDryRight, len, false);
-		}
+		produceLA32Output(reverbDryLeft, len);
+		produceLA32Output(reverbDryRight, len);
 
 		if (isReverbEnabled()) {
 			reverbModel->process(reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, len);
@@ -1553,12 +1558,16 @@ void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sampl
 		}
 
 		// Don't bother with conversion if the output is going to be unused
-		if (nonReverbLeft != tmpBufNonReverbLeft) convertSamplesToOutput(nonReverbLeft, len, false);
-		if (nonReverbRight != tmpBufNonReverbRight) convertSamplesToOutput(nonReverbRight, len, false);
-		if (dacInputMode == DACInputMode_GENERATION1) {
-			if (reverbDryLeft != tmpBufReverbDryLeft) convertSamplesToOutput(reverbDryLeft, len, false);
-			if (reverbDryRight != tmpBufReverbDryRight) convertSamplesToOutput(reverbDryRight, len, false);
+		if (nonReverbLeft != tmpBufNonReverbLeft) {
+			produceLA32Output(nonReverbLeft, len);
+			convertSamplesToOutput(nonReverbLeft, len, false);
 		}
+		if (nonReverbRight != tmpBufNonReverbRight) {
+			produceLA32Output(nonReverbRight, len);
+			convertSamplesToOutput(nonReverbRight, len, false);
+		}
+		if (reverbDryLeft != tmpBufReverbDryLeft) convertSamplesToOutput(reverbDryLeft, len, false);
+		if (reverbDryRight != tmpBufReverbDryRight) convertSamplesToOutput(reverbDryRight, len, false);
 	} else {
 		muteSampleBuffer(reverbWetLeft, len);
 		muteSampleBuffer(reverbWetRight, len);
