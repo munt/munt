@@ -19,6 +19,7 @@
 #define MT32EMU_SYNTH_H
 
 #include <cstdarg>
+#include <cstring>
 
 namespace MT32Emu {
 

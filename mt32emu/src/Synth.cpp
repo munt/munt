@@ -1270,7 +1270,7 @@ void Synth::refreshSystemReverbParameters() {
 		if (isReverbEnabled()) {
 			reverbModel->open();
 		}
-#elif
+#else
 		if (isReverbEnabled()) {
 			reverbModel->mute();
 		}
