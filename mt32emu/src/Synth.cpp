@@ -1484,12 +1484,14 @@ void Synth::produceLA32Output(Sample *buffer, Bit32u len) {
 	switch (dacInputMode) {
 		case DACInputMode_GENERATION2:
 			while (len--) {
-				*(buffer++) = (*buffer & 0x8000) | ((*buffer << 1) & 0x7FFE) | ((*buffer >> 14) & 0x0001);
+				*buffer = (*buffer & 0x8000) | ((*buffer << 1) & 0x7FFE) | ((*buffer >> 14) & 0x0001);
+				++buffer;
 			}
 			break;
 		case DACInputMode_NICE:
 			while (len--) {
-				*(buffer++) = clipBit16s(Bit32s(*buffer) << 1);
+				*buffer = clipBit16s(Bit32s(*buffer) << 1);
+				++buffer;
 			}
 			break;
 		default:
@@ -1516,7 +1518,8 @@ void Synth::convertSamplesToOutput(Sample *buffer, Bit32u len, bool reverb) {
 		return;
 	}
 	while (len--) {
-		*(buffer++) = clipBit16s((Bit32s(*buffer) * gain) >> 8);
+		*buffer = clipBit16s((Bit32s(*buffer) * gain) >> 8);
+		++buffer;
 	}
 #endif
 }
