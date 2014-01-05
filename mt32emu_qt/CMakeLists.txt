@@ -209,6 +209,11 @@ install(TARGETS
   DESTINATION bin
 )
 
+install(FILES
+  AUTHORS.txt COPYING.txt NEWS.txt README.txt TODO.txt
+  DESTINATION share/doc/munt/mt32emu-qt
+)
+
 # build a CPack driven installer package
 include(InstallRequiredSystemLibraries)
 set(CPACK_PACKAGE_VERSION_MAJOR "${munt_VERSION_MAJOR}")
@@ -217,6 +222,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "${munt_VERSION_PATCH}")
 set(CPACK_PACKAGE_VENDOR "muntemu.org")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.txt")
+set(CPACK_STRIP_FILES TRUE)
 set(CPACK_SOURCE_GENERATOR TGZ)
 set(CPACK_SOURCE_STRIP_FILES TRUE)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Main MT-32 emulation application using libmt32emu")

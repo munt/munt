@@ -48,6 +48,11 @@ install(TARGETS
   DESTINATION bin
 )
 
+install(FILES
+  AUTHORS.txt COPYING.txt README.txt
+  DESTINATION share/doc/munt/smf2wav
+)
+
 # build a CPack driven installer package
 include(InstallRequiredSystemLibraries)
 set(CPACK_PACKAGE_VERSION_MAJOR "${mt32emu_smf2wav_VERSION_MAJOR}")
@@ -56,6 +61,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "${mt32emu_smf2wav_VERSION_PATCH}")
 set(CPACK_PACKAGE_VENDOR "muntemu.org")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.txt")
+set(CPACK_STRIP_FILES TRUE)
 set(CPACK_SOURCE_GENERATOR TGZ)
 set(CPACK_SOURCE_STRIP_FILES TRUE)
 # The default source package file name has "-Source" at the end, which doesn't match our previous releases

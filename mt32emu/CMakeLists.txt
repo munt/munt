@@ -64,6 +64,11 @@ install(DIRECTORY
   DESTINATION include
 )
 
+install(FILES
+  AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.txt TODO.txt
+  DESTINATION share/doc/munt/libmt32emu
+)
+
 # Locations are exported for the benefit of a higher-level CMakeLists.txt.
 # These lines are irrelevant if compiling stand-alone.
 set(MT32EMU_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" CACHE PATH "")
