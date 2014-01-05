@@ -198,10 +198,10 @@ void SynthPropertiesDialog::loadSynthProfile() {
 	ui->reverbModeComboBox->setCurrentIndex(synthProfile.reverbMode);
 	ui->reverbTimeSlider->setValue(synthProfile.reverbTime);
 	ui->reverbLevelSlider->setValue(synthProfile.reverbLevel);
-	if (synthProfile.reverbEnabled) {
-		ui->reverbCheckBox->setCheckState(synthProfile.reverbOverridden ? Qt::Checked : Qt::PartiallyChecked);
+	if (synthProfile.reverbOverridden) {
+		ui->reverbCheckBox->setCheckState(synthProfile.reverbEnabled ? Qt::Checked : Qt::Unchecked);
 	} else {
-		ui->reverbCheckBox->setCheckState(Qt::Unchecked);
+		ui->reverbCheckBox->setCheckState(Qt::PartiallyChecked);
 	}
 	ui->outputGainSlider->setValue(synthProfile.outputGain * 100);
 	ui->reverbOutputGainSlider->setValue(synthProfile.reverbOutputGain * 100);
