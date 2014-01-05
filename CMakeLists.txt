@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 project(munt)
 set(munt_VERSION_MAJOR 1)
-set(munt_VERSION_MINOR 3)
+set(munt_VERSION_MINOR 4)
 set(munt_VERSION_PATCH 0)
 
 option(WITH_INTERNAL_PORTAUDIO "Use internal version of PortAudio" TRUE)

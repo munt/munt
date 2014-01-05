@@ -1,4 +1,4 @@
-/* Copyright (C) 2011, 2012, 2013 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011, 2012, 2013, 2014 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -119,7 +119,7 @@ void MainWindow::on_actionAbout_triggered()
 					   "Build " GIT_HASH "\n"
 					   "Date " BUILD_DATE "\n"
 					   "\n"
-					   "Copyright (C) 2011, 2012, 2013 Jerome Fisher, Sergey V. Mikayev\n"
+					   "Copyright (C) 2011, 2012, 2013, 2014 Jerome Fisher, Sergey V. Mikayev\n"
 					   "\n"
 					   "Licensed under GPL v3 or any later version."
 					   );

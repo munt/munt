@@ -1,3 +1,8 @@
+Upcoming release 1.1.1:
+
+	* Updated mt32emu library to version 1.4.0.
+	* Fixed a few minor bugs related to reverb and output gains.
+
 2013-09-21:
 
 	1.1.0 released.

@@ -1,3 +1,11 @@
+Upcoming release 1.4.0:
+
+	* Reworked core rendering engine:
+	  - reduced memory consumption;
+	  - implemented accurate emulation of the LA32 output bit shift depending on the unit generation;
+	  - output gain is now applied after the possible bit shift as it should, assuming the output gain
+	    is the gain of output analogue amplifier, so presence of the overdrives doesn't dependent on it.
+
 2013-09-21:
 
 	1.3.0 released.
