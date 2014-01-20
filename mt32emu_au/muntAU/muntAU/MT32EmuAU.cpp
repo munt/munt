@@ -339,9 +339,11 @@ OSStatus MT32Synth::GetParameterValueStrings(AudioUnitScope inScope, AudioUnitPa
 }
 
 OSStatus MT32Synth::RestoreState(CFPropertyListRef inData) {
-    if(synth) {
-        Globals()->SetParameter(kReverbEnabledParam, synth->isReverbEnabled());
-    }
+    MusicDeviceBase::RestoreState(inData);
+    synth->setOutputGain(Globals()->GetParameter(kGlobalVolumeParam));
+    synth->setReverbOutputGain(Globals()->GetParameter(kReverbGainParam));
+    synth->setReverbEnabled(Globals()->GetParameter(kReverbEnabledParam) == 1.0);
+    sendMIDI(0xC1, Globals()->GetParameter(kInstrumentParam), 0x00, 0x00);
     return noErr;
 }
 
