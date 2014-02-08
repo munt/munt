@@ -148,7 +148,7 @@ public:
 			thread = NULL;
 		}
 		MIXER_DelChannel(chan);
-		chan = NULL; 
+		chan = NULL;
 		synth->close();
 		delete synth;
 		synth = NULL;

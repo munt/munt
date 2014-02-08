@@ -1,16 +1,18 @@
-diff -Nru dosbox-0.74/src/Makefile.am dosbox-0.74-mt32/src/Makefile.am
---- dosbox-0.74/src/Makefile.am	2010-05-10 17:43:54 +0000
-+++ dosbox-0.74-mt32/src/Makefile.am	2011-04-17 18:06:01 +0000
-@@ -17,4 +17,4 @@
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 184469e..286638d 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -17,4 +17,4 @@ dosbox_LDADD = cpu/libcpu.a debug/libdebug.a dos/libdos.a fpu/libfpu.a  hardware
  
  EXTRA_DIST = winres.rc dosbox.ico
  
 -
 +LIBS +=  -lmt32emu
-diff -Nru dosbox-0.74/src/dosbox.cpp dosbox-0.74-mt32/src/dosbox.cpp
---- dosbox-0.74/src/dosbox.cpp	2010-05-10 17:43:54 +0000
-+++ dosbox-0.74-mt32/src/dosbox.cpp	2013-09-06 18:39:25 +0000
-@@ -467,7 +467,7 @@
+diff --git a/src/dosbox.cpp b/src/dosbox.cpp
+index a4bf564..ae66fd6 100644
+--- a/src/dosbox.cpp
++++ b/src/dosbox.cpp
+@@ -467,7 +467,7 @@ void DOSBOX_Init(void) {
  	
  	const char* mputypes[] = { "intelligent", "uart", "none",0};
  	// FIXME: add some way to offer the actually available choices.
@@ -19,7 +21,7 @@ diff -Nru dosbox-0.74/src/dosbox.cpp dosbox-0.74-mt32/src/dosbox.cpp
  	Pstring = secprop->Add_string("mpu401",Property::Changeable::WhenIdle,"intelligent");
  	Pstring->Set_values(mputypes);
  	Pstring->Set_help("Type of MPU-401 to emulate.");
-@@ -480,6 +480,68 @@
+@@ -480,6 +480,68 @@ void DOSBOX_Init(void) {
  	Pstring->Set_help("Special configuration options for the device driver. This is usually the id of the device you want to use.\n"
  	                  "  See the README/Manual for more details.");
  
@@ -66,7 +68,7 @@ diff -Nru dosbox-0.74/src/dosbox.cpp dosbox-0.74-mt32/src/dosbox.cpp
 +		"15 13 12 11 10 09 08 07 06 05 04 03 02 01 00 XX\n\n"
 +
 +		"GENERATION2 = 3\n"
-+		"Re-orders the LA32 output bits as in later geneerations (personally confirmed on my CM-32L - KG).\n"
++		"Re-orders the LA32 output bits as in later generations (personally confirmed on my CM-32L - KG).\n"
 +		"Bit order at DAC (where each number represents the original LA32 output bit number):\n"
 +		"15 13 12 11 10 09 08 07 06 05 04 03 02 01 00 14\n");
 +
@@ -78,7 +80,7 @@ diff -Nru dosbox-0.74/src/dosbox.cpp dosbox-0.74-mt32/src/dosbox.cpp
 +	const char *mt32reverbTimes[] = {"0", "1", "2", "3", "4", "5", "6", "7",0};
 +	Pint = secprop->Add_int("mt32.reverb.time",Property::Changeable::WhenIdle,5);
 +	Pint->Set_values(mt32reverbTimes);
-+	Pint->Set_help("MT-32 reverb decaying time"); 
++	Pint->Set_help("MT-32 reverb decaying time");
 +
 +	const char *mt32reverbLevels[] = {"0", "1", "2", "3", "4", "5", "6", "7",0};
 +	Pint = secprop->Add_int("mt32.reverb.level",Property::Changeable::WhenIdle,3);
@@ -88,20 +90,22 @@ diff -Nru dosbox-0.74/src/dosbox.cpp dosbox-0.74-mt32/src/dosbox.cpp
  #if C_DEBUG
  	secprop=control->AddSection_prop("debug",&DEBUG_Init);
  #endif
-diff -Nru dosbox-0.74/src/gui/Makefile.am dosbox-0.74-mt32/src/gui/Makefile.am
---- dosbox-0.74/src/gui/Makefile.am	2010-05-10 17:43:54 +0000
-+++ dosbox-0.74-mt32/src/gui/Makefile.am	2011-04-17 18:06:19 +0000
-@@ -7,5 +7,5 @@
+diff --git a/src/gui/Makefile.am b/src/gui/Makefile.am
+index 3fed5e6..d4aeabc 100644
+--- a/src/gui/Makefile.am
++++ b/src/gui/Makefile.am
+@@ -7,5 +7,5 @@ libgui_a_SOURCES = sdlmain.cpp sdl_mapper.cpp dosbox_logo.h \
  	render_templates_sai.h render_templates_hq.h \
  	render_templates_hq2x.h render_templates_hq3x.h \
  	midi.cpp midi_win32.h midi_oss.h midi_coreaudio.h midi_alsa.h \
 -	midi_coremidi.h sdl_gui.cpp dosbox_splash.h
 +	midi_coremidi.h midi_mt32.h sdl_gui.cpp dosbox_splash.h
  
-diff -Nru dosbox-0.74/src/gui/midi.cpp dosbox-0.74-mt32/src/gui/midi.cpp
---- dosbox-0.74/src/gui/midi.cpp	2010-05-10 17:43:54 +0000
-+++ dosbox-0.74-mt32/src/gui/midi.cpp	2011-04-17 18:06:28 +0000
-@@ -98,6 +98,8 @@
+diff --git a/src/gui/midi.cpp b/src/gui/midi.cpp
+index 61d15e5..ed03ea4 100644
+--- a/src/gui/midi.cpp
++++ b/src/gui/midi.cpp
+@@ -98,6 +98,8 @@ MidiHandler Midi_none;
  
  #endif
  
@@ -110,9 +114,11 @@ diff -Nru dosbox-0.74/src/gui/midi.cpp dosbox-0.74-mt32/src/gui/midi.cpp
  static struct {
  	Bitu status;
  	Bitu cmd_len;
-diff -Nru dosbox-0.74/src/gui/midi_mt32.h dosbox-0.74-mt32/src/gui/midi_mt32.h
---- dosbox-0.74/src/gui/midi_mt32.h	1970-01-01 00:00:00 +0000
-+++ dosbox-0.74-mt32/src/gui/midi_mt32.h	2013-09-19 17:59:17 +0000
+diff --git a/src/gui/midi_mt32.h b/src/gui/midi_mt32.h
+new file mode 100644
+index 0000000..8834815
+--- /dev/null
++++ b/src/gui/midi_mt32.h
 @@ -0,0 +1,249 @@
 +#include <mt32emu/mt32emu.h>
 +#include <SDL_thread.h>
@@ -264,7 +270,7 @@ diff -Nru dosbox-0.74/src/gui/midi_mt32.h dosbox-0.74-mt32/src/gui/midi_mt32.h
 +			thread = NULL;
 +		}
 +		MIXER_DelChannel(chan);
-+		chan = NULL; 
++		chan = NULL;
 +		synth->close();
 +		delete synth;
 +		synth = NULL;
