@@ -13,3 +13,8 @@ syncThread/midi_mt32.h      - version of the synth engine with synchronous rende
 asyncThread/midi_mt32.h     - version of the synth engine with asynchronous rendering in a separate thread
                               Compared to the sync version, consumes significantly less CPU time.
                               Adds latency about 128 ms.
+
+===========================================================================================================
+
+dosbox-SVN-r3858-mt32-patch.diff - diff file to be applied to DOSBox's source distribution.
+                                   It uses a bit different and clear approach introduced since SVN r3836.
