@@ -194,6 +194,7 @@ public:
 			MessageBox(NULL, L"Failed to get # of samples played", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 			return 10;
 		}
+		mmTime.u.sample &= WRAP_MASK;
 
 		// Deal with waveOutGetPosition() wraparound. For 16-bit stereo output, it equals 2^27,
 		// presumably caused by the internal 32-bit counter of bits played.

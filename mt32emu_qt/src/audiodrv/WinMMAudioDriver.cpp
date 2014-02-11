@@ -76,6 +76,7 @@ DWORD WinMMAudioStream::getCurrentPlayPosition() {
 		qDebug() << "WinMMAudioDriver: Failed to get # of samples played";
 		return (DWORD)-1;
 	}
+	mmTime.u.sample &= WRAP_MASK;
 
 	// Deal with waveOutGetPosition() wraparound. For 16-bit stereo output, it equals 2^27,
 	// presumably caused by the internal 32-bit counter of bits played.
