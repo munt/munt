@@ -28,16 +28,15 @@
 
 using namespace MT32Emu;
 
-#define USE_DYNAMIC_LOADING
-
 static const int FRAME_SIZE = 4; // Stereo, 16-bit
 static const unsigned int DEFAULT_CHUNK_MS = 10;
 static const unsigned int DEFAULT_AUDIO_LATENCY = 200;
 static const unsigned int DEFAULT_MIDI_LATENCY = 20;
 
+#ifdef USE_PULSEAUDIO_DYNAMIC_LOADING
+
 static const char PA_LIB_NAME[] = "libpulse-simple.so"; // PulseAudio library filename
 
-#ifdef USE_DYNAMIC_LOADING
 // Pointers for PulseAudio simple functions
 	static __typeof__ (pa_simple_new) *_pa_simple_new = NULL;
 	static __typeof__ (pa_simple_free) *_pa_simple_free = NULL;
@@ -55,7 +54,7 @@ static const char PA_LIB_NAME[] = "libpulse-simple.so"; // PulseAudio library fi
 #endif
 
 static bool loadLibrary(bool loadNeeded) {
-#ifdef USE_DYNAMIC_LOADING
+#ifdef USE_PULSEAUDIO_DYNAMIC_LOADING
 	static void *dlHandle = NULL;
 	char *error;
 
@@ -115,6 +114,8 @@ static bool loadLibrary(bool loadNeeded) {
 		loadLibrary(false);
 		return false;
 	}
+#else
+	(void)loadNeeded;
 #endif
 	return true;
 }
