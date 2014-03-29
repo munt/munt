@@ -7,6 +7,8 @@ set(mt32emu_qt_VERSION_MAJOR 1)
 set(mt32emu_qt_VERSION_MINOR 1)
 set(mt32emu_qt_VERSION_PATCH 1)
 
+option(mt32emu-qt_WITH_ALSA_MIDI_DRIVER "Use ALSA MIDI sequencer" TRUE)
+
 add_definitions(-DPACKAGE_VERSION="${munt_VERSION_MAJOR}.${munt_VERSION_MINOR}.${munt_VERSION_PATCH}")
 add_definitions(-DAPP_VERSION="${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
 
@@ -58,7 +60,10 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   list(APPEND mt32emu_qt_SOURCES src/mididrv/CoreMidiDriver.cpp)
   set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework CoreMIDI")
 else()
-  list(APPEND mt32emu_qt_SOURCES src/mididrv/OSSMidiPortDriver.cpp)
+  find_package(ALSA)
+  if(NOT (ALSA_FOUND AND mt32emu-qt_WITH_ALSA_MIDI_DRIVER))
+    list(APPEND mt32emu_qt_SOURCES src/mididrv/OSSMidiPortDriver.cpp)
+  endif()
   set(EXT_LIBS ${EXT_LIBS} pthread)
   check_library_exists(rt clock_nanosleep "" NANOSLEEP_IN_RT_FOUND)
   if(NANOSLEEP_IN_RT_FOUND)
@@ -139,19 +144,25 @@ if(PORTAUDIO_FOUND)
   )
 endif()
 
-find_package(ALSA)
 if(ALSA_FOUND)
-  add_definitions(-DWITH_ALSA_AUDIO_DRIVER -DWITH_ALSA_MIDI_DRIVER)
+  add_definitions(-DWITH_ALSA_AUDIO_DRIVER)
   set(EXT_LIBS ${EXT_LIBS} ${ALSA_LIBRARIES})
   include_directories(${ALSA_INCLUDE_DIRS})
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
-    src/mididrv/ALSADriver.cpp
     src/audiodrv/AlsaAudioDriver.cpp
   )
-  set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-    src/mididrv/ALSADriver.h
-#    src/audiodrv/AlsaAudioDriver.h
-  )
+# set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
+#   src/audiodrv/AlsaAudioDriver.h
+# )
+  if(mt32emu-qt_WITH_ALSA_MIDI_DRIVER)
+    add_definitions(-DWITH_ALSA_MIDI_DRIVER)
+    set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+      src/mididrv/ALSADriver.cpp
+    )
+    set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
+      src/mididrv/ALSADriver.h
+    )
+  endif()
 endif()
 
 find_package(PulseAudio)
