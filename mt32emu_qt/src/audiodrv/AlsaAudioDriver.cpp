@@ -61,9 +61,7 @@ void *AlsaAudioStream::processingThread(void *userData) {
 			framesInAudioBuffer = 0;
 		}
 		audioStream.updateTimeInfo(nanosNow, framesInAudioBuffer);
-		if (!audioStream.synth.render(audioStream.buffer, audioStream.bufferSize)) {
-			memset(audioStream.buffer, 0, audioStream.bufferSize);
-		}
+		audioStream.synth.render(audioStream.buffer, audioStream.bufferSize);
 		error = snd_pcm_writei(audioStream.stream, audioStream.buffer, audioStream.bufferSize);
 		if (error < 0) {
 			qDebug() << "snd_pcm_writei failed:" << snd_strerror(error);

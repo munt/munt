@@ -159,11 +159,14 @@ bool QSynth::playMIDISysex(Bit8u *sysex, Bit32u sysexLen, Bit32u timestamp) {
 	return eventPushed;
 }
 
-bool QSynth::render(Bit16s *buffer, uint length) {
+void QSynth::render(Bit16s *buffer, uint length) {
 	synthMutex->lock();
 	if (!isOpen()) {
 		synthMutex->unlock();
-		return false;
+
+		// Synth is closed, simply erase buffer content
+		memset(buffer, 0, length << 2);
+		return;
 	}
 #if MT32EMU_USE_FLOAT_SAMPLES
 	float fBuf[2 * MAX_SAMPLES_PER_RUN];
@@ -179,7 +182,6 @@ bool QSynth::render(Bit16s *buffer, uint length) {
 	synth->render(buffer, length);
 #endif
 	synthMutex->unlock();
-	return true;
 }
 
 bool QSynth::open(const QString useSynthProfileName) {

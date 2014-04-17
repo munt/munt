@@ -190,7 +190,7 @@ void AudioFileWriter::run() {
 		}
 		while (frameCount > 0) {
 			uint framesToRender = qMin(bufferSize, frameCount);
-			if (!synth->render(buffer, framesToRender)) break;
+			synth->render(buffer, framesToRender);
 			qint64 bytesToWrite = framesToRender * FRAME_SIZE;
 			char *bufferPos = (char *)buffer;
 			if (skipSilence) {

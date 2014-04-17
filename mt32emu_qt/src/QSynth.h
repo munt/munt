@@ -106,7 +106,7 @@ public:
 	void playMIDISysexNow(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen);
 	bool playMIDIShortMessage(MT32Emu::Bit32u msg, MT32Emu::Bit32u timestamp);
 	bool playMIDISysex(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, MT32Emu::Bit32u timestamp);
-	bool render(MT32Emu::Bit16s *buffer, uint length);
+	void render(MT32Emu::Bit16s *buffer, uint length);
 
 	const QReportHandler *getReportHandler() const;
 

@@ -65,9 +65,7 @@ void *OSSAudioStream::processingThread(void *userData) {
 			framesInAudioBuffer = 0;
 		}
 		audioStream.updateTimeInfo(nanosNow, framesInAudioBuffer);
-		if (!audioStream.synth.render(audioStream.buffer, audioStream.bufferSize)) {
-			memset(audioStream.buffer, 0, audioStream.bufferSize);
-		}
+		audioStream.synth.render(audioStream.buffer, audioStream.bufferSize);
 		error = write(audioStream.stream, audioStream.buffer, FRAME_SIZE * audioStream.bufferSize);
 		if (error != int(FRAME_SIZE * audioStream.bufferSize)) {
 			if (error == -1) {

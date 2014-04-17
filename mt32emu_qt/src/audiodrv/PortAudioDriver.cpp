@@ -149,10 +149,7 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	}
 	stream->updateTimeInfo(nanosNow, framesInAudioBuffer);
 
-	if (!stream->synth.render((Bit16s *)outputBuffer, frameCount)) {
-		// PortAudio requires that the buffer is filled no matter what
-		memset((char *)outputBuffer, 0, frameCount * FRAME_SIZE);
-	}
+	stream->synth.render((Bit16s *)outputBuffer, frameCount);
 	stream->renderedFramesCount += frameCount;
 	return paContinue;
 }

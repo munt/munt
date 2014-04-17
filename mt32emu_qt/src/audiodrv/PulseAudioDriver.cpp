@@ -145,9 +145,7 @@ void *PulseAudioStream::processingThread(void *userData) {
 			framesInAudioBuffer = 0;
 		}
 		audioStream.updateTimeInfo(nanosNow, framesInAudioBuffer);
-		if (!audioStream.synth.render(audioStream.buffer, audioStream.bufferSize)) {
-			memset(audioStream.buffer, 0, audioStream.bufferSize);
-		}
+		audioStream.synth.render(audioStream.buffer, audioStream.bufferSize);
 		if (_pa_simple_write(audioStream.stream, audioStream.buffer, audioStream.bufferSize * FRAME_SIZE, &error) < 0) {
 			qDebug() << "pa_simple_write() failed:" << _pa_strerror(error);
 			_pa_simple_free(audioStream.stream);
