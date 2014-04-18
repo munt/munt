@@ -2,6 +2,8 @@ Upcoming release 1.1.1:
 
 	* Updated mt32emu library to version 1.4.0.
 	* Fixed a few minor bugs related to reverb and output gains.
+	* Fixed a bug in Windows MME audio driver introduced in version 1.1.0:
+	  resetting the synth no longer cause stopping generation of audio output.
 
 2013-09-21:
 
