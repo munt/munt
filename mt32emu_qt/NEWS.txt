@@ -2,6 +2,12 @@ Upcoming release 1.1.1:
 
 	* Updated mt32emu library to version 1.4.0.
 	* Fixed a few minor bugs related to reverb and output gains.
+	* Improved build:
+	  - added build option mt32emu-qt_WITH_ALSA_MIDI_DRIVER to control
+	    whether to use ALSA MIDI driver (if enabled, ALSA MIDI sequencer
+	    ABI is used to communicate with other applications, otherwise,
+	    ALSA/OSS4 raw MIDI ports and OSS sequencer ABI are available);
+	  - OSS MIDI driver no longer compiles if it isn't needed.
 	* Fixed a bug in Windows MME audio driver introduced in version 1.1.0:
 	  resetting the synth no longer cause stopping generation of audio output.
 
