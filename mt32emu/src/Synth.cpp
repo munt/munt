@@ -492,7 +492,11 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 		mt32ram.system.chanAssign[i] = i + 1;
 	}
 	mt32ram.system.masterVol = 100; // Confirmed
+
+	bool oldReverbOverridden = reverbOverridden;
+	reverbOverridden = false;
 	refreshSystem();
+	reverbOverridden = oldReverbOverridden;
 
 	for (int i = 0; i < 9; i++) {
 		MemParams::PatchTemp *patchTemp = &mt32ram.patchTemp[i];
