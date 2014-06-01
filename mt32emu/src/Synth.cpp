@@ -60,6 +60,7 @@ Synth::Synth(ReportHandler *useReportHandler) {
 	isOpen = false;
 	reverbOverridden = false;
 	partialCount = DEFAULT_MAX_PARTIALS;
+	controlROMFeatures = NULL;
 
 	if (useReportHandler == NULL) {
 		reportHandler = new ReportHandler;
@@ -69,11 +70,9 @@ Synth::Synth(ReportHandler *useReportHandler) {
 		isDefaultReportHandler = false;
 	}
 
-	reverbModels[REVERB_MODE_ROOM] = new BReverbModel(REVERB_MODE_ROOM);
-	reverbModels[REVERB_MODE_HALL] = new BReverbModel(REVERB_MODE_HALL);
-	reverbModels[REVERB_MODE_PLATE] = new BReverbModel(REVERB_MODE_PLATE);
-	reverbModels[REVERB_MODE_TAP_DELAY] = new BReverbModel(REVERB_MODE_TAP_DELAY);
-
+	for (int i = 0; i < 4; i++) {
+		reverbModels[i] = NULL;
+	}
 	reverbModel = NULL;
 	setDACInputMode(DACInputMode_NICE);
 	setMIDIDelayMode(MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY);
@@ -89,9 +88,6 @@ Synth::Synth(ReportHandler *useReportHandler) {
 
 Synth::~Synth() {
 	close(); // Make sure we're closed and everything is freed
-	for (int i = 0; i < 4; i++) {
-		delete reverbModels[i];
-	}
 	if (isDefaultReportHandler) {
 		delete reportHandler;
 	}
@@ -234,6 +230,14 @@ bool Synth::loadControlROM(const ROMImage &controlROMImage) {
 			|| (controlROMInfo->pairType != ROMInfo::Full)) {
 		return false;
 	}
+	controlROMFeatures = controlROMImage.getROMInfo()->controlROMFeatures;
+	if (controlROMFeatures == NULL) {
+#if MT32EMU_MONITOR_INIT
+		printDebug("Invalid Control ROM Info provided without feature set");
+#endif
+		return false;
+	}
+
 #if MT32EMU_MONITOR_INIT
 	printDebug("Found Control ROM: %s, %s", controlROMInfo->shortName, controlROMInfo->description);
 #endif
@@ -368,14 +372,6 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	}
 	partialCount = usePartialCount;
 	abortingPoly = NULL;
-#if MT32EMU_MONITOR_INIT
-	printDebug("Initialising Constant Tables");
-#endif
-#if !MT32EMU_REDUCE_REVERB_MEMORY
-	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
-		reverbModels[i]->open();
-	}
-#endif
 
 	// This is to help detect bugs
 	memset(&mt32ram, '?', sizeof(mt32ram));
@@ -405,6 +401,23 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 		reportHandler->onErrorPCMROM();
 		return false;
 	}
+
+#if MT32EMU_MONITOR_INIT
+	printDebug("Initialising Reverb Models");
+#endif
+	bool mt32CompatibleReverb = controlROMFeatures->isDefaultReverbMT32Compatible();
+#if MT32EMU_MONITOR_INIT
+	printDebug("Using %s Compatible Reverb Models", mt32CompatibleReverb ? "MT-32" : "CM-32L");
+#endif
+	reverbModels[REVERB_MODE_ROOM] = new BReverbModel(REVERB_MODE_ROOM, mt32CompatibleReverb);
+	reverbModels[REVERB_MODE_HALL] = new BReverbModel(REVERB_MODE_HALL, mt32CompatibleReverb);
+	reverbModels[REVERB_MODE_PLATE] = new BReverbModel(REVERB_MODE_PLATE, mt32CompatibleReverb);
+	reverbModels[REVERB_MODE_TAP_DELAY] = new BReverbModel(REVERB_MODE_TAP_DELAY, mt32CompatibleReverb);
+#if !MT32EMU_REDUCE_REVERB_MEMORY
+	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
+		reverbModels[i]->open();
+	}
+#endif
 
 #if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Timbre Bank A");
@@ -543,9 +556,11 @@ void Synth::close() {
 	deleteMemoryRegions();
 
 	for (int i = 0; i < 4; i++) {
-		reverbModels[i]->close();
+		delete reverbModels[i];
+		reverbModels[i] = NULL;
 	}
 	reverbModel = NULL;
+	controlROMFeatures = NULL;
 	isOpen = false;
 }
 

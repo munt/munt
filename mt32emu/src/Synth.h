@@ -324,6 +324,7 @@ private:
 
 	PCMWaveEntry *pcmWaves; // Array
 
+	const ControlROMFeatureSet *controlROMFeatures;
 	const ControlROMMap *controlROMMap;
 	Bit8u controlROMData[CONTROL_ROM_SIZE];
 	Bit16s *pcmROMData;
