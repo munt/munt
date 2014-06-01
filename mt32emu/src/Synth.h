@@ -480,8 +480,16 @@ public:
 
 	void setReverbEnabled(bool reverbEnabled);
 	bool isReverbEnabled() const;
+	// Sets override reverb mode. In this mode, emulation ignores sysexes (or the related part of them) which control the reverb parameters.
+	// This mode is in effect until it is turned off. When the synth is re-opened, the override mode is unchanged but the state
+	// of the reverb model is reset to default.
 	void setReverbOverridden(bool reverbOverridden);
 	bool isReverbOverridden() const;
+	// Forces reverb model compatibility mode. By default, the compatibility mode corresponds to the used control ROM version.
+	// Invoking this method with the argument set to true forces emulation of old MT-32 reverb circuit.
+	// When the argument is false, emulation of the reverb circuit used in new generation of MT-32 compatible modules is enforced
+	// (these include CM-32L and LAPC-I).
+	void setReverbCompatibilityMode(bool mt32CompatibleMode);
 	void setDACInputMode(DACInputMode mode);
 	DACInputMode getDACInputMode() const;
 	void setMIDIDelayMode(MIDIDelayMode mode);

@@ -148,6 +148,27 @@ bool Synth::isReverbOverridden() const {
 	return reverbOverridden;
 }
 
+void Synth::setReverbCompatibilityMode(bool mt32CompatibleMode) {
+	if (isOpen) {
+		setReverbEnabled(false);
+		for (int i = 0; i < 4; i++) {
+			delete reverbModels[i];
+		}
+	}
+	reverbModels[REVERB_MODE_ROOM] = new BReverbModel(REVERB_MODE_ROOM, mt32CompatibleMode);
+	reverbModels[REVERB_MODE_HALL] = new BReverbModel(REVERB_MODE_HALL, mt32CompatibleMode);
+	reverbModels[REVERB_MODE_PLATE] = new BReverbModel(REVERB_MODE_PLATE, mt32CompatibleMode);
+	reverbModels[REVERB_MODE_TAP_DELAY] = new BReverbModel(REVERB_MODE_TAP_DELAY, mt32CompatibleMode);
+#if !MT32EMU_REDUCE_REVERB_MEMORY
+	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
+		reverbModels[i]->open();
+	}
+#endif
+	if (isOpen) {
+		setReverbEnabled(true);
+	}
+}
+
 void Synth::setDACInputMode(DACInputMode mode) {
 #if MT32EMU_USE_FLOAT_SAMPLES
 	// We aren't emulating these in float mode, so better to inform the invoker
@@ -409,15 +430,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 #if MT32EMU_MONITOR_INIT
 	printDebug("Using %s Compatible Reverb Models", mt32CompatibleReverb ? "MT-32" : "CM-32L");
 #endif
-	reverbModels[REVERB_MODE_ROOM] = new BReverbModel(REVERB_MODE_ROOM, mt32CompatibleReverb);
-	reverbModels[REVERB_MODE_HALL] = new BReverbModel(REVERB_MODE_HALL, mt32CompatibleReverb);
-	reverbModels[REVERB_MODE_PLATE] = new BReverbModel(REVERB_MODE_PLATE, mt32CompatibleReverb);
-	reverbModels[REVERB_MODE_TAP_DELAY] = new BReverbModel(REVERB_MODE_TAP_DELAY, mt32CompatibleReverb);
-#if !MT32EMU_REDUCE_REVERB_MEMORY
-	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
-		reverbModels[i]->open();
-	}
-#endif
+	setReverbCompatibilityMode(mt32CompatibleReverb);
 
 #if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Timbre Bank A");
