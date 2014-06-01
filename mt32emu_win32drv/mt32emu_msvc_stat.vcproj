@@ -45,7 +45,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -116,7 +116,7 @@
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
 				FloatingPointModel="2"
@@ -302,11 +302,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\AReverbModel.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\munt\mt32emu\src\delayReverb.cpp"
+				RelativePath="..\..\munt\mt32emu\src\BReverbModel.cpp"
 				>
 			</File>
 			<File
@@ -318,11 +314,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\FreeverbModel.cpp"
+				RelativePath="..\..\munt\mt32emu\src\LA32Ramp.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\LA32Ramp.cpp"
+				RelativePath="..\..\munt\mt32emu\src\LA32WaveGenerator.cpp"
 				>
 			</File>
 			<File
@@ -366,22 +362,6 @@
 				>
 			</File>
 			<Filter
-				Name="freeverb"
-				>
-				<File
-					RelativePath="..\..\munt\mt32emu\src\freeverb\allpass.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\munt\mt32emu\src\freeverb\comb.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\munt\mt32emu\src\freeverb\revmodel.cpp"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="sha1"
 				>
 				<File
@@ -396,11 +376,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\AReverbModel.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\munt\mt32emu\src\delayReverb.h"
+				RelativePath="..\..\munt\mt32emu\src\BReverbModel.h"
 				>
 			</File>
 			<File
@@ -412,11 +388,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\FreeverbModel.h"
+				RelativePath="..\..\munt\mt32emu\src\LA32FloatWaveGenerator.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\munt\mt32emu\src\LA32Ramp.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\munt\mt32emu\src\LA32WaveGenerator.h"
 				>
 			</File>
 			<File
@@ -467,30 +447,6 @@
 				RelativePath="..\..\munt\mt32emu\src\tvp.h"
 				>
 			</File>
-			<Filter
-				Name="freeverb"
-				>
-				<File
-					RelativePath="..\..\munt\mt32emu\src\freeverb\allpass.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\munt\mt32emu\src\freeverb\comb.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\munt\mt32emu\src\freeverb\denormals.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\munt\mt32emu\src\freeverb\revmodel.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\munt\mt32emu\src\freeverb\tuning.h"
-					>
-				</File>
-			</Filter>
 			<Filter
 				Name="sha1"
 				>
