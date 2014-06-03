@@ -164,12 +164,12 @@ void SynthPropertiesDialog::resetSynth() {
 	on_midiDelayEmuComboBox_currentIndexChanged(ui->midiDelayEmuComboBox->currentIndex());
 	on_dacEmuComboBox_currentIndexChanged(ui->dacEmuComboBox->currentIndex());
 	Qt::CheckState reverbState = ui->reverbCheckBox->checkState();
-	on_reverbCheckBox_stateChanged(reverbState);
 	if (reverbState != Qt::PartiallyChecked) {
 		ui->reverbModeComboBox->setCurrentIndex(reverbMode);
 		ui->reverbTimeSlider->setValue(reverbTime);
 		ui->reverbLevelSlider->setValue(reverbLevel);
 	}
+	on_reverbCheckBox_stateChanged(reverbState);
 	on_outputGainSlider_valueChanged(ui->outputGainSlider->value());
 	on_reverbOutputGainSlider_valueChanged(ui->reverbOutputGainSlider->value());
 	on_reverseStereoCheckBox_stateChanged(ui->reverseStereoCheckBox->checkState());
