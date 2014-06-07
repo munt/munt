@@ -551,8 +551,8 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	return true;
 }
 
-void Synth::close() {
-	if (!isOpen) {
+void Synth::close(bool forced) {
+	if (!forced && !isOpen) {
 		return;
 	}
 

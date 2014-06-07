@@ -440,7 +440,7 @@ public:
 	bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount = DEFAULT_MAX_PARTIALS);
 
 	// Closes the MT-32 and deallocates any memory used by the synthesizer
-	void close(void);
+	void close(bool forced = false);
 
 	// All the enqueued events are processed by the synth immediately.
 	void flushMIDIQueue();

@@ -196,6 +196,7 @@ bool QSynth::open(const QString useSynthProfileName) {
 	setSynthProfile(synthProfile, synthProfileName);
 	if (controlROMImage == NULL || pcmROMImage == NULL) {
 		qDebug() << "Missing ROM files. Can't open synth :(";
+		freeROMImages();
 		return false;
 	}
 	if (synth->open(*controlROMImage, *pcmROMImage)) {
@@ -204,6 +205,10 @@ bool QSynth::open(const QString useSynthProfileName) {
 		setSynthProfile(synthProfile, synthProfileName);
 		return true;
 	}
+	// We're now in a partially-open state - better to properly close.
+	synth->close(true);
+	delete synth;
+	synth = new Synth(&reportHandler);
 	return false;
 }
 
@@ -368,6 +373,7 @@ bool QSynth::reset() {
 	// Do not delete synth here to keep the rendered frame counter value, audioStream is also alive during reset
 	if (!synth->open(*controlROMImage, *pcmROMImage)) {
 		// We're now in a partially-open state - better to properly close.
+		synth->close(true);
 		delete synth;
 		synth = new Synth(&reportHandler);
 		synthMutex->unlock();
