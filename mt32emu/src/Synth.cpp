@@ -149,7 +149,8 @@ bool Synth::isReverbOverridden() const {
 }
 
 void Synth::setReverbCompatibilityMode(bool mt32CompatibleMode) {
-	if (isOpen) {
+	if (reverbModels[REVERB_MODE_ROOM] != NULL) {
+		if (isMT32ReverbCompatibilityMode() == mt32CompatibleMode) return;
 		setReverbEnabled(false);
 		for (int i = 0; i < 4; i++) {
 			delete reverbModels[i];
@@ -167,6 +168,10 @@ void Synth::setReverbCompatibilityMode(bool mt32CompatibleMode) {
 	if (isOpen) {
 		setReverbEnabled(true);
 	}
+}
+
+bool Synth::isMT32ReverbCompatibilityMode() {
+	return isOpen && (reverbModels[REVERB_MODE_ROOM]->isMT32Compatible(REVERB_MODE_ROOM));
 }
 
 void Synth::setDACInputMode(DACInputMode mode) {
