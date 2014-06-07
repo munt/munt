@@ -346,12 +346,13 @@ private:
 	MIDIDelayMode midiDelayMode;
 	DACInputMode dacInputMode;
 
-#if MT32EMU_USE_FLOAT_SAMPLES
 	float outputGain;
 	float reverbOutputGain;
+#if MT32EMU_USE_FLOAT_SAMPLES
+	float effectiveReverbOutputGain;
 #else
-	int outputGain;
-	int reverbOutputGain;
+	int effectiveOutputGain;
+	int effectiveReverbOutputGain;
 #endif
 
 	bool reversedStereoEnabled;

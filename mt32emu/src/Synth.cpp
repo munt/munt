@@ -166,6 +166,7 @@ void Synth::setReverbCompatibilityMode(bool mt32CompatibleMode) {
 	}
 #endif
 	if (isOpen) {
+		setReverbOutputGain(reverbOutputGain);
 		setReverbEnabled(true);
 	}
 }
@@ -196,10 +197,13 @@ MIDIDelayMode Synth::getMIDIDelayMode() const {
 	return midiDelayMode;
 }
 
-#if MT32EMU_USE_FLOAT_SAMPLES
-
 void Synth::setOutputGain(float newOutputGain) {
+	if (newOutputGain < 0.0f) newOutputGain = -newOutputGain;
 	outputGain = newOutputGain;
+#if !MT32EMU_USE_FLOAT_SAMPLES
+	if (256.0f < newOutputGain) newOutputGain = 256.0f;
+	effectiveOutputGain = int(newOutputGain * 256.0f);
+#endif
 }
 
 float Synth::getOutputGain() const {
@@ -207,37 +211,20 @@ float Synth::getOutputGain() const {
 }
 
 void Synth::setReverbOutputGain(float newReverbOutputGain) {
+	if (newReverbOutputGain < 0.0f) newReverbOutputGain = -newReverbOutputGain;
 	reverbOutputGain = newReverbOutputGain;
+	if (!isMT32ReverbCompatibilityMode()) newReverbOutputGain *= CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR;
+#if MT32EMU_USE_FLOAT_SAMPLES
+	effectiveReverbOutputGain = newReverbOutputGain;
+#else
+	if (256.0f < newReverbOutputGain) newReverbOutputGain = 256.0f;
+	effectiveReverbOutputGain = int(newReverbOutputGain * 256.0f);
+#endif
 }
 
 float Synth::getReverbOutputGain() const {
 	return reverbOutputGain;
 }
-
-#else // #if MT32EMU_USE_FLOAT_SAMPLES
-
-void Synth::setOutputGain(float newOutputGain) {
-	if (newOutputGain < 0.0f) newOutputGain = -newOutputGain;
-	if (256.0f < newOutputGain) newOutputGain = 256.0f;
-	outputGain = int(newOutputGain * 256.0f);
-}
-
-float Synth::getOutputGain() const {
-	return outputGain / 256.0f;
-}
-
-void Synth::setReverbOutputGain(float newReverbOutputGain) {
-	if (newReverbOutputGain < 0.0f) newReverbOutputGain = -newReverbOutputGain;
-	float maxValue = 256.0f / CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR;
-	if (maxValue < newReverbOutputGain) newReverbOutputGain = maxValue;
-	reverbOutputGain = int(newReverbOutputGain * 256.0f);
-}
-
-float Synth::getReverbOutputGain() const {
-	return reverbOutputGain / 256.0f;
-}
-
-#endif // #if MT32EMU_USE_FLOAT_SAMPLES
 
 void Synth::setReversedStereoEnabled(bool enabled) {
 	reversedStereoEnabled = enabled;
@@ -1541,12 +1528,12 @@ void Synth::convertSamplesToOutput(Sample *buffer, Bit32u len, bool reverb) {
 	if (dacInputMode == DACInputMode_PURE) return;
 
 #if MT32EMU_USE_FLOAT_SAMPLES
-	float gain = reverb ? reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR : outputGain;
+	float gain = reverb ? effectiveReverbOutputGain : outputGain;
 	while (len--) {
 		*(buffer++) *= gain;
 	}
 #else
-	int gain = reverb ? int(reverbOutputGain * CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR) : outputGain;
+	int gain = reverb ? effectiveReverbOutputGain : effectiveOutputGain;
 	if (dacInputMode == DACInputMode_GENERATION1) {
 		while (len--) {
 			Bit32s target = Bit16s((*buffer & 0x8000) | ((*buffer << 1) & 0x7FFE));
