@@ -1,6 +1,7 @@
 Upcoming release 1.1.1:
 
 	* Updated mt32emu library to version 1.4.0.
+	* Added support for reverb model compatibility settings.
 	* Fixed a few minor bugs related to reverb and output gains.
 	* Improved build:
 	  - added build option mt32emu-qt_WITH_ALSA_MIDI_DRIVER to control

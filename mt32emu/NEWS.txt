@@ -9,7 +9,7 @@ Upcoming release 1.4.0:
 	  the maximum and loud input signal (doesn't occur when MT32EMU_USE_FLOAT_SAMPLES set to 1).
 	* Improved reverb model:
 	  - added BReverb settings tuned for accurate emulation of MT-32 version of reverb chip;
-	  - effective settings of the reverb model are selected depending on the used control ROM version.
+	  - effective settings of the reverb model are selected depending on the used control ROM version (can be overridden).
 	* Improved project build:
 	  - doc files are now installed to folder share/doc/munt under the installation prefix;
 	  - introduced build options munt_WITH_MT32EMU_SMF2WAV and munt_WITH_MT32EMU_QT to control build of subcomponents;
