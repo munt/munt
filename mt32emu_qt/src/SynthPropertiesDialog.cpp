@@ -71,6 +71,10 @@ void SynthPropertiesDialog::on_dacEmuComboBox_currentIndexChanged(int index) {
 	}
 }
 
+void SynthPropertiesDialog::on_reverbCompatibilityComboBox_currentIndexChanged(int index) {
+	synthRoute->setReverbCompatibilityMode((ReverbCompatibilityMode)index);
+}
+
 void SynthPropertiesDialog::on_buttonBox_clicked(QAbstractButton *button) {
 	switch (ui->buttonBox->standardButton(button)) {
 		case QDialogButtonBox::Close:
@@ -163,6 +167,7 @@ void SynthPropertiesDialog::resetSynth() {
 	synthRoute->reset();
 	on_midiDelayEmuComboBox_currentIndexChanged(ui->midiDelayEmuComboBox->currentIndex());
 	on_dacEmuComboBox_currentIndexChanged(ui->dacEmuComboBox->currentIndex());
+	on_reverbCompatibilityComboBox_currentIndexChanged(ui->reverbCompatibilityComboBox->currentIndex());
 	Qt::CheckState reverbState = ui->reverbCheckBox->checkState();
 	if (reverbState != Qt::PartiallyChecked) {
 		ui->reverbModeComboBox->setCurrentIndex(reverbMode);
@@ -179,6 +184,7 @@ void SynthPropertiesDialog::restoreDefaults() {
 	ui->midiDelayEmuComboBox->setCurrentIndex(1);
 	ui->dacEmuComboBox->setCurrentIndex(0);
 	ui->reverbCheckBox->setCheckState(Qt::Checked);
+	ui->reverbCompatibilityComboBox->setCurrentIndex(0);
 	ui->reverbModeComboBox->setCurrentIndex(0);
 	ui->reverbTimeSlider->setValue(5);
 	ui->reverbLevelSlider->setValue(3);
@@ -194,6 +200,7 @@ void SynthPropertiesDialog::loadSynthProfile() {
 	rsd.loadROMInfos();
 	ui->midiDelayEmuComboBox->setCurrentIndex(synthProfile.midiDelayMode);
 	ui->dacEmuComboBox->setCurrentIndex(synthProfile.emuDACInputMode == MT32Emu::DACInputMode_NICE ? MT32Emu::DACInputMode_NICE : synthProfile.emuDACInputMode - 1);
+	ui->reverbCompatibilityComboBox->setCurrentIndex(synthProfile.reverbCompatibilityMode);
 	ui->reverbCheckBox->setCheckState(Qt::Checked);
 	ui->reverbModeComboBox->setCurrentIndex(synthProfile.reverbMode);
 	ui->reverbTimeSlider->setValue(synthProfile.reverbTime);

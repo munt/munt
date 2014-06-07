@@ -250,6 +250,10 @@ void SynthRoute::setReversedStereoEnabled(bool enabled) {
 	qSynth.setReversedStereoEnabled(enabled);
 }
 
+void SynthRoute::setReverbCompatibilityMode(ReverbCompatibilityMode reverbCompatibilityMode) {
+	qSynth.setReverbCompatibilityMode(reverbCompatibilityMode);
+}
+
 void SynthRoute::setMIDIDelayMode(MIDIDelayMode midiDelayMode) {
 	qSynth.setMIDIDelayMode(midiDelayMode);
 }

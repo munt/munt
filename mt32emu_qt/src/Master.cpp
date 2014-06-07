@@ -331,6 +331,7 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	synthProfile.pcmROMFileName = settings->value("pcmROM", "MT32_PCM.ROM").toString();
 	synthProfile.emuDACInputMode = (MT32Emu::DACInputMode)settings->value("emuDACInputMode", 0).toInt();
 	synthProfile.midiDelayMode = (MT32Emu::MIDIDelayMode)settings->value("midiDelayMode", 1).toInt();
+	synthProfile.reverbCompatibilityMode = (ReverbCompatibilityMode)settings->value("reverbCompatibilityMode", 0).toInt();
 	synthProfile.reverbEnabled = settings->value("reverbEnabled", true).toBool();
 	synthProfile.reverbOverridden = settings->value("reverbOverridden", false).toBool();
 	synthProfile.reverbMode = settings->value("reverbMode", 0).toInt();
@@ -359,6 +360,7 @@ void Master::storeSynthProfile(const SynthProfile &synthProfile, QString name) c
 	settings->setValue("pcmROM", synthProfile.pcmROMFileName);
 	settings->setValue("emuDACInputMode", synthProfile.emuDACInputMode);
 	settings->setValue("midiDelayMode", synthProfile.midiDelayMode);
+	settings->setValue("reverbCompatibilityMode", synthProfile.reverbCompatibilityMode);
 	settings->setValue("reverbEnabled", synthProfile.reverbEnabled);
 	settings->setValue("reverbOverridden", synthProfile.reverbOverridden);
 	settings->setValue("reverbMode", synthProfile.reverbMode);

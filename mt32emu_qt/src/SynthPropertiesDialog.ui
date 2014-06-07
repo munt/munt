@@ -271,6 +271,30 @@ Incoming MIDI events will be delayed as if they are transferred via a real MIDI 
        </property>
       </widget>
      </item>
+     <item row="3" column="1">
+      <widget class="QComboBox" name="reverbCompatibilityComboBox">
+       <property name="toolTip">
+        <string>Reverb Compatibility Mode
+
+Select reverb model tunings to accurately emulate reverb chip of older units (like MT-32 v.1 or v.2) vs. newer units (including CM-32L).</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>Default - depends on control ROM version</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>MT-32 Compatible</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>CM-32L/LAPC-I Compatible</string>
+        </property>
+       </item>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
@@ -327,6 +351,7 @@ Incoming MIDI events will be delayed as if they are transferred via a real MIDI 
   <tabstop>midiDelayEmuComboBox</tabstop>
   <tabstop>dacEmuComboBox</tabstop>
   <tabstop>reverbCheckBox</tabstop>
+  <tabstop>reverbCompatibilityComboBox</tabstop>
   <tabstop>reverbModeComboBox</tabstop>
   <tabstop>reverbTimeSlider</tabstop>
   <tabstop>reverbLevelSlider</tabstop>

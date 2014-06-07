@@ -291,6 +291,23 @@ void QSynth::setReversedStereoEnabled(bool enabled) {
 	synthMutex->unlock();
 }
 
+void QSynth::setReverbCompatibilityMode(ReverbCompatibilityMode useReverbCompatibilityMode) {
+	reverbCompatibilityMode = useReverbCompatibilityMode;
+	synthMutex->lock();
+	if (!isOpen()) {
+		synthMutex->unlock();
+		return;
+	}
+	bool mt32CompatibleReverb;
+	if (useReverbCompatibilityMode == ReverbCompatibilityMode_DEFAULT) {
+		mt32CompatibleReverb = controlROMImage->getROMInfo()->controlROMFeatures->isDefaultReverbMT32Compatible();
+	} else {
+		mt32CompatibleReverb = useReverbCompatibilityMode == ReverbCompatibilityMode_MT32;
+	}
+	synth->setReverbCompatibilityMode(mt32CompatibleReverb);
+	synthMutex->unlock();
+}
+
 void QSynth::setMIDIDelayMode(MIDIDelayMode midiDelayMode) {
 	synthMutex->lock();
 	if (!isOpen()) {
@@ -420,6 +437,7 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.pcmROMImage = pcmROMImage;
 	synthProfile.emuDACInputMode = synth->getDACInputMode();
 	synthProfile.midiDelayMode = synth->getMIDIDelayMode();
+	synthProfile.reverbCompatibilityMode = reverbCompatibilityMode;
 	synthProfile.outputGain = synth->getOutputGain();
 	synthProfile.reverbOutputGain = synth->getReverbOutputGain();
 	synthProfile.reverbEnabled = synth->isReverbEnabled();
@@ -455,6 +473,7 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 			reset();
 		}
 	}
+	setReverbCompatibilityMode(synthProfile.reverbCompatibilityMode);
 	setMIDIDelayMode(synthProfile.midiDelayMode);
 	setDACInputMode(synthProfile.emuDACInputMode);
 	setOutputGain(synthProfile.outputGain);

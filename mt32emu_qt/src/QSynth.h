@@ -17,6 +17,12 @@ enum PartialState {
 	PartialState_RELEASED
 };
 
+enum ReverbCompatibilityMode {
+	ReverbCompatibilityMode_DEFAULT,
+	ReverbCompatibilityMode_MT32,
+	ReverbCompatibilityMode_CM32L
+};
+
 struct SynthProfile {
 	QDir romDir;
 	QString controlROMFileName;
@@ -25,6 +31,7 @@ struct SynthProfile {
 	const MT32Emu::ROMImage *pcmROMImage;
 	MT32Emu::DACInputMode emuDACInputMode;
 	MT32Emu::MIDIDelayMode midiDelayMode;
+	ReverbCompatibilityMode reverbCompatibilityMode;
 	float outputGain;
 	float reverbOutputGain;
 	bool reverbEnabled;
@@ -83,6 +90,7 @@ private:
 	int reverbMode;
 	int reverbTime;
 	int reverbLevel;
+	ReverbCompatibilityMode reverbCompatibilityMode;
 
 	MT32Emu::Synth *synth;
 	QReportHandler reportHandler;
@@ -120,6 +128,7 @@ public:
 	void setReverbOverridden(bool reverbOverridden);
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
 	void setReversedStereoEnabled(bool enabled);
+	void setReverbCompatibilityMode(ReverbCompatibilityMode reverbCompatibilityMode);
 	void setMIDIDelayMode(MT32Emu::MIDIDelayMode midiDelayMode);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 	const QString getPatchName(int partNum) const;
