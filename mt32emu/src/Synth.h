@@ -490,7 +490,7 @@ public:
 	// When the argument is false, emulation of the reverb circuit used in new generation of MT-32 compatible modules is enforced
 	// (these include CM-32L and LAPC-I).
 	void setReverbCompatibilityMode(bool mt32CompatibleMode);
-	bool isMT32ReverbCompatibilityMode();
+	bool isMT32ReverbCompatibilityMode() const;
 	void setDACInputMode(DACInputMode mode);
 	DACInputMode getDACInputMode() const;
 	void setMIDIDelayMode(MIDIDelayMode mode);

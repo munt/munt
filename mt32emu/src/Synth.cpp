@@ -170,7 +170,7 @@ void Synth::setReverbCompatibilityMode(bool mt32CompatibleMode) {
 	}
 }
 
-bool Synth::isMT32ReverbCompatibilityMode() {
+bool Synth::isMT32ReverbCompatibilityMode() const {
 	return isOpen && (reverbModels[REVERB_MODE_ROOM]->isMT32Compatible(REVERB_MODE_ROOM));
 }
 
