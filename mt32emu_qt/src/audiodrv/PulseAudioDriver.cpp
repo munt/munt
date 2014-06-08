@@ -36,6 +36,7 @@ static const unsigned int DEFAULT_MIDI_LATENCY = 20;
 #ifdef USE_PULSEAUDIO_DYNAMIC_LOADING
 
 static const char PA_LIB_NAME[] = "libpulse-simple.so"; // PulseAudio library filename
+static const char PA_LIB_NAME_MAJOR_VERSION[] = "libpulse-simple.so.0"; // PulseAudio library filename with major version appended
 
 // Pointers for PulseAudio simple functions
 	static __typeof__ (pa_simple_new) *_pa_simple_new = NULL;
@@ -80,10 +81,16 @@ static bool loadLibrary(bool loadNeeded) {
 		// Already loaded
 		return true;
 	}
-	dlHandle = dlopen(PA_LIB_NAME, RTLD_NOW);
+	qDebug() << "Loading PulseAudio library";
+	dlHandle = dlopen(PA_LIB_NAME_MAJOR_VERSION, RTLD_NOW);
 	if (NULL == dlHandle) {
 		qDebug() << "PulseAudio library failed to load:" << dlerror();
-		return false;
+		qDebug() << "Trying versionless PulseAudio library name";
+		dlHandle = dlopen(PA_LIB_NAME, RTLD_NOW);
+		if (NULL == dlHandle) {
+			qDebug() << "PulseAudio library failed to load:" << dlerror();
+			return false;
+		}
 	}
 
 	// Getting function pointers
