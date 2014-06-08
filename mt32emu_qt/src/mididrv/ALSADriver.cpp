@@ -262,7 +262,9 @@ int ALSAMidiDriver::alsa_setup_midi() {
 		qDebug() << "ALSAMidiDriver: Error creating sequencer port";
 		return -1;
 	}
-	qDebug() << "MT-32 emulator ALSA address is:" << QString().setNum(snd_seq_client_id(snd_seq)) + ":0";
+	QString midiPortStr = QString().setNum(snd_seq_client_id(snd_seq)) + ":0";
+	qDebug() << "MT-32 emulator ALSA address is:" << midiPortStr;
+	emit mainWindowTitleContributionUpdated("ALSA MIDI Port " + midiPortStr);
 	return seqPort;
 }
 
@@ -273,6 +275,7 @@ ALSAMidiDriver::~ALSAMidiDriver() {
 }
 
 void ALSAMidiDriver::start() {
+	connect(this, SIGNAL(mainWindowTitleContributionUpdated(const QString &)), master, SLOT(updateMainWindowTitleContribution(const QString &)));
 	if (alsa_setup_midi() < 0) return;
 	stopProcessing = false;
 	int error = pthread_create(&processingThreadID, NULL, processingThread, this);

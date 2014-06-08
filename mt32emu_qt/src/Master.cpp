@@ -419,6 +419,12 @@ void Master::showBalloon(const QString &title, const QString &text) {
 	}
 }
 
+void Master::updateMainWindowTitleContribution(const QString &titleContribution) {
+	QString title("Munt: MT-32 Emulator");
+	if (!titleContribution.isEmpty()) title += " - " + titleContribution;
+	emit mainWindowTitleUpdated(title);
+}
+
 void Master::createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name) {
 	SynthRoute *synthRoute = startSynthRoute();
 	MidiSession *midiSession = new MidiSession(this, midiDriver, name, synthRoute);

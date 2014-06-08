@@ -75,6 +75,7 @@ private slots:
 	void createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, QString name);
 	void deleteMidiSession(MidiSession *midiSession);
 	void showBalloon(const QString &title, const QString &text);
+	void updateMainWindowTitleContribution(const QString &titleContribution);
 	void aboutToQuit();
 
 signals:
@@ -84,6 +85,7 @@ signals:
 	void romsNotSet();
 	void playMidiFiles(const QStringList &);
 	void convertMidiFiles(const QStringList &);
+	void mainWindowTitleUpdated(const QString &);
 };
 
 #endif

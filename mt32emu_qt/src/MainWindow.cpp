@@ -60,6 +60,7 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	connect(master, SIGNAL(romsNotSet()), SLOT(on_actionROM_Configuration_triggered()));
 	connect(master, SIGNAL(playMidiFiles(const QStringList &)), SLOT(handlePlayMidiFiles(const QStringList &)), Qt::QueuedConnection);
 	connect(master, SIGNAL(convertMidiFiles(const QStringList &)), SLOT(handleConvertMidiFiles(const QStringList &)), Qt::QueuedConnection);
+	connect(master, SIGNAL(mainWindowTitleUpdated(const QString &)), SLOT(setWindowTitle(const QString &)));
 
 	if (master->getTrayIcon() != NULL) {
 		connect(master->getTrayIcon(), SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(handleTrayIconActivated(QSystemTrayIcon::ActivationReason)));

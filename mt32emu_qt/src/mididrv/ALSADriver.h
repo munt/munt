@@ -31,6 +31,9 @@ private:
 	unsigned int getSourceAddr(snd_seq_event_t *seq_event);
 	QString getClientName(unsigned int clientAddr);
 	MidiSession *findMidiSessionForClient(unsigned int clientAddr);
+
+signals:
+	void mainWindowTitleContributionUpdated(const QString &);
 };
 
 #endif
