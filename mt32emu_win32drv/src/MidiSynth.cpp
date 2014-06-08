@@ -26,6 +26,12 @@ static const char MT32EMU_REGISTRY_PROFILES_SUBKEY[] = "Profiles";
 // Each frame consists of two samples for both the Left and Right channels
 static const unsigned int SAMPLES_PER_FRAME = 2;
 
+enum ReverbCompatibilityMode {
+	ReverbCompatibilityMode_DEFAULT,
+	ReverbCompatibilityMode_MT32,
+	ReverbCompatibilityMode_CM32L
+};
+
 static MidiSynth &midiSynth = MidiSynth::getInstance();
 
 static class SynthEventWin32 {
@@ -438,6 +444,7 @@ void MidiSynth::ReloadSettings() {
 
 	reversedStereoEnabled = LoadBoolValue(hRegProfile, "reversedStereoEnabled", false);
 
+	reverbCompatibilityMode = (ReverbCompatibilityMode)LoadIntValue(hRegProfile, "reverbCompatibilityMode", ReverbCompatibilityMode_DEFAULT);
 	emuDACInputMode = (DACInputMode)LoadIntValue(hRegProfile, "emuDACInputMode", DACInputMode_NICE);
 	midiDelayMode = (MIDIDelayMode)LoadIntValue(hRegProfile, "midiDelayMode", MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY);
 
@@ -468,7 +475,6 @@ void MidiSynth::ReloadSettings() {
 }
 
 void MidiSynth::ApplySettings() {
-	synth->setReverbEnabled(reverbEnabled);
 	synth->setDACInputMode(emuDACInputMode);
 	synth->setMIDIDelayMode(midiDelayMode);
 	synth->setOutputGain(outputGain);
@@ -478,6 +484,14 @@ void MidiSynth::ApplySettings() {
 		synth->setReverbOverridden(false);
 		synth->writeSysex(16, sysex, 6);
 		synth->setReverbOverridden(true);
+	}
+	synth->setReverbEnabled(reverbEnabled);
+	if (reverbCompatibilityMode == ReverbCompatibilityMode_DEFAULT) {
+		if (controlROM != NULL) {
+			synth->setReverbCompatibilityMode(controlROM->getROMInfo()->controlROMFeatures->isDefaultReverbMT32Compatible());
+		}
+	} else {
+		synth->setReverbCompatibilityMode(reverbCompatibilityMode == ReverbCompatibilityMode_MT32);
 	}
 	synth->setReversedStereoEnabled(reversedStereoEnabled);
 }
@@ -497,8 +511,8 @@ int MidiSynth::Init() {
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
 	}
-	FreeROMImages();
 	ApplySettings();
+	FreeROMImages();
 
 	UINT wResult = waveOut.Init(buffer, bufferSize, chunkSize, useRingBuffer, sampleRate);
 	if (wResult) return wResult;
@@ -528,8 +542,8 @@ int MidiSynth::Reset() {
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
 	}
-	FreeROMImages();
 	ApplySettings();
+	FreeROMImages();
 	synthEvent.Release();
 
 	wResult = waveOut.Resume();
