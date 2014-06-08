@@ -141,6 +141,14 @@ void SynthPropertiesDialog::on_reverseStereoCheckBox_stateChanged(int state) {
 	synthRoute->setReversedStereoEnabled(state == Qt::Checked);
 }
 
+void SynthPropertiesDialog::on_assignChannels2_10Button_clicked() {
+	synthRoute->resetMIDIChannelsAssignment(false);
+}
+
+void SynthPropertiesDialog::on_assignChannels1_8_10Button_clicked() {
+	synthRoute->resetMIDIChannelsAssignment(true);
+}
+
 void SynthPropertiesDialog::updateReverbSettings() {
 	if (ui->reverbCheckBox->checkState() == Qt::PartiallyChecked) return;
 	synthRoute->setReverbSettings(ui->reverbModeComboBox->currentIndex(),

@@ -250,6 +250,10 @@ void SynthRoute::setReversedStereoEnabled(bool enabled) {
 	qSynth.setReversedStereoEnabled(enabled);
 }
 
+void SynthRoute::resetMIDIChannelsAssignment(bool engageChannel1) {
+	qSynth.resetMIDIChannelsAssignment(engageChannel1);
+}
+
 void SynthRoute::setReverbCompatibilityMode(ReverbCompatibilityMode reverbCompatibilityMode) {
 	qSynth.setReverbCompatibilityMode(reverbCompatibilityMode);
 }

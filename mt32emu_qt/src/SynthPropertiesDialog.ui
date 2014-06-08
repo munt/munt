@@ -295,6 +295,30 @@ Select reverb model tunings to accurately emulate reverb chip of older units (li
        </item>
       </widget>
      </item>
+     <item row="9" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <item>
+        <widget class="QPushButton" name="assignChannels2_10Button">
+         <property name="toolTip">
+          <string>Reset channel assignment to default. MIDI channels 2..10 will be used.</string>
+         </property>
+         <property name="text">
+          <string>Set channels 2..10</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="assignChannels1_8_10Button">
+         <property name="toolTip">
+          <string>Reset channel assignment to alternative. MIDI channels 1..8 and 10 will be used.</string>
+         </property>
+         <property name="text">
+          <string>Set channels 1..8,10</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
     </layout>
    </item>
    <item>
@@ -358,6 +382,8 @@ Select reverb model tunings to accurately emulate reverb chip of older units (li
   <tabstop>outputGainSlider</tabstop>
   <tabstop>reverbOutputGainSlider</tabstop>
   <tabstop>reverseStereoCheckBox</tabstop>
+  <tabstop>assignChannels2_10Button</tabstop>
+  <tabstop>assignChannels1_8_10Button</tabstop>
   <tabstop>profileComboBox</tabstop>
   <tabstop>profileCheckBox</tabstop>
   <tabstop>buttonBox</tabstop>

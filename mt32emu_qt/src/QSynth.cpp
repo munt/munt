@@ -291,6 +291,18 @@ void QSynth::setReversedStereoEnabled(bool enabled) {
 	synthMutex->unlock();
 }
 
+void QSynth::resetMIDIChannelsAssignment(bool engageChannel1) {
+	static const Bit8u sysexStandardChannelAssignment[] = {0x10, 0x00, 0x0d, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+	static const Bit8u sysexChannel1EngagedAssignment[] = {0x10, 0x00, 0x0d, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x09};
+	synthMutex->lock();
+	if (!isOpen()) {
+		synthMutex->unlock();
+		return;
+	}
+	synth->writeSysex(16, engageChannel1 ? sysexChannel1EngagedAssignment : sysexStandardChannelAssignment, sizeof(sysexStandardChannelAssignment));
+	synthMutex->unlock();
+}
+
 void QSynth::setReverbCompatibilityMode(ReverbCompatibilityMode useReverbCompatibilityMode) {
 	reverbCompatibilityMode = useReverbCompatibilityMode;
 	synthMutex->lock();
