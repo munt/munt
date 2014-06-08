@@ -3,6 +3,7 @@ Upcoming release 1.2.0:
 	* Updated mt32emu library to version 1.4.0.
 	* Added support for reverb model compatibility settings.
 	* Fixed a few minor bugs related to reverb and output gains.
+	* Added two convenience buttons in synth properties dialog to allow resetting MIDI channel assignment easily.
 	* Improved build:
 	  - added build option mt32emu-qt_WITH_ALSA_MIDI_DRIVER to control
 	    whether to use ALSA MIDI driver (if enabled, ALSA MIDI sequencer
