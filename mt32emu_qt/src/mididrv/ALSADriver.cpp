@@ -258,7 +258,7 @@ int ALSAMidiDriver::alsa_setup_midi() {
 						SND_SEQ_PORT_CAP_WRITE,
 						SND_SEQ_PORT_TYPE_MIDI_GENERIC |
 						SND_SEQ_PORT_TYPE_MIDI_MT32 |
-						SND_SEQ_PORT_TYPE_SYNTH);
+						SND_SEQ_PORT_TYPE_SYNTHESIZER);
 	if (seqPort < 0) {
 		qDebug() << "ALSAMidiDriver: Error creating sequencer port";
 		return -1;

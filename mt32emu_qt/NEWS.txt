@@ -13,6 +13,8 @@ Upcoming release 1.2.0:
 	* Fixed a bug in Windows MME audio driver introduced in version 1.1.0:
 	  resetting the synth no longer cause stopping generation of audio output.
 	* When ALSA MIDI driver is used, ALSA MIDI port being listened is now displayed in the main window title.
+	* Fixed inconsistent ALSA MIDI port advertisement. ALSA MIDI driver now advertises the port
+	  as SND_SEQ_PORT_TYPE_MIDI_GENERIC, SND_SEQ_PORT_TYPE_MIDI_MT32 and SND_SEQ_PORT_TYPE_MIDI_SYNTHESIZER.
 	* When loading PulseAudio library dynamically, a library name with the major version number appended is tried first.
 	  This allows PulseAudio to be loaded without installing the corresponding dev package, which only contains a versionless link
 	  to the library shared object in major Linux/GNU distributions.
