@@ -1,4 +1,6 @@
-Upcoming release 1.4.0:
+2014-06-09:
+
+	1.4.0 released.
 
 	* Reworked core rendering engine:
 	  - reduced memory consumption;

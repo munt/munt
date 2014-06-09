@@ -1,3 +1,9 @@
+2014-06-09:
+
+	1.0.5 released.
+
+	* Updated mt32emu library to version 1.4.0.
+
 2013-09-21:
 
 	1.0.4 released.

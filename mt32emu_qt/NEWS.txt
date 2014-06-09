@@ -1,4 +1,6 @@
-Upcoming release 1.2.0:
+2014-06-09:
+
+	1.2.0 released.
 
 	* Updated mt32emu library to version 1.4.0.
 	* Added support for reverb model compatibility settings.
