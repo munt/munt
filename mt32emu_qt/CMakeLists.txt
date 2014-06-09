@@ -4,8 +4,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake
 
 project(mt32emu-qt)
 set(mt32emu_qt_VERSION_MAJOR 1)
-set(mt32emu_qt_VERSION_MINOR 1)
-set(mt32emu_qt_VERSION_PATCH 1)
+set(mt32emu_qt_VERSION_MINOR 2)
+set(mt32emu_qt_VERSION_PATCH 0)
 
 option(mt32emu-qt_WITH_ALSA_MIDI_DRIVER "Use ALSA MIDI sequencer" TRUE)
 option(mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING "Load PulseAudio library dynamically" TRUE)
