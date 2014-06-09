@@ -256,6 +256,7 @@ int ALSAMidiDriver::alsa_setup_midi() {
 	seqPort = snd_seq_create_simple_port(snd_seq, "Standard",
 						SND_SEQ_PORT_CAP_SUBS_WRITE |
 						SND_SEQ_PORT_CAP_WRITE,
+						SND_SEQ_PORT_TYPE_MIDI_GENERIC |
 						SND_SEQ_PORT_TYPE_MIDI_MT32 |
 						SND_SEQ_PORT_TYPE_SYNTH);
 	if (seqPort < 0) {
