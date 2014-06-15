@@ -495,12 +495,14 @@ void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *
 				Sample outL3 = combs[3]->getOutputAt(currentSettings.outLPositions[2]);
 #if MT32EMU_USE_FLOAT_SAMPLES
 				Sample outSample = 1.5f * (outL1 + outL2) + outL3;
-#else
+#elif MT32EMU_BOSS_REVERB_PRECISE_MODE
 				/* NOTE:
 				 *   Thanks to Mok for discovering, the adder in BOSS reverb chip is found to perform addition with saturation to avoid integer overflow.
 				 *   Analysing of the algorithm suggests that the overflow is most probable when the combs output is added below.
 				 *   So, despite this isn't actually accurate, we only add the check here for performance reasons.
 				 */
+				Sample outSample = Synth::clipBit16s(Synth::clipBit16s(Synth::clipBit16s(Synth::clipBit16s((Bit32s)outL1 + Bit32s(outL1 >> 1)) + (Bit32s)outL2) + Bit32s(outL2 >> 1)) + (Bit32s)outL3);
+#else
 				Sample outSample = Synth::clipBit16s((Bit32s)outL1 + Bit32s(outL1 >> 1) + (Bit32s)outL2 + Bit32s(outL2 >> 1) + (Bit32s)outL3);
 #endif
 				*(outLeft++) = weirdMul(outSample, wetLevel, 0xFF);
@@ -511,8 +513,10 @@ void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *
 				Sample outR3 = combs[3]->getOutputAt(currentSettings.outRPositions[2]);
 #if MT32EMU_USE_FLOAT_SAMPLES
 				Sample outSample = 1.5f * (outR1 + outR2) + outR3;
-#else
+#elif MT32EMU_BOSS_REVERB_PRECISE_MODE
 				// See the note above for the left channel output.
+				Sample outSample = Synth::clipBit16s(Synth::clipBit16s(Synth::clipBit16s(Synth::clipBit16s((Bit32s)outR1 + Bit32s(outR1 >> 1)) + (Bit32s)outR2) + Bit32s(outR2 >> 1)) + (Bit32s)outR3);
+#else
 				Sample outSample = Synth::clipBit16s((Bit32s)outR1 + Bit32s(outR1 >> 1) + (Bit32s)outR2 + Bit32s(outR2 >> 1) + (Bit32s)outR3);
 #endif
 				*(outRight++) = weirdMul(outSample, wetLevel, 0xFF);
