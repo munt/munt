@@ -441,9 +441,19 @@ void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *
 
 	while ((numSamples--) > 0) {
 		if (tapDelayMode) {
-			dry = *(inLeft++) / 2 + *(inRight++) / 2;
+#if MT32EMU_USE_FLOAT_SAMPLES
+			dry = (*(inLeft++) * 0.5f) + (*(inRight++) * 0.5f);
+#else
+			dry = (*(inLeft++) >> 1) + (*(inRight++) >> 1);
+#endif
 		} else {
-			dry = *(inLeft++) / 4 + *(inRight++) / 4;
+#if MT32EMU_USE_FLOAT_SAMPLES
+			dry = (*(inLeft++) * 0.25f) + (*(inRight++) * 0.25f);
+#elif MT32EMU_BOSS_REVERB_PRECISE_MODE
+			dry = (*(inLeft++) >> 1) / 2 + (*(inRight++) >> 1) / 2;
+#else
+			dry = (*(inLeft++) >> 2) + (*(inRight++) >> 2);
+#endif
 		}
 
 		// Looks like dryAmp doesn't change in MT-32 but it does in CM-32L / LAPC-I
