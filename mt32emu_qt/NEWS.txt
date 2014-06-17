@@ -1,3 +1,7 @@
+Next release:
+
+	* Fixed incorrect handling of some rarely used control messages in ALSA MIDI driver.
+
 2014-06-09:
 
 	1.2.0 released.

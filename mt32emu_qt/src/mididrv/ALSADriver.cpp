@@ -162,31 +162,34 @@ bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *syn
 		break;
 
 	case SND_SEQ_EVENT_CONTROL14:
+		// The real hardware units don't support any of LSB controllers,
+		// so we just send the MSB silently ignoring the LSB
+		if ((seq_event->data.control.param & 0xE0) == 0x20) break;
 		msg = 0xB0;
 		msg |= seq_event->data.control.channel;
-		msg |= 0x06 << 8;
+		msg |= seq_event->data.control.param << 8;
 		msg |= (seq_event->data.control.value >> 7) << 16;
 		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_NONREGPARAM:
-		msg = 0xB0;
-		msg |= seq_event->data.control.channel;
-		msg |= 0x63 << 8; // Since the real synths don't support NRPNs, it's OK to send just the MSB
-		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		// The real hardware units don't support NRPNs
 		break;
 
 	case SND_SEQ_EVENT_REGPARAM:
-		msg = 0xB0;
+		// The real hardware units support only RPN 0 (pitch bender range) and only MSB matters
+		if (seq_event->data.control.param != 0) break;
+		msg = 0x64B0;
 		msg |= seq_event->data.control.channel;
-		int rpn;
-		rpn = seq_event->data.control.value;
-		msg |= 0x64 << 8;
-		msg |= (rpn & 0x7F) << 16;
 		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+
 		msg &= 0xFF;
-		msg |= 0x65 << 8;
-		msg |= ((rpn >> 7) & 0x7F) << 16;
+		msg |= 0x6500;
+		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+
+		msg &= 0xFF;
+		msg |= 0x0600;
+		msg |= ((seq_event->data.control.value >> 7) & 0x7F) << 16;
 		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
 		break;
 
