@@ -4,8 +4,5 @@ Emulation engine:
 - Accurate partial allocator which should handle partial pairs.
 - Emulation of distinct LA unit model specific behaviour, especially the old MT-32 quirks.
 
-API:
-- Accurate sample conversion class.
-
 Code:
 - Adding more comments regarding emulation specifics and used approaches
