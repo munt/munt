@@ -184,7 +184,7 @@ void QSynth::render(Bit16s *buffer, uint length) {
 			synth->render(fBuf, framesToRender);
 		}
 		for (uint i = 0; i < 2 * framesToRender; i++) {
-			*(buffer++) = (Bit16s)qBound(-32768.0f, fBuf[i] * 8192.0f, 32767.0f);
+			*(buffer++) = (Bit16s)qBound(-32768.0f, fBuf[i] * 16384.0f, 32767.0f);
 		}
 		length -= framesToRender;
 	}
