@@ -31,7 +31,8 @@ private:
 	const AudioDevice *audioDevice;
 	AudioStream *audioStream; // NULL until a stream is created
 
-	quint64 lastDebugEventTimestamp;
+	quint64 debugLastEventTimestamp;
+	qint64 debugDeltaLowerLimit, debugDeltaUpperLimit;
 
 	void setState(SynthRouteState newState);
 

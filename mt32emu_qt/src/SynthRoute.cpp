@@ -35,7 +35,7 @@ SynthRoute::SynthRoute(QObject *parent) :
 	qSynth(this),
 	audioDevice(NULL),
 	audioStream(NULL),
-	lastDebugEventTimestamp(0)
+	debugLastEventTimestamp(0)
 {
 	connect(&qSynth, SIGNAL(stateChanged(SynthState)), SLOT(handleQSynthState(SynthState)));
 }
@@ -70,7 +70,12 @@ bool SynthRoute::open() {
 	setState(SynthRouteState_OPENING);
 	if (audioDevice != NULL) {
 		uint sampleRate = audioDevice->driver.getAudioSettings().sampleRate;
+		double debugDeltaMean = sampleRate * (8.0 / MasterClock::MILLIS_PER_SECOND);
+		double debugDeltaLimit = debugDeltaMean * 0.01;
+		debugDeltaLowerLimit = qint64(floor(debugDeltaMean - debugDeltaLimit));
+		debugDeltaUpperLimit = qint64(ceil(debugDeltaMean + debugDeltaLimit));
 		qDebug() << "Using sample rate:" << sampleRate;
+
 		if (qSynth.open(sampleRate)) {
 			audioStream = audioDevice->startAudioStream(qSynth, sampleRate);
 			if (audioStream != NULL) {
@@ -186,13 +191,12 @@ bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
 	quint64 timestamp = stream->estimateMIDITimestamp(refNanos);
 	if (msg == 0) {
 		// This is a special event sent by the test driver
-		qint64 delta = qint64(timestamp - lastDebugEventTimestamp);
+		qint64 delta = qint64(timestamp - debugLastEventTimestamp);
 		MasterClockNanos debugEventNanoOffset = (refNanos == 0) ? 0 : MasterClock::getClockNanos() - refNanos;
-		// FIXME: Take into account actual audio sample rate
-		if ((delta < 253) || (259 < delta) || ((15 * MasterClock::NANOS_PER_MILLISECOND) < debugEventNanoOffset)) {
+		if ((delta < debugDeltaLowerLimit) || (debugDeltaUpperLimit < delta) || ((15 * MasterClock::NANOS_PER_MILLISECOND) < debugEventNanoOffset)) {
 			qDebug() << "M" << delta << timestamp << 1e-6 * debugEventNanoOffset;
 		}
-		lastDebugEventTimestamp = timestamp;
+		debugLastEventTimestamp = timestamp;
 		return false;
 	}
 	return qSynth.playMIDIShortMessage(msg, timestamp);
