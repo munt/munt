@@ -46,16 +46,16 @@ AudioStream::~AudioStream() {
 }
 
 // Intended to be called from MIDI receiving thread
-quint32 AudioStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
+quint64 AudioStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
 	MasterClockNanos midiNanos = (refNanos == 0) ? MasterClock::getClockNanos() : refNanos;
 	uint i = timeInfoIx;
 	if (midiNanos < timeInfo[i].lastPlayedNanos) {
 		// Cross-boundary case, use previous time info for late events
 		i = 1 - i;
 	}
-	quint32 refFrameOffset = quint32(((midiNanos - timeInfo[i].lastPlayedNanos) * timeInfo[i].actualSampleRate) / MasterClock::NANOS_PER_SECOND);
-	quint32 timestamp = timeInfo[i].lastPlayedFramesCount + refFrameOffset + midiLatencyFrames;
-	qint32 delay = qint32(timestamp - renderedFramesCount);
+	quint64 refFrameOffset = quint64(((midiNanos - timeInfo[i].lastPlayedNanos) * timeInfo[i].actualSampleRate) / MasterClock::NANOS_PER_SECOND);
+	quint64 timestamp = timeInfo[i].lastPlayedFramesCount + refFrameOffset + midiLatencyFrames;
+	qint64 delay = qint64(timestamp - renderedFramesCount);
 	if (delay < 0) {
 		qDebug() << "L" << renderedFramesCount << timestamp << delay;
 	}
@@ -81,15 +81,15 @@ void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const qui
 	} else {
 
 		// Number of played frames (assuming no x-runs happend)
-		quint32 estimatedNewPlayedFramesCount = quint32(renderedFramesCount - framesInAudioBuffer);
+		quint64 estimatedNewPlayedFramesCount = quint64(renderedFramesCount - framesInAudioBuffer);
 		double secondsElapsed = double(measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) / MasterClock::NANOS_PER_SECOND;
 
 		// Ensure lastPlayedFramesCount is monotonically increasing and has no jumps
-		quint32 newPlayedFramesCount = timeInfo[timeInfoIx].lastPlayedFramesCount + quint32(timeInfo[timeInfoIx].actualSampleRate * secondsElapsed + 0.5);
+		quint64 newPlayedFramesCount = timeInfo[timeInfoIx].lastPlayedFramesCount + quint64(timeInfo[timeInfoIx].actualSampleRate * secondsElapsed + 0.5);
 
 		// If the estimation goes too far - do reset
-		if (qAbs(qint32(estimatedNewPlayedFramesCount - newPlayedFramesCount)) > (qint32)audioLatencyFrames) {
-			qDebug() << "AudioStream: Estimated play position is way off:" << qint32(estimatedNewPlayedFramesCount - newPlayedFramesCount) << "-> resetting...";
+		if (qAbs(qint64(estimatedNewPlayedFramesCount - newPlayedFramesCount)) > (qint64)audioLatencyFrames) {
+			qDebug() << "AudioStream: Estimated play position is way off:" << qint64(estimatedNewPlayedFramesCount - newPlayedFramesCount) << "-> resetting...";
 			timeInfo[nextTimeInfoIx].lastPlayedNanos = measuredNanos;
 			timeInfo[nextTimeInfoIx].lastPlayedFramesCount = estimatedNewPlayedFramesCount;
 			timeInfo[nextTimeInfoIx].actualSampleRate = sampleRate;
@@ -130,6 +130,7 @@ AudioDriver::AudioDriver(QString useID, QString useName) : id(useID), name(useNa
 
 void AudioDriver::loadAudioSettings() {
 	QSettings *qSettings = Master::getInstance()->getSettings();
+	settings.sampleRate = qSettings->value(id + "/SampleRate", MT32Emu::SAMPLE_RATE).toUInt();
 	settings.chunkLen = qSettings->value(id + "/ChunkLen").toInt();
 	settings.audioLatency = qSettings->value(id + "/AudioLatency").toInt();
 	settings.midiLatency = qSettings->value(id + "/MidiLatency").toInt();
@@ -146,6 +147,7 @@ void AudioDriver::setAudioSettings(AudioDriverSettings &useSettings) {
 	settings = useSettings;
 
 	QSettings *qSettings = Master::getInstance()->getSettings();
+	qSettings->setValue(id + "/SampleRate", settings.sampleRate);
 	qSettings->setValue(id + "/ChunkLen", settings.chunkLen);
 	qSettings->setValue(id + "/AudioLatency", settings.audioLatency);
 	qSettings->setValue(id + "/MidiLatency", settings.midiLatency);

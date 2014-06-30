@@ -28,6 +28,7 @@
 #include "QSynth.h"
 #include "Master.h"
 #include "MasterClock.h"
+#include "resample/SampleRateConverter.h"
 
 using namespace MT32Emu;
 
@@ -92,7 +93,7 @@ void QReportHandler::onProgramChanged(int partNum, int timbreGroup, const char p
 
 QSynth::QSynth(QObject *parent) :
 	QObject(parent), state(SynthState_CLOSED), midiMutex(QMutex::Recursive),
-	controlROMImage(NULL), pcmROMImage(NULL), reportHandler(this)
+	controlROMImage(NULL), pcmROMImage(NULL), reportHandler(this), sampleRateConverter(NULL)
 {
 	synthMutex = new QMutex(QMutex::Recursive);
 	synth = new Synth(&reportHandler);
@@ -100,6 +101,7 @@ QSynth::QSynth(QObject *parent) :
 
 QSynth::~QSynth() {
 	freeROMImages();
+	if (sampleRateConverter != NULL) delete sampleRateConverter;
 	delete synth;
 	delete synthMutex;
 }
@@ -137,26 +139,30 @@ void QSynth::playMIDISysexNow(Bit8u *sysex, Bit32u sysexLen) {
 	synthMutex->unlock();
 }
 
-bool QSynth::playMIDIShortMessage(Bit32u msg, Bit32u timestamp) {
+bool QSynth::playMIDIShortMessage(Bit32u msg, quint64 timestamp) {
 	midiMutex.lock();
 	if (!isOpen()) {
 		midiMutex.unlock();
 		return false;
 	}
-	bool eventPushed = synth->playMsg(msg, timestamp);
+	bool eventPushed = synth->playMsg(msg, convertOutputToSynthTimestamp(timestamp));
 	midiMutex.unlock();
 	return eventPushed;
 }
 
-bool QSynth::playMIDISysex(Bit8u *sysex, Bit32u sysexLen, Bit32u timestamp) {
+bool QSynth::playMIDISysex(Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) {
 	midiMutex.lock();
 	if (!isOpen()) {
 		midiMutex.unlock();
 		return false;
 	}
-	bool eventPushed = synth->playSysex(sysex, sysexLen, timestamp);
+	bool eventPushed = synth->playSysex(sysex, sysexLen, convertOutputToSynthTimestamp(timestamp));
 	midiMutex.unlock();
 	return eventPushed;
+}
+
+Bit32u QSynth::convertOutputToSynthTimestamp(quint64 timestamp) {
+	return Bit32u((sampleRateConverter == NULL) ? timestamp : timestamp * sampleRateConverter->getInputToOutputRatio());
 }
 
 void QSynth::render(Bit16s *buffer, uint length) {
@@ -172,19 +178,27 @@ void QSynth::render(Bit16s *buffer, uint length) {
 	float fBuf[2 * MAX_SAMPLES_PER_RUN];
 	while (0 < length) {
 		uint framesToRender = qMin(length, MAX_SAMPLES_PER_RUN);
-		synth->render(fBuf, framesToRender);
+		if (sampleRateConverter != NULL) {
+			sampleRateConverter->getOutputSamples(fBuf, framesToRender);
+		} else {
+			synth->render(fBuf, framesToRender);
+		}
 		for (uint i = 0; i < 2 * framesToRender; i++) {
 			*(buffer++) = (Bit16s)qBound(-32768.0f, fBuf[i] * 8192.0f, 32767.0f);
 		}
 		length -= framesToRender;
 	}
 #else
-	synth->render(buffer, length);
+	if (sampleRateConverter != NULL) {
+		sampleRateConverter->getOutputSamples(buffer, length);
+	} else {
+		synth->render(buffer, length);
+	}
 #endif
 	synthMutex->unlock();
 }
 
-bool QSynth::open(const QString useSynthProfileName) {
+bool QSynth::open(uint targetSampleRate, const QString useSynthProfileName) {
 	if (isOpen()) {
 		return true;
 	}
@@ -203,6 +217,9 @@ bool QSynth::open(const QString useSynthProfileName) {
 		setState(SynthState_OPEN);
 		reportHandler.onDeviceReconfig();
 		setSynthProfile(synthProfile, synthProfileName);
+		if (targetSampleRate != SAMPLE_RATE) {
+			sampleRateConverter = SampleRateConverter::createSampleRateConverter(synth, targetSampleRate) ;
+		}
 		return true;
 	}
 	// We're now in a partially-open state - better to properly close.
@@ -434,6 +451,10 @@ void QSynth::close() {
 	// This effectively resets rendered frame counter, audioStream is also going down
 	delete synth;
 	synth = new Synth(&reportHandler);
+	if (sampleRateConverter != NULL) {
+		delete sampleRateConverter;
+		sampleRateConverter = NULL;
+	}
 	synthMutex->unlock();
 	midiMutex.unlock();
 	setState(SynthState_CLOSED);

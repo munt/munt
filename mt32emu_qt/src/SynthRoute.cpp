@@ -69,8 +69,10 @@ bool SynthRoute::open() {
 	}
 	setState(SynthRouteState_OPENING);
 	if (audioDevice != NULL) {
-		if (qSynth.open()) {
-			audioStream = audioDevice->startAudioStream(qSynth, SAMPLE_RATE);
+		uint sampleRate = audioDevice->driver.getAudioSettings().sampleRate;
+		qDebug() << "Using sample rate:" << sampleRate;
+		if (qSynth.open(sampleRate)) {
+			audioStream = audioDevice->startAudioStream(qSynth, sampleRate);
 			if (audioStream != NULL) {
 				setState(SynthRouteState_OPEN);
 				return true;
@@ -180,11 +182,12 @@ bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
 	recorder.recordShortMessage(msg, refNanos);
 	AudioStream *stream = audioStream;
 	if (stream == NULL) return false;
-	quint32 timestamp = stream->estimateMIDITimestamp(refNanos);
+	quint64 timestamp = stream->estimateMIDITimestamp(refNanos);
 	if (msg == 0) {
 		// This is a special event sent by the test driver
-		qint32 delta = qint32(timestamp - lastDebugEventTimestamp);
+		qint64 delta = qint64(timestamp - lastDebugEventTimestamp);
 		MasterClockNanos debugEventNanoOffset = (refNanos == 0) ? 0 : MasterClock::getClockNanos() - refNanos;
+		// FIXME: Take into account actual audio sample rate
 		if ((delta < 253) || (259 < delta) || ((15 * MasterClock::NANOS_PER_MILLISECOND) < debugEventNanoOffset)) {
 			qDebug() << "M" << delta << timestamp << 1e-6 * debugEventNanoOffset;
 		}
@@ -198,7 +201,7 @@ bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, MasterCl
 	recorder.recordSysex(sysexData, sysexLen, refNanos);
 	AudioStream *stream = audioStream;
 	if (stream == NULL) return false;
-	quint32 timestamp = stream->estimateMIDITimestamp(refNanos);
+	quint64 timestamp = stream->estimateMIDITimestamp(refNanos);
 	return qSynth.playMIDISysex(sysexData, sysexLen, timestamp);
 }
 
@@ -214,11 +217,11 @@ void SynthRoute::playMIDISysexNow(Bit8u *sysex, Bit32u sysexLen) {
 	qSynth.playMIDISysexNow(sysex, sysexLen);
 }
 
-bool SynthRoute::playMIDIShortMessage(Bit32u msg, Bit32u timestamp) {
+bool SynthRoute::playMIDIShortMessage(Bit32u msg, quint64 timestamp) {
 	return qSynth.playMIDIShortMessage(msg, timestamp);
 }
 
-bool SynthRoute::playMIDISysex(Bit8u *sysex, Bit32u sysexLen, Bit32u timestamp) {
+bool SynthRoute::playMIDISysex(Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) {
 	return qSynth.playMIDISysex(sysex, sysexLen, timestamp);
 }
 

@@ -133,6 +133,7 @@ void SynthWidget::on_audioPropertiesButton_clicked()
 	if (QDialog::Accepted == apd.exec()) {
 		AudioDriverSettings newDriverSettings;
 		apd.getData(newDriverSettings);
+		if (newDriverSettings.sampleRate == 0) newDriverSettings.sampleRate = MT32Emu::SAMPLE_RATE;
 		device->driver.setAudioSettings(newDriverSettings);
 	}
 }

@@ -42,6 +42,8 @@ struct SynthProfile {
 	bool reversedStereoEnabled;
 };
 
+class SampleRateConverter;
+
 class QReportHandler : public QObject, public MT32Emu::ReportHandler {
 	Q_OBJECT
 
@@ -96,8 +98,11 @@ private:
 	QReportHandler reportHandler;
 	QString synthProfileName;
 
+	SampleRateConverter *sampleRateConverter;
+
 	void setState(SynthState newState);
 	void freeROMImages();
+	MT32Emu::Bit32u convertOutputToSynthTimestamp(quint64 timestamp);
 
 public:
 	static PartialState getPartialState(int partialPhase);
@@ -105,15 +110,15 @@ public:
 	QSynth(QObject *parent = NULL);
 	~QSynth();
 	bool isOpen() const;
-	bool open(const QString useSynthProfileName = "");
+	bool open(uint targetSampleRate, const QString useSynthProfileName = "");
 	void close();
 	bool reset();
 
 	void flushMIDIQueue();
 	void playMIDIShortMessageNow(MT32Emu::Bit32u msg);
 	void playMIDISysexNow(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen);
-	bool playMIDIShortMessage(MT32Emu::Bit32u msg, MT32Emu::Bit32u timestamp);
-	bool playMIDISysex(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, MT32Emu::Bit32u timestamp);
+	bool playMIDIShortMessage(MT32Emu::Bit32u msg, quint64 timestamp);
+	bool playMIDISysex(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, quint64 timestamp);
 	void render(MT32Emu::Bit16s *buffer, uint length);
 
 	const QReportHandler *getReportHandler() const;

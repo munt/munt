@@ -1,6 +1,11 @@
 Next release:
 
 	* Fixed incorrect handling of some rarely used control messages in ALSA MIDI driver.
+	* Added support for using different sample rates in audio drivers using sample rate conversion.
+	  It is still preferable to use generic sample rate of MT-32 compatible units 32000 Hz and sample rate conversion
+	  should be used if a different sample rate is necessary (e.g. audio system doesn't support 32000 Hz) or deliberate.
+	  For best performance, libsoxr is supported. Libsamplerate is also supported as it is widely available.
+	  As a worst case, the integrated linear interpolator can be used (it's fast but the quality...).
 
 2014-06-09:
 

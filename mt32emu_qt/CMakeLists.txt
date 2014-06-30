@@ -45,6 +45,8 @@ set(mt32emu_qt_SOURCES
   src/mididrv/MidiDriver.cpp
   src/mididrv/TestDriver.cpp
   src/mididrv/SMFDriver.cpp
+
+  src/resample/SampleRateConverter.cpp
 )
 
 set(mt32emu_qt_RESOURCES
@@ -195,6 +197,35 @@ if(SYS_SOUNDCARD_FOUND)
   )
   set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
 #    src/audiodrv/OSSAudioDriver.h
+  )
+endif()
+
+# Prefer using SOXR if it is available
+find_package(LibSoxr)
+if(LIBSOXR_FOUND)
+  add_definitions(-DWITH_LIBSOXR_RESAMPLER)
+  set(EXT_LIBS ${EXT_LIBS} ${LIBSOXR_LIBRARY})
+  include_directories(${LIBSOXR_INCLUDE_DIR})
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/resample/SoxrAdapter.cpp
+  )
+endif()
+
+# Try Samplerate if SOXR is unavailable
+find_package(LibSamplerate)
+if(NOT LIBSOXR_FOUND AND LIBSAMPLERATE_FOUND)
+  add_definitions(-DWITH_LIBSAMPLERATE_RESAMPLER)
+  set(EXT_LIBS ${EXT_LIBS} ${LIBSAMPLERATE_LIBRARY})
+  include_directories(${LIBSAMPLERATE_INCLUDE_DIR})
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/resample/SamplerateAdapter.cpp
+  )
+endif()
+
+# Use "fast and dirty" linear interpolator if neither SOXR nor Samplerate are unavailable
+if(NOT LIBSOXR_FOUND AND NOT LIBSAMPLERATE_FOUND)
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/resample/LinearResampler.cpp
   )
 endif()
 

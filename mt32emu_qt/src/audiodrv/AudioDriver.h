@@ -27,7 +27,7 @@ protected:
 
 	struct {
 		MasterClockNanos lastPlayedNanos;
-		quint32 lastPlayedFramesCount;
+		quint64 lastPlayedFramesCount;
 		double actualSampleRate;
 	} timeInfo[2];
 	volatile uint timeInfoIx;
@@ -39,7 +39,7 @@ public:
 	//virtual void suspend() = 0;
 	//virtual void unsuspend() = 0;
 	virtual ~AudioStream();
-	virtual quint32 estimateMIDITimestamp(const MasterClockNanos refNanos = 0);
+	virtual quint64 estimateMIDITimestamp(const MasterClockNanos refNanos = 0);
 };
 
 class AudioDevice {
@@ -54,6 +54,8 @@ public:
 Q_DECLARE_METATYPE(const AudioDevice *);
 
 struct AudioDriverSettings {
+	// The sample rate to use for instances of AudioStream being created
+	unsigned int sampleRate;
 	// The maximum number of milliseconds to render at once
 	unsigned int chunkLen;
 	// The total latency of audio stream buffers in milliseconds

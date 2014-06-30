@@ -40,9 +40,9 @@ void AudioFileWriterStream::close() {
 	writer.stop();
 }
 
-quint32 AudioFileWriterStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
+quint64 AudioFileWriterStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
 	MasterClockNanos midiNanos = (refNanos == 0) ? MasterClock::getClockNanos() : refNanos;
-	return quint32(((midiNanos - timeInfo[0].lastPlayedNanos) * sampleRate) / MasterClock::NANOS_PER_SECOND) + midiLatencyFrames;
+	return quint64(((midiNanos - timeInfo[0].lastPlayedNanos) * sampleRate) / MasterClock::NANOS_PER_SECOND) + midiLatencyFrames;
 }
 
 AudioFileWriterDevice::AudioFileWriterDevice(AudioFileWriterDriver &driver, QString useDeviceName) :

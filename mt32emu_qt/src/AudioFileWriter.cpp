@@ -64,7 +64,7 @@ bool AudioFileWriter::convertMIDIFiles(QString useOutFileName, QStringList midiF
 		delete synth;
 	}
 	synth = new QSynth(this);
-	if (!synth->open(synthProfileName)) {
+	if (!synth->open(MT32Emu::SAMPLE_RATE, synthProfileName)) {
 		synth->close();
 		delete synth;
 		synth = NULL;
