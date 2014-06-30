@@ -78,6 +78,7 @@ bool SynthRoute::open() {
 				return true;
 			} else {
 				qDebug() << "Failed to start audioStream";
+				qSynth.close();
 			}
 		} else {
 			qDebug() << "Failed to open qSynth";
