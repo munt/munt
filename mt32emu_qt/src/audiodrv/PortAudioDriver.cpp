@@ -98,7 +98,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	PaStreamParameters outStreamParameters = {deviceIndex, 2, paInt16, (double)audioLatency / MasterClock::NANOS_PER_SECOND, NULL};
 	PaError err =  Pa_OpenStream(&stream, NULL, &outStreamParameters, sampleRate, paFramesPerBufferUnspecified, paNoFlag, paCallback, this);
 	if(err != paNoError) {
-		qDebug() << "Pa_OpenStream() returned PaError" << err;
+		qDebug() << "Pa_OpenStream() returned PaError" << err << "-" << Pa_GetErrorText(err);
 		return false;
 	}
 	const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
