@@ -20,8 +20,8 @@
 
 namespace MT32Emu {
 
-static const ControlROMFeatureSet MT32_COMPATIBLE(true);
-static const ControlROMFeatureSet CM32L_COMPATIBLE(false);
+static const ControlROMFeatureSet MT32_COMPATIBLE = { true };
+static const ControlROMFeatureSet CM32L_COMPATIBLE = { false };
 
 // Known ROMs
 static const ROMInfo CTRL_MT32_V1_04 = {65536, "5a5cb5a77d7d55ee69657c2f870416daed52dea7", ROMInfo::Control, "ctrl_mt32_1_04", "MT-32 Control v1.04", ROMInfo::Full, NULL, &MT32_COMPATIBLE};
@@ -107,9 +107,6 @@ File* ROMImage::getFile() const {
 
 const ROMInfo* ROMImage::getROMInfo() const {
 	return romInfo;
-}
-
-ControlROMFeatureSet::ControlROMFeatureSet(bool useDefaultReverbMT32Compatible) : defaultReverbMT32Compatible(useDefaultReverbMT32Compatible) {
 }
 
 bool ControlROMFeatureSet::isDefaultReverbMT32Compatible() const {
