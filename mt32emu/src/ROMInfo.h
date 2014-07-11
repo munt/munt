@@ -75,11 +75,8 @@ public:
 };
 
 struct ControlROMFeatureSet {
-private:
 	unsigned int defaultReverbMT32Compatible : 1;
 
-public:
-	ControlROMFeatureSet(bool defaultReverbMT32Compatible);
 	bool isDefaultReverbMT32Compatible() const;
 };
 
