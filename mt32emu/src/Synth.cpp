@@ -1550,7 +1550,7 @@ void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sampl
 	// Even if LA32 output isn't desired, we proceed anyway with temp buffers
 	Sample tmpBufNonReverbLeft[MAX_SAMPLES_PER_RUN], tmpBufNonReverbRight[MAX_SAMPLES_PER_RUN];
 	if (nonReverbLeft == NULL) nonReverbLeft = tmpBufNonReverbLeft;
-	if (nonReverbLeft == NULL) nonReverbRight = tmpBufNonReverbRight;
+	if (nonReverbRight == NULL) nonReverbRight = tmpBufNonReverbRight;
 
 	Sample tmpBufReverbDryLeft[MAX_SAMPLES_PER_RUN], tmpBufReverbDryRight[MAX_SAMPLES_PER_RUN];
 	if (reverbDryLeft == NULL) reverbDryLeft = tmpBufReverbDryLeft;
