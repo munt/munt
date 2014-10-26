@@ -66,6 +66,7 @@ public:
 	void setReverbCompatibilityMode(ReverbCompatibilityMode reverbCompatibilityMode);
 	void setMIDIDelayMode(MT32Emu::MIDIDelayMode midiDelayMode);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
+	void setAnalogOutputMode(MT32Emu::AnalogOutputMode analogOutputMode);
 
 	void addMidiSession(MidiSession *midiSession);
 	void removeMidiSession(MidiSession *midiSession);

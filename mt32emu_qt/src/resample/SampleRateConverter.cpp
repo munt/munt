@@ -36,8 +36,8 @@ SampleRateConverter *SampleRateConverter::createSampleRateConverter(Synth *synth
 
 SampleRateConverter::SampleRateConverter(Synth *useSynth, double targetSampleRate) :
 	synth(useSynth),
-	inputToOutputRatio(SAMPLE_RATE / targetSampleRate),
-	outputToInputRatio(targetSampleRate / SAMPLE_RATE)
+	inputToOutputRatio(useSynth->getStereoOutputSampleRate() / targetSampleRate),
+	outputToInputRatio(targetSampleRate / useSynth->getStereoOutputSampleRate())
 {}
 
 double SampleRateConverter::getInputToOutputRatio() {

@@ -66,8 +66,13 @@ In such cases, it is still preferable to set the sample rate to the lowest (clos
           <bool>true</bool>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>0</number>
          </property>
+         <item>
+          <property name="text">
+           <string>Default</string>
+          </property>
+         </item>
          <item>
           <property name="text">
            <string>16000</string>

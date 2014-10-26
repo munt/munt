@@ -64,7 +64,7 @@ bool AudioFileWriter::convertMIDIFiles(QString useOutFileName, QStringList midiF
 		delete synth;
 	}
 	synth = new QSynth(this);
-	if (!synth->open(MT32Emu::SAMPLE_RATE, synthProfileName)) {
+	if (!synth->open(0, synthProfileName)) {
 		synth->close();
 		delete synth;
 		synth = NULL;
@@ -75,7 +75,7 @@ bool AudioFileWriter::convertMIDIFiles(QString useOutFileName, QStringList midiF
 		return false;
 	}
 	Master::getInstance()->setAudioFileWriterSynth(synth);
-	sampleRate = MT32Emu::SAMPLE_RATE;
+	sampleRate = synth->getSynthSampleRate();
 	bufferSize = useBufferSize;
 	outFileName = useOutFileName;
 	realtimeMode = false;

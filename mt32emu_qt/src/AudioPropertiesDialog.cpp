@@ -40,7 +40,7 @@ void AudioPropertiesDialog::getData(AudioDriverSettings &driverSettings) {
 }
 
 void AudioPropertiesDialog::setData(const AudioDriverSettings &driverSettings) {
-	int ix = ui->sampleRate->findText(QString().setNum(driverSettings.sampleRate));
+	int ix = (driverSettings.sampleRate <= 0) ? 0 : ui->sampleRate->findText(QString().setNum(driverSettings.sampleRate));
 	if (ix < 0) {
 		ui->sampleRate->addItem(QString().setNum(driverSettings.sampleRate));
 		ui->sampleRate->setCurrentIndex(ui->sampleRate->count() - 1);

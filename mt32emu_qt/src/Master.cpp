@@ -329,9 +329,10 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	synthProfile.romDir.setPath(romPath.isEmpty() ? getDefaultROMSearchPath(): romPath);
 	synthProfile.controlROMFileName = settings->value("controlROM", "MT32_CONTROL.ROM").toString();
 	synthProfile.pcmROMFileName = settings->value("pcmROM", "MT32_PCM.ROM").toString();
-	synthProfile.emuDACInputMode = (MT32Emu::DACInputMode)settings->value("emuDACInputMode", 0).toInt();
-	synthProfile.midiDelayMode = (MT32Emu::MIDIDelayMode)settings->value("midiDelayMode", 1).toInt();
-	synthProfile.reverbCompatibilityMode = (ReverbCompatibilityMode)settings->value("reverbCompatibilityMode", 0).toInt();
+	synthProfile.emuDACInputMode = (MT32Emu::DACInputMode)settings->value("emuDACInputMode", MT32Emu::DACInputMode_NICE).toInt();
+	synthProfile.midiDelayMode = (MT32Emu::MIDIDelayMode)settings->value("midiDelayMode", MT32Emu::MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY).toInt();
+	synthProfile.analogOutputMode = (MT32Emu::AnalogOutputMode)settings->value("analogOutputMode", MT32Emu::AnalogOutputMode_ACCURATE).toInt();
+	synthProfile.reverbCompatibilityMode = (ReverbCompatibilityMode)settings->value("reverbCompatibilityMode", ReverbCompatibilityMode_DEFAULT).toInt();
 	synthProfile.reverbEnabled = settings->value("reverbEnabled", true).toBool();
 	synthProfile.reverbOverridden = settings->value("reverbOverridden", false).toBool();
 	synthProfile.reverbMode = settings->value("reverbMode", 0).toInt();
@@ -360,6 +361,7 @@ void Master::storeSynthProfile(const SynthProfile &synthProfile, QString name) c
 	settings->setValue("pcmROM", synthProfile.pcmROMFileName);
 	settings->setValue("emuDACInputMode", synthProfile.emuDACInputMode);
 	settings->setValue("midiDelayMode", synthProfile.midiDelayMode);
+	settings->setValue("analogOutputMode", synthProfile.analogOutputMode);
 	settings->setValue("reverbCompatibilityMode", synthProfile.reverbCompatibilityMode);
 	settings->setValue("reverbEnabled", synthProfile.reverbEnabled);
 	settings->setValue("reverbOverridden", synthProfile.reverbOverridden);

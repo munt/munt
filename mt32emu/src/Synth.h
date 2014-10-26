@@ -30,6 +30,7 @@ class PartialManager;
 class Part;
 class ROMImage;
 class BReverbModel;
+class Analog;
 
 /**
  * Methods for emulating the connection between the LA32 and the DAC, which involves
@@ -62,6 +63,7 @@ enum DACInputMode {
 	DACInputMode_GENERATION2
 };
 
+// Methods for emulating the effective delay of incoming MIDI messages introduced by a MIDI interface.
 enum MIDIDelayMode {
 	// Process incoming MIDI events immediately.
 	MIDIDelayMode_IMMEDIATE,
@@ -72,6 +74,17 @@ enum MIDIDelayMode {
 
 	// Delay all incoming MIDI events as if they where transferred via a MIDI cable to a real hardware unit.
 	MIDIDelayMode_DELAY_ALL
+};
+
+// Methods for emulating the effects of analogue circuits of real hardware units on the output signal.
+enum AnalogOutputMode {
+	// Only digital path is emulated. The output samples correspond to the digital signal at the DAC entrance.
+	AnalogOutputMode_DIGITAL_ONLY,
+	// Coarse emulation of LPF circuit. High frequencies are boosted, sample rate remains unchanged.
+	AnalogOutputMode_COARSE,
+	// Finer emulation of LPF circuit. Output signal is upsampled to 48 kHz to allow emulation of audible mirror spectra above 16 kHz,
+	// which is passed through the LPF circuit without significant attenuation.
+	AnalogOutputMode_ACCURATE
 };
 
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
@@ -348,12 +361,6 @@ private:
 
 	float outputGain;
 	float reverbOutputGain;
-#if MT32EMU_USE_FLOAT_SAMPLES
-	float effectiveReverbOutputGain;
-#else
-	int effectiveOutputGain;
-	int effectiveReverbOutputGain;
-#endif
 
 	bool reversedStereoEnabled;
 
@@ -370,11 +377,13 @@ private:
 	// We emulate this by delaying new MIDI events processing until abortion finishes.
 	Poly *abortingPoly;
 
+	Analog *analog;
+
 	Bit32u getShortMessageLength(Bit32u msg);
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
 
 	void produceLA32Output(Sample *buffer, Bit32u len);
-	void convertSamplesToOutput(Sample *buffer, Bit32u len, bool reverb);
+	void convertSamplesToOutput(Sample *buffer, Bit32u len);
 	bool isAbortingPoly() const;
 	void doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);
 
@@ -407,12 +416,16 @@ private:
 	void printDebug(const char *fmt, ...);
 
 public:
-	static inline Bit16s clipBit16s(Bit32s sample) {
+	static inline Sample clipSampleEx(SampleEx sampleEx) {
+#if MT32EMU_USE_FLOAT_SAMPLES
+		return sampleEx;
+#else
 		// Clamp values above 32767 to 32767, and values below -32768 to -32768
 		// FIXME: Do we really need this stuff? I think these branches are very well predicted. Instead, this introduces a chain.
 		// The version below is actually a bit faster on my system...
-		//return ((sample + 0x8000) & ~0xFFFF) ? (sample >> 31) ^ 0x7FFF : (Bit16s)sample;
-		return ((-0x8000 <= sample) && (sample <= 0x7FFF)) ? (Bit16s)sample : (sample >> 31) ^ 0x7FFF;
+		//return ((sampleEx + 0x8000) & ~0xFFFF) ? (sampleEx >> 31) ^ 0x7FFF : (Sample)sampleEx;
+		return ((-0x8000 <= sampleEx) && (sampleEx <= 0x7FFF)) ? (Sample)sampleEx : (sampleEx >> 31) ^ 0x7FFF;
+#endif
 	}
 
 	static inline void muteSampleBuffer(Sample *buffer, Bit32u len) {
@@ -437,8 +450,12 @@ public:
 	// Used to initialise the MT-32. Must be called before any other function.
 	// Returns true if initialization was sucessful, otherwise returns false.
 	// controlROMImage and pcmROMImage represent Control and PCM ROM images for use by synth.
-	// usePartialCount sets the maximum number of partials playing simultaneously for this session.
-	bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount = DEFAULT_MAX_PARTIALS);
+	// usePartialCount sets the maximum number of partials playing simultaneously for this session (optional).
+	// analogOutputMode sets the mode for emulation of analogue circuitry of the hardware units (optional).
+	bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount = DEFAULT_MAX_PARTIALS, AnalogOutputMode analogOutputMode = AnalogOutputMode_COARSE);
+
+	// Overloaded method which opens the synth with default partial count.
+	bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, AnalogOutputMode analogOutputMode);
 
 	// Closes the MT-32 and deallocates any memory used by the synthesizer
 	void close(bool forced = false);
@@ -497,12 +514,17 @@ public:
 	void setMIDIDelayMode(MIDIDelayMode mode);
 	MIDIDelayMode getMIDIDelayMode() const;
 
-	// Sets output gain factor. Applied to all output samples and unrelated with the synth's Master volume.
+	// Sets output gain factor for synth output channels. Applied to all output samples and unrelated with the synth's Master volume,
+	// it rather corresponds to the gain of the output analog circuitry of the hardware units. However, together with setReverbOutputGain()
+	// it offers to the user a capability to control the gain of reverb and non-reverb output channels independently.
 	// Ignored in DACInputMode_PURE
 	void setOutputGain(float);
 	float getOutputGain() const;
 
-	// Sets output gain factor for the reverb wet output. setOutputGain() doesn't change reverb output gain.
+	// Sets output gain factor for the reverb wet output channels. It rather corresponds to the gain of the output
+	// analog circuitry of the hardware units. However, together with setOutputGain() it offers to the user a capability
+	// to control the gain of reverb and non-reverb output channels independently.
+	//
 	// Note: We're currently emulate CM-32L/CM-64 reverb quite accurately and the reverb output level closely
 	// corresponds to the level of digital capture. Although, according to the CM-64 PCB schematic,
 	// there is a difference in the reverb analogue circuit, and the resulting output gain is 0.68
@@ -514,12 +536,21 @@ public:
 	void setReversedStereoEnabled(bool enabled);
 	bool isReversedStereoEnabled();
 
-	// Renders samples to the specified output stream.
-	// The length is in frames, not bytes (in 16-bit stereo,
-	// one frame is 4 bytes).
+	// Returns actual sample rate used in emulation of stereo analog circuitry of hardware units.
+	// See comment for render() below.
+	unsigned int getStereoOutputSampleRate() const;
+
+	// Renders samples to the specified output stream as if they appeared at the analog stereo output.
+	// When AnalogOutputMode is set to ACCURATE, the output signal is upsampled to 48 kHz in order
+	// to retain emulation accuracy in whole audible frequency specra. Otherwise, native digital signal sample rate is retained.
+	// getStereoOutputSampleRate() can be used to query actual sample rate of the output signal.
+	// The length is in frames, not bytes (in 16-bit stereo, one frame is 4 bytes).
 	void render(Sample *stream, Bit32u len);
 
-	// Renders samples to the specified output streams (any or all of which may be NULL).
+	// Renders samples to the specified output streams as if they appeared at the DAC entrance.
+	// No further processing performed in analog circuitry emulation is applied to the signal.
+	// NULL may be specified in place of any or all of the stream buffers.
+	// The length is in samples, not bytes.
 	void renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);
 
 	// Returns true when there is at least one active partial, otherwise false.

@@ -75,6 +75,12 @@
 
 namespace MT32Emu
 {
+// Sample rate to use in mixing. With the progress of development, we've found way too many thing dependent.
+// In order to achieve further advance in emulation accuracy, sample rate made fixed throughout the emulator,
+// except the emulation of analogue path.
+// The output from the synth is supposed to be resampled externally in order to convert to the desired sample rate.
+const unsigned int SAMPLE_RATE = 32000;
+
 // The default value for the maximum number of partials playing simultaneously.
 const unsigned int DEFAULT_MAX_PARTIALS = 32;
 

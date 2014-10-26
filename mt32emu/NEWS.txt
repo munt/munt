@@ -1,3 +1,8 @@
+Next release:
+
+	* Introduced support for emulation of analogue circuits of the hardware units.
+	* Synth renderer now produces output at different sample rates depending on the analogue circuits emulation mode in effect.
+
 2014-06-09:
 
 	1.4.0 released.

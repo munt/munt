@@ -40,7 +40,7 @@ SoxrAdapter::SoxrAdapter(Synth *synth, double targetSampleRate) :
 	soxr_quality_spec_t qSpec = soxr_quality_spec(SOXR_LQ, 0);
 	soxr_runtime_spec_t rtSpec = soxr_runtime_spec(1);
 	soxr_error_t error;
-	resampler = soxr_create(SAMPLE_RATE, targetSampleRate, 2, &error, &ioSpec, &qSpec, &rtSpec);
+	resampler = soxr_create(synth->getStereoOutputSampleRate(), targetSampleRate, 2, &error, &ioSpec, &qSpec, &rtSpec);
 	if (error != NULL) {
 		qDebug() << "SampleRateConverter: Creation of SOXR instance failed:" << soxr_strerror(error);
 		soxr_delete(resampler);

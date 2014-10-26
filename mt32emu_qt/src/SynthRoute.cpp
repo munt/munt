@@ -70,13 +70,14 @@ bool SynthRoute::open() {
 	setState(SynthRouteState_OPENING);
 	if (audioDevice != NULL) {
 		uint sampleRate = audioDevice->driver.getAudioSettings().sampleRate;
-		double debugDeltaMean = sampleRate * (8.0 / MasterClock::MILLIS_PER_SECOND);
-		double debugDeltaLimit = debugDeltaMean * 0.01;
-		debugDeltaLowerLimit = qint64(floor(debugDeltaMean - debugDeltaLimit));
-		debugDeltaUpperLimit = qint64(ceil(debugDeltaMean + debugDeltaLimit));
-		qDebug() << "Using sample rate:" << sampleRate;
-
 		if (qSynth.open(sampleRate)) {
+			if (sampleRate <= 0) sampleRate = qSynth.getSynthSampleRate();
+			double debugDeltaMean = sampleRate * (8.0 / MasterClock::MILLIS_PER_SECOND);
+			double debugDeltaLimit = debugDeltaMean * 0.01;
+			debugDeltaLowerLimit = qint64(floor(debugDeltaMean - debugDeltaLimit));
+			debugDeltaUpperLimit = qint64(ceil(debugDeltaMean + debugDeltaLimit));
+			qDebug() << "Using sample rate:" << sampleRate;
+
 			audioStream = audioDevice->startAudioStream(qSynth, sampleRate);
 			if (audioStream != NULL) {
 				setState(SynthRouteState_OPEN);
@@ -272,6 +273,10 @@ void SynthRoute::setMIDIDelayMode(MIDIDelayMode midiDelayMode) {
 
 void SynthRoute::setDACInputMode(DACInputMode emuDACInputMode) {
 	qSynth.setDACInputMode(emuDACInputMode);
+}
+
+void SynthRoute::setAnalogOutputMode(AnalogOutputMode analogOutputMode) {
+	qSynth.setAnalogOutputMode(analogOutputMode);
 }
 
 void SynthRoute::getSynthProfile(SynthProfile &synthProfile) const {

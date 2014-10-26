@@ -147,14 +147,14 @@
        </property>
       </widget>
      </item>
-     <item row="7" column="0">
+     <item row="8" column="0">
       <widget class="QLabel" name="label_5">
        <property name="text">
         <string>Output Gain</string>
        </property>
       </widget>
      </item>
-     <item row="7" column="1">
+     <item row="8" column="1">
       <widget class="QSlider" name="outputGainSlider">
        <property name="maximum">
         <number>400</number>
@@ -170,14 +170,14 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="0">
+     <item row="9" column="0">
       <widget class="QLabel" name="label_6">
        <property name="text">
         <string>Reverb Output Gain</string>
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
+     <item row="9" column="1">
       <widget class="QSlider" name="reverbOutputGainSlider">
        <property name="maximum">
         <number>400</number>
@@ -261,7 +261,7 @@ Incoming MIDI events will be delayed as if they are transferred via a real MIDI 
        </item>
       </widget>
      </item>
-     <item row="9" column="0">
+     <item row="10" column="0">
       <widget class="QCheckBox" name="reverseStereoCheckBox">
        <property name="text">
         <string>Reverse Stereo</string>
@@ -295,7 +295,7 @@ Select reverb model tunings to accurately emulate reverb chip of older units (li
        </item>
       </widget>
      </item>
-     <item row="9" column="1">
+     <item row="10" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
         <widget class="QPushButton" name="assignChannels2_10Button">
@@ -318,6 +318,37 @@ Select reverb model tunings to accurately emulate reverb chip of older units (li
         </widget>
        </item>
       </layout>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="label_8">
+       <property name="text">
+        <string>Analogue Output</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QComboBox" name="analogComboBox">
+       <property name="toolTip">
+        <string>Methods for emulating the effects of analogue circuits of real hardware units on the output signal.
+
+Takes effect after reopening the Synth.</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>Accurate analogue path emulation</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Coarse analogue path emulation</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Digital path emulation only</string>
+        </property>
+       </item>
+      </widget>
      </item>
     </layout>
    </item>
@@ -379,6 +410,7 @@ Select reverb model tunings to accurately emulate reverb chip of older units (li
   <tabstop>reverbModeComboBox</tabstop>
   <tabstop>reverbTimeSlider</tabstop>
   <tabstop>reverbLevelSlider</tabstop>
+  <tabstop>analogComboBox</tabstop>
   <tabstop>outputGainSlider</tabstop>
   <tabstop>reverbOutputGainSlider</tabstop>
   <tabstop>reverseStereoCheckBox</tabstop>

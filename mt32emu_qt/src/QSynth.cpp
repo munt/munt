@@ -162,7 +162,7 @@ bool QSynth::playMIDISysex(Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) {
 }
 
 Bit32u QSynth::convertOutputToSynthTimestamp(quint64 timestamp) {
-	return Bit32u((sampleRateConverter == NULL) ? timestamp : timestamp * sampleRateConverter->getInputToOutputRatio());
+	return Bit32u(timestamp * sampleRateRatio);
 }
 
 void QSynth::render(Bit16s *buffer, uint length) {
@@ -213,12 +213,18 @@ bool QSynth::open(uint targetSampleRate, const QString useSynthProfileName) {
 		freeROMImages();
 		return false;
 	}
-	if (synth->open(*controlROMImage, *pcmROMImage)) {
+	actualAnalogOutputMode = synthProfile.analogOutputMode;
+	static const char *ANALOG_OUTPUT_MODES[] = {"Digital only", "Coarse", "Accurate"};
+	qDebug() << "Using Analogue output mode:" << ANALOG_OUTPUT_MODES[actualAnalogOutputMode];
+	if (synth->open(*controlROMImage, *pcmROMImage, actualAnalogOutputMode)) {
 		setState(SynthState_OPEN);
 		reportHandler.onDeviceReconfig();
 		setSynthProfile(synthProfile, synthProfileName);
-		if (targetSampleRate != SAMPLE_RATE) {
-			sampleRateConverter = SampleRateConverter::createSampleRateConverter(synth, targetSampleRate) ;
+		if (targetSampleRate > 0 && targetSampleRate != getSynthSampleRate()) {
+			sampleRateConverter = SampleRateConverter::createSampleRateConverter(synth, targetSampleRate);
+			sampleRateRatio = SAMPLE_RATE / (double)targetSampleRate;
+		} else {
+			sampleRateRatio = SAMPLE_RATE / (double)getSynthSampleRate();
 		}
 		return true;
 	}
@@ -357,6 +363,10 @@ void QSynth::setDACInputMode(DACInputMode emuDACInputMode) {
 	synthMutex->unlock();
 }
 
+void QSynth::setAnalogOutputMode(MT32Emu::AnalogOutputMode useAnalogOutputMode) {
+	analogOutputMode = useAnalogOutputMode;
+}
+
 const QString QSynth::getPatchName(int partNum) const {
 	synthMutex->lock();
 	if (isOpen()) {
@@ -397,6 +407,10 @@ unsigned int QSynth::getPartialCount() const {
 	return partialCount;
 }
 
+unsigned int QSynth::getSynthSampleRate() const {
+	return synth->getStereoOutputSampleRate();
+}
+
 bool QSynth::isActive() const {
 	synthMutex->lock();
 	if (!isOpen()) {
@@ -417,7 +431,7 @@ bool QSynth::reset() {
 	synthMutex->lock();
 	synth->close();
 	// Do not delete synth here to keep the rendered frame counter value, audioStream is also alive during reset
-	if (!synth->open(*controlROMImage, *pcmROMImage)) {
+	if (!synth->open(*controlROMImage, *pcmROMImage, actualAnalogOutputMode)) {
 		// We're now in a partially-open state - better to properly close.
 		synth->close(true);
 		delete synth;
@@ -470,6 +484,7 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.pcmROMImage = pcmROMImage;
 	synthProfile.emuDACInputMode = synth->getDACInputMode();
 	synthProfile.midiDelayMode = synth->getMIDIDelayMode();
+	synthProfile.analogOutputMode = analogOutputMode;
 	synthProfile.reverbCompatibilityMode = reverbCompatibilityMode;
 	synthProfile.outputGain = synth->getOutputGain();
 	synthProfile.reverbOutputGain = synth->getReverbOutputGain();
@@ -483,11 +498,6 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 }
 
 void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName) {
-	if (&synthProfile == NULL) {
-		synthProfileName = QString();
-		close();
-		return;
-	}
 	synthProfileName = useSynthProfileName;
 	romDir = synthProfile.romDir;
 	controlROMFileName = synthProfile.controlROMFileName;
@@ -509,6 +519,7 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	setReverbCompatibilityMode(synthProfile.reverbCompatibilityMode);
 	setMIDIDelayMode(synthProfile.midiDelayMode);
 	setDACInputMode(synthProfile.emuDACInputMode);
+	setAnalogOutputMode(synthProfile.analogOutputMode);
 	setOutputGain(synthProfile.outputGain);
 	setReverbOutputGain(synthProfile.reverbOutputGain);
 	setReverbSettings(synthProfile.reverbMode, synthProfile.reverbTime, synthProfile.reverbLevel);

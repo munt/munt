@@ -38,6 +38,7 @@ foreach(HEADER ${libmt32emu_HEADERS})
 endforeach(HEADER)
 
 add_library(mt32emu STATIC
+  src/Analog.cpp
   src/BReverbModel.cpp
   src/File.cpp
   src/FileStream.cpp

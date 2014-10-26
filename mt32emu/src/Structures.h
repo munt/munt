@@ -40,8 +40,10 @@ typedef   signed char      Bit8s;
 
 #if MT32EMU_USE_FLOAT_SAMPLES
 typedef float Sample;
+typedef float SampleEx;
 #else
 typedef Bit16s Sample;
+typedef Bit32s SampleEx;
 #endif
 
 // The following structures represent the MT-32's memory

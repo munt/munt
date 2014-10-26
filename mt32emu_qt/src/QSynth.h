@@ -31,6 +31,7 @@ struct SynthProfile {
 	const MT32Emu::ROMImage *pcmROMImage;
 	MT32Emu::DACInputMode emuDACInputMode;
 	MT32Emu::MIDIDelayMode midiDelayMode;
+	MT32Emu::AnalogOutputMode analogOutputMode;
 	ReverbCompatibilityMode reverbCompatibilityMode;
 	float outputGain;
 	float reverbOutputGain;
@@ -92,12 +93,15 @@ private:
 	int reverbMode;
 	int reverbTime;
 	int reverbLevel;
+	MT32Emu::AnalogOutputMode analogOutputMode;
+	MT32Emu::AnalogOutputMode actualAnalogOutputMode;
 	ReverbCompatibilityMode reverbCompatibilityMode;
 
 	MT32Emu::Synth *synth;
 	QReportHandler reportHandler;
 	QString synthProfileName;
 
+	double sampleRateRatio;
 	SampleRateConverter *sampleRateConverter;
 
 	void setState(SynthState newState);
@@ -137,10 +141,12 @@ public:
 	void setReverbCompatibilityMode(ReverbCompatibilityMode reverbCompatibilityMode);
 	void setMIDIDelayMode(MT32Emu::MIDIDelayMode midiDelayMode);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
+	void setAnalogOutputMode(MT32Emu::AnalogOutputMode analogOutputMode);
 	const QString getPatchName(int partNum) const;
 	const MT32Emu::Partial *getPartial(int partialNum) const;
 	const MT32Emu::Poly *getFirstActivePolyOnPart(unsigned int partNum) const;
 	unsigned int getPartialCount() const;
+	unsigned int getSynthSampleRate() const;
 	bool isActive() const;
 
 signals:

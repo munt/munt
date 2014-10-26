@@ -24,6 +24,8 @@
 
 namespace MT32Emu {
 
+// UNUSED: const int MIDDLEC = 60;
+
 const Tables &Tables::getInstance() {
 	static const Tables instance;
 	return instance;
