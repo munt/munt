@@ -20,22 +20,21 @@
 
 namespace MT32Emu {
 
+#if MT32EMU_USE_FLOAT_SAMPLES
+
 /* FIR approximation of the overall impulse response of the cascade composed of the sample & hold circuit and the low pass filter
  * of the MT-32 first generation.
  * The coefficients below are found by windowing the inverse DFT of the 1024 pin frequency response converted to the minimum phase.
  * The frequency response of the LPF is computed directly, the effect of the S&H is approximated by multiplying the LPF frequency
  * response by the corresponding sinc. Although, the LPF has DC gain of 3.2, we ignore this in the emulation and use normalised model.
  * The peak gain of the normalised cascade appears about 1.7 near 11.8 kHz. Relative error doesn't exceed 1% for the frequencies
- * below 12.5 kHz. In the higher frequency range, the relative error is below 8%. Peak value is 16 kHz.
+ * below 12.5 kHz. In the higher frequency range, the relative error is below 8%. Peak error value is at 16 kHz.
  */
-
-#if MT32EMU_USE_FLOAT_SAMPLES
-
 static const float COARSE_LPF_TAPS_MT32[] = {
 	1.272473681f, -0.220267785f, -0.158039905f, 0.179603785f, -0.111484097f, 0.054137498f, -0.023518029f, 0.010997169f, -0.006935698f
 };
 
-// Similar approximation for new MT-32 and CM-32L/LAPC-I LPF. As the voltage controlled amplifier was introduced, LPF has unity gain.
+// Similar approximation for new MT-32 and CM-32L/LAPC-I LPF. As the voltage controlled amplifier was introduced, LPF has unity DC gain.
 // The peak gain value shifted towards higher frequencies and a bit higher about 1.83 near 13 kHz.
 static const float COARSE_LPF_TAPS_CM32L[] = {
 	1.340615635f, -0.403331694f, 0.036005517f, 0.066156844f, -0.069672532f, 0.049563806f, -0.031113416f, 0.019169774f, -0.012421368f
@@ -88,10 +87,11 @@ static const float ACCURATE_LPF_TAPS_CM32L[] = {
 	-0.000131231f, 3.88575E-07f, 4.48813E-05f, -1.31906E-06f, -1.03499E-05f, 7.71971E-06f, 2.86721E-06f
 };
 
-// According to the CM-64 PCB schematic, there is a difference in the values of the LPF entrance resistors for reverb and non-reverb channels.
-// This effectively results in non-unity LPF gain for the reverb channel of 0.68 while the LPF has unity gain for LA32 output channels.
-// The reverb output gain is multiplied by this factor to compensate for the LPF gain difference.
+// According to the CM-64 PCB schematic, there is a difference in the values of the LPF entrance resistors for the reverb and non-reverb channels.
+// This effectively results in non-unity LPF DC gain for the reverb channel of 0.68 while the LPF has unity DC gain for the LA32 output channels.
+// In emulation, the reverb output gain is multiplied by this factor to compensate for the LPF gain difference.
 static const float CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR = 0.68f;
+
 static const unsigned int OUTPUT_GAIN_FRACTION_BITS = 8;
 static const float OUTPUT_GAIN_MULTIPLIER = float(1 << OUTPUT_GAIN_FRACTION_BITS);
 
@@ -115,7 +115,7 @@ public:
 
 class CoarseLowPassFilter : public AbstractLowPassFilter {
 private:
-	static const unsigned int DELAY_LINE_LENGTH = 8;
+	static const unsigned int DELAY_LINE_LENGTH = 8; // Must be a power of 2
 
 	const SampleEx * const LPF_TAPS;
 	SampleEx ringBuffer[DELAY_LINE_LENGTH];
@@ -128,7 +128,7 @@ public:
 
 class AccurateLowPassFilter : public AbstractLowPassFilter {
 private:
-	static const unsigned int DELAY_LINE_LENGTH = 16;
+	static const unsigned int DELAY_LINE_LENGTH = 16; // Must be a power of 2
 	static const unsigned int NUMBER_OF_PHASES = 3; // Upsampling factor
 	static const unsigned int PHASE_INCREMENT = 2; // Downsampling factor
 	static const unsigned int OUTPUT_SAMPLE_RATE = SAMPLE_RATE * NUMBER_OF_PHASES / PHASE_INCREMENT;

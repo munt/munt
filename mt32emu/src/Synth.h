@@ -540,9 +540,9 @@ public:
 	// See comment for render() below.
 	unsigned int getStereoOutputSampleRate() const;
 
-	// Renders samples to the specified output stream as if they appeared at the analog stereo output.
+	// Renders samples to the specified output stream as if they were sampled at the analog stereo output.
 	// When AnalogOutputMode is set to ACCURATE, the output signal is upsampled to 48 kHz in order
-	// to retain emulation accuracy in whole audible frequency specra. Otherwise, native digital signal sample rate is retained.
+	// to retain emulation accuracy in whole audible frequency spectra. Otherwise, native digital signal sample rate is retained.
 	// getStereoOutputSampleRate() can be used to query actual sample rate of the output signal.
 	// The length is in frames, not bytes (in 16-bit stereo, one frame is 4 bytes).
 	void render(Sample *stream, Bit32u len);
