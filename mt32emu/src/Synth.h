@@ -84,7 +84,11 @@ enum AnalogOutputMode {
 	AnalogOutputMode_COARSE,
 	// Finer emulation of LPF circuit. Output signal is upsampled to 48 kHz to allow emulation of audible mirror spectra above 16 kHz,
 	// which is passed through the LPF circuit without significant attenuation.
-	AnalogOutputMode_ACCURATE
+	AnalogOutputMode_ACCURATE,
+	// Same as AnalogOutputMode_ACCURATE mode but the output signal is 2x oversampled, i.e. the output sample rate is 96 kHz.
+	// This makes subsequent resampling easier. Besides, due to nonlinear passband of the LPF emulated, it takes fewer number of MACs
+	// compared to a regular LPF FIR implementations.
+	AnalogOutputMode_OVERSAMPLED
 };
 
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
