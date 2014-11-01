@@ -73,8 +73,7 @@ install(FILES
 # Locations are exported for the benefit of a higher-level CMakeLists.txt.
 # These lines are irrelevant if compiling stand-alone.
 set(MT32EMU_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" CACHE PATH "")
-get_target_property(MT32EMU_LIBRARY mt32emu LOCATION)
-set(MT32EMU_LIBRARY "${MT32EMU_LIBRARY}" CACHE FILEPATH "")
+set(MT32EMU_LIBRARY $<TARGET_FILE:mt32emu> CACHE FILEPATH "")
 
 # build a CPack driven installer package
 include(InstallRequiredSystemLibraries)
