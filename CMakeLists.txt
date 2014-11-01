@@ -7,10 +7,6 @@ set(munt_VERSION_PATCH 0)
 option(munt_WITH_MT32EMU_SMF2WAV "Build command line standard MIDI file conversion tool" TRUE)
 option(munt_WITH_MT32EMU_QT "Build Qt-based UI-enabled application" TRUE)
 
-if(munt_WITH_MT32EMU_QT AND munt_WITH_INTERNAL_PORTAUDIO)
-  add_subdirectory(portaudio)
-endif()
-
 add_subdirectory(mt32emu)
 
 if(munt_WITH_MT32EMU_SMF2WAV)
