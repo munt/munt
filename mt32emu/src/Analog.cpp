@@ -132,8 +132,8 @@ private:
 	static const unsigned int NUMBER_OF_PHASES = 3; // Upsampling factor
 	static const unsigned int PHASE_INCREMENT_REGULAR = 2; // Downsampling factor
 	static const unsigned int PHASE_INCREMENT_OVERSAMPLED = 1; // No downsampling
-	static const Bit32u AccurateLowPassFilter::DELTAS_REGULAR[][NUMBER_OF_PHASES];
-	static const Bit32u AccurateLowPassFilter::DELTAS_OVERSAMPLED[][NUMBER_OF_PHASES];
+	static const Bit32u DELTAS_REGULAR[][NUMBER_OF_PHASES];
+	static const Bit32u DELTAS_OVERSAMPLED[][NUMBER_OF_PHASES];
 
 	const float * const LPF_TAPS;
 	const Bit32u (&deltas)[NUMBER_OF_PHASES][NUMBER_OF_PHASES];
