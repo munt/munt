@@ -210,25 +210,27 @@ if(LIBSOXR_FOUND)
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/resample/SoxrAdapter.cpp
   )
-endif()
+else(LIBSOXR_FOUND)
+  message(STATUS "Could NOT find libsoxr")
 
-# Try Samplerate if SOXR is unavailable
-find_package(LibSamplerate)
-if(NOT LIBSOXR_FOUND AND LIBSAMPLERATE_FOUND)
-  add_definitions(-DWITH_LIBSAMPLERATE_RESAMPLER)
-  set(EXT_LIBS ${EXT_LIBS} ${LIBSAMPLERATE_LIBRARY})
-  include_directories(${LIBSAMPLERATE_INCLUDE_DIR})
-  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
-    src/resample/SamplerateAdapter.cpp
-  )
-endif()
+  # Try Samplerate if SOXR is unavailable
+  find_package(LibSamplerate)
+  if(LIBSAMPLERATE_FOUND)
+    add_definitions(-DWITH_LIBSAMPLERATE_RESAMPLER)
+    set(EXT_LIBS ${EXT_LIBS} ${LIBSAMPLERATE_LIBRARY})
+    include_directories(${LIBSAMPLERATE_INCLUDE_DIR})
+    set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+      src/resample/SamplerateAdapter.cpp
+    )
+  else(LIBSAMPLERATE_FOUND)
+    message(STATUS "Could NOT find libsamplerate")
 
-# Use "fast and dirty" linear interpolator if neither SOXR nor Samplerate are unavailable
-if(NOT LIBSOXR_FOUND AND NOT LIBSAMPLERATE_FOUND)
-  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
-    src/resample/LinearResampler.cpp
-  )
-endif()
+    # Use "fast and dirty" linear interpolator if neither SOXR nor Samplerate are unavailable
+    set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+      src/resample/LinearResampler.cpp
+    )
+  endif(LIBSAMPLERATE_FOUND)
+endif(LIBSOXR_FOUND)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor -ansi)
