@@ -95,6 +95,14 @@ static const float CM32L_REVERB_TO_LA32_ANALOG_OUTPUT_GAIN_FACTOR = 0.68f;
 static const unsigned int OUTPUT_GAIN_FRACTION_BITS = 8;
 static const float OUTPUT_GAIN_MULTIPLIER = float(1 << OUTPUT_GAIN_FRACTION_BITS);
 
+static const unsigned int COARSE_LPF_DELAY_LINE_LENGTH = 8; // Must be a power of 2
+static const unsigned int ACCURATE_LPF_DELAY_LINE_LENGTH = 16; // Must be a power of 2
+static const unsigned int ACCURATE_LPF_NUMBER_OF_PHASES = 3; // Upsampling factor
+static const unsigned int ACCURATE_LPF_PHASE_INCREMENT_REGULAR = 2; // Downsampling factor
+static const unsigned int ACCURATE_LPF_PHASE_INCREMENT_OVERSAMPLED = 1; // No downsampling
+static const Bit32u ACCURATE_LPF_DELTAS_REGULAR[][ACCURATE_LPF_NUMBER_OF_PHASES] = { { 0, 0, 0 }, { 1, 1, 0 }, { 1, 2, 1 } };
+static const Bit32u ACCURATE_LPF_DELTAS_OVERSAMPLED[][ACCURATE_LPF_NUMBER_OF_PHASES] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 0, 1 } };
+
 class AbstractLowPassFilter {
 public:
 	static AbstractLowPassFilter &createLowPassFilter(AnalogOutputMode mode, bool oldMT32AnalogLPF);
@@ -115,10 +123,8 @@ public:
 
 class CoarseLowPassFilter : public AbstractLowPassFilter {
 private:
-	static const unsigned int DELAY_LINE_LENGTH = 8; // Must be a power of 2
-
 	const SampleEx * const LPF_TAPS;
-	SampleEx ringBuffer[DELAY_LINE_LENGTH];
+	SampleEx ringBuffer[COARSE_LPF_DELAY_LINE_LENGTH];
 	unsigned int ringBufferPosition;
 
 public:
@@ -128,19 +134,12 @@ public:
 
 class AccurateLowPassFilter : public AbstractLowPassFilter {
 private:
-	static const unsigned int DELAY_LINE_LENGTH = 16; // Must be a power of 2
-	static const unsigned int NUMBER_OF_PHASES = 3; // Upsampling factor
-	static const unsigned int PHASE_INCREMENT_REGULAR = 2; // Downsampling factor
-	static const unsigned int PHASE_INCREMENT_OVERSAMPLED = 1; // No downsampling
-	static const Bit32u DELTAS_REGULAR[][NUMBER_OF_PHASES];
-	static const Bit32u DELTAS_OVERSAMPLED[][NUMBER_OF_PHASES];
-
 	const float * const LPF_TAPS;
-	const Bit32u (&deltas)[NUMBER_OF_PHASES][NUMBER_OF_PHASES];
+	const Bit32u (* const deltas)[ACCURATE_LPF_NUMBER_OF_PHASES];
 	const unsigned int phaseIncrement;
 	const unsigned int outputSampleRate;
 
-	SampleEx ringBuffer[DELAY_LINE_LENGTH];
+	SampleEx ringBuffer[ACCURATE_LPF_DELAY_LINE_LENGTH];
 	unsigned int ringBufferPosition;
 	unsigned int phase;
 
@@ -274,16 +273,16 @@ CoarseLowPassFilter::CoarseLowPassFilter(bool oldMT32AnalogLPF) :
 	LPF_TAPS(oldMT32AnalogLPF ? COARSE_LPF_TAPS_MT32 : COARSE_LPF_TAPS_CM32L),
 	ringBufferPosition(0)
 {
-	muteRingBuffer(ringBuffer, DELAY_LINE_LENGTH);
+	muteRingBuffer(ringBuffer, COARSE_LPF_DELAY_LINE_LENGTH);
 }
 
 SampleEx CoarseLowPassFilter::process(const SampleEx inSample) {
-	static const unsigned int DELAY_LINE_MASK = DELAY_LINE_LENGTH - 1;
+	static const unsigned int DELAY_LINE_MASK = COARSE_LPF_DELAY_LINE_LENGTH - 1;
 
-	SampleEx sample = LPF_TAPS[DELAY_LINE_LENGTH] * ringBuffer[ringBufferPosition];
+	SampleEx sample = LPF_TAPS[COARSE_LPF_DELAY_LINE_LENGTH] * ringBuffer[ringBufferPosition];
 	ringBuffer[ringBufferPosition] = Synth::clipSampleEx(inSample);
 
-	for (unsigned int i = 0; i < DELAY_LINE_LENGTH; i++) {
+	for (unsigned int i = 0; i < COARSE_LPF_DELAY_LINE_LENGTH; i++) {
 		sample += LPF_TAPS[i] * ringBuffer[(i + ringBufferPosition) & DELAY_LINE_MASK];
 	}
 
@@ -296,39 +295,36 @@ SampleEx CoarseLowPassFilter::process(const SampleEx inSample) {
 	return sample;
 }
 
-const Bit32u AccurateLowPassFilter::DELTAS_REGULAR[][NUMBER_OF_PHASES] = { { 0, 0, 0 }, { 1, 1, 0 }, { 1, 2, 1 } };
-const Bit32u AccurateLowPassFilter::DELTAS_OVERSAMPLED[][NUMBER_OF_PHASES] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 0, 1 } };
-
 AccurateLowPassFilter::AccurateLowPassFilter(const bool oldMT32AnalogLPF, const bool oversample) :
 	LPF_TAPS(oldMT32AnalogLPF ? ACCURATE_LPF_TAPS_MT32 : ACCURATE_LPF_TAPS_CM32L),
-	deltas(oversample ? DELTAS_OVERSAMPLED : DELTAS_REGULAR),
-	phaseIncrement(oversample ? PHASE_INCREMENT_OVERSAMPLED : PHASE_INCREMENT_REGULAR),
-	outputSampleRate(SAMPLE_RATE * NUMBER_OF_PHASES / phaseIncrement),
+	deltas(oversample ? ACCURATE_LPF_DELTAS_OVERSAMPLED : ACCURATE_LPF_DELTAS_REGULAR),
+	phaseIncrement(oversample ? ACCURATE_LPF_PHASE_INCREMENT_OVERSAMPLED : ACCURATE_LPF_PHASE_INCREMENT_REGULAR),
+	outputSampleRate(SAMPLE_RATE * ACCURATE_LPF_NUMBER_OF_PHASES / phaseIncrement),
 	ringBufferPosition(0),
 	phase(0)
 {
-	muteRingBuffer(ringBuffer, DELAY_LINE_LENGTH);
+	muteRingBuffer(ringBuffer, ACCURATE_LPF_DELAY_LINE_LENGTH);
 }
 
 SampleEx AccurateLowPassFilter::process(const SampleEx inSample) {
-	static const unsigned int DELAY_LINE_MASK = DELAY_LINE_LENGTH - 1;
+	static const unsigned int DELAY_LINE_MASK = ACCURATE_LPF_DELAY_LINE_LENGTH - 1;
 
-	float sample = (phase == 0) ? LPF_TAPS[DELAY_LINE_LENGTH * NUMBER_OF_PHASES] * ringBuffer[ringBufferPosition] : 0.0f;
+	float sample = (phase == 0) ? LPF_TAPS[ACCURATE_LPF_DELAY_LINE_LENGTH * ACCURATE_LPF_NUMBER_OF_PHASES] * ringBuffer[ringBufferPosition] : 0.0f;
 	if (!hasNextSample()) {
 		ringBuffer[ringBufferPosition] = inSample;
 	}
 
-	for (unsigned int tapIx = phase, delaySampleIx = 0; delaySampleIx < DELAY_LINE_LENGTH; delaySampleIx++, tapIx += NUMBER_OF_PHASES) {
+	for (unsigned int tapIx = phase, delaySampleIx = 0; delaySampleIx < ACCURATE_LPF_DELAY_LINE_LENGTH; delaySampleIx++, tapIx += ACCURATE_LPF_NUMBER_OF_PHASES) {
 		sample += LPF_TAPS[tapIx] * ringBuffer[(delaySampleIx + ringBufferPosition) & DELAY_LINE_MASK];
 	}
 
 	phase += phaseIncrement;
-	if (NUMBER_OF_PHASES <= phase) {
-		phase -= NUMBER_OF_PHASES;
+	if (ACCURATE_LPF_NUMBER_OF_PHASES <= phase) {
+		phase -= ACCURATE_LPF_NUMBER_OF_PHASES;
 		ringBufferPosition = (ringBufferPosition - 1) & DELAY_LINE_MASK;
 	}
 
-	return SampleEx(NUMBER_OF_PHASES * sample);
+	return SampleEx(ACCURATE_LPF_NUMBER_OF_PHASES * sample);
 }
 
 bool AccurateLowPassFilter::hasNextSample() const {
@@ -340,13 +336,13 @@ unsigned int AccurateLowPassFilter::getOutputSampleRate() const {
 }
 
 unsigned int AccurateLowPassFilter::estimateInSampleCount(unsigned int outSamples) const {
-	Bit32u cycleCount = outSamples / NUMBER_OF_PHASES;
-	Bit32u remainder = outSamples - cycleCount * NUMBER_OF_PHASES;
+	Bit32u cycleCount = outSamples / ACCURATE_LPF_NUMBER_OF_PHASES;
+	Bit32u remainder = outSamples - cycleCount * ACCURATE_LPF_NUMBER_OF_PHASES;
 	return cycleCount * phaseIncrement + deltas[remainder][phase];
 }
 
 void AccurateLowPassFilter::addPositionIncrement(const unsigned int positionIncrement) {
-	phase = (phase + positionIncrement * phaseIncrement) % NUMBER_OF_PHASES;
+	phase = (phase + positionIncrement * phaseIncrement) % ACCURATE_LPF_NUMBER_OF_PHASES;
 }
 
 }
