@@ -274,7 +274,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/mt32emu_stat.lib"
+				OutputFile="$(OutDir)/mt32emu.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -301,6 +301,10 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath="..\..\munt\mt32emu\src\Analog.cpp"
+				>
+			</File>
 			<File
 				RelativePath="..\..\munt\mt32emu\src\BReverbModel.cpp"
 				>
@@ -375,6 +379,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\..\munt\mt32emu\src\Analog.h"
+				>
+			</File>
 			<File
 				RelativePath="..\..\munt\mt32emu\src\BReverbModel.h"
 				>
