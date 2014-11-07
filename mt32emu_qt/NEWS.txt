@@ -7,6 +7,7 @@ Next release:
 	  For best performance, libsoxr is supported. Libsamplerate is also supported as it is widely available.
 	  As a worst case, the integrated linear interpolator can be used (it's fast but the quality...).
 	* Added a new combo box into the Synth Properties dialog that allows to choose analogue circuits emulation method.
+	* Portaudio now required for OS X builds as there is no other audio support available by now.
 
 2014-06-09:
 
