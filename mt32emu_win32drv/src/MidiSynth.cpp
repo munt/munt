@@ -279,7 +279,7 @@ MidiSynth &MidiSynth::getInstance() {
 
 // Renders all the available space in the single looped ring buffer
 void MidiSynth::RenderAvailableSpace() {
-	DWORD playPosition = waveOut.GetPos() % bufferSize;
+	DWORD playPosition = DWORD(waveOut.GetPos() % bufferSize);
 	DWORD renderPosition = DWORD(renderedFramesCount % bufferSize);
 	DWORD framesToRender;
 
