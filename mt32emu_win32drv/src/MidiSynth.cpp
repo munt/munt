@@ -519,6 +519,14 @@ int MidiSynth::Init() {
 	if (synthEvent.Init()) {
 		return 1;
 	}
+	if (controlROM->getROMInfo() == NULL) {
+		MessageBox(NULL, L"Can't find Control ROM", L"MT32", MB_OK | MB_ICONEXCLAMATION);
+		return 1;
+	}
+	if (pcmROM->getROMInfo() == NULL) {
+		MessageBox(NULL, L"Can't find PCM ROM", L"MT32", MB_OK | MB_ICONEXCLAMATION);
+		return 1;
+	}
 	synth = new Synth(&reportHandler);
 	if (!synth->open(*controlROM, *pcmROM)) {
 		synth->close(true);
