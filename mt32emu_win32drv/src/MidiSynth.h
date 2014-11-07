@@ -32,6 +32,7 @@ private:
 
 	DACInputMode emuDACInputMode;
 	MIDIDelayMode midiDelayMode;
+	AnalogOutputMode analogOutputMode;
 	float outputGain;
 	float reverbOutputGain;
 	bool reverbEnabled;
@@ -41,6 +42,7 @@ private:
 	Bit8u reverbLevel;
 	unsigned int reverbCompatibilityMode;
 	bool reversedStereoEnabled;
+	double sampleRateRatio;
 
 	Bit16s *buffer;
 	volatile UINT64 renderedFramesCount;
@@ -50,7 +52,7 @@ private:
 	const ROMImage *pcmROM;
 
 	unsigned int MillisToFrames(unsigned int millis);
-	void LoadSettings();
+	void LoadWaveOutSettings();
 	void ReloadSettings();
 	void ApplySettings();
 

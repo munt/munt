@@ -373,10 +373,10 @@ static DWORD LoadStringValue(HKEY hReg, const char *name, const char *nDefault, 
 }
 
 unsigned int MidiSynth::MillisToFrames(unsigned int millis) {
-	return UINT(sampleRate * millis / 1000.f);
+	return UINT(sampleRate * millis / 1000.0f);
 }
 
-void MidiSynth::LoadSettings() {
+void MidiSynth::LoadWaveOutSettings() {
 	HKEY hReg;
 	if (RegOpenKeyA(HKEY_CURRENT_USER, MT32EMU_REGISTRY_PATH, &hReg)) {
 		hReg = NULL;
@@ -387,7 +387,7 @@ void MidiSynth::LoadSettings() {
 	}
 	RegCloseKey(hReg);
 	hReg = NULL;
-	sampleRate = SAMPLE_RATE;
+
 	// Approx. bufferSize derived from latency
 	bufferSize = MillisToFrames(LoadIntValue(hRegDriver, "AudioLatency", 100));
 	chunkSize = MillisToFrames(LoadIntValue(hRegDriver, "ChunkLen", 10));
@@ -403,9 +403,6 @@ void MidiSynth::LoadSettings() {
 		bufferSize = chunks * chunkSize;
 		std::cout << "MT32: Using " << chunks << " chunks, chunk size: " << chunkSize << " frames, buffer size: " << bufferSize << " frames." << std::endl;
 	}
-	synth = NULL;
-	controlROM = pcmROM = NULL;
-	ReloadSettings();
 }
 
 void MidiSynth::ReloadSettings() {
@@ -461,6 +458,10 @@ void MidiSynth::ReloadSettings() {
 	reverbCompatibilityMode = (ReverbCompatibilityMode)LoadIntValue(hRegProfile, "reverbCompatibilityMode", ReverbCompatibilityMode_DEFAULT);
 	emuDACInputMode = (DACInputMode)LoadIntValue(hRegProfile, "emuDACInputMode", DACInputMode_NICE);
 	midiDelayMode = (MIDIDelayMode)LoadIntValue(hRegProfile, "midiDelayMode", MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY);
+	if (synth == NULL) {
+		// Preserve AnalogOutputMode (and sample rate) in case of reset
+		analogOutputMode = (AnalogOutputMode)LoadIntValue(hRegProfile, "analogOutputMode", AnalogOutputMode_ACCURATE);
+	}
 
 	if (!resetEnabled && synth != NULL) return;
 	char romDir[256];
@@ -511,11 +512,10 @@ void MidiSynth::ApplySettings() {
 }
 
 int MidiSynth::Init() {
-	LoadSettings();
+	synth = NULL;
+	controlROM = pcmROM = NULL;
+	ReloadSettings();
 
-	buffer = new Bit16s[SAMPLES_PER_FRAME * bufferSize];
-
-	// Init synth
 	if (synthEvent.Init()) {
 		return 1;
 	}
@@ -528,11 +528,16 @@ int MidiSynth::Init() {
 		return 1;
 	}
 	synth = new Synth(&reportHandler);
-	if (!synth->open(*controlROM, *pcmROM)) {
+	if (!synth->open(*controlROM, *pcmROM, analogOutputMode)) {
 		synth->close(true);
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
 	}
+	sampleRate = synth->getStereoOutputSampleRate();
+	sampleRateRatio = SAMPLE_RATE / (double)sampleRate;
+	LoadWaveOutSettings();
+	buffer = new Bit16s[SAMPLES_PER_FRAME * bufferSize];
+
 	ApplySettings();
 	FreeROMImages();
 
@@ -583,7 +588,9 @@ Bit32u MidiSynth::getMIDIEventTimestamp() {
 	if (playPosition < renderPosition) {
 		playPosition += bufferSize;
 	}
-	return Bit32u(renderedFramesCountSnapshot - renderPosition) + playPosition + midiLatency;
+	// Estimated MIDI event timestamp in audio output samples
+	UINT64 timestamp = (renderedFramesCountSnapshot - renderPosition) + playPosition + midiLatency;
+	return Bit32u(timestamp * sampleRateRatio);
 }
 
 void MidiSynth::PlayMIDI(DWORD msg) {
