@@ -16,6 +16,18 @@
 
 #include "stdafx.h"
 
+#ifdef __MINGW32__
+
+#define sscanf_s sscanf
+
+typedef LONG LSTATUS;
+
+#endif // defined(__MINGW32__)
+
+// For the sake of Win9x compatibility
+#undef CreateEvent
+#define CreateEvent CreateEventA
+
 namespace MT32Emu {
 
 static const char MT32EMU_REGISTRY_PATH[] = "Software\\muntemu.org\\Munt mt32emu-qt";
@@ -74,7 +86,7 @@ private:
 public:
 	int Init(Bit16s *buffer, unsigned int bufferSize, unsigned int chunkSize, bool useRingBuffer, unsigned int sampleRate) {
 		DWORD callbackType = CALLBACK_NULL;
-		DWORD_PTR callback = NULL;
+		DWORD_PTR callback = (DWORD_PTR)NULL;
 		hEvent = NULL;
 		if (!useRingBuffer) {
 			hEvent = CreateEvent(NULL, false, true, NULL);
@@ -192,7 +204,7 @@ public:
 		MMTIME mmTime;
 		mmTime.wType = TIME_SAMPLES;
 
-		if (waveOutGetPosition(hWaveOut, &mmTime, sizeof MMTIME) != MMSYSERR_NOERROR) {
+		if (waveOutGetPosition(hWaveOut, &mmTime, sizeof(MMTIME)) != MMSYSERR_NOERROR) {
 			MessageBox(NULL, L"Failed to get current playback position", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 			return 10;
 		}
@@ -223,33 +235,35 @@ public:
 		return playPositionSnapshot;
 	}
 
-	static void RenderingThread(void *) {
-		if (waveOut.chunks == 1) {
-			// Rendering using single looped ring buffer
-			while (!waveOut.stopProcessing) {
-				midiSynth.RenderAvailableSpace();
-			}
-		} else {
-			while (!waveOut.stopProcessing) {
-				bool allBuffersRendered = true;
-				for (UINT i = 0; i < waveOut.chunks; i++) {
-					if (waveOut.WaveHdr[i].dwFlags & WHDR_DONE) {
-						allBuffersRendered = false;
-						midiSynth.Render((Bit16s *)waveOut.WaveHdr[i].lpData, waveOut.WaveHdr[i].dwBufferLength / 4);
-						if (waveOutWrite(waveOut.hWaveOut, &waveOut.WaveHdr[i], sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
-							MessageBox(NULL, L"Failed to write block to device", L"MT32", MB_OK | MB_ICONEXCLAMATION);
-						}
+	static void RenderingThread(void *);
+} waveOut;
+
+void WaveOutWin32::RenderingThread(void *) {
+	if (waveOut.chunks == 1) {
+		// Rendering using single looped ring buffer
+		while (!waveOut.stopProcessing) {
+			midiSynth.RenderAvailableSpace();
+		}
+	} else {
+		while (!waveOut.stopProcessing) {
+			bool allBuffersRendered = true;
+			for (UINT i = 0; i < waveOut.chunks; i++) {
+				if (waveOut.WaveHdr[i].dwFlags & WHDR_DONE) {
+					allBuffersRendered = false;
+					midiSynth.Render((Bit16s *)waveOut.WaveHdr[i].lpData, waveOut.WaveHdr[i].dwBufferLength / 4);
+					if (waveOutWrite(waveOut.hWaveOut, &waveOut.WaveHdr[i], sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
+						MessageBox(NULL, L"Failed to write block to device", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 					}
 				}
-				if (allBuffersRendered) {
-					// Ensure the playback position is monitored frequently enough in order not to miss a wraparound
-					waveOut.GetPos();
-					WaitForSingleObject(waveOut.hEvent, INFINITE);
-				}
+			}
+			if (allBuffersRendered) {
+				// Ensure the playback position is monitored frequently enough in order not to miss a wraparound
+				waveOut.GetPos();
+				WaitForSingleObject(waveOut.hEvent, INFINITE);
 			}
 		}
 	}
-} waveOut;
+}
 
 static class : public ReportHandler {
 protected:
