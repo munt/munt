@@ -65,7 +65,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/mt32emu_stat.lib"
+				OutputFile="$(OutDir)/mt32emu.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -137,7 +137,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/mt32emu_stat.lib"
+				OutputFile="$(OutDir)/mt32emu.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -202,7 +202,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/mt32emu_stat.lib"
+				OutputFile="$(OutDir)/mt32emu.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -302,74 +302,74 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\Analog.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\Analog.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\BReverbModel.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\BReverbModel.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\file.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\file.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\FileStream.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\FileStream.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\LA32Ramp.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\LA32Ramp.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\LA32WaveGenerator.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\LA32WaveGenerator.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\part.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\part.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\partial.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\partial.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\partialManager.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\partialManager.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\poly.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\poly.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\ROMInfo.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\ROMInfo.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\synth.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\synth.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\tables.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\tables.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\tva.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\tva.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\tvf.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\tvf.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\tvp.cpp"
+				RelativePath="..\..\..\munt\mt32emu\src\tvp.cpp"
 				>
 			</File>
 			<Filter
 				Name="sha1"
 				>
 				<File
-					RelativePath="..\..\munt\mt32emu\src\sha1\sha1.cpp"
+					RelativePath="..\..\..\munt\mt32emu\src\sha1\sha1.cpp"
 					>
 				</File>
 			</Filter>
@@ -380,86 +380,86 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\Analog.h"
+				RelativePath="..\..\..\munt\mt32emu\src\Analog.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\BReverbModel.h"
+				RelativePath="..\..\..\munt\mt32emu\src\BReverbModel.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\file.h"
+				RelativePath="..\..\..\munt\mt32emu\src\file.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\FileStream.h"
+				RelativePath="..\..\..\munt\mt32emu\src\FileStream.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\LA32FloatWaveGenerator.h"
+				RelativePath="..\..\..\munt\mt32emu\src\LA32FloatWaveGenerator.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\LA32Ramp.h"
+				RelativePath="..\..\..\munt\mt32emu\src\LA32Ramp.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\LA32WaveGenerator.h"
+				RelativePath="..\..\..\munt\mt32emu\src\LA32WaveGenerator.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\mt32emu.h"
+				RelativePath="..\..\..\munt\mt32emu\src\mt32emu.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\part.h"
+				RelativePath="..\..\..\munt\mt32emu\src\part.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\partial.h"
+				RelativePath="..\..\..\munt\mt32emu\src\partial.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\partialManager.h"
+				RelativePath="..\..\..\munt\mt32emu\src\partialManager.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\poly.h"
+				RelativePath="..\..\..\munt\mt32emu\src\poly.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\ROMInfo.h"
+				RelativePath="..\..\..\munt\mt32emu\src\ROMInfo.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\structures.h"
+				RelativePath="..\..\..\munt\mt32emu\src\structures.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\synth.h"
+				RelativePath="..\..\..\munt\mt32emu\src\synth.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\tables.h"
+				RelativePath="..\..\..\munt\mt32emu\src\tables.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\tva.h"
+				RelativePath="..\..\..\munt\mt32emu\src\tva.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\tvf.h"
+				RelativePath="..\..\..\munt\mt32emu\src\tvf.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\munt\mt32emu\src\tvp.h"
+				RelativePath="..\..\..\munt\mt32emu\src\tvp.h"
 				>
 			</File>
 			<Filter
 				Name="sha1"
 				>
 				<File
-					RelativePath="..\..\munt\mt32emu\src\sha1\sha1.h"
+					RelativePath="..\..\..\munt\mt32emu\src\sha1\sha1.h"
 					>
 				</File>
 			</Filter>

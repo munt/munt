@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual C++ Express 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu", "mt32emu_msvc.vcproj", "{063A149D-E48C-499B-B13F-7A70C140A662}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mt32emu", "mt32emu\mt32emu_msvc.vcproj", "{063A149D-E48C-499B-B13F-7A70C140A662}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mm_win32drv", "mm_win32drv.vcproj", "{A2520089-575E-43BD-A242-EF61D3044B71}"
 	ProjectSection(ProjectDependencies) = postProject
