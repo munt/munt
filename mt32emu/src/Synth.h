@@ -100,7 +100,7 @@ const Bit8u SYSEX_CMD_EOD = 0x45; // End of data
 const Bit8u SYSEX_CMD_ERR = 0x4E; // Communications error
 const Bit8u SYSEX_CMD_RJC = 0x4F; // Rejection
 
-const int MAX_SYSEX_SIZE = 512;
+const int MAX_SYSEX_SIZE = 512; // FIXME: Does this correspond to a real MIDI buffer used in h/w devices?
 
 const unsigned int CONTROL_ROM_SIZE = 64 * 1024;
 
@@ -377,6 +377,11 @@ private:
 
 	Analog *analog;
 
+	// Stuff related to keeping running status and collecting fragments of SysEx messages coming to playRawMidiStream().
+	Bit8u runningStatus;
+	Bit8u streamBuffer[MAX_SYSEX_SIZE];
+	Bit32u streamBufferSize;
+
 	Bit32u getShortMessageLength(Bit32u msg);
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
 
@@ -475,9 +480,15 @@ public:
 	// The timestamp is measured as the global rendered sample count since the synth was created.
 	bool playMsg(Bit32u msg, Bit32u timestamp);
 	bool playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp);
+	// Parse raw MIDI byte stream and play all the parsed MIDI messages at the specified timestamp.
+	// SysEx messages are allowed to be fragmented across several calls to this method. Running status is also handled.
+	// Returns # of parsed bytes. NOTE: the total length of a SysEx message being fragmented shall not exceed MAX_SYSEX_SIZE bytes.
+	Bit32u playRawMidiStream(const Bit8u *stream, Bit32u len, Bit32u timestamp);
+
 	// The MIDI event will be processed ASAP.
 	bool playMsg(Bit32u msg);
 	bool playSysex(const Bit8u *sysex, Bit32u len);
+	Bit32u playRawMidiStream(const Bit8u *stream, Bit32u len);
 
 	// WARNING:
 	// The methods below don't ensure minimum 1-sample delay between sequential MIDI events,
