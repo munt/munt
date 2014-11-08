@@ -23,12 +23,6 @@
 
 namespace MT32Emu {
 
-class File;
-class TableInitialiser;
-class Partial;
-class PartialManager;
-class Part;
-class ROMImage;
 class BReverbModel;
 class Analog;
 
