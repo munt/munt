@@ -659,191 +659,180 @@ bool Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
 	return midiQueue->pushSysex(sysex, len, timestamp);
 }
 
-Bit32u Synth::playRawMidiStream(const Bit8u *stream, Bit32u len) {
+// Returns # of bytes parsed or 0 if MIDI queue is full
+Bit32u Synth::parseShortMessage(const Bit8u stream[], Bit32u len, const Bit32u timestamp) {
+	Bit32u parsedLength = 0;
+	Bit8u status = *stream;
+	if (status < 0x80) {
+		// First byte isn't status, use running status
+		if (runningStatus < 0x80) {
+			printDebug("parseShortMessage: No valid running status yet, byte %02x skipped", status);
+			return 1; // Skip one invalid byte
+		}
+		status = runningStatus;
+	} else {
+		// Store current status as running
+		runningStatus = status;
+		++stream;
+		--len;
+		++parsedLength;
+	}
+
+	Bit32u shortMessage = status;
+	const Bit32u shortMessageArgsLength = getShortMessageLength(shortMessage) - 1;
+	if (len < shortMessageArgsLength) {
+		// Store incomplete message for further processing
+		*streamBuffer = status;
+		if (len > 0) streamBuffer[1] = *stream;
+		streamBufferSize = len + 1;
+		return parsedLength + len;
+	}
+
+	// Assemble short message
+	for (Bit32u i = 0; i < shortMessageArgsLength; ++i) {
+		Bit8u dataByte = stream[i];
+		if (dataByte < 0x80) {
+			shortMessage |= dataByte << (8 << i);
+		} else {
+			printDebug("parseShortMessage: Invalid short message: %06x, ignored", shortMessage);
+			// Ignore invalid bytes and start over
+			return parsedLength + i;
+		}
+	}
+	parsedLength += shortMessageArgsLength;
+	return playMsg(shortMessage, timestamp) ? parsedLength : 0;
+}
+
+Bit32u Synth::parseShortMessageFragment(const Bit8u stream[], Bit32u len, const Bit32u timestamp) {
+	const Bit32u shortMessageLength = getShortMessageLength(*streamBuffer);
+	Bit32u parsedLength = 0;
+
+	// Append incoming bytes to streamBuffer
+	while ((streamBufferSize < shortMessageLength) && (len-- > 0)) {
+		streamBuffer[streamBufferSize++] = *(stream++);
+		++parsedLength;
+	}
+	if (streamBufferSize < shortMessageLength) return parsedLength; // Still lacks one byte
+
+	Bit32u shortMessage = streamBuffer[0];
+	for (Bit32u i = 1; i < streamBufferSize; ++i) {
+		Bit8u dataByte = streamBuffer[i];
+		if (dataByte < 0x80) {
+			shortMessage |= dataByte << (i << 3);
+		} else {
+			printDebug("parseShortMessageFragment: Invalid short message: %06x, ignored", shortMessage);
+			// Ignore invalid bytes and start over
+			streamBufferSize -= i;
+			for (Bit32u j = 0; j < streamBufferSize; ++j) {
+				streamBuffer[j] = streamBuffer[j + i];
+			}
+			return parsedLength;
+		}
+	}
+	if (playMsg(shortMessage, timestamp)) streamBufferSize = 0; // Success, clear streamBuffer
+	return parsedLength;
+}
+
+Bit32u Synth::parseSysex(const Bit8u stream[], const Bit32u len, const Bit32u timestamp) {
+	// Find SysEx length
+	Bit32u sysexLength = 1;
+	while (sysexLength < len) {
+		Bit8u nextByte = stream[sysexLength++];
+		if ((0x7F < nextByte) && (nextByte <= 0xF7)) {
+			// End of SysEx?
+			if (nextByte == 0xF7) return playSysex(stream, sysexLength, timestamp) ? sysexLength : 0;
+			// Illegal status byte in SysEx message, aborting
+			printDebug("parseSysex: SysEx message lacks end-of-sysex (0xf7), ignored");
+			return sysexLength - 1;
+		}
+		// FIXME: Pass through System realtime messages (currently unsupported, though)
+	}
+
+	// Store incomplete SysEx message for further processing
+	streamBufferSize = sysexLength;
+	memcpy(streamBuffer, stream, sysexLength);
+	return sysexLength;
+}
+
+Bit32u Synth::parseSysexFragment(const Bit8u stream[], const Bit32u len, const Bit32u timestamp) {
+	if (streamBuffer[streamBufferSize - 1] == 0xF7) {
+		// SysEx well ended but MIDI queue was full, just try again
+		if (playSysex(streamBuffer, streamBufferSize, timestamp)) streamBufferSize = 0; // Clear streamBuffer if success
+		return 0;
+	}
+
+	Bit32u parsedLength = 0;
+	while (parsedLength < len) {
+		Bit8u nextByte = stream[parsedLength++];
+		if ((0x7F < nextByte) && (nextByte <= 0xF7)) {
+			if (MAX_SYSEX_SIZE <= streamBufferSize) {
+				// Stream buffer overrun
+				printDebug("parseSysexFragment: streamBuffer overrun while receiving SysEx message, ignored. Max allowed size of fragmented SysEx is 512 bytes.");
+				streamBufferSize = 0; // Clear streamBuffer
+				// If there is illegal status byte in SysEx message, retry parsing from that point
+				return (nextByte == 0xF7) ? parsedLength : parsedLength - 1;
+			}
+			if (nextByte == 0xF7) {
+				// SysEx well ended
+				streamBuffer[streamBufferSize++] = nextByte;
+				if (playSysex(streamBuffer, streamBufferSize, timestamp)) streamBufferSize = 0; // Clear streamBuffer if success
+				break;
+			}
+			// Illegal status byte in SysEx message, aborting
+			printDebug("parseSysex: SysEx message lacks end-of-sysex (0xf7), ignored");
+			return parsedLength - 1;
+		}
+		if (streamBufferSize < MAX_SYSEX_SIZE) {
+			// FIXME: Pass through System realtime messages (currently unsupported, though)
+			streamBuffer[streamBufferSize++] = nextByte;
+		}
+	}
+	return parsedLength;
+}
+
+Bit32u Synth::playRawMidiStream(const Bit8u *stream, const Bit32u len) {
 	return playRawMidiStream(stream, len, renderedSampleCount);
 }
 
 Bit32u Synth::playRawMidiStream(const Bit8u *stream, Bit32u len, const Bit32u timestamp) {
-	Bit32u parsedLength = 0;
+	Bit32u totalParsedLength = 0;
 	while (len > 0) {
+		Bit32u parsedMessageLength = 0;
 		// Check if there is something in streamBuffer waiting for being processed
 		if (streamBufferSize > 0) {
-			if (*streamBuffer == 0xF7) {
-				// Stream buffer overrun, just wait for the end of SysEx
-				Bit8u nextByte = *stream;
-				if ((0x80 <= nextByte) && (nextByte < 0xF7)) {
-					// Illegal status byte in SysEx, aborting
-					streamBufferSize = 0;
-				} else {
-					if (nextByte == 0xF7) streamBufferSize = 0; // SysEx well ended
-					stream++;
-					--len;
-					++parsedLength;
-				}
-				continue;
-			}
-
 			if (*streamBuffer == 0xF0) {
-				// SysEx fragment
-				if (streamBuffer[streamBufferSize - 1] == 0xF7) {
-					// SysEx well ended but MIDI queue was full, just try again
-					if (!playSysex(streamBuffer, streamBufferSize, timestamp)) break; // MIDI queue is still full :(
-					streamBufferSize = 0;
-					continue;
-				}
-				Bit8u nextByte = *stream;
-				if ((0x80 <= nextByte) && (nextByte < 0xF7)) {
-					// Illegal status byte in SysEx, aborting
-					streamBufferSize = 0;
-					printDebug("playRawMidiStream: SysEx message lacks end-of-sysex (0xf7), ignored");
-				} else {
-					streamBuffer[streamBufferSize++] = nextByte;
-					stream++;
-					--len;
-					++parsedLength;
-					if (nextByte == 0xF7) {
-						// SysEx well ended
-						if (!playSysex(streamBuffer, streamBufferSize, timestamp)) break;
-						streamBufferSize = 0;
-					} else if (streamBufferSize >= MAX_SYSEX_SIZE) {
-						// Stream buffer overrun, just wait for the end of SysEx
-						printDebug("playRawMidiStream: stream buffer overrun while receiving SysEx message, ignored. Max allowed size for fragmented SysEx is 512 bytes.");
-						*streamBuffer = 0xF7; // Put a marker
-					}
-				}
+				parsedMessageLength = parseSysexFragment(stream, len, timestamp);
+				if (parsedMessageLength == 0 && streamBufferSize == 0) continue; // Only streamBuffer content processed, need to rerun
+			} else if (*streamBuffer < 0x80) {
+				// Should never happen
+				printDebug("playRawMidiStream: Internal error while processing stream buffer: first byte isn't status (%02x)", *streamBuffer);
+				streamBufferSize = 0;
+				continue;
+			} else if (streamBufferSize > 3) {
+				// Should never happen
+				printDebug("playRawMidiStream: Internal error while processing fragmented short message: streamBufferSize=%i", streamBufferSize);
+				streamBufferSize = 0;
 				continue;
 			} else {
-				if (*streamBuffer < 0x80) {
-					printDebug("playRawMidiStream: Internal error while processing stream buffer: first byte isn't status (%02x)", *streamBuffer);
-					streamBufferSize = 0;
-					continue;
-				}
-				if (streamBufferSize > 3) {
-					printDebug("playRawMidiStream: Internal error while processing fragmented short message: streamBufferSize=%i", streamBufferSize);
-					streamBufferSize = 0;
-					continue;
-				}
-
-				// Short message fragment
-				Bit32u shortMessageLength = getShortMessageLength(*streamBuffer);
-				if ((streamBufferSize + len) < shortMessageLength) {
-					// Still lacks one byte
-					streamBuffer[streamBufferSize++] = *stream;
-					++parsedLength;
-					break;
-				} else {
-					// Construct complete message
-					while (streamBufferSize < shortMessageLength) {
-						streamBuffer[streamBufferSize++] = *(stream++);
-						--len;
-						++parsedLength;
-					}
-
-					// Do recursively to avoid code duplication
-					Bit8u shortMessage[3];
-					memcpy(shortMessage, streamBuffer, shortMessageLength); // A bit inefficient but clear and compatible
-					streamBufferSize = 0; // Clear streamBuffer
-					Bit32u processedLength = playRawMidiStream(shortMessage, shortMessageLength, timestamp);
-					if (processedLength == 0) {
-						// MIDI queue full, restore the message in buffer
-						memcpy(streamBuffer, shortMessage, shortMessageLength); // Just to be sure
-						streamBufferSize = shortMessageLength;
-						break;
-					}
-					if (processedLength != shortMessageLength) {
-						printDebug("playRawMidiStream: Internal error while processing fragmented short message: processedLength=%i, shortMessageLength=%i", processedLength, shortMessageLength);
-						continue;
-					}
-					continue;
-				}
+				parsedMessageLength = parseShortMessageFragment(stream, len, timestamp);
+				// parsedMessageLength should always be > 0 if a parse error occured
+			}
+		} else {
+			if (*stream == 0xF0) {
+				parsedMessageLength = parseSysex(stream, len, timestamp);
+			} else {
+				parsedMessageLength = parseShortMessage(stream, len, timestamp);
 			}
 		}
 
-		Bit8u status = *stream;
-		if (status == 0xF0) {
-			// New SysEx started
-			Bit32u sysexLength = 1;
-			bool sysexComplete = false;
+		if (parsedMessageLength == 0) break; // MIDI queue full
 
-			// Find SysEx length
-			while (sysexLength < len) {
-				Bit8u nextByte = stream[sysexLength++];
-				if ((nextByte < 0x80) || (nextByte > 0xF7)) continue; // FIXME: Pass through System realtime messages (currently unsupported, though)
-				if (nextByte == 0xF7) {
-					sysexComplete = true;
-					break;
-				}
-				// Error in SysEx message, aborting
-				printDebug("playRawMidiStream: SysEx message lacks end-of-sysex (0xf7), ignored");
-				--sysexLength;
-				stream += sysexLength;
-				len -= sysexLength;
-				parsedLength += sysexLength;
-				sysexLength = 0;
-				break;
-			}
-			if (sysexComplete) {
-				if (!playSysex(stream, sysexLength, timestamp)) break;
-				stream += sysexLength;
-				len -= sysexLength;
-				parsedLength += sysexLength;
-				continue;
-			}
-			if (sysexLength == 0) continue;
-
-			// Store incomplete SysEx message for further processing
-			streamBufferSize = sysexLength;
-			memcpy(streamBuffer, stream, sysexLength);
-			parsedLength += sysexLength;
-			break;
-		}
-
-		// Parse short message
-		Bit32u newParsedLength = parsedLength;
-		if ((status & 0x80) == 0) {
-			if ((runningStatus & 0x80) == 0) {
-				printDebug("playRawMidiStream: No valid running status yet, byte %02x skipped", status);
-				++stream;
-				--len;
-				++parsedLength;
-				continue;
-			}
-			status = runningStatus;
-		}
-		else {
-			runningStatus = status;
-			++stream;
-			--len;
-			++newParsedLength;
-		}
-		Bit32u shortMessage = status;
-		Bit32u shortMessageArgsLength = getShortMessageLength(shortMessage) - 1;
-		if (len < shortMessageArgsLength) {
-			// Store incomplete message for further processing
-			*streamBuffer = status;
-			if (len > 0) streamBuffer[1] = *stream;
-			streamBufferSize = len + 1;
-			parsedLength = newParsedLength + len;
-			break;
-		}
-		// Extract message arguments
-		if (shortMessageArgsLength > 0) {
-			shortMessage |= *(stream++) << 8;
-			if (shortMessageArgsLength > 1) {
-				shortMessage |= *(stream++) << 16;
-			}
-			len -= shortMessageArgsLength;
-			newParsedLength += shortMessageArgsLength;
-			if ((shortMessage & 0x808000) != 0) {
-				printDebug("playRawMidiStream: Invalid short message: %06x, ignored", shortMessage);
-				parsedLength = newParsedLength;
-				continue;
-			}
-		}
-		if (!playMsg(shortMessage, timestamp)) break;
-		parsedLength = newParsedLength;
+		// Parsed successfully
+		stream += parsedMessageLength;
+		len -= parsedMessageLength;
+		totalParsedLength += parsedMessageLength;
 	}
-	return parsedLength;
+	return totalParsedLength;
 }
 
 void Synth::playMsgNow(Bit32u msg) {

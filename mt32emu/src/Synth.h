@@ -384,6 +384,10 @@ private:
 
 	Bit32u getShortMessageLength(Bit32u msg);
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
+	Bit32u parseShortMessage(const Bit8u stream[], Bit32u len, const Bit32u timestamp);
+	Bit32u parseShortMessageFragment(const Bit8u stream[], Bit32u len, const Bit32u timestamp);
+	Bit32u parseSysex(const Bit8u stream[], const Bit32u len, const Bit32u timestamp);
+	Bit32u parseSysexFragment(const Bit8u stream[], const Bit32u len, const Bit32u timestamp);
 
 	void produceLA32Output(Sample *buffer, Bit32u len);
 	void convertSamplesToOutput(Sample *buffer, Bit32u len);
@@ -483,12 +487,12 @@ public:
 	// Parse raw MIDI byte stream and play all the parsed MIDI messages at the specified timestamp.
 	// SysEx messages are allowed to be fragmented across several calls to this method. Running status is also handled.
 	// Returns # of parsed bytes. NOTE: the total length of a SysEx message being fragmented shall not exceed MAX_SYSEX_SIZE bytes.
-	Bit32u playRawMidiStream(const Bit8u *stream, Bit32u len, Bit32u timestamp);
+	Bit32u playRawMidiStream(const Bit8u *stream, Bit32u len, const Bit32u timestamp);
 
 	// The MIDI event will be processed ASAP.
 	bool playMsg(Bit32u msg);
 	bool playSysex(const Bit8u *sysex, Bit32u len);
-	Bit32u playRawMidiStream(const Bit8u *stream, Bit32u len);
+	Bit32u playRawMidiStream(const Bit8u *stream, const Bit32u len);
 
 	// WARNING:
 	// The methods below don't ensure minimum 1-sample delay between sequential MIDI events,
