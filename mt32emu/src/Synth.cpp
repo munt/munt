@@ -687,9 +687,9 @@ Bit32u Synth::playRawMidiStream(const Bit8u *stream, Bit32u len, const Bit32u ti
 				// SysEx fragment
 				if (streamBuffer[streamBufferSize - 1] == 0xF7) {
 					// SysEx well ended but MIDI queue was full, just try again
-					if (playSysex(streamBuffer, streamBufferSize, timestamp)) continue;
-					// MIDI queue is still full :(
-					break;
+					if (!playSysex(streamBuffer, streamBufferSize, timestamp)) break; // MIDI queue is still full :(
+					streamBufferSize = 0;
+					continue;
 				}
 				Bit8u nextByte = *stream;
 				if ((0x80 <= nextByte) && (nextByte < 0xF7)) {
