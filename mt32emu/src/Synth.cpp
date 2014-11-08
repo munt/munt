@@ -603,7 +603,17 @@ void Synth::setMIDIEventQueueSize(Bit32u useSize) {
 }
 
 Bit32u Synth::getShortMessageLength(Bit32u msg) {
-	if ((msg & 0xF0) == 0xF0) return 1;
+	if ((msg & 0xF0) == 0xF0) {
+		switch (msg & 0xFF) {
+			case 0xF1:
+			case 0xF3:
+				return 2;
+			case 0xF2:
+				return 3;
+			default:
+				return 1;
+		}
+	}
 	// NOTE: This calculation isn't quite correct
 	// as it doesn't consider the running status byte
 	return ((msg & 0xE0) == 0xC0) ? 2 : 3;
