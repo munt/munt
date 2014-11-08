@@ -181,7 +181,7 @@ bool WinMMAudioStream::start(int deviceIndex) {
 	}
 
 	DWORD callbackType = CALLBACK_NULL;
-	DWORD_PTR callback = NULL;
+	DWORD_PTR callback = (DWORD_PTR)NULL;
 	if (ringBufferMode) {
 		hWaitableTimer = CreateWaitableTimer(NULL, TRUE, NULL);
 	} else {
