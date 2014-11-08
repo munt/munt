@@ -22,7 +22,11 @@
 namespace MT32Emu {
 
 static void SHA1DigestToString(char *strDigest, const unsigned int intDigest[]) {
+#ifdef _MSC_VER
+	sprintf_s(strDigest, 41, "%08x%08x%08x%08x%08x", intDigest[0], intDigest[1], intDigest[2], intDigest[3], intDigest[4]);
+#else
 	sprintf(strDigest, "%08x%08x%08x%08x%08x", intDigest[0], intDigest[1], intDigest[2], intDigest[3], intDigest[4]);
+#endif
 }
 
 File::File() : sha1DigestCalculated(false), fileSize(0), data(NULL) {
