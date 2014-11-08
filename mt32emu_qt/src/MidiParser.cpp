@@ -136,6 +136,11 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 					data += len;
 				} else {
 					qDebug() << "MidiParser: Unsupported event" << *(data++);
+					if (*data == 0xF1 || *data == 0xF3) {
+						data++;
+					} else if (*data == 0xF2) {
+						data += 2;
+					}
 				}
 				if (time > 0) {
 					// The event is unsupported. Nevertheless, assign a special marker event to retain timing information
