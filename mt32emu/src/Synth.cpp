@@ -779,7 +779,7 @@ Bit32u Synth::parseSysexFragment(const Bit8u stream[], const Bit32u len, const B
 				break;
 			}
 			// Illegal status byte in SysEx message, aborting
-			printDebug("parseSysex: SysEx message lacks end-of-sysex (0xf7), ignored");
+			printDebug("parseSysexFragment: SysEx message lacks end-of-sysex (0xf7), ignored");
 			return parsedLength - 1;
 		}
 		if (streamBufferSize < MAX_SYSEX_SIZE) {
