@@ -691,10 +691,9 @@ Bit32u Synth::parseShortMessage(const Bit8u stream[], Bit32u len, const Bit32u t
 	// Assemble short message
 	for (Bit32u i = 0; i < shortMessageArgsLength; ++i) {
 		Bit8u dataByte = stream[i];
-		if (dataByte < 0x80) {
-			shortMessage |= dataByte << (8 << i);
-		} else {
-			printDebug("parseShortMessage: Invalid short message: %06x, ignored", shortMessage);
+		shortMessage |= dataByte << (8 << i);
+		if (0x7F < dataByte) {
+			printDebug("parseShortMessage: Invalid short message: %06x, expected %i data byte(s), ignored", shortMessage, shortMessageArgsLength);
 			// Ignore invalid bytes and start over
 			return parsedLength + i;
 		}
@@ -717,10 +716,9 @@ Bit32u Synth::parseShortMessageFragment(const Bit8u stream[], Bit32u len, const 
 	Bit32u shortMessage = streamBuffer[0];
 	for (Bit32u i = 1; i < streamBufferSize; ++i) {
 		Bit8u dataByte = streamBuffer[i];
-		if (dataByte < 0x80) {
-			shortMessage |= dataByte << (i << 3);
-		} else {
-			printDebug("parseShortMessageFragment: Invalid short message: %06x, ignored", shortMessage);
+		shortMessage |= dataByte << (i << 3);
+		if (0x7F < dataByte) {
+			printDebug("parseShortMessageFragment: Invalid short message: %06x, expected %i data byte(s), ignored", shortMessage, streamBufferSize - 1);
 			// Ignore invalid bytes and start over
 			streamBufferSize -= i;
 			for (Bit32u j = 0; j < streamBufferSize; ++j) {
