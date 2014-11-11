@@ -683,7 +683,14 @@ Bit32u Synth::parseShortMessage(const Bit8u stream[], Bit32u len, const Bit32u t
 	if (len < shortMessageArgsLength) {
 		// Store incomplete message for further processing
 		*streamBuffer = status;
-		if (len > 0) streamBuffer[1] = *stream;
+		if (len > 0) { // There can be only one...
+			Bit8u dataByte = *stream;
+			if (0x7F < dataByte) { // Only possible if explicit status present
+				printDebug("parseShortMessage: Invalid short message: got status %02x, but no data bytes -> ignored", shortMessage);
+				return parsedLength; // Skip single status byte
+			}
+			streamBuffer[1] = dataByte;
+		}
 		streamBufferSize = len + 1;
 		return parsedLength + len;
 	}
@@ -693,7 +700,7 @@ Bit32u Synth::parseShortMessage(const Bit8u stream[], Bit32u len, const Bit32u t
 		Bit8u dataByte = stream[i];
 		shortMessage |= dataByte << (8 << i);
 		if (0x7F < dataByte) {
-			printDebug("parseShortMessage: Invalid short message: %06x, expected %i data byte(s), ignored", shortMessage, shortMessageArgsLength);
+			printDebug("parseShortMessage: Invalid short message: %06x, expected %i data byte(s) -> ignored", shortMessage, shortMessageArgsLength);
 			// Ignore invalid bytes and start over
 			return parsedLength + i;
 		}
@@ -708,24 +715,22 @@ Bit32u Synth::parseShortMessageFragment(const Bit8u stream[], Bit32u len, const 
 
 	// Append incoming bytes to streamBuffer
 	while ((streamBufferSize < shortMessageLength) && (len-- > 0)) {
-		streamBuffer[streamBufferSize++] = *(stream++);
+		Bit8u dataByte = *(stream++);
+		if (0x7F < dataByte) {
+			printDebug("parseShortMessageFragment: Invalid short message: status %02x, expected length %i, actual %i -> ignored", *streamBuffer, shortMessageLength, streamBufferSize);
+			// Discard invalid bytes and start over
+			streamBufferSize = 0;
+			return parsedLength;
+		}
+		streamBuffer[streamBufferSize++] = dataByte;
 		++parsedLength;
 	}
 	if (streamBufferSize < shortMessageLength) return parsedLength; // Still lacks one byte
 
 	Bit32u shortMessage = streamBuffer[0];
-	for (Bit32u i = 1; i < streamBufferSize; ++i) {
+	for (Bit32u i = 1; i < shortMessageLength; ++i) {
 		Bit8u dataByte = streamBuffer[i];
 		shortMessage |= dataByte << (i << 3);
-		if (0x7F < dataByte) {
-			printDebug("parseShortMessageFragment: Invalid short message: %06x, expected %i data byte(s), ignored", shortMessage, streamBufferSize - 1);
-			// Ignore invalid bytes and start over
-			streamBufferSize -= i;
-			for (Bit32u j = 0; j < streamBufferSize; ++j) {
-				streamBuffer[j] = streamBuffer[j + i];
-			}
-			return parsedLength;
-		}
 	}
 	if (playMsg(shortMessage, timestamp)) streamBufferSize = 0; // Success, clear streamBuffer
 	return parsedLength;
