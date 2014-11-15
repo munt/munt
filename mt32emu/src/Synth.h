@@ -101,6 +101,7 @@ const Bit8u SYSEX_CMD_ERR = 0x4E; // Communications error
 const Bit8u SYSEX_CMD_RJC = 0x4F; // Rejection
 
 const int MAX_SYSEX_SIZE = 512; // FIXME: Does this correspond to a real MIDI buffer used in h/w devices?
+const int MAX_STREAM_BUFFER_SIZE = 32768; // Should suffice for any reasonable bulk dump SysEx, as the h/w units have only 32K of RAM onboard
 
 const unsigned int CONTROL_ROM_SIZE = 64 * 1024;
 
@@ -379,8 +380,10 @@ private:
 
 	// Stuff related to keeping running status and collecting fragments of SysEx messages coming to playRawMidiStream().
 	Bit8u runningStatus;
-	Bit8u streamBuffer[MAX_SYSEX_SIZE];
+	Bit8u *streamBuffer;
+	Bit32u streamBufferCapacity;
 	Bit32u streamBufferSize;
+	bool checkStreamBufferCapacity(const bool preserveContent);
 
 	Bit32u getShortMessageLength(Bit32u msg);
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);

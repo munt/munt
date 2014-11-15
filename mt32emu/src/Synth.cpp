@@ -89,6 +89,8 @@ Synth::Synth(ReportHandler *useReportHandler) {
 	lastReceivedMIDIEventTimestamp = 0;
 	memset(parts, 0, sizeof(parts));
 	renderedSampleCount = 0;
+	streamBuffer = NULL;
+	streamBufferCapacity = 0;
 	streamBufferSize = 0;
 }
 
@@ -533,6 +535,8 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 
 	midiQueue = new MidiEventQueue();
 	runningStatus = 0;
+	streamBuffer = new Bit8u[MAX_SYSEX_SIZE];
+	streamBufferCapacity = MAX_SYSEX_SIZE;
 	streamBufferSize = 0;
 
 	analog = new Analog(analogOutputMode, controlROMFeatures);
@@ -552,6 +556,10 @@ void Synth::close(bool forced) {
 	if (!forced && !isOpen) {
 		return;
 	}
+
+	delete[] streamBuffer;
+	streamBuffer = NULL;
+	streamBufferCapacity = 0;
 
 	delete midiQueue;
 	midiQueue = NULL;
@@ -659,6 +667,21 @@ bool Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
 	return midiQueue->pushSysex(sysex, len, timestamp);
 }
 
+// We deal with SysEx messages below 512 bytes long in most cases. Nevertheless, it seems reasonable to support a possibility
+// to load bulk dumps using a single message. However, this is known to fail with a real device due to limited input buffer size.
+bool Synth::checkStreamBufferCapacity(const bool preserveContent) {
+	if (streamBufferSize < streamBufferCapacity) return true;
+	if (streamBufferCapacity < MAX_STREAM_BUFFER_SIZE) {
+		Bit8u *oldStreamBuffer = streamBuffer;
+		streamBufferCapacity = MAX_STREAM_BUFFER_SIZE;
+		streamBuffer = new Bit8u[streamBufferCapacity];
+		if (preserveContent) memcpy(streamBuffer, oldStreamBuffer, streamBufferSize);
+		delete[] oldStreamBuffer;
+		return true;
+	}
+	return false;
+}
+
 // Returns # of bytes parsed or 0 if MIDI queue is full
 Bit32u Synth::parseShortMessage(const Bit8u stream[], Bit32u len, const Bit32u timestamp) {
 	Bit32u parsedLength = 0;
@@ -757,7 +780,13 @@ Bit32u Synth::parseSysex(const Bit8u stream[], const Bit32u len, const Bit32u ti
 
 	// Store incomplete SysEx message for further processing
 	streamBufferSize = sysexLength;
-	memcpy(streamBuffer, stream, sysexLength);
+	if (checkStreamBufferCapacity(false)) {
+		memcpy(streamBuffer, stream, sysexLength);
+	} else {
+		// Not enough buffer capacity, don't care about the real buffer content, just mark the first byte
+		*streamBuffer = *stream;
+		streamBufferSize = streamBufferCapacity;
+	}
 	return sysexLength;
 }
 
@@ -781,18 +810,18 @@ Bit32u Synth::parseSysexFragment(const Bit8u stream[], const Bit32u len, const B
 				--parsedLength;
 				break;
 			}
-			if (MAX_SYSEX_SIZE <= streamBufferSize) {
-				// SysEx well ended but streamBuffer overrun
-				printDebug("parseSysexFragment: streamBuffer overrun while receiving SysEx message, ignored. Max allowed size of fragmented SysEx is 512 bytes.");
-				streamBufferSize = 0; // Clear streamBuffer
+			// SysEx well ended
+			if (checkStreamBufferCapacity(true)) {
+				streamBuffer[streamBufferSize++] = nextByte;
+				if (playSysex(streamBuffer, streamBufferSize, timestamp)) streamBufferSize = 0; // Clear streamBuffer if success
 				break;
 			}
-			// SysEx well ended
-			streamBuffer[streamBufferSize++] = nextByte;
-			if (playSysex(streamBuffer, streamBufferSize, timestamp)) streamBufferSize = 0; // Clear streamBuffer if success
+			// Encountered streamBuffer overrun
+			printDebug("parseSysexFragment: streamBuffer overrun while receiving SysEx message, ignored. Max allowed size of fragmented SysEx is %i bytes.", streamBufferCapacity);
+			streamBufferSize = 0; // Clear streamBuffer
 			break;
 		}
-		if (streamBufferSize < MAX_SYSEX_SIZE) streamBuffer[streamBufferSize++] = nextByte;
+		if (checkStreamBufferCapacity(true)) streamBuffer[streamBufferSize++] = nextByte;
 	}
 	return parsedLength;
 }
