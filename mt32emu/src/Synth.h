@@ -295,18 +295,19 @@ struct MidiEvent {
 class MidiEventQueue {
 private:
 	MidiEvent *ringBuffer;
-	Bit32u ringBufferSize;
+	Bit32u ringBufferMask;
 	volatile Bit32u startPosition;
 	volatile Bit32u endPosition;
 
 public:
-	MidiEventQueue(Bit32u ringBufferSize = DEFAULT_MIDI_EVENT_QUEUE_SIZE);
+	MidiEventQueue(Bit32u ringBufferSize = DEFAULT_MIDI_EVENT_QUEUE_SIZE); // Must be a power of 2
 	~MidiEventQueue();
 	void reset();
 	bool pushShortMessage(Bit32u shortMessageData, Bit32u timestamp);
 	bool pushSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
 	const MidiEvent *peekMidiEvent();
 	void dropMidiEvent();
+	bool isFull() const;
 };
 
 class Synth {
@@ -473,9 +474,10 @@ public:
 	// All the enqueued events are processed by the synth immediately.
 	void flushMIDIQueue();
 
-	// Sets size of the internal MIDI event queue.
+	// Sets size of the internal MIDI event queue. The queue size is set to the minimum power of 2 that is greater or equal to the size specified.
 	// The queue is flushed before reallocation.
-	void setMIDIEventQueueSize(Bit32u);
+	// Returns the actual queue size being used.
+	Bit32u setMIDIEventQueueSize(Bit32u);
 
 	// Enqueues a MIDI event for subsequent playback.
 	// The minimum delay involves the delay introduced while the event is transferred via MIDI interface

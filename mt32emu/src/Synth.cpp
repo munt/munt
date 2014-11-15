@@ -605,12 +605,23 @@ void Synth::flushMIDIQueue() {
 	}
 }
 
-void Synth::setMIDIEventQueueSize(Bit32u useSize) {
-	if (midiQueue != NULL) {
-		flushMIDIQueue();
-		delete midiQueue;
-		midiQueue = new MidiEventQueue(useSize);
+Bit32u Synth::setMIDIEventQueueSize(Bit32u useSize) {
+	static const Bit32u MAX_QUEUE_SIZE = (1 << 24); // This results in about 256 Mb - much greater than any reasonable value
+
+	if (midiQueue == NULL) return 0;
+	flushMIDIQueue();
+
+	// Find a power of 2 that is >= useSize
+	Bit32u binarySize = 1;
+	if (useSize < MAX_QUEUE_SIZE) {
+		// Using simple linear search as this isn't time critical
+		while (binarySize < useSize) binarySize <<= 1;
+	} else {
+		binarySize = MAX_QUEUE_SIZE;
 	}
+	delete midiQueue;
+	midiQueue = new MidiEventQueue(binarySize);
+	return binarySize;
 }
 
 Bit32u Synth::getShortMessageLength(Bit32u msg) {
@@ -759,6 +770,7 @@ Bit32u Synth::parseShortMessageFragment(const Bit8u stream[], Bit32u len, const 
 	return parsedLength;
 }
 
+// Returns # of bytes parsed or 0 if MIDI queue is full
 Bit32u Synth::parseSysex(const Bit8u stream[], const Bit32u len, const Bit32u timestamp) {
 	// Find SysEx length
 	Bit32u sysexLength = 1;
@@ -833,6 +845,7 @@ Bit32u Synth::playRawMidiStream(const Bit8u *stream, const Bit32u len) {
 Bit32u Synth::playRawMidiStream(const Bit8u *stream, Bit32u len, const Bit32u timestamp) {
 	Bit32u totalParsedLength = 0;
 	while (len > 0) {
+		if (midiQueue->isFull()) break; // Shortcut
 		Bit32u parsedMessageLength = 0;
 		// Check if there is something in streamBuffer waiting for being processed
 		if (streamBufferSize > 0) {
@@ -1627,9 +1640,9 @@ void MidiEvent::setSysex(const Bit8u *useSysexData, Bit32u useSysexLength, Bit32
 	memcpy(dstSysexData, useSysexData, sysexLength);
 }
 
-MidiEventQueue::MidiEventQueue(Bit32u useRingBufferSize) : ringBufferSize(useRingBufferSize) {
-	ringBuffer = new MidiEvent[ringBufferSize];
-	memset(ringBuffer, 0, ringBufferSize * sizeof(MidiEvent));
+MidiEventQueue::MidiEventQueue(Bit32u useRingBufferSize) : ringBufferMask(useRingBufferSize - 1) {
+	ringBuffer = new MidiEvent[useRingBufferSize];
+	memset(ringBuffer, 0, useRingBufferSize * sizeof(MidiEvent));
 	reset();
 }
 
@@ -1643,7 +1656,7 @@ void MidiEventQueue::reset() {
 }
 
 bool MidiEventQueue::pushShortMessage(Bit32u shortMessageData, Bit32u timestamp) {
-	unsigned int newEndPosition = (endPosition + 1) % ringBufferSize;
+	Bit32u newEndPosition = (endPosition + 1) & ringBufferMask;
 	// Is ring buffer full?
 	if (startPosition == newEndPosition) return false;
 	ringBuffer[endPosition].setShortMessage(shortMessageData, timestamp);
@@ -1652,7 +1665,7 @@ bool MidiEventQueue::pushShortMessage(Bit32u shortMessageData, Bit32u timestamp)
 }
 
 bool MidiEventQueue::pushSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp) {
-	unsigned int newEndPosition = (endPosition + 1) % ringBufferSize;
+	Bit32u newEndPosition = (endPosition + 1) & ringBufferMask;
 	// Is ring buffer full?
 	if (startPosition == newEndPosition) return false;
 	ringBuffer[endPosition].setSysex(sysexData, sysexLength, timestamp);
@@ -1667,8 +1680,12 @@ const MidiEvent *MidiEventQueue::peekMidiEvent() {
 void MidiEventQueue::dropMidiEvent() {
 	// Is ring buffer empty?
 	if (startPosition != endPosition) {
-		startPosition = (startPosition + 1) % ringBufferSize;
+		startPosition = (startPosition + 1) & ringBufferMask;
 	}
+}
+
+bool MidiEventQueue::isFull() const {
+	return startPosition == ((endPosition + 1) & ringBufferMask);
 }
 
 unsigned int Synth::getStereoOutputSampleRate() const {
