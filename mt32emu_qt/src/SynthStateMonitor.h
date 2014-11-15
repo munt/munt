@@ -103,7 +103,7 @@ private:
 
 private slots:
 	void handleUpdate();
-	void handleReset();
+	void handleSynthStateChange(SynthState);
 	void handleMIDIMessagePlayed();
 	void handlePolyStateChanged(int partNum);
 	void handleProgramChanged(int partNum, int timbreGroup, QString patchName);

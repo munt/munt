@@ -64,8 +64,8 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 		ui->polyStateGrid->addWidget(partStateWidget[i], i, 1);
 	}
 
-	handleReset();
-	synthRoute->connectSynth(SIGNAL(partStateReset()), this, SLOT(handleReset()));
+	handleSynthStateChange(synthRoute->getState() == SynthRouteState_OPEN ? SynthState_OPEN : SynthState_CLOSED);
+	synthRoute->connectSynth(SIGNAL(stateChanged(SynthState)), this, SLOT(handleSynthStateChange(SynthState)));
 	synthRoute->connectReportHandler(SIGNAL(programChanged(int, int, QString)), this, SLOT(handleProgramChanged(int, int, QString)));
 	synthRoute->connectReportHandler(SIGNAL(polyStateChanged(int)), this, SLOT(handlePolyStateChanged(int)));
 	synthRoute->connectReportHandler(SIGNAL(lcdMessageDisplayed(const QString)), &lcdWidget, SLOT(handleLCDMessageDisplayed(const QString)));
@@ -91,7 +91,8 @@ void SynthStateMonitor::enableMonitor(bool enable) {
 	}
 }
 
-void SynthStateMonitor::handleReset() {
+void SynthStateMonitor::handleSynthStateChange(SynthState state) {
+	enableMonitor(state == SynthState_OPEN);
 	lcdWidget.reset();
 	midiMessageLED.setColor(&COLOR_GRAY);
 

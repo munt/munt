@@ -151,7 +151,6 @@ public:
 
 signals:
 	void stateChanged(SynthState state);
-	void partStateReset();
 };
 
 #endif

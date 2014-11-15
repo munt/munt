@@ -452,7 +452,6 @@ bool QSynth::reset() {
 void QSynth::setState(SynthState newState) {
 	if (state == newState) return;
 	state = newState;
-	emit partStateReset();
 	emit stateChanged(newState);
 }
 

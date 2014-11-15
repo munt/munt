@@ -248,7 +248,9 @@ void SynthWidget::hideEvent(QHideEvent *) {
 }
 
 void SynthWidget::showEvent(QShowEvent *) {
-	synthStateMonitor->enableMonitor(true);
+	if (synthRoute->getState() == SynthRouteState_OPEN) {
+		synthStateMonitor->enableMonitor(true);
+	}
 }
 
 void SynthWidget::on_detailsButton_clicked() {
