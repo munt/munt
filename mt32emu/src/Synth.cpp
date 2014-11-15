@@ -741,14 +741,18 @@ Bit32u Synth::parseSysex(const Bit8u stream[], const Bit32u len, const Bit32u ti
 	Bit32u sysexLength = 1;
 	while (sysexLength < len) {
 		Bit8u nextByte = stream[sysexLength++];
-		if ((0x7F < nextByte) && (nextByte <= 0xF7)) {
-			// End of SysEx?
-			if (nextByte == 0xF7) return playSysex(stream, sysexLength, timestamp) ? sysexLength : 0;
+		if (0x7F < nextByte) {
+			if (nextByte == 0xF7) return playSysex(stream, sysexLength, timestamp) ? sysexLength : 0; // End of SysEx
+			if (0xF7 < nextByte) {
+				// FIXME: Add support for System realtime messages pass through (currently unsupported in playMsgOnPart())
+				// SysEx is therefore fragmented and to be reconstructed in streamBuffer
+				--sysexLength;
+				break;
+			}
 			// Illegal status byte in SysEx message, aborting
 			printDebug("parseSysex: SysEx message lacks end-of-sysex (0xf7), ignored");
 			return sysexLength - 1;
 		}
-		// FIXME: Pass through System realtime messages (currently unsupported, though)
 	}
 
 	// Store incomplete SysEx message for further processing
@@ -767,28 +771,28 @@ Bit32u Synth::parseSysexFragment(const Bit8u stream[], const Bit32u len, const B
 	Bit32u parsedLength = 0;
 	while (parsedLength < len) {
 		Bit8u nextByte = stream[parsedLength++];
-		if ((0x7F < nextByte) && (nextByte <= 0xF7)) {
-			if (MAX_SYSEX_SIZE <= streamBufferSize) {
-				// Stream buffer overrun
-				printDebug("parseSysexFragment: streamBuffer overrun while receiving SysEx message, ignored. Max allowed size of fragmented SysEx is 512 bytes.");
-				streamBufferSize = 0; // Clear streamBuffer
-				// If there is illegal status byte in SysEx message, retry parsing from that point
-				return (nextByte == 0xF7) ? parsedLength : parsedLength - 1;
-			}
-			if (nextByte == 0xF7) {
-				// SysEx well ended
-				streamBuffer[streamBufferSize++] = nextByte;
-				if (playSysex(streamBuffer, streamBufferSize, timestamp)) streamBufferSize = 0; // Clear streamBuffer if success
+		if (0x7F < nextByte) {
+			if (0xF7 < nextByte) continue; // FIXME: Add support for System realtime messages pass through (currently unsupported in playMsgOnPart())
+			if (nextByte != 0xF7) {
+				// Illegal status byte in SysEx message
+				printDebug("parseSysexFragment: SysEx message lacks end-of-sysex (0xf7), ignored");
+				// Clear streamBuffer and continue parsing from that point
+				streamBufferSize = 0;
+				--parsedLength;
 				break;
 			}
-			// Illegal status byte in SysEx message, aborting
-			printDebug("parseSysexFragment: SysEx message lacks end-of-sysex (0xf7), ignored");
-			return parsedLength - 1;
-		}
-		if (streamBufferSize < MAX_SYSEX_SIZE) {
-			// FIXME: Pass through System realtime messages (currently unsupported, though)
+			if (MAX_SYSEX_SIZE <= streamBufferSize) {
+				// SysEx well ended but streamBuffer overrun
+				printDebug("parseSysexFragment: streamBuffer overrun while receiving SysEx message, ignored. Max allowed size of fragmented SysEx is 512 bytes.");
+				streamBufferSize = 0; // Clear streamBuffer
+				break;
+			}
+			// SysEx well ended
 			streamBuffer[streamBufferSize++] = nextByte;
+			if (playSysex(streamBuffer, streamBufferSize, timestamp)) streamBufferSize = 0; // Clear streamBuffer if success
+			break;
 		}
+		if (streamBufferSize < MAX_SYSEX_SIZE) streamBuffer[streamBufferSize++] = nextByte;
 	}
 	return parsedLength;
 }
