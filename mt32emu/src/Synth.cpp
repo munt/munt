@@ -805,7 +805,6 @@ Bit32u Synth::playRawMidiStream(const Bit8u *stream, Bit32u len, const Bit32u ti
 		if (streamBufferSize > 0) {
 			if (*streamBuffer == 0xF0) {
 				parsedMessageLength = parseSysexFragment(stream, len, timestamp);
-				if (parsedMessageLength == 0 && streamBufferSize == 0) continue; // Only streamBuffer content processed, need to rerun
 			} else if (*streamBuffer < 0x80) {
 				// Should never happen
 				printDebug("playRawMidiStream: Internal error while processing stream buffer: first byte isn't status (%02x)", *streamBuffer);
@@ -818,8 +817,8 @@ Bit32u Synth::playRawMidiStream(const Bit8u *stream, Bit32u len, const Bit32u ti
 				continue;
 			} else {
 				parsedMessageLength = parseShortMessageFragment(stream, len, timestamp);
-				// parsedMessageLength should always be > 0 if a parse error occured
 			}
+			if (parsedMessageLength == 0 && streamBufferSize == 0) continue; // Only streamBuffer content processed, need to rerun
 		} else {
 			if (*stream == 0xF0) {
 				parsedMessageLength = parseSysex(stream, len, timestamp);
