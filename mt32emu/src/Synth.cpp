@@ -683,7 +683,7 @@ bool MidiParser::checkStreamBufferCapacity(const bool preserveContent) {
 }
 
 // Adds running status to the MIDI message if it doesn't contain one
-Bit32u MidiParser::ensureStatusByte(Bit32u msg) {
+Bit32u MidiParser::ensureStatusByte(const Bit32u msg) {
 	if ((Bit8u)msg < 0x80) {
 		// First byte isn't status, use running status
 		if (runningStatus < 0x80) {
@@ -845,6 +845,7 @@ Bit32u MidiParser::parseSysexFragment(const Bit8u stream[], const Bit32u len, co
 }
 
 MidiParser::MidiParser(Synth &useSynth, Bit32u initialStreamBufferCapacity) : synth(useSynth) {
+	if (initialStreamBufferCapacity < MAX_SYSEX_SIZE) initialStreamBufferCapacity = MAX_SYSEX_SIZE;
 	if (MAX_STREAM_BUFFER_SIZE < initialStreamBufferCapacity) initialStreamBufferCapacity = MAX_STREAM_BUFFER_SIZE;
 	streamBufferCapacity = initialStreamBufferCapacity;
 	streamBuffer = new Bit8u[streamBufferCapacity];
