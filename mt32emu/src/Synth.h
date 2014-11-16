@@ -480,21 +480,23 @@ public:
 	Bit32u setMIDIEventQueueSize(Bit32u);
 
 	// Enqueues a MIDI event for subsequent playback.
-	// The minimum delay involves the delay introduced while the event is transferred via MIDI interface
-	// and emulation of the MCU busy-loop while it frees partials for use by a new Poly.
-	// Calls from multiple threads must be synchronised, although,
-	// no synchronisation is required with the rendering thread.
-
 	// The MIDI event will be processed not before the specified timestamp.
-	// The timestamp is measured as the global rendered sample count since the synth was created.
+	// The timestamp is measured as the global rendered sample count since the synth was created (at the native sample rate 32000 Hz).
+	// The minimum delay involves emulation of the delay introduced while the event is transferred via MIDI interface
+	// and emulation of the MCU busy-loop while it frees partials for use by a new Poly.
+	// Calls from multiple threads must be synchronised, although, no synchronisation is required with the rendering thread.
+	// The methods return false if the MIDI event queue is full and the message cannot be enqueued.
+
+	// Enqueues a single short MIDI message. The message must contain a status byte.
 	bool playMsg(Bit32u msg, Bit32u timestamp);
+	// Enqueues a single well formed System Exclusive MIDI message.
 	bool playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp);
 	// Parse raw MIDI byte stream and play all the parsed MIDI messages at the specified timestamp.
 	// SysEx messages are allowed to be fragmented across several calls to this method. Running status is also handled.
 	// Returns # of parsed bytes. NOTE: the total length of a SysEx message being fragmented shall not exceed MAX_SYSEX_SIZE bytes.
 	Bit32u playRawMidiStream(const Bit8u *stream, Bit32u len, const Bit32u timestamp);
 
-	// The MIDI event will be processed ASAP.
+	// Overloaded methods for the MIDI events to be processed ASAP.
 	bool playMsg(Bit32u msg);
 	bool playSysex(const Bit8u *sysex, Bit32u len);
 	Bit32u playRawMidiStream(const Bit8u *stream, const Bit32u len);
@@ -502,8 +504,9 @@ public:
 	// WARNING:
 	// The methods below don't ensure minimum 1-sample delay between sequential MIDI events,
 	// and a sequence of NoteOn and immediately succeeding NoteOff messages is always silent.
+	// A thread that invokes these methods must be explicitly synchronised with the thread performing sample rendering.
 
-	// Sends a 4-byte MIDI message to the MT-32 for immediate playback.
+	// Sends a short MIDI message to the synth for immediate playback. The message must contain a status byte.
 	void playMsgNow(Bit32u msg);
 	void playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity);
 
