@@ -310,6 +310,44 @@ public:
 	bool isFull() const;
 };
 
+// Provides a context for parsing a stream of MIDI events coming from a single source.
+// There can be multiple MIDI sources feeding MIDI events to a single Synth object.
+// NOTE: Calls from multiple threads which feed a single Synth object with data must be explicitly synchronised,
+// although, no synchronisation is required with the rendering thread.
+class MidiParser {
+private:
+	Bit8u runningStatus;
+	Bit8u *streamBuffer;
+	Bit32u streamBufferCapacity;
+	Bit32u streamBufferSize;
+	Synth &synth;
+
+	bool checkStreamBufferCapacity(const bool preserveContent);
+	Bit32u ensureStatusByte(Bit32u msg);
+	Bit32u parseShortMessage(const Bit8u stream[], Bit32u len, const Bit32u timestamp);
+	Bit32u parseShortMessageFragment(const Bit8u stream[], Bit32u len, const Bit32u timestamp);
+	Bit32u parseSysex(const Bit8u stream[], const Bit32u len, const Bit32u timestamp);
+	Bit32u parseSysexFragment(const Bit8u stream[], const Bit32u len, const Bit32u timestamp);
+
+public:
+	MidiParser(Synth &synth, Bit32u streamBufferCapacity = MAX_SYSEX_SIZE);
+	~MidiParser();
+
+	// Parses raw MIDI byte stream and enqueues all the parsed MIDI messages at the specified timestamp.
+	// The timestamp is measured as the global rendered sample count since the synth was created (at the native sample rate 32000 Hz).
+	// SysEx messages are allowed to be fragmented across several calls to this method. Running status is also handled.
+	// Returns # of parsed bytes. NOTE: the total length of a SysEx message being fragmented shall not exceed 32768 bytes.
+	Bit32u playRawMidiStream(const Bit8u *stream, Bit32u len, const Bit32u timestamp);
+	// Enqueues a single short MIDI message to be played at the specified timestamp (see the method above for details).
+	// The message may contain no status byte, the running status is used in this case.
+	// Returns false if the MIDI event queue is full and the message cannot be enqueued.
+	bool playMsg(Bit32u msg, Bit32u timestamp);
+
+	// Overloaded methods for the parsed MIDI events to be processed ASAP.
+	Bit32u playRawMidiStream(const Bit8u *stream, const Bit32u len);
+	bool playMsg(Bit32u msg);
+};
+
 class Synth {
 friend class Part;
 friend class RhythmPart;
@@ -321,6 +359,7 @@ friend class MemoryRegion;
 friend class TVA;
 friend class TVF;
 friend class TVP;
+friend class MidiParser;
 private:
 	PatchTempMemoryRegion *patchTempMemoryRegion;
 	RhythmTempMemoryRegion *rhythmTempMemoryRegion;
@@ -379,19 +418,8 @@ private:
 
 	Analog *analog;
 
-	// Stuff related to keeping running status and collecting fragments of SysEx messages coming to playRawMidiStream().
-	Bit8u runningStatus;
-	Bit8u *streamBuffer;
-	Bit32u streamBufferCapacity;
-	Bit32u streamBufferSize;
-	bool checkStreamBufferCapacity(const bool preserveContent);
-
 	Bit32u getShortMessageLength(Bit32u msg);
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
-	Bit32u parseShortMessage(const Bit8u stream[], Bit32u len, const Bit32u timestamp);
-	Bit32u parseShortMessageFragment(const Bit8u stream[], Bit32u len, const Bit32u timestamp);
-	Bit32u parseSysex(const Bit8u stream[], const Bit32u len, const Bit32u timestamp);
-	Bit32u parseSysexFragment(const Bit8u stream[], const Bit32u len, const Bit32u timestamp);
 
 	void produceLA32Output(Sample *buffer, Bit32u len);
 	void convertSamplesToOutput(Sample *buffer, Bit32u len);
@@ -491,15 +519,10 @@ public:
 	bool playMsg(Bit32u msg, Bit32u timestamp);
 	// Enqueues a single well formed System Exclusive MIDI message.
 	bool playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp);
-	// Parse raw MIDI byte stream and play all the parsed MIDI messages at the specified timestamp.
-	// SysEx messages are allowed to be fragmented across several calls to this method. Running status is also handled.
-	// Returns # of parsed bytes. NOTE: the total length of a SysEx message being fragmented shall not exceed MAX_SYSEX_SIZE bytes.
-	Bit32u playRawMidiStream(const Bit8u *stream, Bit32u len, const Bit32u timestamp);
 
 	// Overloaded methods for the MIDI events to be processed ASAP.
 	bool playMsg(Bit32u msg);
 	bool playSysex(const Bit8u *sysex, Bit32u len);
-	Bit32u playRawMidiStream(const Bit8u *stream, const Bit32u len);
 
 	// WARNING:
 	// The methods below don't ensure minimum 1-sample delay between sequential MIDI events,
