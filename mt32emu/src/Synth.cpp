@@ -1640,8 +1640,7 @@ void MidiEvent::setSysex(const Bit8u *useSysexData, Bit32u useSysexLength, Bit32
 	memcpy(dstSysexData, useSysexData, sysexLength);
 }
 
-MidiEventQueue::MidiEventQueue(Bit32u useRingBufferSize) : ringBufferMask(useRingBufferSize - 1) {
-	ringBuffer = new MidiEvent[useRingBufferSize];
+MidiEventQueue::MidiEventQueue(Bit32u useRingBufferSize) : ringBuffer(new MidiEvent[useRingBufferSize]), ringBufferMask(useRingBufferSize - 1) {
 	memset(ringBuffer, 0, useRingBufferSize * sizeof(MidiEvent));
 	reset();
 }

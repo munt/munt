@@ -294,8 +294,8 @@ struct MidiEvent {
  */
 class MidiEventQueue {
 private:
-	MidiEvent *ringBuffer;
-	Bit32u ringBufferMask;
+	MidiEvent * const ringBuffer;
+	const Bit32u ringBufferMask;
 	volatile Bit32u startPosition;
 	volatile Bit32u endPosition;
 
