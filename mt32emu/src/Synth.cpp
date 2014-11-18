@@ -682,19 +682,33 @@ bool MidiParser::checkStreamBufferCapacity(const bool preserveContent) {
 	return false;
 }
 
+// Checks input byte whether it is a status byte. If not, replaces it with running status when available.
+// Returns true if the status byte was changed to running status.
+bool MidiParser::processStatusByte(Bit8u &status) {
+	if (status < 0x80) {
+		// First byte isn't status, try running status
+		if (runningStatus < 0x80) {
+			// No running status available yet
+			synth.printDebug("ensureStatusByte: No valid running status yet, MIDI message ignored");
+			return false;
+		}
+		status = runningStatus;
+		return true;
+	} else if (status < 0xF0) {
+		// Store current status as running for a Voice message
+		runningStatus = status;
+	} else if (status < 0xF8) {
+		// System Common clears running status
+		runningStatus = 0;
+	} // System Realtime doesn't affect running status
+	return false;
+}
+
 // Adds running status to the MIDI message if it doesn't contain one
 Bit32u MidiParser::ensureStatusByte(const Bit32u msg) {
-	if ((Bit8u)msg < 0x80) {
-		// First byte isn't status, use running status
-		if (runningStatus < 0x80) {
-			// No messages processed yet
-			synth.printDebug("ensureStatusByte: No valid running status yet, message %06x ignored", msg);
-			return msg;
-		}
-		return (msg << 8) | runningStatus;
-	} else {
-		// Store current status as running
-		runningStatus = (Bit8u)msg;
+	Bit8u status = (Bit8u)msg;
+	if (processStatusByte(status)) {
+		return (msg << 8) | status;
 	}
 	return msg;
 }
@@ -703,50 +717,15 @@ Bit32u MidiParser::ensureStatusByte(const Bit32u msg) {
 Bit32u MidiParser::parseShortMessage(const Bit8u stream[], Bit32u len, const Bit32u timestamp) {
 	Bit32u parsedLength = 0;
 	Bit8u status = *stream;
-	if (status < 0x80) {
-		// First byte isn't status, use running status
-		if (runningStatus < 0x80) {
-			synth.printDebug("parseShortMessage: No valid running status yet, byte %02x skipped", status);
-			return 1; // Skip one invalid byte
-		}
-		status = runningStatus;
-	} else {
-		// Store current status as running
-		runningStatus = status;
+	if (processStatusByte(status) == false) {
+		if (status < 0x80) return 1; // No running status available yet, skip one byte
 		++stream;
 		--len;
 		++parsedLength;
 	}
-
-	Bit32u shortMessage = status;
-	const Bit32u shortMessageArgsLength = synth.getShortMessageLength(shortMessage) - 1;
-	if (len < shortMessageArgsLength) {
-		// Store incomplete message for further processing
-		*streamBuffer = status;
-		if (len > 0) { // There can be only one...
-			Bit8u dataByte = *stream;
-			if (0x7F < dataByte) { // Only possible if explicit status present
-				synth.printDebug("parseShortMessage: Invalid short message: got status %02x, but no data bytes -> ignored", shortMessage);
-				return parsedLength; // Skip single status byte
-			}
-			streamBuffer[1] = dataByte;
-		}
-		streamBufferSize = len + 1;
-		return parsedLength + len;
-	}
-
-	// Assemble short message
-	for (Bit32u i = 0; i < shortMessageArgsLength; ++i) {
-		Bit8u dataByte = stream[i];
-		shortMessage |= dataByte << (8 << i);
-		if (0x7F < dataByte) {
-			synth.printDebug("parseShortMessage: Invalid short message: %06x, expected %i data byte(s) -> ignored", shortMessage, shortMessageArgsLength);
-			// Ignore invalid bytes and start over
-			return parsedLength + i;
-		}
-	}
-	parsedLength += shortMessageArgsLength;
-	return synth.playMsg(shortMessage, timestamp) ? parsedLength : 0;
+	*streamBuffer = status;
+	++streamBufferSize;
+	return parsedLength + parseShortMessageFragment(stream, len, timestamp);
 }
 
 Bit32u MidiParser::parseShortMessageFragment(const Bit8u stream[], Bit32u len, const Bit32u timestamp) {
@@ -756,13 +735,15 @@ Bit32u MidiParser::parseShortMessageFragment(const Bit8u stream[], Bit32u len, c
 	// Append incoming bytes to streamBuffer
 	while ((streamBufferSize < shortMessageLength) && (len-- > 0)) {
 		Bit8u dataByte = *(stream++);
-		if (0x7F < dataByte) {
+		if (dataByte < 0x80) {
+			// Add data byte to streamBuffer
+			streamBuffer[streamBufferSize++] = dataByte;
+		} else if (dataByte < 0xF8) {
+			// Ignore unsupported System Realtime messages or discard invalid bytes and start over
 			synth.printDebug("parseShortMessageFragment: Invalid short message: status %02x, expected length %i, actual %i -> ignored", *streamBuffer, shortMessageLength, streamBufferSize);
-			// Discard invalid bytes and start over
 			streamBufferSize = 0;
 			return parsedLength;
 		}
-		streamBuffer[streamBufferSize++] = dataByte;
 		++parsedLength;
 	}
 	if (streamBufferSize < shortMessageLength) return parsedLength; // Still lacks one byte
@@ -785,7 +766,7 @@ Bit32u MidiParser::parseSysex(const Bit8u stream[], const Bit32u len, const Bit3
 		if (0x7F < nextByte) {
 			if (nextByte == 0xF7) return synth.playSysex(stream, sysexLength, timestamp) ? sysexLength : 0; // End of SysEx
 			if (0xF7 < nextByte) {
-				// FIXME: Add support for System realtime messages pass through (currently unsupported in playMsgOnPart())
+				// Ignore unsupported System Realtime messages
 				// SysEx is therefore fragmented and to be reconstructed in streamBuffer
 				--sysexLength;
 				break;
@@ -819,7 +800,7 @@ Bit32u MidiParser::parseSysexFragment(const Bit8u stream[], const Bit32u len, co
 	while (parsedLength < len) {
 		Bit8u nextByte = stream[parsedLength++];
 		if (0x7F < nextByte) {
-			if (0xF7 < nextByte) continue; // FIXME: Add support for System realtime messages pass through (currently unsupported in playMsgOnPart())
+			if (0xF7 < nextByte) continue; // Ignore unsupported System Realtime messages
 			if (nextByte != 0xF7) {
 				// Illegal status byte in SysEx message
 				synth.printDebug("parseSysexFragment: SysEx message lacks end-of-sysex (0xf7), ignored");
@@ -886,6 +867,7 @@ Bit32u MidiParser::playRawMidiStream(const Bit8u *stream, Bit32u len, const Bit3
 			if (parsedMessageLength == 0 && streamBufferSize == 0) continue; // Only streamBuffer content processed, need to rerun
 		} else {
 			if (*stream == 0xF0) {
+				runningStatus = 0; // SysEx clears the running status
 				parsedMessageLength = parseSysex(stream, len, timestamp);
 			} else {
 				parsedMessageLength = parseShortMessage(stream, len, timestamp);

@@ -323,6 +323,7 @@ private:
 	Synth &synth;
 
 	bool checkStreamBufferCapacity(const bool preserveContent);
+	bool processStatusByte(Bit8u &status);
 	Bit32u ensureStatusByte(const Bit32u msg);
 	Bit32u parseShortMessage(const Bit8u stream[], Bit32u len, const Bit32u timestamp);
 	Bit32u parseShortMessageFragment(const Bit8u stream[], Bit32u len, const Bit32u timestamp);
