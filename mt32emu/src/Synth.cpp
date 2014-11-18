@@ -911,7 +911,9 @@ bool MidiParser::playMsg(Bit32u msg, Bit32u timestamp) {
 }
 
 void Synth::playMsgNow(Bit32u msg) {
-	// FIXME: Implement active sensing
+	// NOTE: Active sense IS implemented in real hardware. However, realtime processing is clearly out of the library scope.
+	//       It is assumed that realtime consumers of the library respond to these MIDI events as appropriate.
+
 	unsigned char code     = (unsigned char)((msg & 0x0000F0) >> 4);
 	unsigned char chan     = (unsigned char)(msg & 0x00000F);
 	unsigned char note     = (unsigned char)((msg & 0x007F00) >> 8);
