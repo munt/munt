@@ -120,6 +120,11 @@ bool MidiRecorder::writeTrack(MasterClockNanos midiTick) {
 			// Process short message
 			quint32 message = evt.getShortMessage();
 			uint newStatus = message & 0xFF;
+			if (0xF0 <= newStatus) {
+				// No support for escaping System messages, ignore
+				qDebug() << "MidiRecorder: unsupported System message skipped at:" << evt.getTimestamp() - startNanos << "nanos, code:" << newStatus;
+				continue;
+			}
 			if (newStatus == runningStatus) {
 				message >>= 8;
 				if ((newStatus & 0xE0) == 0xC0) {

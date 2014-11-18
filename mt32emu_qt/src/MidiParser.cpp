@@ -89,14 +89,16 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 	while(data < (uchar *)trackData + trackLen) {
 		SynthTimestamp time = parseVarLenInt(data);
 		quint32 message = 0;
-		if (*data & 0x80) {
+		const uchar status = *data;
+		if (status & 0x80) {
 			// It's normal status byte
-			if ((*data & 0xF0) == 0xF0) {
-				// It's a special event
-				if (*data == 0xF0) {
-					// It's a sysex event
-					sysexBuffer[0] = *(data++);
-					quint32 sysexLength = parseVarLenInt(data);
+			if (0xF0 <= status) {
+				// It's a System event
+				if (status == 0xF0) {
+					// It's a SysEx event
+					runningStatus = 0; // SysEx clears running status
+					sysexBuffer[0] = status;
+					quint32 sysexLength = parseVarLenInt(++data);
 					if (MAX_SYSEX_LENGTH <= sysexLength) {
 						qDebug() << "MidiParser: Warning: too long sysex encountered, it may cause problems with real hardware. Sysex length:" << sysexLength + 1;
 						if (sysexBuffer.size() <= (int)sysexLength) {
@@ -107,14 +109,16 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 					data += sysexLength;
 					midiEventList.newMidiEvent().assignSysex(time, sysexBuffer.constData(), sysexLength + 1);
 					continue;
-				} else if (*data == 0xF7) {
-					qDebug() << "MidiParser: Fragmented sysex, unsupported";
-					data++;
-					quint32 len = parseVarLenInt(data);
+				} else if (status == 0xF7) {
+					// It's either a SysEx Continuation event or an escaped System event
+					qDebug() << "MidiParser: Fragmented SysEx / escape, unsupported";
+					quint32 len = parseVarLenInt(++data);
 					data += len;
-				} else if (*(data++) == 0xFF) {
-					uint metaType = *(data++);
-					quint32 len = parseVarLenInt(data);
+				} else if (status == 0xFF) {
+					// It's a Meta-event
+					runningStatus = 0; // Meta-event clears running status
+					uint metaType = *(++data);
+					quint32 len = parseVarLenInt(++data);
 					if (metaType == 0x2F) {
 						qDebug() << "MidiParser: End-of-track Meta-event";
 						if (time > 0) {
@@ -135,12 +139,8 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 					}
 					data += len;
 				} else {
-					qDebug() << "MidiParser: Unsupported event" << *(data++);
-					if (*data == 0xF1 || *data == 0xF3) {
-						data++;
-					} else if (*data == 0xF2) {
-						data += 2;
-					}
+					qDebug() << "MidiParser: Unsupported event" << status;
+					data++;
 				}
 				if (time > 0) {
 					// The event is unsupported. Nevertheless, assign a special marker event to retain timing information
@@ -148,7 +148,7 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 					midiEventList.newMidiEvent().assignSyncMessage(time);
 				}
 				continue;
-			} else if ((*data & 0xE0) == 0xC0) {
+			} else if ((status & 0xE0) == 0xC0) {
 				// It's a short message with one data byte
 				message = qFromLittleEndian<quint16>(data);
 				data += 2;
@@ -157,11 +157,11 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 				message = qFromLittleEndian<quint32>(data) & 0xFFFFFF;
 				data += 3;
 			}
-			runningStatus = message & 0xFF;
+			runningStatus = status;
 		} else {
 			// Handle running status
 			if ((runningStatus & 0x80) == 0) {
-				qDebug() << "MidiParser: First MIDI event must has status byte";
+				qDebug() << "MidiParser: First MIDI event must have status byte";
 				data++;
 				continue;
 			}
