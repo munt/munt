@@ -232,16 +232,15 @@ LONG CloseDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD_PTR dwUser, DW
 }
 
 STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
-	MIDIHDR *midiHdr;
 	Driver *driver = &drivers[uDeviceID];
-	DWORD instance;
 	switch (uMsg) {
-	case MODM_OPEN:
+	case MODM_OPEN: {
 		if (hwnd == NULL) {
 			hwnd = FindWindow(L"mt32emu_class", NULL);
 		}
+		DWORD instance;
 		if (hwnd == NULL) {
-			//  Synth application not found
+			// Synth application not found
 			if (!synthOpened) {
 				if (midiSynth.Init() != 0) return MMSYSERR_ERROR;
 				synthOpened = true;
@@ -253,15 +252,15 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 				synthOpened = false;
 			}
 			updateNanoCounter();
-			DWORD msg[260] = {0, -1, 1, nanoCounter.LowPart, nanoCounter.HighPart}; // 0, handshake indicator, version, timestamp, .exe filename of calling application
+			DWORD msg[70] = {0, -1, 1, nanoCounter.LowPart, nanoCounter.HighPart}; // 0, handshake indicator, version, timestamp, .exe filename of calling application
 			GetModuleFileNameA(GetModuleHandle(NULL), (char *)&msg[5], 255);
 			COPYDATASTRUCT cds = {0, sizeof(msg), msg};
 			instance = (DWORD)SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
 		}
-		DWORD res;
-		res = OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
+		DWORD res = OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
 		driver->clients[*(LONG *)dwUser].synth_instance = instance;
 		return res;
+	}
 
 	case MODM_CLOSE:
 		if (driver->clients[dwUser].allocated == false) {
@@ -283,7 +282,7 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 	case MODM_GETDEVCAPS:
 		return modGetCaps((PVOID)dwParam1, (DWORD)dwParam2);
 
-	case MODM_DATA:
+	case MODM_DATA: {
 		if (driver->clients[dwUser].allocated == false) {
 			return MMSYSERR_ERROR;
 		}
@@ -302,12 +301,13 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 			}
 		}
 		return MMSYSERR_NOERROR;
+	}
 
-	case MODM_LONGDATA:
+	case MODM_LONGDATA: {
 		if (driver->clients[dwUser].allocated == false) {
 			return MMSYSERR_ERROR;
 		}
-		midiHdr = (MIDIHDR *)dwParam1;
+		MIDIHDR *midiHdr = (MIDIHDR *)dwParam1;
 		if ((midiHdr->dwFlags & MHDR_PREPARED) == 0) {
 			return MIDIERR_UNPREPARED;
 		}
@@ -327,6 +327,7 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 		midiHdr->dwFlags &= ~MHDR_INQUEUE;
 		DoCallback(uDeviceID, dwUser, MOM_DONE, dwParam1, NULL);
  		return MMSYSERR_NOERROR;
+	}
 
 	case MODM_GETNUMDEVS:
 		return 0x1;
