@@ -62,6 +62,7 @@ struct Driver {
 		DWORD flags;
 		DWORD_PTR callback;
 		DWORD synth_instance;
+		MT32Emu::MidiParser *midiParser;
 	} clients[MAX_CLIENTS];
 } drivers[MAX_DRIVERS];
 
@@ -258,7 +259,9 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 			instance = (DWORD)SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
 		}
 		DWORD res = OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
-		driver->clients[*(LONG *)dwUser].synth_instance = instance;
+		Driver::Client &client = driver->clients[*(LONG *)dwUser];
+		client.synth_instance = instance;
+		client.midiParser = NULL;
 		return res;
 	}
 
@@ -271,6 +274,7 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 		} else {
 			SendMessage(hwnd, WM_APP, driver->clients[dwUser].synth_instance, NULL); // end of session message
 		}
+		midiSynth.removeMidiParser(driver->clients[dwUser].midiParser);
 		return CloseDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
 
 	case MODM_PREPARE:
@@ -287,7 +291,10 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 			return MMSYSERR_ERROR;
 		}
 		if (hwnd == NULL) {
-			midiSynth.PlayMIDI((DWORD)dwParam1);
+			if (driver->clients[dwUser].midiParser == NULL) {
+				driver->clients[dwUser].midiParser = midiSynth.createMidiParser();
+			}
+			midiSynth.PlayMIDI((DWORD)dwParam1, *driver->clients[dwUser].midiParser);
 		} else {
 			updateNanoCounter();
 			DWORD msg[] = {0, 0, nanoCounter.LowPart, nanoCounter.HighPart, (DWORD)dwParam1}; // 0, short MIDI message indicator, timestamp, data
@@ -312,7 +319,10 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 			return MIDIERR_UNPREPARED;
 		}
 		if (hwnd == NULL) {
-			midiSynth.PlaySysex((MT32Emu::Bit8u*)midiHdr->lpData, midiHdr->dwBufferLength);
+			if (driver->clients[dwUser].midiParser == NULL) {
+				driver->clients[dwUser].midiParser = midiSynth.createMidiParser();
+			}
+			midiSynth.PlayRawStream((MT32Emu::Bit8u*)midiHdr->lpData, midiHdr->dwBufferLength, *driver->clients[dwUser].midiParser);
 		} else {
 			COPYDATASTRUCT cds = {driver->clients[dwUser].synth_instance, midiHdr->dwBufferLength, midiHdr->lpData};
 			LRESULT res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);

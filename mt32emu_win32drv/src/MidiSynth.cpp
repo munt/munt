@@ -597,8 +597,24 @@ void MidiSynth::PlayMIDI(DWORD msg) {
 	synth->playMsg(msg, getMIDIEventTimestamp());
 }
 
+void MidiSynth::PlayMIDI(DWORD msg, MidiParser &midiParser) {
+	midiParser.playMsg(msg, getMIDIEventTimestamp());
+}
+
 void MidiSynth::PlaySysex(const Bit8u *bufpos, DWORD len) {
 	synth->playSysex(bufpos, len, getMIDIEventTimestamp());
+}
+
+void MidiSynth::PlayRawStream(const Bit8u *bufpos, DWORD len, MidiParser &midiParser) {
+	midiParser.playRawMidiStream(bufpos, len, getMIDIEventTimestamp());
+}
+
+MidiParser *MidiSynth::createMidiParser() {
+	return new MidiParser(*synth);
+}
+
+void MidiSynth::removeMidiParser(MidiParser *midiParser) {
+	delete midiParser;
 }
 
 void MidiSynth::FreeROMImages() {

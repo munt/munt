@@ -68,7 +68,11 @@ public:
 	void Render(Bit16s *bufpos, DWORD totalFrames);
 	Bit32u getMIDIEventTimestamp();
 	void PlayMIDI(DWORD msg);
+	void PlayMIDI(DWORD msg, MidiParser &midiParser);
 	void PlaySysex(const Bit8u *bufpos, DWORD len);
+	void PlayRawStream(const Bit8u *bufpos, DWORD len, MidiParser &midiParser);
+	MidiParser *createMidiParser();
+	void removeMidiParser(MidiParser *midiParser);
 };
 
 }
