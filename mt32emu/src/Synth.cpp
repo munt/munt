@@ -49,15 +49,12 @@ static inline void advanceStreamPosition(Sample *&stream, Bit32u posDelta) {
 	}
 }
 
-Bit8u Synth::calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum) {
+Bit8u Synth::calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u initChecksum) {
+	unsigned int checksum = -initChecksum;
 	for (unsigned int i = 0; i < len; i++) {
-		checksum = checksum + data[i];
+		checksum -= data[i];
 	}
-	checksum = checksum & 0x7f;
-	if (checksum) {
-		checksum = 0x80 - checksum;
-	}
-	return checksum;
+	return Bit8u(checksum & 0x7f);
 }
 
 Synth::Synth(ReportHandler *useReportHandler) {
@@ -1060,7 +1057,7 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 		printDebug("playSysexWithoutHeader: Message is too short (%d bytes)!", len);
 		return;
 	}
-	unsigned char checksum = calcSysexChecksum(sysex, len - 1, 0);
+	Bit8u checksum = calcSysexChecksum(sysex, len - 1);
 	if (checksum != sysex[len - 1]) {
 		printDebug("playSysexWithoutHeader: Message checksum is incorrect (provided: %02x, expected: %02x)!", sysex[len - 1], checksum);
 		return;

@@ -481,7 +481,7 @@ public:
 #endif
 	}
 
-	static Bit8u calcSysexChecksum(const Bit8u *data, Bit32u len, Bit8u checksum);
+	static Bit8u calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u initChecksum = 0);
 
 	// Optionally sets callbacks for reporting various errors, information and debug messages
 	Synth(ReportHandler *useReportHandler = NULL);
