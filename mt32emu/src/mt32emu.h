@@ -117,5 +117,6 @@ const unsigned int DEFAULT_MIDI_EVENT_QUEUE_SIZE = 1024;
 #include "Part.h"
 #include "ROMInfo.h"
 #include "Synth.h"
+#include "MidiStreamParser.h"
 
 #endif
