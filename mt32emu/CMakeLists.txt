@@ -12,6 +12,7 @@ set(libmt32emu_HEADERS
   src/LA32Ramp.h
   src/LA32FloatWaveGenerator.h
   src/LA32WaveGenerator.h
+  src/MidiStreamParser.h
   src/Part.h
   src/Partial.h
   src/Poly.h
@@ -44,6 +45,7 @@ add_library(mt32emu STATIC
   src/FileStream.cpp
   src/LA32Ramp.cpp
   src/LA32WaveGenerator.cpp
+  src/MidiStreamParser.cpp
   src/Part.cpp
   src/Partial.cpp
   src/PartialManager.cpp
