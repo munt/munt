@@ -419,7 +419,6 @@ private:
 
 	Analog *analog;
 
-	Bit32u getShortMessageLength(Bit32u msg);
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
 
 	void produceLA32Output(Sample *buffer, Bit32u len);
@@ -481,6 +480,7 @@ public:
 #endif
 	}
 
+	static Bit32u getShortMessageLength(Bit32u msg);
 	static Bit8u calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u initChecksum = 0);
 
 	// Optionally sets callbacks for reporting various errors, information and debug messages
