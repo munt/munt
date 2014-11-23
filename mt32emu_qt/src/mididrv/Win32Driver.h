@@ -26,7 +26,6 @@ class Win32MidiDriver : public MidiDriver {
 private:
 	static LRESULT CALLBACK midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static void messageLoop(void *);
-	static MasterClockNanos timeToMasterClockNanos(MasterClockNanos time);
 	static void enumPorts(QList<QString> &midiInPortNames);
 
 	QList<Win32MidiIn *> midiInPorts;

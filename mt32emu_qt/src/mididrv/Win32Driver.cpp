@@ -26,11 +26,7 @@
 
 static Win32MidiDriver *driver;
 static HWND hwnd = NULL;
-static MasterClockNanos startMasterClock;
-
-MasterClockNanos Win32MidiDriver::timeToMasterClockNanos(MasterClockNanos time) {
-	return time - startMasterClock;
-}
+static MasterClockNanos startMasterClock; // FIXME: Should actually be per-session but doesn't seem to be a real win
 
 LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	MidiSession *midiSession;
@@ -51,8 +47,8 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 		midiSession = (MidiSession*)cds->dwData;
 		DWORD *data;
 		data = (DWORD *)cds->lpData;
-		if (data[0] == 0) {				// special value, mark of a non-Sysex message
-			if (data[1] == (DWORD)-1) {		// special value, mark of a handshaking message
+		if (data[0] == 0) { // special value, mark of a non-Sysex message
+			if (data[1] == (DWORD)-1) { // special value, mark of a handshaking message
 				// Sync the timesource in the driver with MasterClock
 				LARGE_INTEGER t = {{data[3], (LONG)data[4]}};
 				startMasterClock = t.QuadPart - MasterClock::getClockNanos();
@@ -67,15 +63,15 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 					return 0;
 				}
 				return (LRESULT)midiSession;
-			} else if (data[1] == 0) {	// special value, mark of a short MIDI message
+			} else if (data[1] == 0) { // special value, mark of a short MIDI message
 				// Process short MIDI message
 				if (driver->midiSessions.indexOf(midiSession) < 0) {
 					qDebug() << "Win32MidiDriver: Invalid midiSession handle supplied";
 					return 0;
 				}
 				LARGE_INTEGER t = {{data[2], (LONG)data[3]}};
-//				qDebug() << "D" << 1e-6 * (MasterClock::getClockNanos() - timeToMasterClockNanos(t.QuadPart));
-				midiSession->getSynthRoute()->pushMIDIShortMessage(data[4], timeToMasterClockNanos(t.QuadPart));
+//				qDebug() << "D" << 1e-6 * ((t.QuadPart - startMasterClock) - MasterClock::getClockNanos());
+				midiSession->getSynthRoute()->pushMIDIShortMessage(data[4], t.QuadPart - startMasterClock);
 				return 1;
 			}
 		} else {
@@ -238,7 +234,7 @@ void CALLBACK Win32MidiIn::midiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwIn
 		}
 		synthRoute->pushMIDISysex((BYTE *)pMIDIhdr->lpData, pMIDIhdr->dwBytesRecorded, MasterClock::getClockNanos());
 
-		//	Add SysEx Buffer for reuse
+		// Add SysEx Buffer for reuse
 		if (midiInAddBuffer(hMidiIn, pMIDIhdr, sizeof(MIDIHDR)) != MMSYSERR_NOERROR) {
 			QMessageBox::critical(NULL, "Win32MidiIn Error", "Failed to add SysEx Buffer for reuse");
 			return;
@@ -251,14 +247,14 @@ void CALLBACK Win32MidiIn::midiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwIn
 bool Win32MidiIn::open(SynthRoute *synthRoute, unsigned int midiDevID) {
 	int wResult;
 
-	//	Init midiIn port
+	// Init midiIn port
 	wResult = midiInOpen(&hMidiIn, midiDevID, (DWORD_PTR)midiInProc, (DWORD_PTR)synthRoute, CALLBACK_FUNCTION);
 	if (wResult != MMSYSERR_NOERROR) {
 		QMessageBox::critical(NULL, "Win32MidiIn Error", "Failed to open MIDI input port");
 		return false;
 	}
 
-	//	Prepare SysEx midiIn buffer
+	// Prepare SysEx midiIn buffer
 	MidiInHdr.lpData = (LPSTR)sysexbuf;
 	MidiInHdr.dwBufferLength = 4096;
 	MidiInHdr.dwFlags = 0L;
@@ -268,7 +264,7 @@ bool Win32MidiIn::open(SynthRoute *synthRoute, unsigned int midiDevID) {
 		return false;
 	}
 
-	//	Add SysEx Buffer
+	// Add SysEx Buffer
 	wResult = midiInAddBuffer(hMidiIn, &MidiInHdr, sizeof(MIDIHDR));
 	if (wResult != MMSYSERR_NOERROR) {
 		QMessageBox::critical(NULL, "Win32MidiIn Error", "Failed to add SysEx buffer");
