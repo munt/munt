@@ -52,7 +52,7 @@ protected:
 	virtual void handleShortMessage(const Bit32u message) = 0;
 
 	// User-supplied method. Invoked when a complete well-formed System Exclusive MIDI message is parsed in the input MIDI stream.
-	virtual void handleSysex(const Bit8u stream[], const Bit32u len) = 0;
+	virtual void handleSysex(const Bit8u stream[], const Bit32u length) = 0;
 
 	// User-supplied method. Invoked when a System Realtime MIDI message is parsed in the input MIDI stream.
 	virtual void handleSytemRealtimeMessage(const Bit8u realtime) = 0;

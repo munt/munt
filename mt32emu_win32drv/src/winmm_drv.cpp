@@ -47,7 +47,9 @@ void updateNanoCounter() {
 	}
 }
 
-static MT32Emu::MidiSynth &midiSynth = MT32Emu::MidiSynth::getInstance();
+using namespace MT32Emu;
+
+static MidiSynth &midiSynth = MidiSynth::getInstance();
 static bool synthOpened = false;
 static HWND hwnd = NULL;
 static int driverCount;
@@ -62,7 +64,7 @@ struct Driver {
 		DWORD flags;
 		DWORD_PTR callback;
 		DWORD synth_instance;
-		MT32Emu::MidiParser *midiParser;
+		MidiStreamParser *midiStreamParser;
 	} clients[MAX_CLIENTS];
 } drivers[MAX_DRIVERS];
 
@@ -232,6 +234,31 @@ LONG CloseDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD_PTR dwUser, DW
 	return MMSYSERR_NOERROR;
 }
 
+void ensureMidiStreamParser(Driver::Client &client) {
+	if (client.midiStreamParser != NULL) return;
+	class Parser : public MidiStreamParser {
+	protected:
+		virtual void handleShortMessage(const Bit32u message) {
+			midiSynth.PlayMIDI(message);
+		}
+
+		virtual void handleSysex(const Bit8u stream[], const Bit32u length) {
+			midiSynth.PlaySysex(stream, length);
+		}
+
+		virtual void handleSytemRealtimeMessage(const Bit8u realtime) {
+			// Unsupported by now
+		}
+
+		virtual void printDebug(const char *debugMessage) {
+#ifdef ENABLE_DEBUG_OUTPUT
+			std::cout << debugMessage << std::endl;
+#endif
+		}
+	};
+	client.midiStreamParser = new Parser;
+}
+
 STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
 	Driver *driver = &drivers[uDeviceID];
 	switch (uMsg) {
@@ -261,7 +288,7 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 		DWORD res = OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
 		Driver::Client &client = driver->clients[*(LONG *)dwUser];
 		client.synth_instance = instance;
-		client.midiParser = NULL;
+		client.midiStreamParser = NULL;
 		return res;
 	}
 
@@ -274,7 +301,9 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 		} else {
 			SendMessage(hwnd, WM_APP, driver->clients[dwUser].synth_instance, NULL); // end of session message
 		}
-		midiSynth.removeMidiParser(driver->clients[dwUser].midiParser);
+		if (driver->clients[dwUser].midiStreamParser != NULL) {
+			delete driver->clients[dwUser].midiStreamParser;
+		}
 		return CloseDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
 
 	case MODM_PREPARE:
@@ -291,10 +320,8 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 			return MMSYSERR_ERROR;
 		}
 		if (hwnd == NULL) {
-			if (driver->clients[dwUser].midiParser == NULL) {
-				driver->clients[dwUser].midiParser = midiSynth.createMidiParser();
-			}
-			midiSynth.PlayMIDI((DWORD)dwParam1, *driver->clients[dwUser].midiParser);
+			ensureMidiStreamParser(driver->clients[dwUser]);
+			driver->clients[dwUser].midiStreamParser->processShortMessage((Bit32u)dwParam1);
 		} else {
 			updateNanoCounter();
 			DWORD msg[] = {0, 0, nanoCounter.LowPart, nanoCounter.HighPart, (DWORD)dwParam1}; // 0, short MIDI message indicator, timestamp, data
@@ -319,10 +346,8 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 			return MIDIERR_UNPREPARED;
 		}
 		if (hwnd == NULL) {
-			if (driver->clients[dwUser].midiParser == NULL) {
-				driver->clients[dwUser].midiParser = midiSynth.createMidiParser();
-			}
-			midiSynth.PlayRawStream((MT32Emu::Bit8u*)midiHdr->lpData, midiHdr->dwBufferLength, *driver->clients[dwUser].midiParser);
+			ensureMidiStreamParser(driver->clients[dwUser]);
+			driver->clients[dwUser].midiStreamParser->parseStream((Bit8u*)midiHdr->lpData, midiHdr->dwBufferLength);
 		} else {
 			COPYDATASTRUCT cds = {driver->clients[dwUser].synth_instance, midiHdr->dwBufferLength, midiHdr->lpData};
 			LRESULT res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
