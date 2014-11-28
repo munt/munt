@@ -203,7 +203,7 @@ bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
 	return qSynth.playMIDIShortMessage(msg, timestamp);
 }
 
-bool SynthRoute::pushMIDISysex(Bit8u *sysexData, unsigned int sysexLen, MasterClockNanos refNanos) {
+bool SynthRoute::pushMIDISysex(const Bit8u *sysexData, unsigned int sysexLen, MasterClockNanos refNanos) {
 	recorder.recordSysex(sysexData, sysexLen, refNanos);
 	AudioStream *stream = audioStream;
 	if (stream == NULL) return false;
@@ -219,7 +219,7 @@ void SynthRoute::playMIDIShortMessageNow(Bit32u msg) {
 	qSynth.playMIDIShortMessageNow(msg);
 }
 
-void SynthRoute::playMIDISysexNow(Bit8u *sysex, Bit32u sysexLen) {
+void SynthRoute::playMIDISysexNow(const Bit8u *sysex, Bit32u sysexLen) {
 	qSynth.playMIDISysexNow(sysex, sysexLen);
 }
 
@@ -227,7 +227,7 @@ bool SynthRoute::playMIDIShortMessage(Bit32u msg, quint64 timestamp) {
 	return qSynth.playMIDIShortMessage(msg, timestamp);
 }
 
-bool SynthRoute::playMIDISysex(Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) {
+bool SynthRoute::playMIDISysex(const Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) {
 	return qSynth.playMIDISysex(sysex, sysexLen, timestamp);
 }
 

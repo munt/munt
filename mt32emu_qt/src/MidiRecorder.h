@@ -11,7 +11,7 @@ public:
 	MidiRecorder();
 	void startRecording();
 	void recordShortMessage(quint32 msg, MasterClockNanos midiNanos);
-	void recordSysex(uchar *sysexData, quint32 sysexLen, MasterClockNanos midiNanos);
+	void recordSysex(const uchar *sysexData, quint32 sysexLen, MasterClockNanos midiNanos);
 	void stopRecording();
 	bool isRecording();
 	bool saveSMF(QString fileName, MasterClockNanos midiTick);

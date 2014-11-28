@@ -120,9 +120,9 @@ public:
 
 	void flushMIDIQueue();
 	void playMIDIShortMessageNow(MT32Emu::Bit32u msg);
-	void playMIDISysexNow(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen);
+	void playMIDISysexNow(const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen);
 	bool playMIDIShortMessage(MT32Emu::Bit32u msg, quint64 timestamp);
-	bool playMIDISysex(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, quint64 timestamp);
+	bool playMIDISysex(const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, quint64 timestamp);
 	void render(MT32Emu::Bit16s *buffer, uint length);
 
 	const QReportHandler *getReportHandler() const;

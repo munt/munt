@@ -129,7 +129,7 @@ void QSynth::playMIDIShortMessageNow(Bit32u msg) {
 	synthMutex->unlock();
 }
 
-void QSynth::playMIDISysexNow(Bit8u *sysex, Bit32u sysexLen) {
+void QSynth::playMIDISysexNow(const Bit8u *sysex, Bit32u sysexLen) {
 	synthMutex->lock();
 	if (!isOpen()) {
 		synthMutex->unlock();
@@ -150,7 +150,7 @@ bool QSynth::playMIDIShortMessage(Bit32u msg, quint64 timestamp) {
 	return eventPushed;
 }
 
-bool QSynth::playMIDISysex(Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) {
+bool QSynth::playMIDISysex(const Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) {
 	midiMutex.lock();
 	if (!isOpen()) {
 		midiMutex.unlock();

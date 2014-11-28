@@ -50,11 +50,11 @@ public:
 
 	void flushMIDIQueue();
 	void playMIDIShortMessageNow(MT32Emu::Bit32u msg);
-	void playMIDISysexNow(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen);
+	void playMIDISysexNow(const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen);
 	bool playMIDIShortMessage(MT32Emu::Bit32u msg, quint64 timestamp);
-	bool playMIDISysex(MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, quint64 timestamp);
+	bool playMIDISysex(const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, quint64 timestamp);
 	bool pushMIDIShortMessage(MT32Emu::Bit32u msg, MasterClockNanos midiNanos);
-	bool pushMIDISysex(MT32Emu::Bit8u *sysex, unsigned int sysexLen, MasterClockNanos midiNanos);
+	bool pushMIDISysex(const MT32Emu::Bit8u *sysex, unsigned int sysexLen, MasterClockNanos midiNanos);
 	void setMasterVolume(int masterVolume);
 	void setOutputGain(float outputGain);
 	void setReverbOutputGain(float reverbOutputGain);

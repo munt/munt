@@ -37,7 +37,7 @@ void MidiRecorder::recordShortMessage(quint32 msg, MasterClockNanos midiNanos) {
 	}
 }
 
-void MidiRecorder::recordSysex(uchar *sysexData, quint32 sysexLen, MasterClockNanos midiNanos) {
+void MidiRecorder::recordSysex(const uchar *sysexData, quint32 sysexLen, MasterClockNanos midiNanos) {
 	if (isRecording()) {
 		midiEventList.newMidiEvent().assignSysex(midiNanos, sysexData, sysexLen);
 	}
