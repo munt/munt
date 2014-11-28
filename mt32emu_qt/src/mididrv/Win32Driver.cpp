@@ -155,7 +155,7 @@ bool Win32MidiDriver::canSetPortProperties(MidiSession *midiSession) {
 
 bool Win32MidiDriver::createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
 	Win32MidiIn *midiInPort = new Win32MidiIn;
-	if (midiInPort->open(midiSession->getSynthRoute(), mpd->getCurrentMidiPortIndex())) {
+	if (midiInPort->open(midiSession, mpd->getCurrentMidiPortIndex())) {
 		midiInPorts.append(midiInPort);
 		midiInSessions.append(midiSession);
 		return true;
@@ -194,7 +194,7 @@ bool Win32MidiDriver::setPortProperties(MidiPropertiesDialog *mpd, MidiSession *
 	}
 	if (id == mpd->getCurrentMidiPortIndex()) return false;
 	midiInPort->close();
-	if (midiInPort->open(midiSession->getSynthRoute(), mpd->getCurrentMidiPortIndex())) {
+	if (midiInPort->open(midiSession, mpd->getCurrentMidiPortIndex())) {
 		midiSession->getSynthRoute()->setMidiSessionName(midiSession, mpd->getMidiPortName());
 		return true;
 	}
@@ -225,7 +225,7 @@ void Win32MidiDriver::enumPorts(QList<QString> &midiInPortNames) {
 void CALLBACK Win32MidiIn::midiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
 	Q_UNUSED(dwParam2);
 
-	SynthRoute *synthRoute = (SynthRoute *)dwInstance;
+	MidiSession *midiSession = (MidiSession *)dwInstance;
 
 	LPMIDIHDR pMIDIhdr = (LPMIDIHDR)dwParam1;
 	if (wMsg == MIM_LONGDATA) {
@@ -233,7 +233,10 @@ void CALLBACK Win32MidiIn::midiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwIn
 			// 0 length means returning the buffer to the application when closing
 			return;
 		}
-		synthRoute->pushMIDISysex((BYTE *)pMIDIhdr->lpData, pMIDIhdr->dwBytesRecorded, MasterClock::getClockNanos());
+		// Use QMidiStreamParser to extract well-formed SysEx messages from buffer
+		QMidiStreamParser &qMidiStreamParser = *midiSession->getQMidiStreamParser();
+		qMidiStreamParser.setTimestamp(MasterClock::getClockNanos());
+		qMidiStreamParser.parseStream((BYTE *)pMIDIhdr->lpData, pMIDIhdr->dwBytesRecorded);
 
 		// Add SysEx Buffer for reuse
 		if (midiInAddBuffer(hMidiIn, pMIDIhdr, sizeof(MIDIHDR)) != MMSYSERR_NOERROR) {
@@ -242,14 +245,18 @@ void CALLBACK Win32MidiIn::midiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwIn
 		}
 		return;
 	}
-	if (wMsg == MIM_DATA) synthRoute->pushMIDIShortMessage(dwParam1, MasterClock::getClockNanos());
+	if (wMsg == MIM_DATA) {
+		// No need to use QMidiStreamParser for short messages: they are guaranteed to have explicit status byte
+		// if ((dwParam1 & 0xF8) == 0xF8) // No support for System Realtime yet
+		midiSession->getSynthRoute()->pushMIDIShortMessage(dwParam1, MasterClock::getClockNanos());
+	}
 }
 
-bool Win32MidiIn::open(SynthRoute *synthRoute, unsigned int midiDevID) {
+bool Win32MidiIn::open(MidiSession *midiSession, unsigned int midiDevID) {
 	int wResult;
 
 	// Init midiIn port
-	wResult = midiInOpen(&hMidiIn, midiDevID, (DWORD_PTR)midiInProc, (DWORD_PTR)synthRoute, CALLBACK_FUNCTION);
+	wResult = midiInOpen(&hMidiIn, midiDevID, (DWORD_PTR)midiInProc, (DWORD_PTR)midiSession, CALLBACK_FUNCTION);
 	if (wResult != MMSYSERR_NOERROR) {
 		QMessageBox::critical(NULL, "Win32MidiIn Error", "Failed to open MIDI input port");
 		return false;

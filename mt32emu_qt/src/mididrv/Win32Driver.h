@@ -17,7 +17,7 @@ private:
 
 public:
 	~Win32MidiIn();
-	bool open(SynthRoute *synthRoute, unsigned int midiDevID);
+	bool open(MidiSession *midiSession, unsigned int midiDevID);
 	bool close();
 	UINT getID();
 };
