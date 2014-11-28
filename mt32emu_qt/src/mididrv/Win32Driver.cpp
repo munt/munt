@@ -29,10 +29,10 @@ static HWND hwnd = NULL;
 static MasterClockNanos startMasterClock; // FIXME: Should actually be per-session but doesn't seem to be a real win
 
 LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	MidiSession *midiSession;
 	switch (uMsg) {
-	case WM_APP: // closing session
-		midiSession = (MidiSession*)wParam;
+	case WM_APP: {
+		// Closing session
+		MidiSession *midiSession = (MidiSession *)wParam;
 		if (driver->midiSessions.indexOf(midiSession) < 0) {
 			qDebug() << "Win32MidiDriver: Invalid midiSession handle supplied";
 			return 0;
@@ -40,15 +40,14 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 		qDebug() << "Win32MidiDriver: Session" << midiSession << "finished";
 		driver->deleteMidiSession(midiSession);
 		return 1;
+	}
 
-	case WM_COPYDATA:
-		COPYDATASTRUCT *cds;
-		cds = (COPYDATASTRUCT *)lParam;
-		midiSession = (MidiSession*)cds->dwData;
-		DWORD *data;
-		data = (DWORD *)cds->lpData;
-		if (data[0] == 0) { // special value, mark of a non-Sysex message
-			if (data[1] == (DWORD)-1) { // special value, mark of a handshaking message
+	case WM_COPYDATA: {
+		COPYDATASTRUCT *cds = (COPYDATASTRUCT *)lParam;
+		MidiSession *midiSession = (MidiSession *)cds->dwData;
+		DWORD *data = (DWORD *)cds->lpData;
+		if (data[0] == 0) { // Special value, mark of a non-Sysex message
+			if (data[1] == (DWORD)-1) { // Special value, mark of a handshaking message
 				// Sync the timesource in the driver with MasterClock
 				LARGE_INTEGER t = {{data[3], (LONG)data[4]}};
 				startMasterClock = t.QuadPart - MasterClock::getClockNanos();
@@ -63,7 +62,7 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 					return 0;
 				}
 				return (LRESULT)midiSession;
-			} else if (data[1] == 0) { // special value, mark of a short MIDI message
+			} else if (data[1] == 0) { // Special value, mark of a short MIDI message
 				// Process short MIDI message
 				if (driver->midiSessions.indexOf(midiSession) < 0) {
 					qDebug() << "Win32MidiDriver: Invalid midiSession handle supplied";
@@ -83,6 +82,8 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 			midiSession->getSynthRoute()->pushMIDISysex((MT32Emu::Bit8u *)cds->lpData, cds->cbData, MasterClock::getClockNanos());
 			return 1;
 		}
+	}
+
 	default:
 		return DefWindowProc(hwnd, uMsg, wParam, lParam);
 	}
