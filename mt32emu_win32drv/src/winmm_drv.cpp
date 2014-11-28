@@ -195,16 +195,16 @@ void DoCallback(int driverNum, DWORD_PTR clientNum, DWORD msg, DWORD_PTR param1,
 	DriverCallback(client->callback, client->flags, drivers[driverNum].hdrvr, msg, client->instance, param1, param2);
 }
 
-LONG OpenDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
+LONG OpenDriver(Driver &driver, UINT uDeviceID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
 	int clientNum;
-	if (driver->clientCount == 0) {
+	if (driver.clientCount == 0) {
 		clientNum = 0;
-	} else if (driver->clientCount == MAX_CLIENTS) {
+	} else if (driver.clientCount == MAX_CLIENTS) {
 		return MMSYSERR_ALLOCATED;
 	} else {
 		int i;
 		for (i = 0; i < MAX_CLIENTS; i++) {
-			if (!driver->clients[i].allocated) {
+			if (!driver.clients[i].allocated) {
 				break;
 			}
 		}
@@ -214,53 +214,85 @@ LONG OpenDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD_PTR dwUser, DWO
 		clientNum = i;
 	}
 	MIDIOPENDESC *desc = (MIDIOPENDESC *)dwParam1;
-	driver->clients[clientNum].allocated = true;
-	driver->clients[clientNum].flags = HIWORD(dwParam2);
-	driver->clients[clientNum].callback = desc->dwCallback;
-	driver->clients[clientNum].instance = desc->dwInstance;
+	driver.clients[clientNum].allocated = true;
+	driver.clients[clientNum].flags = HIWORD(dwParam2);
+	driver.clients[clientNum].callback = desc->dwCallback;
+	driver.clients[clientNum].instance = desc->dwInstance;
 	*(LONG *)dwUser = clientNum;
-	driver->clientCount++;
+	driver.clientCount++;
 	DoCallback(uDeviceID, clientNum, MOM_OPEN, NULL, NULL);
 	return MMSYSERR_NOERROR;
 }
 
-LONG CloseDriver(Driver *driver, UINT uDeviceID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
-	if (!driver->clients[dwUser].allocated) {
+LONG CloseDriver(Driver &driver, UINT uDeviceID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
+	if (!driver.clients[dwUser].allocated) {
 		return MMSYSERR_INVALPARAM;
 	}
-	driver->clients[dwUser].allocated = false;
-	driver->clientCount--;
+	driver.clients[dwUser].allocated = false;
+	driver.clientCount--;
 	DoCallback(uDeviceID, dwUser, MOM_CLOSE, NULL, NULL);
 	return MMSYSERR_NOERROR;
 }
 
-void ensureMidiStreamParser(Driver::Client &client) {
-	if (client.midiStreamParser != NULL) return;
-	class Parser : public MidiStreamParser {
-	protected:
-		virtual void handleShortMessage(const Bit32u message) {
+class MidiStreamParserImpl : public MidiStreamParser {
+public:
+	MidiStreamParserImpl(Driver::Client &useClient) : client(useClient) {}
+
+protected:
+	virtual void handleShortMessage(const Bit32u message) {
+		if (hwnd == NULL) {
 			midiSynth.PlayMIDI(message);
 		}
+		else {
+			updateNanoCounter();
+			DWORD msg[] = { 0, 0, nanoCounter.LowPart, nanoCounter.HighPart, message }; // 0, short MIDI message indicator, timestamp, data
+			COPYDATASTRUCT cds = { client.synth_instance, sizeof(msg), msg };
+			LRESULT res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
+			if (res != 1) {
+				// Synth app was terminated. Fall back to integrated synth
+				hwnd = NULL;
+				if (midiSynth.Init() == 0) {
+					synthOpened = true;
+					midiSynth.PlayMIDI(message);
+				}
+			}
+		}
+	}
 
-		virtual void handleSysex(const Bit8u stream[], const Bit32u length) {
+	virtual void handleSysex(const Bit8u stream[], const Bit32u length) {
+		if (hwnd == NULL) {
 			midiSynth.PlaySysex(stream, length);
 		}
-
-		virtual void handleSytemRealtimeMessage(const Bit8u realtime) {
-			// Unsupported by now
+		else {
+			COPYDATASTRUCT cds = { client.synth_instance, length, (PVOID)stream };
+			LRESULT res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
+			if (res != 1) {
+				// Synth app was terminated. Fall back to integrated synth
+				hwnd = NULL;
+				if (midiSynth.Init() == 0) {
+					synthOpened = true;
+					midiSynth.PlaySysex(stream, length);
+				}
+			}
 		}
+	}
 
-		virtual void printDebug(const char *debugMessage) {
+	virtual void handleSytemRealtimeMessage(const Bit8u realtime) {
+		// Unsupported by now
+	}
+
+	virtual void printDebug(const char *debugMessage) {
 #ifdef ENABLE_DEBUG_OUTPUT
-			std::cout << debugMessage << std::endl;
+		std::cout << debugMessage << std::endl;
 #endif
-		}
-	};
-	client.midiStreamParser = new Parser;
-}
+	}
+
+private:
+	Driver::Client &client;
+};
 
 STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
-	Driver *driver = &drivers[uDeviceID];
+	Driver &driver = drivers[uDeviceID];
 	switch (uMsg) {
 	case MODM_OPEN: {
 		if (hwnd == NULL) {
@@ -286,24 +318,22 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 			instance = (DWORD)SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
 		}
 		DWORD res = OpenDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
-		Driver::Client &client = driver->clients[*(LONG *)dwUser];
+		Driver::Client &client = driver.clients[*(LONG *)dwUser];
 		client.synth_instance = instance;
-		client.midiStreamParser = NULL;
+		client.midiStreamParser = new MidiStreamParserImpl(client);
 		return res;
 	}
 
 	case MODM_CLOSE:
-		if (driver->clients[dwUser].allocated == false) {
+		if (driver.clients[dwUser].allocated == false) {
 			return MMSYSERR_ERROR;
 		}
 		if (hwnd == NULL) {
 			if (synthOpened) midiSynth.Reset();
 		} else {
-			SendMessage(hwnd, WM_APP, driver->clients[dwUser].synth_instance, NULL); // end of session message
+			SendMessage(hwnd, WM_APP, driver.clients[dwUser].synth_instance, NULL); // end of session message
 		}
-		if (driver->clients[dwUser].midiStreamParser != NULL) {
-			delete driver->clients[dwUser].midiStreamParser;
-		}
+		delete driver.clients[dwUser].midiStreamParser;
 		return CloseDriver(driver, uDeviceID, uMsg, dwUser, dwParam1, dwParam2);
 
 	case MODM_PREPARE:
@@ -316,48 +346,26 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 		return modGetCaps((PVOID)dwParam1, (DWORD)dwParam2);
 
 	case MODM_DATA: {
-		if (driver->clients[dwUser].allocated == false) {
+		if (driver.clients[dwUser].allocated == false) {
 			return MMSYSERR_ERROR;
 		}
-		if (hwnd == NULL) {
-			ensureMidiStreamParser(driver->clients[dwUser]);
-			driver->clients[dwUser].midiStreamParser->processShortMessage((Bit32u)dwParam1);
-		} else {
-			updateNanoCounter();
-			DWORD msg[] = {0, 0, nanoCounter.LowPart, nanoCounter.HighPart, (DWORD)dwParam1}; // 0, short MIDI message indicator, timestamp, data
-			COPYDATASTRUCT cds = {driver->clients[dwUser].synth_instance, sizeof(msg), msg};
-			LRESULT res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
-			if (res != 1) {
-				// Synth app was terminated. Fall back to integrated synth
-				hwnd = NULL;
-				if (midiSynth.Init() != 0) return MMSYSERR_ERROR;
-				synthOpened = true;
-			}
-		}
+		driver.clients[dwUser].midiStreamParser->processShortMessage((Bit32u)dwParam1);
+		if ((hwnd == NULL) && (synthOpened == false))
+			return MMSYSERR_ERROR;
 		return MMSYSERR_NOERROR;
 	}
 
 	case MODM_LONGDATA: {
-		if (driver->clients[dwUser].allocated == false) {
+		if (driver.clients[dwUser].allocated == false) {
 			return MMSYSERR_ERROR;
 		}
 		MIDIHDR *midiHdr = (MIDIHDR *)dwParam1;
 		if ((midiHdr->dwFlags & MHDR_PREPARED) == 0) {
 			return MIDIERR_UNPREPARED;
 		}
-		if (hwnd == NULL) {
-			ensureMidiStreamParser(driver->clients[dwUser]);
-			driver->clients[dwUser].midiStreamParser->parseStream((Bit8u*)midiHdr->lpData, midiHdr->dwBufferLength);
-		} else {
-			COPYDATASTRUCT cds = {driver->clients[dwUser].synth_instance, midiHdr->dwBufferLength, midiHdr->lpData};
-			LRESULT res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
-			if (res != 1) {
-				// Synth app was terminated. Fall back to integrated synth
-				hwnd = NULL;
-				if (midiSynth.Init() != 0) return MMSYSERR_ERROR;
-				synthOpened = true;
-			}
-		}
+		driver.clients[dwUser].midiStreamParser->parseStream((const Bit8u *)midiHdr->lpData, midiHdr->dwBufferLength);
+		if ((hwnd == NULL) && (synthOpened == false))
+			return MMSYSERR_ERROR;
 		midiHdr->dwFlags |= MHDR_DONE;
 		midiHdr->dwFlags &= ~MHDR_INQUEUE;
 		DoCallback(uDeviceID, dwUser, MOM_DONE, dwParam1, NULL);
