@@ -16,7 +16,20 @@
 
 #include "MidiSession.h"
 
+using namespace MT32Emu;
+
 MidiSession::MidiSession(QObject *parent, MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute) : QObject(parent), midiDriver(useMidiDriver), name(useName), synthRoute(useSynthRoute) {
+}
+
+MidiSession::~MidiSession() {
+	if (qMidiStreamParser != NULL) delete qMidiStreamParser;
+}
+
+QMidiStreamParser *MidiSession::getQMidiStreamParser() {
+	if (qMidiStreamParser == NULL) {
+		qMidiStreamParser = new QMidiStreamParser(*synthRoute);
+	}
+	return qMidiStreamParser;
 }
 
 SynthRoute *MidiSession::getSynthRoute() {
@@ -29,4 +42,26 @@ QString MidiSession::getName() {
 
 void MidiSession::setName(const QString &newName) {
 	name = newName;
+}
+
+QMidiStreamParser::QMidiStreamParser(SynthRoute &useSynthRoute) : synthRoute(useSynthRoute) {}
+
+void QMidiStreamParser::setTimestamp(MasterClockNanos newTimestamp) {
+	timestamp = newTimestamp;
+}
+
+void QMidiStreamParser::handleShortMessage(const Bit32u message) {
+	synthRoute.pushMIDIShortMessage(message, timestamp);
+}
+
+void QMidiStreamParser::handleSysex(const Bit8u stream[], const Bit32u length) {
+	synthRoute.pushMIDISysex(stream, length, timestamp);
+}
+
+void QMidiStreamParser::handleSytemRealtimeMessage(const Bit8u realtime) {
+	// Unsupported yet
+}
+
+void QMidiStreamParser::printDebug(const char *debugMessage) {
+	qDebug() << debugMessage;
 }
