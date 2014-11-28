@@ -18,7 +18,7 @@
 
 using namespace MT32Emu;
 
-MidiSession::MidiSession(QObject *parent, MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute) : QObject(parent), midiDriver(useMidiDriver), name(useName), synthRoute(useSynthRoute) {
+MidiSession::MidiSession(QObject *parent, MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute) : QObject(parent), midiDriver(useMidiDriver), name(useName), synthRoute(useSynthRoute), qMidiStreamParser(NULL){
 }
 
 MidiSession::~MidiSession() {
