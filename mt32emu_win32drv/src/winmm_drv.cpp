@@ -242,8 +242,7 @@ protected:
 	virtual void handleShortMessage(const Bit32u message) {
 		if (hwnd == NULL) {
 			midiSynth.PlayMIDI(message);
-		}
-		else {
+		} else {
 			updateNanoCounter();
 			DWORD msg[] = { 0, 0, nanoCounter.LowPart, nanoCounter.HighPart, message }; // 0, short MIDI message indicator, timestamp, data
 			COPYDATASTRUCT cds = { client.synth_instance, sizeof(msg), msg };
@@ -262,8 +261,7 @@ protected:
 	virtual void handleSysex(const Bit8u stream[], const Bit32u length) {
 		if (hwnd == NULL) {
 			midiSynth.PlaySysex(stream, length);
-		}
-		else {
+		} else {
 			COPYDATASTRUCT cds = { client.synth_instance, length, (PVOID)stream };
 			LRESULT res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
 			if (res != 1) {
