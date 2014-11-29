@@ -29,27 +29,14 @@ Q_UNUSED(srcConnRefCon)
 	if (data->midiSession == NULL) {
 		data->midiSession = driver->createMidiSession(data->sessionID);
 	}
-	SynthRoute *synthRoute = data->midiSession->getSynthRoute();
+	QMidiStreamParser &qMidiStreamParser = *data->midiSession->getQMidiStreamParser();
+	qMidiStreamParser.setTimestamp(MasterClock::getClockNanos());
 	MIDIPacket const *packet = &packetList->packet[0];
 	UInt32 numPackets = packetList->numPackets;
 	while (numPackets > 0) {
 		UInt32 packetLen = packet->length;
-		while (packetLen > 0) {
-			Byte const *b = packet->data;
-			if (*b == 240) {
-				if (packet->data[packetLen - 1] != 247) {
-					qDebug() << "Fragmented sysex len:" << packetLen;
-					break;
-				}
-				synthRoute->pushMIDISysex((unsigned char *)b, packetLen, MasterClock::getClockNanos());
-				break;
-			}
-			UInt32 message = 0;
-			message = *((UInt32 *)b);
-			synthRoute->pushMIDIShortMessage(message, MasterClock::getClockNanos());
-			while (--packetLen > 0) {
-				if (*(++b) & 0x80) break;
-			}
+		if (packetLen > 0) {
+			qMidiStreamParser.parseStream(packet->data, packetLen);
 		}
 		packet = MIDIPacketNext(packet);
 		numPackets--;

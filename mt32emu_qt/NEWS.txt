@@ -10,7 +10,7 @@ Next release:
 	* Portaudio now required for OS X builds as there is no other audio support available by now.
 	* Incorporated MidiStreamParser class from libmt32emu. This fixes long standing issue with Windows MIDI driver
 	  and MIDI-in port handler that prevented receiving SysEx fragments or multi-SysEx packets sent in a single buffer.
-	  Windows MIDI driver also supports running status for short messages now. OSS MIDI driver also improved by this.
+	  Windows MIDI driver also supports running status for short messages now. OSS MIDI and CoreMIDI drivers also improved by this.
 
 2014-06-09:
 
