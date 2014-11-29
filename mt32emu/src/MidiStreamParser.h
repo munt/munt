@@ -24,7 +24,7 @@ namespace MT32Emu {
 
 // Maximum allowed size of streamBuffer
 // Should suffice for any reasonable bulk dump SysEx, as the h/w units have only 32K of RAM onboard
-const int MAX_STREAM_BUFFER_SIZE = 32768;
+const Bit32u MAX_STREAM_BUFFER_SIZE = 32768;
 
 // Provides a context for parsing a stream of MIDI events coming from a single source.
 // There can be multiple MIDI sources feeding MIDI events to a single Synth object.

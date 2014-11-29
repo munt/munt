@@ -20,7 +20,7 @@
 using namespace MT32Emu;
 
 MidiStreamParser::MidiStreamParser(Bit32u initialStreamBufferCapacity) {
-	if (initialStreamBufferCapacity < MAX_SYSEX_SIZE) initialStreamBufferCapacity = MAX_SYSEX_SIZE;
+	if (initialStreamBufferCapacity < (Bit32u)MAX_SYSEX_SIZE) initialStreamBufferCapacity = MAX_SYSEX_SIZE;
 	if (MAX_STREAM_BUFFER_SIZE < initialStreamBufferCapacity) initialStreamBufferCapacity = MAX_STREAM_BUFFER_SIZE;
 	streamBufferCapacity = initialStreamBufferCapacity;
 	streamBuffer = new Bit8u[streamBufferCapacity];

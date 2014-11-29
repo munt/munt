@@ -61,6 +61,7 @@ void QMidiStreamParser::handleSysex(const Bit8u stream[], const Bit32u length) {
 
 void QMidiStreamParser::handleSytemRealtimeMessage(const Bit8u realtime) {
 	// Unsupported yet
+	Q_UNUSED(realtime);
 }
 
 void QMidiStreamParser::printDebug(const char *debugMessage) {
