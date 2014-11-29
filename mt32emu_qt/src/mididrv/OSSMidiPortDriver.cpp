@@ -33,18 +33,15 @@ static OSSMidiPortDriver *driver;
 
 void* OSSMidiPortDriver::processingThread(void *userData) {
 	static const int BUFFER_SIZE = 1024;
-	static const int SYSEX_BUFFER_SIZE = 1024;
 	static const int SEQ_MIDIPUTC = 5;
 	unsigned char buffer[4 * BUFFER_SIZE];
 	unsigned char messageBuffer[BUFFER_SIZE];
-	unsigned char sysexBuffer[SYSEX_BUFFER_SIZE];
-	int sysexLength = 0;
 	int fd = -1;
 	pollfd pfd;
 
 	OSSMidiPortData *data = (OSSMidiPortData *)userData;
 	if (data->midiSession == NULL) data->midiSession = driver->createMidiSession(data->midiPortName);
-	SynthRoute *synthRoute = data->midiSession->getSynthRoute();
+	QMidiStreamParser &qMidiStreamParser = *data->midiSession->getQMidiStreamParser();
 	qDebug() << "OSSMidiPortDriver: Processing thread started. Port: " << data->midiPortName;
 
 	while (!data->stopProcessing) {
@@ -95,42 +92,8 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 			}
 			msg = messageBuffer;
 		}
-		if ((*msg & 0x80) == 0 && sysexLength == 0) qDebug() << "OSSMidiPortDriver: Desync in midi stream";
-		while (messageLength > 0) {
-			// Seek for status byte
-			if (sysexLength == 0) {
-				if ((*msg & 0x80) == 0) {
-					msg++;
-					messageLength--;
-					continue;
-				}
-				if (*msg == 0xF0) {
-					sysexBuffer[sysexLength++] = *(msg++);
-					messageLength--;
-				}
-			}
-			if (sysexLength != 0) {
-				while ((messageLength > 0) && ((*msg & 0x80) == 0) && sysexLength < SYSEX_BUFFER_SIZE) {
-					sysexBuffer[sysexLength++] = *(msg++);
-					messageLength--;
-				}
-				if (messageLength == 0) continue;
-				if (sysexLength > SYSEX_BUFFER_SIZE - 1) qDebug() << "OSSMidiPortDriver: Sysex buffer overrun";
-				if (*msg != 0xF7) {
-					qDebug() << "OSSMidiPortDriver: Desync in sysex, ending:" << *msg;
-					sysexLength = 0;
-					continue;
-				}
-				sysexBuffer[sysexLength++] = *(msg++);
-				messageLength--;
-				synthRoute->pushMIDISysex(sysexBuffer, sysexLength, MasterClock::getClockNanos());
-				sysexLength = 0;
-				continue;
-			}
-			synthRoute->pushMIDIShortMessage(*((unsigned int *)msg), MasterClock::getClockNanos());
-			msg++;
-			messageLength--;
-		}
+		qMidiStreamParser.setTimestamp(MasterClock::getClockNanos());
+		qMidiStreamParser.parseStream(messageBuffer, messageLength);
 	}
 	qDebug() << "OSSMidiPortDriver: Processing thread stopped. Port: " << data->midiPortName;
 	if (!data->stopProcessing) driver->deleteMidiSession(data->midiSession);
