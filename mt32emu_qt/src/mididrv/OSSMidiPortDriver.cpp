@@ -93,7 +93,7 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 			msg = messageBuffer;
 		}
 		qMidiStreamParser.setTimestamp(MasterClock::getClockNanos());
-		qMidiStreamParser.parseStream(messageBuffer, messageLength);
+		qMidiStreamParser.parseStream(msg, messageLength);
 	}
 	qDebug() << "OSSMidiPortDriver: Processing thread stopped. Port: " << data->midiPortName;
 	if (!data->stopProcessing) driver->deleteMidiSession(data->midiSession);
