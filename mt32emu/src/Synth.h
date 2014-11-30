@@ -40,8 +40,7 @@ enum DACInputMode {
 	// Produces samples that exactly match the bits output from the emulated LA32.
 	// * Nicer overdrive characteristics than the DAC hacks (it simply clips samples within range)
 	// * Much less likely to overdrive than any other mode.
-	// * Half the volume of any of the other modes, meaning its volume relative to the reverb
-	//   output when mixed together directly will sound wrong.
+	// * Half the volume of any of the other modes.
 	// * Output gain is ignored for both LA32 and reverb output.
 	// * Perfect for developers while debugging :)
 	DACInputMode_PURE,
