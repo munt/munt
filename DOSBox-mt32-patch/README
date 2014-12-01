@@ -2,5 +2,5 @@ Patches for DOSBox to add mt32emu MIDI device
 
 dosbox-0.74-mt32-patch.diff - diff file to be applied to official DOSBox release v.0.74 source distribution.
 
-dosbox-SVN-r3858-mt32-patch.diff - diff file to be applied to official DOSBox sources SVN r3858 (and up, hopefully).
+dosbox-SVN-r3873-mt32-patch.diff - diff file to be applied to official DOSBox sources SVN r3873 (and up, hopefully).
                                    It uses a bit different and clear approach introduced since SVN r3836.

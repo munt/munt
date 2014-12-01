@@ -1,3 +1,9 @@
+commit 32425e02444c9339ee52a1d5d083e84834c4da47
+Author: sergm <sergm@bigmir.net>
+Date:   Mon Dec 1 21:22:55 2014 +0200
+
+    mt32emu patch
+
 diff --git a/src/Makefile.am b/src/Makefile.am
 index 184469e..286638d 100644
 --- a/src/Makefile.am
@@ -9,7 +15,7 @@ index 184469e..286638d 100644
 -
 +LIBS +=  -lmt32emu
 diff --git a/src/dosbox.cpp b/src/dosbox.cpp
-index 6aad419..0ab8cba 100644
+index 6aad419..9a3f96c 100644
 --- a/src/dosbox.cpp
 +++ b/src/dosbox.cpp
 @@ -483,7 +483,7 @@ void DOSBOX_Init(void) {
@@ -21,7 +27,7 @@ index 6aad419..0ab8cba 100644
  	Pstring = secprop->Add_string("mpu401",Property::Changeable::WhenIdle,"intelligent");
  	Pstring->Set_values(mputypes);
  	Pstring->Set_help("Type of MPU-401 to emulate.");
-@@ -499,6 +499,68 @@ void DOSBOX_Init(void) {
+@@ -499,6 +499,88 @@ void DOSBOX_Init(void) {
  	                  "  In that case, add 'delaysysex', for example: midiconfig=2 delaysysex\n"
  	                  "  See the README/Manual for more details.");
  
@@ -58,8 +64,7 @@ index 6aad419..0ab8cba 100644
 +		"Produces samples that exactly match the bits output from the emulated LA32.\n"
 +		"Nicer overdrive characteristics than the DAC hacks (it simply clips samples within range)\n"
 +		"Much less likely to overdrive than any other mode.\n"
-+		"Half the volume of any of the other modes, meaning its volume relative to the reverb\n"
-+		"output when mixed together directly will sound wrong. So, reverb level must be lowered.\n"
++		"Half the volume of any of the other modes.\n"
 +		"Perfect for developers while debugging :)\n\n"
 +
 +		"GENERATION1 = 2\n"
@@ -68,9 +73,30 @@ index 6aad419..0ab8cba 100644
 +		"15 13 12 11 10 09 08 07 06 05 04 03 02 01 00 XX\n\n"
 +
 +		"GENERATION2 = 3\n"
-+		"Re-orders the LA32 output bits as in later geneerations (personally confirmed on my CM-32L - KG).\n"
++		"Re-orders the LA32 output bits as in later generations (personally confirmed on my CM-32L - KG).\n"
 +		"Bit order at DAC (where each number represents the original LA32 output bit number):\n"
 +		"15 13 12 11 10 09 08 07 06 05 04 03 02 01 00 14\n");
++
++	const char *mt32analogModes[] = {"0", "1", "2", "3", "auto",0};
++	Pstring = secprop->Add_string("mt32.analog",Property::Changeable::WhenIdle,"auto");
++	Pstring->Set_values(mt32analogModes);
++	Pstring->Set_help("MT-32 analogue output emulation mode\n"
++		"Digital = 0\n"
++		"Only digital path is emulated. The output samples correspond to the digital output signal appeared at the DAC entrance.\n"
++		"Fastest mode.\n\n"
++
++		"Coarse = 1\n"
++		"Coarse emulation of LPF circuit. High frequencies are boosted, sample rate remains unchanged.\n"
++		"A bit better sounding but also a bit slower.\n\n"
++
++		"Accurate = 2 - default\n"
++		"Finer emulation of LPF circuit. Output signal is upsampled to 48 kHz to allow emulation of audible mirror spectra above 16 kHz,\n"
++		"which is passed through the LPF circuit without significant attenuation.\n"
++		"Sounding is closer to the analog output from real hardware but also slower than the modes 0 and 1.\n\n"
++
++		"Oversampled = 3\n"
++		"Same as the default mode 2 but the output signal is 2x oversampled, i.e. the output sample rate is 96 kHz.\n"
++		"Even slower than all the other modes but better retains highest frequencies while further resampled in DOSBox mixer.\n");
 +
 +	const char *mt32reverbModes[] = {"0", "1", "2", "3", "auto",0};
 +	Pstring = secprop->Add_string("mt32.reverb.mode",Property::Changeable::WhenIdle,"auto");
@@ -102,7 +128,7 @@ index 3fed5e6..ca36a07 100644
 +	midi_coremidi.h midi_mt32.h midi_mt32.cpp sdl_gui.cpp dosbox_splash.h
  
 diff --git a/src/gui/midi.cpp b/src/gui/midi.cpp
-index ce4647f..dae3b7d 100644
+index ce4647f..3d289b8 100644
 --- a/src/gui/midi.cpp
 +++ b/src/gui/midi.cpp
 @@ -91,6 +91,9 @@ MidiHandler Midi_none;
@@ -110,23 +136,31 @@ index ce4647f..dae3b7d 100644
  #endif
  
 +#include "midi_mt32.h"
-+static MidiHandler_mt32 &midiHandler_mt32 = MidiHandler_mt32::GetInstance();
++static MidiHandler_mt32 &Midi_mt32 = MidiHandler_mt32::GetInstance();
 +
  DB_Midi midi;
  
  void MIDI_RawOutByte(Bit8u data) {
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 0000000..2f5d77b
+index 0000000..ce71157
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
-@@ -0,0 +1,228 @@
-+#include "midi_mt32.h"
-+
+@@ -0,0 +1,248 @@
 +#include <SDL_thread.h>
 +#include <SDL_timer.h>
 +#include <SDL_endian.h>
 +#include "control.h"
++
++#ifndef DOSBOX_MIDI_H
++#include "midi.h"
++#endif
++
++#include "midi_mt32.h"
++
++static const Bitu MILLIS_PER_SECOND = 1000;
++static const Bitu MINIMUM_RENDER_MILLIS = 16;
++static const Bitu AUDIO_LATENCY_MILLIS = 2 * MINIMUM_RENDER_MILLIS;
 +
 +MidiHandler_mt32 &MidiHandler_mt32::GetInstance() {
 +	static MidiHandler_mt32 midiHandler_mt32;
@@ -190,8 +224,14 @@ index 0000000..2f5d77b
 +	}
 +	const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
 +	const MT32Emu::ROMImage *pcmROMImage = MT32Emu::ROMImage::makeROMImage(&pcmROMFile);
++
++	MT32Emu::AnalogOutputMode analogOutputMode = MT32Emu::AnalogOutputMode_ACCURATE;
++	if (strcmp(section->Get_string("mt32.analog"), "auto") != 0) {
++		analogOutputMode = (MT32Emu::AnalogOutputMode)atoi(section->Get_string("mt32.analog"));
++	}
++
 +	synth = new MT32Emu::Synth(&reportHandler);
-+	if (!synth->open(*controlROMImage, *pcmROMImage)) {
++	if (!synth->open(*controlROMImage, *pcmROMImage, analogOutputMode)) {
 +		LOG_MSG("MT32: Error initialising emulation");
 +		return false;
 +	}
@@ -205,8 +245,6 @@ index 0000000..2f5d77b
 +		reverbsysex[5] = (Bit8u)section->Get_int("mt32.reverb.level");
 +		synth->writeSysex(16, reverbsysex, 6);
 +		synth->setReverbOverridden(true);
-+	} else {
-+		LOG_MSG("MT32: Using default reverb");
 +	}
 +
 +	if (strcmp(section->Get_string("mt32.dac"), "auto") != 0) {
@@ -217,12 +255,18 @@ index 0000000..2f5d77b
 +	noise = strcmp(section->Get_string("mt32.verbose"), "on") == 0;
 +	renderInThread = strcmp(section->Get_string("mt32.thread"), "on") == 0;
 +
-+	playPos = 0;
-+	chan = MIXER_AddChannel(mixerCallBack, MT32Emu::SAMPLE_RATE, "MT32");
++	if (noise) LOG_MSG("MT32: Adding mixer channel at sample rate %d", synth->getStereoOutputSampleRate());
++	chan = MIXER_AddChannel(mixerCallBack, synth->getStereoOutputSampleRate(), "MT32");
 +	if (renderInThread) {
 +		stopProcessing = false;
 +		renderPos = 0;
-+		render(FRAMES_PER_AUDIO_BUFFER - 1, audioBuffer);
++		playPos = 0;
++		sampleRateRatio = MT32Emu::SAMPLE_RATE / (double)synth->getStereoOutputSampleRate();
++		minimumRenderFrames = (MINIMUM_RENDER_MILLIS * synth->getStereoOutputSampleRate()) / MILLIS_PER_SECOND;
++		framesPerAudioBuffer = (AUDIO_LATENCY_MILLIS * synth->getStereoOutputSampleRate()) / MILLIS_PER_SECOND;
++		audioBufferSize = framesPerAudioBuffer << 1;
++		audioBuffer = new Bit16s[audioBufferSize];
++		render(framesPerAudioBuffer - 1, audioBuffer);
 +		playedBuffers = 1;
 +		thread = SDL_CreateThread(processingThread, NULL);
 +	}
@@ -239,6 +283,8 @@ index 0000000..2f5d77b
 +		stopProcessing = true;
 +		SDL_WaitThread(thread, NULL);
 +		thread = NULL;
++		delete[] audioBuffer;
++		audioBuffer = NULL;
 +	}
 +	MIXER_DelChannel(chan);
 +	chan = NULL;
@@ -267,7 +313,7 @@ index 0000000..2f5d77b
 +void MidiHandler_mt32::render(const Bitu len, Bit16s *buf) {
 +	Bit16s *revBuf = &buf[renderPos];
 +	synth->render(revBuf, len);
-+	renderPos = (renderPos + (len << 1)) % AUDIO_BUFFER_SIZE;
++	renderPos = (renderPos + (len << 1)) % audioBufferSize;
 +}
 +
 +void MidiHandler_mt32::mixerCallBack(Bitu len) {
@@ -280,7 +326,7 @@ index 0000000..2f5d77b
 +		Bitu playPos = midiHandler_mt32.playPos;
 +		Bitu samplesReady;
 +		if (renderPos < playPos) {
-+			samplesReady = AUDIO_BUFFER_SIZE - playPos;
++			samplesReady = midiHandler_mt32.audioBufferSize - playPos;
 +		} else {
 +			samplesReady = renderPos - playPos;
 +		}
@@ -289,8 +335,8 @@ index 0000000..2f5d77b
 +		}
 +		midiHandler_mt32.chan->AddSamples_s16(len, &midiHandler_mt32.audioBuffer[playPos]);
 +		playPos += (len << 1);
-+		while (AUDIO_BUFFER_SIZE <= playPos) {
-+			playPos -= AUDIO_BUFFER_SIZE;
++		while (midiHandler_mt32.audioBufferSize <= playPos) {
++			playPos -= midiHandler_mt32.audioBufferSize;
 +			midiHandler_mt32.playedBuffers++;
 +		}
 +		midiHandler_mt32.playPos = playPos;
@@ -309,16 +355,16 @@ index 0000000..2f5d77b
 +		Bitu framesToRender;
 +		if (renderPos < playPos) {
 +			framesToRender = (playPos - renderPos - 2) >> 1;
-+			if (framesToRender < MINIMUM_RENDER_FRAMES) {
-+				SDL_Delay(1 + (MILLIS_PER_SECOND * (MINIMUM_RENDER_FRAMES - framesToRender)) / SAMPLE_RATE);
++			if (framesToRender < midiHandler_mt32.minimumRenderFrames) {
++				SDL_Delay(1 + (MILLIS_PER_SECOND * (midiHandler_mt32.minimumRenderFrames - framesToRender)) / midiHandler_mt32.synth->getStereoOutputSampleRate());
 +				continue;
 +			}
 +		} else {
-+			framesToRender = (AUDIO_BUFFER_SIZE - renderPos) >> 1;
++			framesToRender = (midiHandler_mt32.audioBufferSize - renderPos) >> 1;
 +			if (playPos == 0) {
 +				framesToRender--;
 +				if (framesToRender == 0) {
-+					SDL_Delay(1 + (MILLIS_PER_SECOND * MINIMUM_RENDER_FRAMES) / SAMPLE_RATE);
++					SDL_Delay(1 + (MILLIS_PER_SECOND * midiHandler_mt32.minimumRenderFrames) / midiHandler_mt32.synth->getStereoOutputSampleRate());
 +					continue;
 +				}
 +			}
@@ -351,16 +397,15 @@ index 0000000..2f5d77b
 +}
 diff --git a/src/gui/midi_mt32.h b/src/gui/midi_mt32.h
 new file mode 100644
-index 0000000..e401666
+index 0000000..45b20cd
 --- /dev/null
 +++ b/src/gui/midi_mt32.h
-@@ -0,0 +1,57 @@
+@@ -0,0 +1,54 @@
 +#ifndef DOSBOX_MIDI_MT32_H
 +#define DOSBOX_MIDI_MT32_H
 +
-+#include <mt32emu/mt32emu.h>
 +#include "mixer.h"
-+#include "midi.h"
++#include <mt32emu/mt32emu.h>
 +
 +struct SDL_Thread;
 +
@@ -375,16 +420,14 @@ index 0000000..e401666
 +	void PlaySysex(Bit8u *sysex, Bitu len);
 +
 +private:
-+	static const Bitu SAMPLE_RATE = MT32Emu::SAMPLE_RATE;
-+	static const Bitu MILLIS_PER_SECOND = 1000;
-+	static const Bitu MINIMUM_RENDER_FRAMES = (16 * SAMPLE_RATE) / MILLIS_PER_SECOND;
-+	static const Bitu AUDIO_BUFFER_SIZE = MIXER_BUFSIZE >> 1;
-+	static const Bitu FRAMES_PER_AUDIO_BUFFER = AUDIO_BUFFER_SIZE >> 1;
-+
 +	MixerChannel *chan;
 +	MT32Emu::Synth *synth;
 +	SDL_Thread *thread;
-+	Bit16s audioBuffer[AUDIO_BUFFER_SIZE];
++	Bit16s *audioBuffer;
++	Bitu audioBufferSize;
++	Bitu framesPerAudioBuffer;
++	Bitu minimumRenderFrames;
++	double sampleRateRatio;
 +	volatile Bitu renderPos, playPos, playedBuffers;
 +	volatile bool stopProcessing;
 +	bool open, noise, renderInThread;
@@ -407,7 +450,7 @@ index 0000000..e401666
 +	void render(const Bitu len, Bit16s *buf);
 +
 +	Bit32u inline getMidiEventTimestamp() {
-+		return playedBuffers * FRAMES_PER_AUDIO_BUFFER + (playPos >> 1);
++		return Bit32u((playedBuffers * framesPerAudioBuffer + (playPos >> 1)) * sampleRateRatio);
 +	}
 +};
 +
