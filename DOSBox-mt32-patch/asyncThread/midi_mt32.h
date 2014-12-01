@@ -7,15 +7,18 @@
 
 static class MidiHandler_mt32 : public MidiHandler {
 private:
-	static const Bitu SAMPLE_RATE = MT32Emu::SAMPLE_RATE;
 	static const Bitu MILLIS_PER_SECOND = 1000;
-	static const Bitu MINIMUM_RENDER_FRAMES = (16 * SAMPLE_RATE) / MILLIS_PER_SECOND;
-	static const Bitu AUDIO_BUFFER_SIZE = MIXER_BUFSIZE >> 1;
-	static const Bitu FRAMES_PER_AUDIO_BUFFER = AUDIO_BUFFER_SIZE >> 1;
+	static const Bitu MINIMUM_RENDER_MILLIS = 16;
+	static const Bitu AUDIO_LATENCY_MILLIS = 2 * MINIMUM_RENDER_MILLIS;
+
 	MixerChannel *chan;
 	MT32Emu::Synth *synth;
 	SDL_Thread *thread;
-	Bit16s audioBuffer[AUDIO_BUFFER_SIZE];
+	Bit16s *audioBuffer;
+	Bitu audioBufferSize;
+	Bitu framesPerAudioBuffer;
+	Bitu minimumRenderFrames;
+	double sampleRateRatio;
 	volatile Bitu renderPos, playPos, playedBuffers;
 	volatile bool stopProcessing;
 	bool open, noise, renderInThread;
@@ -49,7 +52,7 @@ private:
 	}
 
 public:
-	MidiHandler_mt32() : open(false), chan(NULL), synth(NULL), thread(NULL) {}
+	MidiHandler_mt32() : open(false), chan(NULL), synth(NULL), thread(NULL), audioBuffer(NULL) {}
 
 	~MidiHandler_mt32() {
 		Close();
@@ -97,8 +100,14 @@ public:
 		}
 		const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
 		const MT32Emu::ROMImage *pcmROMImage = MT32Emu::ROMImage::makeROMImage(&pcmROMFile);
+
+		MT32Emu::AnalogOutputMode analogOutputMode = MT32Emu::AnalogOutputMode_ACCURATE;
+		if (strcmp(section->Get_string("mt32.analog"), "auto") != 0) {
+			analogOutputMode = (MT32Emu::AnalogOutputMode)atoi(section->Get_string("mt32.analog"));
+		}
+
 		synth = new MT32Emu::Synth(&reportHandler);
-		if (!synth->open(*controlROMImage, *pcmROMImage)) {
+		if (!synth->open(*controlROMImage, *pcmROMImage, analogOutputMode)) {
 			LOG_MSG("MT32: Error initialising emulation");
 			return false;
 		}
@@ -112,8 +121,6 @@ public:
 			reverbsysex[5] = (Bit8u)section->Get_int("mt32.reverb.level");
 			synth->writeSysex(16, reverbsysex, 6);
 			synth->setReverbOverridden(true);
-		} else {
-			LOG_MSG("MT32: Using default reverb");
 		}
 
 		if (strcmp(section->Get_string("mt32.dac"), "auto") != 0) {
@@ -124,12 +131,18 @@ public:
 		noise = strcmp(section->Get_string("mt32.verbose"), "on") == 0;
 		renderInThread = strcmp(section->Get_string("mt32.thread"), "on") == 0;
 
-		playPos = 0;
-		chan = MIXER_AddChannel(mixerCallBack, MT32Emu::SAMPLE_RATE, "MT32");
+		if (noise) LOG_MSG("MT32: Adding mixer channel at sample rate %d", synth->getStereoOutputSampleRate());
+		chan = MIXER_AddChannel(mixerCallBack, synth->getStereoOutputSampleRate(), "MT32");
 		if (renderInThread) {
 			stopProcessing = false;
 			renderPos = 0;
-			render(FRAMES_PER_AUDIO_BUFFER - 1, audioBuffer);
+			playPos = 0;
+			sampleRateRatio = MT32Emu::SAMPLE_RATE / (double)synth->getStereoOutputSampleRate();
+			minimumRenderFrames = (MINIMUM_RENDER_MILLIS * synth->getStereoOutputSampleRate()) / MILLIS_PER_SECOND;
+			framesPerAudioBuffer = (AUDIO_LATENCY_MILLIS * synth->getStereoOutputSampleRate()) / MILLIS_PER_SECOND;
+			audioBufferSize = framesPerAudioBuffer << 1;
+			audioBuffer = new Bit16s[audioBufferSize];
+			render(framesPerAudioBuffer - 1, audioBuffer);
 			playedBuffers = 1;
 			thread = SDL_CreateThread(processingThread, NULL);
 		}
@@ -146,6 +159,8 @@ public:
 			stopProcessing = true;
 			SDL_WaitThread(thread, NULL);
 			thread = NULL;
+			delete[] audioBuffer;
+			audioBuffer = NULL;
 		}
 		MIXER_DelChannel(chan);
 		chan = NULL;
@@ -173,13 +188,13 @@ public:
 
 private:
 	Bit32u inline getMidiEventTimestamp() {
-		return playedBuffers * FRAMES_PER_AUDIO_BUFFER + (playPos >> 1);
+		return Bit32u((playedBuffers * framesPerAudioBuffer + (playPos >> 1)) * sampleRateRatio);
 	}
 
 	void render(const Bitu len, Bit16s *buf) {
 		Bit16s *revBuf = &buf[renderPos];
 		synth->render(revBuf, len);
-		renderPos = (renderPos + (len << 1)) % AUDIO_BUFFER_SIZE;
+		renderPos = (renderPos + (len << 1)) % audioBufferSize;
 	}
 } midiHandler_mt32;
 
@@ -201,7 +216,7 @@ void MidiHandler_mt32::mixerCallBack(Bitu len) {
 		Bitu playPos = midiHandler_mt32.playPos;
 		Bitu samplesReady;
 		if (renderPos < playPos) {
-			samplesReady = AUDIO_BUFFER_SIZE - playPos;
+			samplesReady = midiHandler_mt32.audioBufferSize - playPos;
 		} else {
 			samplesReady = renderPos - playPos;
 		}
@@ -210,8 +225,8 @@ void MidiHandler_mt32::mixerCallBack(Bitu len) {
 		}
 		midiHandler_mt32.chan->AddSamples_s16(len, &midiHandler_mt32.audioBuffer[playPos]);
 		playPos += (len << 1);
-		while (AUDIO_BUFFER_SIZE <= playPos) {
-			playPos -= AUDIO_BUFFER_SIZE;
+		while (midiHandler_mt32.audioBufferSize <= playPos) {
+			playPos -= midiHandler_mt32.audioBufferSize;
 			midiHandler_mt32.playedBuffers++;
 		}
 		midiHandler_mt32.playPos = playPos;
@@ -229,16 +244,16 @@ int MidiHandler_mt32::processingThread(void *) {
 		Bitu framesToRender;
 		if (renderPos < playPos) {
 			framesToRender = (playPos - renderPos - 2) >> 1;
-			if (framesToRender < MINIMUM_RENDER_FRAMES) {
-				SDL_Delay(1 + (MILLIS_PER_SECOND * (MINIMUM_RENDER_FRAMES - framesToRender)) / SAMPLE_RATE);
+			if (framesToRender < midiHandler_mt32.minimumRenderFrames) {
+				SDL_Delay(1 + (MILLIS_PER_SECOND * (midiHandler_mt32.minimumRenderFrames - framesToRender)) / midiHandler_mt32.synth->getStereoOutputSampleRate());
 				continue;
 			}
 		} else {
-			framesToRender = (AUDIO_BUFFER_SIZE - renderPos) >> 1;
+			framesToRender = (midiHandler_mt32.audioBufferSize - renderPos) >> 1;
 			if (playPos == 0) {
 				framesToRender--;
 				if (framesToRender == 0) {
-					SDL_Delay(1 + (MILLIS_PER_SECOND * MINIMUM_RENDER_FRAMES) / SAMPLE_RATE);
+					SDL_Delay(1 + (MILLIS_PER_SECOND * midiHandler_mt32.minimumRenderFrames) / midiHandler_mt32.synth->getStereoOutputSampleRate());
 					continue;
 				}
 			}

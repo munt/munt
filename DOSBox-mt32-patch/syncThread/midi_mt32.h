@@ -10,7 +10,6 @@ private:
 	MixerChannel *chan;
 	MT32Emu::Synth *synth;
 	SDL_Thread *thread;
-	SDL_mutex *synthMutex;
 	SDL_semaphore *procIdleSem, *mixerReqSem;
 	Bit16s mixerBuffer[2 * MIXER_BUFFER_SIZE];
 	volatile Bitu mixerBufferSize;
@@ -46,7 +45,7 @@ private:
 	}
 
 public:
-	MidiHandler_mt32() : open(false), chan(NULL), synth(NULL), thread(NULL), synthMutex(NULL), procIdleSem(NULL), mixerReqSem(NULL) {}
+	MidiHandler_mt32() : open(false), chan(NULL), synth(NULL), thread(NULL), procIdleSem(NULL), mixerReqSem(NULL) {}
 
 	~MidiHandler_mt32() {
 		Close();
@@ -94,8 +93,14 @@ public:
 		}
 		const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
 		const MT32Emu::ROMImage *pcmROMImage = MT32Emu::ROMImage::makeROMImage(&pcmROMFile);
+
+		MT32Emu::AnalogOutputMode analogOutputMode = MT32Emu::AnalogOutputMode_ACCURATE;
+		if (strcmp(section->Get_string("mt32.analog"), "auto") != 0) {
+			analogOutputMode = (MT32Emu::AnalogOutputMode)atoi(section->Get_string("mt32.analog"));
+		}
+
 		synth = new MT32Emu::Synth(&reportHandler);
-		if (!synth->open(*controlROMImage, *pcmROMImage)) {
+		if (!synth->open(*controlROMImage, *pcmROMImage, analogOutputMode)) {
 			LOG_MSG("MT32: Error initialising emulation");
 			return false;
 		}
@@ -109,8 +114,6 @@ public:
 			reverbsysex[5] = (Bit8u)section->Get_int("mt32.reverb.level");
 			synth->writeSysex(16, reverbsysex, 6);
 			synth->setReverbOverridden(true);
-		} else {
-			LOG_MSG("MT32: Using default reverb");
 		}
 
 		if (strcmp(section->Get_string("mt32.dac"), "auto") != 0) {
@@ -121,11 +124,11 @@ public:
 		noise = strcmp(section->Get_string("mt32.verbose"), "on") == 0;
 		renderInThread = strcmp(section->Get_string("mt32.thread"), "on") == 0;
 
-		chan = MIXER_AddChannel(mixerCallBack, MT32Emu::SAMPLE_RATE, "MT32");
+		if (noise) LOG_MSG("MT32: Adding mixer channel at sample rate %d", synth->getStereoOutputSampleRate());
+		chan = MIXER_AddChannel(mixerCallBack, synth->getStereoOutputSampleRate(), "MT32");
 		if (renderInThread) {
 			mixerBufferSize = 0;
 			stopProcessing = false;
-			synthMutex = SDL_CreateMutex();
 			procIdleSem = SDL_CreateSemaphore(0);
 			mixerReqSem = SDL_CreateSemaphore(0);
 			thread = SDL_CreateThread(processingThread, NULL);
@@ -145,8 +148,6 @@ public:
 			SDL_SemPost(mixerReqSem);
 			SDL_WaitThread(thread, NULL);
 			thread = NULL;
-			SDL_DestroyMutex(synthMutex);
-			synthMutex = NULL;
 			SDL_DestroySemaphore(procIdleSem);
 			procIdleSem = NULL;
 			SDL_DestroySemaphore(mixerReqSem);
@@ -201,9 +202,7 @@ int MidiHandler_mt32::processingThread(void *) {
 		for (;;) {
 			Bitu samplesToRender = midiHandler_mt32.mixerBufferSize;
 			if (samplesToRender == 0) break;
-			SDL_LockMutex(midiHandler_mt32.synthMutex);
 			midiHandler_mt32.render(samplesToRender, midiHandler_mt32.mixerBuffer);
-			SDL_UnlockMutex(midiHandler_mt32.synthMutex);
 			midiHandler_mt32.mixerBufferSize -= samplesToRender;
 		}
 	}

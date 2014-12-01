@@ -83,8 +83,14 @@ public:
 		}
 		const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
 		const MT32Emu::ROMImage *pcmROMImage = MT32Emu::ROMImage::makeROMImage(&pcmROMFile);
+
+		MT32Emu::AnalogOutputMode analogOutputMode = MT32Emu::AnalogOutputMode_ACCURATE;
+		if (strcmp(section->Get_string("mt32.analog"), "auto") != 0) {
+			analogOutputMode = (MT32Emu::AnalogOutputMode)atoi(section->Get_string("mt32.analog"));
+		}
+
 		synth = new MT32Emu::Synth(&reportHandler);
-		if (!synth->open(*controlROMImage, *pcmROMImage)) {
+		if (!synth->open(*controlROMImage, *pcmROMImage, analogOutputMode)) {
 			LOG_MSG("MT32: Error initialising emulation");
 			return false;
 		}
@@ -98,8 +104,6 @@ public:
 			reverbsysex[5] = (Bit8u)section->Get_int("mt32.reverb.level");
 			synth->writeSysex(16, reverbsysex, 6);
 			synth->setReverbOverridden(true);
-		} else {
-			LOG_MSG("MT32: Using default reverb");
 		}
 
 		if (strcmp(section->Get_string("mt32.dac"), "auto") != 0) {
@@ -109,7 +113,8 @@ public:
 		synth->setReversedStereoEnabled(strcmp(section->Get_string("mt32.reverse.stereo"), "on") == 0);
 		noise = strcmp(section->Get_string("mt32.verbose"), "on") == 0;
 
-		chan = MIXER_AddChannel(mixerCallBack, MT32Emu::SAMPLE_RATE, "MT32");
+		if (noise) LOG_MSG("MT32: Adding mixer channel at sample rate %d", synth->getStereoOutputSampleRate());
+		chan = MIXER_AddChannel(mixerCallBack, synth->getStereoOutputSampleRate(), "MT32");
 		chan->Enable(true);
 
 		open = true;
