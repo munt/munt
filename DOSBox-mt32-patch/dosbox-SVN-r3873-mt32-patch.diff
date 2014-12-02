@@ -1,6 +1,6 @@
-commit 32425e02444c9339ee52a1d5d083e84834c4da47
+commit 3dbce2eee06d542ac32bb7e11529286dd8c62af6
 Author: sergm <sergm@bigmir.net>
-Date:   Mon Dec 1 21:22:55 2014 +0200
+Date:   Tue Dec 2 09:19:32 2014 +0200
 
     mt32emu patch
 
@@ -143,10 +143,10 @@ index ce4647f..3d289b8 100644
  void MIDI_RawOutByte(Bit8u data) {
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 0000000..ce71157
+index 0000000..902651e
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
-@@ -0,0 +1,248 @@
+@@ -0,0 +1,247 @@
 +#include <SDL_thread.h>
 +#include <SDL_timer.h>
 +#include <SDL_endian.h>
@@ -341,8 +341,7 @@ index 0000000..ce71157
 +		}
 +		midiHandler_mt32.playPos = playPos;
 +	} else {
-+		midiHandler_mt32.renderPos = 0;
-+		midiHandler_mt32.render(len, (Bit16s *)MixTemp);
++		midiHandler_mt32.synth->render((Bit16s *)MixTemp, len);
 +		midiHandler_mt32.chan->AddSamples_s16(len, (Bit16s *)MixTemp);
 +	}
 +}

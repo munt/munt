@@ -1,6 +1,6 @@
-commit 2f29fdee73d7171cbd075b5a8b281f0b58c26b0c
+commit c941deb824acd8c5f40e420ed077015f0d3f38e8
 Author: sergm <sergm@bigmir.net>
-Date:   Mon Dec 1 21:20:05 2014 +0200
+Date:   Tue Dec 2 09:18:57 2014 +0200
 
     mt32emu patch
 
@@ -145,10 +145,10 @@ index 61d15e5..0ec8ebc 100644
  	Bitu cmd_len;
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 0000000..ce71157
+index 0000000..902651e
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
-@@ -0,0 +1,248 @@
+@@ -0,0 +1,247 @@
 +#include <SDL_thread.h>
 +#include <SDL_timer.h>
 +#include <SDL_endian.h>
@@ -343,8 +343,7 @@ index 0000000..ce71157
 +		}
 +		midiHandler_mt32.playPos = playPos;
 +	} else {
-+		midiHandler_mt32.renderPos = 0;
-+		midiHandler_mt32.render(len, (Bit16s *)MixTemp);
++		midiHandler_mt32.synth->render((Bit16s *)MixTemp, len);
 +		midiHandler_mt32.chan->AddSamples_s16(len, (Bit16s *)MixTemp);
 +	}
 +}
