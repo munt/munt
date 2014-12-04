@@ -1,6 +1,6 @@
-commit 826a8c8b41a9c37a1de358321636510027a28469
+commit 2ba72e8dbb3d5e7425302d08be346432101acfb7
 Author: sergm <sergm@bigmir.net>
-Date:   Tue Dec 2 21:43:35 2014 +0200
+Date:   Thu Dec 4 10:11:36 2014 +0200
 
     mt32emu patch
 
@@ -65,12 +65,11 @@ index 61d15e5..0ec8ebc 100644
  	Bitu cmd_len;
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 0000000..82bcc96
+index 0000000..ebe809c
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
-@@ -0,0 +1,248 @@
+@@ -0,0 +1,264 @@
 +#include <SDL_thread.h>
-+#include <SDL_timer.h>
 +#include <SDL_endian.h>
 +#include "control.h"
 +
@@ -87,23 +86,8 @@ index 0000000..82bcc96
 +	return midiHandler_mt32;
 +}
 +
-+MidiHandler_mt32::MidiHandler_mt32() : open(false), chan(NULL), synth(NULL), thread(NULL) {
-+}
-+
-+MidiHandler_mt32::~MidiHandler_mt32() {
-+	Close();
-+}
-+
 +const char *MidiHandler_mt32::GetName(void) {
 +	return "mt32";
-+}
-+
-+void MidiHandler_mt32::makeROMPathName(char pathName[], const char romDir[], const char fileName[], bool addPathSeparator) {
-+	strcpy(pathName, romDir);
-+	if (addPathSeparator) {
-+		strcat(pathName, "/");
-+	}
-+	strcat(pathName, fileName);
 +}
 +
 +bool MidiHandler_mt32::Open(const char *conf) {
@@ -176,7 +160,6 @@ index 0000000..82bcc96
 +	chan = MIXER_AddChannel(mixerCallBack, synth->getStereoOutputSampleRate(), "MT32");
 +	if (renderInThread) {
 +		stopProcessing = false;
-+		renderPos = 0;
 +		playPos = 0;
 +		sampleRateRatio = MT32Emu::SAMPLE_RATE / (double)synth->getStereoOutputSampleRate();
 +		int chunkSize = section->Get_int("mt32.chunk");
@@ -189,8 +172,11 @@ index 0000000..82bcc96
 +		framesPerAudioBuffer = (latency * synth->getStereoOutputSampleRate()) / MILLIS_PER_SECOND;
 +		audioBufferSize = framesPerAudioBuffer << 1;
 +		audioBuffer = new Bit16s[audioBufferSize];
-+		render(framesPerAudioBuffer - 1, audioBuffer);
++		synth->render(audioBuffer, framesPerAudioBuffer - 1);
++		renderPos = (framesPerAudioBuffer - 1) << 1;
 +		playedBuffers = 1;
++		lock = SDL_CreateMutex();
++		framesInBufferChanged = SDL_CreateCond();
 +		thread = SDL_CreateThread(processingThread, NULL);
 +	}
 +	chan->Enable(true);
@@ -204,8 +190,15 @@ index 0000000..82bcc96
 +	chan->Enable(false);
 +	if (renderInThread) {
 +		stopProcessing = true;
++		SDL_LockMutex(lock);
++		SDL_CondSignal(framesInBufferChanged);
++		SDL_UnlockMutex(lock);
 +		SDL_WaitThread(thread, NULL);
 +		thread = NULL;
++		SDL_DestroyMutex(lock);
++		lock = NULL;
++		SDL_DestroyCond(framesInBufferChanged);
++		framesInBufferChanged = NULL;
 +		delete[] audioBuffer;
 +		audioBuffer = NULL;
 +	}
@@ -233,67 +226,90 @@ index 0000000..82bcc96
 +	}
 +}
 +
-+void MidiHandler_mt32::render(const Bitu len, Bit16s *buf) {
-+	Bit16s *revBuf = &buf[renderPos];
-+	synth->render(revBuf, len);
-+	renderPos = (renderPos + (len << 1)) % audioBufferSize;
-+}
-+
 +void MidiHandler_mt32::mixerCallBack(Bitu len) {
-+	MidiHandler_mt32 &midiHandler_mt32 = MidiHandler_mt32::GetInstance();
-+	if (midiHandler_mt32.renderInThread) {
-+		while (midiHandler_mt32.renderPos == midiHandler_mt32.playPos) {
-+			SDL_Delay(1);
-+		}
-+		Bitu renderPos = midiHandler_mt32.renderPos;
-+		Bitu playPos = midiHandler_mt32.playPos;
-+		Bitu samplesReady;
-+		if (renderPos < playPos) {
-+			samplesReady = midiHandler_mt32.audioBufferSize - playPos;
-+		} else {
-+			samplesReady = renderPos - playPos;
-+		}
-+		if (len > (samplesReady >> 1)) {
-+			len = samplesReady >> 1;
-+		}
-+		midiHandler_mt32.chan->AddSamples_s16(len, &midiHandler_mt32.audioBuffer[playPos]);
-+		playPos += (len << 1);
-+		while (midiHandler_mt32.audioBufferSize <= playPos) {
-+			playPos -= midiHandler_mt32.audioBufferSize;
-+			midiHandler_mt32.playedBuffers++;
-+		}
-+		midiHandler_mt32.playPos = playPos;
-+	} else {
-+		midiHandler_mt32.synth->render((Bit16s *)MixTemp, len);
-+		midiHandler_mt32.chan->AddSamples_s16(len, (Bit16s *)MixTemp);
-+	}
++	MidiHandler_mt32::GetInstance().handleMixerCallBack(len);
 +}
 +
 +int MidiHandler_mt32::processingThread(void *) {
-+	MidiHandler_mt32 &midiHandler_mt32 = MidiHandler_mt32::GetInstance();
-+	while (!midiHandler_mt32.stopProcessing) {
-+		Bitu renderPos = midiHandler_mt32.renderPos;
-+		Bitu playPos = midiHandler_mt32.playPos;
-+		Bitu framesToRender;
-+		if (renderPos < playPos) {
-+			framesToRender = (playPos - renderPos - 2) >> 1;
-+			if (framesToRender < midiHandler_mt32.minimumRenderFrames) {
-+				SDL_Delay(1 + (MILLIS_PER_SECOND * (midiHandler_mt32.minimumRenderFrames - framesToRender)) / midiHandler_mt32.synth->getStereoOutputSampleRate());
-+				continue;
-+			}
++	MidiHandler_mt32::GetInstance().renderingLoop();
++	return 0;
++}
++
++void MidiHandler_mt32::makeROMPathName(char pathName[], const char romDir[], const char fileName[], bool addPathSeparator) {
++	strcpy(pathName, romDir);
++	if (addPathSeparator) {
++		strcat(pathName, "/");
++	}
++	strcat(pathName, fileName);
++}
++
++MidiHandler_mt32::MidiHandler_mt32() : open(false), chan(NULL), synth(NULL), thread(NULL) {
++}
++
++MidiHandler_mt32::~MidiHandler_mt32() {
++	Close();
++}
++
++void MidiHandler_mt32::handleMixerCallBack(Bitu len) {
++	if (renderInThread) {
++		while (renderPos == playPos) {
++			SDL_LockMutex(lock);
++			SDL_CondWait(framesInBufferChanged, lock);
++			SDL_UnlockMutex(lock);
++			if (stopProcessing) return;
++		}
++		Bitu renderPosSnap = renderPos;
++		Bitu playPosSnap = playPos;
++		Bitu samplesReady = (renderPosSnap < playPosSnap) ? audioBufferSize - playPosSnap : renderPosSnap - playPosSnap;
++		if (len > (samplesReady >> 1)) {
++			len = samplesReady >> 1;
++		}
++		chan->AddSamples_s16(len, audioBuffer + playPosSnap);
++		playPosSnap += (len << 1);
++		while (audioBufferSize <= playPosSnap) {
++			playPosSnap -= audioBufferSize;
++			playedBuffers++;
++		}
++		playPos = playPosSnap;
++		renderPosSnap = renderPos;
++		const Bitu samplesFree = (renderPosSnap < playPosSnap) ? playPosSnap - renderPosSnap : audioBufferSize + playPosSnap - renderPosSnap;
++		if (minimumRenderFrames <= (samplesFree >> 1)) {
++			SDL_LockMutex(lock);
++			SDL_CondSignal(framesInBufferChanged);
++			SDL_UnlockMutex(lock);
++		}
++	} else {
++		synth->render((Bit16s *)MixTemp, len);
++		chan->AddSamples_s16(len, (Bit16s *)MixTemp);
++	}
++}
++
++void MidiHandler_mt32::renderingLoop() {
++	while (!stopProcessing) {
++		const Bitu renderPosSnap = renderPos;
++		const Bitu playPosSnap = playPos;
++		Bitu samplesToRender;
++		if (renderPosSnap < playPosSnap) {
++			samplesToRender = playPosSnap - renderPosSnap - 2;
 +		} else {
-+			framesToRender = (midiHandler_mt32.audioBufferSize - renderPos) >> 1;
-+			if (playPos == 0) {
-+				framesToRender--;
-+				if (framesToRender == 0) {
-+					SDL_Delay(1 + (MILLIS_PER_SECOND * midiHandler_mt32.minimumRenderFrames) / midiHandler_mt32.synth->getStereoOutputSampleRate());
-+					continue;
-+				}
++			samplesToRender = audioBufferSize - renderPosSnap;
++			if (playPosSnap == 0) samplesToRender -= 2;
++		}
++		Bitu framesToRender = samplesToRender >> 1;
++		if ((framesToRender == 0) || ((framesToRender < minimumRenderFrames) && (renderPosSnap < playPosSnap))) {
++			SDL_LockMutex(lock);
++			SDL_CondWait(framesInBufferChanged, lock);
++			SDL_UnlockMutex(lock);
++		} else {
++			synth->render(audioBuffer + renderPosSnap, framesToRender);
++			renderPos = (renderPosSnap + samplesToRender) % audioBufferSize;
++			if (renderPosSnap == playPos) {
++				SDL_LockMutex(lock);
++				SDL_CondSignal(framesInBufferChanged);
++				SDL_UnlockMutex(lock);
 +			}
 +		}
-+		midiHandler_mt32.render(framesToRender, midiHandler_mt32.audioBuffer);
 +	}
-+	return 0;
 +}
 +
 +void MidiHandler_mt32::MT32ReportHandler::onErrorControlROM() {
@@ -319,10 +335,10 @@ index 0000000..82bcc96
 +}
 diff --git a/src/gui/midi_mt32.h b/src/gui/midi_mt32.h
 new file mode 100644
-index 0000000..45b20cd
+index 0000000..5ceabe7
 --- /dev/null
 +++ b/src/gui/midi_mt32.h
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,57 @@
 +#ifndef DOSBOX_MIDI_MT32_H
 +#define DOSBOX_MIDI_MT32_H
 +
@@ -345,6 +361,8 @@ index 0000000..45b20cd
 +	MixerChannel *chan;
 +	MT32Emu::Synth *synth;
 +	SDL_Thread *thread;
++	SDL_mutex *lock;
++	SDL_cond *framesInBufferChanged;
 +	Bit16s *audioBuffer;
 +	Bitu audioBufferSize;
 +	Bitu framesPerAudioBuffer;
@@ -369,17 +387,18 @@ index 0000000..45b20cd
 +	MidiHandler_mt32();
 +	~MidiHandler_mt32();
 +
-+	void render(const Bitu len, Bit16s *buf);
-+
 +	Bit32u inline getMidiEventTimestamp() {
 +		return Bit32u((playedBuffers * framesPerAudioBuffer + (playPos >> 1)) * sampleRateRatio);
 +	}
++
++	void handleMixerCallBack(Bitu len);
++	void renderingLoop();
 +};
 +
 +#endif /* DOSBOX_MIDI_MT32_H */
 diff --git a/src/mt32options.h b/src/mt32options.h
 new file mode 100644
-index 0000000..4d67069
+index 0000000..aebf042
 --- /dev/null
 +++ b/src/mt32options.h
 @@ -0,0 +1,92 @@
@@ -387,7 +406,7 @@ index 0000000..4d67069
 +Pstring->Set_help("Name of the directory where MT-32 Control and PCM ROM files can be found. Emulation requires these files to work.\n"
 +	"  Accepted file names are as follows:\n"
 +	"    MT32_CONTROL.ROM or CM32L_CONTROL.ROM - control ROM file.\n"
-+	"    MT32_PCM.ROM or CM32L_PCM.ROM - PCM ROM file.\n");
++	"    MT32_PCM.ROM or CM32L_PCM.ROM - PCM ROM file.");
 +
 +Pbool = secprop->Add_bool("mt32.reverse.stereo",Property::Changeable::WhenIdle,false);
 +Pbool->Set_help("Reverse stereo channels for MT-32 output");
