@@ -59,10 +59,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
   list(APPEND mt32emu_qt_SOURCES src/audiodrv/WinMMAudioDriver.cpp)
   set(EXT_LIBS ${EXT_LIBS} winmm)
 elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  find_package(PORTAUDIO REQUIRED)
   add_definitions(-DWITH_COREMIDI_DRIVER -DWITH_COREAUDIO_DRIVER)
-  list(APPEND mt32emu_qt_SOURCES src/mididrv/CoreMidiDriver.cpp)
-  set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework CoreMIDI")
+  list(APPEND mt32emu_qt_SOURCES
+    src/mididrv/CoreMidiDriver.cpp
+    src/audiodrv/CoreAudioDriver.cpp
+)
+  set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework AudioToolbox -framework CoreMIDI")
 else()
   find_package(ALSA)
   if(NOT (ALSA_FOUND AND mt32emu-qt_WITH_ALSA_MIDI_DRIVER))

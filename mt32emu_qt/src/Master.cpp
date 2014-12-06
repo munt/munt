@@ -24,6 +24,9 @@
 #ifdef WITH_WINMM_AUDIO_DRIVER
 #include "audiodrv/WinMMAudioDriver.h"
 #endif
+#ifdef WITH_COREAUDIO_DRIVER
+#include "audiodrv/CoreAudioDriver.h"
+#endif
 #ifdef WITH_ALSA_AUDIO_DRIVER
 #include "audiodrv/AlsaAudioDriver.h"
 #endif
@@ -122,6 +125,9 @@ Master::~Master() {
 void Master::initAudioDrivers() {
 #ifdef WITH_WINMM_AUDIO_DRIVER
 	audioDrivers.append(new WinMMAudioDriver(this));
+#endif
+#ifdef WITH_COREAUDIO_DRIVER
+	audioDrivers.append(new CoreAudioDriver(this));
 #endif
 #ifdef WITH_ALSA_AUDIO_DRIVER
 	audioDrivers.append(new AlsaAudioDriver(this));
