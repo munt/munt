@@ -48,8 +48,19 @@ void CoreAudioStream::renderOutputBuffer(void *userData, AudioQueueRef queue, Au
 	CoreAudioStream *stream = (CoreAudioStream *)userData;
 	const MasterClockNanos nanosNow = MasterClock::getClockNanos();
 	quint32 framesInAudioBuffer = 0;
-	if (stream->settings.advancedTiming) {
-		//framesInAudioBuffer = quint32((timeInfo->outputBufferDacTime - Pa_GetStreamTime(stream->stream)) * Pa_GetStreamInfo(stream->stream)->sampleRate);
+	if (queue == NULL) {
+		// Priming the buffers, skip timestamp handling
+		queue = stream->audioQueue;
+	} else if (stream->settings.advancedTiming) {
+		AudioTimeStamp audioTimeStamp;
+		OSStatus res = AudioQueueGetCurrentTime(queue, NULL, &audioTimeStamp, NULL);
+		if (res) {
+			qDebug() << "CoreAudio: AudioQueueGetCurrentTime() failed with error code:" << res;
+		} else if (audioTimeStamp.mFlags & kAudioTimeStampSampleTimeValid) {
+			framesInAudioBuffer = quint32(stream->renderedFramesCount - audioTimeStamp.mSampleTime);
+		} else {
+			qDebug() << "CoreAudio: AudioQueueGetCurrentTime() returns invalid sample time";
+		}
 	}
 	stream->updateTimeInfo(nanosNow, framesInAudioBuffer);
 
@@ -75,7 +86,7 @@ bool CoreAudioStream::start() {
 		return false;
 	}
 
-	for (int i = 0; i < 3; i++) {
+	for (uint i = 0; i < numberOfBuffers; i++) {
 		res = AudioQueueAllocateBuffer(audioQueue, bufferByteSize, buffers + i);
 		if (res || buffers[i] == NULL) {
 			qDebug() << "CoreAudio: AudioQueueAllocateBuffer() failed with error code" << res;
@@ -86,7 +97,7 @@ bool CoreAudioStream::start() {
 		}
 		buffers[i]->mAudioDataByteSize = bufferByteSize;
 		// Prime the buffer allocated
-		renderOutputBuffer(this, audioQueue, buffers[i]);
+		renderOutputBuffer(this, NULL, buffers[i]);
 	}
 
 	res = AudioQueueStart(audioQueue, NULL);

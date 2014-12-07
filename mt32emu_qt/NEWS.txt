@@ -7,7 +7,7 @@ Next release:
 	  For best performance, libsoxr is supported. Libsamplerate is also supported as it is widely available.
 	  As a worst case, the integrated linear interpolator can be used (it's fast but the quality...).
 	* Added a new combo box into the Synth Properties dialog that allows to choose analogue circuits emulation method.
-	* Portaudio now required for OS X builds as there is no other audio support available by now.
+	* Added CoreAudio driver for OS X. Portaudio is no longer required for OS X builds.
 	* Incorporated MidiStreamParser class from libmt32emu. This fixes long standing issue with Windows MIDI driver
 	  and MIDI-in port handler that prevented receiving SysEx fragments or multi-SysEx packets sent in a single buffer.
 	  Windows MIDI driver also supports running status for short messages now. OSS MIDI and CoreMIDI drivers also improved by this.
