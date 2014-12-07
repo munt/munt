@@ -19,11 +19,29 @@
 #include "../Master.h"
 #include "../QSynth.h"
 
+static const uint DEFAULT_CHUNK_MS = 20;
+static const uint DEFAULT_AUDIO_LATENCY = 60;
+static const uint DEFAULT_MIDI_LATENCY = 0;
+
 CoreAudioStream::CoreAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, quint32 useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), audioQueue(NULL), bufferByteSize(4096*4) {}
+	AudioStream(useSettings, useSynth, useSampleRate), audioQueue(NULL)
+{
+	const uint bufferSize = (settings.chunkLen * sampleRate) / MasterClock::MILLIS_PER_SECOND;
+	bufferByteSize = bufferSize << 2;
+	// Number of buffers should be ceil(audioLatencyFrames / bufferSize)
+	numberOfBuffers = (audioLatencyFrames + bufferSize - 1) / bufferSize;
+	buffers = new AudioQueueBufferRef[numberOfBuffers];
+	midiLatencyFrames -= audioLatencyFrames;
+	// Refine audioLatencyFrames as bufferSize * number of buffers, no less then the specified value
+	audioLatencyFrames = numberOfBuffers * bufferSize;
+	midiLatencyFrames += audioLatencyFrames;
+	qDebug() << "CoreAudioDriver: Using" << numberOfBuffers << "buffers, buffer size:" << bufferSize << "frames, audio latency:" << audioLatencyFrames << "frames.";
+	qDebug() << "CoreAudio: total MIDI latency:" << midiLatencyFrames << "frames";
+}
 
 CoreAudioStream::~CoreAudioStream() {
 	close();
+	delete[] buffers;
 }
 
 void CoreAudioStream::renderOutputBuffer(void *userData, AudioQueueRef queue, AudioQueueBufferRef buffer) {
@@ -80,10 +98,18 @@ bool CoreAudioStream::start() {
 		return false;
 	}
 
+	// Reset timeInfo after priming the buffer
+	timeInfoIx = 0;
+	timeInfo[0].lastPlayedFramesCount = 0;
+	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
+	timeInfo[0].actualSampleRate = sampleRate;
+	timeInfo[1] = timeInfo[0];
+
 	return true;
 }
 
 void CoreAudioStream::close() {
+	if (audioQueue == NULL) return;
 	OSStatus res = AudioQueueDispose(audioQueue, true);
 	if (res) qDebug() << "CoreAudio: AudioQueueDispose() failed with error code" << res;
 	audioQueue = NULL;
@@ -114,4 +140,19 @@ const QList<const AudioDevice *> CoreAudioDriver::createDeviceList() {
 	QList<const AudioDevice *> deviceList;
 	deviceList.append(new CoreAudioDevice(*this));
 	return deviceList;
+}
+
+void CoreAudioDriver::validateAudioSettings(AudioDriverSettings &useSettings) const {
+	if (useSettings.midiLatency == 0) {
+		useSettings.midiLatency = DEFAULT_MIDI_LATENCY;
+	}
+	if (useSettings.audioLatency == 0) {
+		useSettings.audioLatency = DEFAULT_AUDIO_LATENCY;
+	}
+	if (useSettings.chunkLen == 0) {
+		useSettings.chunkLen = DEFAULT_CHUNK_MS;
+	}
+	if (useSettings.audioLatency < useSettings.chunkLen) {
+		useSettings.chunkLen = useSettings.audioLatency;
+	}
 }

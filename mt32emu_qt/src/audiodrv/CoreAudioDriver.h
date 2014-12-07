@@ -13,8 +13,9 @@ class CoreAudioDriver;
 class CoreAudioStream : public AudioStream {
 private:
 	AudioQueueRef audioQueue;
-	AudioQueueBufferRef buffers[3];
-	const uint bufferByteSize;
+	AudioQueueBufferRef *buffers;
+	uint numberOfBuffers;
+	uint bufferByteSize;
 
 	static void renderOutputBuffer(void *userData, AudioQueueRef queue, AudioQueueBufferRef buffer);
 
@@ -36,7 +37,8 @@ public:
 
 class CoreAudioDriver : public AudioDriver {
 private:
-	void validateAudioSettings(AudioDriverSettings &) const {}
+	void validateAudioSettings(AudioDriverSettings &) const;
+
 public:
 	CoreAudioDriver(Master *useMaster);
 	~CoreAudioDriver();
