@@ -30,7 +30,6 @@
 #include "smf.h"
 
 static const int DEFAULT_BUFFER_SIZE = 128 * 1024;
-static const int DEFAULT_SAMPLE_RATE = MT32Emu::SAMPLE_RATE;
 
 // Maximum number of frames to render in each pass while waiting for reverb to become inactive.
 static const unsigned int MAX_REVERB_END_FRAMES = 8192;
@@ -47,6 +46,13 @@ static const MT32Emu::DACInputMode DAC_INPUT_MODES[] = {
 	MT32Emu::DACInputMode_GENERATION2
 };
 
+static const MT32Emu::AnalogOutputMode ANALOG_OUTPUT_MODES[] = {
+	MT32Emu::AnalogOutputMode_DIGITAL_ONLY,
+	MT32Emu::AnalogOutputMode_COARSE,
+	MT32Emu::AnalogOutputMode_ACCURATE,
+	MT32Emu::AnalogOutputMode_OVERSAMPLED
+};
+
 struct Options {
 	gchar **inputFilenames;
 	gchar *outputFilename;
@@ -58,6 +64,7 @@ struct Options {
 	gint sampleRate;
 
 	MT32Emu::DACInputMode dacInputMode;
+	MT32Emu::AnalogOutputMode analogOutputMode;
 	int rawChannelMap[8];
 	int rawChannelCount;
 
@@ -94,6 +101,7 @@ static void freeOptions(Options *options) {
 
 static bool parseOptions(int argc, char *argv[], Options *options) {
 	gint dacInputModeIx = 0;
+	gint analogOutputModeIx = 0;
 	gint bufferFrameCount = DEFAULT_BUFFER_SIZE;
 	gint renderMinFrames = 0;
 	gint renderMaxFrames = -1;
@@ -105,9 +113,9 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	options->quiet = false;
 
 	options->romDir = NULL;
-	options->sampleRate = DEFAULT_SAMPLE_RATE;
 
 	options->dacInputMode = DAC_INPUT_MODES[0];
+	options->analogOutputMode = ANALOG_OUTPUT_MODES[0];
 	options->rawChannelCount = 0;
 
 	options->recordMaxStartSilentFrames = 0;
@@ -126,7 +134,13 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		// buffer-size determines the maximum number of frames to be rendered by the emulator in one pass.
 		// This can have a big impact on performance (Generally more at a time=better).
 		{"buffer-size", 'b', 0, G_OPTION_ARG_INT, &bufferFrameCount, "Buffer size in frames (minimum: 1)", "<frame_count>"},  // FIXME: Show default
-		{"sample-rate", 'r', 0, G_OPTION_ARG_INT, &options->sampleRate, "Sample rate in Hz (minimum: 1, default: 32000)", "<sample_rate>"},
+//		{"sample-rate", 'r', 0, G_OPTION_ARG_INT, &options->sampleRate, "Sample rate in Hz (minimum: 1, default: auto)", "<sample_rate>"},
+
+		{"analog-output-mode", 'a', 0, G_OPTION_ARG_INT, &analogOutputModeIx, "Analogue low-pass filter emulation mode (default: 0)\n"
+		 "                 0: DISABLED\n"
+		 "                 1: COARSE\n"
+		 "                 2: ACCURATE\n"
+		 "                 3: OVERSAMPLED", "<analog_output_mode>"},
 
 		{"dac-input-mode", 'd', 0, G_OPTION_ARG_INT, &dacInputModeIx, "LA-32 to DAC input mode (default: 0)\n"
 		 "                Ignored if -w is used (in which case 1/PURE is always used)\n"
@@ -165,6 +179,10 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	bool parseSuccess = g_option_context_parse(context, &argc, &argv, &error) != 0;
 	if (!parseSuccess) {
 		fprintf(stderr, "Option parsing failed: %s\n", error->message);
+	}
+	if (analogOutputModeIx < 0 || analogOutputModeIx > 3) {
+		fprintf(stderr, "analog-output-mode must be between 0 and 3\n");
+		parseSuccess = false;
 	}
 	if (dacInputModeIx < 0 || dacInputModeIx > 3) {
 		fprintf(stderr, "dac-input-mode must be between 0 and 3\n");
@@ -223,6 +241,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		fprintf(stderr, "No input files specified\n");
 		parseSuccess = false;
 	}
+	options->analogOutputMode = ANALOG_OUTPUT_MODES[analogOutputModeIx];
 	g_strfreev(rawStreams);
 	if (options->rawChannelCount > 0) {
 		options->dacInputMode = MT32Emu::DACInputMode_PURE;
@@ -644,8 +663,10 @@ int main(int argc, char *argv[]) {
 	const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
 	const MT32Emu::ROMImage *pcmROMImage = MT32Emu::ROMImage::makeROMImage(&pcmROMFile);
 	MT32Emu::Synth *synth = new MT32Emu::Synth();
-	if (synth->open(*controlROMImage, *pcmROMImage)) {
+	if (synth->open(*controlROMImage, *pcmROMImage, options.analogOutputMode)) {
 		synth->setDACInputMode(options.dacInputMode);
+		options.sampleRate = synth->getStereoOutputSampleRate();
+		printf("Using output sample rate %d Hz\n", options.sampleRate);
 
 		FILE *outputFile;
 		bool outputFileExists = false;
