@@ -233,6 +233,7 @@ bool WinMMAudioStream::start(int deviceIndex) {
 			return false;
 		}
 	}
+	timeInfo[timeInfoIx].lastPlayedNanos = MasterClock::getClockNanos();
 
 	processingThreadHandle = _beginthread(processingThread, 1024*1024, this);
 	if (processingThreadHandle == (uintptr_t)-1L) {
