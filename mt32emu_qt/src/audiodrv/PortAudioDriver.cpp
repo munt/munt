@@ -21,8 +21,6 @@
 
 using namespace MT32Emu;
 
-static const int FRAME_SIZE = 4; // Stereo, 16-bit
-
 static bool paInitialised = false;
 
 static void dumpPortAudioDevices() {
