@@ -47,30 +47,33 @@ void *AlsaAudioStream::processingThread(void *userData) {
 	qDebug() << "ALSA audio: Processing thread started";
 	while (!audioStream.stopProcessing) {
 		MasterClockNanos nanosNow = MasterClock::getClockNanos();
-		quint32 framesInAudioBuffer;
+		quint32 framesInAudioBuffer = 0;
 		if (audioStream.settings.advancedTiming) {
 			snd_pcm_sframes_t delayp;
 			error = snd_pcm_delay(audioStream.stream, &delayp);
 			if (error < 0) {
 				qDebug() << "snd_pcm_delay failed:" << snd_strerror(error);
-				isErrorOccured = true;
-				break;
+//				isErrorOccured = true;
+//				break;
+			} else {
+				framesInAudioBuffer = (quint32)delayp;
 			}
-			framesInAudioBuffer = (quint32)delayp;
-		} else {
-			framesInAudioBuffer = 0;
 		}
 		audioStream.updateTimeInfo(nanosNow, framesInAudioBuffer);
 		audioStream.synth.render(audioStream.buffer, audioStream.bufferSize);
 		error = snd_pcm_writei(audioStream.stream, audioStream.buffer, audioStream.bufferSize);
 		if (error < 0) {
-			qDebug() << "snd_pcm_writei failed:" << snd_strerror(error);
-			isErrorOccured = true;
-			break;
+			qDebug() << "snd_pcm_writei failed:" << snd_strerror(error) << "-> recovering...";
+			error = snd_pcm_recover(audioStream.stream, error, 0);
+			if (error != 0) {
+				qDebug() << "snd_pcm_recover failed:" << snd_strerror(error) << "-> closing...";
+				isErrorOccured = true;
+				break;
+			}
 		} else if (error != (int)audioStream.bufferSize) {
 			qDebug() << "snd_pcm_writei failed. Written frames:" << error;
-			isErrorOccured = true;
-			break;
+//			isErrorOccured = true;
+//			break;
 		}
 		audioStream.renderedFramesCount += audioStream.bufferSize;
 	}
