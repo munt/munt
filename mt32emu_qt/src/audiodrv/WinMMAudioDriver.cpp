@@ -43,8 +43,10 @@ WinMMAudioStream::WinMMAudioStream(const AudioDriverSettings &useSettings, bool 
 	} else {
 		// Number of chunks should be ceil(bufferSize / chunkSize)
 		numberOfChunks = (audioLatencyFrames + chunkSize - 1) / chunkSize;
+		midiLatencyFrames -= audioLatencyFrames;
 		// Refine bufferSize as chunkSize * number of chunks, no less then the specified value
 		audioLatencyFrames = numberOfChunks * chunkSize;
+		midiLatencyFrames += audioLatencyFrames;
 		qDebug() << "WinMMAudioDriver: Using" << numberOfChunks << "chunks, chunk size:" << chunkSize << "frames, buffer size:" << audioLatencyFrames << "frames.";
 	}
 	buffer = new Bit16s[2 * audioLatencyFrames];
