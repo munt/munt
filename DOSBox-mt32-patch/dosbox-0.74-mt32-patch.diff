@@ -1,6 +1,6 @@
-commit 2ba72e8dbb3d5e7425302d08be346432101acfb7
+commit f060df708f8395f61b2cf03f8679f61ee78a6a49
 Author: sergm <sergm@bigmir.net>
-Date:   Thu Dec 4 10:11:36 2014 +0200
+Date:   Mon Dec 8 10:26:19 2014 +0200
 
     mt32emu patch
 
@@ -65,10 +65,10 @@ index 61d15e5..0ec8ebc 100644
  	Bitu cmd_len;
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 0000000..ebe809c
+index 0000000..eb8bf8f
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
-@@ -0,0 +1,264 @@
+@@ -0,0 +1,265 @@
 +#include <SDL_thread.h>
 +#include <SDL_endian.h>
 +#include "control.h"
@@ -132,7 +132,7 @@ index 0000000..ebe809c
 +	MT32Emu::AnalogOutputMode analogOutputMode = (MT32Emu::AnalogOutputMode)section->Get_int("mt32.analog");
 +
 +	synth = new MT32Emu::Synth(&reportHandler);
-+	if (!synth->open(*controlROMImage, *pcmROMImage, analogOutputMode)) {
++	if (!synth->open(*controlROMImage, *pcmROMImage, section->Get_int("mt32.partials"), analogOutputMode)) {
 +		delete synth;
 +		synth = NULL;
 +		LOG_MSG("MT32: Error initialising emulation");
@@ -156,6 +156,7 @@ index 0000000..ebe809c
 +	noise = section->Get_bool("mt32.verbose");
 +	renderInThread = section->Get_bool("mt32.thread");
 +
++	if (noise) LOG_MSG("MT32: Set maximum number of partials %d", synth->getPartialCount());
 +	if (noise) LOG_MSG("MT32: Adding mixer channel at sample rate %d", synth->getStereoOutputSampleRate());
 +	chan = MIXER_AddChannel(mixerCallBack, synth->getStereoOutputSampleRate(), "MT32");
 +	if (renderInThread) {
@@ -398,10 +399,10 @@ index 0000000..5ceabe7
 +#endif /* DOSBOX_MIDI_MT32_H */
 diff --git a/src/mt32options.h b/src/mt32options.h
 new file mode 100644
-index 0000000..aebf042
+index 0000000..8508215
 --- /dev/null
 +++ b/src/mt32options.h
-@@ -0,0 +1,92 @@
+@@ -0,0 +1,98 @@
 +Pstring = secprop->Add_string("mt32.romdir",Property::Changeable::WhenIdle,"");
 +Pstring->Set_help("Name of the directory where MT-32 Control and PCM ROM files can be found. Emulation requires these files to work.\n"
 +	"  Accepted file names are as follows:\n"
@@ -433,6 +434,12 @@ index 0000000..aebf042
 +	"Increasing this value may help to avoid underruns but also increases audio lag.\n"
 +	"Cannot be set less than or equal to mt32.chunk value.\n"
 +	"Valid for rendering in separate thread only.");
++
++const char *mt32partials[] = {"8", "9", "32", "255", "256",0};
++Pint = secprop->Add_int("mt32.partials",Property::Changeable::WhenIdle,32);
++Pint->Set_values(mt32partials);
++Pint->SetMinMax(8,256);
++Pint->Set_help("The maximum number of partials playing simultaneously.");
 +
 +const char *mt32DACModes[] = {"0", "1", "2", "3",0};
 +Pint = secprop->Add_int("mt32.dac",Property::Changeable::WhenIdle,0);
