@@ -21,7 +21,7 @@
 
 static const uint DEFAULT_CHUNK_MS = 20;
 static const uint DEFAULT_AUDIO_LATENCY = 60;
-static const uint DEFAULT_MIDI_LATENCY = 0;
+static const uint DEFAULT_MIDI_LATENCY = 30;
 
 CoreAudioStream::CoreAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, quint32 useSampleRate) :
 	AudioStream(useSettings, useSynth, useSampleRate), audioQueue(NULL)
