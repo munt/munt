@@ -79,7 +79,7 @@ bool CoreAudioStream::start() {
 
 	qDebug() << "CoreAudio: using default audio output device";
 
-	AudioStreamBasicDescription dataFormat = {sampleRate, kAudioFormatLinearPCM, kAudioFormatFlagIsSignedInteger, 4, 1, 4, 2, 16, 0};
+	AudioStreamBasicDescription dataFormat = {sampleRate, kAudioFormatLinearPCM, kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsSignedInteger, 4, 1, 4, 2, 16, 0};
 	OSStatus res = AudioQueueNewOutput(&dataFormat, renderOutputBuffer, this, CFRunLoopGetCurrent(), kCFRunLoopCommonModes, 0, &audioQueue);
 	if (res || audioQueue == NULL) {
 		qDebug() << "CoreAudio: AudioQueueNewOutput() failed with error code:" << res;

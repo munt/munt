@@ -101,12 +101,7 @@ void QtAudioStream::start() {
 	format.setChannels(2);
 	format.setSampleSize(16);
 	format.setCodec("audio/pcm");
-	// libmt32emu produces samples in native byte order
-#if Q_BYTE_ORDER == Q_LITTLE_ENDIAN
-	format.setByteOrder(QAudioFormat::LittleEndian);
-#else
-	format.setByteOrder(QAudioFormat::BigEndian);
-#endif
+	// libmt32emu produces samples in native byte order which is the default byte order used in QAudioFormat
 	format.setSampleType(QAudioFormat::SignedInt);
 	audioOutput = new QAudioOutput(format);
 	waveGenerator = new WaveGenerator(*this);

@@ -110,6 +110,7 @@ private:
 
 public:
 	static PartialState getPartialState(int partialPhase);
+	static void convertSamplesFromNativeEndian(MT32Emu::Bit16s *buffer, uint sampleCount, QSysInfo::Endian targetByteOrder);
 
 	QSynth(QObject *parent = NULL);
 	~QSynth();

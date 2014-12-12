@@ -106,7 +106,7 @@ bool AlsaAudioStream::start(const char *deviceID) {
 	}
 
 	// Set Sample format to use
-	error = snd_pcm_set_params(stream, SND_PCM_FORMAT_S16_LE, SND_PCM_ACCESS_RW_INTERLEAVED, /* channels */ 2,
+	error = snd_pcm_set_params(stream, SND_PCM_FORMAT_S16, SND_PCM_ACCESS_RW_INTERLEAVED, /* channels */ 2,
 		sampleRate, /* allow resampling */ 1, settings.audioLatency * MasterClock::MICROS_PER_MILLISECOND);
 	if (error < 0) {
 		qDebug() << "snd_pcm_set_params failed:" << snd_strerror(error);

@@ -191,6 +191,8 @@ void AudioFileWriter::run() {
 		while (frameCount > 0) {
 			uint framesToRender = qMin(bufferSize, frameCount);
 			synth->render(buffer, framesToRender);
+			// libmt32emu produces samples in native byte order
+			QSynth::convertSamplesFromNativeEndian(buffer, framesToRender << 1, waveMode ? QSysInfo::LittleEndian : QSysInfo::BigEndian);
 			qint64 bytesToWrite = framesToRender * FRAME_SIZE;
 			char *bufferPos = (char *)buffer;
 			if (skipSilence) {

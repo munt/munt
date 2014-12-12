@@ -91,6 +91,14 @@ void QReportHandler::onProgramChanged(int partNum, int timbreGroup, const char p
 	emit programChanged(partNum, timbreGroup, QString().fromAscii(patchName));
 }
 
+void QSynth::convertSamplesFromNativeEndian(Bit16s *buffer, uint sampleCount, QSysInfo::Endian targetByteOrder) {
+	if (QSysInfo::ByteOrder == targetByteOrder) return;
+	while ((sampleCount--) > 0) {
+		Bit16s tmp = qbswap<Bit16s>(*buffer);
+		*(buffer++) = tmp;
+	}
+}
+
 QSynth::QSynth(QObject *parent) :
 	QObject(parent), state(SynthState_CLOSED), midiMutex(QMutex::Recursive),
 	controlROMImage(NULL), pcmROMImage(NULL), reportHandler(this), sampleRateConverter(NULL)
