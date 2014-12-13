@@ -77,6 +77,22 @@ snd_seq_t *seq_handle = NULL;
 /* Buffer infomation */
 #define FRAGMENT_SIZE 256 // 2 milliseconds
 #define PERIOD_SIZE   128 // 1 millisecond
+
+#if ANALOG_MODE == 3
+static const MT32Emu::AnalogOutputMode ANALOG_OUTPUT_MODE = MT32Emu::AnalogOutputMode_OVERSAMPLED;
+const int SAMPLE_RATE = 96000;
+#elif ANALOG_MODE == 2
+static const MT32Emu::AnalogOutputMode ANALOG_OUTPUT_MODE = MT32Emu::AnalogOutputMode_ACCURATE;
+const int SAMPLE_RATE = 48000;
+#else
+#if ANALOG_MODE == 1
+static const MT32Emu::AnalogOutputMode ANALOG_OUTPUT_MODE = MT32Emu::AnalogOutputMode_COARSE;
+#else
+static const MT32Emu::AnalogOutputMode ANALOG_OUTPUT_MODE = MT32Emu::AnalogOutputMode_DIGITAL_ONLY;
+#endif
+const int SAMPLE_RATE = 32000;
+#endif
+
 int buffermsec = 100;
 int minimum_msec = 40;
 int maximum_msec = 1500;
@@ -89,7 +105,7 @@ int events_qd = 0;
 
 int tempo = -1, ppq = -1;
 double timepertick = -1;
-double bytespermsec = (double)(MT32Emu::SAMPLE_RATE * 2 * 2) / 1000000.0;
+double bytespermsec = (double)(SAMPLE_RATE * 2 * 2) / 1000000.0;
 
 int channelmap[16];
 int channeluse[16];
@@ -143,7 +159,7 @@ int alsa_set_buffer_time(int msec)
 	unsigned int v, rate, periods;
 	double sec, tpp;
 	
-	rate = MT32Emu::SAMPLE_RATE;
+	rate = SAMPLE_RATE;
 	channels = 2;
 	sec = (double)msec / 1000.0;
 	
@@ -160,7 +176,7 @@ int alsa_set_buffer_time(int msec)
 	}
 			
 	/* Set sample format */
-	err = snd_pcm_hw_params_set_format(pcm_handle, pcm_hwparams, SND_PCM_FORMAT_S16_LE);
+	err = snd_pcm_hw_params_set_format(pcm_handle, pcm_hwparams, SND_PCM_FORMAT_S16);
 	if (err < 0) 
 	{
 		fprintf(stderr, "Error setting format: %s\n", snd_strerror(err));
@@ -829,7 +845,7 @@ int init_alsadrv()
 		exit(1);
 			
 	/* create pcm thread if needed */
-	alsa_init_pcm(MT32Emu::SAMPLE_RATE, 2);
+	alsa_init_pcm(SAMPLE_RATE, 2);
 		
 	/* create communication pipe from alsa reader to processor */
 	if (socketpair(PF_LOCAL, SOCK_STREAM, 0, eventpipe))
@@ -911,7 +927,7 @@ void reload_mt32_core(int rv)
 
 	/* create MT32Synth object */
 	mt32 = new MT32Emu::Synth(mt32ReportHandler);
-	if (mt32->open(*controlROMImage, *pcmROMImage) == false) {
+	if (mt32->open(*controlROMImage, *pcmROMImage, ANALOG_OUTPUT_MODE) == false) {
 		report(DRV_MT32FAIL);
 		exit(1);
 	}
