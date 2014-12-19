@@ -3,8 +3,6 @@ Next release:
 	* Introduced support for emulation of analogue circuits of the hardware units.
 	* Synth renderer now produces output at different sample rates depending on the analogue circuits emulation mode in effect.
 	* Introduced full-featured MIDI stream parser class which can be used on incoming raw MIDI stream.
-	* Fixed long standing issue with Windows MIDI driver that prevented receiving SysEx fragments or multi-SysEx packets
-	  sent in a single buffer. Running status for short messages is also supported now.
 	* Removed internal Portaudio copy and related build option munt_WITH_INTERNAL_PORTAUDIO as it becomes obsolete.
 	* Minimum required version of Cmake is now 2.8.4. Added support for version 3.0.2.
 

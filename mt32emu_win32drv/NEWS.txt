@@ -1,3 +1,9 @@
+Next release:
+
+	* Fixed long standing issue with Windows MIDI driver that prevented receiving SysEx fragments or multi-SysEx packets
+	  sent in a single buffer. Running status for short messages is also supported now.
+	* Fixed unreliable synth close which may lead to crashes client MIDI applications when mt32emu_qt app is started and MIDI data is rerouted.
+
 2014-06-09:
 
 	1.0.5 released.

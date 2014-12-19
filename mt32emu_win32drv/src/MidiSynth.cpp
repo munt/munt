@@ -78,6 +78,7 @@ private:
 	HWAVEOUT	hWaveOut;
 	WAVEHDR		*WaveHdr;
 	HANDLE		hEvent;
+	HANDLE		hThread;
 	DWORD		chunks;
 
 	volatile UINT64 prevPlayPosition;
@@ -88,6 +89,7 @@ public:
 		DWORD callbackType = CALLBACK_NULL;
 		DWORD_PTR callback = (DWORD_PTR)NULL;
 		hEvent = NULL;
+		hThread = NULL;
 		if (!useRingBuffer) {
 			hEvent = CreateEvent(NULL, false, true, NULL);
 			callback = (DWORD_PTR)hEvent;
@@ -134,6 +136,13 @@ public:
 	int Close() {
 		stopProcessing = true;
 		SetEvent(hEvent);
+		if (hThread != NULL) {
+#ifdef ENABLE_DEBUG_OUTPUT
+			std::cout << "Waiting for rendering thread to die\n";
+#endif
+			WaitForSingleObject(hThread, INFINITE);
+			hThread = NULL;
+		}
 		int wResult = waveOutReset(hWaveOut);
 		if (wResult != MMSYSERR_NOERROR) {
 			MessageBox(NULL, L"Failed to Reset WaveOut", L"MT32", MB_OK | MB_ICONEXCLAMATION);
@@ -170,7 +179,7 @@ public:
 				return 4;
 			}
 		}
-		HANDLE hThread = (HANDLE)_beginthread(RenderingThread, 16384, this);
+		hThread = (HANDLE)_beginthread(RenderingThread, 16384, this);
 		SetThreadPriority(hThread, THREAD_PRIORITY_TIME_CRITICAL);
 		return 0;
 	}
@@ -252,7 +261,7 @@ void WaveOutWin32::RenderingThread(void *) {
 					allBuffersRendered = false;
 					midiSynth.Render((Bit16s *)waveOut.WaveHdr[i].lpData, waveOut.WaveHdr[i].dwBufferLength / 4);
 					if (waveOutWrite(waveOut.hWaveOut, &waveOut.WaveHdr[i], sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
-						MessageBox(NULL, L"Failed to write block to device", L"MT32", MB_OK | MB_ICONEXCLAMATION);
+						MessageBox(NULL, L"Failed to write block to wave device", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 					}
 				}
 			}
@@ -263,6 +272,9 @@ void WaveOutWin32::RenderingThread(void *) {
 			}
 		}
 	}
+#ifdef ENABLE_DEBUG_OUTPUT
+	std::cout << "Rendering thread stopped\n";
+#endif
 }
 
 static class : public ReportHandler {
