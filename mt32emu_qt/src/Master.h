@@ -15,6 +15,8 @@ class QDropEvent;
 class Master : public QObject {
 	Q_OBJECT
 private:
+	static void showCommandLineHelp();
+
 	QList<SynthRoute *> synthRoutes;
 	QList<AudioDriver *> audioDrivers;
 	QList<const AudioDevice *> audioDevices;
@@ -30,6 +32,7 @@ private:
 	qint64 lastAudioDeviceScan;
 
 	bool stopping;
+	unsigned int maxSessions;
 
 	void init();
 	~Master();
@@ -86,6 +89,7 @@ signals:
 	void playMidiFiles(const QStringList &);
 	void convertMidiFiles(const QStringList &);
 	void mainWindowTitleUpdated(const QString &);
+	void maxSessionsFinished();
 };
 
 #endif

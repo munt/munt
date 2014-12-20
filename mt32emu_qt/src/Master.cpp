@@ -57,6 +57,7 @@
 
 void Master::init() {
 	stopping = false;
+	maxSessions = 0;
 
 	moveToThread(QCoreApplication::instance()->thread());
 
@@ -178,14 +179,78 @@ Master *Master::getInstance() {
 	return &master;
 }
 
+void Master::showCommandLineHelp() {
+	QString appName = QFileInfo(QCoreApplication::arguments().at(0)).fileName();
+	QMessageBox::information(NULL, "Information",
+		"Command line format:\n"
+		"	" + appName + " [option...] [<command> file...]\n"
+		"\n"
+		"Options:\n"
+		"-profile <profile name>\n"
+		"	override default synth profile with specified profile\n"
+		"	during this run only.\n"
+		"-max_sessions <number of sessions>\n"
+		"	exit after this number of MIDI sessions are finished.\n"
+		"\n"
+		"Commands:\n"
+		"play <SMF file...>\n"
+		"	enqueue specified standard MIDI files into the internal\n"
+		"	MIDI player for playback and start playing.\n"
+		"convert <output file> <SMF file...>\n"
+		"	convert specified standard MIDI files to a WAV/RAW wave\n"
+		"	output file and exit.\n"
+	);
+}
+
 void Master::processCommandLine(QStringList args) {
-	if (args.count() < 3) return;
-	QString command = args.at(1);
-	QStringList files = args.mid(2);
+	int argIx = 1;
+	QString command = args.at(argIx++);
+	while (command.startsWith('-')) {
+		if (QString::compare(command, "-profile", Qt::CaseInsensitive) == 0) {
+			if (args.count() > argIx) {
+				QString profile = args.at(argIx++);
+				if (enumSynthProfiles().contains(profile, Qt::CaseInsensitive)) {
+					synthProfileName = profile;
+				} else {
+					QMessageBox::warning(NULL, "Error", "The profile name specified in command line is invalid.\nOption \"-profile\" ignored.");
+				}
+			} else {
+				QMessageBox::warning(NULL, "Error", "The profile name must be specified in command line with \"-profile\" option.");
+				showCommandLineHelp();
+			}
+		} else if (QString::compare(command, "-max_sessions", Qt::CaseInsensitive) == 0) {
+			if (args.count() > argIx) {
+				maxSessions = args.at(argIx++).toUInt();
+				if (maxSessions == 0) QMessageBox::warning(NULL, "Error", "The maximum number of sessions specified in command line is invalid.\nOption \"-max_sessions\" ignored.");
+			} else {
+				QMessageBox::warning(NULL, "Error", "The maximum number of sessions must be specified in command line with \"-max_sessions\" option.");
+				showCommandLineHelp();
+			}
+		} else {
+			QMessageBox::warning(NULL, "Error", "Illegal command line option " + command + " specified.");
+			showCommandLineHelp();
+		}
+		if (args.count() == argIx) return;
+		command = args.at(argIx++);
+	}
+	if (args.count() == argIx) {
+		QMessageBox::warning(NULL, "Error", "The file list must be specified in command line with a command.");
+		showCommandLineHelp();
+		return;
+	}
+	QStringList files = args.mid(argIx);
 	if (QString::compare(command, "play", Qt::CaseInsensitive) == 0) {
 		emit playMidiFiles(files);
 	} else if (QString::compare(command, "convert", Qt::CaseInsensitive) == 0) {
-		if (args.count() > 3) emit convertMidiFiles(files);
+		if (args.count() > (argIx + 1)) {
+			emit convertMidiFiles(files);
+		} else {
+			QMessageBox::warning(NULL, "Error", "The file list must be specified in command line with " + command + " command.");
+			showCommandLineHelp();
+		}
+	} else {
+		QMessageBox::warning(NULL, "Error", "Illegal command " + command + " specified in command line.");
+		showCommandLineHelp();
 	}
 }
 
@@ -449,6 +514,10 @@ void Master::deleteMidiSession(MidiSession *midiSession) {
 	emit synthRouteRemoved(synthRoute);
 	synthRoute->close();
 	delete synthRoute;
+	if ((maxSessions > 0) && (--maxSessions == 0)) {
+		qDebug() << "Exitting due to maximum number of sessions finished";
+		maxSessionsFinished();
+	}
 }
 
 bool Master::canCreateMidiPort() {

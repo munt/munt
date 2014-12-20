@@ -61,6 +61,7 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	connect(master, SIGNAL(playMidiFiles(const QStringList &)), SLOT(handlePlayMidiFiles(const QStringList &)), Qt::QueuedConnection);
 	connect(master, SIGNAL(convertMidiFiles(const QStringList &)), SLOT(handleConvertMidiFiles(const QStringList &)), Qt::QueuedConnection);
 	connect(master, SIGNAL(mainWindowTitleUpdated(const QString &)), SLOT(setWindowTitle(const QString &)));
+	connect(master, SIGNAL(maxSessionsFinished()), SLOT(close()));
 
 	if (master->getTrayIcon() != NULL) {
 		connect(master->getTrayIcon(), SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SLOT(handleTrayIconActivated(QSystemTrayIcon::ActivationReason)));
