@@ -89,7 +89,6 @@ public:
 
 private:
 	const SynthRoute * const synthRoute;
-	QTimer timer;
 
 	const Ui::SynthWidget * const ui;
 	LCDWidget lcdWidget;

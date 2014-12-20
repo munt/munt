@@ -22,7 +22,6 @@
 #include "ui_SynthWidget.h"
 #include "font_6x8.h"
 
-static const int SYNTH_MONITOR_UPDATE_MILLIS = 30;
 static const MasterClockNanos LCD_MESSAGE_DISPLAYING_NANOS = 2 * MasterClock::NANOS_PER_SECOND;
 static const MasterClockNanos LCD_TIMBRE_NAME_DISPLAYING_NANOS = 1 * MasterClock::NANOS_PER_SECOND;
 static const MasterClockNanos MIDI_MESSAGE_LED_MINIMUM_NANOS = 60 * MasterClock::NANOS_PER_MILLISECOND;
@@ -71,7 +70,6 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 	synthRoute->connectReportHandler(SIGNAL(lcdMessageDisplayed(const QString)), &lcdWidget, SLOT(handleLCDMessageDisplayed(const QString)));
 	synthRoute->connectReportHandler(SIGNAL(midiMessagePlayed()), this, SLOT(handleMIDIMessagePlayed()));
 	synthRoute->connectReportHandler(SIGNAL(masterVolumeChanged(int)), &lcdWidget, SLOT(handleMasterVolumeChanged(int)));
-	connect(&timer, SIGNAL(timeout()), SLOT(handleUpdate()));
 }
 
 SynthStateMonitor::~SynthStateMonitor() {
@@ -85,9 +83,9 @@ SynthStateMonitor::~SynthStateMonitor() {
 
 void SynthStateMonitor::enableMonitor(bool enable) {
 	if (enable) {
-		timer.start(SYNTH_MONITOR_UPDATE_MILLIS);
+		synthRoute->connectSynth(SIGNAL(audioBlockRendered()), this, SLOT(handleUpdate()));
 	} else {
-		timer.stop();
+		disconnect(this, SLOT(handleUpdate()));
 	}
 }
 

@@ -180,6 +180,7 @@ void QSynth::render(Bit16s *buffer, uint length) {
 
 		// Synth is closed, simply erase buffer content
 		memset(buffer, 0, length << 2);
+		emit audioBlockRendered();
 		return;
 	}
 #if MT32EMU_USE_FLOAT_SAMPLES
@@ -204,6 +205,7 @@ void QSynth::render(Bit16s *buffer, uint length) {
 	}
 #endif
 	synthMutex->unlock();
+	emit audioBlockRendered();
 }
 
 bool QSynth::open(uint targetSampleRate, const QString useSynthProfileName) {
