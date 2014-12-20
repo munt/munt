@@ -1540,7 +1540,10 @@ void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample 
 // In GENERATION2 units, the output from LA32 goes to the Boss chip already bit-shifted.
 // In NICE mode, it's also better to increase volume before the reverb processing to preserve accuracy.
 void Synth::produceLA32Output(Sample *buffer, Bit32u len) {
-#if !MT32EMU_USE_FLOAT_SAMPLES
+#if MT32EMU_USE_FLOAT_SAMPLES
+	(void)buffer;
+	(void)len;
+#else
 	switch (dacInputMode) {
 		case DACInputMode_GENERATION2:
 			while (len--) {
@@ -1561,7 +1564,10 @@ void Synth::produceLA32Output(Sample *buffer, Bit32u len) {
 }
 
 void Synth::convertSamplesToOutput(Sample *buffer, Bit32u len) {
-#if !MT32EMU_USE_FLOAT_SAMPLES
+#if MT32EMU_USE_FLOAT_SAMPLES
+	(void)buffer;
+	(void)len;
+#else
 	if (dacInputMode == DACInputMode_GENERATION1) {
 		while (len--) {
 			*buffer = Sample((*buffer & 0x8000) | ((*buffer << 1) & 0x7FFE));
