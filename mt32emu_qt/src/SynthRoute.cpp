@@ -299,10 +299,14 @@ const QString SynthRoute::getPatchName(int partNum) const {
 	return qSynth.getPatchName(partNum);
 }
 
-const Partial *SynthRoute::getPartial(int partialNum) const {
-	return qSynth.getPartial(partialNum);
+void SynthRoute::getPartStates(bool *partStates) const {
+	qSynth.getPartStates(partStates);
 }
 
-const Poly *SynthRoute::getFirstActivePolyOnPart(unsigned int partNum) const {
-	return qSynth.getFirstActivePolyOnPart(partNum);
+void SynthRoute::getPartialStates(PartialState *partialStates) const {
+	qSynth.getPartialStates(partialStates);
+}
+
+unsigned int SynthRoute::getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const {
+	return qSynth.getPlayingNotes(partNumber, keys, velocities);
 }

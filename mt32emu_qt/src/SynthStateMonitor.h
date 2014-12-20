@@ -3,6 +3,8 @@
 
 #include <QtCore>
 
+#include <mt32emu/mt32emu.h>
+
 #include "SynthWidget.h"
 
 class SynthRoute;
@@ -96,6 +98,11 @@ private:
 	LEDWidget **partialStateLED;
 	QLabel *patchNameLabel[9];
 	PartStateWidget *partStateWidget[9];
+
+	bool *partStates;
+	MT32Emu::PartialState *partialStates;
+	MT32Emu::Bit8u *keysOfPlayingNotes;
+	MT32Emu::Bit8u *velocitiesOfPlayingNotes;
 
 	MasterClockNanos midiMessageLEDStartNanos;
 	MasterClockNanos previousUpdateNanos;

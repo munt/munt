@@ -16,8 +16,6 @@
 
 #include "SynthStateMonitor.h"
 
-#include <mt32emu/mt32emu.h>
-
 #include "SynthRoute.h"
 #include "ui_SynthWidget.h"
 #include "font_6x8.h"
@@ -34,6 +32,8 @@ static const QColor lcdBgColor(98, 127, 0);
 static const QColor lcdFgColor(232, 254, 0);
 static const QColor partialStateColor[] = {COLOR_GRAY, Qt::red, Qt::yellow, Qt::green};
 
+using namespace MT32Emu;
+
 SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRoute) :
 	synthRoute(useSynthRoute),
 	ui(ui),
@@ -41,6 +41,8 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 	midiMessageLED(&COLOR_GRAY, ui->midiMessageFrame)
 {
 	partialCount = useSynthRoute->getPartialCount();
+	partialStates = new PartialState[partialCount];
+
 	lcdWidget.setMinimumSize(254, 40);
 	ui->synthFrameLayout->insertWidget(1, &lcdWidget);
 	midiMessageLED.setMinimumSize(10, 2);
@@ -81,6 +83,7 @@ SynthStateMonitor::~SynthStateMonitor() {
 	}
 	for (unsigned int i = 0; i < partialCount; i++) delete partialStateLED[i];
 	delete[] partialStateLED;
+	delete[] partialStates;
 }
 
 void SynthStateMonitor::enableMonitor(bool enable) {
@@ -98,7 +101,7 @@ void SynthStateMonitor::handleSynthStateChange(SynthState state) {
 	midiMessageLED.setColor(&COLOR_GRAY);
 
 	for (unsigned int i = 0; i < partialCount; i++) {
-		partialStateLED[i]->setColor(&partialStateColor[PartialState_DEAD]);
+		partialStateLED[i]->setColor(&partialStateColor[PartialState_INACTIVE]);
 	}
 
 	for (int i = 0; i < 9; i++) {
@@ -128,20 +131,15 @@ void SynthStateMonitor::handleUpdate() {
 	MasterClockNanos nanosNow = MasterClock::getClockNanos();
 	if (nanosNow - previousUpdateNanos < MINIMUM_UPDATE_INTERVAL_NANOS) return;
 	previousUpdateNanos = nanosNow;
-	bool partActiveNonReleasing[9] = {false};
 	bool midiMessageOn = false;
+	synthRoute->getPartialStates(partialStates);
 	for (unsigned int partialNum = 0; partialNum < partialCount; partialNum++) {
-		const MT32Emu::Partial *partial = synthRoute->getPartial(partialNum);
-		int partNum = partial == NULL ? -1 : partial->getOwnerPart();
-		bool partialActive = partNum > -1;
-		PartialState partialState = partialActive ? QSynth::getPartialState(partial->getTVA()->getPhase()) : PartialState_DEAD;
-		partialStateLED[partialNum]->setColor(&partialStateColor[partialState]);
-		if (partialActive) {
-			const MT32Emu::Poly *poly = partial->getPoly();
-			bool polyActiveNonReleasing = poly != NULL && poly->isActive() && poly->getState() != MT32Emu::POLY_Releasing;
-			partActiveNonReleasing[partNum] = partActiveNonReleasing[partNum] || polyActiveNonReleasing;
-			midiMessageOn = midiMessageOn || polyActiveNonReleasing;
-		}
+		partialStateLED[partialNum]->setColor(&partialStateColor[partialStates[partialNum]]);
+	}
+	bool partActiveNonReleasing[9] = {false};
+	synthRoute->getPartStates(partActiveNonReleasing);
+	for (unsigned int partNum = 0; partNum < 9; partNum++) {
+		midiMessageOn = midiMessageOn || partActiveNonReleasing[partNum];
 	}
 	MasterClockNanos nanosSinceLastLCDStateChange = nanosNow - lcdWidget.lcdStateStartNanos;
 	if (((lcdWidget.lcdState == LCDWidget::DISPLAYING_MESSAGE) && (nanosSinceLastLCDStateChange > LCD_MESSAGE_DISPLAYING_NANOS))
@@ -191,15 +189,13 @@ void PartStateWidget::paintEvent(QPaintEvent *) {
 	QPainter painter(this);
 	painter.fillRect(rect(), COLOR_GRAY);
 	if (monitor.synthRoute->getState() != SynthRouteState_OPEN) return;
-	const MT32Emu::Poly *poly = monitor.synthRoute->getFirstActivePolyOnPart(partNum);
-	while (poly != NULL) {
-		uint velocity = poly->getVelocity();
+	uint playingNotes = monitor.synthRoute->getPlayingNotes(partNum, monitor.keysOfPlayingNotes, monitor.velocitiesOfPlayingNotes);
+	while (playingNotes-- > 0) {
+		uint velocity = monitor.velocitiesOfPlayingNotes[playingNotes];
 		if (velocity == 0) continue;
-		uint key = poly->getKey();
 		QColor color(2 * velocity, 255 - 2 * velocity, 0);
-		uint x  = 5 * (key - 12);
+		uint x  = 5 * (monitor.keysOfPlayingNotes[playingNotes] - 12);
 		painter.fillRect(x, 0, 5, 16, color);
-		poly = poly->getNext();
 	}
 }
 

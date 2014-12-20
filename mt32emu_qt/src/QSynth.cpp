@@ -385,34 +385,39 @@ void QSynth::setAnalogOutputMode(MT32Emu::AnalogOutputMode useAnalogOutputMode) 
 const QString QSynth::getPatchName(int partNum) const {
 	synthMutex->lock();
 	if (isOpen()) {
-		const char *name = synth->getPart(partNum)->getCurrentInstr();
+		//QString name = QString().fromAscii(synth->getPart(partNum)->getCurrentInstr());
 		synthMutex->unlock();
-		return QString().fromAscii(name);
+		return QString("Channel %1").arg(partNum + 1);
+		//return name;
 	}
 	synthMutex->unlock();
 	return QString("Channel %1").arg(partNum + 1);
 }
 
-const Partial *QSynth::getPartial(int partialNum) const {
+void QSynth::getPartStates(bool *partStates) const {
 	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return NULL;
+	if (isOpen()) {
+		synth->getPartStates(partStates);
 	}
-	const Partial *partial = synth->getPartial(partialNum);
 	synthMutex->unlock();
-	return partial;
 }
 
-const Poly *QSynth::getFirstActivePolyOnPart(unsigned int partNum) const {
+void QSynth::getPartialStates(MT32Emu::PartialState *partialStates) const {
 	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return NULL;
+	if (isOpen()) {
+		synth->getPartialStates(partialStates);
 	}
-	const Poly *poly = synth->getPart(partNum)->getFirstActivePoly();
 	synthMutex->unlock();
-	return poly;
+}
+
+unsigned int QSynth::getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u *velocities) const {
+	unsigned int playingNotes = 0;
+	synthMutex->lock();
+	if (isOpen()) {
+		playingNotes = synth->getPlayingNotes(partNumber, keys, velocities);
+	}
+	synthMutex->unlock();
+	return playingNotes;
 }
 
 unsigned int QSynth::getPartialCount() const {
@@ -551,14 +556,6 @@ void QSynth::freeROMImages() {
 	const ROMImage *pri = pcmROMImage;
 	pcmROMImage = NULL;
 	Master::getInstance()->freeROMImages(cri, pri);
-}
-
-PartialState QSynth::getPartialState(int partialPhase) {
-	static const PartialState partialPhaseToState[8] = {
-		PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK,
-		PartialState_SUSTAINED, PartialState_SUSTAINED, PartialState_RELEASED, PartialState_DEAD
-	};
-	return partialPhaseToState[partialPhase];
 }
 
 const QReportHandler *QSynth::getReportHandler() const {

@@ -10,13 +10,6 @@ enum SynthState {
 	SynthState_CLOSING
 };
 
-enum PartialState {
-	PartialState_DEAD,
-	PartialState_ATTACK,
-	PartialState_SUSTAINED,
-	PartialState_RELEASED
-};
-
 enum ReverbCompatibilityMode {
 	ReverbCompatibilityMode_DEFAULT,
 	ReverbCompatibilityMode_MT32,
@@ -111,7 +104,6 @@ private:
 	MT32Emu::Bit32u convertOutputToSynthTimestamp(quint64 timestamp);
 
 public:
-	static PartialState getPartialState(int partialPhase);
 	static void convertSamplesFromNativeEndian(MT32Emu::Bit16s *buffer, uint sampleCount, QSysInfo::Endian targetByteOrder);
 
 	QSynth(QObject *parent = NULL);
@@ -147,8 +139,9 @@ public:
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 	void setAnalogOutputMode(MT32Emu::AnalogOutputMode analogOutputMode);
 	const QString getPatchName(int partNum) const;
-	const MT32Emu::Partial *getPartial(int partialNum) const;
-	const MT32Emu::Poly *getFirstActivePolyOnPart(unsigned int partNum) const;
+	void getPartStates(bool *partStates) const;
+	void getPartialStates(MT32Emu::PartialState *partialStates) const;
+	unsigned int getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const;
 	unsigned int getPartialCount() const;
 	unsigned int getSynthSampleRate() const;
 	bool isActive() const;

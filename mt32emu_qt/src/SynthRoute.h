@@ -44,8 +44,9 @@ public:
 	bool reset();
 
 	const QString getPatchName(int partNum) const;
-	const MT32Emu::Partial *getPartial(int partialNum) const;
-	const MT32Emu::Poly *getFirstActivePolyOnPart(unsigned int partNum) const;
+	void getPartStates(bool *partStates) const;
+	void getPartialStates(MT32Emu::PartialState *partialStates) const;
+	unsigned int getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const;
 	unsigned int getPartialCount() const;
 
 	void flushMIDIQueue();
