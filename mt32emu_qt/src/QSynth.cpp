@@ -384,14 +384,9 @@ void QSynth::setAnalogOutputMode(MT32Emu::AnalogOutputMode useAnalogOutputMode) 
 
 const QString QSynth::getPatchName(int partNum) const {
 	synthMutex->lock();
-	if (isOpen()) {
-		//QString name = QString().fromAscii(synth->getPart(partNum)->getCurrentInstr());
-		synthMutex->unlock();
-		return QString("Channel %1").arg(partNum + 1);
-		//return name;
-	}
+	QString name = isOpen() ? QString().fromAscii(synth->getPatchName(partNum)) : QString("Channel %1").arg(partNum + 1);
 	synthMutex->unlock();
-	return QString("Channel %1").arg(partNum + 1);
+	return name;
 }
 
 void QSynth::getPartStates(bool *partStates) const {
@@ -413,9 +408,7 @@ void QSynth::getPartialStates(MT32Emu::PartialState *partialStates) const {
 unsigned int QSynth::getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u *velocities) const {
 	unsigned int playingNotes = 0;
 	synthMutex->lock();
-	if (isOpen()) {
-		playingNotes = synth->getPlayingNotes(partNumber, keys, velocities);
-	}
+	playingNotes = synth->getPlayingNotes(partNumber, keys, velocities);
 	synthMutex->unlock();
 	return playingNotes;
 }

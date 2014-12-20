@@ -435,6 +435,10 @@ public:
 	// Returns the number of currently playing notes on the specified part.
 	unsigned int getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u *velocities) const;
 
+	// Returns name of the patch set on the specified part.
+	// Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
+	const char *getPatchName(unsigned int partNumber) const;
+
 	void readMemory(Bit32u addr, Bit32u len, Bit8u *data);
 };
 

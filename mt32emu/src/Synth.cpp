@@ -1690,7 +1690,7 @@ void Synth::getPartialStates(PartialState *partialStates) const {
 
 unsigned int Synth::getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u *velocities) const {
 	unsigned int playingNotes = 0;
-	if (partNumber < 9) {
+	if (isOpen && (partNumber < 9)) {
 		const Part *part = parts[partNumber];
 		const Poly *poly = part->getFirstActivePoly();
 		while (poly != NULL) {
@@ -1701,6 +1701,10 @@ unsigned int Synth::getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u 
 		}
 	}
 	return playingNotes;
+}
+
+const char *Synth::getPatchName(unsigned int partNumber) const {
+	return (!isOpen || partNumber > 8) ? NULL : parts[partNumber]->getCurrentInstr();
 }
 
 const Part *Synth::getPart(unsigned int partNum) const {
