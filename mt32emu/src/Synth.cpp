@@ -96,8 +96,7 @@ Synth::~Synth() {
 }
 
 void ReportHandler::showLCDMessage(const char *data) {
-	printf("WRITE-LCD: %s", data);
-	printf("\n");
+	printf("WRITE-LCD: %s\n", data);
 }
 
 void ReportHandler::printDebug(const char *fmt, va_list list) {
