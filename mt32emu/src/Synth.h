@@ -111,7 +111,7 @@ enum ReverbMode {
 };
 
 enum PartialState {
-	PartialState_DEAD,
+	PartialState_INACTIVE,
 	PartialState_ATTACK,
 	PartialState_SUSTAIN,
 	PartialState_RELEASE
@@ -265,6 +265,9 @@ private:
 	void newTimbreSet(int partNum, Bit8u timbreGroup, const char patchName[]);
 	void printDebug(const char *fmt, ...);
 
+	// partNum should be 0..7 for Part 1..8, or 8 for Rhythm
+	const Part *getPart(unsigned int partNum) const;
+
 public:
 	static inline Sample clipSampleEx(SampleEx sampleEx) {
 #if MT32EMU_USE_FLOAT_SAMPLES
@@ -415,16 +418,24 @@ public:
 	// Returns true if hasActivePartials() returns true, or reverb is (somewhat unreliably) detected as being active.
 	bool isActive() const;
 
-	// Fills in current states of all the partials in the array provided. The array must be large enough.
-	void getPartialStates(PartialState *partialStates) const;
-
 	// Returns the maximum number of partials playing simultaneously.
 	unsigned int getPartialCount() const;
 
-	void readMemory(Bit32u addr, Bit32u len, Bit8u *data);
+	// Fills in current states of all the parts into the array provided. The array must have at least 9 entries to fit values for all the parts.
+	// If the value returned for a part is true, there is at least one active non-releasing partial playing on this part.
+	// This info is useful in emulating behaviour of LCD display of the hardware units.
+	void getPartStates(bool *partStates) const;
 
-	// partNum should be 0..7 for Part 1..8, or 8 for Rhythm
-	const Part *getPart(unsigned int partNum) const;
+	// Fills in current states of all the partials into the array provided. The array must be large enough to accommodate states of all the partials.
+	void getPartialStates(PartialState *partialStates) const;
+
+	// Fills in information about currently playing notes on the specified part into the arrays provided. The arrays must be large enough
+	// to accommodate data for all the playing notes. The maximum number of simultaneously playing notes cannot exceed the number of partials.
+	// Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
+	// Returns the number of currently playing notes on the specified part.
+	unsigned int getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u *velocities) const;
+
+	void readMemory(Bit32u addr, Bit32u len, Bit8u *data);
 };
 
 }

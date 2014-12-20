@@ -1665,20 +1665,42 @@ bool Synth::isActive() const {
 	return false;
 }
 
+unsigned int Synth::getPartialCount() const {
+	return partialCount;
+}
+
+void Synth::getPartStates(bool *partStates) const {
+	for (int partNumber = 0; partNumber < 9; partNumber++) {
+		const Part *part = parts[partNumber];
+		partStates[partNumber] = part->getActiveNonReleasingPartialCount() > 0;
+	}
+}
+
 void Synth::getPartialStates(PartialState *partialStates) const {
 	static const PartialState partialPhaseToState[8] = {
 		PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK,
-		PartialState_SUSTAIN, PartialState_SUSTAIN, PartialState_RELEASE, PartialState_DEAD
+		PartialState_SUSTAIN, PartialState_SUSTAIN, PartialState_RELEASE, PartialState_INACTIVE
 	};
 
 	for (unsigned int partialNum = 0; partialNum < getPartialCount(); partialNum++) {
 		const Partial *partial = partialManager->getPartial(partialNum);
-		partialStates[partialNum] = partial->isActive() ? partialPhaseToState[partial->getTVA()->getPhase()] : PartialState_DEAD;
+		partialStates[partialNum] = partial->isActive() ? partialPhaseToState[partial->getTVA()->getPhase()] : PartialState_INACTIVE;
 	}
 }
 
-unsigned int Synth::getPartialCount() const {
-	return partialCount;
+unsigned int Synth::getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u *velocities) const {
+	unsigned int playingNotes = 0;
+	if (partNumber < 9) {
+		const Part *part = parts[partNumber];
+		const Poly *poly = part->getFirstActivePoly();
+		while (poly != NULL) {
+			keys[playingNotes] = (Bit8u)poly->getKey();
+			velocities[playingNotes] = (Bit8u)poly->getVelocity();
+			playingNotes++;
+			poly = poly->getNext();
+		}
+	}
+	return playingNotes;
 }
 
 const Part *Synth::getPart(unsigned int partNum) const {
