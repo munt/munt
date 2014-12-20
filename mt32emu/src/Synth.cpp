@@ -122,7 +122,7 @@ void Synth::printDebug(const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
 #if MT32EMU_DEBUG_SAMPLESTAMPS > 0
-	reportHandler->printDebug("[%u] ", renderedSampleCount);
+	reportHandler->printDebug("[%u] ", (char *)&renderedSampleCount);
 #endif
 	reportHandler->printDebug(fmt, ap);
 	va_end(ap);
