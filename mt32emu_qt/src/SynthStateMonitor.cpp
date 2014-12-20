@@ -42,6 +42,8 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 {
 	partialCount = useSynthRoute->getPartialCount();
 	partialStates = new PartialState[partialCount];
+	keysOfPlayingNotes = new Bit8u[partialCount];
+	velocitiesOfPlayingNotes = new Bit8u[partialCount];
 
 	lcdWidget.setMinimumSize(254, 40);
 	ui->synthFrameLayout->insertWidget(1, &lcdWidget);
@@ -83,6 +85,8 @@ SynthStateMonitor::~SynthStateMonitor() {
 	}
 	for (unsigned int i = 0; i < partialCount; i++) delete partialStateLED[i];
 	delete[] partialStateLED;
+	delete[] velocitiesOfPlayingNotes;
+	delete[] keysOfPlayingNotes;
 	delete[] partialStates;
 }
 
