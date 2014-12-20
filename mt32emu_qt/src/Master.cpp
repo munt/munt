@@ -506,6 +506,10 @@ void Master::createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, 
 }
 
 void Master::deleteMidiSession(MidiSession *midiSession) {
+	if ((maxSessions > 0) && (--maxSessions == 0)) {
+		qDebug() << "Exitting due to maximum number of sessions finished";
+		maxSessionsFinished();
+	}
 	SynthRoute *synthRoute = midiSession->getSynthRoute();
 	synthRoute->removeMidiSession(midiSession);
 	delete midiSession;
@@ -514,10 +518,6 @@ void Master::deleteMidiSession(MidiSession *midiSession) {
 	emit synthRouteRemoved(synthRoute);
 	synthRoute->close();
 	delete synthRoute;
-	if ((maxSessions > 0) && (--maxSessions == 0)) {
-		qDebug() << "Exitting due to maximum number of sessions finished";
-		maxSessionsFinished();
-	}
 }
 
 bool Master::canCreateMidiPort() {
