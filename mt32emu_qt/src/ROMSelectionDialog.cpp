@@ -98,8 +98,9 @@ void ROMSelectionDialog::refreshROMInfos() {
 		QString fileName = it.next();
 		FileStream file;
 		if (!file.open((synthProfile.romDir.absolutePath() + QDir::separator() + fileName).toUtf8())) continue;
-		const ROMInfo &romInfo = *ROMInfo::getROMInfo(&file);
-		if (&romInfo == NULL) continue;
+		const ROMInfo *romInfoPtr = ROMInfo::getROMInfo(&file);
+		if (romInfoPtr == NULL) continue;
+		const ROMInfo &romInfo = *romInfoPtr;
 
 		QButtonGroup *romGroup;
 		QString romType;

@@ -28,9 +28,9 @@ private:
 	ROMSelectionDialog rsd;
 	void resetSynth();
 	void restoreDefaults();
-	void loadSynthProfile();
+	void loadSynthProfile(bool reloadFromSynthRoute = true);
 	void saveSynthProfile();
-	void refreshProfileCombo();
+	void refreshProfileCombo(QString name);
 	QString getROMSetDescription();
 
 private slots:

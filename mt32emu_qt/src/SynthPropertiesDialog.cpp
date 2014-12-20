@@ -28,7 +28,7 @@ SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent, SynthRoute *useSyn
 	rsd(synthProfile, this)
 {
 	ui->setupUi(this);
-	refreshProfileCombo();
+	refreshProfileCombo("");
 	loadSynthProfile();
 
 	connect(ui->buttonBox, SIGNAL(clicked(QAbstractButton *)), SLOT(on_buttonBox_clicked(QAbstractButton *)));
@@ -51,6 +51,7 @@ void SynthPropertiesDialog::showEvent(QShowEvent *) {
 
 void SynthPropertiesDialog::on_changeROMSetButton_clicked() {
 	rsd.exec();
+	ui->romSetLabel->setText(getROMSetDescription());
 }
 
 void SynthPropertiesDialog::on_midiDelayEmuComboBox_currentIndexChanged(int index) {
@@ -105,7 +106,7 @@ void SynthPropertiesDialog::on_profileComboBox_currentIndexChanged(int) {
 	master.loadSynthProfile(synthProfile, name);
 	synthRoute->setSynthProfile(synthProfile, name);
 	ui->profileCheckBox->setChecked(name == master.getDefaultSynthProfileName());
-	loadSynthProfile();
+	loadSynthProfile(false);
 }
 
 void SynthPropertiesDialog::on_reverbCheckBox_stateChanged(int state) {
@@ -207,8 +208,8 @@ void SynthPropertiesDialog::restoreDefaults() {
 	ui->reverseStereoCheckBox->setCheckState(Qt::Unchecked);
 }
 
-void SynthPropertiesDialog::loadSynthProfile() {
-	synthRoute->getSynthProfile(synthProfile);
+void SynthPropertiesDialog::loadSynthProfile(bool reloadFromSynthRoute) {
+	if (reloadFromSynthRoute) synthRoute->getSynthProfile(synthProfile);
 	ui->romSetLabel->setText(getROMSetDescription());
 	rsd.loadROMInfos();
 	ui->midiDelayEmuComboBox->setCurrentIndex(synthProfile.midiDelayMode);
@@ -244,18 +245,19 @@ void SynthPropertiesDialog::saveSynthProfile() {
 	synthRoute->setSynthProfile(synthProfile, name);
 	if (ui->profileCheckBox->isChecked()) master.setDefaultSynthProfileName(name);
 	ui->romSetLabel->setText(getROMSetDescription());
-	refreshProfileCombo();
+	refreshProfileCombo(name);
 }
 
-void SynthPropertiesDialog::refreshProfileCombo() {
+void SynthPropertiesDialog::refreshProfileCombo(QString name) {
 	QStringList profiles = Master::getInstance()->enumSynthProfiles();
 	ui->profileComboBox->blockSignals(true);
 	ui->profileComboBox->clear();
 	ui->profileComboBox->addItems(profiles);
+	if (name.isEmpty()) name = Master::getInstance()->getDefaultSynthProfileName();
 	for (int i = 0; i < profiles.count(); i++) {
-		if (profiles[i] == Master::getInstance()->getDefaultSynthProfileName()) {
+		if (profiles[i] == name) {
 			ui->profileComboBox->setCurrentIndex(i);
-			ui->profileCheckBox->setChecked(true);
+			ui->profileCheckBox->setChecked(profiles[i] == Master::getInstance()->getDefaultSynthProfileName());
 			break;
 		}
 	}
@@ -263,5 +265,12 @@ void SynthPropertiesDialog::refreshProfileCombo() {
 }
 
 QString SynthPropertiesDialog::getROMSetDescription() {
-	return (synthProfile.controlROMImage == NULL) ? "Unknown" : synthProfile.controlROMImage->getROMInfo()->description;
+	MT32Emu::FileStream file;
+	if (file.open((synthProfile.romDir.absolutePath() + QDir::separator() + synthProfile.controlROMFileName).toUtf8())) {
+		const MT32Emu::ROMInfo *romInfo = MT32Emu::ROMInfo::getROMInfo(&file);
+		if (romInfo != NULL) {
+			return romInfo->description;
+		}
+	}
+	return "Unknown";
 }
