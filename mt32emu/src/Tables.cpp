@@ -16,11 +16,10 @@
  */
 
 #include <cmath>
-#include <cstdlib>
-#include <cstring>
 
 #include "mt32emu.h"
 #include "mmath.h"
+#include "Tables.h"
 
 namespace MT32Emu {
 

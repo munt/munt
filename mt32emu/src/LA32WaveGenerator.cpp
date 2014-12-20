@@ -18,7 +18,7 @@
 #include <cmath>
 #include "mt32emu.h"
 #include "mmath.h"
-#include "LA32WaveGenerator.h"
+#include "internals.h"
 
 #if MT32EMU_USE_FLOAT_SAMPLES
 #include "LA32FloatWaveGenerator.cpp"

@@ -22,9 +22,13 @@
 
 #include "mt32emu.h"
 #include "mmath.h"
-#include "PartialManager.h"
-#include "BReverbModel.h"
+#include "internals.h"
+
 #include "Analog.h"
+#include "BReverbModel.h"
+#include "MemoryRegion.h"
+#include "MidiEventQueue.h"
+#include "PartialManager.h"
 
 namespace MT32Emu {
 
@@ -57,7 +61,7 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u 
 	return Bit8u(checksum & 0x7f);
 }
 
-Synth::Synth(ReportHandler *useReportHandler) {
+Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams()), mt32default(*new MemParams()) {
 	isOpen = false;
 	reverbOverridden = false;
 	partialCount = DEFAULT_MAX_PARTIALS;
@@ -93,6 +97,8 @@ Synth::~Synth() {
 	if (isDefaultReportHandler) {
 		delete reportHandler;
 	}
+	delete &mt32ram;
+	delete &mt32default;
 }
 
 void ReportHandler::showLCDMessage(const char *data) {
@@ -1659,8 +1665,16 @@ bool Synth::isActive() const {
 	return false;
 }
 
-const Partial *Synth::getPartial(unsigned int partialNum) const {
-	return partialManager->getPartial(partialNum);
+void Synth::getPartialStates(PartialState *partialStates) const {
+	static const PartialState partialPhaseToState[8] = {
+		PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK,
+		PartialState_SUSTAIN, PartialState_SUSTAIN, PartialState_RELEASE, PartialState_DEAD
+	};
+
+	for (unsigned int partialNum = 0; partialNum < getPartialCount(); partialNum++) {
+		const Partial *partial = partialManager->getPartial(partialNum);
+		partialStates[partialNum] = partial->isActive() ? partialPhaseToState[partial->getTVA()->getPhase()] : PartialState_DEAD;
+	}
 }
 
 unsigned int Synth::getPartialCount() const {

@@ -23,8 +23,27 @@
 
 namespace MT32Emu {
 
-class BReverbModel;
 class Analog;
+class BReverbModel;
+class MemoryRegion;
+class MidiEventQueue;
+class Part;
+class Poly;
+class Partial;
+class PartialManager;
+
+class PatchTempMemoryRegion;
+class RhythmTempMemoryRegion;
+class TimbreTempMemoryRegion;
+class PatchesMemoryRegion;
+class TimbresMemoryRegion;
+class SystemMemoryRegion;
+class DisplayMemoryRegion;
+class ResetMemoryRegion;
+
+struct ControlROMMap;
+struct PCMWaveEntry;
+struct MemParams;
 
 /**
  * Methods for emulating the connection between the LA32 and the DAC, which involves
@@ -84,6 +103,20 @@ enum AnalogOutputMode {
 	AnalogOutputMode_OVERSAMPLED
 };
 
+enum ReverbMode {
+	REVERB_MODE_ROOM,
+	REVERB_MODE_HALL,
+	REVERB_MODE_PLATE,
+	REVERB_MODE_TAP_DELAY
+};
+
+enum PartialState {
+	PartialState_DEAD,
+	PartialState_ATTACK,
+	PartialState_SUSTAIN,
+	PartialState_RELEASE
+};
+
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
 
 const Bit8u SYSEX_MDL_MT32 = 0x16;
@@ -102,144 +135,6 @@ const Bit8u SYSEX_CMD_RJC = 0x4F; // Rejection
 const int MAX_SYSEX_SIZE = 512; // FIXME: Does this correspond to a real MIDI buffer used in h/w devices?
 
 const unsigned int CONTROL_ROM_SIZE = 64 * 1024;
-
-struct ControlROMPCMStruct {
-	Bit8u pos;
-	Bit8u len;
-	Bit8u pitchLSB;
-	Bit8u pitchMSB;
-};
-
-struct ControlROMMap {
-	Bit16u idPos;
-	Bit16u idLen;
-	const char *idBytes;
-	Bit16u pcmTable; // 4 * pcmCount bytes
-	Bit16u pcmCount;
-	Bit16u timbreAMap; // 128 bytes
-	Bit16u timbreAOffset;
-	bool timbreACompressed;
-	Bit16u timbreBMap; // 128 bytes
-	Bit16u timbreBOffset;
-	bool timbreBCompressed;
-	Bit16u timbreRMap; // 2 * timbreRCount bytes
-	Bit16u timbreRCount;
-	Bit16u rhythmSettings; // 4 * rhythmSettingsCount bytes
-	Bit16u rhythmSettingsCount;
-	Bit16u reserveSettings; // 9 bytes
-	Bit16u panSettings; // 8 bytes
-	Bit16u programSettings; // 8 bytes
-	Bit16u rhythmMaxTable; // 4 bytes
-	Bit16u patchMaxTable; // 16 bytes
-	Bit16u systemMaxTable; // 23 bytes
-	Bit16u timbreMaxTable; // 72 bytes
-};
-
-enum MemoryRegionType {
-	MR_PatchTemp, MR_RhythmTemp, MR_TimbreTemp, MR_Patches, MR_Timbres, MR_System, MR_Display, MR_Reset
-};
-
-enum ReverbMode {
-	REVERB_MODE_ROOM,
-	REVERB_MODE_HALL,
-	REVERB_MODE_PLATE,
-	REVERB_MODE_TAP_DELAY
-};
-
-class MemoryRegion {
-private:
-	Synth *synth;
-	Bit8u *realMemory;
-	Bit8u *maxTable;
-public:
-	MemoryRegionType type;
-	Bit32u startAddr, entrySize, entries;
-
-	MemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable, MemoryRegionType useType, Bit32u useStartAddr, Bit32u useEntrySize, Bit32u useEntries) {
-		synth = useSynth;
-		realMemory = useRealMemory;
-		maxTable = useMaxTable;
-		type = useType;
-		startAddr = useStartAddr;
-		entrySize = useEntrySize;
-		entries = useEntries;
-	}
-	int lastTouched(Bit32u addr, Bit32u len) const {
-		return (offset(addr) + len - 1) / entrySize;
-	}
-	int firstTouchedOffset(Bit32u addr) const {
-		return offset(addr) % entrySize;
-	}
-	int firstTouched(Bit32u addr) const {
-		return offset(addr) / entrySize;
-	}
-	Bit32u regionEnd() const {
-		return startAddr + entrySize * entries;
-	}
-	bool contains(Bit32u addr) const {
-		return addr >= startAddr && addr < regionEnd();
-	}
-	int offset(Bit32u addr) const {
-		return addr - startAddr;
-	}
-	Bit32u getClampedLen(Bit32u addr, Bit32u len) const {
-		if (addr + len > regionEnd())
-			return regionEnd() - addr;
-		return len;
-	}
-	Bit32u next(Bit32u addr, Bit32u len) const {
-		if (addr + len > regionEnd()) {
-			return regionEnd() - addr;
-		}
-		return 0;
-	}
-	Bit8u getMaxValue(int off) const {
-		if (maxTable == NULL)
-			return 0xFF;
-		return maxTable[off % entrySize];
-	}
-	Bit8u *getRealMemory() const {
-		return realMemory;
-	}
-	bool isReadable() const {
-		return getRealMemory() != NULL;
-	}
-	void read(unsigned int entry, unsigned int off, Bit8u *dst, unsigned int len) const;
-	void write(unsigned int entry, unsigned int off, const Bit8u *src, unsigned int len, bool init = false) const;
-};
-
-class PatchTempMemoryRegion : public MemoryRegion {
-public:
-	PatchTempMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_PatchTemp, MT32EMU_MEMADDR(0x030000), sizeof(MemParams::PatchTemp), 9) {}
-};
-class RhythmTempMemoryRegion : public MemoryRegion {
-public:
-	RhythmTempMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_RhythmTemp, MT32EMU_MEMADDR(0x030110), sizeof(MemParams::RhythmTemp), 85) {}
-};
-class TimbreTempMemoryRegion : public MemoryRegion {
-public:
-	TimbreTempMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_TimbreTemp, MT32EMU_MEMADDR(0x040000), sizeof(TimbreParam), 8) {}
-};
-class PatchesMemoryRegion : public MemoryRegion {
-public:
-	PatchesMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_Patches, MT32EMU_MEMADDR(0x050000), sizeof(PatchParam), 128) {}
-};
-class TimbresMemoryRegion : public MemoryRegion {
-public:
-	TimbresMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_Timbres, MT32EMU_MEMADDR(0x080000), sizeof(MemParams::PaddedTimbre), 64 + 64 + 64 + 64) {}
-};
-class SystemMemoryRegion : public MemoryRegion {
-public:
-	SystemMemoryRegion(Synth *useSynth, Bit8u *useRealMemory, Bit8u *useMaxTable) : MemoryRegion(useSynth, useRealMemory, useMaxTable, MR_System, MT32EMU_MEMADDR(0x100000), sizeof(MemParams::System), 1) {}
-};
-class DisplayMemoryRegion : public MemoryRegion {
-public:
-	DisplayMemoryRegion(Synth *useSynth) : MemoryRegion(useSynth, NULL, NULL, MR_Display, MT32EMU_MEMADDR(0x200000), MAX_SYSEX_SIZE - 1, 1) {}
-};
-class ResetMemoryRegion : public MemoryRegion {
-public:
-	ResetMemoryRegion(Synth *useSynth) : MemoryRegion(useSynth, NULL, NULL, MR_Reset, MT32EMU_MEMADDR(0x7F0000), 0x3FFF, 1) {}
-};
 
 class ReportHandler {
 friend class Synth;
@@ -264,48 +159,6 @@ protected:
 	virtual void onNewReverbLevel(Bit8u /* level */) {}
 	virtual void onPolyStateChanged(int /* partNum */) {}
 	virtual void onProgramChanged(int /* partNum */, int /* bankNum */, const char * /* patchName */) {}
-};
-
-/**
- * Used to safely store timestamped MIDI events in a local queue.
- */
-struct MidiEvent {
-	Bit32u shortMessageData;
-	const Bit8u *sysexData;
-	Bit32u sysexLength;
-	Bit32u timestamp;
-
-	~MidiEvent();
-	void setShortMessage(Bit32u shortMessageData, Bit32u timestamp);
-	void setSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
-};
-
-/**
- * Simple queue implementation using a ring buffer to store incoming MIDI event before the synth actually processes it.
- * It is intended to:
- * - get rid of prerenderer while retaining graceful partial abortion
- * - add fair emulation of the MIDI interface delays
- * - extend the synth interface with the default implementation of a typical rendering loop.
- * THREAD SAFETY:
- * It is safe to use either in a single thread environment or when there are only two threads - one performs only reading
- * and one performs only writing. More complicated usage requires external synchronisation.
- */
-class MidiEventQueue {
-private:
-	MidiEvent * const ringBuffer;
-	const Bit32u ringBufferMask;
-	volatile Bit32u startPosition;
-	volatile Bit32u endPosition;
-
-public:
-	MidiEventQueue(Bit32u ringBufferSize = DEFAULT_MIDI_EVENT_QUEUE_SIZE); // Must be a power of 2
-	~MidiEventQueue();
-	void reset();
-	bool pushShortMessage(Bit32u shortMessageData, Bit32u timestamp);
-	bool pushSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
-	const MidiEvent *peekMidiEvent();
-	void dropMidiEvent();
-	bool isFull() const;
 };
 
 class Synth {
@@ -348,7 +201,7 @@ private:
 	volatile Bit32u lastReceivedMIDIEventTimestamp;
 	volatile Bit32u renderedSampleCount;
 
-	MemParams mt32ram, mt32default;
+	MemParams &mt32ram, &mt32default;
 
 	BReverbModel *reverbModels[4];
 	BReverbModel *reverbModel;
@@ -562,7 +415,8 @@ public:
 	// Returns true if hasActivePartials() returns true, or reverb is (somewhat unreliably) detected as being active.
 	bool isActive() const;
 
-	const Partial *getPartial(unsigned int partialNum) const;
+	// Fills in current states of all the partials in the array provided. The array must be large enough.
+	void getPartialStates(PartialState *partialStates) const;
 
 	// Returns the maximum number of partials playing simultaneously.
 	unsigned int getPartialCount() const;
