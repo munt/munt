@@ -228,6 +228,7 @@ bool QSynth::open(uint targetSampleRate, const QString useSynthProfileName) {
 		setState(SynthState_OPEN);
 		reportHandler.onDeviceReconfig();
 		setSynthProfile(synthProfile, synthProfileName);
+		if (engageChannel1OnOpen) resetMIDIChannelsAssignment(true);
 		if (targetSampleRate > 0 && targetSampleRate != getSynthSampleRate()) {
 			sampleRateConverter = SampleRateConverter::createSampleRateConverter(synth, targetSampleRate);
 			sampleRateRatio = SAMPLE_RATE / (double)targetSampleRate;
@@ -332,6 +333,10 @@ void QSynth::resetMIDIChannelsAssignment(bool engageChannel1) {
 	}
 	synth->writeSysex(16, engageChannel1 ? sysexChannel1EngagedAssignment : sysexStandardChannelAssignment, sizeof(sysexStandardChannelAssignment));
 	synthMutex->unlock();
+}
+
+void QSynth::setInitialMIDIChannelsAssignment(bool engageChannel1) {
+	engageChannel1OnOpen = engageChannel1;
 }
 
 void QSynth::setReverbCompatibilityMode(ReverbCompatibilityMode useReverbCompatibilityMode) {
@@ -501,6 +506,7 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.reverbTime = reverbTime;
 	synthProfile.reverbLevel = reverbLevel;
 	synthProfile.reversedStereoEnabled = synth->isReversedStereoEnabled();
+	synthProfile.engageChannel1OnOpen = engageChannel1OnOpen;
 	synthMutex->unlock();
 }
 
@@ -533,6 +539,7 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	setReverbEnabled(synthProfile.reverbEnabled);
 	setReverbOverridden(synthProfile.reverbOverridden);
 	setReversedStereoEnabled(synthProfile.reversedStereoEnabled);
+	setInitialMIDIChannelsAssignment(synthProfile.engageChannel1OnOpen);
 }
 
 void QSynth::freeROMImages() {

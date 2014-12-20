@@ -41,6 +41,7 @@ struct SynthProfile {
 	int reverbTime;
 	int reverbLevel;
 	bool reversedStereoEnabled;
+	bool engageChannel1OnOpen;
 };
 
 class SampleRateConverter;
@@ -96,6 +97,7 @@ private:
 	MT32Emu::AnalogOutputMode analogOutputMode;
 	MT32Emu::AnalogOutputMode actualAnalogOutputMode;
 	ReverbCompatibilityMode reverbCompatibilityMode;
+	bool engageChannel1OnOpen;
 
 	MT32Emu::Synth *synth;
 	QReportHandler reportHandler;
@@ -139,6 +141,7 @@ public:
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
 	void setReversedStereoEnabled(bool enabled);
 	void resetMIDIChannelsAssignment(bool engageChannel1);
+	void setInitialMIDIChannelsAssignment(bool engageChannel1);
 	void setReverbCompatibilityMode(ReverbCompatibilityMode reverbCompatibilityMode);
 	void setMIDIDelayMode(MT32Emu::MIDIDelayMode midiDelayMode);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);

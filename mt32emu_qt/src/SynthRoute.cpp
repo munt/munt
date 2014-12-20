@@ -263,6 +263,10 @@ void SynthRoute::resetMIDIChannelsAssignment(bool engageChannel1) {
 	qSynth.resetMIDIChannelsAssignment(engageChannel1);
 }
 
+void SynthRoute::setInitialMIDIChannelsAssignment(bool engageChannel1) {
+	qSynth.setInitialMIDIChannelsAssignment(engageChannel1);
+}
+
 void SynthRoute::setReverbCompatibilityMode(ReverbCompatibilityMode reverbCompatibilityMode) {
 	qSynth.setReverbCompatibilityMode(reverbCompatibilityMode);
 }

@@ -154,6 +154,10 @@ void SynthPropertiesDialog::on_assignChannels1_8_10Button_clicked() {
 	synthRoute->resetMIDIChannelsAssignment(true);
 }
 
+void SynthPropertiesDialog::on_engageChannel1CheckBox_stateChanged(int state) {
+	synthRoute->setInitialMIDIChannelsAssignment(state == Qt::Checked);
+}
+
 void SynthPropertiesDialog::updateReverbSettings() {
 	if (ui->reverbCheckBox->checkState() == Qt::PartiallyChecked) return;
 	synthRoute->setReverbSettings(ui->reverbModeComboBox->currentIndex(),
@@ -206,6 +210,7 @@ void SynthPropertiesDialog::restoreDefaults() {
 	ui->outputGainSlider->setValue(100);
 	ui->reverbOutputGainSlider->setValue(100);
 	ui->reverseStereoCheckBox->setCheckState(Qt::Unchecked);
+	ui->engageChannel1CheckBox->setCheckState(Qt::Unchecked);
 }
 
 void SynthPropertiesDialog::loadSynthProfile(bool reloadFromSynthRoute) {
@@ -228,6 +233,7 @@ void SynthPropertiesDialog::loadSynthProfile(bool reloadFromSynthRoute) {
 	ui->outputGainSlider->setValue(synthProfile.outputGain * 100);
 	ui->reverbOutputGainSlider->setValue(synthProfile.reverbOutputGain * 100);
 	ui->reverseStereoCheckBox->setCheckState(synthProfile.reversedStereoEnabled ? Qt::Checked : Qt::Unchecked);
+	ui->engageChannel1CheckBox->setCheckState(synthProfile.engageChannel1OnOpen ? Qt::Checked : Qt::Unchecked);
 }
 
 void SynthPropertiesDialog::saveSynthProfile() {

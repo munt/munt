@@ -14,6 +14,9 @@ Next release:
 	  Windows MIDI driver also supports running status for short messages now. OSS MIDI and CoreMIDI drivers also improved by this.
 	* AudioFileWriter now always produces .WAV files in little endian and .RAW files in big endian which corresponds to smf2wav behaviour.
 	* Audio drivers for CoreAudio, ALSA and PulseAudio made compatible with big endian systems.
+	* Improved command line in handling. Added new options "-profile" and "-max_sessions". Added short help regarding command line syntax.
+	* Minor improvements in handling of synth profiles and ROM sets.
+	* Added an option in synth properties to use alternative channel assignment automatically on opening a synth.
 
 2014-06-09:
 

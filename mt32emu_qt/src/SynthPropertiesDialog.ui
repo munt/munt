@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>389</width>
+    <width>393</width>
     <height>305</height>
    </rect>
   </property>
@@ -261,16 +261,6 @@ Incoming MIDI events will be delayed as if they are transferred via a real MIDI 
        </item>
       </widget>
      </item>
-     <item row="10" column="0">
-      <widget class="QCheckBox" name="reverseStereoCheckBox">
-       <property name="text">
-        <string>Reverse Stereo</string>
-       </property>
-       <property name="tristate">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
      <item row="3" column="1">
       <widget class="QComboBox" name="reverbCompatibilityComboBox">
        <property name="toolTip">
@@ -294,30 +284,6 @@ Select reverb model tunings to accurately emulate reverb chip of older units (li
         </property>
        </item>
       </widget>
-     </item>
-     <item row="10" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
-       <item>
-        <widget class="QPushButton" name="assignChannels2_10Button">
-         <property name="toolTip">
-          <string>Reset channel assignment to default. MIDI channels 2..10 will be used.</string>
-         </property>
-         <property name="text">
-          <string>Set channels 2..10</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="assignChannels1_8_10Button">
-         <property name="toolTip">
-          <string>Reset channel assignment to alternative. MIDI channels 1..8 and 10 will be used.</string>
-         </property>
-         <property name="text">
-          <string>Set channels 1..8,10</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
      </item>
      <item row="7" column="0">
       <widget class="QLabel" name="label_8">
@@ -348,6 +314,50 @@ Takes effect after reopening the Synth.</string>
          <string>Digital path emulation only</string>
         </property>
        </item>
+      </widget>
+     </item>
+     <item row="10" column="0">
+      <widget class="QCheckBox" name="reverseStereoCheckBox">
+       <property name="text">
+        <string>Reverse Stereo</string>
+       </property>
+       <property name="tristate">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <item>
+        <widget class="QPushButton" name="assignChannels2_10Button">
+         <property name="toolTip">
+          <string>Reset channel assignment to default. MIDI channels 2..10 will be used.</string>
+         </property>
+         <property name="text">
+          <string>Set channels 2..10</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="assignChannels1_8_10Button">
+         <property name="toolTip">
+          <string>Reset channel assignment to alternative. MIDI channels 1..8 and 10 will be used.</string>
+         </property>
+         <property name="text">
+          <string>Set channels 1..8,10</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="11" column="1">
+      <widget class="QCheckBox" name="engageChannel1CheckBox">
+       <property name="text">
+        <string>Use alternative channel assignment on synth start</string>
+       </property>
+       <property name="tristate">
+        <bool>false</bool>
+       </property>
       </widget>
      </item>
     </layout>
@@ -402,6 +412,7 @@ Takes effect after reopening the Synth.</string>
   </layout>
  </widget>
  <tabstops>
+  <tabstop>buttonBox</tabstop>
   <tabstop>changeROMSetButton</tabstop>
   <tabstop>midiDelayEmuComboBox</tabstop>
   <tabstop>dacEmuComboBox</tabstop>
@@ -416,9 +427,9 @@ Takes effect after reopening the Synth.</string>
   <tabstop>reverseStereoCheckBox</tabstop>
   <tabstop>assignChannels2_10Button</tabstop>
   <tabstop>assignChannels1_8_10Button</tabstop>
+  <tabstop>engageChannel1CheckBox</tabstop>
   <tabstop>profileComboBox</tabstop>
   <tabstop>profileCheckBox</tabstop>
-  <tabstop>buttonBox</tabstop>
  </tabstops>
  <resources/>
  <connections/>
