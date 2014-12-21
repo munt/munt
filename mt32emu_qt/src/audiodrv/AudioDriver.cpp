@@ -131,6 +131,7 @@ AudioDriver::AudioDriver(QString useID, QString useName) : id(useID), name(useNa
 void AudioDriver::loadAudioSettings() {
 	QSettings *qSettings = Master::getInstance()->getSettings();
 	settings.sampleRate = qSettings->value(id + "/SampleRate", 0).toUInt();
+	settings.srcQuality = (SampleRateConverter::SRCQuality)qSettings->value(id + "/SRCQuality", SampleRateConverter::SRC_GOOD).toUInt();
 	settings.chunkLen = qSettings->value(id + "/ChunkLen").toInt();
 	settings.audioLatency = qSettings->value(id + "/AudioLatency").toInt();
 	settings.midiLatency = qSettings->value(id + "/MidiLatency").toInt();
@@ -148,6 +149,7 @@ void AudioDriver::setAudioSettings(AudioDriverSettings &useSettings) {
 
 	QSettings *qSettings = Master::getInstance()->getSettings();
 	qSettings->setValue(id + "/SampleRate", settings.sampleRate);
+	qSettings->setValue(id + "/SRCQuality", settings.srcQuality);
 	qSettings->setValue(id + "/ChunkLen", settings.chunkLen);
 	qSettings->setValue(id + "/AudioLatency", settings.audioLatency);
 	qSettings->setValue(id + "/MidiLatency", settings.midiLatency);

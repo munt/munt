@@ -28,8 +28,8 @@ size_t SoxrAdapter::getInputSamples(void *input_fn_state, soxr_in_t *data, size_
 	return length;
 }
 
-SoxrAdapter::SoxrAdapter(Synth *synth, double targetSampleRate) :
-	SampleRateConverter(synth, targetSampleRate),
+SoxrAdapter::SoxrAdapter(Synth *synth, double targetSampleRate, SRCQuality quality) :
+	SampleRateConverter(synth, targetSampleRate, quality),
 	inBuffer(new Sample[2 * MAX_SAMPLES_PER_RUN])
 {
 #if MT32EMU_USE_FLOAT_SAMPLES
@@ -37,7 +37,23 @@ SoxrAdapter::SoxrAdapter(Synth *synth, double targetSampleRate) :
 #else
 	soxr_io_spec_t ioSpec = soxr_io_spec(SOXR_INT16_I, SOXR_INT16_I);
 #endif
-	soxr_quality_spec_t qSpec = soxr_quality_spec(SOXR_LQ, 0);
+	unsigned long qualityRecipe;
+	switch (quality) {
+	case SRC_FASTEST:
+		qualityRecipe = SOXR_QQ;
+		break;
+	case SRC_FAST:
+		qualityRecipe = SOXR_LQ;
+		break;
+	case SRC_BEST:
+		qualityRecipe = SOXR_16_BITQ;
+		break;
+	case SRC_GOOD:
+	default:
+		qualityRecipe = SOXR_MQ;
+		break;
+	};
+	soxr_quality_spec_t qSpec = soxr_quality_spec(qualityRecipe, 0);
 	soxr_runtime_spec_t rtSpec = soxr_runtime_spec(1);
 	soxr_error_t error;
 	resampler = soxr_create(synth->getStereoOutputSampleRate(), targetSampleRate, 2, &error, &ioSpec, &qSpec, &rtSpec);

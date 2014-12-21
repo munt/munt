@@ -28,7 +28,6 @@
 #include "QSynth.h"
 #include "Master.h"
 #include "MasterClock.h"
-#include "resample/SampleRateConverter.h"
 
 using namespace MT32Emu;
 
@@ -208,7 +207,7 @@ void QSynth::render(Bit16s *buffer, uint length) {
 	emit audioBlockRendered();
 }
 
-bool QSynth::open(uint targetSampleRate, const QString useSynthProfileName) {
+bool QSynth::open(uint targetSampleRate, SampleRateConverter::SRCQuality srcQuality, const QString useSynthProfileName) {
 	if (isOpen()) {
 		return true;
 	}
@@ -232,7 +231,7 @@ bool QSynth::open(uint targetSampleRate, const QString useSynthProfileName) {
 		setSynthProfile(synthProfile, synthProfileName);
 		if (engageChannel1OnOpen) resetMIDIChannelsAssignment(true);
 		if (targetSampleRate > 0 && targetSampleRate != getSynthSampleRate()) {
-			sampleRateConverter = SampleRateConverter::createSampleRateConverter(synth, targetSampleRate);
+			sampleRateConverter = SampleRateConverter::createSampleRateConverter(synth, targetSampleRate, srcQuality);
 			sampleRateRatio = SAMPLE_RATE / (double)targetSampleRate;
 		} else {
 			sampleRateRatio = SAMPLE_RATE / (double)getSynthSampleRate();

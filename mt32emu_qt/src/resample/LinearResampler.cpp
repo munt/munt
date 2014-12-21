@@ -21,7 +21,7 @@
 using namespace MT32Emu;
 
 LinearResampler::LinearResampler(Synth *synth, double targetSampleRate) :
-	SampleRateConverter(synth, targetSampleRate),
+	SampleRateConverter(synth, targetSampleRate, SampleRateConverter::SRC_FASTEST),
 	inBuffer(new Sample[2 * MAX_SAMPLES_PER_RUN]),
 	position(1.0f), // Effectively makes resampler zero phase
 	lastLeft(),

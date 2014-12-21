@@ -21,7 +21,9 @@
 
 class SampleRateConverter {
 public:
-	static SampleRateConverter *createSampleRateConverter(MT32Emu::Synth *synth, double targetSampleRate);
+	enum SRCQuality {SRC_FASTEST, SRC_FAST, SRC_GOOD, SRC_BEST};
+
+	static SampleRateConverter *createSampleRateConverter(MT32Emu::Synth *synth, double targetSampleRate, SRCQuality quality);
 	virtual ~SampleRateConverter() {}
 
 	virtual void getOutputSamples(MT32Emu::Sample *buffer, unsigned int length) = 0;
@@ -32,8 +34,9 @@ protected:
 	MT32Emu::Synth * const synth;
 	const double inputToOutputRatio;
 	const double outputToInputRatio;
+	const SRCQuality srcQuality;
 
-	SampleRateConverter(MT32Emu::Synth *synth, double targetSampleRate);
+	SampleRateConverter(MT32Emu::Synth *synth, double targetSampleRate, SRCQuality quality);
 
 private:
 	SampleRateConverter(const SampleRateConverter &);

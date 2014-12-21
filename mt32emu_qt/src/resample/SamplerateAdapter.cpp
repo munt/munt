@@ -34,13 +34,29 @@ long SamplerateAdapter::getInputSamples(void *cb_data, float **data) {
 	return length;
 }
 
-SamplerateAdapter::SamplerateAdapter(Synth *synth, double targetSampleRate) :
-	SampleRateConverter(synth, targetSampleRate),
+SamplerateAdapter::SamplerateAdapter(Synth *synth, double targetSampleRate, SRCQuality quality) :
+	SampleRateConverter(synth, targetSampleRate, quality),
 	inBuffer(new float[2 * MAX_SAMPLES_PER_RUN]),
 	inBufferSize(MAX_SAMPLES_PER_RUN)
 {
 	int error;
-	resampler = src_callback_new(getInputSamples, SRC_SINC_FASTEST, 2, &error, this);
+	int conversionType;
+	switch (quality) {
+	case SRC_FASTEST:
+		conversionType = SRC_LINEAR;
+		break;
+	case SRC_FAST:
+		conversionType = SRC_SINC_FASTEST;
+		break;
+	case SRC_BEST:
+		conversionType = SRC_SINC_BEST_QUALITY;
+		break;
+	case SRC_GOOD:
+	default:
+		conversionType = SRC_SINC_MEDIUM_QUALITY;
+		break;
+	};
+	resampler = src_callback_new(getInputSamples, conversionType, 2, &error, this);
 	if (error != 0) {
 		qDebug() << "SampleRateConverter: Creation of Samplerate instance failed:" << src_strerror(error);
 		src_delete(resampler);

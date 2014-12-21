@@ -33,6 +33,7 @@ AudioPropertiesDialog::~AudioPropertiesDialog()
 
 void AudioPropertiesDialog::getData(AudioDriverSettings &driverSettings) {
 	driverSettings.sampleRate = ui->sampleRate->currentText().toUInt();
+	driverSettings.srcQuality = (SampleRateConverter::SRCQuality)ui->srcQuality->currentIndex();
 	driverSettings.chunkLen = ui->chunkLen->text().toInt();
 	driverSettings.audioLatency = ui->audioLatency->text().toInt();
 	driverSettings.midiLatency = ui->midiLatency->text().toInt();
@@ -47,6 +48,7 @@ void AudioPropertiesDialog::setData(const AudioDriverSettings &driverSettings) {
 	} else {
 		ui->sampleRate->setCurrentIndex(ix);
 	}
+	ui->srcQuality->setCurrentIndex(driverSettings.srcQuality);
 	ui->chunkLen->setText(QString().setNum(driverSettings.chunkLen));
 	ui->audioLatency->setText(QString().setNum(driverSettings.audioLatency));
 	ui->midiLatency->setText(QString().setNum(driverSettings.midiLatency));

@@ -24,20 +24,21 @@
 
 using namespace MT32Emu;
 
-SampleRateConverter *SampleRateConverter::createSampleRateConverter(Synth *synth, double targetSampleRate) {
+SampleRateConverter *SampleRateConverter::createSampleRateConverter(Synth *synth, double targetSampleRate, SRCQuality quality) {
 #if defined WITH_LIBSOXR_RESAMPLER
-	return new SoxrAdapter(synth, targetSampleRate);
+	return new SoxrAdapter(synth, targetSampleRate, quality);
 #elif defined WITH_LIBSAMPLERATE_RESAMPLER
-	return new SamplerateAdapter(synth, targetSampleRate);
+	return new SamplerateAdapter(synth, targetSampleRate, quality);
 #else
 	return new LinearResampler(synth, targetSampleRate);
 #endif
 }
 
-SampleRateConverter::SampleRateConverter(Synth *useSynth, double targetSampleRate) :
+SampleRateConverter::SampleRateConverter(Synth *useSynth, double targetSampleRate, SRCQuality quality) :
 	synth(useSynth),
 	inputToOutputRatio(useSynth->getStereoOutputSampleRate() / targetSampleRate),
-	outputToInputRatio(targetSampleRate / useSynth->getStereoOutputSampleRate())
+	outputToInputRatio(targetSampleRate / useSynth->getStereoOutputSampleRate()),
+	srcQuality(quality)
 {}
 
 double SampleRateConverter::getInputToOutputRatio() {

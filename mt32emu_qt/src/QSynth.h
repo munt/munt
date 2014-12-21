@@ -4,6 +4,8 @@
 #include <QtCore>
 #include <mt32emu/mt32emu.h>
 
+#include "resample/SampleRateConverter.h"
+
 enum SynthState {
 	SynthState_CLOSED,
 	SynthState_OPEN,
@@ -109,7 +111,7 @@ public:
 	QSynth(QObject *parent = NULL);
 	~QSynth();
 	bool isOpen() const;
-	bool open(uint targetSampleRate, const QString useSynthProfileName = "");
+	bool open(uint targetSampleRate, SampleRateConverter::SRCQuality srcQuality = SampleRateConverter::SRC_GOOD, const QString useSynthProfileName = "");
 	void close();
 	bool reset();
 

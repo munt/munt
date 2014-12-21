@@ -8,6 +8,7 @@
 #include <QMetaType>
 
 #include "../MasterClock.h"
+#include "../resample/SampleRateConverter.h"
 
 class AudioDriver;
 class QSynth;
@@ -56,6 +57,8 @@ Q_DECLARE_METATYPE(const AudioDevice *);
 struct AudioDriverSettings {
 	// The sample rate to use for instances of AudioStream being created
 	unsigned int sampleRate;
+	// The quality of sample rate conversion if applicable
+	SampleRateConverter::SRCQuality srcQuality;
 	// The maximum number of milliseconds to render at once
 	unsigned int chunkLen;
 	// The total latency of audio stream buffers in milliseconds

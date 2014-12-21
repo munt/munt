@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>174</width>
-    <height>172</height>
+    <height>198</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,6 +25,13 @@
         <widget class="QLabel" name="label_4">
          <property name="text">
           <string>Sample rate</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>SRC quality</string>
          </property>
         </widget>
        </item>
@@ -58,9 +65,10 @@
          <property name="toolTip">
           <string>As MT-32 compatible units use internally sample rate 32000 Hz, the emulation core is strictly bound to this frequency.
 Though, virtually any sample rate can be used by means of sample conversion, it can significantly degrade performance.
-So, it's best to rely on the audio system to make necessary conversions and set the emulation to produce output at 32000 Hz.
+So, it's best to rely on the audio system to make necessary conversions and set the emulation to produce output
+at default sample rate (which depends on analog output emulation mode).
 However, there are cases when a different sample rate is necessary / desired.
-In such cases, it is still preferable to set the sample rate to the lowest (closest) possible above 32000 Hz.</string>
+In such cases, it is still preferable to set the sample rate to the lowest (closest) possible above the default rate.</string>
          </property>
          <property name="editable">
           <bool>true</bool>
@@ -111,6 +119,39 @@ In such cases, it is still preferable to set the sample rate to the lowest (clos
         </widget>
        </item>
        <item>
+        <widget class="QComboBox" name="srcQuality">
+         <property name="toolTip">
+          <string>The quality of sample rate conversion when used.</string>
+         </property>
+         <property name="editable">
+          <bool>false</bool>
+         </property>
+         <property name="currentIndex">
+          <number>2</number>
+         </property>
+         <item>
+          <property name="text">
+           <string>Fastest</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Fast</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Good</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Best</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
         <widget class="QLineEdit" name="chunkLen"/>
        </item>
        <item>
@@ -145,6 +186,7 @@ In such cases, it is still preferable to set the sample rate to the lowest (clos
  <tabstops>
   <tabstop>buttonBox</tabstop>
   <tabstop>sampleRate</tabstop>
+  <tabstop>srcQuality</tabstop>
   <tabstop>chunkLen</tabstop>
   <tabstop>audioLatency</tabstop>
   <tabstop>midiLatency</tabstop>
