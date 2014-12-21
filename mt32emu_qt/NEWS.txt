@@ -1,4 +1,6 @@
-Next release:
+2014-12-21:
+
+	1.3.0 released.
 
 	* Fixed incorrect handling of some rarely used control messages in ALSA MIDI driver.
 	* Added support for using different sample rates in audio drivers using sample rate conversion.
