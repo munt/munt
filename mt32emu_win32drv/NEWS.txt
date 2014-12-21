@@ -1,4 +1,6 @@
-Next release:
+2014-12-21:
+
+	1.1.0 released.
 
 	* Fixed long standing issue with Windows MIDI driver that prevented receiving SysEx fragments or multi-SysEx packets
 	  sent in a single buffer. Running status for short messages is also supported now.
