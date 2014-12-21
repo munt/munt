@@ -5,6 +5,10 @@ Next release:
 	* Introduced full-featured MIDI stream parser class which can be used on incoming raw MIDI stream.
 	* Removed internal Portaudio copy and related build option munt_WITH_INTERNAL_PORTAUDIO as it becomes obsolete.
 	* Minimum required version of Cmake is now 2.8.4. Added support for version 3.0.2.
+	* Clarified API. Internal classes and structures are no longer defined in mt32emu.h file.
+	  Reduced number of headers installed. Some preprocessor definitions which control debugging output and optimisations
+	  moved to dedicated header file internals.h. Introduced a few wrapper methods in Synth to facilitate synth state
+	  visualisation and monitoring while avoiding direct access to internal classes.
 
 2014-06-09:
 
