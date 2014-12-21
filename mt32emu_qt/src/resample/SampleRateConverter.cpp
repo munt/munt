@@ -14,6 +14,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QtGlobal>
+
 #if defined WITH_LIBSOXR_RESAMPLER
 #include "SoxrAdapter.h"
 #elif defined WITH_LIBSAMPLERATE_RESAMPLER
@@ -30,6 +32,7 @@ SampleRateConverter *SampleRateConverter::createSampleRateConverter(Synth *synth
 #elif defined WITH_LIBSAMPLERATE_RESAMPLER
 	return new SamplerateAdapter(synth, targetSampleRate, quality);
 #else
+	Q_UNUSED(quality);
 	return new LinearResampler(synth, targetSampleRate);
 #endif
 }
