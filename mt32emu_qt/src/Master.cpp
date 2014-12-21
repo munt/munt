@@ -16,6 +16,7 @@
 
 #include <QSystemTrayIcon>
 #include <QDropEvent>
+#include <QMessageBox>
 
 #include "Master.h"
 #include "MasterClock.h"
