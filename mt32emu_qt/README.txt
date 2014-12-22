@@ -21,18 +21,25 @@ Cmake is required to building. The minimum set of dependencies is:
 2) Qt library
    @ http://qt.digia.com/
 
-3) PortAudio - cross-platform audio I/O library (included to the main munt repository)
-   @ http://www.portaudio.com/
-
-4) GLib - Gnome library (for building smf2wav console tool only)
+3) GLib - Gnome library (for building smf2wav console tool only)
    @ http://developer.gnome.org/glib/
 
 Additional dependencies maybe needed (depending on the platform):
 
-1) PulseAudio - sound system for POSIX OSes - provides for accurate audio rendering
-   @ http://www.pulseaudio.org/ or http://www.freedesktop.org/wiki/Software/PulseAudio
+1) PortAudio - cross-platform audio I/O library
+   @ http://www.portaudio.com/
 
 2) DirectX SDK - for building PortAudio with DirectSound and WDMKS support
+   @ http://www.microsoft.com/en-us/download/details.aspx?id=6812
+
+3) PulseAudio - sound system for POSIX OSes - provides for accurate audio rendering
+   @ http://www.pulseaudio.org/ or http://www.freedesktop.org/wiki/Software/PulseAudio
+
+4) libsoxr - The SoX Resampler library - to perform fast and high quality sample-rate conversion
+   @ http://sourceforge.net/projects/soxr/
+
+5) libsamplerate - Secret Rabbit Code - Sample Rate Converter
+   @ http://www.mega-nerd.com/SRC/
 
 
 License
