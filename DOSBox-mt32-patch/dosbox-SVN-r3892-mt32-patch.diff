@@ -1,4 +1,4 @@
-commit fe0a2c983887945d462ff34214d45cfefce51d17
+commit feddff63cd05b91ffea6181efbae173935c3aff2
 Author: sergm <sergm@bigmir.net>
 Date:   Mon Dec 8 10:31:44 2014 +0200
 
@@ -15,10 +15,10 @@ index 184469e..286638d 100644
 -
 +LIBS +=  -lmt32emu
 diff --git a/src/dosbox.cpp b/src/dosbox.cpp
-index 6aad419..9fec99a 100644
+index 83e6f43..d049aee 100644
 --- a/src/dosbox.cpp
 +++ b/src/dosbox.cpp
-@@ -483,7 +483,7 @@ void DOSBOX_Init(void) {
+@@ -491,7 +491,7 @@ void DOSBOX_Init(void) {
  	
  	const char* mputypes[] = { "intelligent", "uart", "none",0};
  	// FIXME: add some way to offer the actually available choices.
@@ -27,7 +27,7 @@ index 6aad419..9fec99a 100644
  	Pstring = secprop->Add_string("mpu401",Property::Changeable::WhenIdle,"intelligent");
  	Pstring->Set_values(mputypes);
  	Pstring->Set_help("Type of MPU-401 to emulate.");
-@@ -499,6 +499,8 @@ void DOSBOX_Init(void) {
+@@ -507,6 +507,8 @@ void DOSBOX_Init(void) {
  	                  "  In that case, add 'delaysysex', for example: midiconfig=2 delaysysex\n"
  	                  "  See the README/Manual for more details.");
  
@@ -48,7 +48,7 @@ index 3fed5e6..ca36a07 100644
 +	midi_coremidi.h midi_mt32.h midi_mt32.cpp sdl_gui.cpp dosbox_splash.h
  
 diff --git a/src/gui/midi.cpp b/src/gui/midi.cpp
-index ce4647f..3d289b8 100644
+index e7cc6d4..d908446 100644
 --- a/src/gui/midi.cpp
 +++ b/src/gui/midi.cpp
 @@ -91,6 +91,9 @@ MidiHandler Midi_none;
