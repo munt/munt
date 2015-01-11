@@ -1,3 +1,9 @@
+2015-01-11:
+
+	1.1.1 released.
+
+	* Fixed incorrect Analog emulation mode (and possibly samplerate) applied upon resetting the internal synth engine.
+
 2014-12-21:
 
 	1.1.0 released.

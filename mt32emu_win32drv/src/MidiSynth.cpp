@@ -576,7 +576,7 @@ int MidiSynth::Reset() {
 
 	synthEvent.Wait();
 	synth->close();
-	if (!synth->open(*controlROM, *pcmROM)) {
+	if (!synth->open(*controlROM, *pcmROM, analogOutputMode)) {
 		synth->close(true);
 		synthEvent.Release();
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
