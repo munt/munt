@@ -27,10 +27,6 @@ mt32emu_win32drv_setup
 ======================
 A tool intended to fascilitate installation / upgrade of the Windows driver mt32emu_win32drv.
 
-portaudio
-=========
-Portable Real-Time Audio Library, the main UI-enabled synthesiser application mt32emu_qt depends on.
-
 mt32emu_qt
 ==========
 Main synthesiser application. It makes use of mt32emu and Qt to provide for:

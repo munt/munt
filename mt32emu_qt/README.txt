@@ -21,9 +21,6 @@ Cmake is required to building. The minimum set of dependencies is:
 2) Qt library
    @ http://qt.digia.com/
 
-3) GLib - Gnome library (for building smf2wav console tool only)
-   @ http://developer.gnome.org/glib/
-
 Additional dependencies maybe needed (depending on the platform):
 
 1) PortAudio - cross-platform audio I/O library
