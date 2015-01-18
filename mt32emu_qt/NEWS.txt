@@ -1,3 +1,7 @@
+Next release:
+
+	* Improved CoreAudio driver: CoreAudioStream no longer renders data in the GUI thread, a dedicated internal AudioQueue thread is used instead.
+
 2014-12-21:
 
 	1.3.0 released.
