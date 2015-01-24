@@ -46,7 +46,7 @@ void* OSSMidiPortDriver::processingThread(void *userData) {
 
 	while (!data->stopProcessing) {
 		if (fd == -1) {
-			fd = open(data->midiPortName.toAscii().constData(), O_RDONLY | O_NONBLOCK);
+			fd = open(data->midiPortName.toLocal8Bit().constData(), O_RDONLY | O_NONBLOCK);
 			if (fd == -1) {
 				qDebug() << "OSSMidiPortDriver: Can't open MIDI port provided:" << data->midiPortName << ", errno:" << errno;
 				break;
