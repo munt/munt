@@ -1,4 +1,8 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.6)
+
+if(POLICY CMP0020)
+  cmake_policy(SET CMP0020 NEW) # remove if CMake >= 2.8.11 required
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/")
 
@@ -49,6 +53,17 @@ set(mt32emu_qt_SOURCES
   src/resample/SampleRateConverter.cpp
 )
 
+set(mt32emu_qt_FORMS
+  src/MainWindow.ui
+  src/AudioPropertiesDialog.ui
+  src/MidiPropertiesDialog.ui
+  src/SynthPropertiesDialog.ui
+  src/ROMSelectionDialog.ui
+  src/SynthWidget.ui
+  src/MidiConverterDialog.ui
+  src/MidiPlayerDialog.ui
+)
+
 set(mt32emu_qt_RESOURCES
   src/images.qrc
 )
@@ -63,7 +78,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   list(APPEND mt32emu_qt_SOURCES
     src/mididrv/CoreMidiDriver.cpp
     src/audiodrv/CoreAudioDriver.cpp
-)
+  )
   set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework AudioToolbox -framework CoreMIDI")
 else()
   find_package(ALSA)
@@ -77,56 +92,14 @@ else()
   endif()
 endif()
 
-set(mt32emu_qt_HEADERS
-  src/AudioFileWriter.h
-  src/MainWindow.h
-  src/Master.h
-  src/MidiSession.h
-  src/QSynth.h
-  src/SynthPropertiesDialog.h
-  src/AudioPropertiesDialog.h
-  src/MidiConverterDialog.h
-  src/MidiPropertiesDialog.h
-  src/ROMSelectionDialog.h
-  src/SynthRoute.h
-  src/SynthStateMonitor.h
-  src/SynthWidget.h
-  src/MidiPlayerDialog.h
-
-#  src/audiodrv/AudioDriver.h
-
-  src/mididrv/MidiDriver.h
-  src/mididrv/TestDriver.h
-  src/mididrv/SMFDriver.h
-)
-
-set(mt32emu_qt_FORMS
-  src/MainWindow.ui
-  src/AudioPropertiesDialog.ui
-  src/MidiPropertiesDialog.ui
-  src/SynthPropertiesDialog.ui
-  src/ROMSelectionDialog.ui
-  src/SynthWidget.ui
-  src/MidiConverterDialog.ui
-  src/MidiPlayerDialog.ui
-)
-
-find_package(Qt4 4.6.0 REQUIRED)
-include(${QT_USE_FILE})
-set(EXT_LIBS ${EXT_LIBS} ${QT_LIBRARIES})
+find_package(Qt5Widgets REQUIRED)
+set(EXT_LIBS ${EXT_LIBS} Qt5::Widgets)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  find_package(QtMobility)
-  if(QT_QTMULTIMEDIA_FOUND)
+  find_package(Qt5Multimedia)
+  if(Qt5Multimedia_FOUND)
     add_definitions(-DWITH_QT_AUDIO_DRIVER)
-    set(EXT_LIBS ${EXT_LIBS} ${QT_QTMULTIMEDIA_LIBRARY})
-    set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
-      src/audiodrv/QtAudioDriver.cpp
-    )
-  elseif(QT_MOBILITY_MULTIMEDIAKIT_FOUND)
-    add_definitions(-DWITH_QT_AUDIO_DRIVER -DUSE_QT_MULTIMEDIAKIT)
-    set(EXT_LIBS ${EXT_LIBS} ${QT_MOBILITY_MULTIMEDIAKIT_LIBRARY})
-    include_directories(${QT_MOBILITY_MULTIMEDIAKIT_INCLUDE_DIR} ${QT_MOBILITY_INCLUDE_DIR})
+    set(EXT_LIBS ${EXT_LIBS} Qt5::Multimedia)
     set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
       src/audiodrv/QtAudioDriver.cpp
     )
@@ -145,9 +118,6 @@ if(PORTAUDIO_FOUND)
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/PortAudioDriver.cpp
   )
-  set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-#    src/audiodrv/PortAudioDriver.h
-  )
 endif()
 
 if(ALSA_FOUND)
@@ -157,9 +127,6 @@ if(ALSA_FOUND)
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/AlsaAudioDriver.cpp
   )
-# set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-#   src/audiodrv/AlsaAudioDriver.h
-# )
   if(mt32emu-qt_WITH_ALSA_MIDI_DRIVER)
     add_definitions(-DWITH_ALSA_MIDI_DRIVER)
     set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
@@ -187,9 +154,6 @@ if(PULSEAUDIO_FOUND)
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/PulseAudioDriver.cpp
   )
-  set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-#    src/audiodrv/PulseAudioDriver.h
-  )
 endif()
 
 check_include_files(sys/soundcard.h SYS_SOUNDCARD_FOUND)
@@ -197,9 +161,6 @@ if(SYS_SOUNDCARD_FOUND)
   add_definitions(-DWITH_OSS_AUDIO_DRIVER)
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/OSSAudioDriver.cpp
-  )
-  set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-#    src/audiodrv/OSSAudioDriver.h
   )
 endif()
 
@@ -238,14 +199,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor -ansi)
 endif()
 
-QT4_ADD_RESOURCES(mt32emu_qt_RC ${mt32emu_qt_RESOURCES})
-qt4_wrap_cpp(mt32emu_qt_HEADERS_MOC ${mt32emu_qt_HEADERS})
-qt4_wrap_ui(mt32emu_qt_FORMS_HEADERS ${mt32emu_qt_FORMS})
+qt5_add_resources(mt32emu_qt_RC ${mt32emu_qt_RESOURCES})
+qt5_wrap_ui(mt32emu_qt_FORMS_HEADERS ${mt32emu_qt_FORMS})
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_executable(mt32emu-qt
-  ${mt32emu_qt_HEADERS_MOC}
   ${mt32emu_qt_FORMS_HEADERS}
   ${mt32emu_qt_SOURCES}
   ${mt32emu_qt_RC}

@@ -8,6 +8,8 @@
 #include "SynthWidget.h"
 
 class SynthRoute;
+class QLabel;
+
 namespace Ui {
 	class SynthWidget;
 }

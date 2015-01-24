@@ -87,7 +87,7 @@ void QReportHandler::onPolyStateChanged(int partNum) {
 }
 
 void QReportHandler::onProgramChanged(int partNum, int timbreGroup, const char patchName[]) {
-	emit programChanged(partNum, timbreGroup, QString().fromAscii(patchName));
+	emit programChanged(partNum, timbreGroup, QString().fromLocal8Bit(patchName));
 }
 
 void QSynth::convertSamplesFromNativeEndian(Bit16s *buffer, uint sampleCount, QSysInfo::Endian targetByteOrder) {
@@ -383,7 +383,7 @@ void QSynth::setAnalogOutputMode(MT32Emu::AnalogOutputMode useAnalogOutputMode) 
 
 const QString QSynth::getPatchName(int partNum) const {
 	synthMutex->lock();
-	QString name = isOpen() ? QString().fromAscii(synth->getPatchName(partNum)) : QString("Channel %1").arg(partNum + 1);
+	QString name = isOpen() ? QString().fromLocal8Bit(synth->getPatchName(partNum)) : QString("Channel %1").arg(partNum + 1);
 	synthMutex->unlock();
 	return name;
 }

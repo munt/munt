@@ -273,7 +273,7 @@ void LCDWidget::paintEvent(QPaintEvent *) {
 void LCDWidget::handleLCDMessageDisplayed(const QString useText) {
 	lcdState = DISPLAYING_MESSAGE;
 	lcdStateStartNanos = MasterClock::getClockNanos();
-	lcdText = useText.toAscii();
+	lcdText = useText.toLocal8Bit();
 	update();
 }
 
@@ -287,7 +287,7 @@ void LCDWidget::handleMasterVolumeChanged(int volume) {
 
 void LCDWidget::setPartStateLCDText() {
 	lcdState = DISPLAYING_PART_STATE;
-	lcdText = QString().sprintf("1 2 3 4 5 R |vol:%3d", masterVolume).toAscii();
+	lcdText = QString().sprintf("1 2 3 4 5 R |vol:%3d", masterVolume).toLocal8Bit();
 }
 
 void LCDWidget::setProgramChangeLCDText(int partNum, QString bankName, QString timbreName) {
@@ -295,7 +295,7 @@ void LCDWidget::setProgramChangeLCDText(int partNum, QString bankName, QString t
 	if ((lcdState != DISPLAYING_MESSAGE) || (nanosNow - lcdStateStartNanos > LCD_MESSAGE_DISPLAYING_NANOS)) {
 		lcdState = DISPLAYING_TIMBRE_NAME;
 		lcdStateStartNanos = nanosNow;
-		lcdText = (QString().sprintf("%1i|", partNum) + bankName + "|" + timbreName).toAscii();
+		lcdText = (QString().sprintf("%1i|", partNum) + bankName + "|" + timbreName).toLocal8Bit();
 		update();
 	}
 }

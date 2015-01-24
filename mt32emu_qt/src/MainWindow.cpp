@@ -15,6 +15,7 @@
  */
 
 #include <QtGui>
+#include <QMessageBox>
 
 #ifdef WITH_WINCONSOLE
 #ifndef _WIN32_WINNT

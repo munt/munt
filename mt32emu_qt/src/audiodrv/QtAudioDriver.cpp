@@ -16,11 +16,7 @@
 
 #include "QtAudioDriver.h"
 
-#ifdef USE_QT_MULTIMEDIAKIT
-#include <QtMultimediaKit/QAudioOutput>
-#else
 #include <QtMultimedia/QAudioOutput>
-#endif
 
 #include <mt32emu/mt32emu.h>
 
@@ -97,8 +93,8 @@ QtAudioStream::~QtAudioStream() {
 
 void QtAudioStream::start() {
 	QAudioFormat format;
-	format.setFrequency(sampleRate);
-	format.setChannels(2);
+	format.setSampleRate(sampleRate);
+	format.setChannelCount(2);
 	format.setSampleSize(16);
 	format.setCodec("audio/pcm");
 	// libmt32emu produces samples in native byte order which is the default byte order used in QAudioFormat

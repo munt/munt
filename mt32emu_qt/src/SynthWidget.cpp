@@ -14,6 +14,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QFileDialog>
+
 #include "audiodrv/AudioDriver.h"
 #include "SynthWidget.h"
 #include "ui_SynthWidget.h"
@@ -82,7 +84,7 @@ void SynthWidget::refreshAudioDeviceList(Master *master, const AudioDevice *useA
 }
 
 void SynthWidget::on_refreshButton_clicked() {
-	const AudioDevice *currentDevice = qVariantValue<const AudioDevice *> (ui->audioDeviceComboBox->itemData(ui->audioDeviceComboBox->currentIndex()));
+	const AudioDevice *currentDevice = ui->audioDeviceComboBox->itemData(ui->audioDeviceComboBox->currentIndex()).value<const AudioDevice *>();
 	refreshAudioDeviceList(Master::getInstance(), currentDevice);
 }
 
