@@ -94,6 +94,7 @@ endif()
 
 find_package(Qt5Widgets REQUIRED)
 set(EXT_LIBS ${EXT_LIBS} Qt5::Widgets)
+include_directories(${Qt5Widgets_INCLUDE_DIRS}) # remove if CMake >= 2.8.11 required
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
   find_package(Qt5Multimedia)
