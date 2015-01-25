@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.6)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/")
 
@@ -50,6 +50,17 @@ set(mt32emu_qt_SOURCES
   src/resample/SampleRateConverter.cpp
 )
 
+set(mt32emu_qt_FORMS
+  src/MainWindow.ui
+  src/AudioPropertiesDialog.ui
+  src/MidiPropertiesDialog.ui
+  src/SynthPropertiesDialog.ui
+  src/ROMSelectionDialog.ui
+  src/SynthWidget.ui
+  src/MidiConverterDialog.ui
+  src/MidiPlayerDialog.ui
+)
+
 set(mt32emu_qt_RESOURCES
   src/images.qrc
 )
@@ -69,7 +80,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   list(APPEND mt32emu_qt_SOURCES
     src/mididrv/CoreMidiDriver.cpp
     src/audiodrv/CoreAudioDriver.cpp
-)
+  )
   set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework AudioToolbox -framework CoreMIDI")
 else()
   find_package(ALSA)
@@ -82,40 +93,6 @@ else()
     set(EXT_LIBS ${EXT_LIBS} rt)
   endif()
 endif()
-
-set(mt32emu_qt_HEADERS
-  src/AudioFileWriter.h
-  src/MainWindow.h
-  src/Master.h
-  src/MidiSession.h
-  src/QSynth.h
-  src/SynthPropertiesDialog.h
-  src/AudioPropertiesDialog.h
-  src/MidiConverterDialog.h
-  src/MidiPropertiesDialog.h
-  src/ROMSelectionDialog.h
-  src/SynthRoute.h
-  src/SynthStateMonitor.h
-  src/SynthWidget.h
-  src/MidiPlayerDialog.h
-
-#  src/audiodrv/AudioDriver.h
-
-  src/mididrv/MidiDriver.h
-  src/mididrv/TestDriver.h
-  src/mididrv/SMFDriver.h
-)
-
-set(mt32emu_qt_FORMS
-  src/MainWindow.ui
-  src/AudioPropertiesDialog.ui
-  src/MidiPropertiesDialog.ui
-  src/SynthPropertiesDialog.ui
-  src/ROMSelectionDialog.ui
-  src/SynthWidget.ui
-  src/MidiConverterDialog.ui
-  src/MidiPlayerDialog.ui
-)
 
 find_package(Qt4 4.6.0 REQUIRED)
 include(${QT_USE_FILE})
@@ -151,9 +128,6 @@ if(PORTAUDIO_FOUND)
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/PortAudioDriver.cpp
   )
-  set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-#    src/audiodrv/PortAudioDriver.h
-  )
 endif()
 
 if(ALSA_FOUND)
@@ -163,16 +137,10 @@ if(ALSA_FOUND)
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/AlsaAudioDriver.cpp
   )
-# set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-#   src/audiodrv/AlsaAudioDriver.h
-# )
   if(mt32emu-qt_WITH_ALSA_MIDI_DRIVER)
     add_definitions(-DWITH_ALSA_MIDI_DRIVER)
     set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
       src/mididrv/ALSADriver.cpp
-    )
-    set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-      src/mididrv/ALSADriver.h
     )
   endif()
 endif()
@@ -193,9 +161,6 @@ if(PULSEAUDIO_FOUND)
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/PulseAudioDriver.cpp
   )
-  set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-#    src/audiodrv/PulseAudioDriver.h
-  )
 endif()
 
 check_include_files(sys/soundcard.h SYS_SOUNDCARD_FOUND)
@@ -203,9 +168,6 @@ if(SYS_SOUNDCARD_FOUND)
   add_definitions(-DWITH_OSS_AUDIO_DRIVER)
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/OSSAudioDriver.cpp
-  )
-  set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-#    src/audiodrv/OSSAudioDriver.h
   )
 endif()
 
@@ -244,14 +206,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor -ansi)
 endif()
 
-QT4_ADD_RESOURCES(mt32emu_qt_RC ${mt32emu_qt_RESOURCES})
-qt4_wrap_cpp(mt32emu_qt_HEADERS_MOC ${mt32emu_qt_HEADERS})
+qt4_add_resources(mt32emu_qt_RC ${mt32emu_qt_RESOURCES})
 qt4_wrap_ui(mt32emu_qt_FORMS_HEADERS ${mt32emu_qt_FORMS})
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_executable(mt32emu-qt
-  ${mt32emu_qt_HEADERS_MOC}
   ${mt32emu_qt_FORMS_HEADERS}
   ${mt32emu_qt_SOURCES}
   ${mt32emu_qt_RC}
