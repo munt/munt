@@ -102,15 +102,13 @@ find_package(Qt5Widgets REQUIRED)
 set(EXT_LIBS ${EXT_LIBS} Qt5::Widgets)
 include_directories(${Qt5Widgets_INCLUDE_DIRS}) # remove if CMake >= 2.8.11 required
 
-if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  find_package(Qt5Multimedia)
-  if(Qt5Multimedia_FOUND)
-    add_definitions(-DWITH_QT_AUDIO_DRIVER)
-    set(EXT_LIBS ${EXT_LIBS} Qt5::Multimedia)
-    set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
-      src/audiodrv/QtAudioDriver.cpp
-    )
-  endif()
+find_package(Qt5Multimedia)
+if(Qt5Multimedia_FOUND)
+  add_definitions(-DWITH_QT_AUDIO_DRIVER)
+  set(EXT_LIBS ${EXT_LIBS} Qt5::Multimedia)
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/audiodrv/QtAudioDriver.cpp
+  )
 endif()
 
 find_package(MT32EMU REQUIRED)
