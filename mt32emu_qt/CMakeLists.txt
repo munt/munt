@@ -9,6 +9,7 @@ set(mt32emu_qt_VERSION_PATCH 0)
 
 option(mt32emu-qt_WITH_ALSA_MIDI_DRIVER "Use ALSA MIDI sequencer" TRUE)
 option(mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING "Load PulseAudio library dynamically" TRUE)
+option(mt32emu-qt_WITH_DEBUG_WINCONSOLE "Use console for showing debug output on Windows" FALSE)
 
 add_definitions(-DPACKAGE_VERSION="${munt_VERSION_MAJOR}.${munt_VERSION_MINOR}.${munt_VERSION_PATCH}")
 add_definitions(-DAPP_VERSION="${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
@@ -54,10 +55,15 @@ set(mt32emu_qt_RESOURCES
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
-  add_definitions(-DWITH_WIN32_MIDI_DRIVER -DWITH_WINMM_AUDIO_DRIVER -DWITH_WINMMTIMER -DWITH_WINCONSOLE)
+  add_definitions(-DWITH_WIN32_MIDI_DRIVER -DWITH_WINMM_AUDIO_DRIVER -DWITH_WINMMTIMER)
   list(APPEND mt32emu_qt_SOURCES src/mididrv/Win32Driver.cpp)
   list(APPEND mt32emu_qt_SOURCES src/audiodrv/WinMMAudioDriver.cpp)
   set(EXT_LIBS ${EXT_LIBS} winmm)
+  if(mt32emu-qt_WITH_DEBUG_WINCONSOLE)
+    add_definitions(-DWITH_WINCONSOLE)
+  else()
+    set(CMAKE_WIN32_EXECUTABLE True)
+  endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   add_definitions(-DWITH_COREMIDI_DRIVER -DWITH_COREAUDIO_DRIVER)
   list(APPEND mt32emu_qt_SOURCES
