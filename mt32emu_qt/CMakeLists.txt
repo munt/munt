@@ -98,22 +98,20 @@ find_package(Qt4 4.6.0 REQUIRED)
 include(${QT_USE_FILE})
 set(EXT_LIBS ${EXT_LIBS} ${QT_LIBRARIES})
 
-if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  find_package(QtMobility)
-  if(QT_QTMULTIMEDIA_FOUND)
-    add_definitions(-DWITH_QT_AUDIO_DRIVER)
-    set(EXT_LIBS ${EXT_LIBS} ${QT_QTMULTIMEDIA_LIBRARY})
-    set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
-      src/audiodrv/QtAudioDriver.cpp
-    )
-  elseif(QT_MOBILITY_MULTIMEDIAKIT_FOUND)
-    add_definitions(-DWITH_QT_AUDIO_DRIVER -DUSE_QT_MULTIMEDIAKIT)
-    set(EXT_LIBS ${EXT_LIBS} ${QT_MOBILITY_MULTIMEDIAKIT_LIBRARY})
-    include_directories(${QT_MOBILITY_MULTIMEDIAKIT_INCLUDE_DIR} ${QT_MOBILITY_INCLUDE_DIR})
-    set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
-      src/audiodrv/QtAudioDriver.cpp
-    )
-  endif()
+find_package(QtMobility)
+if(QT_QTMULTIMEDIA_FOUND)
+  add_definitions(-DWITH_QT_AUDIO_DRIVER)
+  set(EXT_LIBS ${EXT_LIBS} ${QT_QTMULTIMEDIA_LIBRARY})
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/audiodrv/QtAudioDriver.cpp
+  )
+elseif(QT_MOBILITY_MULTIMEDIAKIT_FOUND)
+  add_definitions(-DWITH_QT_AUDIO_DRIVER -DUSE_QT_MULTIMEDIAKIT)
+  set(EXT_LIBS ${EXT_LIBS} ${QT_MOBILITY_MULTIMEDIAKIT_LIBRARY})
+  include_directories(${QT_MOBILITY_MULTIMEDIAKIT_INCLUDE_DIR} ${QT_MOBILITY_INCLUDE_DIR})
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/audiodrv/QtAudioDriver.cpp
+  )
 endif()
 
 find_package(MT32EMU REQUIRED)
