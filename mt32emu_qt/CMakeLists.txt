@@ -139,9 +139,6 @@ if(ALSA_FOUND)
     set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
       src/mididrv/ALSADriver.cpp
     )
-    set(mt32emu_qt_HEADERS ${mt32emu_qt_HEADERS}
-      src/mididrv/ALSADriver.h
-    )
   endif()
 endif()
 
