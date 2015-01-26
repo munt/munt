@@ -77,7 +77,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
   if(mt32emu-qt_WITH_DEBUG_WINCONSOLE)
     add_definitions(-DWITH_WINCONSOLE)
   else()
-    set(CMAKE_WIN32_EXECUTABLE True)
+#   set(CMAKE_WIN32_EXECUTABLE True) # available since cmake v2.8.8
+    set(EXE_PROPERTY WIN32)
   endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   add_definitions(-DWITH_COREMIDI_DRIVER -DWITH_COREAUDIO_DRIVER)
@@ -86,6 +87,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     src/audiodrv/CoreAudioDriver.cpp
   )
   set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework AudioToolbox -framework CoreMIDI")
+# set(CMAKE_MACOSX_BUNDLE True) # available since cmake v2.8.8
+  set(EXE_PROPERTY MACOSX_BUNDLE)
 else()
   find_package(ALSA)
   if(NOT (ALSA_FOUND AND mt32emu-qt_WITH_ALSA_MIDI_DRIVER))
@@ -207,7 +210,7 @@ qt5_wrap_ui(mt32emu_qt_FORMS_HEADERS ${mt32emu_qt_FORMS})
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_executable(mt32emu-qt
+add_executable(mt32emu-qt ${EXE_PROPERTY}
   ${mt32emu_qt_FORMS_HEADERS}
   ${mt32emu_qt_SOURCES}
   ${mt32emu_qt_RC}
