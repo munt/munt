@@ -99,6 +99,6 @@ void SoxrAdapter::getOutputSamples(Sample *buffer, uint length) {
 			qDebug() << "SampleRateConverter: got 0 frames from SOXR, weird";
 		}
 		buffer += gotFrames << 1;
-		length -= gotFrames;
+		length -= (uint)gotFrames;
 	}
 }
