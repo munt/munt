@@ -16,7 +16,7 @@
 
 #include "LinearResampler.h"
 
-#include <qglobal.h>
+#include <QtGlobal>
 
 using namespace MT32Emu;
 
