@@ -61,6 +61,12 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u 
 	return Bit8u(checksum & 0x7f);
 }
 
+unsigned int Synth::getStereoOutputSampleRate(AnalogOutputMode analogOutputMode) {
+	static const unsigned int SAMPLE_RATES[] = {SAMPLE_RATE, SAMPLE_RATE, SAMPLE_RATE * 3 / 2, SAMPLE_RATE * 3};
+
+	return SAMPLE_RATES[analogOutputMode];
+}
+
 Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams()), mt32default(*new MemParams()) {
 	isOpen = false;
 	reverbOverridden = false;

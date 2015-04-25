@@ -297,6 +297,10 @@ public:
 	static Bit32u getShortMessageLength(Bit32u msg);
 	static Bit8u calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u initChecksum = 0);
 
+	// Returns output sample rate used in emulation of stereo analog circuitry of hardware units.
+	// See comment for AnalogOutputMode above.
+	static unsigned int getStereoOutputSampleRate(AnalogOutputMode analogOutputMode);
+
 	// Optionally sets callbacks for reporting various errors, information and debug messages
 	Synth(ReportHandler *useReportHandler = NULL);
 	~Synth();
