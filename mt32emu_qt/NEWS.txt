@@ -2,6 +2,7 @@ Next release:
 
 	* Improved CoreAudio driver: CoreAudioStream no longer renders data in the GUI thread, a dedicated internal AudioQueue thread is used instead.
 	* Added build option mt32emu-qt_WITH_DEBUG_WINCONSOLE. It controls whether a debugging console is shown on Windows.
+	* Fixed a bug in LinearResampler that may cause incorrect output at beginning of each audio block.
 
 2014-12-21:
 

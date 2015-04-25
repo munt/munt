@@ -16,6 +16,7 @@ private:
 
 	float position;
 	MT32Emu::Sample lastLeft, lastRight;
+	MT32Emu::Sample nextLeft, nextRight;
 
 	MT32Emu::Sample computeOutSample(MT32Emu::Sample prev, MT32Emu::Sample next);
 };
