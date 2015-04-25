@@ -39,6 +39,9 @@ AnalogOutputMode SampleRateConverter::chooseActualAnalogOutputMode(AnalogOutputM
 			desiredMode = AnalogOutputMode_COARSE;
 		}
 	}
+#else
+	Q_UNUSED(targetSampleRate)
+	Q_UNUSED(srcQuality)
 #endif
 	return desiredMode;
 }
