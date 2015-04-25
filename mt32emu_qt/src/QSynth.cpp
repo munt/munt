@@ -222,8 +222,8 @@ bool QSynth::open(uint targetSampleRate, SampleRateConverter::SRCQuality srcQual
 		freeROMImages();
 		return false;
 	}
-	actualAnalogOutputMode = synthProfile.analogOutputMode;
-	static const char *ANALOG_OUTPUT_MODES[] = {"Digital only", "Coarse", "Accurate"};
+	actualAnalogOutputMode = SampleRateConverter::chooseActualAnalogOutputMode(synthProfile.analogOutputMode, targetSampleRate, srcQuality);
+	static const char *ANALOG_OUTPUT_MODES[] = {"Digital only", "Coarse", "Accurate", "Oversampled2x"};
 	qDebug() << "Using Analogue output mode:" << ANALOG_OUTPUT_MODES[actualAnalogOutputMode];
 	if (synth->open(*controlROMImage, *pcmROMImage, actualAnalogOutputMode)) {
 		setState(SynthState_OPEN);

@@ -10,7 +10,7 @@ set(mt32emu_qt_VERSION_PATCH 0)
 option(mt32emu-qt_WITH_ALSA_MIDI_DRIVER "Use ALSA MIDI sequencer" TRUE)
 option(mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING "Load PulseAudio library dynamically" TRUE)
 option(mt32emu-qt_WITH_DEBUG_WINCONSOLE "Use console for showing debug output on Windows" FALSE)
-option(mt32emu-qt_WITH_LINEAR_RESAMPLER "Use internal linear interpolator for resampling" TRUE)
+option(mt32emu-qt_WITH_INTERNAL_RESAMPLER "Use internal resampler" TRUE)
 
 add_definitions(-DPACKAGE_VERSION="${munt_VERSION_MAJOR}.${munt_VERSION_MINOR}.${munt_VERSION_PATCH}")
 add_definitions(-DAPP_VERSION="${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
@@ -173,39 +173,44 @@ if(SYS_SOUNDCARD_FOUND)
   )
 endif()
 
-# Prefer using SOXR if it is available
-find_package(LibSoxr)
-if(LIBSOXR_FOUND)
-  add_definitions(-DWITH_LIBSOXR_RESAMPLER)
-  set(EXT_LIBS ${EXT_LIBS} ${LIBSOXR_LIBRARY})
-  include_directories(${LIBSOXR_INCLUDE_DIR})
-  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
-    src/resample/SoxrAdapter.cpp
-  )
-else(LIBSOXR_FOUND)
-  message(STATUS "Could NOT find libsoxr")
-
-  # Try Samplerate if SOXR is unavailable
-  find_package(LibSamplerate)
-  if(LIBSAMPLERATE_FOUND)
-    add_definitions(-DWITH_LIBSAMPLERATE_RESAMPLER)
-    set(EXT_LIBS ${EXT_LIBS} ${LIBSAMPLERATE_LIBRARY})
-    include_directories(${LIBSAMPLERATE_INCLUDE_DIR})
+if(NOT mt32emu-qt_WITH_INTERNAL_RESAMPLER)
+  # Prefer using SOXR if it is available
+  find_package(LibSoxr)
+  if(LIBSOXR_FOUND)
+    add_definitions(-DWITH_LIBSOXR_RESAMPLER)
+    set(EXT_LIBS ${EXT_LIBS} ${LIBSOXR_LIBRARY})
+    include_directories(${LIBSOXR_INCLUDE_DIR})
     set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
-      src/resample/SamplerateAdapter.cpp
+      src/resample/SoxrAdapter.cpp
     )
-  else(LIBSAMPLERATE_FOUND)
-    message(STATUS "Could NOT find libsamplerate")
+  else(LIBSOXR_FOUND)
+    message(STATUS "Could NOT find libsoxr")
 
-    if(mt32emu-qt_WITH_LINEAR_RESAMPLER)
-      # Use "fast and dirty" linear interpolator if neither SOXR nor Samplerate are unavailable
-      add_definitions(-DWITH_LINEAR_RESAMPLER)
+    # Try Samplerate if SOXR is unavailable
+    find_package(LibSamplerate)
+    if(LIBSAMPLERATE_FOUND)
+      add_definitions(-DWITH_LIBSAMPLERATE_RESAMPLER)
+      set(EXT_LIBS ${EXT_LIBS} ${LIBSAMPLERATE_LIBRARY})
+      include_directories(${LIBSAMPLERATE_INCLUDE_DIR})
       set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
-        src/resample/LinearResampler.cpp
+        src/resample/SamplerateAdapter.cpp
       )
-    endif(mt32emu-qt_WITH_LINEAR_RESAMPLER)
-  endif(LIBSAMPLERATE_FOUND)
-endif(LIBSOXR_FOUND)
+    else(LIBSAMPLERATE_FOUND)
+      message(STATUS "Could NOT find libsamplerate")
+      set(mt32emu-qt_WITH_INTERNAL_RESAMPLER "TRUE")
+    endif(LIBSAMPLERATE_FOUND)
+  endif(LIBSOXR_FOUND)
+endif(NOT mt32emu-qt_WITH_INTERNAL_RESAMPLER)
+
+if(mt32emu-qt_WITH_INTERNAL_RESAMPLER)
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/resample/FIRInterpolator.cpp
+    src/resample/SincResampler.cpp
+    src/resample/IIRDecimator.cpp
+    src/resample/InternalResampler.cpp
+    src/resample/LinearResampler.cpp
+  )
+endif(mt32emu-qt_WITH_INTERNAL_RESAMPLER)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor -ansi)
