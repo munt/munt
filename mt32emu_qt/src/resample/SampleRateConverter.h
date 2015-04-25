@@ -7,7 +7,7 @@ class SampleRateConverter {
 public:
 	enum SRCQuality {SRC_FASTEST, SRC_FAST, SRC_GOOD, SRC_BEST};
 
-	static MT32Emu::AnalogOutputMode SampleRateConverter::chooseActualAnalogOutputMode(MT32Emu::AnalogOutputMode desiredMode, double targetSampleRate, SampleRateConverter::SRCQuality srcQuality);
+	static MT32Emu::AnalogOutputMode chooseActualAnalogOutputMode(MT32Emu::AnalogOutputMode desiredMode, double targetSampleRate, SampleRateConverter::SRCQuality srcQuality);
 	static SampleRateConverter *createSampleRateConverter(MT32Emu::Synth *synth, double targetSampleRate, SRCQuality quality);
 	virtual ~SampleRateConverter() {}
 
