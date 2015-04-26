@@ -92,7 +92,7 @@ const FIRCoefficient * SincResampler::I::windowedSinc(FIRCoefficient *kernel, co
 	const double mult = 2.0 * fc * amp / bessel(beta);
 	for (int i = order, j = 0; 0 <= i; i -= 2, ++j) {
 		double xw = i * recipOrder;
-		double win = bessel(beta * sqrt(abs(1.0 - xw * xw)));
+		double win = bessel(beta * sqrt(fabs(1.0 - xw * xw)));
 		double xs = i * fc_pi;
 		double sinc = (i == 0) ? 1.0 : sin(xs) / xs;
 		FIRCoefficient imp = FIRCoefficient(mult * sinc * win);
