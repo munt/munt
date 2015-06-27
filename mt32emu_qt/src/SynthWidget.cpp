@@ -224,7 +224,7 @@ void SynthWidget::on_midiRecord_clicked() {
 		ui->midiRecord->setText("Record");
 		recorder.stopRecording();
 		static QString currentDir = NULL;
-		QString fileName = QFileDialog::getSaveFileName(NULL, NULL, currentDir, "Standard MIDI files (*.mid)");
+		QString fileName = QFileDialog::getSaveFileName(this, NULL, currentDir, "Standard MIDI files (*.mid)");
 		if (!fileName.isEmpty()) {
 			currentDir = QDir(fileName).absolutePath();
 			recorder.saveSMF(fileName, MasterClock::NANOS_PER_MILLISECOND);
