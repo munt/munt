@@ -43,7 +43,7 @@ void MidiPlayerDialog::on_playList_doubleClicked(const QModelIndex &) {
 
 void MidiPlayerDialog::on_addButton_clicked() {
 	static QString currentDir = Master::getInstance()->getSettings()->value("Master/LastAddMidiFileDir").toString();
-	QStringList fileNames = QFileDialog::getOpenFileNames(NULL, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
 	if (!fileNames.isEmpty()) {
 		currentDir = QDir(fileNames.first()).absolutePath();
 		Master::getInstance()->getSettings()->setValue("Master/LastAddMidiFileDir", currentDir);
@@ -55,7 +55,7 @@ void MidiPlayerDialog::on_addButton_clicked() {
 
 void MidiPlayerDialog::on_addListButton_clicked() {
 	static QString currentDir = Master::getInstance()->getSettings()->value("Master/LastAddMidiFileListDir").toString();
-	QString fileName = QFileDialog::getOpenFileName(NULL, NULL, currentDir, "Play list files (*.*)");
+	QString fileName = QFileDialog::getOpenFileName(this, NULL, currentDir, "Play list files (*.*)");
 	if (!fileName.isEmpty()) {
 		currentDir = QDir(fileName).absolutePath();
 		Master::getInstance()->getSettings()->setValue("Master/LastAddMidiFileListDir", currentDir);
@@ -82,7 +82,7 @@ void MidiPlayerDialog::on_clearButton_clicked() {
 
 void MidiPlayerDialog::on_saveListButton_clicked() {
 	static QString currentDir = NULL;
-	QString fileName = QFileDialog::getSaveFileName(NULL, NULL, currentDir, "Play list files (*.*)");
+	QString fileName = QFileDialog::getSaveFileName(this, NULL, currentDir, "Play list files (*.*)");
 	if (!fileName.isEmpty()) {
 		currentDir = QDir(fileName).absolutePath();
 		QFile listFile(fileName);
