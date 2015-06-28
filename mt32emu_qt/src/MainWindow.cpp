@@ -120,6 +120,7 @@ void MainWindow::on_actionAbout_triggered()
 					   "Munt mt32emu_qt GUI Application Version " APP_VERSION "\n"
 					   "Qt Library Version " QT_VERSION_STR "\n"
 					   "\n"
+					   "Arch " + QSysInfo::currentCpuArchitecture() + "\n"
 					   "Build " GIT_HASH "\n"
 					   "Date " BUILD_DATE "\n"
 					   "\n"
