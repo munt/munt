@@ -36,8 +36,11 @@ private:
 	static void enumPorts(QList<QString> &midiInPortNames);
 
 	Win32MidiInProcessor midiInProcessor;
+	QList<unsigned int> midiSessionIDs;
 	QList<Win32MidiIn *> midiInPorts;
 	QList<MidiSession *> midiInSessions;
+
+	MidiSession *findMidiSession(quint32 midiSessionID);
 
 public:
 	Win32MidiDriver(Master *useMaster);

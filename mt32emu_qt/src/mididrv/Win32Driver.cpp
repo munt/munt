@@ -31,19 +31,21 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 	switch (uMsg) {
 	case WM_APP: {
 		// Closing session
-		MidiSession *midiSession = (MidiSession *)wParam;
-		if (driver->midiSessions.indexOf(midiSession) < 0) {
-			qDebug() << "Win32MidiDriver: Invalid midiSession handle supplied";
+		quint32 midiSessionID = (quint32)wParam;
+		MidiSession *midiSession = driver->findMidiSession(midiSessionID);
+		driver->midiSessionIDs.removeAll(midiSessionID);
+		if (!midiSession) {
+			qDebug() << "Win32MidiDriver: Invalid midiSession ID supplied:" << "0x" + QString::number(midiSessionID, 16);
 			return 0;
 		}
-		qDebug() << "Win32MidiDriver: Session" << midiSession << "finished";
+		qDebug() << "Win32MidiDriver: Session ID =" << "0x" + QString::number(midiSessionID, 16) << "finished";
 		driver->deleteMidiSession(midiSession);
 		return 1;
 	}
 
 	case WM_COPYDATA: {
 		COPYDATASTRUCT *cds = (COPYDATASTRUCT *)lParam;
-		MidiSession *midiSession = (MidiSession *)cds->dwData;
+		quint32 midiSessionID = (quint32)cds->dwData;
 		DWORD *data = (DWORD *)cds->lpData;
 		if (data[0] == 0) { // Special value, mark of a non-Sysex message
 			if (data[1] == (DWORD)-1) { // Special value, mark of a handshaking message
@@ -52,30 +54,36 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 				startMasterClock = t.QuadPart - MasterClock::getClockNanos();
 				// Process handshaking message
 				QString appName = QFileInfo(QString((const char *)&data[5])).fileName();
-				midiSession = driver->createMidiSession(appName);
-				driver->showBalloon("Connected application:", appName);
-				qDebug() << "Win32MidiDriver: Connected application" << appName;
-				qDebug() << "Win32MidiDriver: Session" << midiSession << "protocol version" << data[2];
+				MidiSession *midiSession = driver->createMidiSession(appName);
 				if (!midiSession) {
 					qDebug() << "Win32MidiDriver: Failed to create new session";
 					return 0;
 				}
-				return (LRESULT)midiSession;
+				do
+					midiSessionID = (quint32)qrand();
+				while (driver->midiSessionIDs.indexOf(midiSessionID) >= 0);
+				driver->midiSessionIDs.append(midiSessionID);
+				driver->showBalloon("Connected application:", appName);
+				qDebug() << "Win32MidiDriver: Connected application" << appName;
+				qDebug() << "Win32MidiDriver: Session ID:" << "0x" + QString::number(midiSessionID, 16) << "with protocol version" << data[2];
+				return (LRESULT)midiSessionID;
 			} else if (data[1] == 0) { // Special value, mark of a short MIDI message
 				// Process short MIDI message
-				if (driver->midiSessions.indexOf(midiSession) < 0) {
-					qDebug() << "Win32MidiDriver: Invalid midiSession handle supplied";
+				MidiSession *midiSession = driver->findMidiSession(midiSessionID);
+				if (!midiSession) {
+					qDebug() << "Win32MidiDriver: Invalid midiSession ID supplied:" << "0x" + QString::number(midiSessionID, 16);
 					return 0;
 				}
-				LARGE_INTEGER t = {{data[2], (LONG)data[3]}};
+				LARGE_INTEGER t = { { data[2], (LONG)data[3] } };
 //				qDebug() << "D" << 1e-6 * ((t.QuadPart - startMasterClock) - MasterClock::getClockNanos());
 				midiSession->getSynthRoute()->pushMIDIShortMessage(data[4], t.QuadPart - startMasterClock);
 				return 1;
 			}
 		} else {
 			// Process Sysex
-			if (driver->midiSessions.indexOf(midiSession) < 0) {
-				qDebug() << "Win32MidiDriver: Invalid midiSession handle supplied";
+			MidiSession *midiSession = driver->findMidiSession(midiSessionID);
+			if (!midiSession) {
+				qDebug() << "Win32MidiDriver: Invalid midiSession ID supplied:" << "0x" + QString::number(midiSessionID, 16);
 				return 0;
 			}
 			midiSession->getSynthRoute()->pushMIDISysex((MT32Emu::Bit8u *)cds->lpData, cds->cbData, MasterClock::getClockNanos());
@@ -86,6 +94,11 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 	default:
 		return DefWindowProc(hwnd, uMsg, wParam, lParam);
 	}
+}
+
+MidiSession *Win32MidiDriver::findMidiSession(quint32 midiSessionID) {
+	int midiSessionIx = midiSessionIDs.indexOf(midiSessionID);
+	return ((midiSessionIx < 0) || (midiSessions.size() <= midiSessionIx)) ? NULL : midiSessions.at(midiSessionIx);
 }
 
 void Win32MidiInProcessor::run() {
@@ -169,7 +182,12 @@ bool Win32MidiDriver::createPort(MidiPropertiesDialog *mpd, MidiSession *midiSes
 void Win32MidiDriver::deletePort(MidiSession *midiSession) {
 	int portIx = midiInSessions.indexOf(midiSession);
 	if (portIx < 0) {
-		midiSessions.removeOne(midiSession);
+		int i = midiSessions.indexOf(midiSession);
+		if ((0 <= i) && (i < midiSessionIDs.size())) {
+			quint32 id = midiSessionIDs.at(i);
+			midiSessionIDs.removeAll(id);
+			midiSessions.removeAt(i);
+		}
 		return;
 	}
 	delete midiInPorts.takeAt(portIx);
