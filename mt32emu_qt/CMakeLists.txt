@@ -76,7 +76,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows OR CYGWIN)
   list(APPEND mt32emu_qt_SOURCES src/mididrv/Win32Driver.cpp)
   list(APPEND mt32emu_qt_SOURCES src/audiodrv/WinMMAudioDriver.cpp)
   set(EXT_LIBS ${EXT_LIBS} winmm)
-  if(mt32emu-qt_WITH_DEBUG_WINCONSOLE)
+  if(NOT CYGWIN AND mt32emu-qt_WITH_DEBUG_WINCONSOLE)
     add_definitions(-DWITH_WINCONSOLE)
   else()
 #   set(CMAKE_WIN32_EXECUTABLE True) # available since cmake v2.8.8
