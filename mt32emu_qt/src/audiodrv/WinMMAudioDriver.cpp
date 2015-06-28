@@ -34,7 +34,7 @@ static const DWORD DEFAULT_MIDI_LATENCY = 15;
 WinMMAudioStream::WinMMAudioStream(const AudioDriverSettings &useSettings, bool useRingBufferMode, QSynth &useSynth, const uint useSampleRate) :
 	AudioStream(useSettings, useSynth, useSampleRate),
 	hWaveOut(NULL), waveHdr(NULL), hEvent(NULL), hWaitableTimer(NULL), stopProcessing(false),
-	processingThreadHandle(0L), ringBufferMode(useRingBufferMode), prevPlayPosition(0L)
+	processor(*this), ringBufferMode(useRingBufferMode), prevPlayPosition(0L)
 {
 	chunkSize = (settings.chunkLen * sampleRate) / MasterClock::MILLIS_PER_SECOND;
 	if (ringBufferMode) {
@@ -97,8 +97,9 @@ DWORD WinMMAudioStream::getCurrentPlayPosition() {
 	return DWORD(prevPlayPosition % audioLatencyFrames);
 }
 
-void WinMMAudioStream::processingThread(void *userData) {
-	WinMMAudioStream &stream = *(WinMMAudioStream *)userData;
+WinMMAudioProcessor::WinMMAudioProcessor(WinMMAudioStream &stream) : stream(stream) {}
+
+void WinMMAudioProcessor::run() {
 	const double samplePeriod = (double)MasterClock::NANOS_PER_SECOND / (double)stream.sampleRate;
 	while (!stream.stopProcessing) {
 		const DWORD playCursor = stream.getCurrentPlayPosition();
@@ -163,7 +164,6 @@ void WinMMAudioStream::processingThread(void *userData) {
 		}
 	}
 	stream.stopProcessing = false;
-	return;
 }
 
 bool WinMMAudioStream::start(int deviceIndex) {
@@ -235,40 +235,16 @@ bool WinMMAudioStream::start(int deviceIndex) {
 	}
 	timeInfo[timeInfoIx].lastPlayedNanos = MasterClock::getClockNanos();
 
-	processingThreadHandle = _beginthread(processingThread, 1024*1024, this);
-	if (processingThreadHandle == (uintptr_t)-1L) {
-		qDebug() << "WinMMAudioDriver: Cannot start processing thread";
-		stopProcessing = true;
-		processingThreadHandle = 0L;
-		close();
-		return false;
-	}
-	SetThreadPriority((HANDLE)processingThreadHandle, THREAD_PRIORITY_TIME_CRITICAL);
+	processor.start(QThread::TimeCriticalPriority);
 	return true;
 }
 
 void WinMMAudioStream::close() {
 	if (hWaveOut != NULL) {
-
-		// stopProcessing == true means the processing thread has already exited upon a failure
-		if ((stopProcessing == false) && (processingThreadHandle != 0L)) {
+		if (stopProcessing == false) {
 			stopProcessing = true;
-			if (hEvent != NULL) SetEvent(hEvent);
-			qDebug() << "WinMMAudioDriver: Waiting for processing thread to stop...";
-			while (stopProcessing == true) {
-				DWORD res = WaitForSingleObject((HANDLE)processingThreadHandle, 10);
-				if (WAIT_TIMEOUT == res) {
-					// The thread is still alive
-					continue;
-				}
-				if (WAIT_OBJECT_0 != res) {
-					// Looks like the thread is already died
-					qDebug() << "WinMMAudioDriver: WaitForSingleObject() returned" << res;
-				}
-				break;
-			}
+			processor.wait();
 		}
-		processingThreadHandle = 0L;
 		stopProcessing = false;
 		qDebug() << "WinMMAudioDriver: Processing thread stopped";
 

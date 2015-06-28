@@ -15,8 +15,23 @@
 class Master;
 class WinMMAudioDriver;
 class WinMMAudioDevice;
+class WinMMAudioStream;
+
+class WinMMAudioProcessor : public QThread {
+	Q_OBJECT
+
+public:
+	WinMMAudioProcessor(WinMMAudioStream &stream);
+
+protected:
+	void run();
+
+private:
+	WinMMAudioStream &stream;
+};
 
 class WinMMAudioStream : public AudioStream {
+	friend class WinMMAudioProcessor;
 private:
 	HWAVEOUT hWaveOut;
 	WAVEHDR	 *waveHdr;
@@ -27,11 +42,9 @@ private:
 	uint chunkSize;
 	MT32Emu::Bit16s *buffer;
 	bool volatile stopProcessing;
-	uintptr_t processingThreadHandle;
+	WinMMAudioProcessor processor;
 	bool ringBufferMode;
 	quint64 prevPlayPosition;
-
-	static void processingThread(void *);
 
 	DWORD getCurrentPlayPosition();
 
