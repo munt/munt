@@ -16,7 +16,11 @@
 
 #include "QtAudioDriver.h"
 
+#ifdef USE_QT_MULTIMEDIAKIT
+#include <QtMultimediaKit/QAudioOutput>
+#else
 #include <QtMultimedia/QAudioOutput>
+#endif
 
 #include <mt32emu/mt32emu.h>
 

@@ -35,7 +35,7 @@ static void nanosToTimespec(timespec &ts, qint64 nanos) {
 	ts.tv_nsec = nanos % MasterClock::NANOS_PER_SECOND;
 }
 
-void MasterClock::sleepForNanos(qint64 nanos) {
+void MasterClock::sleepForNanos(MasterClockNanos nanos) {
 	timespec ts;
 	nanosToTimespec(ts, nanos);
 	if (clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL) != 0) {
@@ -67,17 +67,109 @@ MasterClock::MasterClock() {}
 
 MasterClock::~MasterClock() {}
 
+#elif defined WITH_WINMMTIMER
+
+#include <Windows.h>
+
+void MasterClock::sleepForNanos(MasterClockNanos nanos) {
+	Sleep(DWORD(qMax(1LL, nanos / NANOS_PER_MILLISECOND)));
+}
+
+void MasterClock::sleepUntilClockNanos(MasterClockNanos clockNanos) {
+	sleepForNanos(clockNanos - getClockNanos());
+}
+
+static bool hrTimerAvailable;
+
+static LARGE_INTEGER freq = {{0, 0}};
+static double mult;
+
+static LARGE_INTEGER startTime = {{0, 0}};
+static LARGE_INTEGER counter = {{0, 0}};
+
+static DWORD mmTimerResolution = 0;
+
+MasterClockNanos MasterClock::getClockNanos() {
+	if (hrTimerAvailable) {
+		QueryPerformanceCounter(&counter);
+		return MasterClockNanos((counter.QuadPart - startTime.QuadPart) * mult);
+	} else {
+		DWORD currentTime = timeGetTime();
+		LARGE_INTEGER counterSnapshot = counter;
+		if (currentTime < counterSnapshot.LowPart) counterSnapshot.HighPart++;
+		counterSnapshot.LowPart = currentTime;
+		counter = counterSnapshot;
+		return MasterClockNanos(counterSnapshot.QuadPart - startTime.QuadPart) * NANOS_PER_MILLISECOND;
+	}
+}
+
+MasterClock::MasterClock() {
+	TIMECAPS tc;
+	if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR) {
+		qDebug() << "Unable to get multimedia timer capabilities.";
+		qDebug() << "Trying to set 1 ms multimedia timer resolution.";
+		mmTimerResolution = 1;
+	} else {
+		qDebug() << "Found minimum supported multimedia timer resolution:" << tc.wPeriodMin << "ms.";
+		qDebug() << "Setting multimedia timer resolution to" << tc.wPeriodMin << "ms.";
+		mmTimerResolution = tc.wPeriodMin;
+	}
+	if (timeBeginPeriod(mmTimerResolution) != TIMERR_NOERROR) {
+		qDebug() << "Unable to set multimedia timer resolution. Using defaults.";;
+		mmTimerResolution = 0;
+	}
+	if (QueryPerformanceFrequency(&freq)) {
+		hrTimerAvailable = true;
+		qDebug() << "High resolution timer initialized. Frequency:" << freq.QuadPart * 1e-6 << "MHz";
+		mult = (double)NANOS_PER_SECOND / freq.QuadPart;
+		QueryPerformanceCounter(&startTime);
+	} else {
+		hrTimerAvailable = false;
+		qDebug() << "High resolution timer unavailable on the system. Falling back to multimedia timer.";
+		startTime.QuadPart = timeGetTime();
+	}
+}
+
+MasterClock::~MasterClock() {
+	if (mmTimerResolution != 0) {
+		qDebug() << "Restoring default multimedia timer resolution.";;
+		timeEndPeriod(mmTimerResolution);
+	}
+}
+
 #else
 
 #include <QThread>
 #include <QElapsedTimer>
 
-void MasterClock::sleepForNanos(qint64 nanos) {
+#if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
+
+// This class exists solely to expose usleep() publicly.
+// Why it's protected in QThread is a bit of a mystery...
+class QtSucks : public QThread {
+public:
+	static void usleep(ulong usecs) {
+		QThread::usleep(usecs);
+	}
+};
+
+void MasterClock::sleepForNanos(MasterClockNanos nanos) {
+	if (nanos <= 0) {
+		return;
+	}
+	QtSucks::usleep(nanos / NANOS_PER_MICROSECOND);
+}
+
+#else
+
+void MasterClock::sleepForNanos(MasterClockNanos nanos) {
 	if (nanos <= 0) {
 		return;
 	}
 	QThread::usleep(nanos / NANOS_PER_MICROSECOND);
 }
+
+#endif
 
 void MasterClock::sleepUntilClockNanos(MasterClockNanos clockNanos) {
 	sleepForNanos(clockNanos - getClockNanos());
