@@ -88,7 +88,7 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 	}
 }
 
-void Win32MidiDriver::messageLoop(void *) {
+void Win32MidiInProcessor::run() {
 	HINSTANCE hInstance = GetModuleHandle(NULL);
 	LPCTSTR mt32emuClassName = "mt32emu_class";
 	WNDCLASS wc;
@@ -117,6 +117,7 @@ void Win32MidiDriver::messageLoop(void *) {
 	}
 	MSG msg;
 	GetMessage(&msg, hwnd, WM_QUIT, WM_QUIT);
+	hwnd = NULL;
 }
 
 Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster) {
@@ -126,12 +127,14 @@ Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster) {
 }
 
 void Win32MidiDriver::start() {
-	HANDLE processingThreadHandle = (HANDLE)_beginthread(&messageLoop, 16384, NULL);
-	SetThreadPriority(processingThreadHandle, THREAD_PRIORITY_TIME_CRITICAL);
+	midiInProcessor.start(QThread::TimeCriticalPriority);
 }
 
 void Win32MidiDriver::stop() {
-	PostMessage(hwnd, WM_QUIT, 0, 0);
+	if (hwnd != NULL) {
+		PostMessage(hwnd, WM_QUIT, 0, 0);
+		waitForProcessingThread(midiInProcessor, 10 * MasterClock::NANOS_PER_MILLISECOND);
+	}
 	for (int i = 0; i < midiInPorts.size(); i++) {
 		delete midiInPorts[i];
 		deleteMidiSession(midiInSessions[i]);

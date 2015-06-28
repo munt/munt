@@ -22,12 +22,20 @@ public:
 	UINT getID();
 };
 
+class Win32MidiInProcessor : public QThread {
+	Q_OBJECT
+
+protected:
+	void run();
+};
+
 class Win32MidiDriver : public MidiDriver {
+	friend class Win32MidiInProcessor;
 private:
 	static LRESULT CALLBACK midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	static void messageLoop(void *);
 	static void enumPorts(QList<QString> &midiInPortNames);
 
+	Win32MidiInProcessor midiInProcessor;
 	QList<Win32MidiIn *> midiInPorts;
 	QList<MidiSession *> midiInSessions;
 
