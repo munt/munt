@@ -114,21 +114,21 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 void MainWindow::on_actionAbout_triggered()
 {
 	QMessageBox::about(this, "About",
-					   "Munt - Roland (R) MT-32 sound module emulator\n"
-					   "\n"
-					   "Munt Package Version " PACKAGE_VERSION "\n"
-					   "Munt mt32emu_qt GUI Application Version " APP_VERSION "\n"
-					   "Qt Library Version " QT_VERSION_STR "\n"
-					   "\n"
-					   "CPU Arch " + QSysInfo::currentCpuArchitecture() + "\n"
-					   "Build Arch " + QSysInfo::buildCpuArchitecture() + "\n"
-					   "Build Hash " GIT_HASH "\n"
-					   "Build Date " BUILD_DATE "\n"
-					   "\n"
-					   "Copyright (C) 2011-2015 Jerome Fisher, Sergey V. Mikayev\n"
-					   "\n"
-					   "Licensed under GPL v3 or any later version."
-					   );
+		"Munt - Roland (R) MT-32 sound module emulator\n"
+		"\n"
+		"Munt Package Version " PACKAGE_VERSION "\n"
+		"Munt mt32emu_qt GUI Application Version " APP_VERSION "\n"
+		"Qt Library Version " QT_VERSION_STR "\n"
+		"\n"
+		"Build Info:\n"
+		"  Arch:\t" BUILD_SYSTEM " " + QString::number(QSysInfo::WordSize) + "-bit\n"
+		"  Hash:\t" GIT_HASH "\n"
+		"  Date:\t" BUILD_DATE "\n"
+		"\n"
+		"Copyright (C) 2011-2015 Jerome Fisher, Sergey V. Mikayev\n"
+		"\n"
+		"Licensed under GPL v3 or any later version."
+	);
 }
 
 void MainWindow::refreshTabNames()
