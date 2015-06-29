@@ -19,7 +19,7 @@ Cmake is required to building. The minimum set of dependencies is:
    @ http://www.cmake.org/
 
 2) Qt library
-   @ http://qt.digia.com/
+   @ http://www.qt.io/
 
 Additional dependencies maybe needed (depending on the platform):
 
