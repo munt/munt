@@ -7,6 +7,9 @@ Next release:
 	  yet to reduce the processing delay libsoxr introduces. That's achieved by taking advantage of oversampled output produced
 	  by analog circuit emulation engine and using efficient elliptic low-pass filter instead of FFT-based FIR.
 	* Added build option mt32emu-qt_WITH_INTERNAL_RESAMPLER. It controls whether to use internal resampler or try to find an external library.
+	* Added support for Qt5.
+	* Improved support for 64-bit Windows.
+	* Improved support for Cygwin, enabled native Windows MIDI and wave audio API.
 
 2014-12-21:
 

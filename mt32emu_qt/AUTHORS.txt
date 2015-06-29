@@ -12,6 +12,6 @@ http://munt.sourceforge.net/
 Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
 Copyright (C) 2011, 2012, 2013, 2014 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
 
-Uses Qt library version 4.8.6.
+Uses Qt library.
 http://www.qt-project.org/
 Copyright (C) 2014 Digia Plc and/or its subsidiary(-ies).
