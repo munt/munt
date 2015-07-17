@@ -399,11 +399,11 @@ bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, int count, int startTi
 	return true;
 }
 
-void Synth::initSoundGroups(char soundGroupNames[][9]) {
+void Synth::initSoundGroups(char newSoundGroupNames[][9]) {
 	memcpy(soundGroupIx, &controlROMData[controlROMMap->soundGroupsTable - sizeof(soundGroupIx)], sizeof(soundGroupIx));
 	const SoundGroup *table = (SoundGroup *)&controlROMData[controlROMMap->soundGroupsTable];
 	for (unsigned int i = 0; i < controlROMMap->soundGroupsCount; i++) {
-		memcpy(&soundGroupNames[i][0], table[i].name, sizeof(table[i].name));
+		memcpy(&newSoundGroupNames[i][0], table[i].name, sizeof(table[i].name));
 	}
 }
 
