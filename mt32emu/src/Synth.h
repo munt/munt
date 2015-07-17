@@ -158,7 +158,7 @@ protected:
 	virtual void onNewReverbTime(Bit8u /* time */) {}
 	virtual void onNewReverbLevel(Bit8u /* level */) {}
 	virtual void onPolyStateChanged(int /* partNum */) {}
-	virtual void onProgramChanged(int /* partNum */, int /* bankNum */, const char * /* patchName */) {}
+	virtual void onProgramChanged(int /* partNum */, const char * /* soundGroupName */, const char * /* patchName */) {}
 };
 
 class Synth {
@@ -193,6 +193,9 @@ private:
 	Bit8u controlROMData[CONTROL_ROM_SIZE];
 	Bit16s *pcmROMData;
 	size_t pcmROMSize; // This is in 16-bit samples, therefore half the number of bytes in the ROM
+
+	Bit8u soundGroupIx[128]; // For each standard timbre
+	const char (*soundGroupNames)[9]; // Array
 
 	unsigned int partialCount;
 	Bit8s chantable[32]; // FIXME: Need explanation why 32 is set, obviously it should be 16
@@ -250,6 +253,7 @@ private:
 	bool initPCMList(Bit16u mapAddress, Bit16u count);
 	bool initTimbres(Bit16u mapAddress, Bit16u offset, int timbreCount, int startTimbre, bool compressed);
 	bool initCompressedTimbre(int drumNum, const Bit8u *mem, unsigned int memLen);
+	void initSoundGroups(char soundGroupNames[][9]);
 
 	void refreshSystemMasterTune();
 	void refreshSystemReverbParameters();
@@ -262,7 +266,7 @@ private:
 	void printPartialUsage(unsigned long sampleOffset = 0);
 
 	void polyStateChanged(int partNum);
-	void newTimbreSet(int partNum, Bit8u timbreGroup, const char patchName[]);
+	void newTimbreSet(int partNum, Bit8u timbreGroup, Bit8u timbreNumber, const char patchName[]);
 	void printDebug(const char *fmt, ...);
 
 	// partNum should be 0..7 for Part 1..8, or 8 for Rhythm

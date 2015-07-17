@@ -194,6 +194,8 @@ struct ControlROMMap {
 	Bit16u patchMaxTable; // 16 bytes
 	Bit16u systemMaxTable; // 23 bytes
 	Bit16u timbreMaxTable; // 72 bytes
+	Bit16u soundGroupsTable; // 14 bytes each entry
+	Bit16u soundGroupsCount;
 };
 
 struct ControlROMPCMStruct {
@@ -231,6 +233,14 @@ struct PatchCache {
 
 	// The following directly points into live sysex-addressable memory
 	const TimbreParam::PartialParam *partialParam;
+};
+
+struct SoundGroup {
+	Bit16u timbreNumberTableAddr;
+	Bit8u displayPosition;
+	Bit8u name[9];
+	Bit8u timbreCount;
+	Bit8u pad;
 };
 
 }

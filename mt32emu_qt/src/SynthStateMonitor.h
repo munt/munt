@@ -116,7 +116,7 @@ private slots:
 	void handleSynthStateChange(SynthState);
 	void handleMIDIMessagePlayed();
 	void handlePolyStateChanged(int partNum);
-	void handleProgramChanged(int partNum, int timbreGroup, QString patchName);
+	void handleProgramChanged(int partNum, QString soundGroupName, QString patchName);
 };
 
 #endif

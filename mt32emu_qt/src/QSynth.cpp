@@ -86,8 +86,8 @@ void QReportHandler::onPolyStateChanged(int partNum) {
 	emit polyStateChanged(partNum);
 }
 
-void QReportHandler::onProgramChanged(int partNum, int timbreGroup, const char patchName[]) {
-	emit programChanged(partNum, timbreGroup, QString().fromLocal8Bit(patchName));
+void QReportHandler::onProgramChanged(int partNum, const char soundGroupName[], const char patchName[]) {
+	emit programChanged(partNum, QString().fromLocal8Bit(soundGroupName), QString().fromLocal8Bit(patchName));
 }
 
 void QSynth::convertSamplesFromNativeEndian(Bit16s *buffer, uint sampleCount, QSysInfo::Endian targetByteOrder) {

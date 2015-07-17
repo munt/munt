@@ -56,7 +56,7 @@ public:
 	void onNewReverbTime(MT32Emu::Bit8u time);
 	void onNewReverbLevel(MT32Emu::Bit8u level);
 	void onPolyStateChanged(int partNum);
-	void onProgramChanged(int partNum, int timbreGroup, const char patchName[]);
+	void onProgramChanged(int partNum, const char soundGroupName[], const char patchName[]);
 
 signals:
 	void balloonMessageAppeared(const QString &title, const QString &text);
@@ -67,7 +67,7 @@ signals:
 	void reverbTimeChanged(int);
 	void reverbLevelChanged(int);
 	void polyStateChanged(int);
-	void programChanged(int, int, QString);
+	void programChanged(int, QString, QString);
 };
 
 class QSynth : public QObject {
