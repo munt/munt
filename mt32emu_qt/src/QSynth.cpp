@@ -349,7 +349,7 @@ void QSynth::setReverbCompatibilityMode(ReverbCompatibilityMode useReverbCompati
 	}
 	bool mt32CompatibleReverb;
 	if (useReverbCompatibilityMode == ReverbCompatibilityMode_DEFAULT) {
-		mt32CompatibleReverb = controlROMImage->getROMInfo()->controlROMFeatures->isDefaultReverbMT32Compatible();
+		mt32CompatibleReverb = controlROMImage->getROMInfo()->controlROMFeatures->defaultReverbMT32Compatible;
 	} else {
 		mt32CompatibleReverb = useReverbCompatibilityMode == ReverbCompatibilityMode_MT32;
 	}

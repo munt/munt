@@ -75,14 +75,15 @@ public:
 };
 
 struct ControlROMFeatureSet {
-private:
-	unsigned int defaultReverbMT32Compatible : 1;
-	unsigned int oldMT32AnalogLPF : 1;
+public:
+	const unsigned int quirkPitchEnvelopeOverflow : 1;
+
+	// Features below don't actually depend on control ROM version, which is used to identify hardware model
+	const unsigned int defaultReverbMT32Compatible : 1;
+	const unsigned int oldMT32AnalogLPF : 1;
 
 public:
-	ControlROMFeatureSet(bool defaultReverbMT32Compatible, bool oldMT32AnalogLPF);
-	bool isDefaultReverbMT32Compatible() const;
-	bool isOldMT32AnalogLPF() const;
+	ControlROMFeatureSet(bool quirkPitchEnvelopeOverflow, bool defaultReverbMT32Compatible, bool oldMT32AnalogLPF);
 };
 
 }

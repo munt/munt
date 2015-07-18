@@ -453,7 +453,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 #if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Reverb Models");
 #endif
-	bool mt32CompatibleReverb = controlROMFeatures->isDefaultReverbMT32Compatible();
+	bool mt32CompatibleReverb = controlROMFeatures->defaultReverbMT32Compatible;
 #if MT32EMU_MONITOR_INIT
 	printDebug("Using %s Compatible Reverb Models", mt32CompatibleReverb ? "MT-32" : "CM-32L");
 #endif

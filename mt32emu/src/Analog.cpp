@@ -153,8 +153,8 @@ public:
 };
 
 Analog::Analog(const AnalogOutputMode mode, const ControlROMFeatureSet *controlROMFeatures) :
-	leftChannelLPF(AbstractLowPassFilter::createLowPassFilter(mode, controlROMFeatures->isOldMT32AnalogLPF())),
-	rightChannelLPF(AbstractLowPassFilter::createLowPassFilter(mode, controlROMFeatures->isOldMT32AnalogLPF())),
+	leftChannelLPF(AbstractLowPassFilter::createLowPassFilter(mode, controlROMFeatures->oldMT32AnalogLPF)),
+	rightChannelLPF(AbstractLowPassFilter::createLowPassFilter(mode, controlROMFeatures->oldMT32AnalogLPF)),
 	synthGain(0),
 	reverbGain(0)
 {}
