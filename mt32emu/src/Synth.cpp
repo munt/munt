@@ -92,6 +92,9 @@ Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams()), mt32d
 	setReverbOutputGain(1.0f);
 	setReversedStereoEnabled(false);
 	partialManager = NULL;
+	pcmWaves = NULL;
+	pcmROMData = NULL;
+	soundGroupNames = NULL;
 	midiQueue = NULL;
 	lastReceivedMIDIEventTimestamp = 0;
 	memset(parts, 0, sizeof(parts));
