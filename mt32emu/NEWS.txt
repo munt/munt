@@ -2,6 +2,8 @@
 
 	* Introduced support for sound groups. Callback ReportHandler::onProgramChanged() now supply correct sound group name
 	  instead of just number of the timbre bank.
+	* Reworked ControlROMFeatureSet. MT-32 GEN0 quirk "Pitch Envelope Overflow" exploited in Colonel's Bequest timbre "Lightning"
+	  is now emulated when loading one of control ROMs v.1.04-1.07.
 
 2014-12-21:
 
