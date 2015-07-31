@@ -24,17 +24,18 @@
 
 static const MasterClockNanos MAX_SLEEP_TIME = 200 * MasterClock::NANOS_PER_MILLISECOND;
 
-void SMFProcessor::sendChannelsReset(SynthRoute *synthRoute) {
+void SMFProcessor::sendAllSoundOff(SynthRoute *synthRoute, bool resetAllControllers) {
 	if (synthRoute->getState() != SynthRouteState_OPEN) return;
 	synthRoute->flushMIDIQueue();
 	for (quint8 i = 0; i < 16; i++) {
 		// All notes off
 		quint32 msg = 0x7FB0 | i;
 		synthRoute->playMIDIShortMessageNow(msg);
-
-		// Reset all controllers
-		msg = 0x79B0 | i;
-		synthRoute->playMIDIShortMessageNow(msg);
+		if (resetAllControllers) {
+			// Reset all controllers
+			msg = 0x79B0 | i;
+			synthRoute->playMIDIShortMessageNow(msg);
+		}
 	}
 }
 
@@ -43,6 +44,7 @@ SMFProcessor::SMFProcessor(SMFDriver *useSMFDriver) : driver(useSMFDriver) {
 
 void SMFProcessor::start(QString useFileName) {
 	stopProcessing = false;
+	pauseProcessing = false;
 	bpmUpdated = false;
 	driver->seekPosition = -1;
 	driver->fastForwardingFactor = 0;
@@ -60,6 +62,10 @@ void SMFProcessor::stop() {
 	stopProcessing = true;
 }
 
+void SMFProcessor::pause(bool paused) {
+	pauseProcessing = paused;
+}
+
 void SMFProcessor::setBPM(quint32 newBPM) {
 	midiTick = parser.getMidiTick(MidiParser::MICROSECONDS_PER_MINUTE / newBPM);
 	bpmUpdated = true;
@@ -68,6 +74,7 @@ void SMFProcessor::setBPM(quint32 newBPM) {
 void SMFProcessor::run() {
 	MidiSession *session = driver->createMidiSession(QFileInfo(fileName).fileName());
 	SynthRoute *synthRoute = session->getSynthRoute();
+	bool paused = false;
 	const QMidiEventList &midiEvents = parser.getMIDIEvents();
 	midiTick = parser.getMidiTick();
 	quint32 totalSeconds = estimateRemainingTime(midiEvents, 0);
@@ -81,8 +88,20 @@ void SMFProcessor::run() {
 				totalSeconds = (currentNanos - startNanos) / MasterClock::NANOS_PER_SECOND + estimateRemainingTime(midiEvents, currentEventIx + 1);
 			}
 			MasterClockNanos nanosNow = MasterClock::getClockNanos();
+			if (pauseProcessing) {
+				if (!paused) {
+					paused = true;
+					SMFProcessor::sendAllSoundOff(synthRoute, false);
+				}
+				usleep(MAX_SLEEP_TIME / MasterClock::NANOS_PER_MICROSECOND);
+				MasterClockNanos delay = MasterClock::getClockNanos() - nanosNow;
+				startNanos += delay;
+				currentNanos += delay;
+				continue;
+			}
+			if (paused) paused = false;
 			if (driver->seekPosition > -1) {
-				SMFProcessor::sendChannelsReset(synthRoute);
+				SMFProcessor::sendAllSoundOff(synthRoute, true);
 				MasterClockNanos seekNanosSinceStart = totalSeconds * driver->seekPosition * MasterClock::NANOS_PER_MILLISECOND;
 				MasterClockNanos currentNanosSinceStart = currentNanos - startNanos;
 				MasterClockNanos lastEventNanosSinceStart = currentNanosSinceStart - midiEvents.at(currentEventIx).getTimestamp() * midiTick;
@@ -128,7 +147,7 @@ void SMFProcessor::run() {
 				break;
 		}
 	}
-	SMFProcessor::sendChannelsReset(synthRoute);
+	SMFProcessor::sendAllSoundOff(synthRoute, true);
 	emit driver->playbackTimeChanged(0, 0);
 	qDebug() << "SMFDriver: processor thread stopped";
 	driver->deleteMidiSession(session);
@@ -199,6 +218,10 @@ void SMFDriver::start(QString fileName) {
 void SMFDriver::stop() {
 	processor.stop();
 	MidiDriver::waitForProcessingThread(processor, MAX_SLEEP_TIME);
+}
+
+void SMFDriver::pause(bool paused) {
+	processor.pause(paused);
 }
 
 void SMFDriver::setBPM(quint32 newBPM) {

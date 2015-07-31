@@ -17,6 +17,7 @@ public:
 	SMFProcessor(SMFDriver *useSMFDriver);
 	void start(QString fileName);
 	void stop();
+	void pause(bool paused);
 	void setBPM(quint32 newBPM);
 
 protected:
@@ -26,11 +27,12 @@ private:
 	MidiParser parser;
 	SMFDriver *driver;
 	volatile bool stopProcessing;
+	volatile bool pauseProcessing;
 	volatile MasterClockNanos midiTick;
 	volatile bool bpmUpdated;
 	QString fileName;
 
-	static void sendChannelsReset(SynthRoute *synthRoute);
+	static void sendAllSoundOff(SynthRoute *synthRoute, bool resetAllControllers);
 	quint32 estimateRemainingTime(const QMidiEventList &midiEvents, int currentEventIx);
 	void seek(SynthRoute *synthRoute, const QMidiEventList &midiEvents, int &currentEventIx, MasterClockNanos &currentEventNanos, const MasterClockNanos seekNanos);
 };
@@ -45,6 +47,7 @@ public:
 	void start();
 	void start(QString fileName);
 	void stop();
+	void pause(bool paused);
 	void setBPM(quint32 newBPM);
 	void setFastForwardingFactor(uint useFastForwardingFactor);
 	void jump(int newPosition);

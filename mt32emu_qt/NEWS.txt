@@ -11,6 +11,8 @@
 	* Improved support for 64-bit Windows.
 	* Improved support for Cygwin, enabled native Windows MIDI and wave audio API.
 	* Improved LCD emulation: when setting standard patches, proper sound group name is shown.
+	* Introduced pause function in MIDI player for convenience.
+	* About window now shows target arch and used version of Qt library.
 
 2014-12-21:
 

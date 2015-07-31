@@ -19,7 +19,7 @@
 
 #include "MidiPlayerDialog.h"
 
-MidiPlayerDialog::MidiPlayerDialog(Master *master, QWidget *parent) : QDialog(parent), ui(new Ui::MidiPlayerDialog), smfDriver(master), advancePlayList(false), rowPlaying(-1) {
+MidiPlayerDialog::MidiPlayerDialog(Master *master, QWidget *parent) : QDialog(parent), ui(new Ui::MidiPlayerDialog), smfDriver(master), advancePlayList(false), sliderUpdating(false), paused(false), rowPlaying(-1) {
 	ui->setupUi(this);
 	ui->playButton->setEnabled(false);
 	connect(&smfDriver, SIGNAL(playbackFinished()), SLOT(handlePlaybackFinished()));
@@ -38,6 +38,7 @@ void MidiPlayerDialog::on_playList_currentRowChanged(int currentRow) {
 }
 
 void MidiPlayerDialog::on_playList_doubleClicked(const QModelIndex &) {
+	paused = false;
 	on_playButton_clicked();
 }
 
@@ -115,6 +116,11 @@ void MidiPlayerDialog::on_moveDownButton_clicked() {
 }
 
 void MidiPlayerDialog::on_playButton_clicked() {
+	if (paused) {
+		paused = !paused;
+		smfDriver.pause(paused);
+		return;
+	}
 	int initialPosition = 0;
 	if (rowPlaying != -1) {
 		smfDriver.stop();
@@ -127,7 +133,15 @@ void MidiPlayerDialog::on_playButton_clicked() {
 	if (initialPosition != 0) smfDriver.jump(initialPosition);
 }
 
+void MidiPlayerDialog::on_pauseButton_clicked() {
+	if (rowPlaying != -1) {
+		paused = !paused;
+		smfDriver.pause(paused);
+	}
+}
+
 void MidiPlayerDialog::on_stopButton_clicked() {
+	paused = false;
 	if (rowPlaying != -1) {
 		smfDriver.stop();
 	}

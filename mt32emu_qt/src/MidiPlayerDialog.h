@@ -29,6 +29,7 @@ private:
 	SMFDriver smfDriver;
 	bool advancePlayList;
 	bool sliderUpdating;
+	bool paused;
 	int rowPlaying;
 
 	void addPathName(const QString &fileName);
@@ -44,6 +45,7 @@ private slots:
 	void on_moveUpButton_clicked();
 	void on_moveDownButton_clicked();
 	void on_playButton_clicked();
+	void on_pauseButton_clicked();
 	void on_stopButton_clicked();
 	void on_fastForwardButton_pressed();
 	void on_fastForwardButton_released();

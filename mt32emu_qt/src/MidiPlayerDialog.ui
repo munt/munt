@@ -129,6 +129,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="pauseButton">
+         <property name="text">
+          <string>Pause</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="stopButton">
          <property name="text">
           <string>Stop</string>
@@ -192,6 +199,7 @@
   <tabstop>moveDownButton</tabstop>
   <tabstop>positionSlider</tabstop>
   <tabstop>playButton</tabstop>
+  <tabstop>pauseButton</tabstop>
   <tabstop>stopButton</tabstop>
   <tabstop>fastForwardButton</tabstop>
   <tabstop>fastFastForwardButton</tabstop>
