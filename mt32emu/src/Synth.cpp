@@ -35,15 +35,19 @@ namespace MT32Emu {
 // MIDI interface data transfer rate in samples. Used to simulate the transfer delay.
 static const double MIDI_DATA_TRANSFER_RATE = (double)SAMPLE_RATE / 31250.0 * 8.0;
 
+// FIXME: there should be more specific feature sets for various MT-32 control ROM versions
+static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = {true, true, true};
+static const ControlROMFeatureSet CM32L_COMPATIBLE = {false, false, false};
+
 static const ControlROMMap ControlROMMaps[7] = {
-	// ID    IDc IDbytes                     PCMmap  PCMc  tmbrA   tmbrAO, tmbrAC tmbrB   tmbrBO, tmbrBC tmbrR   trC  rhythm  rhyC  rsrv    panpot  prog    rhyMax  patMax  sysMax  timMax  sndGrp sGC
-	{0x4014, 22, "\000 ver1.04 14 July 87 ", 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x73A6,  85,  0x57C7, 0x57E2, 0x57D0, 0x5252, 0x525E, 0x526E, 0x520A, 0x7064, 19},
-	{0x4014, 22, "\000 ver1.05 06 Aug, 87 ", 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x7414,  85,  0x57C7, 0x57E2, 0x57D0, 0x5252, 0x525E, 0x526E, 0x520A, 0x70CA, 19},
-	{0x4014, 22, "\000 ver1.06 31 Aug, 87 ", 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x7414,  85,  0x57D9, 0x57F4, 0x57E2, 0x5264, 0x5270, 0x5280, 0x521C, 0x70CA, 19},
-	{0x4010, 22, "\000 ver1.07 10 Oct, 87 ", 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x73fe,  85,  0x57B1, 0x57CC, 0x57BA, 0x523C, 0x5248, 0x5258, 0x51F4, 0x70B0, 19}, // MT-32 revision 1
-	{0x4010, 22, "\000verX.XX  30 Sep, 88 ", 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x741C,  85,  0x57E5, 0x5800, 0x57EE, 0x5270, 0x527C, 0x528C, 0x5228, 0x70CE, 19}, // MT-32 Blue Ridge mod
-	{0x2205, 22, "\000CM32/LAPC1.00 890404", 0x8100,  256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500,  64, 0x8580,  85,  0x4F65, 0x4F80, 0x4F6E, 0x48A1, 0x48A5, 0x48BE, 0x48D5, 0x5A6C, 19},
-	{0x2205, 22, "\000CM32/LAPC1.02 891205", 0x8100,  256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500,  64, 0x8580,  85,  0x4F93, 0x4FAE, 0x4F9C, 0x48CB, 0x48CF, 0x48E8, 0x48FF, 0x5A96, 19}  // CM-32L
+	//     ID                Features        PCMmap  PCMc  tmbrA   tmbrAO, tmbrAC tmbrB   tmbrBO  tmbrBC tmbrR   trC  rhythm  rhyC  rsrv    panpot  prog    rhyMax  patMax  sysMax  timMax  sndGrp sGC
+	{"ctrl_mt32_1_04",  OLD_MT32_COMPATIBLE, 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x73A6,  85,  0x57C7, 0x57E2, 0x57D0, 0x5252, 0x525E, 0x526E, 0x520A, 0x7064, 19},
+	{"ctrl_mt32_1_05",  OLD_MT32_COMPATIBLE, 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x7414,  85,  0x57C7, 0x57E2, 0x57D0, 0x5252, 0x525E, 0x526E, 0x520A, 0x70CA, 19},
+	{"ctrl_mt32_1_06",  OLD_MT32_COMPATIBLE, 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x7414,  85,  0x57D9, 0x57F4, 0x57E2, 0x5264, 0x5270, 0x5280, 0x521C, 0x70CA, 19},
+	{"ctrl_mt32_1_07",  OLD_MT32_COMPATIBLE, 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x73fe,  85,  0x57B1, 0x57CC, 0x57BA, 0x523C, 0x5248, 0x5258, 0x51F4, 0x70B0, 19}, // MT-32 revision 1
+	{"ctrl_mt32_bluer", OLD_MT32_COMPATIBLE, 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x741C,  85,  0x57E5, 0x5800, 0x57EE, 0x5270, 0x527C, 0x528C, 0x5228, 0x70CE, 19}, // MT-32 Blue Ridge mod
+	{"ctrl_cm32l_1_00", CM32L_COMPATIBLE,    0x8100,  256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500,  64, 0x8580,  85,  0x4F65, 0x4F80, 0x4F6E, 0x48A1, 0x48A5, 0x48BE, 0x48D5, 0x5A6C, 19},
+	{"ctrl_cm32l_1_02", CM32L_COMPATIBLE,    0x8100,  256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500,  64, 0x8580,  85,  0x4F93, 0x4FAE, 0x4F9C, 0x48CB, 0x48CF, 0x48E8, 0x48FF, 0x5A96, 19}  // CM-32L
 	// (Note that all but CM-32L ROM actually have 86 entries for rhythmTemp)
 };
 
@@ -71,6 +75,7 @@ Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams()), mt32d
 	isOpen = false;
 	reverbOverridden = false;
 	partialCount = DEFAULT_MAX_PARTIALS;
+	controlROMMap = NULL;
 	controlROMFeatures = NULL;
 
 	if (useReportHandler == NULL) {
@@ -209,6 +214,10 @@ bool Synth::isMT32ReverbCompatibilityMode() const {
 	return isOpen && (reverbModels[REVERB_MODE_ROOM]->isMT32Compatible(REVERB_MODE_ROOM));
 }
 
+bool Synth::isDefaultReverbMT32Compatible() const {
+	return isOpen && controlROMFeatures->defaultReverbMT32Compatible;
+}
+
 void Synth::setDACInputMode(DACInputMode mode) {
 #if MT32EMU_USE_FLOAT_SAMPLES
 	// We aren't emulating these in float mode, so better to inform the invoker
@@ -265,12 +274,8 @@ bool Synth::loadControlROM(const ROMImage &controlROMImage) {
 	if ((controlROMInfo == NULL)
 			|| (controlROMInfo->type != ROMInfo::Control)
 			|| (controlROMInfo->pairType != ROMInfo::Full)) {
-		return false;
-	}
-	controlROMFeatures = controlROMImage.getROMInfo()->controlROMFeatures;
-	if (controlROMFeatures == NULL) {
 #if MT32EMU_MONITOR_INIT
-		printDebug("Invalid Control ROM Info provided without feature set");
+		printDebug("Invalid Control ROM Info provided");
 #endif
 		return false;
 	}
@@ -283,9 +288,11 @@ bool Synth::loadControlROM(const ROMImage &controlROMImage) {
 
 	// Control ROM successfully loaded, now check whether it's a known type
 	controlROMMap = NULL;
+	controlROMFeatures = NULL;
 	for (unsigned int i = 0; i < sizeof(ControlROMMaps) / sizeof(ControlROMMaps[0]); i++) {
-		if (memcmp(&controlROMData[ControlROMMaps[i].idPos], ControlROMMaps[i].idBytes, ControlROMMaps[i].idLen) == 0) {
+		if (strcmp(controlROMInfo->shortName, ControlROMMaps[i].shortName) == 0) {
 			controlROMMap = &ControlROMMaps[i];
+			controlROMFeatures = &controlROMMap->featureSet;
 			return true;
 		}
 	}
@@ -573,7 +580,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 
 	midiQueue = new MidiEventQueue();
 
-	analog = new Analog(analogOutputMode, controlROMFeatures);
+	analog = new Analog(analogOutputMode, controlROMFeatures->oldMT32AnalogLPF);
 	setOutputGain(outputGain);
 	setReverbOutputGain(reverbOutputGain);
 
@@ -619,6 +626,7 @@ void Synth::close(bool forced) {
 	}
 	reverbModel = NULL;
 	controlROMFeatures = NULL;
+	controlROMMap = NULL;
 	isOpen = false;
 }
 

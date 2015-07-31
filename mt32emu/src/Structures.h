@@ -171,10 +171,17 @@ struct MemParams {
 #pragma pack()
 #endif
 
+struct ControlROMFeatureSet {
+	unsigned int quirkPitchEnvelopeOverflow : 1;
+
+	// Features below don't actually depend on control ROM version, which is used to identify hardware model
+	unsigned int defaultReverbMT32Compatible : 1;
+	unsigned int oldMT32AnalogLPF : 1;
+};
+
 struct ControlROMMap {
-	Bit16u idPos;
-	Bit16u idLen;
-	const char *idBytes;
+	const char *shortName;
+	const ControlROMFeatureSet &featureSet;
 	Bit16u pcmTable; // 4 * pcmCount bytes
 	Bit16u pcmCount;
 	Bit16u timbreAMap; // 128 bytes

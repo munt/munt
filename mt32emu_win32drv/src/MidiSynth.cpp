@@ -515,7 +515,7 @@ void MidiSynth::ApplySettings() {
 	synth->setReverbEnabled(reverbEnabled);
 	if (reverbCompatibilityMode == ReverbCompatibilityMode_DEFAULT) {
 		if (controlROM != NULL) {
-			synth->setReverbCompatibilityMode(controlROM->getROMInfo()->controlROMFeatures->defaultReverbMT32Compatible);
+			synth->setReverbCompatibilityMode(synth->isDefaultReverbMT32Compatible());
 		}
 	} else {
 		synth->setReverbCompatibilityMode(reverbCompatibilityMode == ReverbCompatibilityMode_MT32);

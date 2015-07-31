@@ -152,9 +152,9 @@ public:
 	void addPositionIncrement(unsigned int positionIncrement);
 };
 
-Analog::Analog(const AnalogOutputMode mode, const ControlROMFeatureSet *controlROMFeatures) :
-	leftChannelLPF(AbstractLowPassFilter::createLowPassFilter(mode, controlROMFeatures->oldMT32AnalogLPF)),
-	rightChannelLPF(AbstractLowPassFilter::createLowPassFilter(mode, controlROMFeatures->oldMT32AnalogLPF)),
+Analog::Analog(const AnalogOutputMode mode, const bool oldMT32AnalogLPF) :
+	leftChannelLPF(AbstractLowPassFilter::createLowPassFilter(mode, oldMT32AnalogLPF)),
+	rightChannelLPF(AbstractLowPassFilter::createLowPassFilter(mode, oldMT32AnalogLPF)),
 	synthGain(0),
 	reverbGain(0)
 {}

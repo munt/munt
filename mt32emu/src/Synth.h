@@ -41,6 +41,7 @@ class SystemMemoryRegion;
 class DisplayMemoryRegion;
 class ResetMemoryRegion;
 
+struct ControlROMFeatureSet;
 struct ControlROMMap;
 struct PCMWaveEntry;
 struct MemParams;
@@ -376,6 +377,7 @@ public:
 	// (these include CM-32L and LAPC-I).
 	void setReverbCompatibilityMode(bool mt32CompatibleMode);
 	bool isMT32ReverbCompatibilityMode() const;
+	bool isDefaultReverbMT32Compatible() const;
 	void setDACInputMode(DACInputMode mode);
 	DACInputMode getDACInputMode() const;
 	void setMIDIDelayMode(MIDIDelayMode mode);
