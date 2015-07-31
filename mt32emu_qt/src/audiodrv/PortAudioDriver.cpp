@@ -81,7 +81,8 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		qDebug() << "Pa_GetDeviceInfo() returned NULL for" << deviceIndex;
 		return false;
 	}
-	qDebug() << "PortAudio: using audio device:" << deviceIndex << QString().fromLocal8Bit(deviceInfo->name);
+	const PaHostApiInfo *hostApiInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
+	qDebug() << "PortAudio: using audio device:" << deviceIndex << "API: " + QString(hostApiInfo->name) << QString().fromLocal8Bit(deviceInfo->name);
 	/*
 	if (deviceInfo->maxOutputChannels < 2) {
 		qDebug() << "Device does not support stereo; maxOutputChannels =" << deviceInfo->maxOutputChannels;
