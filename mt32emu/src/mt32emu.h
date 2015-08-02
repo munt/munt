@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011, 2012, 2013, 2014 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2015 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -22,7 +22,9 @@
 
 // 0: Use 16-bit signed samples and refined wave generator based on logarithmic fixed-point computations and LUTs. Maximum emulation accuracy and speed.
 // 1: Use float samples in the wave generator and renderer. Maximum output quality and minimum noise.
+#ifndef MT32EMU_USE_FLOAT_SAMPLES
 #define MT32EMU_USE_FLOAT_SAMPLES 0
+#endif
 
 namespace MT32Emu
 {
