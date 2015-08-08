@@ -36,7 +36,7 @@ public:
 	void close();
 
 private:
-	std::basic_ifstream<Bit8u, std::char_traits<Bit8u> > ifsp;
+	std::ifstream ifsp;
 	const Bit8u *data;
 	size_t size;
 };

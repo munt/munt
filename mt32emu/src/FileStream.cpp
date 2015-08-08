@@ -20,7 +20,6 @@
 
 namespace MT32Emu {
 
-using std::ifstream;
 using std::ios_base;
 
 FileStream::FileStream() : data(NULL), size(0)
@@ -58,7 +57,7 @@ const Bit8u *FileStream::getData() {
 		return NULL;
 	}
 	ifsp.seekg(0);
-	ifsp.read(fileData, (std::streamsize)size);
+	ifsp.read((char *)fileData, (std::streamsize)size);
 	if ((size_t)ifsp.tellg() != size) {
 		delete[] fileData;
 		return NULL;
