@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011, 2012, 2013, 2014 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2015 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -15,43 +15,64 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cstring>
 #include <cstdio>
 #include "mt32emu.h"
 #include "sha1/sha1.h"
 
 namespace MT32Emu {
 
-static void SHA1DigestToString(char *strDigest, const unsigned int intDigest[]) {
-#ifdef _MSC_VER
-	sprintf_s(strDigest, 41, "%08x%08x%08x%08x%08x", intDigest[0], intDigest[1], intDigest[2], intDigest[3], intDigest[4]);
-#else
+static void SHA1DigestToString(File::SHA1Digest &strDigest, const unsigned int intDigest[]) {
 	sprintf(strDigest, "%08x%08x%08x%08x%08x", intDigest[0], intDigest[1], intDigest[2], intDigest[3], intDigest[4]);
-#endif
 }
 
-File::File() : sha1DigestCalculated(false), fileSize(0), data(NULL) {
-	sha1DigestCalculated = false;
+AbstractFile::AbstractFile() : sha1DigestCalculated(false) {
+	sha1Digest[0] = 0;
 }
 
-const char *File::getSHA1() {
+AbstractFile::AbstractFile(const SHA1Digest &useSHA1Digest) : sha1DigestCalculated(true) {
+	memcpy(sha1Digest, useSHA1Digest, sizeof(SHA1Digest) - 1);
+	sha1Digest[sizeof(SHA1Digest) - 1] = 0; // Ensure terminator char.
+}
+
+const File::SHA1Digest &AbstractFile::getSHA1() {
 	if (sha1DigestCalculated) {
 		return sha1Digest;
 	}
-	sha1Digest[0] = 0;
 	sha1DigestCalculated = true;
 
-	if (getData() == NULL) {
+	size_t size = getSize();
+	if (size == 0) {
+		return sha1Digest;
+	}
+
+	const Bit8u *data = getData();
+	if (data == NULL) {
 		return sha1Digest;
 	}
 
 	SHA1 sha1;
 	unsigned int fileDigest[5];
 
-	sha1.Input(data, (unsigned int)fileSize);
+	sha1.Input(data, (unsigned int)size);
 	if (sha1.Result(fileDigest)) {
 		SHA1DigestToString(sha1Digest, fileDigest);
 	}
 	return sha1Digest;
+}
+
+ArrayFile::ArrayFile(const Bit8u *useData, size_t useSize) : data(useData), size(useSize)
+{}
+
+ArrayFile::ArrayFile(const Bit8u *useData, size_t useSize, const SHA1Digest &useSHA1Digest) : AbstractFile(useSHA1Digest), data(useData), size(useSize)
+{}
+
+size_t ArrayFile::getSize() {
+	return size;
+}
+
+const Bit8u *ArrayFile::getData() {
+	return data;
 }
 
 }

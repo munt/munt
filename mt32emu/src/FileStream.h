@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011, 2012, 2013, 2014 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2015 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -26,17 +26,19 @@
 
 namespace MT32Emu {
 
-class FileStream: public File {
-private:
-	std::ifstream * const ifsp;
+class FileStream : public AbstractFile {
 public:
 	FileStream();
-	virtual ~FileStream();
-	virtual size_t getSize();
-	virtual const unsigned char* getData();
-
+	~FileStream();
+	size_t getSize();
+	const Bit8u *getData();
 	bool open(const char *filename);
 	void close();
+
+private:
+	std::basic_ifstream<Bit8u, std::char_traits<Bit8u> > ifsp;
+	const Bit8u *data;
+	size_t size;
 };
 
 }
