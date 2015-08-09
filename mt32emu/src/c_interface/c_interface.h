@@ -48,13 +48,15 @@ mt32emu_context mt32emu_create_synth(const struct mt32emu_report_handler_o *repo
 // Closes and destroys emulation context.
 void mt32emu_free_synth(mt32emu_context context);
 
-// Adds new ROM identified by its SHA1 digest to the emulation context replacing previously added ROM if any.
+// Adds new ROM identified by its SHA1 digest to the emulation context replacing previously added ROM of the same type if any.
 // Argument sha1_digest can be NULL, in this case the digest will be computed using the actual ROM data.
 // If sha1_digest is set to non-NULL, it is assumed correct and will not be recomputed.
+// This function doesn't immediately change the state of already opened synth. Newly added ROM will take effect upon next call of mt32emu_open_synth().
 // Returns positive value upon success.
 enum mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest);
 
-// Loads a ROM file, identify it by SHA1 digest, and adds it to the emulation context replacing previously added ROM if any.
+// Loads a ROM file, identify it by SHA1 digest, and adds it to the emulation context replacing previously added ROM of the same type if any.
+// This function doesn't immediately change the state of already opened synth. Newly added ROM will take effect upon next call of mt32emu_open_synth().
 // Returns positive value upon success.
 enum mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *filename);
 

@@ -194,9 +194,8 @@ private:
 		}
 	}
 
-	void handleSytemRealtimeMessage(const Bit8u realtime) {
+	void handleSytemRealtimeMessage(const Bit8u /* realtime */) {
 		// Not implemented yet
-		(void)realtime;
 	}
 
 	void printDebug(const char *debugMessage) {
