@@ -286,4 +286,20 @@ mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *fi
 	return rc;
 }
 
+mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const unsigned int *partial_count, const mt32emu_analog_output_mode *analog_output_mode) {
+	if ((context->controlROMImage == NULL) || (context->pcmROMImage == NULL)) {
+		return MT32EMU_RC_MISSING_ROMS;
+	}
+	unsigned int partialCount = (partial_count == NULL) ? MT32EMU_DEFAULT_MAX_PARTIALS : *partial_count;
+	AnalogOutputMode analogOutputMode = (analog_output_mode == NULL) ? AnalogOutputMode_COARSE : (AnalogOutputMode)*analog_output_mode;
+	if (context->synth->open(*context->controlROMImage, *context->pcmROMImage, partialCount, analogOutputMode)) {
+		return MT32EMU_RC_OK;
+	}
+	return MT32EMU_RC_FAILED;
+}
+
+void mt32emu_close_synth(mt32emu_const_context context) {
+	context->synth->close();
+}
+
 } // extern "C"
