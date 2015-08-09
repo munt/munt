@@ -20,6 +20,10 @@
 
 #include <stdarg.h>
 
+#define MT32EMU_C_ENUMERATIONS
+#include "../Enumerations.h"
+#undef MT32EMU_C_ENUMERATIONS
+
 typedef unsigned int       mt32emu_bit32u;
 typedef   signed int       mt32emu_bit32s;
 typedef unsigned short int mt32emu_bit16u;
@@ -37,13 +41,26 @@ typedef mt32emu_bit32s mt32emu_sample_ex;
 
 typedef char mt32emu_sha1_digest[41];
 
+enum mt32emu_boolean {
+	MT32EMU_BOOL_FALSE, MT32EMU_BOOL_TRUE
+};
+
 enum mt32emu_return_code {
-	mt32emu_rc_ok = 0,
-	mt32emu_rc_added_control_rom = 1,
-	mt32emu_rc_added_pcm_rom = 2,
-	mt32emu_rc_rom_not_identified = -1,
-	mt32emu_rc_file_not_found = -2,
-	mt32emu_rc_file_not_loaded = -3
+	// Operation completed normally.
+	MT32EMU_RC_OK = 0,
+	MT32EMU_RC_ADDED_CONTROL_ROM = 1,
+	MT32EMU_RC_ADDED_PCM_ROM = 2,
+
+	// Definite error occurred.
+	MT32EMU_RC_ROM_NOT_IDENTIFIED = -1,
+	MT32EMU_RC_FILE_NOT_FOUND = -2,
+	MT32EMU_RC_FILE_NOT_LOADED = -3,
+	MT32EMU_RC_MISSING_ROMS = -4,
+	MT32EMU_RC_NOT_OPENED = -5,
+	MT32EMU_RC_QUEUE_FULL = -5,
+
+	// Undefined error occurred.
+	MT32EMU_RC_FAILED = -100
 };
 
 // Emulation context

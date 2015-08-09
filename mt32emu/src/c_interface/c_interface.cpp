@@ -209,7 +209,7 @@ static mt32emu_return_code addROMFile(mt32emu_context context, File *file) {
 	const ROMInfo *info = image->getROMInfo();
 	if (info == NULL) {
 		ROMImage::freeROMImage(image);
-		return mt32emu_rc_rom_not_identified;
+		return MT32EMU_RC_ROM_NOT_IDENTIFIED;
 	}
 	if (info->type == ROMInfo::Control) {
 		if (context->controlROMImage != NULL) {
@@ -217,17 +217,17 @@ static mt32emu_return_code addROMFile(mt32emu_context context, File *file) {
 			ROMImage::freeROMImage(context->controlROMImage);
 		}
 		context->controlROMImage = image;
-		return mt32emu_rc_added_control_rom;
+		return MT32EMU_RC_ADDED_CONTROL_ROM;
 	} else if (info->type == ROMInfo::PCM) {
 		if (context->pcmROMImage != NULL) {
 			delete context->pcmROMImage->getFile();
 			ROMImage::freeROMImage(context->pcmROMImage);
 		}
 		context->pcmROMImage = image;
-		return mt32emu_rc_added_pcm_rom;
+		return MT32EMU_RC_ADDED_PCM_ROM;
 	}
 	ROMImage::freeROMImage(image);
-	return mt32emu_rc_ok; // No support for reverb ROM yet.
+	return MT32EMU_RC_OK; // No support for reverb ROM yet.
 }
 
 } // namespace MT32Emu
@@ -271,17 +271,17 @@ mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context, const mt32emu_
 }
 
 mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *filename) {
-	mt32emu_return_code rc = mt32emu_rc_ok;
+	mt32emu_return_code rc = MT32EMU_RC_OK;
 	FileStream *fs = new FileStream;
 	if (fs->open(filename)) {
 		if (fs->getData() != NULL) {
 			rc = addROMFile(context, fs);
 			if (rc > 0) return rc;
 		} else {
-			rc = mt32emu_rc_file_not_loaded;
+			rc = MT32EMU_RC_FILE_NOT_LOADED;
 		}
 	} else {
-		rc = mt32emu_rc_file_not_found;
+		rc = MT32EMU_RC_FILE_NOT_FOUND;
 	}
 	delete fs;
 	return rc;
