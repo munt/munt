@@ -53,7 +53,7 @@ class ReportHandlerAdapter : public ReportHandler {
 public:
 	ReportHandlerAdapter(const mt32emu_report_handler_o *use_report_handler) : delegate(use_report_handler) {}
 
-	static void printDebug(mt32emu_context context, const char *fmt, ...) {
+	static void printDebug(mt32emu_const_context context, const char *fmt, ...) {
 		va_list ap;
 		va_start(ap, fmt);
 		context->reportHandler->printDebug(fmt, ap);
@@ -162,7 +162,7 @@ private:
 
 class MidiStreamParserAdapter : public MidiStreamParser {
 public:
-	MidiStreamParserAdapter(mt32emu_context useContext) : context(useContext), timestampSet(false) {}
+	MidiStreamParserAdapter(mt32emu_const_context useContext) : context(useContext), timestampSet(false) {}
 
 	void setTimestamp(const Bit32u useTimestamp) {
 		timestampSet = true;
@@ -174,7 +174,7 @@ public:
 	}
 
 private:
-	const mt32emu_context context;
+	const mt32emu_const_context context;
 	bool timestampSet;
 	Bit32u timestamp;
 

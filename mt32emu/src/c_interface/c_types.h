@@ -65,6 +65,7 @@ enum mt32emu_return_code {
 
 // Emulation context
 typedef struct mt32emu_data *mt32emu_context;
+typedef const struct mt32emu_data *mt32emu_const_context;
 
 // Interface for handling reported events
 struct mt32emu_report_handler_i {
