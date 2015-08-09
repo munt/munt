@@ -98,4 +98,14 @@ struct mt32emu_report_handler_o {
 	void *d;
 };
 
+// Set of multiplexed output streams appeared at the DAC entrance.
+struct mt32emu_dac_output_streams {
+	mt32emu_sample *nonReverbLeft;
+	mt32emu_sample *nonReverbRight;
+	mt32emu_sample *reverbDryLeft;
+	mt32emu_sample *reverbDryRight;
+	mt32emu_sample *reverbWetLeft;
+	mt32emu_sample *reverbWetRight;
+};
+
 #endif // #ifndef MT32EMU_C_TYPES_H
