@@ -13,6 +13,8 @@ set(libmt32emu_HEADERS
   src/ROMInfo.h
   src/Synth.h
   src/Types.h
+  src/c_interface/c_interface.h
+  src/c_interface/c_types.h
 )
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
@@ -47,6 +49,7 @@ add_library(mt32emu STATIC
   src/TVF.cpp
   src/TVP.cpp
   src/sha1/sha1.cpp
+  src/c_interface/c_interface.cpp
 )
 
 install(TARGETS mt32emu

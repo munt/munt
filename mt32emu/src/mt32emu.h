@@ -26,6 +26,14 @@
 #define MT32EMU_USE_FLOAT_SAMPLES 0
 #endif
 
+// 0: Use full-featured C++ API.
+// 1: Use C-compatible API.
+#ifndef MT32EMU_C_INTERFACE
+#define MT32EMU_C_INTERFACE 0
+#endif
+
+#if defined(__cplusplus) && !MT32EMU_C_INTERFACE
+
 namespace MT32Emu
 {
 // Sample rate to use in mixing. With the progress of development, we've found way too many thing dependent.
@@ -63,4 +71,10 @@ const unsigned int DEFAULT_MIDI_EVENT_QUEUE_SIZE = 1024;
 #include "Synth.h"
 #include "MidiStreamParser.h"
 
-#endif
+#else // #if defined(__cplusplus) && !MT32EMU_C_INTERFACE
+
+#include "c_interface/c_interface.h"
+
+#endif // #if defined(__cplusplus) && !MT32EMU_C_INTERFACE
+
+#endif // #ifndef MT32EMU_MT32EMU_H
