@@ -276,13 +276,14 @@ public:
 	// Calls from multiple threads must be synchronised, although, no synchronisation is required with the rendering thread.
 	// The methods return false if the MIDI event queue is full and the message cannot be enqueued.
 
-	// Enqueues a single short MIDI message. The message must contain a status byte.
+	// Enqueues a single short MIDI message to play at specified time. The message must contain a status byte.
 	bool playMsg(Bit32u msg, Bit32u timestamp);
-	// Enqueues a single well formed System Exclusive MIDI message.
+	// Enqueues a single well formed System Exclusive MIDI message to play at specified time.
 	bool playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp);
 
-	// Overloaded methods for the MIDI events to be processed ASAP.
+	// Enqueues a single short MIDI message to be processed ASAP. The message must contain a status byte.
 	bool playMsg(Bit32u msg);
+	// Enqueues a single well formed System Exclusive MIDI message to be processed ASAP.
 	bool playSysex(const Bit8u *sysex, Bit32u len);
 
 	// WARNING:
@@ -291,40 +292,59 @@ public:
 	// A thread that invokes these methods must be explicitly synchronised with the thread performing sample rendering.
 
 	// Sends a short MIDI message to the synth for immediate playback. The message must contain a status byte.
+	// See the WARNING above.
 	void playMsgNow(Bit32u msg);
+	// Sends unpacked short MIDI message to the synth for immediate playback. The message must contain a status byte.
+	// See the WARNING above.
 	void playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity);
 
-	// Sends a string of Sysex commands to the MT-32 for immediate interpretation
-	// The length is in bytes
+	// Sends a single well formed System Exclusive MIDI message for immediate processing. The length is in bytes.
+	// See the WARNING above.
 	void playSysexNow(const Bit8u *sysex, Bit32u len);
+	// Sends inner body of a System Exclusive MIDI message for direct processing. The length is in bytes.
+	// See the WARNING above.
 	void playSysexWithoutFraming(const Bit8u *sysex, Bit32u len);
+	// Sends inner body of a System Exclusive MIDI message for direct processing. The length is in bytes.
+	// See the WARNING above.
 	void playSysexWithoutHeader(unsigned char device, unsigned char command, const Bit8u *sysex, Bit32u len);
+	// Sends inner body of a System Exclusive MIDI message for direct processing. The length is in bytes.
+	// See the WARNING above.
 	void writeSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
 
+	// Allows to disable wet reverb output altogether.
 	void setReverbEnabled(bool reverbEnabled);
+	// Returns whether wet reverb output is enabled.
 	bool isReverbEnabled() const;
 	// Sets override reverb mode. In this mode, emulation ignores sysexes (or the related part of them) which control the reverb parameters.
 	// This mode is in effect until it is turned off. When the synth is re-opened, the override mode is unchanged but the state
 	// of the reverb model is reset to default.
 	void setReverbOverridden(bool reverbOverridden);
+	// Returns whether reverb settings are overridden.
 	bool isReverbOverridden() const;
 	// Forces reverb model compatibility mode. By default, the compatibility mode corresponds to the used control ROM version.
 	// Invoking this method with the argument set to true forces emulation of old MT-32 reverb circuit.
 	// When the argument is false, emulation of the reverb circuit used in new generation of MT-32 compatible modules is enforced
 	// (these include CM-32L and LAPC-I).
 	void setReverbCompatibilityMode(bool mt32CompatibleMode);
+	// Returns whether reverb is in old MT-32 compatibility mode.
 	bool isMT32ReverbCompatibilityMode() const;
+	// Returns whether default reverb compatibility mode is the old MT-32 compatibility mode.
 	bool isDefaultReverbMT32Compatible() const;
+	// Sets new DAC input mode. See DACInputMode for details.
 	void setDACInputMode(DACInputMode mode);
+	// Returns current DAC input mode. See DACInputMode for details.
 	DACInputMode getDACInputMode() const;
+	// Sets new MIDI delay mode. See MIDIDelayMode for details.
 	void setMIDIDelayMode(MIDIDelayMode mode);
+	// Returns current MIDI delay mode. See MIDIDelayMode for details.
 	MIDIDelayMode getMIDIDelayMode() const;
 
 	// Sets output gain factor for synth output channels. Applied to all output samples and unrelated with the synth's Master volume,
 	// it rather corresponds to the gain of the output analog circuitry of the hardware units. However, together with setReverbOutputGain()
 	// it offers to the user a capability to control the gain of reverb and non-reverb output channels independently.
 	// Ignored in DACInputMode_PURE
-	void setOutputGain(float);
+	void setOutputGain(float gain);
+	// Returns current output gain factor for synth output channels.
 	float getOutputGain() const;
 
 	// Sets output gain factor for the reverb wet output channels. It rather corresponds to the gain of the output
@@ -336,10 +356,13 @@ public:
 	// there is a difference in the reverb analogue circuit, and the resulting output gain is 0.68
 	// of that for LA32 analogue output. This factor is applied to the reverb output gain.
 	// Ignored in DACInputMode_PURE
-	void setReverbOutputGain(float);
+	void setReverbOutputGain(float gain);
+	// Returns current output gain factor for reverb wet output channels.
 	float getReverbOutputGain() const;
 
+	// Swaps left and right output channels.
 	void setReversedStereoEnabled(bool enabled);
+	// Returns whether left and right output channels are swapped.
 	bool isReversedStereoEnabled() const;
 
 	// Returns actual sample rate used in emulation of stereo analog circuitry of hardware units.
@@ -347,16 +370,16 @@ public:
 	unsigned int getStereoOutputSampleRate() const;
 
 	// Renders samples to the specified output stream as if they were sampled at the analog stereo output.
-	// When AnalogOutputMode is set to ACCURATE, the output signal is upsampled to 48 kHz in order
+	// When AnalogOutputMode is set to ACCURATE (OVERSAMPLED), the output signal is upsampled to 48 (96) kHz in order
 	// to retain emulation accuracy in whole audible frequency spectra. Otherwise, native digital signal sample rate is retained.
 	// getStereoOutputSampleRate() can be used to query actual sample rate of the output signal.
-	// The length is in frames, not bytes (in 16-bit stereo, one frame is 4 bytes).
+	// The length is in frames, not bytes (in 16-bit stereo, one frame is 4 bytes). Uses NATIVE byte ordering.
 	void render(Sample *stream, Bit32u len);
 
 	// Renders samples to the specified output streams as if they appeared at the DAC entrance.
 	// No further processing performed in analog circuitry emulation is applied to the signal.
-	// NULL may be specified in place of any or all of the stream buffers.
-	// The length is in samples, not bytes.
+	// NULL may be specified in place of any or all of the stream buffers to skip it.
+	// The length is in samples, not bytes. Uses NATIVE byte ordering.
 	void renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);
 
 	// Returns true when there is at least one active partial, otherwise false.
@@ -386,6 +409,7 @@ public:
 	// Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
 	const char *getPatchName(unsigned int partNumber) const;
 
+	// Stores internal state of emulated synth into an array provided (as it would be acquired from hardware).
 	void readMemory(Bit32u addr, Bit32u len, Bit8u *data);
 };
 
