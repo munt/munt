@@ -21,6 +21,8 @@
 #include <cstdarg>
 #include <cstring>
 
+#include "Enumerations.h"
+
 namespace MT32Emu {
 
 class Analog;
@@ -46,76 +48,11 @@ struct ControlROMMap;
 struct PCMWaveEntry;
 struct MemParams;
 
-/**
- * Methods for emulating the connection between the LA32 and the DAC, which involves
- * some hacks in the real devices for doubling the volume.
- * See also http://en.wikipedia.org/wiki/Roland_MT-32#Digital_overflow
- */
-enum DACInputMode {
-	// Produces samples at double the volume, without tricks.
-	// * Nicer overdrive characteristics than the DAC hacks (it simply clips samples within range)
-	// * Higher quality than the real devices
-	DACInputMode_NICE,
-
-	// Produces samples that exactly match the bits output from the emulated LA32.
-	// * Nicer overdrive characteristics than the DAC hacks (it simply clips samples within range)
-	// * Much less likely to overdrive than any other mode.
-	// * Half the volume of any of the other modes.
-	// * Output gain is ignored for both LA32 and reverb output.
-	// * Perfect for developers while debugging :)
-	DACInputMode_PURE,
-
-	// Re-orders the LA32 output bits as in early generation MT-32s (according to Wikipedia).
-	// Bit order at DAC (where each number represents the original LA32 output bit number, and XX means the bit is always low):
-	// 15 13 12 11 10 09 08 07 06 05 04 03 02 01 00 XX
-	DACInputMode_GENERATION1,
-
-	// Re-orders the LA32 output bits as in later generations (personally confirmed on my CM-32L - KG).
-	// Bit order at DAC (where each number represents the original LA32 output bit number):
-	// 15 13 12 11 10 09 08 07 06 05 04 03 02 01 00 14
-	DACInputMode_GENERATION2
-};
-
-// Methods for emulating the effective delay of incoming MIDI messages introduced by a MIDI interface.
-enum MIDIDelayMode {
-	// Process incoming MIDI events immediately.
-	MIDIDelayMode_IMMEDIATE,
-
-	// Delay incoming short MIDI messages as if they where transferred via a MIDI cable to a real hardware unit and immediate sysex processing.
-	// This ensures more accurate timing of simultaneous NoteOn messages.
-	MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY,
-
-	// Delay all incoming MIDI events as if they where transferred via a MIDI cable to a real hardware unit.
-	MIDIDelayMode_DELAY_ALL
-};
-
-// Methods for emulating the effects of analogue circuits of real hardware units on the output signal.
-enum AnalogOutputMode {
-	// Only digital path is emulated. The output samples correspond to the digital signal at the DAC entrance.
-	AnalogOutputMode_DIGITAL_ONLY,
-	// Coarse emulation of LPF circuit. High frequencies are boosted, sample rate remains unchanged.
-	AnalogOutputMode_COARSE,
-	// Finer emulation of LPF circuit. Output signal is upsampled to 48 kHz to allow emulation of audible mirror spectra above 16 kHz,
-	// which is passed through the LPF circuit without significant attenuation.
-	AnalogOutputMode_ACCURATE,
-	// Same as AnalogOutputMode_ACCURATE mode but the output signal is 2x oversampled, i.e. the output sample rate is 96 kHz.
-	// This makes subsequent resampling easier. Besides, due to nonlinear passband of the LPF emulated, it takes fewer number of MACs
-	// compared to a regular LPF FIR implementations.
-	AnalogOutputMode_OVERSAMPLED
-};
-
 enum ReverbMode {
 	REVERB_MODE_ROOM,
 	REVERB_MODE_HALL,
 	REVERB_MODE_PLATE,
 	REVERB_MODE_TAP_DELAY
-};
-
-enum PartialState {
-	PartialState_INACTIVE,
-	PartialState_ATTACK,
-	PartialState_SUSTAIN,
-	PartialState_RELEASE
 };
 
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
@@ -303,7 +240,7 @@ public:
 	static Bit8u calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u initChecksum = 0);
 
 	// Returns output sample rate used in emulation of stereo analog circuitry of hardware units.
-	// See comment for AnalogOutputMode above.
+	// See comment for AnalogOutputMode.
 	static unsigned int getStereoOutputSampleRate(AnalogOutputMode analogOutputMode);
 
 	// Optionally sets callbacks for reporting various errors, information and debug messages

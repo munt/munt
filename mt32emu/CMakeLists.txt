@@ -6,15 +6,16 @@ set(libmt32emu_VERSION_PATCH 0)
 
 # Only headers that need to be installed should be listed here:
 set(libmt32emu_HEADERS
-  src/File.h
-  src/FileStream.h
-  src/mt32emu.h
-  src/MidiStreamParser.h
-  src/ROMInfo.h
-  src/Synth.h
-  src/Types.h
-  src/c_interface/c_interface.h
-  src/c_interface/c_types.h
+  Enumerations.h
+  File.h
+  FileStream.h
+  mt32emu.h
+  MidiStreamParser.h
+  ROMInfo.h
+  Synth.h
+  Types.h
+  c_interface/c_interface.h
+  c_interface/c_types.h
 )
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
@@ -26,8 +27,7 @@ if(MSVC)
 endif()
 
 foreach(HEADER ${libmt32emu_HEADERS})
-  get_filename_component(FILENAME "${HEADER}" NAME)
-  configure_file(${HEADER} "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu/${FILENAME}" COPYONLY)
+  configure_file("src/${HEADER}" "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu/${HEADER}" COPYONLY)
 endforeach(HEADER)
 
 add_library(mt32emu STATIC
