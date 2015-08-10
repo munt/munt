@@ -72,7 +72,7 @@ unsigned int Synth::getStereoOutputSampleRate(AnalogOutputMode analogOutputMode)
 }
 
 Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams()), mt32default(*new MemParams()) {
-	isOpen = false;
+	opened = false;
 	reverbOverridden = false;
 	partialCount = DEFAULT_MAX_PARTIALS;
 	controlROMMap = NULL;
@@ -204,18 +204,18 @@ void Synth::setReverbCompatibilityMode(bool mt32CompatibleMode) {
 		reverbModels[i]->open();
 	}
 #endif
-	if (isOpen) {
+	if (opened) {
 		setReverbOutputGain(reverbOutputGain);
 		setReverbEnabled(true);
 	}
 }
 
 bool Synth::isMT32ReverbCompatibilityMode() const {
-	return isOpen && (reverbModels[REVERB_MODE_ROOM]->isMT32Compatible(REVERB_MODE_ROOM));
+	return opened && (reverbModels[REVERB_MODE_ROOM]->isMT32Compatible(REVERB_MODE_ROOM));
 }
 
 bool Synth::isDefaultReverbMT32Compatible() const {
-	return isOpen && controlROMFeatures->defaultReverbMT32Compatible;
+	return opened && controlROMFeatures->defaultReverbMT32Compatible;
 }
 
 void Synth::setDACInputMode(DACInputMode mode) {
@@ -422,7 +422,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, A
 }
 
 bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount, AnalogOutputMode analogOutputMode) {
-	if (isOpen) {
+	if (opened) {
 		return false;
 	}
 	partialCount = usePartialCount;
@@ -584,7 +584,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	setOutputGain(outputGain);
 	setReverbOutputGain(reverbOutputGain);
 
-	isOpen = true;
+	opened = true;
 	isEnabled = false;
 
 #if MT32EMU_MONITOR_INIT
@@ -594,9 +594,11 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 }
 
 void Synth::close(bool forced) {
-	if (!forced && !isOpen) {
+	if (!forced && !opened) {
 		return;
 	}
+
+	opened = false;
 
 	delete midiQueue;
 	midiQueue = NULL;
@@ -627,7 +629,6 @@ void Synth::close(bool forced) {
 	reverbModel = NULL;
 	controlROMFeatures = NULL;
 	controlROMMap = NULL;
-	isOpen = false;
 }
 
 void Synth::flushMIDIQueue() {
@@ -1746,7 +1747,7 @@ void Synth::getPartialStates(PartialState *partialStates) const {
 
 unsigned int Synth::getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u *velocities) const {
 	unsigned int playingNotes = 0;
-	if (isOpen && (partNumber < 9)) {
+	if (opened && (partNumber < 9)) {
 		const Part *part = parts[partNumber];
 		const Poly *poly = part->getFirstActivePoly();
 		while (poly != NULL) {
@@ -1760,7 +1761,7 @@ unsigned int Synth::getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u 
 }
 
 const char *Synth::getPatchName(unsigned int partNumber) const {
-	return (!isOpen || partNumber > 8) ? NULL : parts[partNumber]->getCurrentInstr();
+	return (!opened || partNumber > 8) ? NULL : parts[partNumber]->getCurrentInstr();
 }
 
 const Part *Synth::getPart(unsigned int partNum) const {

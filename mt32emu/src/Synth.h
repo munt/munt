@@ -156,7 +156,7 @@ private:
 
 	bool reversedStereoEnabled;
 
-	bool isOpen;
+	bool opened;
 
 	bool isDefaultReportHandler;
 	ReportHandler *reportHandler;
@@ -259,6 +259,9 @@ public:
 
 	// Closes the MT-32 and deallocates any memory used by the synthesizer
 	void close(bool forced = false);
+
+	// Returns true if the synth is in completely initialized state, otherwise returns false.
+	bool isOpen() const;
 
 	// All the enqueued events are processed by the synth immediately.
 	void flushMIDIQueue();
