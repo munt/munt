@@ -70,6 +70,9 @@ enum mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const
 // Closes the emulation context freeing allocated resources. Added ROMs remain unaffected and ready for reuse.
 void mt32emu_close_synth(mt32emu_const_context context);
 
+// Returns true if the synth is in completely initialized state, otherwise returns false.
+enum mt32emu_boolean mt32emu_is_open(mt32emu_const_context context);
+
 // Returns output sample rate used in emulation of stereo analog circuitry of hardware units for particular analog_output_mode.
 // See comment for mt32emu_analog_output_mode.
 unsigned int mt32emu_get_stereo_output_samplerate(const enum mt32emu_analog_output_mode analog_output_mode);
@@ -79,7 +82,7 @@ unsigned int mt32emu_get_stereo_output_samplerate(const enum mt32emu_analog_outp
 unsigned int mt32emu_get_actual_stereo_output_samplerate(mt32emu_const_context context);
 
 // All the enqueued events are processed by the synth immediately.
-void mt32emu_flush_midi_queue();
+void mt32emu_flush_midi_queue(mt32emu_const_context context);
 
 // Sets size of the internal MIDI event queue. The queue size is set to the minimum power of 2 that is greater or equal to the size specified.
 // The queue is flushed before reallocation.
