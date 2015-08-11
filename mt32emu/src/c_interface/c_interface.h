@@ -42,6 +42,10 @@ extern const unsigned int MT32EMU_DEFAULT_MAX_PARTIALS;
 // This value must be >= 1.
 extern const unsigned int MT32EMU_MAX_SAMPLES_PER_RUN;
 
+// Maximum allowed size of MIDI parser input stream buffer.
+// Should suffice for any reasonable bulk dump SysEx, as the h/w units have only 32K of RAM onboard
+extern const mt32emu_bit32u MT32EMU_MAX_STREAM_BUFFER_SIZE;
+
 // Initialises a new emulation context and installs custom report handler if non-NULL.
 mt32emu_context mt32emu_create_synth(const struct mt32emu_report_handler_o *report_handler);
 
@@ -96,6 +100,24 @@ mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_context context, 
 // and emulation of the MCU busy-loop while it frees partials for use by a new Poly.
 // Calls from multiple threads must be synchronised, although, no synchronisation is required with the rendering thread.
 // The methods return false if the MIDI event queue is full and the message cannot be enqueued.
+
+// Parses a block of raw MIDI bytes and enqueues parsed MIDI messages for further processing ASAP.
+// SysEx messages are allowed to be fragmented across several calls to this method. Running status is also handled for short messages.
+// NOTE: the total length of a SysEx message being fragmented shall not exceed MT32EMU_MAX_STREAM_BUFFER_SIZE (32768 bytes).
+void mt32emu_parse_stream(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length);
+
+// Parses a block of raw MIDI bytes and enqueues parsed MIDI messages to play at specified time.
+// SysEx messages are allowed to be fragmented across several calls to this method. Running status is also handled for short messages.
+// NOTE: the total length of a SysEx message being fragmented shall not exceed MT32EMU_MAX_STREAM_BUFFER_SIZE (32768 bytes).
+void mt32emu_parse_stream_at(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length, mt32emu_bit32u timestamp);
+
+// Enqueues a single mt32emu_bit32u-encoded short MIDI message with full processing ASAP.
+// The short MIDI message may contain no status byte, the running status is used in this case.
+void mt32emu_play_short_message(mt32emu_const_context context, mt32emu_bit32u message);
+
+// Enqueues a single mt32emu_bit32u-encoded short MIDI message to play at specified time with full processing.
+// The short MIDI message may contain no status byte, the running status is used in this case.
+void mt32emu_play_short_message_at(mt32emu_const_context context, mt32emu_bit32u message, mt32emu_bit32u timestamp);
 
 // Enqueues a single short MIDI message to be processed ASAP. The message must contain a status byte.
 enum mt32emu_return_code mt32emu_play_msg(mt32emu_const_context context, mt32emu_bit32u msg);

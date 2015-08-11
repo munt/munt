@@ -78,6 +78,8 @@ struct mt32emu_report_handler_i {
 	void (*showLCDMessage)(const struct mt32emu_report_handler_o *instance, const char *message);
 	// Callback for reporting actual processing of a MIDI message
 	void (*onMIDIMessagePlayed)(const struct mt32emu_report_handler_o *instance);
+	// Callback for reporting an overflow of the input MIDI queue
+	void (*onMIDIQueueOverflow)(const struct mt32emu_report_handler_o *instance);
 	// Callbacks for reporting system events
 	void (*onDeviceReset)(const struct mt32emu_report_handler_o *instance);
 	void (*onDeviceReconfig)(const struct mt32emu_report_handler_o *instance);
