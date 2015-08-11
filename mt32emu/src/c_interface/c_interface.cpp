@@ -54,10 +54,12 @@ public:
 	ReportHandlerAdapter(const mt32emu_report_handler_o *use_report_handler) : delegate(use_report_handler) {}
 
 	static void printDebug(mt32emu_const_context context, const char *fmt, ...) {
-		va_list ap;
-		va_start(ap, fmt);
-		context->reportHandler->printDebug(fmt, ap);
-		va_end(ap);
+		if (context->reportHandler != NULL) {
+			va_list ap;
+			va_start(ap, fmt);
+			context->reportHandler->printDebug(fmt, ap);
+			va_end(ap);
+		}
 	}
 
 private:
