@@ -4,6 +4,8 @@ set(libmt32emu_VERSION_MAJOR 1)
 set(libmt32emu_VERSION_MINOR 5)
 set(libmt32emu_VERSION_PATCH 0)
 
+option(libmt32emu_SHARED "Build shared library" FALSE)
+
 # Only headers that need to be installed should be listed here:
 set(libmt32emu_HEADERS
   Enumerations.h
@@ -30,7 +32,11 @@ foreach(HEADER ${libmt32emu_HEADERS})
   configure_file("src/${HEADER}" "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu/${HEADER}" COPYONLY)
 endforeach(HEADER)
 
-add_library(mt32emu STATIC
+if(libmt32emu_SHARED)
+  set(libmt32emu_BUILD_TYPE SHARED)
+endif()
+
+add_library(mt32emu ${libmt32emu_BUILD_TYPE}
   src/Analog.cpp
   src/BReverbModel.cpp
   src/File.cpp
@@ -69,7 +75,7 @@ install(FILES
 # These lines are irrelevant if compiling stand-alone.
 set(MT32EMU_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" CACHE PATH "")
 if(CMAKE_MAJOR_VERSION GREATER 2)
-  set(MT32EMU_LIBRARY $<TARGET_FILE:mt32emu> CACHE FILEPATH "")
+  set(MT32EMU_LIBRARY $<TARGET_LINKER_FILE:mt32emu> CACHE FILEPATH "")
 else()
   get_target_property(LIBRARY_PATH mt32emu LOCATION)
   set(MT32EMU_LIBRARY ${LIBRARY_PATH} CACHE FILEPATH "")
