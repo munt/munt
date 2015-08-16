@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.4)
+cmake_minimum_required(VERSION 2.8.12)
 project(munt)
 set(munt_VERSION_MAJOR 1)
 set(munt_VERSION_MINOR 5)

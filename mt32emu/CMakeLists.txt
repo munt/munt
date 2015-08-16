@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.12)
 project(libmt32emu CXX)
 set(libmt32emu_VERSION_MAJOR 1)
 set(libmt32emu_VERSION_MINOR 5)

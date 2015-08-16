@@ -1,8 +1,4 @@
-cmake_minimum_required(VERSION 2.8.6)
-
-if(POLICY CMP0020)
-  cmake_policy(SET CMP0020 NEW) # remove if CMake >= 2.8.11 required
-endif()
+cmake_minimum_required(VERSION 2.8.12)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/")
 
@@ -80,8 +76,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows OR CYGWIN)
   if(NOT CYGWIN AND mt32emu-qt_WITH_DEBUG_WINCONSOLE)
     add_definitions(-DWITH_WINCONSOLE)
   else()
-#   set(CMAKE_WIN32_EXECUTABLE True) # available since cmake v2.8.8
-    set(EXE_PROPERTY WIN32)
+    set(CMAKE_WIN32_EXECUTABLE True)
   endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   add_definitions(-DWITH_COREMIDI_DRIVER -DWITH_COREAUDIO_DRIVER)
@@ -90,8 +85,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     src/audiodrv/CoreAudioDriver.cpp
   )
   set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework AudioToolbox -framework CoreMIDI")
-# set(CMAKE_MACOSX_BUNDLE True) # available since cmake v2.8.8
-  set(EXE_PROPERTY MACOSX_BUNDLE)
+  set(CMAKE_MACOSX_BUNDLE True)
 else()
   find_package(ALSA)
   if(NOT (ALSA_FOUND AND mt32emu-qt_WITH_ALSA_MIDI_DRIVER))
@@ -112,8 +106,8 @@ if(Qt4_FOUND)
   set(EXT_LIBS ${EXT_LIBS} ${QT_LIBRARIES})
 else()
   find_package(Qt5Widgets REQUIRED)
+  include_directories(${Qt5Widgets_INCLUDE_DIRS})
   set(EXT_LIBS ${EXT_LIBS} Qt5::Widgets)
-  include_directories(${Qt5Widgets_INCLUDE_DIRS}) # remove if CMake >= 2.8.11 required
   find_package(Qt5Multimedia)
 endif()
 
