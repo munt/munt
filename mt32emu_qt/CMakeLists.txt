@@ -103,7 +103,7 @@ if(NOT mt32emu-qt_WITH_QT5)
 endif()
 if(Qt4_FOUND)
   include(${QT_USE_FILE})
-  set(EXT_LIBS ${EXT_LIBS} ${QT_LIBRARIES})
+  set(EXT_LIBS ${EXT_LIBS} Qt4::QtGui)
 else()
   find_package(Qt5Widgets REQUIRED)
   include_directories(${Qt5Widgets_INCLUDE_DIRS})
@@ -119,7 +119,7 @@ if(QT_QTMULTIMEDIA_FOUND OR Qt5Multimedia_FOUND)
   if(Qt5Multimedia_FOUND)
     set(EXT_LIBS ${EXT_LIBS} Qt5::Multimedia)
   else()
-    set(EXT_LIBS ${EXT_LIBS} ${QT_QTMULTIMEDIA_LIBRARY})
+    set(EXT_LIBS ${EXT_LIBS} Qt4::QtMultimedia)
   endif()
 else()
   find_package(QtMobility)
@@ -242,7 +242,7 @@ endif()
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_executable(mt32emu-qt ${EXE_PROPERTY}
+add_executable(mt32emu-qt
   ${mt32emu_qt_FORMS_HEADERS}
   ${mt32emu_qt_SOURCES}
   ${mt32emu_qt_RC}
