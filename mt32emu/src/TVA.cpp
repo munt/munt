@@ -140,7 +140,7 @@ static int calcBasicAmp(const Tables *tables, const Partial *partial, const MemP
 	return amp;
 }
 
-int calcKeyTimeSubtraction(Bit8u envTimeKeyfollow, int key) {
+static int calcKeyTimeSubtraction(Bit8u envTimeKeyfollow, int key) {
 	if (envTimeKeyfollow == 0) {
 		return 0;
 	}
