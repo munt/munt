@@ -60,6 +60,7 @@ add_library(mt32emu ${libmt32emu_BUILD_TYPE}
 
 install(TARGETS mt32emu
   ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
 )
 install(DIRECTORY
   "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu"
