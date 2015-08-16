@@ -631,6 +631,10 @@ void Synth::close(bool forced) {
 	controlROMMap = NULL;
 }
 
+bool Synth::isOpen() const {
+	return opened;
+}
+
 void Synth::flushMIDIQueue() {
 	if (midiQueue != NULL) {
 		for (;;) {
