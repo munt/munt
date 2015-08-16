@@ -40,6 +40,8 @@
 
 #include "sha1.h"
 
+using namespace MT32Emu;
+
 /*  
  *  SHA1
  *

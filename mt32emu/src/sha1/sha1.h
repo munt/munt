@@ -24,6 +24,8 @@
 #ifndef _SHA1_H_
 #define _SHA1_H_
 
+namespace MT32Emu {
+
 class SHA1
 {
 
@@ -85,5 +87,7 @@ class SHA1
         bool Corrupted;                     // Is the message digest corruped?
     
 };
+
+}
 
 #endif
