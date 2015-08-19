@@ -132,7 +132,7 @@ MasterClock::MasterClock() {
 
 MasterClock::~MasterClock() {
 	if (mmTimerResolution != 0) {
-		qDebug() << "Restoring default multimedia timer resolution.";;
+		// Restoring default multimedia timer resolution.
 		timeEndPeriod(mmTimerResolution);
 	}
 }
