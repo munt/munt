@@ -16,7 +16,7 @@
  */
 
 #include <cstring>
-#include "ROMInfo.h"
+#include "mt32emu.h"
 
 namespace MT32Emu {
 

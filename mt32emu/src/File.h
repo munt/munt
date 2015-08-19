@@ -23,7 +23,7 @@
 
 namespace MT32Emu {
 
-class File {
+class MT32EMU_EXPORT File {
 public:
 	// Includes terminator char.
 	typedef char SHA1Digest[41];
@@ -36,7 +36,7 @@ public:
 	virtual void close() = 0;
 };
 
-class AbstractFile : public File {
+class MT32EMU_EXPORT AbstractFile : public File {
 public:
 	const SHA1Digest &getSHA1();
 
@@ -49,7 +49,7 @@ private:
 	SHA1Digest sha1Digest;
 };
 
-class ArrayFile : public AbstractFile {
+class MT32EMU_EXPORT ArrayFile : public AbstractFile {
 public:
 	ArrayFile(const Bit8u *data, size_t size);
 	ArrayFile(const Bit8u *data, size_t size, const SHA1Digest &sha1Digest);

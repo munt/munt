@@ -21,6 +21,7 @@
 #include <cstdarg>
 #include <cstring>
 
+#include "Types.h"
 #include "Enumerations.h"
 
 namespace MT32Emu {
@@ -33,6 +34,7 @@ class Part;
 class Poly;
 class Partial;
 class PartialManager;
+class ROMImage;
 
 class PatchTempMemoryRegion;
 class RhythmTempMemoryRegion;
@@ -74,7 +76,7 @@ const int MAX_SYSEX_SIZE = 512; // FIXME: Does this correspond to a real MIDI bu
 
 const unsigned int CONTROL_ROM_SIZE = 64 * 1024;
 
-class ReportHandler {
+class MT32EMU_EXPORT ReportHandler {
 friend class Synth;
 
 public:
@@ -99,7 +101,7 @@ protected:
 	virtual void onProgramChanged(int /* partNum */, const char * /* soundGroupName */, const char * /* patchName */) {}
 };
 
-class Synth {
+class MT32EMU_EXPORT Synth {
 friend class Part;
 friend class RhythmPart;
 friend class Poly;

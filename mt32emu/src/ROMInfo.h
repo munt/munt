@@ -19,13 +19,14 @@
 #define MT32EMU_ROMINFO_H
 
 #include <cstddef>
-#include "File.h"
 
 namespace MT32Emu {
 
 // Defines vital info about ROM file to be used by synth and applications
 
-struct ROMInfo {
+class File;
+
+struct MT32EMU_EXPORT ROMInfo {
 public:
 	size_t fileSize;
 	const File::SHA1Digest &sha1Digest;
@@ -62,13 +63,13 @@ public:
 	// Creates a ROMImage object given a ROMInfo and a File. Keeps a reference
 	// to the File and ROMInfo given, which must be freed separately by the user
 	// after the ROMImage is freed
-	static const ROMImage* makeROMImage(File *file);
+	MT32EMU_EXPORT static const ROMImage* makeROMImage(File *file);
 
 	// Must only be done after all Synths using the ROMImage are deleted
-	static void freeROMImage(const ROMImage *romImage);
+	MT32EMU_EXPORT static void freeROMImage(const ROMImage *romImage);
 
-	File *getFile() const;
-	const ROMInfo *getROMInfo() const;
+	MT32EMU_EXPORT File *getFile() const;
+	MT32EMU_EXPORT const ROMInfo *getROMInfo() const;
 };
 
 }

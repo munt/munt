@@ -30,7 +30,7 @@ const Bit32u MAX_STREAM_BUFFER_SIZE = 32768;
 // There can be multiple MIDI sources feeding MIDI events to a single Synth object.
 // NOTE: Calls from multiple threads which feed a single Synth object with data must be explicitly synchronised,
 // although, no synchronisation is required with the rendering thread.
-class MidiStreamParser {
+class MT32EMU_EXPORT MidiStreamParser {
 public:
 	// The argument specifies streamBuffer initial capacity. The buffer capacity should be large enough to fit the longest SysEx expected.
 	// If a longer SysEx occurs, streamBuffer is reallocated to the maximum size of MAX_STREAM_BUFFER_SIZE (32768 bytes).

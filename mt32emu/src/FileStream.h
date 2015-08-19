@@ -28,12 +28,12 @@ namespace MT32Emu {
 
 class FileStream : public AbstractFile {
 public:
-	FileStream();
-	~FileStream();
-	size_t getSize();
-	const Bit8u *getData();
-	bool open(const char *filename);
-	void close();
+	MT32EMU_EXPORT FileStream();
+	MT32EMU_EXPORT ~FileStream();
+	MT32EMU_EXPORT size_t getSize();
+	MT32EMU_EXPORT const Bit8u *getData();
+	MT32EMU_EXPORT bool open(const char *filename);
+	MT32EMU_EXPORT void close();
 
 private:
 	std::ifstream ifsp;

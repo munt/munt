@@ -32,6 +32,29 @@
 #define MT32EMU_C_INTERFACE 0
 #endif
 
+// Support for compiling shared library.
+#ifdef MT32EMU_SHARED
+#if defined _WIN32 || defined __CYGWIN__
+#ifdef _MSC_VER
+#ifdef mt32emu_EXPORTS
+#define MT32EMU_EXPORT _declspec(dllexport)
+#else // #ifdef mt32emu_EXPORTS
+#define MT32EMU_EXPORT _declspec(dllimport)
+#endif // #ifdef mt32emu_EXPORTS
+#else // #ifdef _MSC_VER
+#ifdef mt32emu_EXPORTS
+#define MT32EMU_EXPORT __attribute__ ((dllexport))
+#else // #ifdef mt32emu_EXPORTS
+#define MT32EMU_EXPORT __attribute__ ((dllimport))
+#endif // #ifdef mt32emu_EXPORTS
+#endif // #ifdef _MSC_VER
+#else // #if defined _WIN32 || defined __CYGWIN__
+#define MT32EMU_EXPORT __attribute__ ((visibility("default")))
+#endif // #if defined _WIN32 || defined __CYGWIN__
+#else // #ifdef MT32EMU_SHARED
+#define MT32EMU_EXPORT
+#endif // #ifdef MT32EMU_SHARED
+
 #if defined(__cplusplus) && !MT32EMU_C_INTERFACE
 
 namespace MT32Emu

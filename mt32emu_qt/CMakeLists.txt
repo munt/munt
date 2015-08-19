@@ -17,6 +17,10 @@ add_definitions(-DPACKAGE_VERSION="${munt_VERSION_MAJOR}.${munt_VERSION_MINOR}.$
 add_definitions(-DAPP_VERSION="${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
 add_definitions(-DBUILD_SYSTEM="${CMAKE_SYSTEM_NAME}")
 
+if(libmt32emu_SHARED)
+  add_definitions(-DMT32EMU_SHARED)
+endif()
+
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 

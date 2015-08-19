@@ -34,6 +34,8 @@ endforeach(HEADER)
 
 if(libmt32emu_SHARED)
   set(libmt32emu_BUILD_TYPE SHARED)
+  add_definitions(-DMT32EMU_SHARED)
+  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 endif()
 
 add_library(mt32emu ${libmt32emu_BUILD_TYPE}
