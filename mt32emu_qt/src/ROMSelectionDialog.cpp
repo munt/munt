@@ -17,7 +17,7 @@
 #include <QCheckBox>
 #include <QFileDialog>
 
-#include <mt32emu/ROMInfo.h>
+#include <mt32emu/mt32emu.h>
 
 #include "Master.h"
 #include "ROMSelectionDialog.h"
