@@ -24,28 +24,6 @@
 extern "C" {
 #endif
 
-// Sample rate to use in mixing. With the progress of development, we've found way too many thing dependent.
-// In order to achieve further advance in emulation accuracy, sample rate made fixed throughout the emulator,
-// except the emulation of analogue path.
-// The output from the synth is supposed to be resampled externally in order to convert to the desired sample rate.
-extern const unsigned int MT32EMU_SAMPLE_RATE;
-
-// The default value for the maximum number of partials playing simultaneously.
-extern const unsigned int MT32EMU_DEFAULT_MAX_PARTIALS;
-
-// The higher this number, the more memory will be used, but the more samples can be processed in one run -
-// various parts of sample generation can be processed more efficiently in a single run.
-// A run's maximum length is that given to Synth::render(), so giving a value here higher than render() is ever
-// called with will give no gain (but simply waste the memory).
-// Note that this value does *not* in any way impose limitations on the length given to render(), and has no effect
-// on the generated audio.
-// This value must be >= 1.
-extern const unsigned int MT32EMU_MAX_SAMPLES_PER_RUN;
-
-// Maximum allowed size of MIDI parser input stream buffer.
-// Should suffice for any reasonable bulk dump SysEx, as the h/w units have only 32K of RAM onboard
-extern const mt32emu_bit32u MT32EMU_MAX_STREAM_BUFFER_SIZE;
-
 // Initialises a new emulation context and installs custom report handler if non-NULL.
 mt32emu_context mt32emu_create_synth(const struct mt32emu_report_handler_o *report_handler);
 

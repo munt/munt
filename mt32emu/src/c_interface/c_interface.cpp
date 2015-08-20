@@ -31,18 +31,13 @@ class MidiStreamParserAdapter;
 
 extern "C" {
 
-	const unsigned int MT32EMU_SAMPLE_RATE = SAMPLE_RATE;
-	const unsigned int MT32EMU_DEFAULT_MAX_PARTIALS = DEFAULT_MAX_PARTIALS;
-	const unsigned int MT32EMU_MAX_SAMPLES_PER_RUN = MAX_SAMPLES_PER_RUN;
-	const mt32emu_bit32u MT32EMU_MAX_STREAM_BUFFER_SIZE = MAX_STREAM_BUFFER_SIZE;
-
-	struct mt32emu_data {
-		ReportHandlerAdapter *reportHandler;
-		Synth *synth;
-		const ROMImage *controlROMImage;
-		const ROMImage *pcmROMImage;
-		MidiStreamParserAdapter *midiParser;
-	};
+struct mt32emu_data {
+	ReportHandlerAdapter *reportHandler;
+	Synth *synth;
+	const ROMImage *controlROMImage;
+	const ROMImage *pcmROMImage;
+	MidiStreamParserAdapter *midiParser;
+};
 
 } // extern "C"
 
