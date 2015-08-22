@@ -26,7 +26,7 @@ namespace MT32Emu {
 
 class File;
 
-struct MT32EMU_EXPORT ROMInfo {
+struct ROMInfo {
 public:
 	size_t fileSize;
 	const File::SHA1Digest &sha1Digest;
@@ -37,29 +37,31 @@ public:
 	ROMInfo *pairROMInfo;
 
 	// Returns a ROMInfo struct by inspecting the size and the SHA1 hash
-	static const ROMInfo* getROMInfo(File *file);
+	MT32EMU_EXPORT static const ROMInfo* getROMInfo(File *file);
 
 	// Currently no-op
-	static void freeROMInfo(const ROMInfo *romInfo);
+	MT32EMU_EXPORT static void freeROMInfo(const ROMInfo *romInfo);
 
 	// Allows retrieving a NULL-terminated list of ROMInfos for a range of types and pairTypes
 	// (specified by bitmasks)
 	// Useful for GUI/console app to output information on what ROMs it supports
-	static const ROMInfo** getROMInfoList(unsigned int types, unsigned int pairTypes);
+	MT32EMU_EXPORT static const ROMInfo** getROMInfoList(unsigned int types, unsigned int pairTypes);
 
 	// Frees the list of ROMInfos given
-	static void freeROMInfoList(const ROMInfo **romInfos);
+	MT32EMU_EXPORT static void freeROMInfoList(const ROMInfo **romInfos);
 };
 
 // Synth::open() is to require a full control ROMImage and a full PCM ROMImage to work
 
 class ROMImage {
 private:
-	File *file;
-	const ROMInfo *romInfo;
+	File * const file;
+	const ROMInfo * const romInfo;
+
+	ROMImage(File *file);
+	~ROMImage();
 
 public:
-
 	// Creates a ROMImage object given a ROMInfo and a File. Keeps a reference
 	// to the File and ROMInfo given, which must be freed separately by the user
 	// after the ROMImage is freed

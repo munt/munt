@@ -88,15 +88,18 @@ void ROMInfo::freeROMInfoList(const ROMInfo **romInfoList) {
 	delete[] romInfoList;
 }
 
+ROMImage::ROMImage(File *useFile) : file(useFile), romInfo(ROMInfo::getROMInfo(file))
+{}
+
+ROMImage::~ROMImage() {
+	ROMInfo::freeROMInfo(romInfo);
+}
+
 const ROMImage* ROMImage::makeROMImage(File *file) {
-	ROMImage *romImage = new ROMImage;
-	romImage->file = file;
-	romImage->romInfo = ROMInfo::getROMInfo(romImage->file);
-	return romImage;
+	return new ROMImage(file);
 }
 
 void ROMImage::freeROMImage(const ROMImage *romImage) {
-	ROMInfo::freeROMInfo(romImage->romInfo);
 	delete romImage;
 }
 

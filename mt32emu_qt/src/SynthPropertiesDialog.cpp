@@ -275,7 +275,9 @@ QString SynthPropertiesDialog::getROMSetDescription() {
 	if (file.open((synthProfile.romDir.absolutePath() + QDir::separator() + synthProfile.controlROMFileName).toUtf8())) {
 		const MT32Emu::ROMInfo *romInfo = MT32Emu::ROMInfo::getROMInfo(&file);
 		if (romInfo != NULL) {
-			return romInfo->description;
+			QString des = romInfo->description;
+			MT32Emu::ROMInfo::freeROMInfo(romInfo);
+			return des;
 		}
 	}
 	return "Unknown";
