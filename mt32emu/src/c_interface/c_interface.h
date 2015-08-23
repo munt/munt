@@ -18,6 +18,7 @@
 #ifndef MT32EMU_C_INTERFACE_H
 #define MT32EMU_C_INTERFACE_H
 
+#include "../globals.h"
 #include "c_types.h"
 
 #ifdef __cplusplus

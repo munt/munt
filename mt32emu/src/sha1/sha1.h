@@ -88,6 +88,6 @@ class SHA1
     
 };
 
-}
+} // namespace MT32Emu
 
-#endif
+#endif // #ifndef _SHA1_H_

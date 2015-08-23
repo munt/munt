@@ -15,9 +15,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Relying on external guards here since this file may be included twice.
+// Using two guards since this file may be included twice with different MT32EMU_C_ENUMERATIONS define.
+
+#if (!defined MT32EMU_CPP_ENUMERATIONS_H && !defined MT32EMU_C_ENUMERATIONS) || (!defined MT32EMU_C_ENUMERATIONS_H && defined MT32EMU_C_ENUMERATIONS)
 
 #ifdef MT32EMU_C_ENUMERATIONS
+
+#define MT32EMU_C_ENUMERATIONS_H
 
 #define MT32EMU_DAC_INPUT_MODE_NAME mt32emu_dac_input_mode
 #define MT32EMU_DAC_INPUT_MODE(ident) MT32EMU_DAC_##ident
@@ -32,6 +36,8 @@
 #define MT32EMU_PARTIAL_STATE(ident) MT32EMU_PS_##ident
 
 #else // #ifdef MT32EMU_C_ENUMERATIONS
+
+#define MT32EMU_CPP_ENUMERATIONS_H
 
 #define MT32EMU_DAC_INPUT_MODE_NAME DACInputMode
 #define MT32EMU_DAC_INPUT_MODE(ident) DACInputMode_##ident
@@ -131,3 +137,5 @@ enum MT32EMU_PARTIAL_STATE_NAME {
 
 #undef MT32EMU_PARTIAL_STATE_NAME
 #undef MT32EMU_PARTIAL_STATE
+
+#endif // #if (!defined MT32EMU_CPP_ENUMERATIONS_H && !defined MT32EMU_C_ENUMERATIONS) || (!defined MT32EMU_C_ENUMERATIONS_H && defined MT32EMU_C_ENUMERATIONS)

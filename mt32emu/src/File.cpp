@@ -15,9 +15,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cstring>
 #include <cstdio>
-#include "mt32emu.h"
+#include <cstring>
+
+#include "internals.h"
+
+#include "File.h"
 #include "sha1/sha1.h"
 
 namespace MT32Emu {
@@ -75,4 +78,4 @@ const Bit8u *ArrayFile::getData() {
 	return data;
 }
 
-}
+} // namespace MT32Emu

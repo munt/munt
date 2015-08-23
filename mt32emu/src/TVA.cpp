@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011, 2012, 2013, 2014 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2015 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -19,11 +19,15 @@
  * This class emulates the calculations performed by the 8095 microcontroller in order to configure the LA-32's amplitude ramp for a single partial at each stage of its TVA envelope.
  * Unless we introduced bugs, it should be pretty much 100% accurate according to Mok's specifications.
 */
-#include <cmath>
 
-#include "mt32emu.h"
-#include "mmath.h"
 #include "internals.h"
+
+#include "TVA.h"
+#include "Part.h"
+#include "Partial.h"
+#include "Poly.h"
+#include "Synth.h"
+#include "Tables.h"
 
 namespace MT32Emu {
 
@@ -363,4 +367,4 @@ void TVA::nextPhase() {
 	startRamp((Bit8u)newTarget, (Bit8u)newIncrement, newPhase);
 }
 
-}
+} // namespace MT32Emu

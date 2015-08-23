@@ -20,11 +20,12 @@
 
 #include <cstddef>
 
+#include "globals.h"
+#include "File.h"
+
 namespace MT32Emu {
 
 // Defines vital info about ROM file to be used by synth and applications
-
-class File;
 
 struct ROMInfo {
 public:
@@ -74,6 +75,6 @@ public:
 	MT32EMU_EXPORT const ROMInfo *getROMInfo() const;
 };
 
-}
+} // namespace MT32Emu
 
-#endif
+#endif // #ifndef MT32EMU_ROMINFO_H

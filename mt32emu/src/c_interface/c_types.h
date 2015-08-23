@@ -20,6 +20,8 @@
 
 #include <stdarg.h>
 
+#include "../globals.h"
+
 #define MT32EMU_C_ENUMERATIONS
 #include "../Enumerations.h"
 #undef MT32EMU_C_ENUMERATIONS

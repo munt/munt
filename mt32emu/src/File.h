@@ -19,6 +19,8 @@
 #define MT32EMU_FILE_H
 
 #include <cstddef>
+
+#include "globals.h"
 #include "Types.h"
 
 namespace MT32Emu {

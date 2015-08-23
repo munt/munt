@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011, 2012, 2013, 2014 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2015 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -18,9 +18,13 @@
 #include <cstdio>
 #include <cstring>
 
-#include "mt32emu.h"
 #include "internals.h"
+
+#include "Part.h"
+#include "Partial.h"
 #include "PartialManager.h"
+#include "Poly.h"
+#include "Synth.h"
 
 namespace MT32Emu {
 
@@ -597,12 +601,10 @@ void Part::partialDeactivated(Poly *poly) {
 	}
 }
 
-//#define POLY_LIST_DEBUG
-
 PolyList::PolyList() : firstPoly(NULL), lastPoly(NULL) {}
 
 bool PolyList::isEmpty() const {
-#ifdef POLY_LIST_DEBUG
+#ifdef MT32EMU_POLY_LIST_DEBUG
 	if ((firstPoly == NULL || lastPoly == NULL) && firstPoly != lastPoly) {
 		printf("PolyList: desynchronised firstPoly & lastPoly pointers\n");
 	}
@@ -619,7 +621,7 @@ Poly *PolyList::getLast() const {
 }
 
 void PolyList::prepend(Poly *poly) {
-#ifdef POLY_LIST_DEBUG
+#ifdef MT32EMU_POLY_LIST_DEBUG
 	if (poly->getNext() != NULL) {
 		printf("PolyList: Non-NULL next field in a Poly being prepended is ignored\n");
 	}
@@ -632,14 +634,14 @@ void PolyList::prepend(Poly *poly) {
 }
 
 void PolyList::append(Poly *poly) {
-#ifdef POLY_LIST_DEBUG
+#ifdef MT32EMU_POLY_LIST_DEBUG
 	if (poly->getNext() != NULL) {
 		printf("PolyList: Non-NULL next field in a Poly being appended is ignored\n");
 	}
 #endif
 	poly->setNext(NULL);
 	if (lastPoly != NULL) {
-#ifdef POLY_LIST_DEBUG
+#ifdef MT32EMU_POLY_LIST_DEBUG
 		if (lastPoly->getNext() != NULL) {
 			printf("PolyList: Non-NULL next field in the lastPoly\n");
 		}
@@ -656,7 +658,7 @@ Poly *PolyList::takeFirst() {
 	Poly *oldFirst = firstPoly;
 	firstPoly = oldFirst->getNext();
 	if (firstPoly == NULL) {
-#ifdef POLY_LIST_DEBUG
+#ifdef MT32EMU_POLY_LIST_DEBUG
 		if (lastPoly != oldFirst) {
 			printf("PolyList: firstPoly != lastPoly in a list with a single Poly\n");
 		}
@@ -675,7 +677,7 @@ void PolyList::remove(Poly * const polyToRemove) {
 	for (Poly *poly = firstPoly; poly != NULL; poly = poly->getNext()) {
 		if (poly->getNext() == polyToRemove) {
 			if (polyToRemove == lastPoly) {
-#ifdef POLY_LIST_DEBUG
+#ifdef MT32EMU_POLY_LIST_DEBUG
 				if (lastPoly->getNext() != NULL) {
 					printf("PolyList: Non-NULL next field in the lastPoly\n");
 				}
@@ -689,4 +691,4 @@ void PolyList::remove(Poly * const polyToRemove) {
 	}
 }
 
-}
+} // namespace MT32Emu

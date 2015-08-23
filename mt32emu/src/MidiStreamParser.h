@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011, 2012, 2013, 2014 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2015 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,8 @@
 #ifndef MT32EMU_MIDI_STREAM_PARSER_H
 #define MT32EMU_MIDI_STREAM_PARSER_H
 
-#include "mt32emu.h"
+#include "globals.h"
+#include "Types.h"
 
 namespace MT32Emu {
 
@@ -30,8 +31,8 @@ class MT32EMU_EXPORT MidiStreamParser {
 public:
 	// The argument specifies streamBuffer initial capacity. The buffer capacity should be large enough to fit the longest SysEx expected.
 	// If a longer SysEx occurs, streamBuffer is reallocated to the maximum size of MAX_STREAM_BUFFER_SIZE (32768 bytes).
-	// Default capacity is MAX_SYSEX_SIZE (512 bytes) which is enough to fit SysEx messages in common use.
-	MidiStreamParser(Bit32u initialStreamBufferCapacity = MAX_SYSEX_SIZE);
+	// Default capacity is SYSEX_BUFFER_SIZE (1000 bytes) which is enough to fit SysEx messages in common use.
+	MidiStreamParser(Bit32u initialStreamBufferCapacity = SYSEX_BUFFER_SIZE);
 	virtual ~MidiStreamParser();
 
 	// Parses a block of raw MIDI bytes. All the parsed MIDI messages are sent in sequence to the user-supplied methods for further processing.
@@ -68,7 +69,8 @@ private:
 	Bit32u parseShortMessageDataBytes(const Bit8u stream[], Bit32u length);
 	Bit32u parseSysex(const Bit8u stream[], const Bit32u length);
 	Bit32u parseSysexFragment(const Bit8u stream[], const Bit32u length);
-};
+}; // class MidiStreamParser
 
-}
+} // namespace MT32Emu
+
 #endif // MT32EMU_MIDI_STREAM_PARSER_H

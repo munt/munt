@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011, 2012, 2013, 2014 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2015 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -16,7 +16,11 @@
  */
 
 #include <cstring>
+
+#include "internals.h"
+
 #include "Analog.h"
+#include "Synth.h"
 
 namespace MT32Emu {
 
@@ -345,4 +349,4 @@ void AccurateLowPassFilter::addPositionIncrement(const unsigned int positionIncr
 	phase = (phase + positionIncrement * phaseIncrement) % ACCURATE_LPF_NUMBER_OF_PHASES;
 }
 
-}
+} // namespace MT32Emu

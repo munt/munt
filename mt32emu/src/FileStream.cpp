@@ -15,7 +15,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mt32emu.h"
+#include "internals.h"
+
 #include "FileStream.h"
 
 namespace MT32Emu {
@@ -78,4 +79,4 @@ void FileStream::close() {
 	ifsp.clear();
 }
 
-}
+} // namespace MT32Emu

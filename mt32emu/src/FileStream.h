@@ -19,9 +19,9 @@
 #define MT32EMU_FILE_STREAM_H
 
 #include <fstream>
-#include <iostream>
-#include <cstdio>
 
+#include "globals.h"
+#include "Types.h"
 #include "File.h"
 
 namespace MT32Emu {
@@ -41,6 +41,6 @@ private:
 	size_t size;
 };
 
-}
+} // namespace MT32Emu
 
-#endif
+#endif // #ifndef MT32EMU_FILE_STREAM_H

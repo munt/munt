@@ -15,20 +15,22 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cerrno>
-#include <cmath>
-#include <cstdlib>
-#include <cstring>
+#include <cstdio>
 
-#include "mt32emu.h"
-#include "mmath.h"
 #include "internals.h"
 
+#include "Synth.h"
 #include "Analog.h"
 #include "BReverbModel.h"
+#include "File.h"
 #include "MemoryRegion.h"
 #include "MidiEventQueue.h"
+#include "Part.h"
+#include "Partial.h"
 #include "PartialManager.h"
+#include "Poly.h"
+#include "ROMInfo.h"
+#include "TVA.h"
 
 namespace MT32Emu {
 
@@ -1327,7 +1329,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 		}
 		break;
 	case MR_Display:
-		char buf[MAX_SYSEX_SIZE];
+		char buf[SYSEX_BUFFER_SIZE];
 		memcpy(&buf, &data[0], len);
 		buf[len] = 0;
 #if MT32EMU_MONITOR_SYSEX > 0
@@ -1846,4 +1848,4 @@ void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src,
 	}
 }
 
-}
+} // namespace MT32Emu

@@ -19,8 +19,10 @@
 #define MT32EMU_SYNTH_H
 
 #include <cstdarg>
+#include <cstddef>
 #include <cstring>
 
+#include "globals.h"
 #include "Types.h"
 #include "Enumerations.h"
 
@@ -50,13 +52,6 @@ struct ControlROMMap;
 struct PCMWaveEntry;
 struct MemParams;
 
-enum ReverbMode {
-	REVERB_MODE_ROOM,
-	REVERB_MODE_HALL,
-	REVERB_MODE_PLATE,
-	REVERB_MODE_TAP_DELAY
-};
-
 const Bit8u SYSEX_MANUFACTURER_ROLAND = 0x41;
 
 const Bit8u SYSEX_MDL_MT32 = 0x16;
@@ -71,8 +66,6 @@ const Bit8u SYSEX_CMD_ACK = 0x43; // Acknowledge
 const Bit8u SYSEX_CMD_EOD = 0x45; // End of data
 const Bit8u SYSEX_CMD_ERR = 0x4E; // Communications error
 const Bit8u SYSEX_CMD_RJC = 0x4F; // Rejection
-
-const int MAX_SYSEX_SIZE = 512; // FIXME: Does this correspond to a real MIDI buffer used in h/w devices?
 
 const unsigned int CONTROL_ROM_SIZE = 64 * 1024;
 
@@ -416,8 +409,8 @@ public:
 
 	// Stores internal state of emulated synth into an array provided (as it would be acquired from hardware).
 	void readMemory(Bit32u addr, Bit32u len, Bit8u *data);
-};
+}; // class Synth
 
-}
+} // namespace MT32Emu
 
-#endif
+#endif // #ifndef MT32EMU_SYNTH_H

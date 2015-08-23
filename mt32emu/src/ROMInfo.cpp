@@ -16,7 +16,10 @@
  */
 
 #include <cstring>
-#include "mt32emu.h"
+
+#include "internals.h"
+
+#include "ROMInfo.h"
 
 namespace MT32Emu {
 
@@ -111,4 +114,4 @@ const ROMInfo* ROMImage::getROMInfo() const {
 	return romInfo;
 }
 
-}
+} // namespace MT32Emu

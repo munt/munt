@@ -91,15 +91,22 @@
 #define MT32EMU_BOSS_REVERB_PRECISE_MODE 0
 #endif
 
-#include "Structures.h"
-#include "Tables.h"
-#include "Poly.h"
-#include "LA32Ramp.h"
-#include "LA32WaveGenerator.h"
-#include "TVA.h"
-#include "TVP.h"
-#include "TVF.h"
-#include "Partial.h"
-#include "Part.h"
+namespace MT32Emu {
 
-#endif
+enum PolyState {
+	POLY_Playing,
+	POLY_Held, // This marks keys that have been released on the keyboard, but are being held by the pedal
+	POLY_Releasing,
+	POLY_Inactive
+};
+
+enum ReverbMode {
+	REVERB_MODE_ROOM,
+	REVERB_MODE_HALL,
+	REVERB_MODE_PLATE,
+	REVERB_MODE_TAP_DELAY
+};
+
+}
+
+#endif // #ifndef MT32EMU_INTERNALS_H

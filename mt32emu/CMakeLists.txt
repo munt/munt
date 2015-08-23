@@ -9,6 +9,7 @@ option(libmt32emu_SHARED "Build shared library" FALSE)
 # Only headers that need to be installed should be listed here:
 set(libmt32emu_HEADERS
   Enumerations.h
+  globals.h
   File.h
   FileStream.h
   mt32emu.h
