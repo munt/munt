@@ -1,4 +1,4 @@
-	1.6.0
+	2.0.0
 
 	* Introduced support for sound groups. Callback ReportHandler::onProgramChanged() now supply correct sound group name
 	  instead of just number of the timbre bank.
