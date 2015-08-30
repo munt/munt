@@ -496,7 +496,15 @@ unsigned int mt32emu_get_partial_count(mt32emu_const_context context) {
 }
 
 void mt32emu_get_part_states(mt32emu_const_context context, mt32emu_boolean *part_states) {
-	context->synth->getPartStates((bool *)part_states);
+	if (sizeof(mt32emu_boolean) == sizeof(bool)) {
+		context->synth->getPartStates((bool *)part_states);
+	} else {
+		bool partStates[9];
+		context->synth->getPartStates(partStates);
+		for (int i = 0; i < 9; i++) {
+			part_states[i] = partStates[i] ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
+		}
+	}
 }
 
 void mt32emu_get_partial_states(mt32emu_const_context context, mt32emu_partial_state *partial_states) {
