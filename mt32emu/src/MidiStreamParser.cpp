@@ -48,7 +48,7 @@ void MidiStreamParserImpl::parseStream(const Bit8u *stream, Bit32u length) {
 		Bit32u parsedMessageLength = 0;
 		if (0xF8 <= *stream) {
 			// Process System Realtime immediately and go on
-			midiReceiver.handleSytemRealtimeMessage(*stream);
+			midiReceiver.handleSystemRealtimeMessage(*stream);
 			parsedMessageLength = 1;
 			// No effect on the running status
 		} else if (streamBufferSize > 0) {
@@ -77,7 +77,7 @@ void MidiStreamParserImpl::processShortMessage(const Bit32u message) {
 	// Adds running status to the MIDI message if it doesn't contain one
 	Bit8u status = (Bit8u)message;
 	if (0xF8 <= status) {
-		midiReceiver.handleSytemRealtimeMessage(status);
+		midiReceiver.handleSystemRealtimeMessage(status);
 	} else if (processStatusByte(status)) {
 		midiReceiver.handleShortMessage((message << 8) | status);
 	} else {
@@ -153,7 +153,7 @@ Bit32u MidiStreamParserImpl::parseShortMessageDataBytes(const Bit8u stream[], Bi
 			return parsedLength;
 		} else {
 			// Bypass System Realtime message
-			midiReceiver.handleSytemRealtimeMessage(dataByte);
+			midiReceiver.handleSystemRealtimeMessage(dataByte);
 		}
 		++parsedLength;
 	}
@@ -218,7 +218,7 @@ Bit32u MidiStreamParserImpl::parseSysexFragment(const Bit8u stream[], const Bit3
 		}
 		if (0xF8 <= nextByte) {
 			// Bypass System Realtime message
-			midiReceiver.handleSytemRealtimeMessage(nextByte);
+			midiReceiver.handleSystemRealtimeMessage(nextByte);
 			continue;
 		}
 		if (nextByte != 0xF7) {

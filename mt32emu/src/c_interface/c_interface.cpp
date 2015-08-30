@@ -214,7 +214,7 @@ private:
 		if (!res) ReportHandlerAdapter::onMIDIQueueOverflow(context);
 	}
 
-	void handleSytemRealtimeMessage(const Bit8u realtime) {
+	void handleSystemRealtimeMessage(const Bit8u realtime) {
 		ReportHandlerAdapter::onMIDISystemRealtime(context, realtime);
 	}
 

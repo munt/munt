@@ -35,7 +35,7 @@ public:
 protected:
 	void handleShortMessage(const MT32Emu::Bit32u message);
 	void handleSysex(const MT32Emu::Bit8u stream[], const MT32Emu::Bit32u length);
-	void handleSytemRealtimeMessage(const MT32Emu::Bit8u realtime);
+	void handleSystemRealtimeMessage(const MT32Emu::Bit8u realtime);
 	void printDebug(const char *debugMessage);
 
 private:

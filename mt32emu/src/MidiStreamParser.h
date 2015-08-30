@@ -37,7 +37,7 @@ public:
 	virtual void handleSysex(const Bit8u stream[], const Bit32u length) = 0;
 
 	// Invoked when a System Realtime MIDI message is parsed in the input MIDI stream.
-	virtual void handleSytemRealtimeMessage(const Bit8u realtime) = 0;
+	virtual void handleSystemRealtimeMessage(const Bit8u realtime) = 0;
 };
 
 // Interface for a user-supplied class to receive notifications of input MIDI stream parse errors.

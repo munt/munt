@@ -20,6 +20,8 @@
 #define MAX_DRIVERS 8
 #define MAX_CLIENTS 8 // Per driver
 
+namespace {
+
 static bool hrTimerAvailable;
 static double mult;
 static LARGE_INTEGER counter;
@@ -275,7 +277,7 @@ protected:
 		}
 	}
 
-	virtual void handleSytemRealtimeMessage(const Bit8u realtime) {
+	virtual void handleSystemRealtimeMessage(const Bit8u realtime) {
 		// Unsupported by now
 	}
 
@@ -378,3 +380,5 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 		break;
 	}
 }
+
+} // namespace

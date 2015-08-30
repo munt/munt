@@ -59,7 +59,7 @@ void QMidiStreamParser::handleSysex(const Bit8u stream[], const Bit32u length) {
 	synthRoute.pushMIDISysex(stream, length, timestamp);
 }
 
-void QMidiStreamParser::handleSytemRealtimeMessage(const Bit8u realtime) {
+void QMidiStreamParser::handleSystemRealtimeMessage(const Bit8u realtime) {
 	// Unsupported yet
 	Q_UNUSED(realtime);
 }
