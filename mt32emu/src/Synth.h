@@ -100,10 +100,7 @@ friend class RhythmPart;
 friend class Poly;
 friend class Partial;
 friend class PartialManager;
-friend class Tables;
-friend class MemoryRegion;
 friend class TVA;
-friend class TVF;
 friend class TVP;
 private:
 	PatchTempMemoryRegion *patchTempMemoryRegion;
