@@ -29,10 +29,10 @@
 #include "Synth.h"
 #include "MidiStreamParser.h"
 
-#else // #if defined(__cplusplus) && !MT32EMU_C_INTERFACE
+#else /* #if defined(__cplusplus) && !MT32EMU_C_INTERFACE */
 
 #include "c_interface/c_interface.h"
 
-#endif // #if defined(__cplusplus) && !MT32EMU_C_INTERFACE
+#endif /* #if defined(__cplusplus) && !MT32EMU_C_INTERFACE */
 
-#endif // #ifndef MT32EMU_MT32EMU_H
+#endif /* #ifndef MT32EMU_MT32EMU_H */
