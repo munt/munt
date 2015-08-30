@@ -67,6 +67,15 @@ public:
 		}
 	}
 
+	static void onMIDISystemRealtime(mt32emu_const_context context, Bit8u systemRealtime) {
+		if (context->reportHandler != NULL) {
+			const mt32emu_report_handler_o *delegate = context->reportHandler->delegate;
+			if (delegate->i->onMIDISystemRealtime != NULL) {
+				delegate->i->onMIDISystemRealtime(delegate, systemRealtime);
+			}
+		}
+	}
+
 private:
 	const mt32emu_report_handler_o * const delegate;
 
@@ -205,8 +214,8 @@ private:
 		if (!res) ReportHandlerAdapter::onMIDIQueueOverflow(context);
 	}
 
-	void handleSytemRealtimeMessage(const Bit8u /* realtime */) {
-		// Not implemented yet
+	void handleSytemRealtimeMessage(const Bit8u realtime) {
+		ReportHandlerAdapter::onMIDISystemRealtime(context, realtime);
 	}
 
 	void printDebug(const char *debugMessage) {

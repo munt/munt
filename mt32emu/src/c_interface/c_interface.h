@@ -87,11 +87,13 @@ MT32EMU_EXPORT void mt32emu_parse_stream(mt32emu_const_context context, const mt
 
 // Parses a block of raw MIDI bytes and enqueues parsed MIDI messages to play at specified time.
 // SysEx messages are allowed to be fragmented across several calls to this method. Running status is also handled for short messages.
+// When a System Realtime MIDI message is parsed, onMIDISystemRealtime callback is invoked.
 // NOTE: the total length of a SysEx message being fragmented shall not exceed MT32EMU_MAX_STREAM_BUFFER_SIZE (32768 bytes).
 MT32EMU_EXPORT void mt32emu_parse_stream_at(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length, mt32emu_bit32u timestamp);
 
 // Enqueues a single mt32emu_bit32u-encoded short MIDI message with full processing ASAP.
 // The short MIDI message may contain no status byte, the running status is used in this case.
+// When the argument is a System Realtime MIDI message, onMIDISystemRealtime callback is invoked.
 MT32EMU_EXPORT void mt32emu_play_short_message(mt32emu_const_context context, mt32emu_bit32u message);
 
 // Enqueues a single mt32emu_bit32u-encoded short MIDI message to play at specified time with full processing.

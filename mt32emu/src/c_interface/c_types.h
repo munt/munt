@@ -82,6 +82,9 @@ struct mt32emu_report_handler_i {
 	void (*onMIDIMessagePlayed)(const struct mt32emu_report_handler_o *instance);
 	// Callback for reporting an overflow of the input MIDI queue
 	void (*onMIDIQueueOverflow)(const struct mt32emu_report_handler_o *instance);
+	// Callback invoked when a System Realtime MIDI message is detected in functions
+	// mt32emu_parse_stream and mt32emu_play_short_message and the likes.
+	void(*onMIDISystemRealtime)(const struct mt32emu_report_handler_o *instance, mt32emu_bit8u systemRealtime);
 	// Callbacks for reporting system events
 	void (*onDeviceReset)(const struct mt32emu_report_handler_o *instance);
 	void (*onDeviceReconfig)(const struct mt32emu_report_handler_o *instance);
