@@ -23,17 +23,44 @@
 
 namespace MT32Emu {
 
+class Synth;
+
+// Interface for a user-supplied class to receive parsed well-formed MIDI messages.
+class MT32EMU_EXPORT MidiReceiver {
+public:
+	virtual ~MidiReceiver() {}
+
+	// Invoked when a complete short MIDI message is parsed in the input MIDI stream.
+	virtual void handleShortMessage(const Bit32u message) = 0;
+
+	// Invoked when a complete well-formed System Exclusive MIDI message is parsed in the input MIDI stream.
+	virtual void handleSysex(const Bit8u stream[], const Bit32u length) = 0;
+
+	// Invoked when a System Realtime MIDI message is parsed in the input MIDI stream.
+	virtual void handleSytemRealtimeMessage(const Bit8u realtime) = 0;
+};
+
+// Interface for a user-supplied class to receive notifications of input MIDI stream parse errors.
+class MT32EMU_EXPORT MidiReporter {
+public:
+	virtual ~MidiReporter() {}
+
+	// Invoked when an error occurs during processing the input MIDI stream.
+	virtual void printDebug(const char *debugMessage) = 0;
+};
+
 // Provides a context for parsing a stream of MIDI events coming from a single source.
 // There can be multiple MIDI sources feeding MIDI events to a single Synth object.
 // NOTE: Calls from multiple threads which feed a single Synth object with data must be explicitly synchronised,
 // although, no synchronisation is required with the rendering thread.
-class MT32EMU_EXPORT MidiStreamParser {
+class MT32EMU_EXPORT MidiStreamParserImpl {
 public:
-	// The argument specifies streamBuffer initial capacity. The buffer capacity should be large enough to fit the longest SysEx expected.
+	// The first two arguments provide for implementations of essential interfaces needed.
+	// The third argument specifies streamBuffer initial capacity. The buffer capacity should be large enough to fit the longest SysEx expected.
 	// If a longer SysEx occurs, streamBuffer is reallocated to the maximum size of MAX_STREAM_BUFFER_SIZE (32768 bytes).
 	// Default capacity is SYSEX_BUFFER_SIZE (1000 bytes) which is enough to fit SysEx messages in common use.
-	MidiStreamParser(Bit32u initialStreamBufferCapacity = SYSEX_BUFFER_SIZE);
-	virtual ~MidiStreamParser();
+	MidiStreamParserImpl(MidiReceiver &, MidiReporter &, Bit32u initialStreamBufferCapacity = SYSEX_BUFFER_SIZE);
+	virtual ~MidiStreamParserImpl();
 
 	// Parses a block of raw MIDI bytes. All the parsed MIDI messages are sent in sequence to the user-supplied methods for further processing.
 	// SysEx messages are allowed to be fragmented across several calls to this method. Running status is also handled for short messages.
@@ -44,24 +71,13 @@ public:
 	// The short MIDI message may contain no status byte, the running status is used in this case.
 	void processShortMessage(const Bit32u message);
 
-protected:
-	// User-supplied method. Invoked when a complete short MIDI message is parsed in the input MIDI stream.
-	virtual void handleShortMessage(const Bit32u message) = 0;
-
-	// User-supplied method. Invoked when a complete well-formed System Exclusive MIDI message is parsed in the input MIDI stream.
-	virtual void handleSysex(const Bit8u stream[], const Bit32u length) = 0;
-
-	// User-supplied method. Invoked when a System Realtime MIDI message is parsed in the input MIDI stream.
-	virtual void handleSytemRealtimeMessage(const Bit8u realtime) = 0;
-
-	// User-supplied method. Invoked when an error occurs during processing the input MIDI stream.
-	virtual void printDebug(const char *debugMessage) = 0;
-
 private:
 	Bit8u runningStatus;
 	Bit8u *streamBuffer;
 	Bit32u streamBufferCapacity;
 	Bit32u streamBufferSize;
+	MidiReceiver &midiReceiver;
+	MidiReporter &midiReporter;
 
 	bool checkStreamBufferCapacity(const bool preserveContent);
 	bool processStatusByte(Bit8u &status);
@@ -69,7 +85,16 @@ private:
 	Bit32u parseShortMessageDataBytes(const Bit8u stream[], Bit32u length);
 	Bit32u parseSysex(const Bit8u stream[], const Bit32u length);
 	Bit32u parseSysexFragment(const Bit8u stream[], const Bit32u length);
-}; // class MidiStreamParser
+}; // class MidiStreamParserImpl
+
+// An abstract class that provides a context for parsing a stream of MIDI events coming from a single source.
+class MT32EMU_EXPORT MidiStreamParser : public MidiStreamParserImpl, protected MidiReceiver, protected MidiReporter {
+public:
+	// The argument specifies streamBuffer initial capacity. The buffer capacity should be large enough to fit the longest SysEx expected.
+	// If a longer SysEx occurs, streamBuffer is reallocated to the maximum size of MAX_STREAM_BUFFER_SIZE (32768 bytes).
+	// Default capacity is SYSEX_BUFFER_SIZE (1000 bytes) which is enough to fit SysEx messages in common use.
+	explicit MidiStreamParser(Bit32u initialStreamBufferCapacity = SYSEX_BUFFER_SIZE);
+};
 
 } // namespace MT32Emu
 

@@ -25,7 +25,12 @@
 
 using namespace MT32Emu;
 
-MidiStreamParser::MidiStreamParser(Bit32u initialStreamBufferCapacity) {
+MidiStreamParser::MidiStreamParser(Bit32u initialStreamBufferCapacity) :
+	MidiStreamParserImpl(*this, *this, initialStreamBufferCapacity) {}
+
+MidiStreamParserImpl::MidiStreamParserImpl(MidiReceiver &useReceiver, MidiReporter &useReporter, Bit32u initialStreamBufferCapacity) :
+	midiReceiver(useReceiver), midiReporter(useReporter)
+{
 	if (initialStreamBufferCapacity < (Bit32u)SYSEX_BUFFER_SIZE) initialStreamBufferCapacity = SYSEX_BUFFER_SIZE;
 	if (MAX_STREAM_BUFFER_SIZE < initialStreamBufferCapacity) initialStreamBufferCapacity = MAX_STREAM_BUFFER_SIZE;
 	streamBufferCapacity = initialStreamBufferCapacity;
@@ -34,16 +39,16 @@ MidiStreamParser::MidiStreamParser(Bit32u initialStreamBufferCapacity) {
 	runningStatus = 0;
 }
 
-MidiStreamParser::~MidiStreamParser() {
+MidiStreamParserImpl::~MidiStreamParserImpl() {
 	delete[] streamBuffer;
 }
 
-void MidiStreamParser::parseStream(const Bit8u *stream, Bit32u length) {
+void MidiStreamParserImpl::parseStream(const Bit8u *stream, Bit32u length) {
 	while (length > 0) {
 		Bit32u parsedMessageLength = 0;
 		if (0xF8 <= *stream) {
 			// Process System Realtime immediately and go on
-			handleSytemRealtimeMessage(*stream);
+			midiReceiver.handleSytemRealtimeMessage(*stream);
 			parsedMessageLength = 1;
 			// No effect on the running status
 		} else if (streamBufferSize > 0) {
@@ -68,21 +73,21 @@ void MidiStreamParser::parseStream(const Bit8u *stream, Bit32u length) {
 	}
 }
 
-void MidiStreamParser::processShortMessage(const Bit32u message) {
+void MidiStreamParserImpl::processShortMessage(const Bit32u message) {
 	// Adds running status to the MIDI message if it doesn't contain one
 	Bit8u status = (Bit8u)message;
 	if (0xF8 <= status) {
-		handleSytemRealtimeMessage(status);
+		midiReceiver.handleSytemRealtimeMessage(status);
 	} else if (processStatusByte(status)) {
-		handleShortMessage((message << 8) | status);
+		midiReceiver.handleShortMessage((message << 8) | status);
 	} else {
-		handleShortMessage(message);
+		midiReceiver.handleShortMessage(message);
 	}
 }
 
 // We deal with SysEx messages below 512 bytes long in most cases. Nevertheless, it seems reasonable to support a possibility
 // to load bulk dumps using a single message. However, this is known to fail with a real device due to limited input buffer size.
-bool MidiStreamParser::checkStreamBufferCapacity(const bool preserveContent) {
+bool MidiStreamParserImpl::checkStreamBufferCapacity(const bool preserveContent) {
 	if (streamBufferSize < streamBufferCapacity) return true;
 	if (streamBufferCapacity < MAX_STREAM_BUFFER_SIZE) {
 		Bit8u *oldStreamBuffer = streamBuffer;
@@ -97,12 +102,12 @@ bool MidiStreamParser::checkStreamBufferCapacity(const bool preserveContent) {
 
 // Checks input byte whether it is a status byte. If not, replaces it with running status when available.
 // Returns true if the input byte was changed to running status.
-bool MidiStreamParser::processStatusByte(Bit8u &status) {
+bool MidiStreamParserImpl::processStatusByte(Bit8u &status) {
 	if (status < 0x80) {
 		// First byte isn't status, try running status
 		if (runningStatus < 0x80) {
 			// No running status available yet
-			printDebug("processStatusByte: No valid running status yet, MIDI message ignored");
+			midiReporter.printDebug("processStatusByte: No valid running status yet, MIDI message ignored");
 			return false;
 		}
 		status = runningStatus;
@@ -118,7 +123,7 @@ bool MidiStreamParser::processStatusByte(Bit8u &status) {
 }
 
 // Returns # of bytes parsed
-Bit32u MidiStreamParser::parseShortMessageStatus(const Bit8u stream[]) {
+Bit32u MidiStreamParserImpl::parseShortMessageStatus(const Bit8u stream[]) {
 	Bit8u status = *stream;
 	Bit32u parsedLength = processStatusByte(status) ? 0 : 1;
 	if (0x80 <= status) { // No running status available yet, skip one byte
@@ -129,7 +134,7 @@ Bit32u MidiStreamParser::parseShortMessageStatus(const Bit8u stream[]) {
 }
 
 // Returns # of bytes parsed
-Bit32u MidiStreamParser::parseShortMessageDataBytes(const Bit8u stream[], Bit32u length) {
+Bit32u MidiStreamParserImpl::parseShortMessageDataBytes(const Bit8u stream[], Bit32u length) {
 	const Bit32u shortMessageLength = Synth::getShortMessageLength(*streamBuffer);
 	Bit32u parsedLength = 0;
 
@@ -143,12 +148,12 @@ Bit32u MidiStreamParser::parseShortMessageDataBytes(const Bit8u stream[], Bit32u
 			// Discard invalid bytes and start over
 			char s[128];
 			sprintf(s, "parseShortMessageDataBytes: Invalid short message: status %02x, expected length %i, actual %i -> ignored", *streamBuffer, shortMessageLength, streamBufferSize);
-			printDebug(s);
+			midiReporter.printDebug(s);
 			streamBufferSize = 0; // Clear streamBuffer
 			return parsedLength;
 		} else {
 			// Bypass System Realtime message
-			handleSytemRealtimeMessage(dataByte);
+			midiReceiver.handleSytemRealtimeMessage(dataByte);
 		}
 		++parsedLength;
 	}
@@ -159,13 +164,13 @@ Bit32u MidiStreamParser::parseShortMessageDataBytes(const Bit8u stream[], Bit32u
 	for (Bit32u i = 1; i < shortMessageLength; ++i) {
 		shortMessage |= streamBuffer[i] << (i << 3);
 	}
-	handleShortMessage(shortMessage);
+	midiReceiver.handleShortMessage(shortMessage);
 	streamBufferSize = 0; // Clear streamBuffer
 	return parsedLength;
 }
 
 // Returns # of bytes parsed
-Bit32u MidiStreamParser::parseSysex(const Bit8u stream[], const Bit32u length) {
+Bit32u MidiStreamParserImpl::parseSysex(const Bit8u stream[], const Bit32u length) {
 	// Find SysEx length
 	Bit32u sysexLength = 1;
 	while (sysexLength < length) {
@@ -173,7 +178,7 @@ Bit32u MidiStreamParser::parseSysex(const Bit8u stream[], const Bit32u length) {
 		if (0x80 <= nextByte) {
 			if (nextByte == 0xF7) {
 				// End of SysEx
-				handleSysex(stream, sysexLength);
+				midiReceiver.handleSysex(stream, sysexLength);
 				return sysexLength;
 			}
 			if (0xF8 <= nextByte) {
@@ -183,7 +188,7 @@ Bit32u MidiStreamParser::parseSysex(const Bit8u stream[], const Bit32u length) {
 				break;
 			}
 			// Illegal status byte in SysEx message, aborting
-			printDebug("parseSysex: SysEx message lacks end-of-sysex (0xf7), ignored");
+			midiReporter.printDebug("parseSysex: SysEx message lacks end-of-sysex (0xf7), ignored");
 			// Continue parsing from that point
 			return sysexLength - 1;
 		}
@@ -202,7 +207,7 @@ Bit32u MidiStreamParser::parseSysex(const Bit8u stream[], const Bit32u length) {
 }
 
 // Returns # of bytes parsed
-Bit32u MidiStreamParser::parseSysexFragment(const Bit8u stream[], const Bit32u length) {
+Bit32u MidiStreamParserImpl::parseSysexFragment(const Bit8u stream[], const Bit32u length) {
 	Bit32u parsedLength = 0;
 	while (parsedLength < length) {
 		Bit8u nextByte = stream[parsedLength++];
@@ -213,12 +218,12 @@ Bit32u MidiStreamParser::parseSysexFragment(const Bit8u stream[], const Bit32u l
 		}
 		if (0xF8 <= nextByte) {
 			// Bypass System Realtime message
-			handleSytemRealtimeMessage(nextByte);
+			midiReceiver.handleSytemRealtimeMessage(nextByte);
 			continue;
 		}
 		if (nextByte != 0xF7) {
 			// Illegal status byte in SysEx message, aborting
-			printDebug("parseSysexFragment: SysEx message lacks end-of-sysex (0xf7), ignored");
+			midiReporter.printDebug("parseSysexFragment: SysEx message lacks end-of-sysex (0xf7), ignored");
 			// Clear streamBuffer and continue parsing from that point
 			streamBufferSize = 0;
 			--parsedLength;
@@ -227,12 +232,12 @@ Bit32u MidiStreamParser::parseSysexFragment(const Bit8u stream[], const Bit32u l
 		// End of SysEx
 		if (checkStreamBufferCapacity(true)) {
 			streamBuffer[streamBufferSize++] = nextByte;
-			handleSysex(streamBuffer, streamBufferSize);
+			midiReceiver.handleSysex(streamBuffer, streamBufferSize);
 			streamBufferSize = 0; // Clear streamBuffer
 			break;
 		}
 		// Encountered streamBuffer overrun
-		printDebug("parseSysexFragment: streamBuffer overrun while receiving SysEx message, ignored. Max allowed size of fragmented SysEx is 32768 bytes.");
+		midiReporter.printDebug("parseSysexFragment: streamBuffer overrun while receiving SysEx message, ignored. Max allowed size of fragmented SysEx is 32768 bytes.");
 		streamBufferSize = 0; // Clear streamBuffer
 		break;
 	}
