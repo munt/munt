@@ -71,8 +71,6 @@ typedef const struct mt32emu_data *mt32emu_const_context;
 
 /* Convenience aliases */
 #ifndef __cplusplus
-typedef enum mt32emu_boolean mt32emu_boolean;
-typedef enum mt32emu_return_code mt32emu_return_code;
 typedef enum mt32emu_analog_output_mode mt32emu_analog_output_mode;
 typedef enum mt32emu_dac_input_mode mt32emu_dac_input_mode;
 typedef enum mt32emu_midi_delay_mode mt32emu_midi_delay_mode;
