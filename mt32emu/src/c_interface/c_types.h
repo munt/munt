@@ -43,11 +43,11 @@ typedef mt32emu_bit32s mt32emu_sample_ex;
 
 typedef char mt32emu_sha1_digest[41];
 
-enum mt32emu_boolean {
+typedef enum {
 	MT32EMU_BOOL_FALSE, MT32EMU_BOOL_TRUE
-};
+} mt32emu_boolean;
 
-enum mt32emu_return_code {
+typedef enum {
 	// Operation completed normally.
 	MT32EMU_RC_OK = 0,
 	MT32EMU_RC_ADDED_CONTROL_ROM = 1,
@@ -63,56 +63,68 @@ enum mt32emu_return_code {
 
 	// Undefined error occurred.
 	MT32EMU_RC_FAILED = -100
-};
+} mt32emu_return_code;
 
 // Emulation context
 typedef struct mt32emu_data *mt32emu_context;
 typedef const struct mt32emu_data *mt32emu_const_context;
 
+// Convenience aliases
+#ifndef __cplusplus
+typedef enum mt32emu_boolean mt32emu_boolean;
+typedef enum mt32emu_return_code mt32emu_return_code;
+typedef enum mt32emu_analog_output_mode mt32emu_analog_output_mode;
+typedef enum mt32emu_dac_input_mode mt32emu_dac_input_mode;
+typedef enum mt32emu_midi_delay_mode mt32emu_midi_delay_mode;
+typedef enum mt32emu_partial_state mt32emu_partial_state;
+#endif
+
+typedef struct mt32emu_report_handler_o mt32emu_report_handler_o;
+
 // Interface for handling reported events
-struct mt32emu_report_handler_i {
+typedef struct {
 	// Callback for debug messages, in vprintf() format
-	void (*printDebug)(const struct mt32emu_report_handler_o *instance, const char *fmt, va_list list);
+	void (*printDebug)(const mt32emu_report_handler_o *instance, const char *fmt, va_list list);
 	// Callbacks for reporting errors
-	void (*onErrorControlROM)(const struct mt32emu_report_handler_o *instance);
-	void (*onErrorPCMROM)(const struct mt32emu_report_handler_o *instance);
+	void (*onErrorControlROM)(const mt32emu_report_handler_o *instance);
+	void (*onErrorPCMROM)(const mt32emu_report_handler_o *instance);
 	// Callback for reporting about displaying a new custom message on LCD
-	void (*showLCDMessage)(const struct mt32emu_report_handler_o *instance, const char *message);
+	void (*showLCDMessage)(const mt32emu_report_handler_o *instance, const char *message);
 	// Callback for reporting actual processing of a MIDI message
-	void (*onMIDIMessagePlayed)(const struct mt32emu_report_handler_o *instance);
+	void (*onMIDIMessagePlayed)(const mt32emu_report_handler_o *instance);
 	// Callback for reporting an overflow of the input MIDI queue
-	void (*onMIDIQueueOverflow)(const struct mt32emu_report_handler_o *instance);
+	void (*onMIDIQueueOverflow)(const mt32emu_report_handler_o *instance);
 	// Callback invoked when a System Realtime MIDI message is detected in functions
 	// mt32emu_parse_stream and mt32emu_play_short_message and the likes.
-	void(*onMIDISystemRealtime)(const struct mt32emu_report_handler_o *instance, mt32emu_bit8u systemRealtime);
+	void(*onMIDISystemRealtime)(const mt32emu_report_handler_o *instance, mt32emu_bit8u systemRealtime);
 	// Callbacks for reporting system events
-	void (*onDeviceReset)(const struct mt32emu_report_handler_o *instance);
-	void (*onDeviceReconfig)(const struct mt32emu_report_handler_o *instance);
+	void (*onDeviceReset)(const mt32emu_report_handler_o *instance);
+	void (*onDeviceReconfig)(const mt32emu_report_handler_o *instance);
 	// Callbacks for reporting changes of reverb settings
-	void (*onNewReverbMode)(const struct mt32emu_report_handler_o *instance, mt32emu_bit8u mode);
-	void (*onNewReverbTime)(const struct mt32emu_report_handler_o *instance, mt32emu_bit8u time);
-	void (*onNewReverbLevel)(const struct mt32emu_report_handler_o *instance, mt32emu_bit8u level);
+	void (*onNewReverbMode)(const mt32emu_report_handler_o *instance, mt32emu_bit8u mode);
+	void (*onNewReverbTime)(const mt32emu_report_handler_o *instance, mt32emu_bit8u time);
+	void (*onNewReverbLevel)(const mt32emu_report_handler_o *instance, mt32emu_bit8u level);
 	// Callbacks for reporting various information
-	void (*onPolyStateChanged)(const struct mt32emu_report_handler_o *instance, int partNum);
-	void (*onProgramChanged)(const struct mt32emu_report_handler_o *instance, int partNum, const char *soundGroupName, const char *patchName);
-};
+	void (*onPolyStateChanged)(const mt32emu_report_handler_o *instance, int partNum);
+	void (*onProgramChanged)(const mt32emu_report_handler_o *instance, int partNum, const char *soundGroupName, const char *patchName);
+} mt32emu_report_handler_i;
 
 // Instance of report handler object
 struct mt32emu_report_handler_o {
 	// Interface
-	const struct mt32emu_report_handler_i *i;
+	const mt32emu_report_handler_i *i;
 	// User data for this instance
 	void *d;
 };
 
 // Set of multiplexed output streams appeared at the DAC entrance.
-struct mt32emu_dac_output_streams {
+typedef struct {
 	mt32emu_sample *nonReverbLeft;
 	mt32emu_sample *nonReverbRight;
 	mt32emu_sample *reverbDryLeft;
 	mt32emu_sample *reverbDryRight;
 	mt32emu_sample *reverbWetLeft;
 	mt32emu_sample *reverbWetRight;
-};
+} mt32emu_dac_output_streams;
 
 #endif // #ifndef MT32EMU_C_TYPES_H

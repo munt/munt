@@ -36,29 +36,29 @@ MT32EMU_EXPORT void mt32emu_free_synth(mt32emu_context context);
 // If sha1_digest is set to non-NULL, it is assumed correct and will not be recomputed.
 // This function doesn't immediately change the state of already opened synth. Newly added ROM will take effect upon next call of mt32emu_open_synth().
 // Returns positive value upon success.
-MT32EMU_EXPORT enum mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest);
+MT32EMU_EXPORT mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest);
 
 // Loads a ROM file, identify it by SHA1 digest, and adds it to the emulation context replacing previously added ROM of the same type if any.
 // This function doesn't immediately change the state of already opened synth. Newly added ROM will take effect upon next call of mt32emu_open_synth().
 // Returns positive value upon success.
-MT32EMU_EXPORT enum mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *filename);
+MT32EMU_EXPORT mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *filename);
 
 // Prepares the emulation context to receive MIDI messages and produce output audio data using aforehand added set of ROMs.
 // partial_count sets the maximum number of partials playing simultaneously for this session (optional).
 // analog_output_mode sets the mode for emulation of analogue circuitry of the hardware units (optional).
 // If either partial_count and/or analog_output_mode arguments is set to NULL, the default value will be used.
 // Returns MT32EMU_RC_OK upon success.
-MT32EMU_EXPORT enum mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const unsigned int *partial_count, const enum mt32emu_analog_output_mode *analog_output_mode);
+MT32EMU_EXPORT mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const unsigned int *partial_count, const mt32emu_analog_output_mode *analog_output_mode);
 
 // Closes the emulation context freeing allocated resources. Added ROMs remain unaffected and ready for reuse.
 MT32EMU_EXPORT void mt32emu_close_synth(mt32emu_const_context context);
 
 // Returns true if the synth is in completely initialized state, otherwise returns false.
-MT32EMU_EXPORT enum mt32emu_boolean mt32emu_is_open(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_open(mt32emu_const_context context);
 
 // Returns output sample rate used in emulation of stereo analog circuitry of hardware units for particular analog_output_mode.
 // See comment for mt32emu_analog_output_mode.
-MT32EMU_EXPORT unsigned int mt32emu_get_stereo_output_samplerate(const enum mt32emu_analog_output_mode analog_output_mode);
+MT32EMU_EXPORT unsigned int mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode);
 
 // Returns actual output sample rate used in emulation of stereo analog circuitry of hardware units.
 // See comment for mt32emu_analog_output_mode.
@@ -101,14 +101,14 @@ MT32EMU_EXPORT void mt32emu_play_short_message(mt32emu_const_context context, mt
 MT32EMU_EXPORT void mt32emu_play_short_message_at(mt32emu_const_context context, mt32emu_bit32u message, mt32emu_bit32u timestamp);
 
 // Enqueues a single short MIDI message to be processed ASAP. The message must contain a status byte.
-MT32EMU_EXPORT enum mt32emu_return_code mt32emu_play_msg(mt32emu_const_context context, mt32emu_bit32u msg);
+MT32EMU_EXPORT mt32emu_return_code mt32emu_play_msg(mt32emu_const_context context, mt32emu_bit32u msg);
 // Enqueues a single well formed System Exclusive MIDI message to be processed ASAP.
-MT32EMU_EXPORT enum mt32emu_return_code mt32emu_play_sysex(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len);
+MT32EMU_EXPORT mt32emu_return_code mt32emu_play_sysex(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len);
 
 // Enqueues a single short MIDI message to play at specified time. The message must contain a status byte.
-MT32EMU_EXPORT enum mt32emu_return_code mt32emu_play_msg_at(mt32emu_const_context context, mt32emu_bit32u msg, mt32emu_bit32u timestamp);
+MT32EMU_EXPORT mt32emu_return_code mt32emu_play_msg_at(mt32emu_const_context context, mt32emu_bit32u msg, mt32emu_bit32u timestamp);
 // Enqueues a single well formed System Exclusive MIDI message to play at specified time.
-MT32EMU_EXPORT enum mt32emu_return_code mt32emu_play_sysex_at(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len, mt32emu_bit32u timestamp);
+MT32EMU_EXPORT mt32emu_return_code mt32emu_play_sysex_at(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len, mt32emu_bit32u timestamp);
 
 // WARNING:
 // The methods below don't ensure minimum 1-sample delay between sequential MIDI events,
@@ -130,34 +130,34 @@ MT32EMU_EXPORT void mt32emu_play_sysex_now(mt32emu_const_context context, const 
 MT32EMU_EXPORT void mt32emu_write_sysex(mt32emu_const_context context, unsigned char channel, const mt32emu_bit8u *sysex, mt32emu_bit32u len);
 
 // Allows to disable wet reverb output altogether.
-MT32EMU_EXPORT void mt32emu_set_reverb_enabled(mt32emu_const_context context, const enum mt32emu_boolean reverb_enabled);
+MT32EMU_EXPORT void mt32emu_set_reverb_enabled(mt32emu_const_context context, const mt32emu_boolean reverb_enabled);
 // Returns whether wet reverb output is enabled.
-MT32EMU_EXPORT enum mt32emu_boolean mt32emu_is_reverb_enabled(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_reverb_enabled(mt32emu_const_context context);
 // Sets override reverb mode. In this mode, emulation ignores sysexes (or the related part of them) which control the reverb parameters.
 // This mode is in effect until it is turned off. When the synth is re-opened, the override mode is unchanged but the state
 // of the reverb model is reset to default.
-MT32EMU_EXPORT void mt32emu_set_reverb_overridden(mt32emu_const_context context, const enum mt32emu_boolean reverbOverridden);
+MT32EMU_EXPORT void mt32emu_set_reverb_overridden(mt32emu_const_context context, const mt32emu_boolean reverbOverridden);
 // Returns whether reverb settings are overridden.
-MT32EMU_EXPORT enum mt32emu_boolean mt32emu_is_reverb_overridden(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_reverb_overridden(mt32emu_const_context context);
 // Forces reverb model compatibility mode. By default, the compatibility mode corresponds to the used control ROM version.
 // Invoking this method with the argument set to true forces emulation of old MT-32 reverb circuit.
 // When the argument is false, emulation of the reverb circuit used in new generation of MT-32 compatible modules is enforced
 // (these include CM-32L and LAPC-I).
-MT32EMU_EXPORT void mt32emu_set_reverb_compatibility_mode(mt32emu_const_context context, const enum mt32emu_boolean mt32_compatible_mode);
+MT32EMU_EXPORT void mt32emu_set_reverb_compatibility_mode(mt32emu_const_context context, const mt32emu_boolean mt32_compatible_mode);
 // Returns whether reverb is in old MT-32 compatibility mode.
-MT32EMU_EXPORT enum mt32emu_boolean mt32emu_is_mt32_reverb_compatibility_mode(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_mt32_reverb_compatibility_mode(mt32emu_const_context context);
 // Returns whether default reverb compatibility mode is the old MT-32 compatibility mode.
-MT32EMU_EXPORT enum mt32emu_boolean mt32emu_is_default_reverb_mt32_compatible(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_default_reverb_mt32_compatible(mt32emu_const_context context);
 
 // Sets new DAC input mode. See mt32emu_dac_input_mode for details.
-MT32EMU_EXPORT void mt32emu_set_dac_input_mode(mt32emu_const_context context, const enum mt32emu_dac_input_mode mode);
+MT32EMU_EXPORT void mt32emu_set_dac_input_mode(mt32emu_const_context context, const mt32emu_dac_input_mode mode);
 // Returns current DAC input mode. See mt32emu_dac_input_mode for details.
-MT32EMU_EXPORT enum mt32emu_dac_input_mode mt32emu_get_dac_input_mode(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_dac_input_mode mt32emu_get_dac_input_mode(mt32emu_const_context context);
 
 // Sets new MIDI delay mode. See mt32emu_midi_delay_mode for details.
-MT32EMU_EXPORT void mt32emu_set_midi_delay_mode(mt32emu_const_context context, const enum mt32emu_midi_delay_mode mode);
+MT32EMU_EXPORT void mt32emu_set_midi_delay_mode(mt32emu_const_context context, const mt32emu_midi_delay_mode mode);
 // Returns current MIDI delay mode. See mt32emu_midi_delay_mode for details.
-MT32EMU_EXPORT enum mt32emu_midi_delay_mode mt32emu_get_midi_delay_mode(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_midi_delay_mode mt32emu_get_midi_delay_mode(mt32emu_const_context context);
 
 // Sets output gain factor for synth output channels. Applied to all output samples and unrelated with the synth's Master volume,
 // it rather corresponds to the gain of the output analog circuitry of the hardware units. However, together with mt32emu_set_reverb_output_gain()
@@ -181,9 +181,9 @@ MT32EMU_EXPORT void mt32emu_set_reverb_output_gain(mt32emu_const_context context
 MT32EMU_EXPORT float mt32emu_get_reverb_output_gain(mt32emu_const_context context);
 
 // Swaps left and right output channels.
-MT32EMU_EXPORT void mt32emu_set_reversed_stereo_enabled(mt32emu_const_context context, const enum mt32emu_boolean enabled);
+MT32EMU_EXPORT void mt32emu_set_reversed_stereo_enabled(mt32emu_const_context context, const mt32emu_boolean enabled);
 // Returns whether left and right output channels are swapped.
-MT32EMU_EXPORT enum mt32emu_boolean mt32emu_is_reversed_stereo_enabled(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_reversed_stereo_enabled(mt32emu_const_context context);
 
 // Renders samples to the specified output stream as if they were sampled at the analog stereo output.
 // When mt32emu_analog_output_mode is set to ACCURATE (OVERSAMPLED), the output signal is upsampled to 48 (96) kHz in order
@@ -196,13 +196,13 @@ MT32EMU_EXPORT void mt32emu_render(mt32emu_const_context context, mt32emu_sample
 // No further processing performed in analog circuitry emulation is applied to the signal.
 // NULL may be specified in place of any or all of the stream buffers to skip it.
 // The length is in samples, not bytes. Uses NATIVE byte ordering.
-MT32EMU_EXPORT void mt32emu_renderStreams(mt32emu_const_context context, const struct mt32emu_dac_output_streams *streams, mt32emu_bit32u len);
+MT32EMU_EXPORT void mt32emu_renderStreams(mt32emu_const_context context, const mt32emu_dac_output_streams *streams, mt32emu_bit32u len);
 
 // Returns true when there is at least one active partial, otherwise false.
-MT32EMU_EXPORT enum mt32emu_boolean mt32emu_has_active_partials(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_boolean mt32emu_has_active_partials(mt32emu_const_context context);
 
 // Returns true if mt32emu_has_active_partials() returns true, or reverb is (somewhat unreliably) detected as being active.
-MT32EMU_EXPORT enum mt32emu_boolean mt32emu_is_active(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_active(mt32emu_const_context context);
 
 // Returns the maximum number of partials playing simultaneously.
 MT32EMU_EXPORT unsigned int mt32emu_get_partial_count(mt32emu_const_context context);
@@ -210,10 +210,10 @@ MT32EMU_EXPORT unsigned int mt32emu_get_partial_count(mt32emu_const_context cont
 // Fills in current states of all the parts into the array provided. The array must have at least 9 entries to fit values for all the parts.
 // If the value returned for a part is true, there is at least one active non-releasing partial playing on this part.
 // This info is useful in emulating behaviour of LCD display of the hardware units.
-MT32EMU_EXPORT void mt32emu_get_part_states(mt32emu_const_context context, enum mt32emu_boolean *part_states);
+MT32EMU_EXPORT void mt32emu_get_part_states(mt32emu_const_context context, mt32emu_boolean *part_states);
 
 // Fills in current states of all the partials into the array provided. The array must be large enough to accommodate states of all the partials.
-MT32EMU_EXPORT void mt32emu_get_partial_states(mt32emu_const_context context, enum mt32emu_partial_state *partial_states);
+MT32EMU_EXPORT void mt32emu_get_partial_states(mt32emu_const_context context, mt32emu_partial_state *partial_states);
 
 // Fills in information about currently playing notes on the specified part into the arrays provided. The arrays must be large enough
 // to accommodate data for all the playing notes. The maximum number of simultaneously playing notes cannot exceed the number of partials.
