@@ -252,14 +252,19 @@ MT32EMU_EXPORT mt32emu_boolean mt32emu_is_active(mt32emu_const_context context);
 MT32EMU_EXPORT unsigned int mt32emu_get_partial_count(mt32emu_const_context context);
 
 /**
- * Fills in current states of all the parts into the array provided. The array must have at least 9 entries to fit values for all the parts.
- * If the value returned for a part is true, there is at least one active non-releasing partial playing on this part.
- * This info is useful in emulating behaviour of LCD display of the hardware units.
+ * Returns current states of all the parts as a bit set. The least significant bit corresponds to the state of part 1,
+ * total of 9 bits hold the states of all the parts. If the returned bit for a part is set, there is at least one active
+ * non-releasing partial playing on this part. This info is useful in emulating behaviour of LCD display of the hardware units.
  */
-MT32EMU_EXPORT void mt32emu_get_part_states(mt32emu_const_context context, mt32emu_boolean *part_states);
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_part_states(mt32emu_const_context context);
 
-/** Fills in current states of all the partials into the array provided. The array must be large enough to accommodate states of all the partials. */
-MT32EMU_EXPORT void mt32emu_get_partial_states(mt32emu_const_context context, mt32emu_partial_state *partial_states);
+/**
+ * Fills in current states of all the partials into the array provided. Each byte in the array holds states of 4 partials
+ * starting from the least significant bits. The state of each partial is packed in a pair of bits.
+ * The array must be large enough to accommodate states of all the partials.
+ * @see getPartialCount()
+ */
+MT32EMU_EXPORT void mt32emu_get_partial_states(mt32emu_const_context context, mt32emu_bit8u *partial_states);
 
 /**
  * Fills in information about currently playing notes on the specified part into the arrays provided. The arrays must be large enough

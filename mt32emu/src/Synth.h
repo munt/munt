@@ -391,8 +391,18 @@ public:
 	// This info is useful in emulating behaviour of LCD display of the hardware units.
 	void getPartStates(bool *partStates) const;
 
+	// Returns current states of all the parts as a bit set. The least significant bit corresponds to the state of part 1,
+	// total of 9 bits hold the states of all the parts. If the returned bit for a part is set, there is at least one active
+	// non-releasing partial playing on this part. This info is useful in emulating behaviour of LCD display of the hardware units.
+	Bit32u getPartStates() const;
+
 	// Fills in current states of all the partials into the array provided. The array must be large enough to accommodate states of all the partials.
 	void getPartialStates(PartialState *partialStates) const;
+
+	// Fills in current states of all the partials into the array provided. Each byte in the array holds states of 4 partials
+	// starting from the least significant bits. The state of each partial is packed in a pair of bits.
+	// The array must be large enough to accommodate states of all the partials (see getPartialCount()).
+	void getPartialStates(Bit8u *partialStates) const;
 
 	// Fills in information about currently playing notes on the specified part into the arrays provided. The arrays must be large enough
 	// to accommodate data for all the playing notes. The maximum number of simultaneously playing notes cannot exceed the number of partials.

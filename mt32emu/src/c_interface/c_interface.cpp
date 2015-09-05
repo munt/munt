@@ -495,20 +495,12 @@ unsigned int mt32emu_get_partial_count(mt32emu_const_context context) {
 	return context->synth->getPartialCount();
 }
 
-void mt32emu_get_part_states(mt32emu_const_context context, mt32emu_boolean *part_states) {
-	if (sizeof(mt32emu_boolean) == sizeof(bool)) {
-		context->synth->getPartStates((bool *)part_states);
-	} else {
-		bool partStates[9];
-		context->synth->getPartStates(partStates);
-		for (int i = 0; i < 9; i++) {
-			part_states[i] = partStates[i] ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
-		}
-	}
+mt32emu_bit32u mt32emu_get_part_states(mt32emu_const_context context) {
+	return context->synth->getPartStates();
 }
 
-void mt32emu_get_partial_states(mt32emu_const_context context, mt32emu_partial_state *partial_states) {
-	context->synth->getPartialStates((PartialState *)partial_states);
+void mt32emu_get_partial_states(mt32emu_const_context context, mt32emu_bit8u *partial_states) {
+	context->synth->getPartialStates(partial_states);
 }
 
 unsigned int mt32emu_get_playing_notes(mt32emu_const_context context, unsigned int part_number, mt32emu_bit8u *keys, mt32emu_bit8u *velocities) {

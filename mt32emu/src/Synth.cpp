@@ -53,10 +53,20 @@ static const ControlROMMap ControlROMMaps[7] = {
 	// (Note that all but CM-32L ROM actually have 86 entries for rhythmTemp)
 };
 
+static const PartialState PARTIAL_PHASE_TO_STATE[8] = {
+	PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK,
+	PartialState_SUSTAIN, PartialState_SUSTAIN, PartialState_RELEASE, PartialState_INACTIVE
+};
+
 static inline void advanceStreamPosition(Sample *&stream, Bit32u posDelta) {
 	if (stream != NULL) {
 		stream += posDelta;
 	}
+}
+
+static inline PartialState getPartialState(PartialManager *partialManager, unsigned int partialNum) {
+	const Partial *partial = partialManager->getPartial(partialNum);
+	return partial->isActive() ? PARTIAL_PHASE_TO_STATE[partial->getTVA()->getPhase()] : PartialState_INACTIVE;
 }
 
 Bit8u Synth::calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u initChecksum) {
@@ -1739,15 +1749,32 @@ void Synth::getPartStates(bool *partStates) const {
 	}
 }
 
-void Synth::getPartialStates(PartialState *partialStates) const {
-	static const PartialState partialPhaseToState[8] = {
-		PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK,
-		PartialState_SUSTAIN, PartialState_SUSTAIN, PartialState_RELEASE, PartialState_INACTIVE
-	};
+Bit32u Synth::getPartStates() const {
+	bool partStates[9];
+	getPartStates(partStates);
+	Bit32u bitSet = 0;
+	for (int partNumber = 8; partNumber >= 0; partNumber--) {
+		bitSet = (bitSet << 1) | (partStates[partNumber] ? 1 : 0);
+	}
+	return bitSet;
+}
 
-	for (unsigned int partialNum = 0; partialNum < getPartialCount(); partialNum++) {
-		const Partial *partial = partialManager->getPartial(partialNum);
-		partialStates[partialNum] = partial->isActive() ? partialPhaseToState[partial->getTVA()->getPhase()] : PartialState_INACTIVE;
+void Synth::getPartialStates(PartialState *partialStates) const {
+	for (unsigned int partialNum = 0; partialNum < partialCount; partialNum++) {
+		partialStates[partialNum] = getPartialState(partialManager, partialNum);
+	}
+}
+
+void Synth::getPartialStates(Bit8u *partialStates) const {
+	for (unsigned int quartNum = 0; (4 * quartNum) < partialCount; quartNum++) {
+		Bit8u packedStates = 0;
+		for (unsigned int i = 0; i < 4; i++) {
+			unsigned int partialNum = (4 * quartNum) + i;
+			if (partialCount <= partialNum) break;
+			PartialState partialState = getPartialState(partialManager, partialNum);
+			packedStates |= (partialState & 3) << (2 * i);
+		}
+		partialStates[quartNum] = packedStates;
 	}
 }
 
