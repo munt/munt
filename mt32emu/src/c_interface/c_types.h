@@ -59,7 +59,7 @@ typedef enum {
 	MT32EMU_RC_FILE_NOT_LOADED = -3,
 	MT32EMU_RC_MISSING_ROMS = -4,
 	MT32EMU_RC_NOT_OPENED = -5,
-	MT32EMU_RC_QUEUE_FULL = -5,
+	MT32EMU_RC_QUEUE_FULL = -6,
 
 	/* Undefined error occurred. */
 	MT32EMU_RC_FAILED = -100

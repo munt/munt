@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 /** Initialises a new emulation context and installs custom report handler if non-NULL. */
-MT32EMU_EXPORT mt32emu_context mt32emu_create_synth(const struct mt32emu_report_handler_o *report_handler);
+MT32EMU_EXPORT mt32emu_context mt32emu_create_synth(const mt32emu_report_handler_o *report_handler);
 
 /** Closes and destroys emulation context. */
 MT32EMU_EXPORT void mt32emu_free_synth(mt32emu_context context);
@@ -36,7 +36,7 @@ MT32EMU_EXPORT void mt32emu_free_synth(mt32emu_context context);
 /**
  * Adds new ROM identified by its SHA1 digest to the emulation context replacing previously added ROM of the same type if any.
  * Argument sha1_digest can be NULL, in this case the digest will be computed using the actual ROM data.
- * If sha1_digest is set to non-NULL, it is assumed correct and will not be recomputed.
+ * If sha1_digest is set to non-NULL, it is assumed being correct and will not be recomputed.
  * This function doesn't immediately change the state of already opened synth. Newly added ROM will take effect upon next call of mt32emu_open_synth().
  * Returns positive value upon success.
  */
