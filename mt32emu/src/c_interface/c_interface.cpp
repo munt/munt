@@ -178,7 +178,11 @@ private:
 
 class MidiStreamParserAdapter : public MidiStreamParser {
 public:
-	MidiStreamParserAdapter(mt32emu_const_context useContext) : context(useContext), timestampSet(false) {}
+	MidiStreamParserAdapter(mt32emu_const_context useContext) : delegate(NULL), context(useContext), timestampSet(false) {}
+
+	void setMIDIReceiver(const mt32emu_midi_receiver_o *newMIDIReceiver) {
+		delegate = newMIDIReceiver;
+	}
 
 	void setTimestamp(const Bit32u useTimestamp) {
 		timestampSet = true;
@@ -190,11 +194,17 @@ public:
 	}
 
 private:
+	const mt32emu_midi_receiver_o *delegate;
 	const mt32emu_const_context context;
 	bool timestampSet;
 	Bit32u timestamp;
 
 	void handleShortMessage(const Bit32u message) {
+		if (delegate != NULL) {
+			delegate->i->v0.handleShortMessage(delegate, message);
+			return;
+		}
+
 		bool res;
 		if (timestampSet) {
 			res = context->synth->playMsg(message, timestamp);
@@ -205,6 +215,11 @@ private:
 	}
 
 	void handleSysex(const Bit8u *stream, const Bit32u length) {
+		if (delegate != NULL) {
+			delegate->i->v0.handleSysex(delegate, stream, length);
+			return;
+		}
+
 		bool res;
 		if (timestampSet) {
 			res = context->synth->playSysex(stream, length, timestamp);
@@ -215,6 +230,11 @@ private:
 	}
 
 	void handleSystemRealtimeMessage(const Bit8u realtime) {
+		if (delegate != NULL) {
+			delegate->i->v0.handleSystemRealtimeMessage(delegate, realtime);
+			return;
+		}
+
 		ReportHandlerAdapter::onMIDISystemRealtime(context, realtime);
 	}
 
@@ -340,6 +360,10 @@ void mt32emu_flush_midi_queue(mt32emu_const_context context) {
 
 mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_context context, const mt32emu_bit32u queue_size) {
 	return context->synth->setMIDIEventQueueSize(queue_size);
+}
+
+void mt32emu_set_midi_receiver(mt32emu_const_context context, const mt32emu_midi_receiver_o *midi_receiver) {
+	context->midiParser->setMIDIReceiver(midi_receiver);
 }
 
 void mt32emu_parse_stream(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length) {
