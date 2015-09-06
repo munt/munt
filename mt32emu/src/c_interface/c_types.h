@@ -87,6 +87,8 @@ typedef struct {
 	mt32emu_sample *reverbWetRight;
 } mt32emu_dac_output_streams;
 
+/* === Interface handling === */
+
 /** Report handler interface versions */
 typedef enum {
 	MT32EMU_REPORT_HANDLER_VERSION_0 = 0,

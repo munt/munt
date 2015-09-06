@@ -362,8 +362,9 @@ mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_context context, 
 	return context->synth->setMIDIEventQueueSize(queue_size);
 }
 
-void mt32emu_set_midi_receiver(mt32emu_const_context context, const mt32emu_midi_receiver_o *midi_receiver) {
+mt32emu_midi_receiver_version mt32emu_set_midi_receiver(mt32emu_const_context context, const mt32emu_midi_receiver_o *midi_receiver) {
 	context->midiParser->setMIDIReceiver(midi_receiver);
+	return MT32EMU_MIDI_RECEIVER_VERSION_CURRENT;
 }
 
 void mt32emu_parse_stream(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length) {
