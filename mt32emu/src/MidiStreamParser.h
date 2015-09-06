@@ -23,8 +23,6 @@
 
 namespace MT32Emu {
 
-class Synth;
-
 // Interface for a user-supplied class to receive parsed well-formed MIDI messages.
 class MT32EMU_EXPORT MidiReceiver {
 public:
