@@ -47,131 +47,131 @@ namespace MT32Emu {
 
 class ReportHandlerAdapter : public ReportHandler {
 public:
-	ReportHandlerAdapter(const mt32emu_report_handler_o *use_report_handler) : delegate(use_report_handler) {}
-
-	static void printDebug(mt32emu_const_context context, const char *fmt, ...) {
-		if (context->reportHandler != NULL) {
-			va_list ap;
-			va_start(ap, fmt);
-			context->reportHandler->printDebug(fmt, ap);
-			va_end(ap);
-		}
+	virtual void printDebug(const char *fmt, ...) {
+		va_list ap;
+		va_start(ap, fmt);
+		printDebug(fmt, ap);
+		va_end(ap);
 	}
 
-	static void onMIDIQueueOverflow(mt32emu_const_context context) {
-		if (context->reportHandler != NULL) {
-			const mt32emu_report_handler_o *delegate = context->reportHandler->delegate;
-			if (delegate->i->v0.onMIDIQueueOverflow != NULL) {
-				delegate->i->v0.onMIDIQueueOverflow(delegate);
-			}
-		}
-	}
+	virtual void onMIDIQueueOverflow() {}
+	virtual void onMIDISystemRealtime(Bit8u /* systemRealtime */) {}
+};
 
-	static void onMIDISystemRealtime(mt32emu_const_context context, Bit8u systemRealtime) {
-		if (context->reportHandler != NULL) {
-			const mt32emu_report_handler_o *delegate = context->reportHandler->delegate;
-			if (delegate->i->v0.onMIDISystemRealtime != NULL) {
-				delegate->i->v0.onMIDISystemRealtime(delegate, systemRealtime);
-			}
-		}
-	}
+class DelegatingReportHandlerAdapter : public ReportHandlerAdapter {
+public:
+	DelegatingReportHandlerAdapter(const mt32emu_report_handler_o *use_report_handler) :
+		delegate(use_report_handler), interface(*use_report_handler->i) {}
 
 private:
 	const mt32emu_report_handler_o * const delegate;
+	const mt32emu_report_handler_i &interface;
 
 	void printDebug(const char *fmt, va_list list) {
-		if (delegate->i->v0.printDebug == NULL) {
+		if (interface.v0.printDebug == NULL) {
 			ReportHandler::printDebug(fmt, list);
 		} else {
-			delegate->i->v0.printDebug(delegate, fmt, list);
+			interface.v0.printDebug(delegate, fmt, list);
 		}
 	}
 
 	void onErrorControlROM() {
-		if (delegate->i->v0.onErrorControlROM == NULL) {
+		if (interface.v0.onErrorControlROM == NULL) {
 			ReportHandler::onErrorControlROM();
 		} else {
-			delegate->i->v0.onErrorControlROM(delegate);
+			interface.v0.onErrorControlROM(delegate);
 		}
 	}
 
 	void onErrorPCMROM() {
-		if (delegate->i->v0.onErrorPCMROM == NULL) {
+		if (interface.v0.onErrorPCMROM == NULL) {
 			ReportHandler::onErrorPCMROM();
 		} else {
-			delegate->i->v0.onErrorPCMROM(delegate);
+			interface.v0.onErrorPCMROM(delegate);
 		}
 	}
 
 	void showLCDMessage(const char *message) {
-		if (delegate->i->v0.showLCDMessage == NULL) {
+		if (interface.v0.showLCDMessage == NULL) {
 			ReportHandler::showLCDMessage(message);
 		} else {
-			delegate->i->v0.showLCDMessage(delegate, message);
+			interface.v0.showLCDMessage(delegate, message);
 		}
 	}
 
 	void onMIDIMessagePlayed() {
-		if (delegate->i->v0.onMIDIMessagePlayed == NULL) {
+		if (interface.v0.onMIDIMessagePlayed == NULL) {
 			ReportHandler::onMIDIMessagePlayed();
 		} else {
-			delegate->i->v0.onMIDIMessagePlayed(delegate);
+			interface.v0.onMIDIMessagePlayed(delegate);
 		}
 	}
 
 	void onDeviceReset() {
-		if (delegate->i->v0.onDeviceReset == NULL) {
+		if (interface.v0.onDeviceReset == NULL) {
 			ReportHandler::onDeviceReset();
 		} else {
-			delegate->i->v0.onDeviceReset(delegate);
+			interface.v0.onDeviceReset(delegate);
 		}
 	}
 
 	void onDeviceReconfig() {
-		if (delegate->i->v0.onDeviceReconfig == NULL) {
+		if (interface.v0.onDeviceReconfig == NULL) {
 			ReportHandler::onDeviceReconfig();
 		} else {
-			delegate->i->v0.onDeviceReconfig(delegate);
+			interface.v0.onDeviceReconfig(delegate);
 		}
 	}
 
 	void onNewReverbMode(Bit8u mode) {
-		if (delegate->i->v0.onNewReverbMode == NULL) {
+		if (interface.v0.onNewReverbMode == NULL) {
 			ReportHandler::onNewReverbMode(mode);
 		} else {
-			delegate->i->v0.onNewReverbMode(delegate, mode);
+			interface.v0.onNewReverbMode(delegate, mode);
 		}
 	}
 
 	void onNewReverbTime(Bit8u time) {
-		if (delegate->i->v0.onNewReverbTime == NULL) {
+		if (interface.v0.onNewReverbTime == NULL) {
 			ReportHandler::onNewReverbTime(time);
 		} else {
-			delegate->i->v0.onNewReverbTime(delegate, time);
+			interface.v0.onNewReverbTime(delegate, time);
 		}
 	}
 
 	void onNewReverbLevel(Bit8u level) {
-		if (delegate->i->v0.onNewReverbLevel == NULL) {
+		if (interface.v0.onNewReverbLevel == NULL) {
 			ReportHandler::onNewReverbLevel(level);
 		} else {
-			delegate->i->v0.onNewReverbLevel(delegate, level);
+			interface.v0.onNewReverbLevel(delegate, level);
 		}
 	}
 
 	void onPolyStateChanged(int partNum) {
-		if (delegate->i->v0.onPolyStateChanged == NULL) {
+		if (interface.v0.onPolyStateChanged == NULL) {
 			ReportHandler::onPolyStateChanged(partNum);
 		} else {
-			delegate->i->v0.onPolyStateChanged(delegate, partNum);
+			interface.v0.onPolyStateChanged(delegate, partNum);
 		}
 	}
 
 	void onProgramChanged(int partNum, const char *soundGroupName, const char *patchName) {
-		if (delegate->i->v0.onProgramChanged == NULL) {
+		if (interface.v0.onProgramChanged == NULL) {
 			ReportHandler::onProgramChanged(partNum, soundGroupName, patchName);
 		} else {
-			delegate->i->v0.onProgramChanged(delegate, partNum, soundGroupName, patchName);
+			interface.v0.onProgramChanged(delegate, partNum, soundGroupName, patchName);
+		}
+	}
+
+	void onMIDIQueueOverflow() {
+		if (interface.v0.onMIDIQueueOverflow != NULL) {
+			interface.v0.onMIDIQueueOverflow(delegate);
+		}
+	}
+
+	void onMIDISystemRealtime(Bit8u systemRealtime) {
+		if (interface.v0.onMIDISystemRealtime != NULL) {
+			interface.v0.onMIDISystemRealtime(delegate, systemRealtime);
 		}
 	}
 };
@@ -211,7 +211,7 @@ private:
 		} else {
 			res = context->synth->playMsg(message);
 		}
-		if (!res) ReportHandlerAdapter::onMIDIQueueOverflow(context);
+		if (!res) context->reportHandler->onMIDIQueueOverflow();
 	}
 
 	void handleSysex(const Bit8u *stream, const Bit32u length) {
@@ -226,7 +226,7 @@ private:
 		} else {
 			res = context->synth->playSysex(stream, length);
 		}
-		if (!res) ReportHandlerAdapter::onMIDIQueueOverflow(context);
+		if (!res) context->reportHandler->onMIDIQueueOverflow();
 	}
 
 	void handleSystemRealtimeMessage(const Bit8u realtime) {
@@ -235,11 +235,11 @@ private:
 			return;
 		}
 
-		ReportHandlerAdapter::onMIDISystemRealtime(context, realtime);
+		context->reportHandler->onMIDISystemRealtime(realtime);
 	}
 
 	void printDebug(const char *debugMessage) {
-		ReportHandlerAdapter::printDebug(context, debugMessage);
+		context->reportHandler->printDebug(debugMessage);
 	}
 };
 
@@ -277,7 +277,7 @@ extern "C" {
 
 mt32emu_context mt32emu_create_synth(const mt32emu_report_handler_o *report_handler) {
 	mt32emu_context data = new mt32emu_data;
-	data->reportHandler = (report_handler == NULL) ? NULL : new ReportHandlerAdapter(report_handler);
+	data->reportHandler = (report_handler != NULL) ? new DelegatingReportHandlerAdapter(report_handler) : new ReportHandlerAdapter;
 	data->synth = new Synth(data->reportHandler);
 	data->midiParser = new MidiStreamParserAdapter(data);
 	data->controlROMImage = NULL;
@@ -389,28 +389,28 @@ void mt32emu_play_short_message_at(mt32emu_const_context context, mt32emu_bit32u
 mt32emu_return_code mt32emu_play_msg(mt32emu_const_context context, mt32emu_bit32u msg) {
 	if (!context->synth->isOpen()) return MT32EMU_RC_NOT_OPENED;
 	if (context->synth->playMsg(msg)) return MT32EMU_RC_OK;
-	ReportHandlerAdapter::onMIDIQueueOverflow(context);
+	context->reportHandler->onMIDIQueueOverflow();
 	return MT32EMU_RC_QUEUE_FULL;
 }
 
 mt32emu_return_code mt32emu_play_sysex(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len) {
 	if (!context->synth->isOpen()) return MT32EMU_RC_NOT_OPENED;
 	if (context->synth->playSysex(sysex, len)) return MT32EMU_RC_OK;
-	ReportHandlerAdapter::onMIDIQueueOverflow(context);
+	context->reportHandler->onMIDIQueueOverflow();
 	return MT32EMU_RC_QUEUE_FULL;
 }
 
 mt32emu_return_code mt32emu_play_msg_at(mt32emu_const_context context, mt32emu_bit32u msg, mt32emu_bit32u timestamp) {
 	if (!context->synth->isOpen()) return MT32EMU_RC_NOT_OPENED;
 	if (context->synth->playMsg(msg, timestamp)) return MT32EMU_RC_OK;
-	ReportHandlerAdapter::onMIDIQueueOverflow(context);
+	context->reportHandler->onMIDIQueueOverflow();
 	return MT32EMU_RC_QUEUE_FULL;
 }
 
 mt32emu_return_code mt32emu_play_sysex_at(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len, mt32emu_bit32u timestamp) {
 	if (!context->synth->isOpen()) return MT32EMU_RC_NOT_OPENED;
 	if (context->synth->playSysex(sysex, len, timestamp)) return MT32EMU_RC_OK;
-	ReportHandlerAdapter::onMIDIQueueOverflow(context);
+	context->reportHandler->onMIDIQueueOverflow();
 	return MT32EMU_RC_QUEUE_FULL;
 }
 
