@@ -77,10 +77,29 @@ typedef enum mt32emu_midi_delay_mode mt32emu_midi_delay_mode;
 typedef enum mt32emu_partial_state mt32emu_partial_state;
 #endif
 
+/** Report handler interface versions */
+typedef enum {
+	MT32EMU_REPORT_HANDLER_VERSION_0 = 0,
+	MT32EMU_REPORT_HANDLER_VERSION_CURRENT = MT32EMU_REPORT_HANDLER_VERSION_0
+} mt32emu_report_handler_version;
+
+/** Intended for run-time interface type identification */
+typedef union {
+	mt32emu_report_handler_version rh;
+} mt32emu_interface_version;
+
+/** Basic interface definition */
+typedef struct {
+	/** Returns run-time interface type identifier */
+	mt32emu_interface_version (*getVersionID)();
+} mt32emu_interface;
+
 typedef struct mt32emu_report_handler_o mt32emu_report_handler_o;
 
-/** Interface for handling reported events */
+/** Interface for handling reported events (initial version) */
 typedef struct {
+	mt32emu_interface base;
+
 	/** Callback for debug messages, in vprintf() format */
 	void (*printDebug)(const mt32emu_report_handler_o *instance, const char *fmt, va_list list);
 	/** Callbacks for reporting errors */
@@ -107,6 +126,16 @@ typedef struct {
 	/** Callbacks for reporting various information */
 	void (*onPolyStateChanged)(const mt32emu_report_handler_o *instance, int partNum);
 	void (*onProgramChanged)(const mt32emu_report_handler_o *instance, int partNum, const char *soundGroupName, const char *patchName);
+} mt32emu_report_handler_i_v0;
+
+/**
+ * Extensible interface for handling reported events.
+ * Union intended to view an interface of any subsequent version as any parent interface not requiring a cast.
+ * Elements are to be addressed using the tag of the interface version when they were introduced.
+ */
+typedef union {
+	mt32emu_interface interface;
+	mt32emu_report_handler_i_v0 v0;
 } mt32emu_report_handler_i;
 
 /** Instance of report handler object */

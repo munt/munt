@@ -283,6 +283,14 @@ MT32EMU_EXPORT const char *mt32emu_get_patch_name(mt32emu_const_context context,
 /** Stores internal state of emulated synth into an array provided (as it would be acquired from hardware). */
 MT32EMU_EXPORT void mt32emu_read_memory(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data);
 
+/* === Interface handling === */
+
+/**
+ * Returns the version ID of mt32emu_report_handler_i interface the library has been compiled with.
+ * This allows a client to fall-back gracefully instead of silently not receiving expected event reports.
+ */
+MT32EMU_EXPORT mt32emu_report_handler_version mt32emu_get_supported_report_handler_version();
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
