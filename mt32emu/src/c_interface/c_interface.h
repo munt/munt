@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 /** Initialises a new emulation context and installs custom report handler if non-NULL. */
-MT32EMU_EXPORT mt32emu_context mt32emu_create_synth(const mt32emu_report_handler_o *report_handler);
+MT32EMU_EXPORT mt32emu_context mt32emu_create_synth(const mt32emu_report_handler_i *report_handler);
 
 /** Closes and destroys emulation context. */
 MT32EMU_EXPORT void mt32emu_free_synth(mt32emu_context context);
@@ -94,7 +94,7 @@ MT32EMU_EXPORT mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_co
  * Returns the version ID of mt32emu_midi_receiver_i interface the library has been compiled with, so the client can fall-back gracefully
  * instead of silently not receiving expected MIDI messages.
  */
-MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_set_midi_receiver(mt32emu_const_context context, const mt32emu_midi_receiver_o *midi_receiver);
+MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_set_midi_receiver(mt32emu_const_context context, const mt32emu_midi_receiver_i *midi_receiver);
 
 /* Enqueues a MIDI event for subsequent playback.
  * The MIDI event will be processed not before the specified timestamp.
