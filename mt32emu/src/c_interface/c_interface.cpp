@@ -87,7 +87,7 @@ static const mt32emu_synth_i_v0 SYNTH_VTABLE = {
 } // namespace MT32Emu
 
 struct mt32emu_data {
-	const mt32emu_synth_i *i; // vtable placeholder
+	mt32emu_synth_i i; // vtable placeholder
 	ReportHandlerAdapter *reportHandler;
 	Synth *synth;
 	const ROMImage *controlROMImage;
@@ -347,7 +347,7 @@ extern "C" {
 
 mt32emu_context mt32emu_create_synth(const mt32emu_report_handler_i *report_handler) {
 	mt32emu_data *data = new mt32emu_data;
-	data->i = (const mt32emu_synth_i *)&SYNTH_VTABLE;
+	data->i.v0 = &SYNTH_VTABLE;
 	data->reportHandler = (report_handler != NULL) ? new DelegatingReportHandlerAdapter(report_handler) : new ReportHandlerAdapter;
 	data->synth = new Synth(data->reportHandler);
 	data->midiParser = new MidiStreamParserAdapter(data);
