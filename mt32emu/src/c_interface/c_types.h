@@ -19,6 +19,7 @@
 #define MT32EMU_C_TYPES_H
 
 #include <stdarg.h>
+#include <stddef.h>
 
 #include "../globals.h"
 

@@ -19,6 +19,7 @@ set(libmt32emu_HEADERS
   Types.h
   c_interface/c_interface.h
   c_interface/c_types.h
+  c_interface/cpp_interface.h
 )
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
