@@ -63,10 +63,11 @@ public:
 	DelegatingReportHandlerAdapter(const mt32emu_report_handler_o *use_report_handler) :
 		delegate(use_report_handler), interface(*use_report_handler->i) {}
 
-private:
+protected:
 	const mt32emu_report_handler_o * const delegate;
 	const mt32emu_report_handler_i &interface;
 
+private:
 	void printDebug(const char *fmt, va_list list) {
 		if (interface.v0.printDebug == NULL) {
 			ReportHandler::printDebug(fmt, list);
@@ -193,9 +194,11 @@ public:
 		timestampSet = false;
 	}
 
-private:
+protected:
 	const mt32emu_midi_receiver_o *delegate;
 	const mt32emu_const_context context;
+
+private:
 	bool timestampSet;
 	Bit32u timestamp;
 
