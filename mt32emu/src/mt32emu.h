@@ -22,12 +22,20 @@
 
 #if defined(__cplusplus) && !MT32EMU_C_INTERFACE
 
+#ifdef MT32EMU_CPP_PLUGIN_INTERFACE
+
+#include "c_interface/cpp_interface.h"
+
+#else /* #ifdef MT32EMU_CPP_PLUGIN_INTERFACE */
+
 #include "Types.h"
 #include "File.h"
 #include "FileStream.h"
 #include "ROMInfo.h"
 #include "Synth.h"
 #include "MidiStreamParser.h"
+
+#endif /* #ifdef MT32EMU_CPP_PLUGIN_INTERFACE */
 
 #else /* #if defined(__cplusplus) && !MT32EMU_C_INTERFACE */
 
