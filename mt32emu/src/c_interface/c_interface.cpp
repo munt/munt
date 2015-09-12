@@ -25,13 +25,73 @@ namespace MT32Emu {
 class ReportHandlerAdapter;
 class MidiStreamParserAdapter;
 
-}
+static mt32emu_interface_version getSynthVersionID();
+static mt32emu_report_handler_version getSupportedReportHandlerVersionID(mt32emu_const_context context);
+static unsigned int getStereoOutputSamplerate(mt32emu_const_context context, const mt32emu_analog_output_mode analog_output_mode);
+
+static const mt32emu_synth_i_v0 SYNTH_VTABLE = {
+	getSynthVersionID,
+	mt32emu_free_synth,
+	mt32emu_add_rom_data,
+	mt32emu_add_rom_file,
+	mt32emu_open_synth,
+	mt32emu_close_synth,
+	mt32emu_is_open,
+	getStereoOutputSamplerate,
+	mt32emu_get_actual_stereo_output_samplerate,
+	mt32emu_flush_midi_queue,
+	mt32emu_set_midi_event_queue_size,
+	mt32emu_set_midi_receiver,
+	mt32emu_parse_stream,
+	mt32emu_parse_stream_at,
+	mt32emu_play_short_message,
+	mt32emu_play_short_message_at,
+	mt32emu_play_msg,
+	mt32emu_play_sysex,
+	mt32emu_play_msg_at,
+	mt32emu_play_sysex_at,
+	mt32emu_play_msg_now,
+	mt32emu_play_msg_on_part,
+	mt32emu_play_sysex_now,
+	mt32emu_write_sysex,
+	mt32emu_set_reverb_enabled,
+	mt32emu_is_reverb_enabled,
+	mt32emu_set_reverb_overridden,
+	mt32emu_is_reverb_overridden,
+	mt32emu_set_reverb_compatibility_mode,
+	mt32emu_is_mt32_reverb_compatibility_mode,
+	mt32emu_is_default_reverb_mt32_compatible,
+	mt32emu_set_dac_input_mode,
+	mt32emu_get_dac_input_mode,
+	mt32emu_set_midi_delay_mode,
+	mt32emu_get_midi_delay_mode,
+	mt32emu_set_output_gain,
+	mt32emu_get_output_gain,
+	mt32emu_set_reverb_output_gain,
+	mt32emu_get_reverb_output_gain,
+	mt32emu_set_reversed_stereo_enabled,
+	mt32emu_is_reversed_stereo_enabled,
+	mt32emu_render,
+	mt32emu_render_streams,
+	mt32emu_has_active_partials,
+	mt32emu_is_active,
+	mt32emu_get_partial_count,
+	mt32emu_get_part_states,
+	mt32emu_get_partial_states,
+	mt32emu_get_playing_notes,
+	mt32emu_get_patch_name,
+	mt32emu_read_memory,
+	getSupportedReportHandlerVersionID
+};
+
+} // namespace MT32Emu
 
 // Exported C-visible stuff
 
 extern "C" {
 
 struct mt32emu_data {
+	const mt32emu_synth_i *i; // vtable placeholder
 	ReportHandlerAdapter *reportHandler;
 	Synth *synth;
 	const ROMImage *controlROMImage;
@@ -272,6 +332,20 @@ static mt32emu_return_code addROMFile(mt32emu_context context, File *file) {
 	return MT32EMU_RC_OK; // No support for reverb ROM yet.
 }
 
+mt32emu_interface_version getSynthVersionID() {
+	mt32emu_interface_version v;
+	v.s = MT32EMU_SYNTH_VERSION_CURRENT;
+	return v;
+}
+
+mt32emu_report_handler_version getSupportedReportHandlerVersionID(mt32emu_const_context context) {
+	return mt32emu_get_supported_report_handler_version();
+}
+
+unsigned int getStereoOutputSamplerate(mt32emu_const_context context, const mt32emu_analog_output_mode analog_output_mode) {
+	return mt32emu_get_stereo_output_samplerate(analog_output_mode);
+}
+
 } // namespace MT32Emu
 
 // C-visible implementation
@@ -280,6 +354,7 @@ extern "C" {
 
 mt32emu_context mt32emu_create_synth(const mt32emu_report_handler_o *report_handler) {
 	mt32emu_context data = new mt32emu_data;
+	data->i = (const mt32emu_synth_i *)&SYNTH_VTABLE;
 	data->reportHandler = (report_handler != NULL) ? new DelegatingReportHandlerAdapter(report_handler) : new ReportHandlerAdapter;
 	data->synth = new Synth(data->reportHandler);
 	data->midiParser = new MidiStreamParserAdapter(data);
@@ -506,7 +581,7 @@ void mt32emu_render(mt32emu_const_context context, mt32emu_sample *stream, mt32e
 	context->synth->render(stream, len);
 }
 
-void mt32emu_renderStreams(mt32emu_const_context context, const mt32emu_dac_output_streams *streams, mt32emu_bit32u len) {
+void mt32emu_render_streams(mt32emu_const_context context, const mt32emu_dac_output_streams *streams, mt32emu_bit32u len) {
 	context->synth->renderStreams(streams->nonReverbLeft, streams->nonReverbRight, streams->reverbDryLeft, streams->reverbDryRight,
 		streams->reverbWetLeft, streams->reverbWetRight, len);
 }

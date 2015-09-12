@@ -250,7 +250,7 @@ MT32EMU_EXPORT void mt32emu_render(mt32emu_const_context context, mt32emu_sample
  * NULL may be specified in place of any or all of the stream buffers to skip it.
  * The length is in samples, not bytes. Uses NATIVE byte ordering.
  */
-MT32EMU_EXPORT void mt32emu_renderStreams(mt32emu_const_context context, const mt32emu_dac_output_streams *streams, mt32emu_bit32u len);
+MT32EMU_EXPORT void mt32emu_render_streams(mt32emu_const_context context, const mt32emu_dac_output_streams *streams, mt32emu_bit32u len);
 
 /** Returns true when there is at least one active partial, otherwise false. */
 MT32EMU_EXPORT mt32emu_boolean mt32emu_has_active_partials(mt32emu_const_context context);
