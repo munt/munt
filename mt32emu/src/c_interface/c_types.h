@@ -116,10 +116,11 @@ typedef union {
 } mt32emu_interface_version;
 
 /** Basic interface definition */
-typedef struct {
+typedef struct mt32emu_interface mt32emu_interface;
+struct mt32emu_interface {
 	/** Returns run-time interface type identifier */
-	mt32emu_interface_version (*getVersionID)();
-} mt32emu_interface;
+	mt32emu_interface_version (*getVersionID)(const mt32emu_interface **);
+};
 
 /* === Report Handler Interface === */
 
