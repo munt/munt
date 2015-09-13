@@ -74,6 +74,7 @@ if(libmt32emu_SHARED)
     add_definitions(-DMT32EMU_EXPORTS_TYPE=0)
   endif(libmt32emu_C_INTERFACE)
 
+  add_definitions(-DMT32EMU_SHARED)
   set(libmt32emu_BUILD_TYPE SHARED)
   set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 endif(libmt32emu_SHARED)
