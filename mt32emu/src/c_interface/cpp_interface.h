@@ -161,4 +161,6 @@ MT32EMU_EXPORT MT32Emu::Synth *mt32emu_create_synth(const MT32Emu::ReportHandler
 
 }
 
+#undef MT32EMU_METHOD
+
 #endif /* #ifndef MT32EMU_CPP_INTERFACE_H */
