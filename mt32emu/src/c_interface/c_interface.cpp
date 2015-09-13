@@ -15,7 +15,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../mt32emu.h"
+#include "../globals.h"
+#include "../Types.h"
+#include "../File.h"
+#include "../FileStream.h"
+#include "../ROMInfo.h"
+#include "../Synth.h"
+#include "../MidiStreamParser.h"
+
 #include "c_interface.h"
 
 using namespace MT32Emu;

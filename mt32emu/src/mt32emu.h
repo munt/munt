@@ -18,15 +18,31 @@
 #ifndef MT32EMU_MT32EMU_H
 #define MT32EMU_MT32EMU_H
 
+/* API Configuration */
+
+/* 0: Use full-featured C++ API. Well suitable when the library is to be linked statically.
+ *    When the library is shared, ABI compatibility may be an issue. Therefore, it should
+ *    only be used within a project comprising of several modules to share the library code.
+ * 1: Use C-compatible API. Make the library looks as a regular C library with well-defined ABI.
+ *    This is also crucial when the library is to be linked with objects compiled in a different
+ *    language, either statically or dynamically.
+ * 2: Use plugin-like API via C++ abstract classes. This is mainly intended for a shared library
+ *    being dynamically loaded in run-type. To get access to all the library services, a client
+ *    application only needs to bind with a single factory function.
+ */
+#ifndef MT32EMU_API_TYPE
+#define MT32EMU_API_TYPE 0
+#endif
+
+#ifndef MT32EMU_EXPORTS_TYPE
+#define MT32EMU_EXPORTS_TYPE MT32EMU_API_TYPE
+#endif
+
 #include "globals.h"
 
-#if defined(__cplusplus) && !MT32EMU_C_INTERFACE
+#if defined(__cplusplus) && MT32EMU_API_TYPE != 1
 
-#ifdef MT32EMU_CPP_PLUGIN_INTERFACE
-
-#include "c_interface/cpp_interface.h"
-
-#else /* #ifdef MT32EMU_CPP_PLUGIN_INTERFACE */
+#if MT32EMU_API_TYPE == 0
 
 #include "Types.h"
 #include "File.h"
@@ -35,12 +51,16 @@
 #include "Synth.h"
 #include "MidiStreamParser.h"
 
-#endif /* #ifdef MT32EMU_CPP_PLUGIN_INTERFACE */
+#else /* MT32EMU_API_TYPE == 0 */
 
-#else /* #if defined(__cplusplus) && !MT32EMU_C_INTERFACE */
+#include "c_interface/cpp_interface.h"
+
+#endif /* MT32EMU_API_TYPE == 0 */
+
+#else /* #if defined(__cplusplus) && MT32EMU_API_TYPE != 1 */
 
 #include "c_interface/c_interface.h"
 
-#endif /* #if defined(__cplusplus) && !MT32EMU_C_INTERFACE */
+#endif /* #if defined(__cplusplus) && MT32EMU_API_TYPE != 1 */
 
 #endif /* #ifndef MT32EMU_MT32EMU_H */

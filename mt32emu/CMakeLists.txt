@@ -5,42 +5,10 @@ set(libmt32emu_VERSION_MINOR 5)
 set(libmt32emu_VERSION_PATCH 0)
 
 option(libmt32emu_SHARED "Build shared library" FALSE)
+option(libmt32emu_C_INTERFACE "Provide C compatible external interface" ${libmt32emu_SHARED})
+option(libmt32emu_CPP_PLUGIN_INTERFACE "Provide plugin external interface via C++ abstract classes, implies libmt32emu_C_INTERFACE=FALSE" FALSE)
 
-# Only headers that need to be installed should be listed here:
-set(libmt32emu_HEADERS
-  Enumerations.h
-  globals.h
-  File.h
-  FileStream.h
-  mt32emu.h
-  MidiStreamParser.h
-  ROMInfo.h
-  Synth.h
-  Types.h
-  c_interface/c_interface.h
-  c_interface/c_types.h
-  c_interface/cpp_interface.h
-)
-
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
-  add_definitions(-Wall -Wextra -Wnon-virtual-dtor -Wshadow -ansi -pedantic)
-endif()
-
-if(MSVC)
-  add_definitions(-D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1)
-endif()
-
-foreach(HEADER ${libmt32emu_HEADERS})
-  configure_file("src/${HEADER}" "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu/${HEADER}" COPYONLY)
-endforeach(HEADER)
-
-if(libmt32emu_SHARED)
-  set(libmt32emu_BUILD_TYPE SHARED)
-  add_definitions(-DMT32EMU_SHARED)
-  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-endif()
-
-add_library(mt32emu ${libmt32emu_BUILD_TYPE}
+set(libmt32emu_SOURCES
   src/Analog.cpp
   src/BReverbModel.cpp
   src/File.cpp
@@ -59,8 +27,58 @@ add_library(mt32emu ${libmt32emu_BUILD_TYPE}
   src/TVF.cpp
   src/TVP.cpp
   src/sha1/sha1.cpp
-  src/c_interface/c_interface.cpp
 )
+
+# Only headers that need to be installed should be listed here:
+set(libmt32emu_HEADERS
+  Enumerations.h
+  globals.h
+  File.h
+  FileStream.h
+  mt32emu.h
+  MidiStreamParser.h
+  ROMInfo.h
+  Synth.h
+  Types.h
+)
+
+if(libmt32emu_C_INTERFACE OR libmt32emu_CPP_PLUGIN_INTERFACE)
+  list(APPEND libmt32emu_SOURCES
+    src/c_interface/c_interface.cpp
+  )
+  list(APPEND libmt32emu_HEADERS
+    c_interface/c_interface.h
+    c_interface/c_types.h
+    c_interface/cpp_interface.h
+  )
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
+  add_definitions(-Wall -Wextra -Wnon-virtual-dtor -Wshadow -ansi -pedantic)
+endif()
+
+if(MSVC)
+  add_definitions(-D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1)
+endif()
+
+foreach(HEADER ${libmt32emu_HEADERS})
+  configure_file("src/${HEADER}" "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu/${HEADER}" COPYONLY)
+endforeach(HEADER)
+
+if(libmt32emu_SHARED)
+  if(libmt32emu_C_INTERFACE)
+    add_definitions(-DMT32EMU_EXPORTS_TYPE=1)
+  elseif(libmt32emu_CPP_PLUGIN_INTERFACE)
+    add_definitions(-DMT32EMU_EXPORTS_TYPE=2)
+  else(libmt32emu_C_INTERFACE)
+    add_definitions(-DMT32EMU_EXPORTS_TYPE=0)
+  endif(libmt32emu_C_INTERFACE)
+
+  set(libmt32emu_BUILD_TYPE SHARED)
+  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+endif(libmt32emu_SHARED)
+
+add_library(mt32emu ${libmt32emu_BUILD_TYPE} ${libmt32emu_SOURCES})
 
 install(TARGETS mt32emu
   ARCHIVE DESTINATION lib

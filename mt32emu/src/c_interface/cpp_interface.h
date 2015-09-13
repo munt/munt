@@ -154,6 +154,13 @@ private:
 
 } // namespace MT32Emu
 
+#undef MT32EMU_EXPORT
+#if (MT32EMU_EXPORTS_TYPE == 2)
+#define MT32EMU_EXPORT MT32EMU_EXPORT_ATTRIBUTE
+#else
+#define MT32EMU_EXPORT
+#endif
+
 extern "C" {
 
 // Creates an instance of Synth interface implementation and installs custom report handler if non-NULL. */

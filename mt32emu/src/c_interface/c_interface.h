@@ -23,12 +23,24 @@
 #include "../globals.h"
 #include "c_types.h"
 
+#undef MT32EMU_EXPORT
+#if MT32EMU_EXPORTS_TYPE == 0
+#define MT32EMU_EXPORT
+#else
+#define MT32EMU_EXPORT MT32EMU_EXPORT_ATTRIBUTE
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /** Initialises a new emulation context and installs custom report handler if non-NULL. */
 MT32EMU_EXPORT mt32emu_context mt32emu_create_synth(const mt32emu_report_handler_i *report_handler);
+
+#if MT32EMU_EXPORTS_TYPE == 2
+#undef MT32EMU_EXPORT
+#define MT32EMU_EXPORT
+#endif
 
 /** Closes and destroys emulation context. */
 MT32EMU_EXPORT void mt32emu_free_synth(mt32emu_context context);

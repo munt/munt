@@ -27,35 +27,34 @@
 #define MT32EMU_USE_FLOAT_SAMPLES 0
 #endif
 
-/* 0: Use full-featured C++ API.
- * 1: Use C-compatible API.
- */
-#ifndef MT32EMU_C_INTERFACE
-#define MT32EMU_C_INTERFACE 0
-#endif
-
 /* Support for compiling shared library. */
 #ifdef MT32EMU_SHARED
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef _MSC_VER
 #ifdef mt32emu_EXPORTS
-#define MT32EMU_EXPORT _declspec(dllexport)
+#define MT32EMU_EXPORT_ATTRIBUTE _declspec(dllexport)
 #else /* #ifdef mt32emu_EXPORTS */
-#define MT32EMU_EXPORT _declspec(dllimport)
+#define MT32EMU_EXPORT_ATTRIBUTE _declspec(dllimport)
 #endif /* #ifdef mt32emu_EXPORTS */
 #else /* #ifdef _MSC_VER */
 #ifdef mt32emu_EXPORTS
-#define MT32EMU_EXPORT __attribute__ ((dllexport))
+#define MT32EMU_EXPORT_ATTRIBUTE __attribute__ ((dllexport))
 #else /* #ifdef mt32emu_EXPORTS */
-#define MT32EMU_EXPORT __attribute__ ((dllimport))
+#define MT32EMU_EXPORT_ATTRIBUTE __attribute__ ((dllimport))
 #endif /* #ifdef mt32emu_EXPORTS */
 #endif /* #ifdef _MSC_VER */
 #else /* #if defined _WIN32 || defined __CYGWIN__ */
-#define MT32EMU_EXPORT __attribute__ ((visibility("default")))
+#define MT32EMU_EXPORT_ATTRIBUTE __attribute__ ((visibility("default")))
 #endif /* #if defined _WIN32 || defined __CYGWIN__ */
 #else /* #ifdef MT32EMU_SHARED */
-#define MT32EMU_EXPORT
+#define MT32EMU_EXPORT_ATTRIBUTE
 #endif /* #ifdef MT32EMU_SHARED */
+
+#if MT32EMU_EXPORTS_TYPE == 0
+#define MT32EMU_EXPORT MT32EMU_EXPORT_ATTRIBUTE
+#else
+#define MT32EMU_EXPORT
+#endif
 
 /* Useful constants */
 
@@ -99,7 +98,7 @@
  */
 #define MT32EMU_SYSEX_BUFFER_SIZE 1000
 
-#if defined(__cplusplus) && !MT32EMU_C_INTERFACE
+#if defined(__cplusplus) && MT32EMU_API_TYPE != 1
 
 namespace MT32Emu
 {
