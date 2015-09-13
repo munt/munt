@@ -145,7 +145,7 @@ typedef struct {
 	 * Callback invoked when a System Realtime MIDI message is detected in functions
 	 * mt32emu_parse_stream and mt32emu_play_short_message and the likes.
 	 */
-	void(*onMIDISystemRealtime)(const mt32emu_report_handler_i *instance, mt32emu_bit8u systemRealtime);
+	void (*onMIDISystemRealtime)(const mt32emu_report_handler_i *instance, mt32emu_bit8u systemRealtime);
 	/** Callbacks for reporting system events */
 	void (*onDeviceReset)(const mt32emu_report_handler_i *instance);
 	void (*onDeviceReconfig)(const mt32emu_report_handler_i *instance);

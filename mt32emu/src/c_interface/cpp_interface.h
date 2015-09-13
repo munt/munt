@@ -97,7 +97,7 @@ struct Synth : public Interface {
 	virtual unsigned int MT32EMU_METHOD getActualStereoOutputSamplerate() = 0;
 	virtual void MT32EMU_METHOD flushMIDIQueue() = 0;
 	virtual mt32emu_bit32u MT32EMU_METHOD setMIDIEventQueueSize(const mt32emu_bit32u queue_size) = 0;
-	virtual mt32emu_midi_receiver_version MT32EMU_METHOD setMIDIReceiver(const mt32emu_midi_receiver_i *midi_receiver) = 0;
+	virtual mt32emu_midi_receiver_version MT32EMU_METHOD setMIDIReceiver(const MidiReceiver *midi_receiver) = 0;
 
 	virtual void MT32EMU_METHOD parseStream(const mt32emu_bit8u *stream, mt32emu_bit32u length) = 0;
 	virtual void MT32EMU_METHOD parseStream_At(const mt32emu_bit8u *stream, mt32emu_bit32u length, mt32emu_bit32u timestamp) = 0;
