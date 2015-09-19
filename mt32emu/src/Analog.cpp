@@ -167,7 +167,7 @@ Analog::~Analog() {
 	delete &rightChannelLPF;
 }
 
-void Analog::process(Sample **outStream, const Sample *nonReverbLeft, const Sample *nonReverbRight, const Sample *reverbDryLeft, const Sample *reverbDryRight, const Sample *reverbWetLeft, const Sample *reverbWetRight, Bit32u outLength) {
+void Analog::process(Sample *outStream, const Sample *nonReverbLeft, const Sample *nonReverbRight, const Sample *reverbDryLeft, const Sample *reverbDryRight, const Sample *reverbWetLeft, const Sample *reverbWetRight, Bit32u outLength) {
 	if (outStream == NULL) {
 		leftChannelLPF.addPositionIncrement(outLength);
 		rightChannelLPF.addPositionIncrement(outLength);
@@ -194,8 +194,8 @@ void Analog::process(Sample **outStream, const Sample *nonReverbLeft, const Samp
 			outSampleR = rightChannelLPF.process(inSampleR);
 		}
 
-		*((*outStream)++) = Synth::clipSampleEx(outSampleL);
-		*((*outStream)++) = Synth::clipSampleEx(outSampleR);
+		*(outStream++) = Synth::clipSampleEx(outSampleL);
+		*(outStream++) = Synth::clipSampleEx(outSampleR);
 	}
 }
 

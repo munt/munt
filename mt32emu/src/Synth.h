@@ -37,6 +37,7 @@ class Poly;
 class Partial;
 class PartialManager;
 class ROMImage;
+class SampleFormatConverter;
 
 class PatchTempMemoryRegion;
 class RhythmTempMemoryRegion;
@@ -165,6 +166,8 @@ private:
 
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
 
+	void render(SampleFormatConverter &converter, Bit32u len);
+	void renderStreams(SampleFormatConverter &nonReverbLeft, SampleFormatConverter &nonReverbRight, SampleFormatConverter &reverbDryLeft, SampleFormatConverter &reverbDryRight, SampleFormatConverter &reverbWetLeft, SampleFormatConverter &reverbWetRight, Bit32u len);
 	void produceLA32Output(Sample *buffer, Bit32u len);
 	void convertSamplesToOutput(Sample *buffer, Bit32u len);
 	bool isAbortingPoly() const;
@@ -370,13 +373,15 @@ public:
 	// to retain emulation accuracy in whole audible frequency spectra. Otherwise, native digital signal sample rate is retained.
 	// getStereoOutputSampleRate() can be used to query actual sample rate of the output signal.
 	// The length is in frames, not bytes (in 16-bit stereo, one frame is 4 bytes). Uses NATIVE byte ordering.
-	MT32EMU_EXPORT void render(Sample *stream, Bit32u len);
+	MT32EMU_EXPORT void render(Bit16s *stream, Bit32u len);
+	MT32EMU_EXPORT void render(float *stream, Bit32u len);
 
 	// Renders samples to the specified output streams as if they appeared at the DAC entrance.
 	// No further processing performed in analog circuitry emulation is applied to the signal.
 	// NULL may be specified in place of any or all of the stream buffers to skip it.
 	// The length is in samples, not bytes. Uses NATIVE byte ordering.
-	MT32EMU_EXPORT void renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);
+	MT32EMU_EXPORT void renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
+	MT32EMU_EXPORT void renderStreams(float *nonReverbLeft, float *nonReverbRight, float *reverbDryLeft, float *reverbDryRight, float *reverbWetLeft, float *reverbWetRight, Bit32u len);
 
 	// Returns true when there is at least one active partial, otherwise false.
 	MT32EMU_EXPORT bool hasActivePartials() const;

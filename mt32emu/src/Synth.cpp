@@ -38,18 +38,18 @@ namespace MT32Emu {
 static const double MIDI_DATA_TRANSFER_RATE = (double)SAMPLE_RATE / 31250.0 * 8.0;
 
 // FIXME: there should be more specific feature sets for various MT-32 control ROM versions
-static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = {true, true, true};
-static const ControlROMFeatureSet CM32L_COMPATIBLE = {false, false, false};
+static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = { true, true, true };
+static const ControlROMFeatureSet CM32L_COMPATIBLE = { false, false, false };
 
 static const ControlROMMap ControlROMMaps[7] = {
 	//     ID                Features        PCMmap  PCMc  tmbrA   tmbrAO, tmbrAC tmbrB   tmbrBO  tmbrBC tmbrR   trC  rhythm  rhyC  rsrv    panpot  prog    rhyMax  patMax  sysMax  timMax  sndGrp sGC
-	{"ctrl_mt32_1_04",  OLD_MT32_COMPATIBLE, 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x73A6,  85,  0x57C7, 0x57E2, 0x57D0, 0x5252, 0x525E, 0x526E, 0x520A, 0x7064, 19},
-	{"ctrl_mt32_1_05",  OLD_MT32_COMPATIBLE, 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x7414,  85,  0x57C7, 0x57E2, 0x57D0, 0x5252, 0x525E, 0x526E, 0x520A, 0x70CA, 19},
-	{"ctrl_mt32_1_06",  OLD_MT32_COMPATIBLE, 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x7414,  85,  0x57D9, 0x57F4, 0x57E2, 0x5264, 0x5270, 0x5280, 0x521C, 0x70CA, 19},
-	{"ctrl_mt32_1_07",  OLD_MT32_COMPATIBLE, 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x73fe,  85,  0x57B1, 0x57CC, 0x57BA, 0x523C, 0x5248, 0x5258, 0x51F4, 0x70B0, 19}, // MT-32 revision 1
-	{"ctrl_mt32_bluer", OLD_MT32_COMPATIBLE, 0x3000,  128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200,  30, 0x741C,  85,  0x57E5, 0x5800, 0x57EE, 0x5270, 0x527C, 0x528C, 0x5228, 0x70CE, 19}, // MT-32 Blue Ridge mod
-	{"ctrl_cm32l_1_00", CM32L_COMPATIBLE,    0x8100,  256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500,  64, 0x8580,  85,  0x4F65, 0x4F80, 0x4F6E, 0x48A1, 0x48A5, 0x48BE, 0x48D5, 0x5A6C, 19},
-	{"ctrl_cm32l_1_02", CM32L_COMPATIBLE,    0x8100,  256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500,  64, 0x8580,  85,  0x4F93, 0x4FAE, 0x4F9C, 0x48CB, 0x48CF, 0x48E8, 0x48FF, 0x5A96, 19}  // CM-32L
+	{ "ctrl_mt32_1_04", OLD_MT32_COMPATIBLE, 0x3000, 128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200, 30, 0x73A6, 85, 0x57C7, 0x57E2, 0x57D0, 0x5252, 0x525E, 0x526E, 0x520A, 0x7064, 19 },
+	{ "ctrl_mt32_1_05", OLD_MT32_COMPATIBLE, 0x3000, 128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200, 30, 0x7414, 85, 0x57C7, 0x57E2, 0x57D0, 0x5252, 0x525E, 0x526E, 0x520A, 0x70CA, 19 },
+	{ "ctrl_mt32_1_06", OLD_MT32_COMPATIBLE, 0x3000, 128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200, 30, 0x7414, 85, 0x57D9, 0x57F4, 0x57E2, 0x5264, 0x5270, 0x5280, 0x521C, 0x70CA, 19 },
+	{ "ctrl_mt32_1_07", OLD_MT32_COMPATIBLE, 0x3000, 128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200, 30, 0x73fe, 85, 0x57B1, 0x57CC, 0x57BA, 0x523C, 0x5248, 0x5258, 0x51F4, 0x70B0, 19 }, // MT-32 revision 1
+	{ "ctrl_mt32_bluer", OLD_MT32_COMPATIBLE, 0x3000, 128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200, 30, 0x741C, 85, 0x57E5, 0x5800, 0x57EE, 0x5270, 0x527C, 0x528C, 0x5228, 0x70CE, 19 }, // MT-32 Blue Ridge mod
+	{ "ctrl_cm32l_1_00", CM32L_COMPATIBLE, 0x8100, 256, 0x8000, 0x8000, true, 0x8080, 0x8000, true, 0x8500, 64, 0x8580, 85, 0x4F65, 0x4F80, 0x4F6E, 0x48A1, 0x48A5, 0x48BE, 0x48D5, 0x5A6C, 19 },
+	{ "ctrl_cm32l_1_02", CM32L_COMPATIBLE, 0x8100, 256, 0x8000, 0x8000, true, 0x8080, 0x8000, true, 0x8500, 64, 0x8580, 85, 0x4F93, 0x4FAE, 0x4F9C, 0x48CB, 0x48CF, 0x48E8, 0x48FF, 0x5A96, 19 }  // CM-32L
 	// (Note that all but CM-32L ROM actually have 86 entries for rhythmTemp)
 };
 
@@ -69,6 +69,70 @@ static inline PartialState getPartialState(PartialManager *partialManager, unsig
 	const Partial *partial = partialManager->getPartial(partialNum);
 	return partial->isActive() ? PARTIAL_PHASE_TO_STATE[partial->getTVA()->getPhase()] : PartialState_INACTIVE;
 }
+
+static inline Bit16s convertSample(float sample) {
+	return Synth::clipSampleEx(Bit32s(sample * 16384.0f)); // This multiplier takes into account the DAC bit shift
+}
+
+static inline float convertSample(Bit16s sample) {
+	return float(sample) / 16384.0f; // This multiplier takes into account the DAC bit shift
+}
+
+class SampleFormatConverter {
+protected:
+#if MT32EMU_USE_FLOAT_SAMPLES
+	Bit16s *outBuffer;
+#else
+	float *outBuffer;
+#endif
+
+public:
+	Sample *sampleBuffer;
+
+	SampleFormatConverter(Sample *buffer) : sampleBuffer(buffer), outBuffer(NULL) {}
+
+	inline bool isConversionNeeded() {
+		return outBuffer != NULL;
+	}
+
+	inline void convert(Bit32u len) {
+		if (sampleBuffer == NULL) return;
+		if (outBuffer == NULL) {
+			sampleBuffer += len;
+			return;
+		}
+		Sample *inBuffer = sampleBuffer;
+		while (len--) {
+			*(outBuffer++) = convertSample(*(inBuffer++));
+		}
+	}
+
+	inline void addSilence(Bit32u len) {
+		if (outBuffer != NULL) {
+			Synth::muteSampleBuffer(outBuffer, len);
+			outBuffer += len;
+		} else if (sampleBuffer != NULL) {
+			Synth::muteSampleBuffer(sampleBuffer, len);
+			sampleBuffer += len;
+		}
+	}
+};
+
+struct BufferedSampleFormatConverter : public SampleFormatConverter {
+	Sample renderingBuffer[MAX_SAMPLES_PER_RUN];
+
+public:
+#if MT32EMU_USE_FLOAT_SAMPLES
+	BufferedSampleFormatConverter(Bit16s *buffer)
+#else
+	BufferedSampleFormatConverter(float *buffer)
+#endif
+		: SampleFormatConverter(renderingBuffer)
+	{
+		outBuffer = buffer;
+		if (buffer == NULL) sampleBuffer = NULL;
+	}
+};
 
 Bit8u Synth::calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u initChecksum) {
 	unsigned int checksum = -initChecksum;
@@ -1547,11 +1611,11 @@ unsigned int Synth::getStereoOutputSampleRate() const {
 	return (analog == NULL) ? SAMPLE_RATE : analog->getOutputSampleRate();
 }
 
-void Synth::render(Sample *stream, Bit32u len) {
+void Synth::render(SampleFormatConverter &converter, Bit32u len) {
 	if (!isEnabled) {
 		renderedSampleCount += analog->getDACStreamsLength(len);
 		analog->process(NULL, NULL, NULL, NULL, NULL, NULL, NULL, len);
-		muteSampleBuffer(stream, len << 1);
+		converter.addSilence(len << 1);
 		return;
 	}
 
@@ -1563,12 +1627,36 @@ void Synth::render(Sample *stream, Bit32u len) {
 	while (len > 0) {
 		Bit32u thisPassLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
 		renderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, analog->getDACStreamsLength(thisPassLen));
-		analog->process(&stream, tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisPassLen);
+		analog->process(converter.sampleBuffer, tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisPassLen);
+		converter.convert(thisPassLen);
 		len -= thisPassLen;
 	}
 }
 
-void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len) {
+void Synth::render(Bit16s *stream, Bit32u len) {
+#if MT32EMU_USE_FLOAT_SAMPLES
+	BufferedSampleFormatConverter converter(stream);
+#else
+	SampleFormatConverter converter(stream);
+#endif
+	render(converter, len);
+}
+
+void Synth::render(float *stream, Bit32u len) {
+#if MT32EMU_USE_FLOAT_SAMPLES
+	SampleFormatConverter converter(stream);
+#else
+	BufferedSampleFormatConverter converter(stream);
+#endif
+	render(converter, len);
+}
+
+void Synth::renderStreams(
+	SampleFormatConverter &nonReverbLeft, SampleFormatConverter &nonReverbRight,
+	SampleFormatConverter &reverbDryLeft, SampleFormatConverter &reverbDryRight,
+	SampleFormatConverter &reverbWetLeft, SampleFormatConverter &reverbWetRight,
+	Bit32u len)
+{
 	while (len > 0) {
 		// We need to ensure zero-duration notes will play so add minimum 1-sample delay.
 		Bit32u thisLen = 1;
@@ -1594,15 +1682,63 @@ void Synth::renderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample 
 				}
 			}
 		}
-		doRenderStreams(nonReverbLeft, nonReverbRight, reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, thisLen);
-		advanceStreamPosition(nonReverbLeft, thisLen);
-		advanceStreamPosition(nonReverbRight, thisLen);
-		advanceStreamPosition(reverbDryLeft, thisLen);
-		advanceStreamPosition(reverbDryRight, thisLen);
-		advanceStreamPosition(reverbWetLeft, thisLen);
-		advanceStreamPosition(reverbWetRight, thisLen);
+		doRenderStreams(
+			nonReverbLeft.sampleBuffer, nonReverbRight.sampleBuffer,
+			reverbDryLeft.sampleBuffer, reverbDryRight.sampleBuffer,
+			reverbWetLeft.sampleBuffer, reverbWetRight.sampleBuffer,
+			thisLen);
+		nonReverbLeft.convert(thisLen);
+		nonReverbRight.convert(thisLen);
+		reverbDryLeft.convert(thisLen);
+		reverbDryRight.convert(thisLen);
+		reverbWetLeft.convert(thisLen);
+		reverbWetRight.convert(thisLen);
 		len -= thisLen;
 	}
+}
+
+void Synth::renderStreams(
+	Bit16s *nonReverbLeft, Bit16s *nonReverbRight,
+	Bit16s *reverbDryLeft, Bit16s *reverbDryRight,
+	Bit16s *reverbWetLeft, Bit16s *reverbWetRight,
+	Bit32u len)
+{
+#if MT32EMU_USE_FLOAT_SAMPLES
+	BufferedSampleFormatConverter convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
+	BufferedSampleFormatConverter convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
+	BufferedSampleFormatConverter convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
+#else
+	SampleFormatConverter convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
+	SampleFormatConverter convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
+	SampleFormatConverter convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
+#endif
+	renderStreams(
+		convNonReverbLeft, convNonReverbRight,
+		convReverbDryLeft, convReverbDryRight,
+		convReverbWetLeft, convReverbWetRight,
+		len);
+}
+
+void Synth::renderStreams(
+	float *nonReverbLeft, float *nonReverbRight,
+	float *reverbDryLeft, float *reverbDryRight,
+	float *reverbWetLeft, float *reverbWetRight,
+	Bit32u len)
+{
+#if MT32EMU_USE_FLOAT_SAMPLES
+	SampleFormatConverter convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
+	SampleFormatConverter convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
+	SampleFormatConverter convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
+#else
+	BufferedSampleFormatConverter convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
+	BufferedSampleFormatConverter convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
+	BufferedSampleFormatConverter convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
+#endif
+	renderStreams(
+		convNonReverbLeft, convNonReverbRight,
+		convReverbDryLeft, convReverbDryRight,
+		convReverbWetLeft, convReverbWetRight,
+		len);
 }
 
 // In GENERATION2 units, the output from LA32 goes to the Boss chip already bit-shifted.

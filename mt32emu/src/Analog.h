@@ -39,7 +39,7 @@ class Analog {
 public:
 	Analog(const AnalogOutputMode mode, const bool oldMT32AnalogLPF);
 	~Analog();
-	void process(Sample **outStream, const Sample *nonReverbLeft, const Sample *nonReverbRight, const Sample *reverbDryLeft, const Sample *reverbDryRight, const Sample *reverbWetLeft, const Sample *reverbWetRight, const Bit32u outLength);
+	void process(Sample *outStream, const Sample *nonReverbLeft, const Sample *nonReverbRight, const Sample *reverbDryLeft, const Sample *reverbDryRight, const Sample *reverbWetLeft, const Sample *reverbWetRight, Bit32u outLength);
 	unsigned int getOutputSampleRate() const;
 	Bit32u getDACStreamsLength(Bit32u outputLength) const;
 	void setSynthOutputGain(float synthGain);
