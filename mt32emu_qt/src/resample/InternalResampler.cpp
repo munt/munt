@@ -106,7 +106,7 @@ void InternalResampler::getOutputSamples(Bit16s *outBuffer, uint totalFrames) {
 		FloatSample *outs = buffer;
 		FloatSample *ends = buffer + CHANNEL_COUNT * size;
 		while (outs < ends) {
-			FloatSample f = *(outs++);
+			FloatSample f = *(outs++) * 16384.0f;
 			*(outBuffer++) = (Bit16s)qBound(-0x8000, Bit32s((f < 0.0f) ? f - 0.5f : f + 0.5f), 0x7FFF);
 		}
 		totalFrames -= size;
