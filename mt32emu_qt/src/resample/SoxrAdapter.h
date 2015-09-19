@@ -9,10 +9,10 @@ class SoxrAdapter : public SampleRateConverter {
 public:
 	SoxrAdapter(MT32Emu::Synth *synth, double targetSampleRate, SRCQuality quality);
 	~SoxrAdapter();
-	void getOutputSamples(MT32Emu::Sample *buffer, unsigned int length);
+	void getOutputSamples(MT32Emu::Bit16s *buffer, unsigned int length);
 
 private:
-	MT32Emu::Sample * const inBuffer;
+	MT32Emu::Bit16s * const inBuffer;
 	soxr_t resampler;
 
 	static size_t getInputSamples(void *input_fn_state, soxr_in_t *data, size_t requested_len);

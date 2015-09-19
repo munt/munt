@@ -182,27 +182,11 @@ void QSynth::render(Bit16s *buffer, uint length) {
 		emit audioBlockRendered();
 		return;
 	}
-#if MT32EMU_USE_FLOAT_SAMPLES
-	float fBuf[2 * MAX_SAMPLES_PER_RUN];
-	while (0 < length) {
-		uint framesToRender = qMin(length, MAX_SAMPLES_PER_RUN);
-		if (sampleRateConverter != NULL) {
-			sampleRateConverter->getOutputSamples(fBuf, framesToRender);
-		} else {
-			synth->render(fBuf, framesToRender);
-		}
-		for (uint i = 0; i < 2 * framesToRender; i++) {
-			*(buffer++) = (Bit16s)qBound(-32768.0f, fBuf[i] * 16384.0f, 32767.0f);
-		}
-		length -= framesToRender;
-	}
-#else
 	if (sampleRateConverter != NULL) {
 		sampleRateConverter->getOutputSamples(buffer, length);
 	} else {
 		synth->render(buffer, length);
 	}
-#endif
 	synthMutex->unlock();
 	emit audioBlockRendered();
 }

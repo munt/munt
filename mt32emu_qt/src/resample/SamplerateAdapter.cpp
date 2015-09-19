@@ -23,13 +23,7 @@ using namespace MT32Emu;
 long SamplerateAdapter::getInputSamples(void *cb_data, float **data) {
 	SamplerateAdapter *instance = (SamplerateAdapter *)cb_data;
 	uint length = qBound((uint)1, instance->inBufferSize, MAX_SAMPLES_PER_RUN);
-#if MT32EMU_USE_FLOAT_SAMPLES
 	instance->synth->render(instance->inBuffer, length);
-#else
-	Sample inSampleBuffer[2 * MAX_SAMPLES_PER_RUN];
-	instance->synth->render(inSampleBuffer, length);
-	src_short_to_float_array(inSampleBuffer, instance->inBuffer, int(2 * length));
-#endif
 	*data = instance->inBuffer;
 	return length;
 }
@@ -69,21 +63,17 @@ SamplerateAdapter::~SamplerateAdapter() {
 	src_delete(resampler);
 }
 
-void SamplerateAdapter::getOutputSamples(MT32Emu::Sample *buffer, unsigned int length) {
+void SamplerateAdapter::getOutputSamples(Bit16s *buffer, uint length) {
 	if (resampler == NULL) {
-		Synth::muteSampleBuffer(buffer, 2 * length);
+		Synth::muteSampleBuffer(buffer, length << 1);
 		return;
 	}
-#if MT32EMU_USE_FLOAT_SAMPLES
-	float *outBufferPtr = buffer;
-#else
-	float outBuffer[2 * MAX_SAMPLES_PER_RUN];
-	float *outBufferPtr = outBuffer;
-#endif
-	const uint totalLength = length;
+	Bit16s *outBufferPtr = buffer;
 	while (length > 0) {
-		inBufferSize = uint(length * inputToOutputRatio + 0.5);
-		long gotFrames = src_callback_read(resampler, outputToInputRatio, (long)length, outBufferPtr);
+		float floatBuffer[2 * MAX_SAMPLES_PER_RUN];
+		long frames = qBound<long>(1, length, MAX_SAMPLES_PER_RUN);
+		inBufferSize = uint(frames * inputToOutputRatio + 0.5);
+		long gotFrames = src_callback_read(resampler, outputToInputRatio, frames, floatBuffer);
 		int error = src_error(resampler);
 		if (error != 0) {
 			qDebug() << "SampleRateConverter: Samplerate error during processing:" << src_strerror(error) << "> resetting";
@@ -92,7 +82,7 @@ void SamplerateAdapter::getOutputSamples(MT32Emu::Sample *buffer, unsigned int l
 				qDebug() << "SampleRateConverter: Samplerate failed to reset:" << src_strerror(error);
 				src_delete(resampler);
 				resampler = NULL;
-				Synth::muteSampleBuffer(buffer, 2 * length);
+				Synth::muteSampleBuffer(buffer, length << 1);
 				return;
 			}
 			continue;
@@ -100,10 +90,8 @@ void SamplerateAdapter::getOutputSamples(MT32Emu::Sample *buffer, unsigned int l
 		if (gotFrames <= 0) {
 			qDebug() << "SampleRateConverter: got" << gotFrames << "frames from Samplerate, weird";
 		}
+		src_float_to_short_array(floatBuffer, outBufferPtr, int(gotFrames << 1));
 		outBufferPtr += gotFrames << 1;
 		length -= gotFrames;
 	}
-#if !MT32EMU_USE_FLOAT_SAMPLES
-	src_float_to_short_array(outBuffer, buffer, int(2 * totalLength));
-#endif
 }

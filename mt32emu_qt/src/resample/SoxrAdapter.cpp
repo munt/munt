@@ -30,13 +30,9 @@ size_t SoxrAdapter::getInputSamples(void *input_fn_state, soxr_in_t *data, size_
 
 SoxrAdapter::SoxrAdapter(Synth *synth, double targetSampleRate, SRCQuality quality) :
 	SampleRateConverter(synth, targetSampleRate, quality),
-	inBuffer(new Sample[2 * MAX_SAMPLES_PER_RUN])
+	inBuffer(new Bit16s[2 * MAX_SAMPLES_PER_RUN])
 {
-#if MT32EMU_USE_FLOAT_SAMPLES
-	soxr_io_spec_t ioSpec = soxr_io_spec(SOXR_FLOAT32_I, SOXR_FLOAT32_I);
-#else
 	soxr_io_spec_t ioSpec = soxr_io_spec(SOXR_INT16_I, SOXR_INT16_I);
-#endif
 	unsigned long qualityRecipe;
 	switch (quality) {
 	case SRC_FASTEST:
@@ -75,7 +71,7 @@ SoxrAdapter::~SoxrAdapter() {
 	soxr_delete(resampler);
 }
 
-void SoxrAdapter::getOutputSamples(Sample *buffer, uint length) {
+void SoxrAdapter::getOutputSamples(Bit16s *buffer, uint length) {
 	if (resampler == NULL) {
 		Synth::muteSampleBuffer(buffer, 2 * length);
 		return;

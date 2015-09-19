@@ -9,7 +9,7 @@ class SamplerateAdapter : public SampleRateConverter {
 public:
 	SamplerateAdapter(MT32Emu::Synth *synth, double targetSampleRate, SRCQuality quality);
 	~SamplerateAdapter();
-	void getOutputSamples(MT32Emu::Sample *buffer, unsigned int length);
+	void getOutputSamples(MT32Emu::Bit16s *buffer, unsigned int length);
 
 private:
 	float * const inBuffer;

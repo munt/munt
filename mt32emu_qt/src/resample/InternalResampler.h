@@ -10,7 +10,7 @@ class InternalResampler : public SampleRateConverter {
 public:
 	static InternalResampler *createInternalResampler(MT32Emu::Synth *synth, double targetSampleRate, SRCQuality quality);
 	~InternalResampler();
-	void getOutputSamples(MT32Emu::Sample *buffer, unsigned int length);
+	void getOutputSamples(MT32Emu::Bit16s *buffer, unsigned int length);
 
 private:
 	SincStage * const sincStage;

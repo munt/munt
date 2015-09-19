@@ -94,44 +94,27 @@ InternalResampler::~InternalResampler() {
 	delete sincStage;
 }
 
-void InternalResampler::getOutputSamples(Sample *outBuffer, uint totalFrames) {
-#if MT32EMU_USE_FLOAT_SAMPLES
-	FloatSample *buffer = outBuffer;
-	uint size = totalFrames;
-#else
+void InternalResampler::getOutputSamples(Bit16s *outBuffer, uint totalFrames) {
 	FloatSample buffer[CHANNEL_COUNT * MAX_SAMPLES_PER_RUN];
 	while (totalFrames > 0) {
 		uint size = qMin(totalFrames, MAX_SAMPLES_PER_RUN);
-#endif
 		if (iirStage == NULL) {
 			sincStage->getOutputSamples(buffer, size);
 		} else {
 			iirStage->getOutputSamples(buffer, size);
 		}
-#if !MT32EMU_USE_FLOAT_SAMPLES
 		FloatSample *outs = buffer;
 		FloatSample *ends = buffer + CHANNEL_COUNT * size;
 		while (outs < ends) {
 			FloatSample f = *(outs++);
-			*(outBuffer++) = (Sample)qBound(-0x8000, SampleEx((f < 0.0f) ? f - 0.5f : f + 0.5f), 0x7FFF);
+			*(outBuffer++) = (Bit16s)qBound(-0x8000, Bit32s((f < 0.0f) ? f - 0.5f : f + 0.5f), 0x7FFF);
 		}
 		totalFrames -= size;
 	}
-#endif
 }
 
 static void getInputSamples(Synth &synth, FloatSample *outBuffer, uint size) {
-#if MT32EMU_USE_FLOAT_SAMPLES
 	synth.render(outBuffer, size);
-#else
-	Sample inSamples[CHANNEL_COUNT * MAX_SAMPLES_PER_RUN];
-	synth.render(inSamples, size);
-	Sample *ins = inSamples;
-	Sample *ends = inSamples + CHANNEL_COUNT * size;
-	while (ins < ends) {
-		*(outBuffer++) = *(ins++);
-	}
-#endif
 }
 
 CascadeStage::CascadeStage() :

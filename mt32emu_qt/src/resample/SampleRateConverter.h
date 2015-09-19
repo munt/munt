@@ -11,7 +11,7 @@ public:
 	static SampleRateConverter *createSampleRateConverter(MT32Emu::Synth *synth, double targetSampleRate, SRCQuality quality);
 	virtual ~SampleRateConverter() {}
 
-	virtual void getOutputSamples(MT32Emu::Sample *buffer, unsigned int length) = 0;
+	virtual void getOutputSamples(MT32Emu::Bit16s *buffer, unsigned int length) = 0;
 	double getInputToOutputRatio();
 	double getOutputToInputRatio();
 
