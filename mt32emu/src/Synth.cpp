@@ -111,8 +111,9 @@ public:
 	}
 };
 
+template <int BUFFER_SIZE_MULTIPLIER = 1>
 struct BufferedSampleFormatConverter : public SampleFormatConverter {
-	Sample renderingBuffer[MAX_SAMPLES_PER_RUN];
+	Sample renderingBuffer[BUFFER_SIZE_MULTIPLIER * MAX_SAMPLES_PER_RUN];
 
 public:
 #if MT32EMU_USE_FLOAT_SAMPLES
@@ -1621,14 +1622,14 @@ void Synth::render(SampleFormatConverter &converter, Bit32u len) {
 		Bit32u thisPassLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
 		renderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, analog->getDACStreamsLength(thisPassLen));
 		analog->process(converter.sampleBuffer, tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisPassLen);
-		converter.convert(thisPassLen);
+		converter.convert(thisPassLen << 1);
 		len -= thisPassLen;
 	}
 }
 
 void Synth::render(Bit16s *stream, Bit32u len) {
 #if MT32EMU_USE_FLOAT_SAMPLES
-	BufferedSampleFormatConverter converter(stream);
+	BufferedSampleFormatConverter<2> converter(stream);
 #else
 	SampleFormatConverter converter(stream);
 #endif
@@ -1639,7 +1640,7 @@ void Synth::render(float *stream, Bit32u len) {
 #if MT32EMU_USE_FLOAT_SAMPLES
 	SampleFormatConverter converter(stream);
 #else
-	BufferedSampleFormatConverter converter(stream);
+	BufferedSampleFormatConverter<2> converter(stream);
 #endif
 	render(converter, len);
 }
@@ -1697,9 +1698,9 @@ void Synth::renderStreams(
 	Bit32u len)
 {
 #if MT32EMU_USE_FLOAT_SAMPLES
-	BufferedSampleFormatConverter convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
-	BufferedSampleFormatConverter convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
-	BufferedSampleFormatConverter convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
+	BufferedSampleFormatConverter<> convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
+	BufferedSampleFormatConverter<> convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
+	BufferedSampleFormatConverter<> convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
 #else
 	SampleFormatConverter convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
 	SampleFormatConverter convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
@@ -1723,9 +1724,9 @@ void Synth::renderStreams(
 	SampleFormatConverter convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
 	SampleFormatConverter convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
 #else
-	BufferedSampleFormatConverter convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
-	BufferedSampleFormatConverter convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
-	BufferedSampleFormatConverter convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
+	BufferedSampleFormatConverter<> convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
+	BufferedSampleFormatConverter<> convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
+	BufferedSampleFormatConverter<> convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
 #endif
 	renderStreams(
 		convNonReverbLeft, convNonReverbRight,
