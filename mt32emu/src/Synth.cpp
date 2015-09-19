@@ -58,13 +58,6 @@ static const PartialState PARTIAL_PHASE_TO_STATE[8] = {
 	PartialState_SUSTAIN, PartialState_SUSTAIN, PartialState_RELEASE, PartialState_INACTIVE
 };
 
-template <class S>
-static inline void advanceStreamPosition(S *&stream, Bit32u posDelta) {
-	if (stream != NULL) {
-		stream += posDelta;
-	}
-}
-
 static inline PartialState getPartialState(PartialManager *partialManager, unsigned int partialNum) {
 	const Partial *partial = partialManager->getPartial(partialNum);
 	return partial->isActive() ? PARTIAL_PHASE_TO_STATE[partial->getTVA()->getPhase()] : PartialState_INACTIVE;
