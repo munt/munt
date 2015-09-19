@@ -206,7 +206,7 @@ private:
 	const Part *getPart(unsigned int partNum) const;
 
 public:
-	MT32EMU_EXPORT static inline Bit16s clipSampleEx(Bit32s sampleEx) {
+	static inline Bit16s clipSampleEx(Bit32s sampleEx) {
 		// Clamp values above 32767 to 32767, and values below -32768 to -32768
 		// FIXME: Do we really need this stuff? I think these branches are very well predicted. Instead, this introduces a chain.
 		// The version below is actually a bit faster on my system...
@@ -214,17 +214,17 @@ public:
 		return ((-0x8000 <= sampleEx) && (sampleEx <= 0x7FFF)) ? Bit16s(sampleEx) : Bit16s((sampleEx >> 31) ^ 0x7FFF);
 	}
 
-	MT32EMU_EXPORT static inline float clipSampleEx(float sampleEx) {
+	static inline float clipSampleEx(float sampleEx) {
 		return sampleEx;
 	}
 
 	template <class S>
-	MT32EMU_EXPORT static inline void muteSampleBuffer(S *buffer, Bit32u len) {
+	static inline void muteSampleBuffer(S *buffer, Bit32u len) {
 		if (buffer == NULL) return;
 		memset(buffer, 0, len * sizeof(S));
 	}
 
-	MT32EMU_EXPORT static inline void muteSampleBuffer(float *buffer, Bit32u len) {
+	static inline void muteSampleBuffer(float *buffer, Bit32u len) {
 		if (buffer == NULL) return;
 		// FIXME: Use memset() where compatibility is guaranteed (if this turns out to be a win)
 		while (len--) {
