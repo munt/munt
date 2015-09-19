@@ -20,6 +20,14 @@
 
 using namespace MT32Emu;
 
+static void floatToBit16s(float *ins, Bit16s *outs, uint length) {
+	Bit16s *ends = outs + length;
+	while (outs < ends) {
+		float f = *(ins++) * 16384.0f;
+		*(outs++) = (Bit16s)qBound(-0x8000, Bit32s((f < 0.0f) ? f - 0.5f : f + 0.5f), 0x7FFF);
+	}
+}
+
 long SamplerateAdapter::getInputSamples(void *cb_data, float **data) {
 	SamplerateAdapter *instance = (SamplerateAdapter *)cb_data;
 	uint length = qBound((uint)1, instance->inBufferSize, MAX_SAMPLES_PER_RUN);
@@ -55,6 +63,8 @@ SamplerateAdapter::SamplerateAdapter(Synth *synth, double targetSampleRate, SRCQ
 		qDebug() << "SampleRateConverter: Creation of Samplerate instance failed:" << src_strerror(error);
 		src_delete(resampler);
 		resampler = NULL;
+	} else {
+		qDebug() << "SampleRateConverter: using Samplerate with outputToInputRatio" << outputToInputRatio;
 	}
 }
 
@@ -90,7 +100,7 @@ void SamplerateAdapter::getOutputSamples(Bit16s *buffer, uint length) {
 		if (gotFrames <= 0) {
 			qDebug() << "SampleRateConverter: got" << gotFrames << "frames from Samplerate, weird";
 		}
-		src_float_to_short_array(floatBuffer, outBufferPtr, int(gotFrames << 1));
+		floatToBit16s(floatBuffer, outBufferPtr, uint(gotFrames << 1));
 		outBufferPtr += gotFrames << 1;
 		length -= gotFrames;
 	}
