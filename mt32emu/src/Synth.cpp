@@ -82,7 +82,7 @@ protected:
 public:
 	Sample *sampleBuffer;
 
-	SampleFormatConverter(Sample *buffer) : sampleBuffer(buffer), outBuffer(NULL) {}
+	SampleFormatConverter(Sample *buffer) : outBuffer(NULL), sampleBuffer(buffer) {}
 
 	inline bool isConversionNeeded() {
 		return outBuffer != NULL;
