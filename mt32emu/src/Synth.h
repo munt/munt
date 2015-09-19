@@ -215,17 +215,18 @@ public:
 #endif
 	}
 
-	MT32EMU_EXPORT static inline void muteSampleBuffer(Sample *buffer, Bit32u len) {
+	template <class S>
+	MT32EMU_EXPORT static inline void muteSampleBuffer(S *buffer, Bit32u len) {
 		if (buffer == NULL) return;
+		memset(buffer, 0, len * sizeof(S));
+	}
 
-#if MT32EMU_USE_FLOAT_SAMPLES
+	MT32EMU_EXPORT static inline void muteSampleBuffer(float *buffer, Bit32u len) {
+		if (buffer == NULL) return;
 		// FIXME: Use memset() where compatibility is guaranteed (if this turns out to be a win)
 		while (len--) {
 			*(buffer++) = 0.0f;
 		}
-#else
-		memset(buffer, 0, len * sizeof(Sample));
-#endif
 	}
 
 	MT32EMU_EXPORT static Bit32u getShortMessageLength(Bit32u msg);

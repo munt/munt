@@ -110,7 +110,6 @@ static const Bit32u ACCURATE_LPF_DELTAS_OVERSAMPLED[][ACCURATE_LPF_NUMBER_OF_PHA
 class AbstractLowPassFilter {
 public:
 	static AbstractLowPassFilter &createLowPassFilter(AnalogOutputMode mode, bool oldMT32AnalogLPF);
-	static void muteRingBuffer(SampleEx *ringBuffer, unsigned int length);
 
 	virtual ~AbstractLowPassFilter() {}
 	virtual SampleEx process(SampleEx sample) = 0;
@@ -240,23 +239,6 @@ AbstractLowPassFilter &AbstractLowPassFilter::createLowPassFilter(AnalogOutputMo
 	}
 }
 
-void AbstractLowPassFilter::muteRingBuffer(SampleEx *ringBuffer, unsigned int length) {
-
-#if MT32EMU_USE_FLOAT_SAMPLES
-
-	SampleEx *p = ringBuffer;
-	while (length--) {
-		*(p++) = 0.0f;
-	}
-
-#else
-
-	memset(ringBuffer, 0, length * sizeof(SampleEx));
-
-#endif
-
-}
-
 bool AbstractLowPassFilter::hasNextSample() const {
 	return false;
 }
@@ -277,7 +259,7 @@ CoarseLowPassFilter::CoarseLowPassFilter(bool oldMT32AnalogLPF) :
 	LPF_TAPS(oldMT32AnalogLPF ? COARSE_LPF_TAPS_MT32 : COARSE_LPF_TAPS_CM32L),
 	ringBufferPosition(0)
 {
-	muteRingBuffer(ringBuffer, COARSE_LPF_DELAY_LINE_LENGTH);
+	Synth::muteSampleBuffer(ringBuffer, COARSE_LPF_DELAY_LINE_LENGTH);
 }
 
 SampleEx CoarseLowPassFilter::process(const SampleEx inSample) {
@@ -307,7 +289,7 @@ AccurateLowPassFilter::AccurateLowPassFilter(const bool oldMT32AnalogLPF, const 
 	ringBufferPosition(0),
 	phase(0)
 {
-	muteRingBuffer(ringBuffer, ACCURATE_LPF_DELAY_LINE_LENGTH);
+	Synth::muteSampleBuffer(ringBuffer, ACCURATE_LPF_DELAY_LINE_LENGTH);
 }
 
 SampleEx AccurateLowPassFilter::process(const SampleEx inSample) {
