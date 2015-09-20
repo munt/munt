@@ -27,7 +27,7 @@
  *    This is also crucial when the library is to be linked with objects compiled in a different
  *    language, either statically or dynamically.
  * 2: Use plugin-like API via C++ abstract classes. This is mainly intended for a shared library
- *    being dynamically loaded in run-type. To get access to all the library services, a client
+ *    being dynamically loaded in run-time. To get access to all the library services, a client
  *    application only needs to bind with a single factory function.
  */
 #ifndef MT32EMU_API_TYPE
