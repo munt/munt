@@ -19,6 +19,7 @@
 #define MT32EMU_LA32_WAVE_GENERATOR_H
 
 #include "globals.h"
+#include "internals.h"
 #include "Types.h"
 
 #if MT32EMU_USE_FLOAT_SAMPLES

@@ -18,15 +18,6 @@
 #ifndef MT32EMU_GLOBALS_H
 #define MT32EMU_GLOBALS_H
 
-/* Configuration */
-
-/* 0: Use 16-bit signed samples and refined wave generator based on logarithmic fixed-point computations and LUTs. Maximum emulation accuracy and speed.
- * 1: Use float samples in the wave generator and renderer. Maximum output quality and minimum noise.
- */
-#ifndef MT32EMU_USE_FLOAT_SAMPLES
-#define MT32EMU_USE_FLOAT_SAMPLES 0
-#endif
-
 /* Support for compiling shared library. */
 #ifdef MT32EMU_SHARED
 #if defined _WIN32 || defined __CYGWIN__

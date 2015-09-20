@@ -19,8 +19,8 @@
 #define MT32EMU_B_REVERB_MODEL_H
 
 #include "globals.h"
-#include "Types.h"
 #include "internals.h"
+#include "Types.h"
 
 namespace MT32Emu {
 

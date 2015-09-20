@@ -19,9 +19,9 @@
 #define MT32EMU_PART_H
 
 #include "globals.h"
+#include "internals.h"
 #include "Types.h"
 #include "Structures.h"
-#include "internals.h"
 
 namespace MT32Emu {
 

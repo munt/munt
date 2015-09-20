@@ -18,8 +18,6 @@
 #ifndef MT32EMU_TYPES_H
 #define MT32EMU_TYPES_H
 
-#include "globals.h"
-
 namespace MT32Emu {
 
 typedef unsigned int       Bit32u;
@@ -28,14 +26,6 @@ typedef unsigned short int Bit16u;
 typedef   signed short int Bit16s;
 typedef unsigned char      Bit8u;
 typedef   signed char      Bit8s;
-
-#if MT32EMU_USE_FLOAT_SAMPLES
-typedef float Sample;
-typedef float SampleEx;
-#else
-typedef Bit16s Sample;
-typedef Bit32s SampleEx;
-#endif
 
 }
 

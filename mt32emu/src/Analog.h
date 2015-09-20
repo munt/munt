@@ -19,6 +19,7 @@
 #define MT32EMU_ANALOG_H
 
 #include "globals.h"
+#include "internals.h"
 #include "Types.h"
 #include "Enumerations.h"
 

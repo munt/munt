@@ -18,6 +18,8 @@
 #ifndef MT32EMU_INTERNALS_H
 #define MT32EMU_INTERNALS_H
 
+#include "Types.h"
+
 // Debugging
 
 // 0: Standard debug output is not stamped with the rendered sample count
@@ -79,6 +81,12 @@
 
 // Configuration
 
+// 0: Use 16-bit signed samples and refined wave generator based on logarithmic fixed-point computations and LUTs. Maximum emulation accuracy and speed.
+// 1: Use float samples in the wave generator and renderer. Maximum output quality and minimum noise.
+#ifndef MT32EMU_USE_FLOAT_SAMPLES
+#define MT32EMU_USE_FLOAT_SAMPLES 0
+#endif
+
 // If non-zero, deletes reverb buffers that are not in use to save memory.
 // If zero, keeps reverb buffers for all modes around all the time to avoid allocating/freeing in the critical path.
 #ifndef MT32EMU_REDUCE_REVERB_MEMORY
@@ -106,6 +114,14 @@ enum ReverbMode {
 	REVERB_MODE_PLATE,
 	REVERB_MODE_TAP_DELAY
 };
+
+#if MT32EMU_USE_FLOAT_SAMPLES
+typedef float Sample;
+typedef float SampleEx;
+#else
+typedef Bit16s Sample;
+typedef Bit32s SampleEx;
+#endif
 
 }
 

@@ -19,6 +19,7 @@
 #define MT32EMU_PARTIALMANAGER_H
 
 #include "globals.h"
+#include "internals.h"
 #include "Types.h"
 
 namespace MT32Emu {

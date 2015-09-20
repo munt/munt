@@ -19,6 +19,7 @@
 #define MT32EMU_PARTIAL_H
 
 #include "globals.h"
+#include "internals.h"
 #include "Types.h"
 #include "Structures.h"
 #include "LA32Ramp.h"

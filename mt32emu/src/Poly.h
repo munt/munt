@@ -19,13 +19,13 @@
 #define MT32EMU_POLY_H
 
 #include "globals.h"
-#include "Types.h"
-#include "Structures.h"
+#include "internals.h"
 
 namespace MT32Emu {
 
 class Part;
 class Partial;
+struct PatchCache;
 
 class Poly {
 private:

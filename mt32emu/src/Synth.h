@@ -23,6 +23,7 @@
 #include <cstring>
 
 #include "globals.h"
+#include "internals.h"
 #include "Types.h"
 #include "Enumerations.h"
 
@@ -210,7 +211,7 @@ public:
 		// Clamp values above 32767 to 32767, and values below -32768 to -32768
 		// FIXME: Do we really need this stuff? I think these branches are very well predicted. Instead, this introduces a chain.
 		// The version below is actually a bit faster on my system...
-		//return ((sampleEx + 0x8000) & ~0xFFFF) ? (sampleEx >> 31) ^ 0x7FFF : (Sample)sampleEx;
+		//return ((sampleEx + 0x8000) & ~0xFFFF) ? Bit16s((sampleEx >> 31) ^ 0x7FFF) : (Bit16s)sampleEx;
 		return ((-0x8000 <= sampleEx) && (sampleEx <= 0x7FFF)) ? Bit16s(sampleEx) : Bit16s((sampleEx >> 31) ^ 0x7FFF);
 	}
 
@@ -374,6 +375,7 @@ public:
 	// getStereoOutputSampleRate() can be used to query actual sample rate of the output signal.
 	// The length is in frames, not bytes (in 16-bit stereo, one frame is 4 bytes). Uses NATIVE byte ordering.
 	MT32EMU_EXPORT void render(Bit16s *stream, Bit32u len);
+	// Same as above but outputs to a float stereo stream.
 	MT32EMU_EXPORT void render(float *stream, Bit32u len);
 
 	// Renders samples to the specified output streams as if they appeared at the DAC entrance.
@@ -381,6 +383,7 @@ public:
 	// NULL may be specified in place of any or all of the stream buffers to skip it.
 	// The length is in samples, not bytes. Uses NATIVE byte ordering.
 	MT32EMU_EXPORT void renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
+	// Same as above but outputs to float streams.
 	MT32EMU_EXPORT void renderStreams(float *nonReverbLeft, float *nonReverbRight, float *reverbDryLeft, float *reverbDryRight, float *reverbWetLeft, float *reverbWetRight, Bit32u len);
 
 	// Returns true when there is at least one active partial, otherwise false.
