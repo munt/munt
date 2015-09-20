@@ -1,2 +1,0 @@
-#define PACKAGE_NAME "@CMAKE_PROJECT_NAME@"
-#define PACKAGE_VERSION "@mt32emu_smf2wav_VERSION_MAJOR@.@mt32emu_smf2wav_VERSION_MINOR@.@mt32emu_smf2wav_VERSION_PATCH@"

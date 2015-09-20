@@ -21,12 +21,6 @@ find_package(MT32EMU REQUIRED)
 set(EXT_LIBS ${EXT_LIBS} ${MT32EMU_LIBRARIES})
 include_directories(${MT32EMU_INCLUDE_DIRS})
 
-configure_file(
-  src/config.h.in
-  "${PROJECT_BINARY_DIR}/config.h"
-)
-include_directories("${PROJECT_BINARY_DIR}")
-
 include_directories(libsmf/src)
 add_subdirectory(libsmf)
 

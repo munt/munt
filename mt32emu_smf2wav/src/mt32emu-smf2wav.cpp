@@ -26,7 +26,6 @@
 
 #include <mt32emu/mt32emu.h>
 
-#include "config.h"
 #include "smf.h"
 
 static const int DEFAULT_BUFFER_SIZE = 128 * 1024;
