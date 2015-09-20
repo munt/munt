@@ -78,8 +78,10 @@ static const mt32emu_synth_i_v0 SYNTH_VTABLE = {
 	mt32emu_get_reverb_output_gain,
 	mt32emu_set_reversed_stereo_enabled,
 	mt32emu_is_reversed_stereo_enabled,
-	mt32emu_render,
-	mt32emu_render_streams,
+	mt32emu_render_bit16s,
+	mt32emu_render_float,
+	mt32emu_render_bit16s_streams,
+	mt32emu_render_float_streams,
 	mt32emu_has_active_partials,
 	mt32emu_is_active,
 	mt32emu_get_partial_count,
@@ -580,11 +582,20 @@ mt32emu_boolean mt32emu_is_reversed_stereo_enabled(mt32emu_const_context context
 	return context.c->synth->isReversedStereoEnabled() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
-void mt32emu_render(mt32emu_const_context context, mt32emu_sample *stream, mt32emu_bit32u len) {
+void mt32emu_render_bit16s(mt32emu_const_context context, mt32emu_bit16s *stream, mt32emu_bit32u len) {
 	context.c->synth->render(stream, len);
 }
 
-void mt32emu_render_streams(mt32emu_const_context context, const mt32emu_dac_output_streams *streams, mt32emu_bit32u len) {
+void mt32emu_render_float(mt32emu_const_context context, float *stream, mt32emu_bit32u len) {
+	context.c->synth->render(stream, len);
+}
+
+void mt32emu_render_bit16s_streams(mt32emu_const_context context, const mt32emu_dac_output_bit16s_streams *streams, mt32emu_bit32u len) {
+	context.c->synth->renderStreams(streams->nonReverbLeft, streams->nonReverbRight, streams->reverbDryLeft, streams->reverbDryRight,
+		streams->reverbWetLeft, streams->reverbWetRight, len);
+}
+
+void mt32emu_render_float_streams(mt32emu_const_context context, const mt32emu_dac_output_float_streams *streams, mt32emu_bit32u len) {
 	context.c->synth->renderStreams(streams->nonReverbLeft, streams->nonReverbRight, streams->reverbDryLeft, streams->reverbDryRight,
 		streams->reverbWetLeft, streams->reverbWetRight, len);
 }

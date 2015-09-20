@@ -34,14 +34,6 @@ typedef   signed short int mt32emu_bit16s;
 typedef unsigned char      mt32emu_bit8u;
 typedef   signed char      mt32emu_bit8s;
 
-#if MT32EMU_USE_FLOAT_SAMPLES
-typedef float mt32emu_sample;
-typedef float mt32emu_sample_ex;
-#else
-typedef mt32emu_bit16s mt32emu_sample;
-typedef mt32emu_bit32s mt32emu_sample_ex;
-#endif
-
 typedef char mt32emu_sha1_digest[41];
 
 typedef enum {
@@ -78,15 +70,25 @@ typedef enum mt32emu_midi_delay_mode mt32emu_midi_delay_mode;
 typedef enum mt32emu_partial_state mt32emu_partial_state;
 #endif
 
-/** Set of multiplexed output streams appeared at the DAC entrance. */
+/** Set of multiplexed output bit16s streams appeared at the DAC entrance. */
 typedef struct {
-	mt32emu_sample *nonReverbLeft;
-	mt32emu_sample *nonReverbRight;
-	mt32emu_sample *reverbDryLeft;
-	mt32emu_sample *reverbDryRight;
-	mt32emu_sample *reverbWetLeft;
-	mt32emu_sample *reverbWetRight;
-} mt32emu_dac_output_streams;
+	mt32emu_bit16s *nonReverbLeft;
+	mt32emu_bit16s *nonReverbRight;
+	mt32emu_bit16s *reverbDryLeft;
+	mt32emu_bit16s *reverbDryRight;
+	mt32emu_bit16s *reverbWetLeft;
+	mt32emu_bit16s *reverbWetRight;
+} mt32emu_dac_output_bit16s_streams;
+
+/** Set of multiplexed output float streams appeared at the DAC entrance. */
+typedef struct {
+	float *nonReverbLeft;
+	float *nonReverbRight;
+	float *reverbDryLeft;
+	float *reverbDryRight;
+	float *reverbWetLeft;
+	float *reverbWetRight;
+} mt32emu_dac_output_float_streams;
 
 /* === Interface handling === */
 
@@ -256,8 +258,10 @@ typedef struct {
 	void (*setReversedStereoEnabled)(mt32emu_const_context context, const mt32emu_boolean enabled);
 	mt32emu_boolean (*isReversedStereoEnabled)(mt32emu_const_context context);
 
-	void (*render)(mt32emu_const_context context, mt32emu_sample *stream, mt32emu_bit32u len);
-	void (*renderStreams)(mt32emu_const_context context, const mt32emu_dac_output_streams *streams, mt32emu_bit32u len);
+	void(*renderBit16s)(mt32emu_const_context context, mt32emu_bit16s *stream, mt32emu_bit32u len);
+	void(*renderFloat)(mt32emu_const_context context, float *stream, mt32emu_bit32u len);
+	void(*renderBit16sStreams)(mt32emu_const_context context, const mt32emu_dac_output_bit16s_streams *streams, mt32emu_bit32u len);
+	void(*renderFloatStreams)(mt32emu_const_context context, const mt32emu_dac_output_float_streams *streams, mt32emu_bit32u len);
 
 	mt32emu_boolean (*hasActivePartials)(mt32emu_const_context context);
 	mt32emu_boolean (*isActive)(mt32emu_const_context context);

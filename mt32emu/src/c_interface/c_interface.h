@@ -254,7 +254,9 @@ MT32EMU_EXPORT mt32emu_boolean mt32emu_is_reversed_stereo_enabled(mt32emu_const_
  * mt32emu_get_actual_stereo_output_samplerate() can be used to query actual sample rate of the output signal.
  * The length is in frames, not bytes (in 16-bit stereo, one frame is 4 bytes). Uses NATIVE byte ordering.
  */
-MT32EMU_EXPORT void mt32emu_render(mt32emu_const_context context, mt32emu_sample *stream, mt32emu_bit32u len);
+MT32EMU_EXPORT void mt32emu_render_bit16s(mt32emu_const_context context, mt32emu_bit16s *stream, mt32emu_bit32u len);
+/** Same as above but outputs to a float stereo stream. */
+MT32EMU_EXPORT void mt32emu_render_float(mt32emu_const_context context, float *stream, mt32emu_bit32u len);
 
 /**
  * Renders samples to the specified output streams as if they appeared at the DAC entrance.
@@ -262,7 +264,9 @@ MT32EMU_EXPORT void mt32emu_render(mt32emu_const_context context, mt32emu_sample
  * NULL may be specified in place of any or all of the stream buffers to skip it.
  * The length is in samples, not bytes. Uses NATIVE byte ordering.
  */
-MT32EMU_EXPORT void mt32emu_render_streams(mt32emu_const_context context, const mt32emu_dac_output_streams *streams, mt32emu_bit32u len);
+MT32EMU_EXPORT void mt32emu_render_bit16s_streams(mt32emu_const_context context, const mt32emu_dac_output_bit16s_streams *streams, mt32emu_bit32u len);
+/** Same as above but outputs to float streams. */
+MT32EMU_EXPORT void mt32emu_render_float_streams(mt32emu_const_context context, const mt32emu_dac_output_float_streams *streams, mt32emu_bit32u len);
 
 /** Returns true when there is at least one active partial, otherwise false. */
 MT32EMU_EXPORT mt32emu_boolean mt32emu_has_active_partials(mt32emu_const_context context);

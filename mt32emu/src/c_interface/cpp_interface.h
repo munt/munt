@@ -135,8 +135,10 @@ struct Synth : public Interface {
 	virtual void MT32EMU_METHOD setReversedStereoEnabled(const mt32emu_boolean enabled) = 0;
 	virtual mt32emu_boolean MT32EMU_METHOD isReversedStereoEnabled() = 0;
 
-	virtual void MT32EMU_METHOD render(mt32emu_sample *stream, mt32emu_bit32u len) = 0;
-	virtual void MT32EMU_METHOD renderStreams(const mt32emu_dac_output_streams *streams, mt32emu_bit32u len) = 0;
+	virtual void MT32EMU_METHOD render(mt32emu_bit16s *stream, mt32emu_bit32u len) = 0;
+	virtual void MT32EMU_METHOD render(float *stream, mt32emu_bit32u len) = 0;
+	virtual void MT32EMU_METHOD renderStreams(const mt32emu_dac_output_bit16s_streams *streams, mt32emu_bit32u len) = 0;
+	virtual void MT32EMU_METHOD renderStreams(const mt32emu_dac_output_float_streams *streams, mt32emu_bit32u len) = 0;
 
 	virtual mt32emu_boolean MT32EMU_METHOD hasActivePartials() = 0;
 	virtual mt32emu_boolean MT32EMU_METHOD isActive() = 0;
