@@ -26,8 +26,6 @@ namespace MT32Emu {
 // Interface for a user-supplied class to receive parsed well-formed MIDI messages.
 class MT32EMU_EXPORT MidiReceiver {
 public:
-	virtual ~MidiReceiver() {}
-
 	// Invoked when a complete short MIDI message is parsed in the input MIDI stream.
 	virtual void handleShortMessage(const Bit32u message) = 0;
 
@@ -36,15 +34,19 @@ public:
 
 	// Invoked when a System Realtime MIDI message is parsed in the input MIDI stream.
 	virtual void handleSystemRealtimeMessage(const Bit8u realtime) = 0;
+
+protected:
+	~MidiReceiver() {}
 };
 
 // Interface for a user-supplied class to receive notifications of input MIDI stream parse errors.
 class MT32EMU_EXPORT MidiReporter {
 public:
-	virtual ~MidiReporter() {}
-
 	// Invoked when an error occurs during processing the input MIDI stream.
 	virtual void printDebug(const char *debugMessage) = 0;
+
+protected:
+	~MidiReporter() {}
 };
 
 // Provides a context for parsing a stream of MIDI events coming from a single source.
