@@ -23,7 +23,6 @@
 #include <cstring>
 
 #include "globals.h"
-#include "internals.h"
 #include "Types.h"
 #include "Enumerations.h"
 
@@ -37,6 +36,7 @@ class Part;
 class Poly;
 class Partial;
 class PartialManager;
+class Renderer;
 class ROMImage;
 class SampleFormatConverter;
 
@@ -98,12 +98,14 @@ protected:
 
 class Synth {
 friend class Part;
-friend class RhythmPart;
-friend class Poly;
 friend class Partial;
 friend class PartialManager;
+friend class Poly;
+friend class Renderer;
+friend class RhythmPart;
 friend class TVA;
 friend class TVP;
+
 private:
 	PatchTempMemoryRegion *patchTempMemoryRegion;
 	RhythmTempMemoryRegion *rhythmTempMemoryRegion;
@@ -164,15 +166,10 @@ private:
 	Poly *abortingPoly;
 
 	Analog *analog;
+	Renderer &renderer;
 
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
-
-	void render(SampleFormatConverter &converter, Bit32u len);
-	void renderStreams(SampleFormatConverter &nonReverbLeft, SampleFormatConverter &nonReverbRight, SampleFormatConverter &reverbDryLeft, SampleFormatConverter &reverbDryRight, SampleFormatConverter &reverbWetLeft, SampleFormatConverter &reverbWetRight, Bit32u len);
-	void produceLA32Output(Sample *buffer, Bit32u len);
-	void convertSamplesToOutput(Sample *buffer, Bit32u len);
 	bool isAbortingPoly() const;
-	void doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);
 
 	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len) const;
 	void initMemoryRegions();

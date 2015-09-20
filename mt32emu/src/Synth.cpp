@@ -112,7 +112,7 @@ public:
 };
 
 template <int BUFFER_SIZE_MULTIPLIER = 1>
-struct BufferedSampleFormatConverter : public SampleFormatConverter {
+class BufferedSampleFormatConverter : public SampleFormatConverter {
 	Sample renderingBuffer[BUFFER_SIZE_MULTIPLIER * MAX_SAMPLES_PER_RUN];
 
 public:
@@ -126,6 +126,19 @@ public:
 		outBuffer = buffer;
 		if (buffer == NULL) sampleBuffer = NULL;
 	}
+};
+
+class Renderer {
+	Synth &synth;
+
+public:
+	Renderer(Synth &useSynth) : synth(useSynth) {}
+
+	void render(SampleFormatConverter &converter, Bit32u len);
+	void renderStreams(SampleFormatConverter &nonReverbLeft, SampleFormatConverter &nonReverbRight, SampleFormatConverter &reverbDryLeft, SampleFormatConverter &reverbDryRight, SampleFormatConverter &reverbWetLeft, SampleFormatConverter &reverbWetRight, Bit32u len);
+	void produceLA32Output(Sample *buffer, Bit32u len);
+	void convertSamplesToOutput(Sample *buffer, Bit32u len);
+	void doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);
 };
 
 Bit8u Synth::calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u initChecksum) {
@@ -142,7 +155,7 @@ unsigned int Synth::getStereoOutputSampleRate(AnalogOutputMode analogOutputMode)
 	return SAMPLE_RATES[analogOutputMode];
 }
 
-Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams()), mt32default(*new MemParams()) {
+Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams), mt32default(*new MemParams), renderer(*new Renderer(*this)) {
 	opened = false;
 	reverbOverridden = false;
 	partialCount = DEFAULT_MAX_PARTIALS;
@@ -184,6 +197,7 @@ Synth::~Synth() {
 	}
 	delete &mt32ram;
 	delete &mt32default;
+	delete &renderer;
 }
 
 void ReportHandler::showLCDMessage(const char *data) {
@@ -1605,10 +1619,10 @@ unsigned int Synth::getStereoOutputSampleRate() const {
 	return (analog == NULL) ? SAMPLE_RATE : analog->getOutputSampleRate();
 }
 
-void Synth::render(SampleFormatConverter &converter, Bit32u len) {
-	if (!isEnabled) {
-		renderedSampleCount += analog->getDACStreamsLength(len);
-		analog->process(NULL, NULL, NULL, NULL, NULL, NULL, NULL, len);
+void Renderer::render(SampleFormatConverter &converter, Bit32u len) {
+	if (!synth.isEnabled) {
+		synth.renderedSampleCount += synth.analog->getDACStreamsLength(len);
+		synth.analog->process(NULL, NULL, NULL, NULL, NULL, NULL, NULL, len);
 		converter.addSilence(len << 1);
 		return;
 	}
@@ -1620,8 +1634,8 @@ void Synth::render(SampleFormatConverter &converter, Bit32u len) {
 
 	while (len > 0) {
 		Bit32u thisPassLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
-		renderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, analog->getDACStreamsLength(thisPassLen));
-		analog->process(converter.sampleBuffer, tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisPassLen);
+		synth.renderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, synth.analog->getDACStreamsLength(thisPassLen));
+		synth.analog->process(converter.sampleBuffer, tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisPassLen);
 		converter.convert(thisPassLen << 1);
 		len -= thisPassLen;
 	}
@@ -1633,7 +1647,7 @@ void Synth::render(Bit16s *stream, Bit32u len) {
 #else
 	SampleFormatConverter converter(stream);
 #endif
-	render(converter, len);
+	renderer.render(converter, len);
 }
 
 void Synth::render(float *stream, Bit32u len) {
@@ -1642,10 +1656,10 @@ void Synth::render(float *stream, Bit32u len) {
 #else
 	BufferedSampleFormatConverter<2> converter(stream);
 #endif
-	render(converter, len);
+	renderer.render(converter, len);
 }
 
-void Synth::renderStreams(
+void Renderer::renderStreams(
 	SampleFormatConverter &nonReverbLeft, SampleFormatConverter &nonReverbRight,
 	SampleFormatConverter &reverbDryLeft, SampleFormatConverter &reverbDryRight,
 	SampleFormatConverter &reverbWetLeft, SampleFormatConverter &reverbWetRight,
@@ -1654,9 +1668,9 @@ void Synth::renderStreams(
 	while (len > 0) {
 		// We need to ensure zero-duration notes will play so add minimum 1-sample delay.
 		Bit32u thisLen = 1;
-		if (!isAbortingPoly()) {
-			const MidiEvent *nextEvent = midiQueue->peekMidiEvent();
-			Bit32s samplesToNextEvent = (nextEvent != NULL) ? Bit32s(nextEvent->timestamp - renderedSampleCount) : MAX_SAMPLES_PER_RUN;
+		if (!synth.isAbortingPoly()) {
+			const MidiEvent *nextEvent = synth.midiQueue->peekMidiEvent();
+			Bit32s samplesToNextEvent = (nextEvent != NULL) ? Bit32s(nextEvent->timestamp - synth.renderedSampleCount) : MAX_SAMPLES_PER_RUN;
 			if (samplesToNextEvent > 0) {
 				thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
 				if (thisLen > (Bit32u)samplesToNextEvent) {
@@ -1664,15 +1678,15 @@ void Synth::renderStreams(
 				}
 			} else {
 				if (nextEvent->sysexData == NULL) {
-					playMsgNow(nextEvent->shortMessageData);
+					synth.playMsgNow(nextEvent->shortMessageData);
 					// If a poly is aborting we don't drop the event from the queue.
 					// Instead, we'll return to it again when the abortion is done.
-					if (!isAbortingPoly()) {
-						midiQueue->dropMidiEvent();
+					if (!synth.isAbortingPoly()) {
+						synth.midiQueue->dropMidiEvent();
 					}
 				} else {
-					playSysexNow(nextEvent->sysexData, nextEvent->sysexLength);
-					midiQueue->dropMidiEvent();
+					synth.playSysexNow(nextEvent->sysexData, nextEvent->sysexLength);
+					synth.midiQueue->dropMidiEvent();
 				}
 			}
 		}
@@ -1706,7 +1720,7 @@ void Synth::renderStreams(
 	SampleFormatConverter convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
 	SampleFormatConverter convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
 #endif
-	renderStreams(
+	renderer.renderStreams(
 		convNonReverbLeft, convNonReverbRight,
 		convReverbDryLeft, convReverbDryRight,
 		convReverbWetLeft, convReverbWetRight,
@@ -1728,7 +1742,7 @@ void Synth::renderStreams(
 	BufferedSampleFormatConverter<> convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
 	BufferedSampleFormatConverter<> convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
 #endif
-	renderStreams(
+	renderer.renderStreams(
 		convNonReverbLeft, convNonReverbRight,
 		convReverbDryLeft, convReverbDryRight,
 		convReverbWetLeft, convReverbWetRight,
@@ -1737,12 +1751,12 @@ void Synth::renderStreams(
 
 // In GENERATION2 units, the output from LA32 goes to the Boss chip already bit-shifted.
 // In NICE mode, it's also better to increase volume before the reverb processing to preserve accuracy.
-void Synth::produceLA32Output(Sample *buffer, Bit32u len) {
+void Renderer::produceLA32Output(Sample *buffer, Bit32u len) {
 #if MT32EMU_USE_FLOAT_SAMPLES
 	(void)buffer;
 	(void)len;
 #else
-	switch (dacInputMode) {
+	switch (synth.dacInputMode) {
 		case DACInputMode_GENERATION2:
 			while (len--) {
 				*buffer = (*buffer & 0x8000) | ((*buffer << 1) & 0x7FFE) | ((*buffer >> 14) & 0x0001);
@@ -1751,7 +1765,7 @@ void Synth::produceLA32Output(Sample *buffer, Bit32u len) {
 			break;
 		case DACInputMode_NICE:
 			while (len--) {
-				*buffer = clipSampleEx(SampleEx(*buffer) << 1);
+				*buffer = Synth::clipSampleEx(SampleEx(*buffer) << 1);
 				++buffer;
 			}
 			break;
@@ -1761,12 +1775,12 @@ void Synth::produceLA32Output(Sample *buffer, Bit32u len) {
 #endif
 }
 
-void Synth::convertSamplesToOutput(Sample *buffer, Bit32u len) {
+void Renderer::convertSamplesToOutput(Sample *buffer, Bit32u len) {
 #if MT32EMU_USE_FLOAT_SAMPLES
 	(void)buffer;
 	(void)len;
 #else
-	if (dacInputMode == DACInputMode_GENERATION1) {
+	if (synth.dacInputMode == DACInputMode_GENERATION1) {
 		while (len--) {
 			*buffer = Sample((*buffer & 0x8000) | ((*buffer << 1) & 0x7FFE));
 			++buffer;
@@ -1775,7 +1789,7 @@ void Synth::convertSamplesToOutput(Sample *buffer, Bit32u len) {
 #endif
 }
 
-void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len) {
+void Renderer::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len) {
 	// Even if LA32 output isn't desired, we proceed anyway with temp buffers
 	Sample tmpBufNonReverbLeft[MAX_SAMPLES_PER_RUN], tmpBufNonReverbRight[MAX_SAMPLES_PER_RUN];
 	if (nonReverbLeft == NULL) nonReverbLeft = tmpBufNonReverbLeft;
@@ -1785,30 +1799,30 @@ void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sampl
 	if (reverbDryLeft == NULL) reverbDryLeft = tmpBufReverbDryLeft;
 	if (reverbDryRight == NULL) reverbDryRight = tmpBufReverbDryRight;
 
-	if (isEnabled) {
-		muteSampleBuffer(nonReverbLeft, len);
-		muteSampleBuffer(nonReverbRight, len);
-		muteSampleBuffer(reverbDryLeft, len);
-		muteSampleBuffer(reverbDryRight, len);
+	if (synth.isEnabled) {
+		Synth::muteSampleBuffer(nonReverbLeft, len);
+		Synth::muteSampleBuffer(nonReverbRight, len);
+		Synth::muteSampleBuffer(reverbDryLeft, len);
+		Synth::muteSampleBuffer(reverbDryRight, len);
 
-		for (unsigned int i = 0; i < getPartialCount(); i++) {
-			if (partialManager->shouldReverb(i)) {
-				partialManager->produceOutput(i, reverbDryLeft, reverbDryRight, len);
+		for (unsigned int i = 0; i < synth.getPartialCount(); i++) {
+			if (synth.partialManager->shouldReverb(i)) {
+				synth.partialManager->produceOutput(i, reverbDryLeft, reverbDryRight, len);
 			} else {
-				partialManager->produceOutput(i, nonReverbLeft, nonReverbRight, len);
+				synth.partialManager->produceOutput(i, nonReverbLeft, nonReverbRight, len);
 			}
 		}
 
 		produceLA32Output(reverbDryLeft, len);
 		produceLA32Output(reverbDryRight, len);
 
-		if (isReverbEnabled()) {
-			reverbModel->process(reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, len);
+		if (synth.isReverbEnabled()) {
+			synth.reverbModel->process(reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, len);
 			if (reverbWetLeft != NULL) convertSamplesToOutput(reverbWetLeft, len);
 			if (reverbWetRight != NULL) convertSamplesToOutput(reverbWetRight, len);
 		} else {
-			muteSampleBuffer(reverbWetLeft, len);
-			muteSampleBuffer(reverbWetRight, len);
+			Synth::muteSampleBuffer(reverbWetLeft, len);
+			Synth::muteSampleBuffer(reverbWetRight, len);
 		}
 
 		// Don't bother with conversion if the output is going to be unused
@@ -1824,16 +1838,16 @@ void Synth::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sampl
 		if (reverbDryRight != tmpBufReverbDryRight) convertSamplesToOutput(reverbDryRight, len);
 	} else {
 		// Avoid muting buffers that wasn't requested
-		if (nonReverbLeft != tmpBufNonReverbLeft) muteSampleBuffer(nonReverbLeft, len);
-		if (nonReverbRight != tmpBufNonReverbRight) muteSampleBuffer(nonReverbRight, len);
-		if (reverbDryLeft != tmpBufReverbDryLeft) muteSampleBuffer(reverbDryLeft, len);
-		if (reverbDryRight != tmpBufReverbDryRight) muteSampleBuffer(reverbDryRight, len);
-		muteSampleBuffer(reverbWetLeft, len);
-		muteSampleBuffer(reverbWetRight, len);
+		if (nonReverbLeft != tmpBufNonReverbLeft) Synth::muteSampleBuffer(nonReverbLeft, len);
+		if (nonReverbRight != tmpBufNonReverbRight) Synth::muteSampleBuffer(nonReverbRight, len);
+		if (reverbDryLeft != tmpBufReverbDryLeft) Synth::muteSampleBuffer(reverbDryLeft, len);
+		if (reverbDryRight != tmpBufReverbDryRight) Synth::muteSampleBuffer(reverbDryRight, len);
+		Synth::muteSampleBuffer(reverbWetLeft, len);
+		Synth::muteSampleBuffer(reverbWetRight, len);
 	}
 
-	partialManager->clearAlreadyOutputed();
-	renderedSampleCount += len;
+	synth.partialManager->clearAlreadyOutputed();
+	synth.renderedSampleCount += len;
 }
 
 void Synth::printPartialUsage(unsigned long sampleOffset) {
