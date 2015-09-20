@@ -39,10 +39,10 @@ float LA32WaveGenerator::getPCMSample(unsigned int position) {
 	return ((pcmSample & 32768) == 0) ? sampleValue : -sampleValue;
 }
 
-void LA32WaveGenerator::initSynth(const bool sawtoothWaveform, const Bit8u pulseWidth, const Bit8u resonance) {
-	this->sawtoothWaveform = sawtoothWaveform;
-	this->pulseWidth = pulseWidth;
-	this->resonance = resonance;
+void LA32WaveGenerator::initSynth(const bool useSawtoothWaveform, const Bit8u usePulseWidth, const Bit8u useResonance) {
+	sawtoothWaveform = useSawtoothWaveform;
+	pulseWidth = usePulseWidth;
+	resonance = useResonance;
 
 	wavePos = 0.0f;
 	lastFreq = 0.0f;
@@ -51,23 +51,23 @@ void LA32WaveGenerator::initSynth(const bool sawtoothWaveform, const Bit8u pulse
 	active = true;
 }
 
-void LA32WaveGenerator::initPCM(const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped, const bool pcmWaveInterpolated) {
-	this->pcmWaveAddress = pcmWaveAddress;
-	this->pcmWaveLength = pcmWaveLength;
-	this->pcmWaveLooped = pcmWaveLooped;
-	this->pcmWaveInterpolated = pcmWaveInterpolated;
+void LA32WaveGenerator::initPCM(const Bit16s * const usePCMWaveAddress, const Bit32u usePCMWaveLength, const bool usePCMWaveLooped, const bool usePCMWaveInterpolated) {
+	pcmWaveAddress = usePCMWaveAddress;
+	pcmWaveLength = usePCMWaveLength;
+	pcmWaveLooped = usePCMWaveLooped;
+	pcmWaveInterpolated = usePCMWaveInterpolated;
 
 	pcmPosition = 0.0f;
 	active = true;
 }
 
+// ampVal - Logarithmic amp of the wave generator
+// pitch - Logarithmic frequency of the resulting wave
+// cutoffRampVal - Composed of the base cutoff in range [78..178] left-shifted by 18 bits and the TVF modifier
 float LA32WaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pitch, const Bit32u cutoffRampVal) {
 	if (!active) {
 		return 0.0f;
 	}
-
-	this->amp = amp;
-	this->pitch = pitch;
 
 	float sample = 0.0f;
 
@@ -285,9 +285,9 @@ bool LA32WaveGenerator::isPCMWave() const {
 	return pcmWaveAddress != NULL;
 }
 
-void LA32PartialPair::init(const bool ringModulated, const bool mixed) {
-	this->ringModulated = ringModulated;
-	this->mixed = mixed;
+void LA32PartialPair::init(const bool useRingModulated, const bool useMixed) {
+	ringModulated = useRingModulated;
+	mixed = useMixed;
 	masterOutputSample = 0.0f;
 	slaveOutputSample = 0.0f;
 }

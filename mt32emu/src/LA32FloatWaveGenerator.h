@@ -39,12 +39,6 @@ class LA32WaveGenerator {
 	// True means the resulting square wave is to be multiplied by the synchronous cosine
 	bool sawtoothWaveform;
 
-	// Logarithmic amp of the wave generator
-	Bit32u amp;
-
-	// Logarithmic frequency of the resulting wave
-	Bit16u pitch;
-
 	// Values in range [1..31]
 	// Value 1 correspong to the minimum resonance
 	Bit8u resonance;
@@ -53,9 +47,6 @@ class LA32WaveGenerator {
 	// Values in range [0..128] have no effect and the resulting wave remains symmetrical
 	// Value 255 corresponds to the maximum possible asymmetric of the resulting wave
 	Bit8u pulseWidth;
-
-	// Composed of the base cutoff in range [78..178] left-shifted by 18 bits and the TVF modifier
-	Bit32u cutoffVal;
 
 	// Logarithmic PCM sample start address
 	const Bit16s *pcmWaveAddress;
