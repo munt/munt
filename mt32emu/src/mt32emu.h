@@ -34,6 +34,11 @@
 #define MT32EMU_API_TYPE 0
 #endif
 
+/* MT32EMU_SHARED should be defined when building shared library, especially for Windows platforms. */
+/*
+#define MT32EMU_SHARED
+*/
+
 #ifndef MT32EMU_EXPORTS_TYPE
 #define MT32EMU_EXPORTS_TYPE MT32EMU_API_TYPE
 #endif
