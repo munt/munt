@@ -38,7 +38,6 @@ class Partial;
 class PartialManager;
 class Renderer;
 class ROMImage;
-class SampleFormatConverter;
 
 class PatchTempMemoryRegion;
 class RhythmTempMemoryRegion;
