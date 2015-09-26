@@ -24,78 +24,89 @@ static const double M_PI = 3.1415926535897931;
 #endif
 
 // Sharp elliptic filter with symmetric ripple: N=18, Ap=As=-106 dB, fp=0.238, fs = 0.25 (in terms of sample rate)
-static const IIRCoefficient NUMERATOR_BEST[] = {0.00143137924716997, 0.00789698517354518, 0.0294398110190094, 0.0799173748728548, 0.176072871289035,
-	0.323814086626527, 0.511425793167272, 0.702365967828135, 0.847109517379751, 0.901144542299114, 0.847109517379751, 0.702365967828135,
-	0.511425793167272, 0.323814086626527, 0.176072871289035, 0.0799173748728548, 0.0294398110190094, 0.00789698517354518, 0.00143137924716997};
-static const IIRCoefficient DENOMINATOR_BEST[] = {1.0, -2.69897208543826, 8.80398722907614, -16.1424580924884, 29.5248804330701, -40.1684486817326,
-	51.5296017286296, -54.0515071033872, 52.1159369741569, -42.6527147191785, 31.4919185157548, -19.9291740542395, 11.1241159254197,
-	-5.25734624012707, 2.10951442619652, -0.68470573213706, 0.17303565409162, -0.0304599797948271, 0.0029192180943142};
+static const IIRCoefficient FIR_BEST = 0.0014313792470984;
+static const IIRSection SECTIONS_BEST[] = {
+	{ 2.85800356692148000,-0.2607342682253230,-0.602478421807085, 0.109823442522145},
+	{-4.39519408383016000, 1.4651975326003500,-0.533817668127954, 0.226045921792036},
+	{ 0.86638550740991800,-2.1053851417898500,-0.429134968401065, 0.403512574222174},
+	{ 1.67161485530774000, 0.7963595880494520,-0.324989203363446, 0.580756666711889},
+	{-1.19962759276471000, 0.5873595178851540,-0.241486447489019, 0.724264899930934},
+	{ 0.01631779946479250,-0.6282334739461620,-0.182766025706656, 0.827774001858882},
+	{ 0.28404415859352400, 0.1038619997715160,-0.145276649558926, 0.898510501923554},
+	{-0.08105788424234910, 0.0781551578108934,-0.123965846623366, 0.947105257601873},
+	{-0.00872608905948005,-0.0222098231712466,-0.115056854360748, 0.983542001125711}
+};
 
 // Average elliptic filter with symmetric ripple: N=12, Ap=As=-106 dB, fp=0.193, fs = 0.25 (in terms of sample rate)
-static const IIRCoefficient NUMERATOR_GOOD[] = {0.000891054570312711, 0.00401699642072141, 0.0116339860079785, 0.0241764921599365, 0.0395683393387297,
-	0.0525279880454076, 0.0576516896473707, 0.0525279880454076, 0.0395683393387297, 0.0241764921599365, 0.0116339860079785, 0.00401699642072141,
-	0.000891054570312711};
-static const IIRCoefficient DENOMINATOR_GOOD[] = {1.0, -3.75282253489812, 9.02653937439474, -14.9124231385925, 18.9475953813622, -18.8010210368353,
-	14.9129109507335, -9.40866788231319, 4.68220224634757, -1.78427646611801, 0.49489467322571, -0.0897350197525806, 0.00808647158647441};
+static const IIRCoefficient FIR_GOOD = 0.000891054570268146;
+static const IIRSection SECTIONS_GOOD[] = {
+	{ 2.2650157226725700,-0.4034180565140230,-0.7500614860953010, 0.1578014045119530},
+	{-3.2788261989161700, 1.3952152147542600,-0.7058542702067880, 0.2655649856457740},
+	{ 0.4397975114813240,-1.3957634748753100,-0.6397188539652650, 0.4353241343603150},
+	{ 0.9827040216680520, 0.1837182774040940,-0.5785699656184180, 0.6152055578375420},
+	{-0.3759752818621670, 0.3266073609399490,-0.5409135886371090, 0.7782644201765740},
+	{-0.0253548089519618,-0.0925779221603846,-0.5377043703752400, 0.9258000832529640}
+};
 
 // Fast elliptic filter with symmetric ripple: N=8, Ap=As=-99 dB, fp=0.125, fs = 0.25 (in terms of sample rate)
-static const IIRCoefficient NUMERATOR_FAST[] = {0.000919048607199723, 0.00296201761602858, 0.00637178853917259, 0.00955422804027462, 0.0109258558065688,
-	0.00955422804027462, 0.00637178853917259, 0.00296201761602858, 0.000919048607199723};
-static const IIRCoefficient DENOMINATOR_FAST[] = {1.0, -4.0206974114077, 8.10330349808915, -10.1791188149644, 8.59525285186386, -4.94319220919619,
-	1.88033873505286, -0.430744335378428, 0.0453982115557566};
+static const IIRCoefficient FIR_FAST = 0.000882837778745889;
+static const IIRSection SECTIONS_FAST[] = {
+	{ 1.21537707743162000,-0.35864455030878000,-0.97222071878924200, 0.25293473593062000},
+	{-1.52565441925414000, 0.86784918631245500,-0.97771368935812400, 0.37658061670366800},
+	{ 0.13609444156422000,-0.50414116798010400,-1.00700447186529000, 0.58404885484533100},
+	{ 0.18060408228580600,-0.00467624342403851,-1.09348691901210000, 0.84490452484399600}
+};
 
-IIRDecimator::C::C(const unsigned int useOrder, const IIRCoefficient useNumerator[], const IIRCoefficient useDenominator[], const Quality quality) {
+IIRDecimator::C::C(const unsigned int useSectionsCount, const IIRCoefficient useFIR, const IIRSection useSections[], const Quality quality) {
 	if (quality == CUSTOM) {
-		order = useOrder;
-		numerator = useNumerator;
-		denominator = useDenominator;
+		sectionsCount = useSectionsCount;
+		fir = useFIR;
+		sections = useSections;
 	} else {
-		unsigned int numeratorSize;
+		unsigned int sectionsSize;
 		switch (quality) {
 		case FAST:
-			numeratorSize = sizeof(NUMERATOR_FAST);
-			numerator = NUMERATOR_FAST;
-			denominator = DENOMINATOR_FAST;
+			fir = FIR_FAST;
+			sections = SECTIONS_FAST;
+			sectionsSize = sizeof(SECTIONS_FAST);
 			break;
 		case GOOD:
-			numeratorSize = sizeof(NUMERATOR_GOOD);
-			numerator = NUMERATOR_GOOD;
-			denominator = DENOMINATOR_GOOD;
+			fir = FIR_GOOD;
+			sections = SECTIONS_GOOD;
+			sectionsSize = sizeof(SECTIONS_GOOD);
 			break;
 		case BEST:
-			numeratorSize = sizeof(NUMERATOR_BEST);
-			numerator = NUMERATOR_BEST;
-			denominator = DENOMINATOR_BEST;
+			fir = FIR_BEST;
+			sections = SECTIONS_BEST;
+			sectionsSize = sizeof(SECTIONS_BEST);
 			break;
 		default:
-			numeratorSize = 0;
+			sectionsSize = 0;
 			break;
 		}
-		order = (numeratorSize / sizeof(IIRCoefficient)) - 1;
+		sectionsCount = (sectionsSize / sizeof(IIRSection));
 	}
-	unsigned int delayLineLength = 2;
-	while (delayLineLength < (order + 1)) delayLineLength <<= 1;
-	delayLineMask = delayLineLength - 1;
-	ringBuffer = new BufferedSample[delayLineLength][IIR_DECIMATOR_CHANNEL_COUNT];
-	BufferedSample *s = *ringBuffer;
-	BufferedSample *e = ringBuffer[delayLineLength];
+	buffer = new BufferedSample[sectionsCount][IIR_DECIMATOR_CHANNEL_COUNT][IIR_SECTION_ORDER];
+	BufferedSample *s = buffer[0][0];
+	BufferedSample *e = buffer[sectionsCount][0];
 	while (s < e) *(s++) = 0;
 }
 
 IIRDecimator::IIRDecimator(const Quality quality) :
 	c(0, NULL, NULL, quality),
-	ringBufferPosition(0),
 	phase(1)
 {}
 
-IIRDecimator::IIRDecimator(const unsigned int order, const IIRCoefficient numerator[], const IIRCoefficient denominator[]) :
-	c(order, numerator, denominator, IIRDecimator::CUSTOM),
-	ringBufferPosition(0),
+IIRDecimator::IIRDecimator(const unsigned int useSectionsCount, const IIRCoefficient useFIR, const IIRSection useSections[]) :
+	c(useSectionsCount, useFIR, useSections, IIRDecimator::CUSTOM),
 	phase(1)
-{}
+{
+	outputSamples[0] = 0.0f;
+	outputSamples[1] = 0.0f;
+}
 
 IIRDecimator::~IIRDecimator() {
-	delete[] c.ringBuffer;
+	delete[] c.buffer;
 }
 
 void IIRDecimator::process(const FloatSample *&inSamples, unsigned int &inLength, FloatSample *&outSamples, unsigned int &outLength) {
@@ -119,30 +130,30 @@ bool IIRDecimator::needNextInSample() const {
 }
 
 void IIRDecimator::addInSamples(const FloatSample *&inSamples) {
-	ringBufferPosition = (ringBufferPosition - 1) & c.delayLineMask;
-	BufferedSample leftSample = *(inSamples++);
-	BufferedSample rightSample = *(inSamples++);
-	unsigned int delaySampleIx = ringBufferPosition;
-	for (unsigned int i = 1; i <= c.order; ++i) {
-		delaySampleIx = (delaySampleIx + 1) & c.delayLineMask;
-		leftSample -= c.denominator[i] * c.ringBuffer[delaySampleIx][0];
-		rightSample -= c.denominator[i] * c.ringBuffer[delaySampleIx][1];
-	}
-	c.ringBuffer[ringBufferPosition][0] = leftSample;
-	c.ringBuffer[ringBufferPosition][1] = rightSample;
+	BufferedSample leftIn = *(inSamples++);
+	BufferedSample rightIn = *(inSamples++);
 	--phase;
+	unsigned int z1Ix = phase;
+	unsigned int z2Ix = phase ^ 1;
+	BufferedSample leftOut = 0.0;
+	BufferedSample rightOut = 0.0;
+	for (unsigned int i = 0; i <= c.sectionsCount; ++i) {
+		BufferedSample leftRecOut = leftIn - c.sections[i].den1 * c.buffer[i][0][z1Ix] - c.sections[i].den2 * c.buffer[i][0][z2Ix];
+		BufferedSample rightRecOut = rightIn - c.sections[i].den1 * c.buffer[i][1][z1Ix] - c.sections[i].den2 * c.buffer[i][1][z2Ix];
+		if (needNextInSample()) continue; // Output isn't needed now
+
+		leftOut += c.sections[i].num1 * c.buffer[i][0][z1Ix] + c.sections[i].num2 * c.buffer[i][0][z2Ix];
+		c.buffer[i][0][z2Ix] = leftRecOut;
+
+		rightOut += c.sections[i].num1 * c.buffer[i][1][z1Ix] + c.sections[i].num2 * c.buffer[i][1][z2Ix];
+		c.buffer[i][1][z2Ix] = rightRecOut;
+	}
+	outputSamples[0] = FloatSample(leftOut + leftIn * c.fir);
+	outputSamples[1] = FloatSample(rightOut + rightIn * c.fir);
 }
 
 void IIRDecimator::getOutSamples(FloatSample *&outSamples) {
-	BufferedSample leftSample = 0.0;
-	BufferedSample rightSample = 0.0;
-	unsigned int delaySampleIx = ringBufferPosition;
-	for (unsigned int i = 0; i <= c.order; ++i) {
-		leftSample += c.numerator[i] * c.ringBuffer[delaySampleIx][0];
-		rightSample += c.numerator[i] * c.ringBuffer[delaySampleIx][1];
-		delaySampleIx = (delaySampleIx + 1) & c.delayLineMask;
-	}
-	*(outSamples++) = (FloatSample)leftSample;
-	*(outSamples++) = (FloatSample)rightSample;
+	*(outSamples++) = outputSamples[0];
+	*(outSamples++) = outputSamples[1];
 	phase += 2;
 }
