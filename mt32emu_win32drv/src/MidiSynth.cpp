@@ -507,12 +507,15 @@ void MidiSynth::ApplySettings() {
 	synth->setOutputGain(outputGain);
 	synth->setReverbOutputGain(reverbOutputGain);
 	if (reverbOverridden) {
-		Bit8u sysex[] = {0x10, 0x00, 0x01, reverbMode, reverbTime, reverbLevel};
 		synth->setReverbOverridden(false);
-		synth->writeSysex(16, sysex, 6);
+		if (reverbEnabled) {
+			Bit8u sysex[] = { 0x10, 0x00, 0x01, reverbMode, reverbTime, reverbLevel };
+			synth->writeSysex(16, sysex, 6);
+		} else {
+			synth->setReverbEnabled(reverbEnabled);
+		}
 		synth->setReverbOverridden(true);
 	}
-	synth->setReverbEnabled(reverbEnabled);
 	if (reverbCompatibilityMode == ReverbCompatibilityMode_DEFAULT) {
 		if (controlROM != NULL) {
 			synth->setReverbCompatibilityMode(synth->isDefaultReverbMT32Compatible());

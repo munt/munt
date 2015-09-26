@@ -483,8 +483,8 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.reverbCompatibilityMode = reverbCompatibilityMode;
 	synthProfile.outputGain = synth->getOutputGain();
 	synthProfile.reverbOutputGain = synth->getReverbOutputGain();
-	synthProfile.reverbEnabled = synth->isReverbEnabled();
 	synthProfile.reverbOverridden = synth->isReverbOverridden();
+	synthProfile.reverbEnabled = synth->isReverbEnabled() || !synthProfile.reverbOverridden;
 	synthProfile.reverbMode = reverbMode;
 	synthProfile.reverbTime = reverbTime;
 	synthProfile.reverbLevel = reverbLevel;
@@ -518,9 +518,11 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	setAnalogOutputMode(synthProfile.analogOutputMode);
 	setOutputGain(synthProfile.outputGain);
 	setReverbOutputGain(synthProfile.reverbOutputGain);
-	setReverbSettings(synthProfile.reverbMode, synthProfile.reverbTime, synthProfile.reverbLevel);
-	setReverbEnabled(synthProfile.reverbEnabled);
 	setReverbOverridden(synthProfile.reverbOverridden);
+	if (synthProfile.reverbOverridden) {
+		setReverbSettings(synthProfile.reverbMode, synthProfile.reverbTime, synthProfile.reverbLevel);
+		setReverbEnabled(synthProfile.reverbEnabled);
+	}
 	setReversedStereoEnabled(synthProfile.reversedStereoEnabled);
 	setInitialMIDIChannelsAssignment(synthProfile.engageChannel1OnOpen);
 }
