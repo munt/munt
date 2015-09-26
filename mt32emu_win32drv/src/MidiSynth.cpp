@@ -299,8 +299,8 @@ protected:
 MidiSynth::MidiSynth() {}
 
 MidiSynth &MidiSynth::getInstance() {
-	static MidiSynth *instance = new MidiSynth;
-	return *instance;
+	static MidiSynth instance;
+	return instance;
 }
 
 // Renders all the available space in the single looped ring buffer
@@ -430,7 +430,7 @@ void MidiSynth::ReloadSettings() {
 	char profile[256];
 	LoadStringValue(hRegMaster, "defaultSynthProfile", "default", profile, sizeof(profile));
 	RegCloseKey(hRegMaster);
-
+	hRegMaster = NULL;
 	HKEY hRegProfiles;
 	if (hReg == NULL || RegOpenKeyA(hReg, MT32EMU_REGISTRY_PROFILES_SUBKEY, &hRegProfiles)) {
 		hRegProfiles = NULL;
@@ -567,7 +567,9 @@ int MidiSynth::Init() {
 int MidiSynth::Reset() {
 	ReloadSettings();
 	if (!resetEnabled) {
+		synthEvent.Wait();
 		ApplySettings();
+		synthEvent.Release();
 		return 0;
 	}
 
