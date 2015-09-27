@@ -86,74 +86,57 @@ IIRDecimator::C::C(const unsigned int useSectionsCount, const IIRCoefficient use
 		}
 		sectionsCount = (sectionsSize / sizeof(IIRSection));
 	}
-	buffer = new BufferedSample[sectionsCount][IIR_DECIMATOR_CHANNEL_COUNT][IIR_SECTION_ORDER];
+	buffer = new SectionBuffer[sectionsCount];
 	BufferedSample *s = buffer[0][0];
 	BufferedSample *e = buffer[sectionsCount][0];
 	while (s < e) *(s++) = 0;
 }
 
 IIRDecimator::IIRDecimator(const Quality quality) :
-	c(0, NULL, NULL, quality),
-	phase(1)
+	c(0, NULL, NULL, quality)
 {}
 
 IIRDecimator::IIRDecimator(const unsigned int useSectionsCount, const IIRCoefficient useFIR, const IIRSection useSections[]) :
-	c(useSectionsCount, useFIR, useSections, IIRDecimator::CUSTOM),
-	phase(1)
-{
-	outputSamples[0] = 0.0f;
-	outputSamples[1] = 0.0f;
-}
+	c(useSectionsCount, useFIR, useSections, IIRDecimator::CUSTOM)
+{}
 
 IIRDecimator::~IIRDecimator() {
 	delete[] c.buffer;
 }
 
+static inline BufferedSample calcNumerator(const IIRSection &section, const BufferedSample buffer1, const BufferedSample buffer2) {
+	return section.num1 * buffer1 + section.num2 * buffer2;
+}
+
+static inline void calcDenominator(const IIRSection &section, const BufferedSample input, const BufferedSample buffer1, BufferedSample &buffer2) {
+	buffer2 = input - section.den1 * buffer1 - section.den2 * buffer2;
+}
+
 void IIRDecimator::process(const FloatSample *&inSamples, unsigned int &inLength, FloatSample *&outSamples, unsigned int &outLength) {
-	while (outLength > 0) {
-		while (needNextInSample()) {
-			if (inLength == 0) return;
-			addInSamples(inSamples);
-			--inLength;
-		}
-		getOutSamples(outSamples);
+	while (outLength > 0 && inLength > 1) {
+		inLength -= 2;
 		--outLength;
+		BufferedSample tmpOut[IIR_DECIMATOR_CHANNEL_COUNT];
+		for (unsigned int chIx = 0; chIx < IIR_DECIMATOR_CHANNEL_COUNT; ++chIx) {
+			tmpOut[chIx] = (BufferedSample)0.0;
+		}
+		for (unsigned int i = 0; i < c.sectionsCount; ++i) {
+			const IIRSection &section = c.sections[i];
+			SectionBuffer &sectionBuffer = c.buffer[i];
+
+			for (unsigned int chIx = 0; chIx < IIR_DECIMATOR_CHANNEL_COUNT; ++chIx) {
+				BufferedSample *buffer = sectionBuffer[chIx];
+				tmpOut[chIx] += calcNumerator(section, buffer[0], buffer[1]);
+				calcDenominator(section, inSamples[chIx], buffer[0], buffer[1]);
+				calcDenominator(section, inSamples[chIx], buffer[1], buffer[0]);
+			}
+		}
+		for (unsigned int chIx = 0; chIx < IIR_DECIMATOR_CHANNEL_COUNT; ++chIx) {
+			*(outSamples++) = FloatSample(tmpOut[chIx] + *(inSamples++) * c.fir);
+		}
 	}
 }
 
 unsigned int IIRDecimator::estimateInLength(const unsigned int outLength) const {
-	return (outLength << 1) + phase;
-}
-
-bool IIRDecimator::needNextInSample() const {
-	return phase != 0;
-}
-
-void IIRDecimator::addInSamples(const FloatSample *&inSamples) {
-	BufferedSample leftIn = *(inSamples++);
-	BufferedSample rightIn = *(inSamples++);
-	--phase;
-	unsigned int z1Ix = phase;
-	unsigned int z2Ix = phase ^ 1;
-	BufferedSample leftOut = 0.0;
-	BufferedSample rightOut = 0.0;
-	for (unsigned int i = 0; i <= c.sectionsCount; ++i) {
-		BufferedSample leftRecOut = leftIn - c.sections[i].den1 * c.buffer[i][0][z1Ix] - c.sections[i].den2 * c.buffer[i][0][z2Ix];
-		BufferedSample rightRecOut = rightIn - c.sections[i].den1 * c.buffer[i][1][z1Ix] - c.sections[i].den2 * c.buffer[i][1][z2Ix];
-		if (needNextInSample()) continue; // Output isn't needed now
-
-		leftOut += c.sections[i].num1 * c.buffer[i][0][z1Ix] + c.sections[i].num2 * c.buffer[i][0][z2Ix];
-		c.buffer[i][0][z2Ix] = leftRecOut;
-
-		rightOut += c.sections[i].num1 * c.buffer[i][1][z1Ix] + c.sections[i].num2 * c.buffer[i][1][z2Ix];
-		c.buffer[i][1][z2Ix] = rightRecOut;
-	}
-	outputSamples[0] = FloatSample(leftOut + leftIn * c.fir);
-	outputSamples[1] = FloatSample(rightOut + rightIn * c.fir);
-}
-
-void IIRDecimator::getOutSamples(FloatSample *&outSamples) {
-	*(outSamples++) = outputSamples[0];
-	*(outSamples++) = outputSamples[1];
-	phase += 2;
+	return (outLength << 1);
 }

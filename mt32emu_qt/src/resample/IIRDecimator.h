@@ -1,9 +1,14 @@
 #ifndef IIR_DECIMATOR_H
 #define IIR_DECIMATOR_H
 
+static const unsigned int IIR_DECIMATOR_CHANNEL_COUNT = 2;
+static const unsigned int IIR_SECTION_ORDER = 2;
+
 typedef float IIRCoefficient;
 typedef float BufferedSample;
 typedef float FloatSample;
+
+typedef BufferedSample SectionBuffer[IIR_DECIMATOR_CHANNEL_COUNT][IIR_SECTION_ORDER];
 
 // Non-trivial coefficients of a 2nd-order section of a parallel bank
 // (zero-order numerator coefficient is always zero, zero-order denominator coefficient is always unity)
@@ -13,9 +18,6 @@ struct IIRSection {
 	IIRCoefficient den1;
 	IIRCoefficient den2;
 };
-
-static const unsigned int IIR_DECIMATOR_CHANNEL_COUNT = 2;
-static const unsigned int IIR_SECTION_ORDER = 2;
 
 class IIRDecimator {
 public:
@@ -36,18 +38,10 @@ private:
 		// Number of 2nd-order sections
 		unsigned int sectionsCount;
 		// Delay line per each section
-		BufferedSample (*buffer)[IIR_DECIMATOR_CHANNEL_COUNT][IIR_SECTION_ORDER];
+		SectionBuffer *buffer;
 
 		C(const unsigned int useSectionsCount, const IIRCoefficient useFIR, const IIRSection useSections[], const Quality quality);
 	} c;
-	// Current phase
-	unsigned int phase;
-	// Temporary storage for output samples
-	FloatSample outputSamples[IIR_DECIMATOR_CHANNEL_COUNT];
-
-	bool needNextInSample() const;
-	void addInSamples(const FloatSample *&inSamples);
-	void getOutSamples(FloatSample *&outSamples);
 };
 
 #endif // IIR_DECIMATOR_H
