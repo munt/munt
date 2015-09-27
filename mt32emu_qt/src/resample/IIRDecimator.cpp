@@ -128,12 +128,13 @@ void IIRDecimator::process(const FloatSample *&inSamples, unsigned int &inLength
 				BufferedSample *buffer = sectionBuffer[chIx];
 				tmpOut[chIx] += calcNumerator(section, buffer[0], buffer[1]);
 				calcDenominator(section, inSamples[chIx], buffer[0], buffer[1]);
-				calcDenominator(section, inSamples[chIx], buffer[1], buffer[0]);
+				calcDenominator(section, inSamples[chIx + IIR_DECIMATOR_CHANNEL_COUNT], buffer[1], buffer[0]);
 			}
 		}
 		for (unsigned int chIx = 0; chIx < IIR_DECIMATOR_CHANNEL_COUNT; ++chIx) {
 			*(outSamples++) = FloatSample(tmpOut[chIx] + *(inSamples++) * c.fir);
 		}
+		inSamples += IIR_DECIMATOR_CHANNEL_COUNT;
 	}
 }
 
