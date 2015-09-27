@@ -10,6 +10,9 @@ typedef float FloatSample;
 
 typedef BufferedSample SectionBuffer[IIR_DECIMATOR_CHANNEL_COUNT][IIR_SECTION_ORDER];
 
+// Avoid denormals degrading performance, using biased input
+static const BufferedSample BIAS = 1e-35f;
+
 // Non-trivial coefficients of a 2nd-order section of a parallel bank
 // (zero-order numerator coefficient is always zero, zero-order denominator coefficient is always unity)
 struct IIRSection {
