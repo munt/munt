@@ -29,29 +29,52 @@ set(libmt32emu_SOURCES
   src/sha1/sha1.cpp
 )
 
-# Only headers that need to be installed should be listed here:
-set(libmt32emu_HEADERS
-  Enumerations.h
+# Headers that always need to be installed:
+set(libmt32emu_COMMON_HEADERS
+  mt32emu.h
   globals.h
+  Enumerations.h
+)
+
+# Headers used by C++ clients:
+set(libmt32emu_CPP_HEADERS
   File.h
   FileStream.h
-  mt32emu.h
   MidiStreamParser.h
   ROMInfo.h
   Synth.h
   Types.h
 )
 
+# Headers that support C-compatible and plugin-style API:
+set(libmt32emu_C_HEADERS
+  c_interface/c_interface.h
+  c_interface/c_types.h
+  c_interface/cpp_interface.h
+)
+
 if(libmt32emu_C_INTERFACE OR libmt32emu_CPP_PLUGIN_INTERFACE)
   list(APPEND libmt32emu_SOURCES
     src/c_interface/c_interface.cpp
   )
-  list(APPEND libmt32emu_HEADERS
-    c_interface/c_interface.h
-    c_interface/c_types.h
-    c_interface/cpp_interface.h
+  if(libmt32emu_SHARED)
+    set(libmt32emu_HEADERS
+      ${libmt32emu_COMMON_HEADERS}
+      ${libmt32emu_C_HEADERS}
+    )
+  else(libmt32emu_SHARED)
+    set(libmt32emu_HEADERS
+      ${libmt32emu_COMMON_HEADERS}
+      ${libmt32emu_CPP_HEADERS}
+      ${libmt32emu_C_HEADERS}
+    )
+  endif(libmt32emu_SHARED)
+else(libmt32emu_C_INTERFACE OR libmt32emu_CPP_PLUGIN_INTERFACE)
+  set(libmt32emu_HEADERS
+    ${libmt32emu_COMMON_HEADERS}
+    ${libmt32emu_CPP_HEADERS}
   )
-endif()
+endif(libmt32emu_C_INTERFACE OR libmt32emu_CPP_PLUGIN_INTERFACE)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor -Wshadow -ansi -pedantic)
