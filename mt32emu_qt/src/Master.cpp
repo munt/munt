@@ -56,11 +56,20 @@
 #include "mididrv/OSSMidiPortDriver.h"
 #endif
 
-void Master::init() {
-	stopping = false;
+static Master *instance = NULL;
+
+Master::Master() {
+	if (instance != NULL) {
+		qFatal("Master already instantiated!");
+		// Do nothing if ignored
+		return;
+	}
+	instance = this;
 	maxSessions = 0;
 
 	moveToThread(QCoreApplication::instance()->thread());
+
+	MasterClock::init();
 
 	settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
 	synthProfileName = settings->value("Master/defaultSynthProfile", "default").toString();
@@ -74,6 +83,7 @@ void Master::init() {
 	lastAudioDeviceScan = -4 * MasterClock::NANOS_PER_SECOND;
 	getAudioDevices();
 	pinnedSynthRoute = NULL;
+	audioFileWriterSynth = NULL;
 
 	qRegisterMetaType<MidiDriver *>("MidiDriver*");
 	qRegisterMetaType<MidiSession *>("MidiSession*");
@@ -81,9 +91,8 @@ void Master::init() {
 	qRegisterMetaType<SynthState>("SynthState");
 }
 
-void Master::aboutToQuit() {
-	qDebug() << "Got Master::aboutToQuit(), shutting down...";
-	stopping = true;
+Master::~Master() {
+	qDebug() << "Shutting down Master...";
 
 	delete settings;
 
@@ -94,34 +103,24 @@ void Master::aboutToQuit() {
 	}
 
 	QMutableListIterator<SynthRoute *> synthRouteIt(synthRoutes);
-	while(synthRouteIt.hasNext()) {
+	while (synthRouteIt.hasNext()) {
 		delete synthRouteIt.next();
 		synthRouteIt.remove();
 	}
 
 	QMutableListIterator<const AudioDevice *> audioDeviceIt(audioDevices);
-	while(audioDeviceIt.hasNext()) {
+	while (audioDeviceIt.hasNext()) {
 		delete audioDeviceIt.next();
 		audioDeviceIt.remove();
 	}
 
 	QMutableListIterator<AudioDriver *> audioDriverIt(audioDrivers);
-	while(audioDriverIt.hasNext()) {
+	while (audioDriverIt.hasNext()) {
 		delete audioDriverIt.next();
 		audioDriverIt.remove();
 	}
-	return;
-}
 
-Master::~Master() {
-	if (!stopping) {
-		// Emergency exit
-		fprintf(stderr, "Master is going down but haven't got Master::aboutToQuit(), exiting immediately!\n");
-		if (trayIcon != NULL) {
-			trayIcon->hide();
-		}
-		exit(1);
-	}
+	MasterClock::cleanup();
 }
 
 void Master::initAudioDrivers() {
@@ -168,16 +167,7 @@ void Master::startMidiProcessing() {
 }
 
 Master *Master::getInstance() {
-	static Master master;
-
-	// This fixes a deadlock caused by static initialization algorithm of GCC
-	// Instead, MSVC invokes constructors for static vars only once
-	static bool initialized = false;
-	if (!initialized) {
-		initialized = true;
-		master.init();
-	}
-	return &master;
+	return instance;
 }
 
 void Master::showCommandLineHelp() {

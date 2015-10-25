@@ -19,8 +19,6 @@
 
 #include "MasterClock.h"
 
-const MasterClock MasterClock::instance;
-
 #if _POSIX_C_SOURCE >= 199309L
 
 #include <cerrno>
@@ -63,9 +61,9 @@ MasterClockNanos MasterClock::getClockNanos() {
 	return timespecToNanos(ts);
 }
 
-MasterClock::MasterClock() {}
+void MasterClock::init() {}
 
-MasterClock::~MasterClock() {}
+void MasterClock::cleanup() {}
 
 #elif defined WITH_WINMMTIMER
 
@@ -103,7 +101,7 @@ MasterClockNanos MasterClock::getClockNanos() {
 	}
 }
 
-MasterClock::MasterClock() {
+void MasterClock::init() {
 	TIMECAPS tc;
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR) {
 		qDebug() << "Unable to get multimedia timer capabilities.";
@@ -130,9 +128,9 @@ MasterClock::MasterClock() {
 	}
 }
 
-MasterClock::~MasterClock() {
+void MasterClock::cleanup() {
 	if (mmTimerResolution != 0) {
-		// Restoring default multimedia timer resolution.
+		qDebug() << "Restoring default multimedia timer resolution";
 		timeEndPeriod(mmTimerResolution);
 	}
 }
@@ -181,12 +179,15 @@ MasterClockNanos MasterClock::getClockNanos() {
 	return (MasterClockNanos)elapsedTimer.nsecsElapsed();
 }
 
-MasterClock::MasterClock() {
+void MasterClock::init() {
 	elapsedTimer.start();
 	static const char *clockTypes[] = { "SystemTime", "MonotonicClock", "TickCounter", "MachAbsoluteTime", "PerformanceCounter" };
 	qDebug() << "Initialised QElapsedTimer, clockType:" << clockTypes[elapsedTimer.clockType()];
 }
 
-MasterClock::~MasterClock() {}
+void MasterClock::cleanup() {
+	qDebug() << "Invalidating QElapsedTimer";
+	elapsedTimer.invalidate();
+}
 
 #endif

@@ -25,25 +25,23 @@ int main(int argv, char **args) {
 	QApplication app(argv, args);
 	app.setApplicationName("Munt mt32emu-qt");
 	app.setQuitOnLastWindowClosed(false);
-
-	QProcessEnvironment::systemEnvironment().insert("PA_ALSA_PLUGHW", "1");
-
-	Master *master = Master::getInstance();
-	QSystemTrayIcon *trayIcon = NULL;
-	if (QSystemTrayIcon::isSystemTrayAvailable()) {
-		trayIcon = new QSystemTrayIcon(QIcon(":/images/note.gif"));
-		trayIcon->setToolTip("Munt: MT-32 Emulator");
-		trayIcon->show();
-		master->setTrayIcon(trayIcon);
+	{
+		Master master;
+		QSystemTrayIcon *trayIcon = NULL;
+		if (QSystemTrayIcon::isSystemTrayAvailable()) {
+			trayIcon = new QSystemTrayIcon(QIcon(":/images/note.gif"));
+			trayIcon->setToolTip("Munt: MT-32 Emulator");
+			trayIcon->show();
+			master.setTrayIcon(trayIcon);
+		}
+		MainWindow mainWindow(&master);
+		if (trayIcon == NULL || !master.getSettings()->value("Master/startIconized", false).toBool()) mainWindow.show();
+		if (argv > 1) master.processCommandLine(app.arguments());
+		master.startPinnedSynthRoute();
+		master.startMidiProcessing();
+		app.exec();
+		master.setTrayIcon(NULL);
+		delete trayIcon;
 	}
-	MainWindow mainWindow(master);
-	if (trayIcon == NULL || !master->getSettings()->value("Master/startIconized", false).toBool()) mainWindow.show();
-	if (argv > 1) master->processCommandLine(app.arguments());
-	master->startPinnedSynthRoute();
-	master->startMidiProcessing();
-	master->connect(&app, SIGNAL(aboutToQuit()), SLOT(aboutToQuit()));
-	app.exec();
-	master->setTrayIcon(NULL);
-	delete trayIcon;
 	return 0;
 }

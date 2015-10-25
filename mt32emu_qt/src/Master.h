@@ -13,6 +13,7 @@ class MidiPropertiesDialog;
 class QDropEvent;
 
 class Master : public QObject {
+friend int main(int argv, char **args);
 	Q_OBJECT
 private:
 	static void showCommandLineHelp();
@@ -31,10 +32,10 @@ private:
 	QString defaultAudioDeviceName;
 	qint64 lastAudioDeviceScan;
 
-	bool stopping;
 	unsigned int maxSessions;
 
-	void init();
+	explicit Master();
+	explicit Master(Master &);
 	~Master();
 
 	void initAudioDrivers();
@@ -79,7 +80,6 @@ private slots:
 	void deleteMidiSession(MidiSession *midiSession);
 	void showBalloon(const QString &title, const QString &text);
 	void updateMainWindowTitleContribution(const QString &titleContribution);
-	void aboutToQuit();
 
 signals:
 	void synthRouteAdded(SynthRoute *route, const AudioDevice *audioDevice);
