@@ -34,7 +34,7 @@ namespace MT32Emu {
 /**
  * The interfaces below correspond to those defined in c_types.h provided for convenience when using C++.
  * Although, the approach used assumes an arbitrary memory layout of internal class data, and in particular, virtual function tables,
- * that most of C++ compiler tend to implement, and it may successfully work, it is necessary to note that the C++ standard does not
+ * that most of C++ compilers tend to implement, and it may successfully work, it is necessary to note that the C++ standard does not
  * provide any detail in this area and leaves it up to the implementation.
  * Therefore, portability is not guaranteed.
  * See c_types.h and c_interface.h for description of corresponding interfaces.
@@ -93,7 +93,7 @@ struct Synth : public Interface {
 	virtual mt32emu_return_code MT32EMU_METHOD openSynth(const unsigned int *partial_count, const mt32emu_analog_output_mode *analog_output_mode) = 0;
 	virtual void MT32EMU_METHOD closeSynth() = 0;
 	virtual mt32emu_boolean MT32EMU_METHOD isOpen() = 0;
-	virtual unsigned int MT32EMU_METHOD getStereoOutputSamplerate(mt32emu_const_context context, const mt32emu_analog_output_mode analog_output_mode) = 0;
+	virtual unsigned int MT32EMU_METHOD getStereoOutputSamplerate(const mt32emu_analog_output_mode analog_output_mode) = 0;
 	virtual unsigned int MT32EMU_METHOD getActualStereoOutputSamplerate() = 0;
 	virtual void MT32EMU_METHOD flushMIDIQueue() = 0;
 	virtual mt32emu_bit32u MT32EMU_METHOD setMIDIEventQueueSize(const mt32emu_bit32u queue_size) = 0;
