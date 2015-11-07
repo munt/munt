@@ -46,6 +46,7 @@ class QReportHandler : public QObject, public MT32Emu::ReportHandler {
 
 public:
 	QReportHandler(QObject *parent = NULL);
+	void printDebug(const char *fmt, va_list list);
 	void showLCDMessage(const char *message);
 	void onErrorControlROM();
 	void onErrorPCMROM();

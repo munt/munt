@@ -35,6 +35,10 @@ QReportHandler::QReportHandler(QObject *parent) : QObject(parent) {
 	connect(this, SIGNAL(balloonMessageAppeared(const QString &, const QString &)), Master::getInstance(), SLOT(showBalloon(const QString &, const QString &)));
 }
 
+void QReportHandler::printDebug(const char *fmt, va_list list) {
+	qDebug() << "MT32:" << QString::vasprintf(fmt, list);
+}
+
 void QReportHandler::showLCDMessage(const char *message) {
 	qDebug() << "LCD-Message:" << message;
 	if (Master::getInstance()->getSettings()->value("Master/showLCDBalloons", true).toBool()) {
