@@ -191,7 +191,7 @@ Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams), mt32def
 }
 
 Synth::~Synth() {
-	close(); // Make sure we're closed and everything is freed
+	close(true); // Make sure we're closed and everything is freed
 	if (isDefaultReportHandler) {
 		delete reportHandler;
 	}
@@ -703,7 +703,10 @@ void Synth::close(bool forced) {
 	soundGroupNames = NULL;
 
 	delete[] pcmWaves;
+	pcmWaves = NULL;
+
 	delete[] pcmROMData;
+	pcmROMData = NULL;
 
 	deleteMemoryRegions();
 
