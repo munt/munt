@@ -23,6 +23,9 @@
 #include "../globals.h"
 #include "c_types.h"
 
+#include "../Types.h"
+#include "../Enumerations.h"
+
 #if defined _WIN32 || defined __CYGWIN__
 #define MT32EMU_METHOD __cdecl
 #else
