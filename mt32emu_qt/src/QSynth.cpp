@@ -36,7 +36,7 @@ QReportHandler::QReportHandler(QObject *parent) : QObject(parent) {
 }
 
 void QReportHandler::printDebug(const char *fmt, va_list list) {
-	qDebug() << "MT32:" << QString::vasprintf(fmt, list);
+	qDebug() << "MT32:" << QString().vsprintf(fmt, list);
 }
 
 void QReportHandler::showLCDMessage(const char *message) {
