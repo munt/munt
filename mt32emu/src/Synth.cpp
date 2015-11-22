@@ -180,6 +180,17 @@ Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams), mt32def
 	setOutputGain(1.0f);
 	setReverbOutputGain(1.0f);
 	setReversedStereoEnabled(false);
+
+	patchTempMemoryRegion = NULL;
+	rhythmTempMemoryRegion = NULL;
+	timbreTempMemoryRegion = NULL;
+	patchesMemoryRegion = NULL;
+	timbresMemoryRegion = NULL;
+	systemMemoryRegion = NULL;
+	displayMemoryRegion = NULL;
+	resetMemoryRegion = NULL;
+	paddedTimbreMaxTable = NULL;
+
 	partialManager = NULL;
 	pcmWaves = NULL;
 	pcmROMData = NULL;
