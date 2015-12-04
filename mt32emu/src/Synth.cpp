@@ -1010,12 +1010,20 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 	}
 	len -= 1; // Exclude checksum
 	switch (command) {
+	case SYSEX_CMD_WSD:
+	case SYSEX_CMD_EOD:
+#if MT32EMU_MONITOR_SYSEX > 0
+		printDebug("playSysexWithoutHeader: Ignored unsupported command %02x", command);
+#endif
+		break;
 	case SYSEX_CMD_DAT:
+		/* Outcommented until we (ever) actually implement handshake communication
 		if (hasActivePartials()) {
 			printDebug("playSysexWithoutHeader: Got SYSEX_CMD_DAT but partials are active - ignoring");
 			// FIXME: We should send SYSEX_CMD_RJC in this case
 			break;
 		}
+		*/
 		// Deliberate fall-through
 	case SYSEX_CMD_DT1:
 		writeSysex(device, sysex, len);
