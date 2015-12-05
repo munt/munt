@@ -62,6 +62,12 @@ MT32EMU_EXPORT mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context,
 MT32EMU_EXPORT mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *filename);
 
 /**
+ * Fills in mt32emu_rom_info structure with identifiers and descriptions of control and PCM ROM files identified and added to the synth context.
+ * If one of the ROM files is not loaded and identified yet, NULL is returned in the corresponding fields of the mt32emu_rom_info structure.
+ */
+MT32EMU_EXPORT void mt32emu_get_rom_info(mt32emu_const_context context, mt32emu_rom_info *rom_info);
+
+/**
  * Prepares the emulation context to receive MIDI messages and produce output audio data using aforehand added set of ROMs.
  * partial_count sets the maximum number of partials playing simultaneously for this session (optional).
  * analog_output_mode sets the mode for emulation of analogue circuitry of the hardware units (optional).

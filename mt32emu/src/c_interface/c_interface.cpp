@@ -41,6 +41,7 @@ static const mt32emu_synth_i_v0 SYNTH_VTABLE = {
 	mt32emu_free_synth,
 	mt32emu_add_rom_data,
 	mt32emu_add_rom_file,
+	mt32emu_get_rom_info,
 	mt32emu_open_synth,
 	mt32emu_close_synth,
 	mt32emu_is_open,
@@ -407,6 +408,25 @@ mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *fi
 	}
 	delete fs;
 	return rc;
+}
+
+void mt32emu_get_rom_info(mt32emu_const_context context, mt32emu_rom_info *rom_info) {
+	const ROMInfo *romInfo = context.c->controlROMImage == NULL ? NULL : context.c->controlROMImage->getROMInfo();
+	if (romInfo != NULL) {
+		rom_info->control_rom_id = romInfo->shortName;
+		rom_info->control_rom_description = romInfo->description;
+	} else {
+		rom_info->control_rom_id = NULL;
+		rom_info->control_rom_description = NULL;
+	}
+	romInfo = context.c->pcmROMImage == NULL ? NULL : context.c->pcmROMImage->getROMInfo();
+	if (romInfo != NULL) {
+		rom_info->pcm_rom_id = romInfo->shortName;
+		rom_info->pcm_rom_description = romInfo->description;
+	} else {
+		rom_info->pcm_rom_id = NULL;
+		rom_info->pcm_rom_description = NULL;
+	}
 }
 
 mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const unsigned int *partial_count, const mt32emu_analog_output_mode *analog_output_mode) {

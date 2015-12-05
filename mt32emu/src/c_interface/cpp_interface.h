@@ -93,6 +93,7 @@ struct Synth : public Interface {
 	virtual void MT32EMU_METHOD freeSynth() = 0;
 	virtual mt32emu_return_code MT32EMU_METHOD addROMData(const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest) = 0;
 	virtual mt32emu_return_code MT32EMU_METHOD addROMFile(const char *filename) = 0;
+	virtual void MT32EMU_METHOD getROMInfo(mt32emu_rom_info *rom_info) = 0;
 	virtual mt32emu_return_code MT32EMU_METHOD openSynth(const unsigned int *partial_count, const mt32emu_analog_output_mode *analog_output_mode) = 0;
 	virtual void MT32EMU_METHOD closeSynth() = 0;
 	virtual mt32emu_boolean MT32EMU_METHOD isOpen() = 0;
