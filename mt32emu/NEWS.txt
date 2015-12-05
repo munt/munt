@@ -1,9 +1,11 @@
-	2.0.0
+	2.0 Current
 
 	* Introduced support for sound groups. Callback ReportHandler::onProgramChanged() now supply correct sound group name
 	  instead of just number of the timbre bank.
 	* Reworked ControlROMFeatureSet. MT-32 GEN0 quirk "Pitch Envelope Overflow" exploited in Colonel's Bequest timbre "Lightning"
 	  is now emulated when loading one of control ROMs v.1.04-1.07.
+	* Improved current loose implementation of SysEx handshake communication. Specifically, disabled the check for partial
+	  activity, as that caused SysEx messages to be ignored without any feedback.
 	* API and build changes:
 	  - minimum required version of Cmake raised to 2.8.12;
 	  - clarified existing C++ API, mt32emu.h no longer used internally but intended for clients;
