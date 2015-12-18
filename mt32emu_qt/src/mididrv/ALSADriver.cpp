@@ -211,8 +211,19 @@ bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *syn
 		break;
 
 	case SND_SEQ_EVENT_SYSEX:
-		synthRoute->pushMIDISysex((MT32Emu::Bit8u *)seq_event->data.ext.ptr, seq_event->data.ext.len, MasterClock::getClockNanos());
+	{
+		// Concatenate any existing data.
+		MT32Emu::Bit8u *sysexBytes = (MT32Emu::Bit8u *)seq_event->data.ext.ptr;
+		std::copy(sysexBytes, sysexBytes + seq_event->data.ext.len, std::back_inserter(sysexBuf));
+		// Check that the buffer contains EOX; if not, don't transmit yet.
+		for (unsigned int i = 0; i < seq_event->data.ext.len; i++) {
+			if (sysexBytes[i] == MIDI_CMD_COMMON_SYSEX_END) {
+				synthRoute->pushMIDISysex(&sysexBuf[0], sysexBuf.size(), MasterClock::getClockNanos());
+				sysexBuf.resize(0);
+			}
+		}
 		break;
+	}
 
 	case SND_SEQ_EVENT_PORT_SUBSCRIBED:
 		// no-op
