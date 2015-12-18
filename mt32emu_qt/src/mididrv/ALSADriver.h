@@ -2,6 +2,7 @@
 #define ALSA_MIDI_DRIVER_H
 
 #include <alsa/asoundlib.h>
+#include <QVector>
 
 #include "MidiDriver.h"
 
@@ -23,6 +24,7 @@ private:
 	pthread_t processingThreadID;
 	volatile bool stopProcessing;
 	QList<unsigned int> clients;
+	QVector<MT32Emu::Bit8u> sysexBuf;
 
 	static void *processingThread(void *userData);
 	int alsa_setup_midi();
