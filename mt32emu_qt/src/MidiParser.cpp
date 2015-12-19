@@ -93,8 +93,8 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 					quint32 sysexLength = parseVarLenInt(++data);
 					if (MT32Emu::SYSEX_BUFFER_SIZE <= sysexLength) {
 						qDebug() << "MidiParser: Warning: too long sysex encountered, it may cause problems with real hardware. Sysex length:" << sysexLength + 1;
-						sysexBuffer.append(data, sysexLength);
 					}
+					sysexBuffer.append(data, sysexLength);
 					data += sysexLength;
 					midiEventList.newMidiEvent().assignSysex(time, sysexBuffer.constData(), sysexLength + 1);
 					continue;
