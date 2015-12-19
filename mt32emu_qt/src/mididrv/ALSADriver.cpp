@@ -16,7 +16,7 @@
 
 #include "ALSADriver.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <poll.h>
 #include <pthread.h>
 #include <QtCore>
@@ -212,15 +212,24 @@ bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *syn
 
 	case SND_SEQ_EVENT_SYSEX:
 	{
-		// Concatenate any existing data.
-		MT32Emu::Bit8u *sysexBytes = (MT32Emu::Bit8u *)seq_event->data.ext.ptr;
-		std::copy(sysexBytes, sysexBytes + seq_event->data.ext.len, std::back_inserter(sysexBuf));
-		// Check that the buffer contains EOX; if not, don't transmit yet.
-		for (unsigned int i = 0; i < seq_event->data.ext.len; i++) {
-			if (sysexBytes[i] == MIDI_CMD_COMMON_SYSEX_END) {
-				synthRoute->pushMIDISysex(&sysexBuf[0], sysexBuf.size(), MasterClock::getClockNanos());
-				sysexBuf.resize(0);
-			}
+		MT32Emu::Bit8u *sysexData = (MT32Emu::Bit8u *)seq_event->data.ext.ptr;
+		uint sysexLength = seq_event->data.ext.len;
+
+		if(sysexLength == 0) break; // no-op
+
+		// We may well get a SysEx fragment, so if this is the case, it's buffered and the full SysEx is reconstructed further on.
+		// If not, don't bother and take a shortcut.
+		bool hasSysexStart = sysexData[0] == MIDI_CMD_COMMON_SYSEX;
+		bool hasSysexEnd = sysexData[sysexLength - 1] == MIDI_CMD_COMMON_SYSEX_END;
+		if (hasSysexStart && hasSysexEnd) {
+			synthRoute->pushMIDISysex(sysexData, sysexLength, MasterClock::getClockNanos());
+			break;
+		}
+		// OK, accumulate SysEx data received so far and commit when ready.
+		sysexBuffer.append(sysexData, sysexLength);
+		if (hasSysexEnd) {
+			synthRoute->pushMIDISysex(sysexBuffer.constData(), sysexBuffer.size(), MasterClock::getClockNanos());
+			sysexBuffer.clear();
 		}
 		break;
 	}

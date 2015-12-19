@@ -2,12 +2,8 @@
 #define ALSA_MIDI_DRIVER_H
 
 #include <alsa/asoundlib.h>
-#include <QVector>
 
 #include "MidiDriver.h"
-
-class SynthRoute;
-class MidiSession;
 
 class ALSAMidiDriver : public MidiDriver {
 	Q_OBJECT
@@ -24,7 +20,7 @@ private:
 	pthread_t processingThreadID;
 	volatile bool stopProcessing;
 	QList<unsigned int> clients;
-	QVector<MT32Emu::Bit8u> sysexBuf;
+	QVarLengthArray<MT32Emu::Bit8u,MT32Emu::SYSEX_BUFFER_SIZE> sysexBuffer;
 
 	static void *processingThread(void *userData);
 	int alsa_setup_midi();
