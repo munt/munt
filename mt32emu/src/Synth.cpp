@@ -999,6 +999,13 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 		reset();
 		return;
 	}
+
+	if (command == SYSEX_CMD_EOD) {
+#if MT32EMU_MONITOR_SYSEX > 0
+		printDebug("playSysexWithoutHeader: Ignored unsupported command %02x", command);
+#endif
+		return;
+	}
 	if (len < 4) {
 		printDebug("playSysexWithoutHeader: Message is too short (%d bytes)!", len);
 		return;
@@ -1011,7 +1018,6 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 	len -= 1; // Exclude checksum
 	switch (command) {
 	case SYSEX_CMD_WSD:
-	case SYSEX_CMD_EOD:
 #if MT32EMU_MONITOR_SYSEX > 0
 		printDebug("playSysexWithoutHeader: Ignored unsupported command %02x", command);
 #endif
