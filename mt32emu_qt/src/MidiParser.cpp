@@ -20,15 +20,6 @@
 static const char headerID[] = "MThd\x00\x00\x00\x06";
 static const char trackID[] = "MTrk";
 
-/**
- * According to the Roland units Owner's manuals (at least MT-32 and CM32-L),
- * the length of SysEx messages is limited to 256 bytes.
- * However, we have no explicit limit implemented in the mt32emu library (as of v. 1.2.0),
- * so this is just a recommended SysEx buffer size. Besides, a quick test on a real CM-64
- * indicates a larger SysEx messages are possible but unreliable and may result in a unit hang.
- */
-static const uint MAX_SYSEX_LENGTH = 256;
-
 bool MidiParser::readFile(char *data, qint64 len) {
 	qint64 readLen = file.read(data, len);
 	if (readLen == len) return true;
@@ -85,8 +76,8 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 	// Parsing actual MIDI events
 	unsigned int runningStatus = 0;
 	const uchar *data = (uchar *)trackData;
-	QVector<uchar> sysexBuffer(MAX_SYSEX_LENGTH);
-	while(data < (uchar *)trackData + trackLen) {
+	QVarLengthArray<MT32Emu::Bit8u, MT32Emu::SYSEX_BUFFER_SIZE> sysexBuffer;
+	while (data < (uchar *)trackData + trackLen) {
 		SynthTimestamp time = parseVarLenInt(data);
 		quint32 message = 0;
 		const uchar status = *data;
@@ -97,15 +88,13 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 				if (status == 0xF0) {
 					// It's a SysEx event
 					runningStatus = 0; // SysEx clears running status
-					sysexBuffer[0] = status;
+					sysexBuffer.clear();
+					sysexBuffer += status;
 					quint32 sysexLength = parseVarLenInt(++data);
-					if (MAX_SYSEX_LENGTH <= sysexLength) {
+					if (MT32Emu::SYSEX_BUFFER_SIZE <= sysexLength) {
 						qDebug() << "MidiParser: Warning: too long sysex encountered, it may cause problems with real hardware. Sysex length:" << sysexLength + 1;
-						if (sysexBuffer.size() <= (int)sysexLength) {
-							sysexBuffer.resize(sysexLength + 1);
-						}
+						sysexBuffer.append(data, sysexLength);
 					}
-					memcpy(&sysexBuffer[1], data, sysexLength);
 					data += sysexLength;
 					midiEventList.newMidiEvent().assignSysex(time, sysexBuffer.constData(), sysexLength + 1);
 					continue;
