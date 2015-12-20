@@ -5,8 +5,17 @@ set(libmt32emu_VERSION_MINOR 5)
 set(libmt32emu_VERSION_PATCH 0)
 
 option(libmt32emu_SHARED "Build shared library" FALSE)
-option(libmt32emu_C_INTERFACE "Provide C compatible external interface" ${libmt32emu_SHARED})
-option(libmt32emu_CPP_PLUGIN_INTERFACE "Provide plugin external interface via C++ abstract classes, implies libmt32emu_C_INTERFACE=FALSE" FALSE)
+
+if(${libmt32emu_SHARED} AND (${munt_WITH_MT32EMU_SMF2WAV} OR ${munt_WITH_MT32EMU_QT}))
+  if(${libmt32emu_C_INTERFACE} OR ${libmt32emu_PLUGIN_INTERFACE})
+    message(STATUS "Options libmt32emu_C_INTERFACE and libmt32emu_PLUGIN_INTERFACE only supported for static library builds or stand-alone shared library builds, ignored")
+    set(libmt32emu_C_INTERFACE FALSE)
+    set(libmt32emu_PLUGIN_INTERFACE FALSE)
+  endif(${libmt32emu_C_INTERFACE} OR ${libmt32emu_PLUGIN_INTERFACE})
+else(${libmt32emu_SHARED} AND (${munt_WITH_MT32EMU_SMF2WAV} OR ${munt_WITH_MT32EMU_QT}))
+  option(libmt32emu_C_INTERFACE "Provide C compatible external interface" ${libmt32emu_SHARED})
+  option(libmt32emu_PLUGIN_INTERFACE "Provide plugin external interface via C++ abstract classes, implies libmt32emu_C_INTERFACE=FALSE" FALSE)
+endif(${libmt32emu_SHARED} AND (${munt_WITH_MT32EMU_SMF2WAV} OR ${munt_WITH_MT32EMU_QT}))
 
 set(libmt32emu_SOURCES
   src/Analog.cpp
@@ -53,7 +62,7 @@ set(libmt32emu_C_HEADERS
   c_interface/cpp_interface.h
 )
 
-if(libmt32emu_C_INTERFACE OR libmt32emu_CPP_PLUGIN_INTERFACE)
+if(libmt32emu_C_INTERFACE OR libmt32emu_PLUGIN_INTERFACE)
   list(APPEND libmt32emu_SOURCES
     src/c_interface/c_interface.cpp
   )
@@ -69,12 +78,12 @@ if(libmt32emu_C_INTERFACE OR libmt32emu_CPP_PLUGIN_INTERFACE)
       ${libmt32emu_C_HEADERS}
     )
   endif(libmt32emu_SHARED)
-else(libmt32emu_C_INTERFACE OR libmt32emu_CPP_PLUGIN_INTERFACE)
+else(libmt32emu_C_INTERFACE OR libmt32emu_PLUGIN_INTERFACE)
   set(libmt32emu_HEADERS
     ${libmt32emu_COMMON_HEADERS}
     ${libmt32emu_CPP_HEADERS}
   )
-endif(libmt32emu_C_INTERFACE OR libmt32emu_CPP_PLUGIN_INTERFACE)
+endif(libmt32emu_C_INTERFACE OR libmt32emu_PLUGIN_INTERFACE)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor -Wshadow -ansi -pedantic)
@@ -91,7 +100,7 @@ endforeach(HEADER)
 if(libmt32emu_SHARED)
   if(libmt32emu_C_INTERFACE)
     add_definitions(-DMT32EMU_EXPORTS_TYPE=1)
-  elseif(libmt32emu_CPP_PLUGIN_INTERFACE)
+  elseif(libmt32emu_PLUGIN_INTERFACE)
     add_definitions(-DMT32EMU_EXPORTS_TYPE=2)
   else(libmt32emu_C_INTERFACE)
     add_definitions(-DMT32EMU_EXPORTS_TYPE=0)
