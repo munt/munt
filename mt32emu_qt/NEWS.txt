@@ -1,5 +1,6 @@
 	1.4 Current
 
+	* Added support of ALSA raw MIDI ports in ALSA MIDI driver.
 	* Added handling of fragmented SysExes in ALSA MIDI driver.
 	* Improved CoreAudio driver: CoreAudioStream no longer renders data in the GUI thread, a dedicated internal AudioQueue thread is used instead.
 	* Added build option mt32emu-qt_WITH_DEBUG_WINCONSOLE. It controls whether a debugging console is shown on Windows.

@@ -228,5 +228,5 @@ QString OSSMidiPortDriver::getNewPortName(MidiPropertiesDialog *mpd) {
 }
 
 void OSSMidiPortDriver::enumPorts(QList<QString> &midiPortNames) {
-	midiPortNames.append(QDir(devDirName).entryList(QStringList() << defaultMidiPortName << defaultMidiPortName + "??" << sequencerName, QDir::System));
+	midiPortNames.append(QDir(devDirName).entryList(QStringList() << defaultMidiPortName << defaultMidiPortName + "*" << sequencerName, QDir::System));
 }

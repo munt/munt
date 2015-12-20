@@ -3,7 +3,7 @@
 
 #include <alsa/asoundlib.h>
 
-#include "MidiDriver.h"
+#include "OSSMidiPortDriver.h"
 
 class ALSAMidiDriver : public MidiDriver {
 	Q_OBJECT
@@ -12,8 +12,13 @@ public:
 	~ALSAMidiDriver();
 	void start();
 	void stop();
+	bool canCreatePort();
+	bool canDeletePort(MidiSession *);
 	bool canSetPortProperties(MidiSession *);
-	bool setPortProperties(MidiPropertiesDialog *mpd, MidiSession *);
+	bool createPort(MidiPropertiesDialog *, MidiSession *);
+	void deletePort(MidiSession *);
+	bool setPortProperties(MidiPropertiesDialog *, MidiSession *);
+	QString getNewPortName(MidiPropertiesDialog *);
 
 private:
 	snd_seq_t *snd_seq;
@@ -21,6 +26,7 @@ private:
 	volatile bool stopProcessing;
 	QList<unsigned int> clients;
 	QVarLengthArray<MT32Emu::Bit8u,MT32Emu::SYSEX_BUFFER_SIZE> sysexBuffer;
+	OSSMidiPortDriver rawMidiPortDriver;
 
 	static void *processingThread(void *userData);
 	int alsa_setup_midi();

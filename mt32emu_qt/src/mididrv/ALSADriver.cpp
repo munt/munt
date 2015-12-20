@@ -292,13 +292,14 @@ int ALSAMidiDriver::alsa_setup_midi() {
 	return seqPort;
 }
 
-ALSAMidiDriver::ALSAMidiDriver(Master *useMaster) : MidiDriver(useMaster), processingThreadID(0) {}
+ALSAMidiDriver::ALSAMidiDriver(Master *useMaster) : MidiDriver(useMaster), processingThreadID(0), rawMidiPortDriver(useMaster) {}
 
 ALSAMidiDriver::~ALSAMidiDriver() {
 	stop();
 }
 
 void ALSAMidiDriver::start() {
+	rawMidiPortDriver.start();
 	connect(this, SIGNAL(mainWindowTitleContributionUpdated(const QString &)), master, SLOT(updateMainWindowTitleContribution(const QString &)));
 	if (alsa_setup_midi() < 0) return;
 	stopProcessing = false;
@@ -311,6 +312,7 @@ void ALSAMidiDriver::start() {
 }
 
 void ALSAMidiDriver::stop() {
+	rawMidiPortDriver.stop();
 	if (processingThreadID == 0) return;
 	qDebug() << "ALSAMidiDriver: Stopping MIDI processing loop...";
 	stopProcessing = true;
@@ -318,14 +320,30 @@ void ALSAMidiDriver::stop() {
 	processingThreadID = 0;
 }
 
-bool ALSAMidiDriver::canSetPortProperties(MidiSession *) {
-	return true;
+bool ALSAMidiDriver::canCreatePort() {
+	return rawMidiPortDriver.canCreatePort();
 }
 
-bool ALSAMidiDriver::setPortProperties(MidiPropertiesDialog *mpd, MidiSession *) {
-	mpd->setMidiPortListEnabled(false);
-	mpd->setMidiPortNameEditorEnabled(false);
-	mpd->setMidiPortName(QString().setNum(snd_seq_client_id(snd_seq)));
-	mpd->exec();
-	return false;
+bool ALSAMidiDriver::canDeletePort(MidiSession *midiSession) {
+	return rawMidiPortDriver.canDeletePort(midiSession);
+}
+
+bool ALSAMidiDriver::canSetPortProperties(MidiSession *midiSession) {
+	return rawMidiPortDriver.canSetPortProperties(midiSession);
+}
+
+bool ALSAMidiDriver::createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
+	return rawMidiPortDriver.createPort(mpd, midiSession);
+}
+
+void ALSAMidiDriver::deletePort(MidiSession *midiSession) {
+	rawMidiPortDriver.deletePort(midiSession);
+}
+
+bool ALSAMidiDriver::setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
+	return rawMidiPortDriver.setPortProperties(mpd, midiSession);
+}
+
+QString ALSAMidiDriver::getNewPortName(MidiPropertiesDialog *mpd) {
+	return rawMidiPortDriver.getNewPortName(mpd);
 }
