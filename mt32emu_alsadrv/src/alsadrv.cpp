@@ -1,7 +1,7 @@
 /* Copyright (C) 2003 Tristan
  * Copyright (C) 2004, 2005 Tristan, Jerome Fisher
  * Copyright (C) 2008, 2011 Tristan, Jerome Fisher, Jörg Walter
- * Copyright (C) 2013 Tristan, Jerome Fisher, Jörg Walter, Sergey V. Mikayev
+ * Copyright (C) 2013-2015 Tristan, Jerome Fisher, Jörg Walter, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -69,8 +69,27 @@ int uicmd_pipe[2];
 #define MINPROCESS_SIZE  16
 #define URUN_MAX         2
 
+class SysexHandler : public MT32Emu::MidiStreamParser {
+public:
+	explicit SysexHandler(MT32Emu::Synth &useSynth) : synth(useSynth) {}
+
+	void handleSystemRealtimeMessage(const MT32Emu::Bit8u realtime) { /* Not interesting */ }
+	void handleShortMessage(const MT32Emu::Bit32u message) { /* Not interesting */ }
+
+	void handleSysex(const MT32Emu::Bit8u stream[], const MT32Emu::Bit32u length) {
+		synth.playSysex(stream, length);
+	}
+
+	void printDebug(const char *debugMessage) {
+		printf("SysexHandler: %s\n", debugMessage);
+	}
+
+private:
+	MT32Emu::Synth &synth;
+};
 
 MT32Emu::Synth *mt32;
+SysexHandler *sysexHandler;
 snd_seq_t *seq_handle = NULL;
 
 
@@ -587,6 +606,51 @@ static inline void get_msg(snd_seq_event_t *seq_ev, midiev_t *ev)
 		ev->type = EVENT_MIDI;
 		return;
 		
+	    case SND_SEQ_EVENT_CONTROL14:
+		// The real hardware units don't support any of LSB controllers,
+		// so we just send the MSB silently ignoring the LSB
+		if ((seq_ev->data.control.param & 0xE0) == 0x20) {
+			ev->type = EVENT_NONE;
+			return;
+		}
+
+		channel = seq_ev->data.control.channel;
+
+		ev->msg= 0xB0 | channel;
+		ev->msg|= seq_ev->data.control.param << 8;
+		ev->msg|= (seq_ev->data.control.value >> 7) << 16;
+		debug_msg("Controller 14-bit, channel:%d param:%d value:%d\n",
+		       seq_ev->data.control.channel, seq_ev->data.control.param,
+		       seq_ev->data.control.value);
+		ev->type = EVENT_MIDI;
+		return;
+
+	    case SND_SEQ_EVENT_NONREGPARAM:
+		// The real hardware units don't support NRPNs
+		ev->type = EVENT_NONE;
+		return;
+
+	    case SND_SEQ_EVENT_REGPARAM:
+		// The real hardware units support only RPN 0 (pitch bender range) and only MSB matters
+		if (seq_ev->data.control.param == 0) {
+			unsigned int *msg_buffer = new unsigned int[3];
+			unsigned int msg = (0x0000B0 | seq_ev->data.control.channel);
+			msg_buffer[0] = msg | 0x006400;
+			msg_buffer[1] = msg | 0x006500;
+			msg_buffer[2] = msg | 0x000600 | ((seq_ev->data.control.value >> 7) & 0x7F) << 16;
+
+			debug_msg("RPN: channel:%d param:%d value:%d\n",
+				   seq_ev->data.control.channel, seq_ev->data.control.param,
+				   seq_ev->data.control.value);
+
+			ev->type = EVENT_MIDI_TRIPLET;
+			ev->sysex_len = 3 * sizeof(unsigned int);
+			ev->sysex = msg_buffer;
+		} else {
+			ev->type = EVENT_NONE;
+		}
+		return;
+
 	    case SND_SEQ_EVENT_PGMCHANGE:
 		channel = seq_ev->data.control.channel;
 		
@@ -621,7 +685,7 @@ static inline void get_msg(snd_seq_event_t *seq_ev, midiev_t *ev)
 		return;
 		
 	    case SND_SEQ_EVENT_SYSEX:
-		debug_msg("Sending SysEX of size %d\n", seq_ev->data.ext.len);				
+		debug_msg("SysEx (fragment) of size %d\n", seq_ev->data.ext.len);
 
 		ev->type = EVENT_SYSEX;
 		ev->sysex_len = seq_ev->data.ext.len;
@@ -888,6 +952,7 @@ void reload_mt32_core(int rv)
 	/* delete core if there is already an instance of it */
 	if (mt32 != NULL)
 	{
+		delete sysexHandler;
 		delete mt32;
 		printf("Restarting MT-32 core\n");
 		report(DRV_M32RESET);
@@ -931,6 +996,7 @@ void reload_mt32_core(int rv)
 		report(DRV_MT32FAIL);
 		exit(1);
 	}
+	sysexHandler = new SysexHandler(*mt32);
 
 	MT32Emu::ROMImage::freeROMImage(controlROMImage);
 	MT32Emu::ROMImage::freeROMImage(pcmROMImage);
@@ -958,6 +1024,7 @@ int process_loop(int rv)
 	snd_pcm_state_t pcmstate;
 	
 	mt32 = NULL;
+	sysexHandler = NULL;
 	rv_type = 0;
 	rv_time = 5;
 	rv_level = 3;
@@ -1077,6 +1144,15 @@ int process_loop(int rv)
 			mt32->playMsg(newev.msg);    
 			break;
 			
+		    case EVENT_MIDI_TRIPLET: {
+			unsigned int *msg_buffer = (unsigned int *)newev.sysex;
+			for(int i = 0; i < 3; i++) {
+				mt32->playMsg(msg_buffer[i]);
+			}
+			delete[] msg_buffer;
+			break;
+		    }
+
 		    case EVENT_SYSEX:
 			/* record it if needed */
 			if (consumer_types & CONSUME_SYSEX)
@@ -1084,7 +1160,7 @@ int process_loop(int rv)
 				fwrite((unsigned char *)newev.sysex, 1, newev.sysex_len, recsyx_file);
 				fflush(recsyx_file);
 			}			
-			mt32->playSysex((MT32Emu::Bit8u *)newev.sysex, newev.sysex_len);			
+			sysexHandler->parseStream((MT32Emu::Bit8u *) newev.sysex, newev.sysex_len);
 			free(newev.sysex);
 			break;
 		

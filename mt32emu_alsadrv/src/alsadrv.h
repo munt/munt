@@ -54,6 +54,7 @@ typedef struct {
 #define EVENT_WAVREC_OFF     9
 #define EVENT_SYXREC_ON      10
 #define EVENT_SYXREC_OFF     11
+#define EVENT_MIDI_TRIPLET   12
 
 extern int minimum_msec;
 extern int maximum_msec;
