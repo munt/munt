@@ -381,6 +381,7 @@ void write_wav_header(FILE *f)
 	fwrite(wav_header, 1, 44, f);
 }
 
+/*
 static inline int time_to_offset(struct timeval ot, struct timeval nt)
 {
 	double ct;
@@ -393,6 +394,7 @@ static inline int time_to_offset(struct timeval ot, struct timeval nt)
 	offset = (int)(ct * bytespermsec);
 	return offset;
 }
+*/
 
 static inline struct timeval get_time()
 {
