@@ -36,7 +36,7 @@ set(CPACK_SOURCE_STRIP_FILES TRUE)
 # The default source package file name has "-Source" at the end, which doesn't match our previous releases
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(CPACK_RPM_PACKAGE_GROUP "Audio/Emulators")
-set(CPACK_RPM_PACKAGE_LICENSE "LGPL, GPLv2.1, GPLv3")
+set(CPACK_RPM_PACKAGE_LICENSE "LGPLv2.1, GPLv3")
 set(CPACK_RPM_PACKAGE_URL "http://munt.sourceforge.net/")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS "ON")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://munt.sourceforge.net/")

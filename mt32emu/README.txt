@@ -1,8 +1,8 @@
 Munt mt32emu
 ============
 
-mt32emu is a module of the Munt project. It produces a C++ static link library
-named libmt32emu which provides classes to emulate (approximately) the Roland
+mt32emu is a module of the Munt project. It produces a C/C++ library
+named libmt32emu which allows to emulate (approximately) the Roland
 MT-32, CM-32L and LAPC-I synthesiser modules.
 
 This library is intended for developers wishing to integrate an MT-32 emulator
@@ -13,7 +13,7 @@ mt32emu_win32drv and mt32emu_qt respectively.
 mt32emu requires CMake to build. See http://www.cmake.org/ for details. For a
 simple in-tree build, you can probably just do:
 
-cmake .
+cmake -DCMAKE_BUILD_TYPE:STRING=Release .
 make
 sudo make install
 
