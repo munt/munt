@@ -6,6 +6,7 @@ project(mt32emu-qt)
 set(mt32emu_qt_VERSION_MAJOR 1)
 set(mt32emu_qt_VERSION_MINOR 3)
 set(mt32emu_qt_VERSION_PATCH 0)
+set(mt32emu_qt_VERSION "${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
   set(LINUX_FOUND TRUE)
@@ -19,7 +20,7 @@ option(mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING "Load PulseAudio library dynami
 option(mt32emu-qt_WITH_DEBUG_WINCONSOLE "Use console for showing debug output on Windows" FALSE)
 option(mt32emu-qt_WITH_INTERNAL_RESAMPLER "Use internal resampler" TRUE)
 
-add_definitions(-DAPP_VERSION="${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
+add_definitions(-DAPP_VERSION="${mt32emu_qt_VERSION}")
 add_definitions(-DBUILD_SYSTEM="${CMAKE_SYSTEM_NAME}")
 
 if(libmt32emu_SHARED)
@@ -255,6 +256,10 @@ add_executable(mt32emu-qt
 
 target_link_libraries(mt32emu-qt
   ${EXT_LIBS}
+)
+
+set_target_properties(mt32emu-qt
+  PROPERTIES VERSION ${mt32emu_qt_VERSION}
 )
 
 install(TARGETS

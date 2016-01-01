@@ -6,8 +6,9 @@ project(mt32emu-smf2wav CXX)
 set(mt32emu_smf2wav_VERSION_MAJOR 1)
 set(mt32emu_smf2wav_VERSION_MINOR 1)
 set(mt32emu_smf2wav_VERSION_PATCH 0)
+set(mt32emu_smf2wav_VERSION "${mt32emu_smf2wav_VERSION_MAJOR}.${mt32emu_smf2wav_VERSION_MINOR}.${mt32emu_smf2wav_VERSION_PATCH}")
 
-add_definitions(-DVERSION="${mt32emu_smf2wav_VERSION_MAJOR}.${mt32emu_smf2wav_VERSION_MINOR}.${mt32emu_smf2wav_VERSION_PATCH}")
+add_definitions(-DVERSION="${mt32emu_smf2wav_VERSION}")
 
 if(libmt32emu_SHARED)
   add_definitions(-DMT32EMU_SHARED)
@@ -39,6 +40,10 @@ add_executable(mt32emu-smf2wav
 target_link_libraries(mt32emu-smf2wav
   smf
   ${EXT_LIBS}
+)
+
+set_target_properties(mt32emu-smf2wav
+  PROPERTIES VERSION ${mt32emu_smf2wav_VERSION}
 )
 
 install(TARGETS

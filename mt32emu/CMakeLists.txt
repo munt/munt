@@ -3,11 +3,12 @@ project(libmt32emu CXX)
 set(libmt32emu_VERSION_MAJOR 1)
 set(libmt32emu_VERSION_MINOR 5)
 set(libmt32emu_VERSION_PATCH 0)
+set(libmt32emu_VERSION "${libmt32emu_VERSION_MAJOR}.${libmt32emu_VERSION_MINOR}.${libmt32emu_VERSION_PATCH}")
 
 add_definitions(-DMT32EMU_VERSION_MAJOR=${libmt32emu_VERSION_MAJOR})
 add_definitions(-DMT32EMU_VERSION_MINOR=${libmt32emu_VERSION_MINOR})
 add_definitions(-DMT32EMU_VERSION_PATCH=${libmt32emu_VERSION_PATCH})
-add_definitions(-DMT32EMU_VERSION="${libmt32emu_VERSION_MAJOR}.${libmt32emu_VERSION_MINOR}.${libmt32emu_VERSION_PATCH}")
+add_definitions(-DMT32EMU_VERSION="${libmt32emu_VERSION}")
 
 if(${munt_WITH_MT32EMU_SMF2WAV} OR ${munt_WITH_MT32EMU_QT})
   set(libmt32emu_STANDALONE_BUILD FALSE)
@@ -124,6 +125,11 @@ if(libmt32emu_SHARED)
 endif(libmt32emu_SHARED)
 
 add_library(mt32emu ${libmt32emu_BUILD_TYPE} ${libmt32emu_SOURCES})
+
+set_target_properties(mt32emu
+  PROPERTIES VERSION ${libmt32emu_VERSION}
+  SOVERSION ${libmt32emu_VERSION_MAJOR}
+)
 
 install(TARGETS mt32emu
   ARCHIVE DESTINATION lib
