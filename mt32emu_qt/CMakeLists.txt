@@ -258,9 +258,11 @@ target_link_libraries(mt32emu-qt
   ${EXT_LIBS}
 )
 
-set_target_properties(mt32emu-qt
-  PROPERTIES VERSION ${mt32emu_qt_VERSION}
-)
+if(Windows)
+  set_target_properties(mt32emu-qt
+    PROPERTIES VERSION ${mt32emu_qt_VERSION}
+  )
+endif()
 
 install(TARGETS
   mt32emu-qt
