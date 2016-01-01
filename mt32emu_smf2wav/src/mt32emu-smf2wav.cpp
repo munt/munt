@@ -610,6 +610,7 @@ int main(int argc, char *argv[]) {
 	Options options;
 	printf("Munt MT32Emu MIDI to Wave Conversion Utility. Version %s\n", VERSION);
 	printf("  Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>\n");
+	printf("Using Munt MT32Emu Library Version %s\n", MT32Emu::Synth::getLibraryVersionString());
 	if (!parseOptions(argc, argv, &options)) {
 		return -1;
 	}
