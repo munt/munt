@@ -4,6 +4,11 @@ set(libmt32emu_VERSION_MAJOR 1)
 set(libmt32emu_VERSION_MINOR 5)
 set(libmt32emu_VERSION_PATCH 0)
 
+add_definitions(-DMT32EMU_VERSION_MAJOR=${libmt32emu_VERSION_MAJOR})
+add_definitions(-DMT32EMU_VERSION_MINOR=${libmt32emu_VERSION_MINOR})
+add_definitions(-DMT32EMU_VERSION_PATCH=${libmt32emu_VERSION_PATCH})
+add_definitions(-DMT32EMU_VERSION="${libmt32emu_VERSION_MAJOR}.${libmt32emu_VERSION_MINOR}.${libmt32emu_VERSION_PATCH}")
+
 if(${munt_WITH_MT32EMU_SMF2WAV} OR ${munt_WITH_MT32EMU_QT})
   set(libmt32emu_STANDALONE_BUILD FALSE)
 else()

@@ -229,6 +229,14 @@ public:
 		}
 	}
 
+	// Returns library version as an integer in format: 0x00MMmmpp, where:
+	// MM - major version number
+	// mm - minor version number
+	// pp - patch number
+	MT32EMU_EXPORT static Bit32u getLibraryVersionInt();
+	// Returns library version as a C-string in format: "MAJOR.MINOR.PATCH"
+	MT32EMU_EXPORT static const char *getLibraryVersionString();
+
 	MT32EMU_EXPORT static Bit32u getShortMessageLength(Bit32u msg);
 	MT32EMU_EXPORT static Bit8u calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u initChecksum = 0);
 

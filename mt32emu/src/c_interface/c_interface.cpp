@@ -33,12 +33,16 @@ class ReportHandlerAdapter;
 class MidiStreamParserAdapter;
 
 static mt32emu_interface_version getSynthVersionID(const mt32emu_interface **);
-static mt32emu_report_handler_version getSupportedReportHandlerVersionID(mt32emu_const_context context);
-static unsigned int getStereoOutputSamplerate(mt32emu_const_context context, const mt32emu_analog_output_mode analog_output_mode);
+static mt32emu_bit32u getLibraryVersionInt(mt32emu_const_context);
+static const char *getLibraryVersionString(mt32emu_const_context);
+static mt32emu_report_handler_version getSupportedReportHandlerVersionID(mt32emu_const_context);
+static unsigned int getStereoOutputSamplerate(mt32emu_const_context, const mt32emu_analog_output_mode analog_output_mode);
 
 static const mt32emu_synth_i_v0 SYNTH_VTABLE = {
 	getSynthVersionID,
 	mt32emu_free_synth,
+	getLibraryVersionInt,
+	getLibraryVersionString,
 	mt32emu_add_rom_data,
 	mt32emu_add_rom_file,
 	mt32emu_get_rom_info,
@@ -341,6 +345,14 @@ mt32emu_interface_version getSynthVersionID(const mt32emu_interface **) {
 	return v;
 }
 
+mt32emu_bit32u getLibraryVersionInt(mt32emu_const_context) {
+	return mt32emu_get_library_version_int();
+}
+
+const char *getLibraryVersionString(mt32emu_const_context) {
+	return mt32emu_get_library_version_string();
+}
+
 mt32emu_report_handler_version getSupportedReportHandlerVersionID(mt32emu_const_context) {
 	return mt32emu_get_supported_report_handler_version();
 }
@@ -354,6 +366,14 @@ unsigned int getStereoOutputSamplerate(mt32emu_const_context, const mt32emu_anal
 // C-visible implementation
 
 extern "C" {
+
+mt32emu_bit32u mt32emu_get_library_version_int() {
+	return Synth::getLibraryVersionInt();
+}
+
+const char *mt32emu_get_library_version_string() {
+	return Synth::getLibraryVersionString();
+}
 
 mt32emu_context mt32emu_create_synth(const mt32emu_report_handler_i *report_handler) {
 	mt32emu_data *data = new mt32emu_data;

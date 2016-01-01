@@ -141,6 +141,14 @@ public:
 	void doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);
 };
 
+Bit32u Synth::getLibraryVersionInt() {
+	return (MT32EMU_VERSION_MAJOR << 16) | (MT32EMU_VERSION_MINOR << 8) | (MT32EMU_VERSION_PATCH);
+}
+
+const char *Synth::getLibraryVersionString() {
+	return MT32EMU_VERSION;
+}
+
 Bit8u Synth::calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u initChecksum) {
 	unsigned int checksum = -initChecksum;
 	for (unsigned int i = 0; i < len; i++) {

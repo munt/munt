@@ -34,6 +34,19 @@
 extern "C" {
 #endif
 
+/**
+ * Returns library version as an integer in format: 0x00MMmmpp, where:
+ * MM - major version number
+ * mm - minor version number
+ * pp - patch number
+ */
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_library_version_int();
+
+/**
+ * Returns library version as a C-string in format: "MAJOR.MINOR.PATCH".
+ */
+MT32EMU_EXPORT const char *mt32emu_get_library_version_string();
+
 /** Initialises a new emulation context and installs custom report handler if non-NULL. */
 MT32EMU_EXPORT mt32emu_context mt32emu_create_synth(const mt32emu_report_handler_i *report_handler);
 

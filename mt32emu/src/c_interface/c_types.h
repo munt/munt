@@ -219,13 +219,15 @@ typedef struct {
 	mt32emu_interface base;
 
 	void (*freeSynth)(mt32emu_context context);
+	mt32emu_bit32u (*getLibraryVersionInt)(mt32emu_const_context _unused_);
+	const char *(*getLibraryVersionString)(mt32emu_const_context _unused_);
 	mt32emu_return_code (*addROMData)(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest);
 	mt32emu_return_code (*addROMFile)(mt32emu_context context, const char *filename);
 	void (*mt32emu_get_rom_info)(mt32emu_const_context context, mt32emu_rom_info *rom_info);
 	mt32emu_return_code (*openSynth)(mt32emu_const_context context, const unsigned int *partial_count, const mt32emu_analog_output_mode *analog_output_mode);
 	void (*closeSynth)(mt32emu_const_context context);
 	mt32emu_boolean (*isOpen)(mt32emu_const_context context);
-	unsigned int (*getStereoOutputSamplerate)(mt32emu_const_context context, const mt32emu_analog_output_mode analog_output_mode);
+	unsigned int (*getStereoOutputSamplerate)(mt32emu_const_context _unused_, const mt32emu_analog_output_mode analog_output_mode);
 	unsigned int (*getActualStereoOutputSamplerate)(mt32emu_const_context context);
 	void (*flushMIDIQueue)(mt32emu_const_context context);
 	mt32emu_bit32u (*setMIDIEventQueueSize)(mt32emu_const_context context, const mt32emu_bit32u queue_size);
@@ -280,7 +282,7 @@ typedef struct {
 	unsigned int (*getPlayingNotes)(mt32emu_const_context context, unsigned int part_number, mt32emu_bit8u *keys, mt32emu_bit8u *velocities);
 	const char *(*getPatchName)(mt32emu_const_context context, unsigned int part_number);
 	void (*readMemory)(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data);
-	mt32emu_report_handler_version (*getSupportedReportHandlerVersionID)(mt32emu_const_context context);
+	mt32emu_report_handler_version (*getSupportedReportHandlerVersionID)(mt32emu_const_context _unused_);
 } mt32emu_synth_i_v0;
 
 /**
