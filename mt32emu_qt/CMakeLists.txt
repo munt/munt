@@ -258,7 +258,7 @@ target_link_libraries(mt32emu-qt
   ${EXT_LIBS}
 )
 
-if(Windows)
+if(WIN32)
   set_target_properties(mt32emu-qt
     PROPERTIES VERSION ${mt32emu_qt_VERSION}
   )

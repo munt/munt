@@ -42,7 +42,7 @@ target_link_libraries(mt32emu-smf2wav
   ${EXT_LIBS}
 )
 
-if(Windows)
+if(WIN32)
   set_target_properties(mt32emu-smf2wav
     PROPERTIES VERSION ${mt32emu_smf2wav_VERSION}
   )
