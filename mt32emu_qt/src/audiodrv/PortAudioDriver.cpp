@@ -107,17 +107,10 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	audioLatencyFrames = quint32((audioLatency * sampleRate) / MasterClock::NANOS_PER_SECOND);
 	qDebug() << "PortAudio: audio latency (s):" << (double)audioLatency / MasterClock::NANOS_PER_SECOND;
 
-	MasterClockNanos midiLatency = settings.midiLatency * MasterClock::NANOS_PER_MILLISECOND;
-	if (midiLatency == 0) {
-		midiLatency = audioLatency / 2;
-	}
-	midiLatencyFrames = quint32((midiLatency * sampleRate) / MasterClock::NANOS_PER_SECOND);
-	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatency / MasterClock::NANOS_PER_SECOND;
-	if (clockSync != NULL) {
-		clockSync->setParams(audioLatency, 10 * audioLatency);
-	} else {
-		midiLatencyFrames += audioLatencyFrames;
-	}
+	// Setup initial MIDI latency
+	if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames;
+	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatencyFrames / sampleRate;
+	updateResetPeriod();
 
 	timeInfo[0].lastPlayedFramesCount -= audioLatencyFrames;
 	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();

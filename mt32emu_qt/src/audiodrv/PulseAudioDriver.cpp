@@ -30,7 +30,7 @@ using namespace MT32Emu;
 
 static const int FRAME_SIZE = 4; // Stereo, 16-bit
 static const unsigned int DEFAULT_CHUNK_MS = 10;
-static const unsigned int DEFAULT_AUDIO_LATENCY = 200;
+static const unsigned int DEFAULT_AUDIO_LATENCY = 40;
 static const unsigned int DEFAULT_MIDI_LATENCY = 20;
 
 #ifdef USE_PULSEAUDIO_DYNAMIC_LOADING
@@ -201,6 +201,10 @@ bool PulseAudioStream::start() {
 		return false;
 	}
 
+	// Setup initial MIDI latency
+	if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames + ((DEFAULT_MIDI_LATENCY * sampleRate) / MasterClock::MILLIS_PER_SECOND);
+	updateResetPeriod();
+
 	// Start playing to fill audio buffers
 	int initFrames = audioLatencyFrames;
 	while (initFrames > 0) {
@@ -274,9 +278,6 @@ const QList<const AudioDevice *> PulseAudioDriver::createDeviceList() {
 }
 
 void PulseAudioDriver::validateAudioSettings(AudioDriverSettings &settings) const {
-	if (settings.midiLatency == 0) {
-		settings.midiLatency = DEFAULT_MIDI_LATENCY;
-	}
 	if (settings.audioLatency == 0) {
 		settings.audioLatency = DEFAULT_AUDIO_LATENCY;
 	}
@@ -285,5 +286,8 @@ void PulseAudioDriver::validateAudioSettings(AudioDriverSettings &settings) cons
 	}
 	if (settings.chunkLen > settings.audioLatency) {
 		settings.chunkLen = settings.audioLatency;
+	}
+	if ((settings.midiLatency != 0) && (settings.midiLatency < settings.chunkLen)) {
+		settings.midiLatency = settings.chunkLen;
 	}
 }

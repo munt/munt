@@ -113,19 +113,12 @@ void QtAudioStream::start() {
 	MasterClockNanos chunkSize = MasterClock::NANOS_PER_SECOND * audioOutput->periodSize() / (sampleRate << 2);
 	audioLatencyFrames = quint32(audioOutput->bufferSize() >> 2);
 	qDebug() << "QAudioDriver: Latency set to:" << (double)audioLatency / MasterClock::NANOS_PER_SECOND << "sec." << "Chunk size:" << (double)chunkSize / MasterClock::NANOS_PER_SECOND;
-	MasterClockNanos midiLatency;
-	if (settings.midiLatency == 0) {
-		midiLatency = 2 * chunkSize;
-	} else {
-		midiLatency = settings.midiLatency * MasterClock::NANOS_PER_MILLISECOND;
-	}
-	midiLatencyFrames = quint32((midiLatency * sampleRate) / MasterClock::NANOS_PER_SECOND);
-	qDebug() << "QAudioDriver: MIDI latency set to:" << (double)midiLatency / MasterClock::NANOS_PER_SECOND << "sec";
-	if (clockSync != NULL) {
-		clockSync->setParams(audioLatency, 10 * audioLatency);
-	} else {
-		midiLatencyFrames += audioLatencyFrames;
-	}
+
+	// Setup initial MIDI latency
+	if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames;
+	qDebug() << "QAudioDriver: MIDI latency set to:" << (double)midiLatencyFrames / sampleRate << "sec";
+	updateResetPeriod();
+
 	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
 	renderedFramesCount = 0;
 }
@@ -156,5 +149,5 @@ const QList<const AudioDevice *> QtAudioDriver::createDeviceList() {
 
 void QtAudioDriver::validateAudioSettings(AudioDriverSettings &settings) const {
 	settings.chunkLen = settings.audioLatency / 5;
-	if (settings.midiLatency < settings.chunkLen) settings.midiLatency = settings.chunkLen;
+	if ((settings.midiLatency != 0) && (settings.midiLatency < settings.chunkLen)) settings.midiLatency = settings.chunkLen;
 }

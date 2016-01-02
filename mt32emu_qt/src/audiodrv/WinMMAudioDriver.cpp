@@ -43,13 +43,12 @@ WinMMAudioStream::WinMMAudioStream(const AudioDriverSettings &useSettings, bool 
 	} else {
 		// Number of chunks should be ceil(bufferSize / chunkSize)
 		numberOfChunks = (audioLatencyFrames + chunkSize - 1) / chunkSize;
-		midiLatencyFrames -= audioLatencyFrames;
 		// Refine bufferSize as chunkSize * number of chunks, no less then the specified value
 		audioLatencyFrames = numberOfChunks * chunkSize;
-		midiLatencyFrames += audioLatencyFrames;
 		qDebug() << "WinMMAudioDriver: Using" << numberOfChunks << "chunks, chunk size:" << chunkSize << "frames, buffer size:" << audioLatencyFrames << "frames.";
 	}
 	buffer = new Bit16s[2 * audioLatencyFrames];
+	if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames + ((DEFAULT_MIDI_LATENCY * sampleRate) / MasterClock::MILLIS_PER_SECOND);
 }
 
 WinMMAudioStream::~WinMMAudioStream() {
@@ -299,9 +298,6 @@ const QList<const AudioDevice *> WinMMAudioDriver::createDeviceList() {
 }
 
 void WinMMAudioDriver::validateAudioSettings(AudioDriverSettings &useSettings) const {
-	if (useSettings.midiLatency == 0) {
-		useSettings.midiLatency = DEFAULT_MIDI_LATENCY;
-	}
 	if (useSettings.audioLatency == 0) {
 		useSettings.audioLatency = DEFAULT_AUDIO_LATENCY;
 	}
@@ -310,6 +306,9 @@ void WinMMAudioDriver::validateAudioSettings(AudioDriverSettings &useSettings) c
 	}
 	if (useSettings.audioLatency < useSettings.chunkLen) {
 		useSettings.chunkLen = useSettings.audioLatency;
+	}
+	if ((useSettings.midiLatency != 0) && (useSettings.midiLatency < useSettings.chunkLen)) {
+		useSettings.midiLatency = useSettings.chunkLen;
 	}
 }
 

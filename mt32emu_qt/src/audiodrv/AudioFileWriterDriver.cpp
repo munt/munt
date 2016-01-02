@@ -21,7 +21,7 @@
 #include "../MasterClock.h"
 
 static const unsigned int DEFAULT_AUDIO_LATENCY = 150;
-static const unsigned int DEFAULT_MIDI_LATENCY = 50;
+static const unsigned int DEFAULT_MIDI_LATENCY = 200;
 
 AudioFileWriterStream::AudioFileWriterStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
 	AudioStream(useSettings, useSynth, useSampleRate) {}

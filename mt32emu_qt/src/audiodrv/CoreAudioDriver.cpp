@@ -31,11 +31,13 @@ CoreAudioStream::CoreAudioStream(const AudioDriverSettings &useSettings, QSynth 
 	// Number of buffers should be ceil(audioLatencyFrames / bufferSize)
 	numberOfBuffers = (audioLatencyFrames + bufferSize - 1) / bufferSize;
 	buffers = new AudioQueueBufferRef[numberOfBuffers];
-	midiLatencyFrames -= audioLatencyFrames;
 	// Refine audioLatencyFrames as bufferSize * number of buffers, no less then the specified value
 	audioLatencyFrames = numberOfBuffers * bufferSize;
-	midiLatencyFrames += audioLatencyFrames;
 	qDebug() << "CoreAudioDriver: Using" << numberOfBuffers << "buffers, buffer size:" << bufferSize << "frames, audio latency:" << audioLatencyFrames << "frames.";
+
+	// Setup initial MIDI latency
+	if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames + ((DEFAULT_MIDI_LATENCY * sampleRate) / MasterClock::MILLIS_PER_SECOND);
+	updateResetPeriod();
 	qDebug() << "CoreAudio: total MIDI latency:" << midiLatencyFrames << "frames";
 }
 
@@ -154,9 +156,6 @@ const QList<const AudioDevice *> CoreAudioDriver::createDeviceList() {
 }
 
 void CoreAudioDriver::validateAudioSettings(AudioDriverSettings &useSettings) const {
-	if (useSettings.midiLatency == 0) {
-		useSettings.midiLatency = DEFAULT_MIDI_LATENCY;
-	}
 	if (useSettings.audioLatency == 0) {
 		useSettings.audioLatency = DEFAULT_AUDIO_LATENCY;
 	}
@@ -165,5 +164,8 @@ void CoreAudioDriver::validateAudioSettings(AudioDriverSettings &useSettings) co
 	}
 	if (useSettings.audioLatency < useSettings.chunkLen) {
 		useSettings.chunkLen = useSettings.audioLatency;
+	}
+	if ((settings.midiLatency != 0) && (settings.midiLatency < settings.chunkLen)) {
+		settings.midiLatency = settings.chunkLen;
 	}
 }

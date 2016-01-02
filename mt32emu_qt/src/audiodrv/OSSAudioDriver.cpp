@@ -187,6 +187,10 @@ bool OSSAudioStream::start() {
 	qDebug() << "OSS audio setup: Number of fragments:" << bi.fragments << "Audio buffer size:" << bi.bytes << "bytes ("<< audioLatencyFrames << ") frames";
 	qDebug() << "fragsize:" << bi.fragsize << "bufferSize:" << bufferSize;
 
+	// Setup initial MIDI latency
+	if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames + ((DEFAULT_MIDI_LATENCY * sampleRate) / MasterClock::MILLIS_PER_SECOND);
+	updateResetPeriod();
+
 	// Start playing to fill audio buffers
 	int initFrames = audioLatencyFrames;
 	while (initFrames > 0) {
@@ -249,9 +253,6 @@ const QList<const AudioDevice *> OSSAudioDriver::createDeviceList() {
 }
 
 void OSSAudioDriver::validateAudioSettings(AudioDriverSettings &settings) const {
-	if (settings.midiLatency == 0) {
-		settings.midiLatency = DEFAULT_MIDI_LATENCY;
-	}
 	if (settings.audioLatency == 0) {
 		settings.audioLatency = DEFAULT_AUDIO_LATENCY;
 	}
@@ -260,5 +261,8 @@ void OSSAudioDriver::validateAudioSettings(AudioDriverSettings &settings) const 
 	}
 	if (settings.chunkLen > settings.audioLatency) {
 		settings.chunkLen = settings.audioLatency;
+	}
+	if ((settings.midiLatency != 0) && (settings.midiLatency < settings.chunkLen)) {
+		settings.midiLatency = settings.chunkLen;
 	}
 }

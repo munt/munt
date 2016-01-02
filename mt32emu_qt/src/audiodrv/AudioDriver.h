@@ -34,11 +34,11 @@ protected:
 	volatile uint timeInfoIx;
 
 	void updateTimeInfo(const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer);
+	bool isAutoLatencyMode() const;
+	void updateResetPeriod() const;
 
 public:
 	AudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
-	//virtual void suspend() = 0;
-	//virtual void unsuspend() = 0;
 	virtual ~AudioStream();
 	virtual quint64 estimateMIDITimestamp(const MasterClockNanos refNanos = 0);
 };
@@ -47,6 +47,7 @@ class AudioDevice {
 public:
 	AudioDriver &driver;
 	const QString name;
+
 	AudioDevice(AudioDriver &driver, const QString name);
 	virtual ~AudioDevice() {};
 	virtual AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const = 0;

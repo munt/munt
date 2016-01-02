@@ -24,12 +24,7 @@ AudioStream::AudioStream(const AudioDriverSettings &useSettings, QSynth &useSynt
 {
 	audioLatencyFrames = settings.audioLatency * sampleRate / MasterClock::MILLIS_PER_SECOND;
 	midiLatencyFrames = settings.midiLatency * sampleRate / MasterClock::MILLIS_PER_SECOND;
-	if (settings.advancedTiming) {
-		clockSync = NULL;
-		midiLatencyFrames += audioLatencyFrames;
-	} else {
-		clockSync = new ClockSync;
-	}
+	clockSync = settings.advancedTiming ? NULL : new ClockSync;
 	timeInfoIx = 0;
 	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
 	timeInfo[0].lastPlayedFramesCount = renderedFramesCount;
@@ -55,7 +50,12 @@ quint64 AudioStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
 	quint64 timestamp = timeInfo[i].lastPlayedFramesCount + refFrameOffset + midiLatencyFrames;
 	qint64 delay = qint64(timestamp - renderedFramesCount);
 	if (delay < 0) {
-		qDebug() << "L" << renderedFramesCount << timestamp << delay;
+		// Negative delay means our timing is broken. We want to absort all the jitter while keeping the latency at the minimum.
+		if (isAutoLatencyMode()) {
+			midiLatencyFrames -= delay;
+			updateResetPeriod();
+		}
+		qDebug() << "L" << renderedFramesCount << timestamp << delay << midiLatencyFrames;
 	}
 	return timestamp;
 }
@@ -123,6 +123,17 @@ void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const qui
 #endif
 	}
 	timeInfoIx = nextTimeInfoIx;
+}
+
+bool AudioStream::isAutoLatencyMode() const {
+	return settings.midiLatency == 0;
+}
+
+void AudioStream::updateResetPeriod() const {
+	if (clockSync == NULL) return;
+	quint32 resetThresholdFrames = qMax(midiLatencyFrames, audioLatencyFrames);
+	MasterClockNanos resetThresholdNanos = MasterClockNanos((resetThresholdFrames / (double)sampleRate) * MasterClock::NANOS_PER_SECOND);
+	clockSync->setParams(resetThresholdNanos, 10 * resetThresholdNanos);
 }
 
 AudioDevice::AudioDevice(AudioDriver &useDriver, QString useName) : driver(useDriver), name(useName) {}

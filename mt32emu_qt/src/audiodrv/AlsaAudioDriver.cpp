@@ -117,19 +117,15 @@ bool AlsaAudioStream::start(const char *deviceID) {
 
 	audioLatencyFrames = snd_pcm_avail(stream);
 
-	midiLatencyFrames = settings.midiLatency * sampleRate / MasterClock::MILLIS_PER_SECOND;
-	if (clockSync == NULL) {
-		midiLatencyFrames += audioLatencyFrames;
-	} else {
-		MasterClockNanos audioLatencyNanos = (MasterClock::NANOS_PER_SECOND * audioLatencyFrames) / sampleRate;
-		clockSync->setParams(audioLatencyNanos, 10 * audioLatencyNanos);
-	}
-
 	if (audioLatencyFrames <= bufferSize) {
 		bufferSize = audioLatencyFrames / 2;
 	}
 
 	qDebug() << "Using audio latency:" << audioLatencyFrames << "frames, chunk size:" << bufferSize << "frames";
+
+	// Setup initial MIDI latency
+	if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames + ((DEFAULT_MIDI_LATENCY * sampleRate) / MasterClock::MILLIS_PER_SECOND);
+	updateResetPeriod();
 
 	// Start playing to fill audio buffers
 	int initFrames = audioLatencyFrames;
@@ -203,9 +199,6 @@ const QList<const AudioDevice *> AlsaAudioDriver::createDeviceList() {
 }
 
 void AlsaAudioDriver::validateAudioSettings(AudioDriverSettings &settings) const {
-	if (settings.midiLatency == 0) {
-		settings.midiLatency = DEFAULT_MIDI_LATENCY;
-	}
 	if (settings.audioLatency == 0) {
 		settings.audioLatency = DEFAULT_AUDIO_LATENCY;
 	}
@@ -214,5 +207,8 @@ void AlsaAudioDriver::validateAudioSettings(AudioDriverSettings &settings) const
 	}
 	if (settings.chunkLen > settings.audioLatency) {
 		settings.chunkLen = settings.audioLatency;
+	}
+	if ((settings.midiLatency != 0) && (settings.midiLatency < settings.chunkLen)) {
+		settings.midiLatency = settings.chunkLen;
 	}
 }
