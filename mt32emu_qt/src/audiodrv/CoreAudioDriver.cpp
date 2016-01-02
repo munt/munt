@@ -165,7 +165,7 @@ void CoreAudioDriver::validateAudioSettings(AudioDriverSettings &useSettings) co
 	if (useSettings.audioLatency < useSettings.chunkLen) {
 		useSettings.chunkLen = useSettings.audioLatency;
 	}
-	if ((settings.midiLatency != 0) && (settings.midiLatency < settings.chunkLen)) {
-		settings.midiLatency = settings.chunkLen;
+	if ((useSettings.midiLatency != 0) && (useSettings.midiLatency < useSettings.chunkLen)) {
+		useSettings.midiLatency = useSettings.chunkLen;
 	}
 }
