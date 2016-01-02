@@ -142,7 +142,9 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	MasterClockNanos nanosNow = MasterClock::getClockNanos();
 	quint32 framesInAudioBuffer;
 	if (stream->settings.advancedTiming) {
-		framesInAudioBuffer = quint32((timeInfo->outputBufferDacTime - Pa_GetStreamTime(stream->stream)) * Pa_GetStreamInfo(stream->stream)->sampleRate);
+		double currentTime = Pa_GetStreamTime(stream->stream);
+		double bufferedTime = timeInfo->outputBufferDacTime - currentTime;
+		framesInAudioBuffer = bufferedTime <= 0.0 ? 0 : quint32(bufferedTime * Pa_GetStreamInfo(stream->stream)->sampleRate);
 	} else {
 		framesInAudioBuffer = 0;
 	}
