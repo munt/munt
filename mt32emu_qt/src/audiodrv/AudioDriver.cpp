@@ -19,8 +19,6 @@
 #include "../Master.h"
 #include "../ClockSync.h"
 
-static const MasterClockNanos MINIMUM_TIMEINFO_UPDATE_NANOS = 10 * MasterClock::NANOS_PER_MILLISECOND;
-
 AudioStream::AudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
 	synth(useSynth), sampleRate(useSampleRate), settings(useSettings), renderedFramesCount(0)
 {
@@ -67,9 +65,12 @@ void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const qui
 	qDebug() << "R" << renderedFramesCount - timeInfo[timeInfoIx].lastPlayedFramesCount
 					<< (measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) * 1e-6;
 #endif
-	if ((measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) < MINIMUM_TIMEINFO_UPDATE_NANOS) {
-		// If callbacks are coming too quickly, we cannot benefit from that, it just makes our timing estimation worse...
-		// Moreover, we should be able to adjust lastPlayedFramesCount increasing speed as it counts in samples
+	if ((double(measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) * sampleRate) < ((double)midiLatencyFrames * MasterClock::NANOS_PER_SECOND)) {
+		// If callbacks are coming too quickly, we cannot benefit from that, it just makes our timing estimation worse.
+		// This is because some audio systems may pull more data than the our specified audio latency in no time.
+		// Moreover, we should be able to adjust lastPlayedFramesCount increasing speed as it counts in samples.
+		// So, it seems reasonable to only update time info at intervals no less than our total MIDI latency,
+		// which is meant to absort all the jitter.
 		return;
 	}
 	uint nextTimeInfoIx = 1 - timeInfoIx;
@@ -88,7 +89,7 @@ void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const qui
 		quint64 newPlayedFramesCount = timeInfo[timeInfoIx].lastPlayedFramesCount + quint64(timeInfo[timeInfoIx].actualSampleRate * secondsElapsed + 0.5);
 
 		// If the estimation goes too far - do reset
-		if (qAbs(qint64(estimatedNewPlayedFramesCount - newPlayedFramesCount)) > (qint64)audioLatencyFrames) {
+		if (qAbs(qint64(estimatedNewPlayedFramesCount - newPlayedFramesCount)) > (qint64)midiLatencyFrames) {
 			qDebug() << "AudioStream: Estimated play position is way off:" << qint64(estimatedNewPlayedFramesCount - newPlayedFramesCount) << "-> resetting...";
 			timeInfo[nextTimeInfoIx].lastPlayedNanos = measuredNanos;
 			timeInfo[nextTimeInfoIx].lastPlayedFramesCount = estimatedNewPlayedFramesCount;
