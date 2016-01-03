@@ -4,7 +4,7 @@ MT32Emu WinMM Driver
 First-time Installation
 -----------------------
 
-Run drvsetup.exe to perform installation. This will copy mt32emu.dll into
+Run "drvsetup.exe install" to perform installation. This will copy mt32emu.dll into
 C:\WINDOWS\SYSTEM32 (C:\WINDOWS\SYSWOW64 for x64 systems) directory.
 Use the main UI-enabled application to configure driver settings.
 
@@ -48,7 +48,8 @@ Panel or a MIDI switcher like Putzlowitschs Vista-MIDIMapper.
 The driver tries to find out whether the main UI-enabled application is running, and if
 it is, the driver directs all the incoming MIDI messages to the main application
 for processing. If the application is not running, the driver operates in self-contained
-mode.
+mode. In the latter case, the configuration you set using the main UI-enabled application
+will also apply to the internal synth engine where relevant.
 
 If you start the main synth application and / or change the emulation parameters you need
 to either restart MIDI playback or reopen your MIDI application for the new
@@ -59,8 +60,8 @@ with the main application.
 Upgrading
 ---------
 
-Run drvsetup.exe to upgrade the driver. You may also need to check
-the configuration file mt32emu.ini for new configuration variables.
+Run "drvsetup.exe install" to upgrade the driver. The configuration you set using
+the main UI-enabled application will apply to the internal synth engine as well.
 
                              OR
 
@@ -80,11 +81,18 @@ the configuration file mt32emu.ini for new configuration variables.
 14) You almost certainly *will* need to reboot the computer for the change to take effect.
 
 
+Upgrading
+---------
+
+Run "drvsetup.exe uninstall" to remove the driver. This will not affect any configuration
+variables set using the main UI-enabled application.
+
+
 License
 -------
 
 Copyright (C) 2003, 2004, 2005, 2011 Dean Beeler, Jerome Fisher
-Copyright (C) 2011, 2012, 2013, 2014 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011-2016 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public

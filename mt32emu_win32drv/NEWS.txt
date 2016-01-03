@@ -1,7 +1,8 @@
-	1.1.2
+	1.2 Current
 
 	* Fixed possible crashes when reloading settings to the internal synth upon MIDI port re-opening in some cases.
 	* Updated mt32emu library to version 2.0.0.
+	* Added support for mt32emu_qt settings version 2.
 
 2015-01-11:
 

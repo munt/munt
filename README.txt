@@ -1,7 +1,7 @@
 mt32emu
 =======
-mt32emu is a C++ static link library which provides classes to approximately emulate
-the Roland MT-32, CM-32L and LAPC-I synthesiser modules.
+mt32emu is a C/C++ library which allows to emulate (approximately) the Roland
+MT-32, CM-32L and LAPC-I synthesiser modules.
 
 mt32emu_alsadrv
 ===============

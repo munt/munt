@@ -31,7 +31,8 @@ typedef LONG LSTATUS;
 namespace MT32Emu {
 
 static const char MT32EMU_REGISTRY_PATH[] = "Software\\muntemu.org\\Munt mt32emu-qt";
-static const char MT32EMU_REGISTRY_DRIVER_SUBKEY[] = "waveout";
+static const char MT32EMU_REGISTRY_DRIVER_SUBKEY_V1[] = "waveout";
+static const char MT32EMU_REGISTRY_DRIVER_SUBKEY_V2[] = "Audio\\waveout";
 static const char MT32EMU_REGISTRY_MASTER_SUBKEY[] = "Master";
 static const char MT32EMU_REGISTRY_PROFILES_SUBKEY[] = "Profiles";
 
@@ -394,7 +395,8 @@ void MidiSynth::LoadWaveOutSettings() {
 		hReg = NULL;
 	}
 	HKEY hRegDriver;
-	if (hReg == NULL || RegOpenKeyA(hReg, MT32EMU_REGISTRY_DRIVER_SUBKEY, &hRegDriver)) {
+	const char *driverKey = (settingsVersion == 1) ? MT32EMU_REGISTRY_DRIVER_SUBKEY_V1 : MT32EMU_REGISTRY_DRIVER_SUBKEY_V2;
+	if (hReg == NULL || RegOpenKeyA(hReg, driverKey, &hRegDriver)) {
 		hRegDriver = NULL;
 	}
 	RegCloseKey(hReg);
@@ -415,6 +417,8 @@ void MidiSynth::LoadWaveOutSettings() {
 		bufferSize = chunks * chunkSize;
 		std::cout << "MT32: Using " << chunks << " chunks, chunk size: " << chunkSize << " frames, buffer size: " << bufferSize << " frames." << std::endl;
 	}
+	// Default MIDI latency equals the audio buffer length
+	if ((settingsVersion == 1) || (midiLatency == 0)) midiLatency += bufferSize;
 }
 
 void MidiSynth::ReloadSettings() {
@@ -426,6 +430,7 @@ void MidiSynth::ReloadSettings() {
 	if (hReg == NULL || RegOpenKeyA(hReg, MT32EMU_REGISTRY_MASTER_SUBKEY, &hRegMaster)) {
 		hRegMaster = NULL;
 	}
+	settingsVersion = LoadIntValue(hRegMaster, "settingsVersion", 1);
 	resetEnabled = !LoadBoolValue(hRegMaster, "startPinnedSynthRoute", false);
 	char profile[256];
 	LoadStringValue(hRegMaster, "defaultSynthProfile", "default", profile, sizeof(profile));
@@ -602,11 +607,13 @@ Bit32u MidiSynth::getMIDIEventTimestamp() {
 
 	// Using relative play position helps to keep correct timing after underruns
 	Bit32u playPosition = Bit32u(waveOut.GetPos() % bufferSize);
-	if (playPosition < renderPosition) {
-		playPosition += bufferSize;
+	Bit32s bufferedFramesCount = renderPosition - playPosition;
+	if (bufferedFramesCount <= 0) {
+		bufferedFramesCount += bufferSize;
 	}
+	UINT64 playedFramesCount = renderedFramesCountSnapshot - bufferedFramesCount;
 	// Estimated MIDI event timestamp in audio output samples
-	UINT64 timestamp = (renderedFramesCountSnapshot - renderPosition) + playPosition + midiLatency;
+	UINT64 timestamp = playedFramesCount + midiLatency;
 	return Bit32u(timestamp * sampleRateRatio);
 }
 

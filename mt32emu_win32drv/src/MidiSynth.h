@@ -27,6 +27,7 @@ private:
 	unsigned int midiLatency;
 	unsigned int bufferSize;
 	unsigned int chunkSize;
+	unsigned int settingsVersion;
 	bool useRingBuffer;
 	bool resetEnabled;
 
