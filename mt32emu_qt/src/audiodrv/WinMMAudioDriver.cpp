@@ -317,7 +317,7 @@ void WinMMAudioDriver::loadAudioSettings() {
 	QSettings *qSettings = Master::getInstance()->getSettings();
 	streamSettings = settings;
 	streamSettings.advancedTiming = true;
-	settings.advancedTiming = ringBufferMode = qSettings->value(id + "/UseRingBuffer").toBool();
+	settings.advancedTiming = ringBufferMode = qSettings->value("Audio/" + id + "/UseRingBuffer").toBool();
 }
 
 void WinMMAudioDriver::setAudioSettings(AudioDriverSettings &useSettings) {
@@ -326,8 +326,8 @@ void WinMMAudioDriver::setAudioSettings(AudioDriverSettings &useSettings) {
 	streamSettings = settings;
 	streamSettings.advancedTiming = true;
 	QSettings *qSettings = Master::getInstance()->getSettings();
-	qSettings->setValue(id + "/UseRingBuffer", ringBufferMode);
-	qSettings->remove(id + "/AdvancedTiming");
+	qSettings->setValue("Audio/" + id + "/UseRingBuffer", ringBufferMode);
+	qSettings->remove("Audio/" + id + "/AdvancedTiming");
 }
 
 bool WinMMAudioDriver::isRingBufferMode() {

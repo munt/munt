@@ -86,6 +86,8 @@ public:
 	// name is the English human-readable name to be used in the GUI.
 	const QString name;
 
+	static void migrateAudioSettingsFromVersion1();
+
 	AudioDriver(QString useID, QString useName);
 	virtual ~AudioDriver() {};
 	virtual const QList<const AudioDevice *> createDeviceList() = 0;

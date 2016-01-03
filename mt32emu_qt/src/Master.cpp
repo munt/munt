@@ -56,7 +56,25 @@
 #include "mididrv/OSSMidiPortDriver.h"
 #endif
 
+static const int ACTUAL_SETTINGS_VERSION = 2;
+
 static Master *instance = NULL;
+
+static void migrateSettings(QSettings &settings, const int fromVersion) {
+	qDebug() << "Migrating settings from version" << fromVersion << "to version" << ACTUAL_SETTINGS_VERSION;
+	switch (fromVersion) {
+	case 1:
+		AudioDriver::migrateAudioSettingsFromVersion1();
+		settings.setValue("Master/settingsVersion", ACTUAL_SETTINGS_VERSION);
+		break;
+	default:
+		qDebug() << "Migration failed";
+		QMessageBox::warning(NULL, "Unsupported settings version",
+			"Unable to load application settings of unsupported version " + QString().setNum(fromVersion) + ".\n"
+			"Please, check the settings!");
+		break;
+	}
+}
 
 Master::Master() {
 	if (instance != NULL) {
@@ -72,6 +90,11 @@ Master::Master() {
 	MasterClock::init();
 
 	settings = new QSettings("muntemu.org", "Munt mt32emu-qt");
+	int settingsVersion = settings->value("Master/settingsVersion", 1).toInt();
+	if (settingsVersion != ACTUAL_SETTINGS_VERSION) {
+		migrateSettings(*settings, settingsVersion);
+	}
+
 	synthProfileName = settings->value("Master/defaultSynthProfile", "default").toString();
 
 	trayIcon = NULL;

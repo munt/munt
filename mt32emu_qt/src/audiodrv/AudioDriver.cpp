@@ -142,12 +142,13 @@ AudioDriver::AudioDriver(QString useID, QString useName) : id(useID), name(useNa
 
 void AudioDriver::loadAudioSettings() {
 	QSettings *qSettings = Master::getInstance()->getSettings();
-	settings.sampleRate = qSettings->value(id + "/SampleRate", 0).toUInt();
-	settings.srcQuality = (SampleRateConverter::SRCQuality)qSettings->value(id + "/SRCQuality", SampleRateConverter::SRC_GOOD).toUInt();
-	settings.chunkLen = qSettings->value(id + "/ChunkLen").toInt();
-	settings.audioLatency = qSettings->value(id + "/AudioLatency").toInt();
-	settings.midiLatency = qSettings->value(id + "/MidiLatency").toInt();
-	settings.advancedTiming = qSettings->value(id + "/AdvancedTiming", true).toBool();
+	QString prefix = "Audio/" + id;
+	settings.sampleRate = qSettings->value(prefix + "/SampleRate", 0).toUInt();
+	settings.srcQuality = (SampleRateConverter::SRCQuality)qSettings->value(prefix + "/SRCQuality", SampleRateConverter::SRC_GOOD).toUInt();
+	settings.chunkLen = qSettings->value(prefix + "/ChunkLen").toInt();
+	settings.audioLatency = qSettings->value(prefix + "/AudioLatency").toInt();
+	settings.midiLatency = qSettings->value(prefix + "/MidiLatency").toInt();
+	settings.advancedTiming = qSettings->value(prefix + "/AdvancedTiming", true).toBool();
 	validateAudioSettings(settings);
 }
 
@@ -160,10 +161,38 @@ void AudioDriver::setAudioSettings(AudioDriverSettings &useSettings) {
 	settings = useSettings;
 
 	QSettings *qSettings = Master::getInstance()->getSettings();
-	qSettings->setValue(id + "/SampleRate", settings.sampleRate);
-	qSettings->setValue(id + "/SRCQuality", settings.srcQuality);
-	qSettings->setValue(id + "/ChunkLen", settings.chunkLen);
-	qSettings->setValue(id + "/AudioLatency", settings.audioLatency);
-	qSettings->setValue(id + "/MidiLatency", settings.midiLatency);
-	qSettings->setValue(id + "/AdvancedTiming", settings.advancedTiming);
+	QString prefix = "Audio/" + id;
+	qSettings->setValue(prefix + "/SampleRate", settings.sampleRate);
+	qSettings->setValue(prefix + "/SRCQuality", settings.srcQuality);
+	qSettings->setValue(prefix + "/ChunkLen", settings.chunkLen);
+	qSettings->setValue(prefix + "/AudioLatency", settings.audioLatency);
+	qSettings->setValue(prefix + "/MidiLatency", settings.midiLatency);
+	qSettings->setValue(prefix + "/AdvancedTiming", settings.advancedTiming);
+}
+
+void AudioDriver::migrateAudioSettingsFromVersion1() {
+	QSettings *settings = Master::getInstance()->getSettings();
+	foreach(QString group, settings->childGroups()) {
+		if (group == "Master" || group == "Profiles") continue;
+		QString oldPrefix = group + "/";
+		QString newPrefix = "Audio/" + group + "/";
+		settings->beginGroup(group);
+		const QStringList keys = settings->childKeys();
+		settings->endGroup();
+		foreach(QString key, keys) {
+			if (key == "MidiLatency") {
+				bool advancedTiming = group == "waveout" || settings->value(oldPrefix + "AdvancedTiming", true).toBool();
+				if (advancedTiming) {
+					int midiLatency = settings->value(oldPrefix + "MidiLatency").toInt();
+					if (midiLatency != 0) {
+						int audioLatency = settings->value(oldPrefix + "AudioLatency").toInt();
+						settings->setValue(newPrefix + key, midiLatency + audioLatency);
+						continue;
+					}
+				}
+			}
+			settings->setValue(newPrefix + key, settings->value(oldPrefix + key));
+		}
+		settings->remove(group);
+	}
 }
