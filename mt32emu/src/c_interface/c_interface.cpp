@@ -313,7 +313,7 @@ private:
 	}
 };
 
-static mt32emu_return_code addROMFile(mt32emu_context context, File *file) {
+static mt32emu_return_code addROMFile(mt32emu_data *data, File *file) {
 	const ROMImage *image = ROMImage::makeROMImage(file);
 	const ROMInfo *info = image->getROMInfo();
 	if (info == NULL) {
@@ -321,18 +321,18 @@ static mt32emu_return_code addROMFile(mt32emu_context context, File *file) {
 		return MT32EMU_RC_ROM_NOT_IDENTIFIED;
 	}
 	if (info->type == ROMInfo::Control) {
-		if (context.d->controlROMImage != NULL) {
-			delete context.d->controlROMImage->getFile();
-			ROMImage::freeROMImage(context.d->controlROMImage);
+		if (data->controlROMImage != NULL) {
+			delete data->controlROMImage->getFile();
+			ROMImage::freeROMImage(data->controlROMImage);
 		}
-		context.d->controlROMImage = image;
+		data->controlROMImage = image;
 		return MT32EMU_RC_ADDED_CONTROL_ROM;
 	} else if (info->type == ROMInfo::PCM) {
-		if (context.d->pcmROMImage != NULL) {
-			delete context.d->pcmROMImage->getFile();
-			ROMImage::freeROMImage(context.d->pcmROMImage);
+		if (data->pcmROMImage != NULL) {
+			delete data->pcmROMImage->getFile();
+			ROMImage::freeROMImage(data->pcmROMImage);
 		}
-		context.d->pcmROMImage = image;
+		data->pcmROMImage = image;
 		return MT32EMU_RC_ADDED_PCM_ROM;
 	}
 	ROMImage::freeROMImage(image);
@@ -410,7 +410,7 @@ void mt32emu_free_synth(mt32emu_context context) {
 }
 
 mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest) {
-	return addROMFile(context, new ArrayFile(data, data_size, *sha1_digest));
+	return addROMFile(context.d, new ArrayFile(data, data_size, *sha1_digest));
 }
 
 mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *filename) {
@@ -418,7 +418,7 @@ mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *fi
 	FileStream *fs = new FileStream;
 	if (fs->open(filename)) {
 		if (fs->getData() != NULL) {
-			rc = addROMFile(context, fs);
+			rc = addROMFile(context.d, fs);
 			if (rc > 0) return rc;
 		} else {
 			rc = MT32EMU_RC_FILE_NOT_LOADED;
