@@ -235,7 +235,7 @@ struct PatchCache {
 	bool playPartial;
 	bool PCMPartial;
 	int pcm;
-	char waveform;
+	Bit8u waveform;
 
 	Bit32u structureMix;
 	int structurePosition;

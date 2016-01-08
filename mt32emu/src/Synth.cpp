@@ -843,7 +843,7 @@ void Synth::playMsgNow(Bit32u msg) {
 
 	//printDebug("Playing chan %d, code 0x%01x note: 0x%02x", chan, code, note);
 
-	char part = chantable[chan];
+	Bit8s part = chantable[chan];
 	if (part < 0 || part > 8) {
 #if MT32EMU_MONITOR_MIDI > 0
 		printDebug("Play msg on unreg chan %d (%d): code=0x%01x, vel=%d", chan, part, code, velocity);
