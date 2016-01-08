@@ -60,7 +60,7 @@ typedef enum {
 
 /** Emulation context */
 typedef union mt32emu_context mt32emu_context;
-typedef union mt32emu_const_context mt32emu_const_context;
+typedef const struct mt32emu_data *mt32emu_const_context;
 
 /* Convenience aliases */
 #ifndef __cplusplus
@@ -298,11 +298,6 @@ typedef union {
 union mt32emu_context {
 	const mt32emu_synth_i *i;
 	struct mt32emu_data *d;
-};
-
-union mt32emu_const_context {
-	const mt32emu_synth_i *i;
-	const struct mt32emu_data *c;
 };
 
 #endif /* #ifndef MT32EMU_C_TYPES_H */
