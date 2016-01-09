@@ -609,13 +609,11 @@ void mt32emu_render_float(mt32emu_const_context context, float *stream, mt32emu_
 }
 
 void mt32emu_render_bit16s_streams(mt32emu_const_context context, const mt32emu_dac_output_bit16s_streams *streams, mt32emu_bit32u len) {
-	context->synth->renderStreams(streams->nonReverbLeft, streams->nonReverbRight, streams->reverbDryLeft, streams->reverbDryRight,
-		streams->reverbWetLeft, streams->reverbWetRight, len);
+	context->synth->renderStreams(*(const DACOutputStreams<Bit16s> *)streams, len);
 }
 
 void mt32emu_render_float_streams(mt32emu_const_context context, const mt32emu_dac_output_float_streams *streams, mt32emu_bit32u len) {
-	context->synth->renderStreams(streams->nonReverbLeft, streams->nonReverbRight, streams->reverbDryLeft, streams->reverbDryRight,
-		streams->reverbWetLeft, streams->reverbWetRight, len);
+	context->synth->renderStreams(*(const DACOutputStreams<float> *)streams, len);
 }
 
 mt32emu_boolean mt32emu_has_active_partials(mt32emu_const_context context) {

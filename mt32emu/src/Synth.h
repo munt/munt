@@ -70,6 +70,17 @@ const Bit8u SYSEX_CMD_RJC = 0x4F; // Rejection
 
 const unsigned int CONTROL_ROM_SIZE = 64 * 1024;
 
+// Set of multiplexed output streams appeared at the DAC entrance.
+template <class T>
+struct DACOutputStreams {
+	T *nonReverbLeft;
+	T *nonReverbRight;
+	T *reverbDryLeft;
+	T *reverbDryRight;
+	T *reverbWetLeft;
+	T *reverbWetRight;
+};
+
 class MT32EMU_EXPORT ReportHandler {
 friend class Synth;
 
@@ -387,8 +398,14 @@ public:
 	// NULL may be specified in place of any or all of the stream buffers to skip it.
 	// The length is in samples, not bytes. Uses NATIVE byte ordering.
 	MT32EMU_EXPORT void renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
+	MT32EMU_EXPORT void renderStreams(const DACOutputStreams<Bit16s> &streams, Bit32u len) {
+		renderStreams(streams.nonReverbLeft, streams.nonReverbRight, streams.reverbDryLeft, streams.reverbDryRight, streams.reverbWetLeft, streams.reverbWetRight, len);
+	}
 	// Same as above but outputs to float streams.
 	MT32EMU_EXPORT void renderStreams(float *nonReverbLeft, float *nonReverbRight, float *reverbDryLeft, float *reverbDryRight, float *reverbWetLeft, float *reverbWetRight, Bit32u len);
+	MT32EMU_EXPORT void renderStreams(const DACOutputStreams<float> &streams, Bit32u len) {
+		renderStreams(streams.nonReverbLeft, streams.nonReverbRight, streams.reverbDryLeft, streams.reverbDryRight, streams.reverbWetLeft, streams.reverbWetRight, len);
+	}
 
 	// Returns true when there is at least one active partial, otherwise false.
 	MT32EMU_EXPORT bool hasActivePartials() const;
