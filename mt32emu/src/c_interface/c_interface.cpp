@@ -555,7 +555,7 @@ void mt32emu_write_sysex(mt32emu_const_context context, unsigned char channel, c
 }
 
 void mt32emu_set_reverb_enabled(mt32emu_const_context context, const mt32emu_boolean reverb_enabled) {
-	context->synth->setReverbEnabled(reverb_enabled == MT32EMU_BOOL_TRUE);
+	context->synth->setReverbEnabled(reverb_enabled != MT32EMU_BOOL_FALSE);
 }
 
 mt32emu_boolean mt32emu_is_reverb_enabled(mt32emu_const_context context) {
@@ -563,7 +563,7 @@ mt32emu_boolean mt32emu_is_reverb_enabled(mt32emu_const_context context) {
 }
 
 void mt32emu_set_reverb_overridden(mt32emu_const_context context, const mt32emu_boolean reverbOverridden) {
-	context->synth->setReverbOverridden(reverbOverridden == MT32EMU_BOOL_TRUE);
+	context->synth->setReverbOverridden(reverbOverridden != MT32EMU_BOOL_FALSE);
 }
 
 mt32emu_boolean mt32emu_is_reverb_overridden(mt32emu_const_context context) {
@@ -571,7 +571,7 @@ mt32emu_boolean mt32emu_is_reverb_overridden(mt32emu_const_context context) {
 }
 
 void mt32emu_set_reverb_compatibility_mode(mt32emu_const_context context, const mt32emu_boolean mt32_compatible_mode) {
-	context->synth->setReverbCompatibilityMode(mt32_compatible_mode == MT32EMU_BOOL_TRUE);
+	context->synth->setReverbCompatibilityMode(mt32_compatible_mode != MT32EMU_BOOL_FALSE);
 }
 
 mt32emu_boolean mt32emu_is_mt32_reverb_compatibility_mode(mt32emu_const_context context) {
@@ -615,7 +615,7 @@ float mt32emu_get_reverb_output_gain(mt32emu_const_context context) {
 }
 
 void mt32emu_set_reversed_stereo_enabled(mt32emu_const_context context, const mt32emu_boolean enabled) {
-	context->synth->setReversedStereoEnabled(enabled == MT32EMU_BOOL_TRUE);
+	context->synth->setReversedStereoEnabled(enabled != MT32EMU_BOOL_FALSE);
 }
 
 mt32emu_boolean mt32emu_is_reversed_stereo_enabled(mt32emu_const_context context) {
