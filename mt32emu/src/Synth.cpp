@@ -157,7 +157,7 @@ Bit8u Synth::calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u 
 	return Bit8u(checksum & 0x7f);
 }
 
-unsigned int Synth::getStereoOutputSampleRate(AnalogOutputMode analogOutputMode) {
+Bit32u Synth::getStereoOutputSampleRate(AnalogOutputMode analogOutputMode) {
 	static const unsigned int SAMPLE_RATES[] = {SAMPLE_RATE, SAMPLE_RATE, SAMPLE_RATE * 3 / 2, SAMPLE_RATE * 3};
 
 	return SAMPLE_RATES[analogOutputMode];
@@ -228,11 +228,11 @@ void ReportHandler::printDebug(const char *fmt, va_list list) {
 	printf("\n");
 }
 
-void Synth::polyStateChanged(int partNum) {
+void Synth::polyStateChanged(Bit8u partNum) {
 	reportHandler->onPolyStateChanged(partNum);
 }
 
-void Synth::newTimbreSet(int partNum, Bit8u timbreGroup, Bit8u timbreNumber, const char patchName[]) {
+void Synth::newTimbreSet(Bit8u partNum, Bit8u timbreGroup, Bit8u timbreNumber, const char patchName[]) {
 	const char *soundGroupName;
 	switch (timbreGroup) {
 	case 1:
@@ -431,7 +431,7 @@ bool Synth::loadPCMROM(const ROMImage &pcmROMImage) {
 
 		int order[16] = {0, 9, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 8};
 
-		signed short log = 0;
+		Bit16s log = 0;
 		for (int u = 0; u < 15; u++) {
 			int bit;
 			if (order[u] < 8) {
@@ -439,7 +439,7 @@ bool Synth::loadPCMROM(const ROMImage &pcmROMImage) {
 			} else {
 				bit = (c >> (7 - (order[u] - 8))) & 0x1;
 			}
-			log = log | (short)(bit << (15 - u));
+			log = log | (Bit16s)(bit << (15 - u));
 		}
 		pcmROMData[i] = log;
 	}
@@ -467,7 +467,7 @@ bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
 	return false;
 }
 
-bool Synth::initCompressedTimbre(int timbreNum, const Bit8u *src, unsigned int srcLen) {
+bool Synth::initCompressedTimbre(Bit16u timbreNum, const Bit8u *src, Bit32u srcLen) {
 	// "Compressed" here means that muted partials aren't present in ROM (except in the case of partial 0 being muted).
 	// Instead the data from the previous unmuted partial is used.
 	if (srcLen < sizeof(TimbreParam::CommonParam)) {
@@ -491,7 +491,7 @@ bool Synth::initCompressedTimbre(int timbreNum, const Bit8u *src, unsigned int s
 	return true;
 }
 
-bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, int count, int startTimbre, bool compressed) {
+bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, Bit16u count, Bit16u startTimbre, bool compressed) {
 	const Bit8u *timbreMap = &controlROMData[mapAddress];
 	for (Bit16u i = 0; i < count * 2; i += 2) {
 		Bit16u address = (timbreMap[i + 1] << 8) | timbreMap[i];
@@ -835,10 +835,10 @@ void Synth::playMsgNow(Bit32u msg) {
 	// NOTE: Active sense IS implemented in real hardware. However, realtime processing is clearly out of the library scope.
 	//       It is assumed that realtime consumers of the library respond to these MIDI events as appropriate.
 
-	unsigned char code     = (unsigned char)((msg & 0x0000F0) >> 4);
-	unsigned char chan     = (unsigned char)(msg & 0x00000F);
-	unsigned char note     = (unsigned char)((msg & 0x007F00) >> 8);
-	unsigned char velocity = (unsigned char)((msg & 0x7F0000) >> 16);
+	Bit8u code = (Bit8u)((msg & 0x0000F0) >> 4);
+	Bit8u chan = (Bit8u)(msg & 0x00000F);
+	Bit8u note = (Bit8u)((msg & 0x007F00) >> 8);
+	Bit8u velocity = (Bit8u)((msg & 0x7F0000) >> 16);
 	if (!isEnabled) isEnabled = true;
 
 	//printDebug("Playing chan %d, code 0x%01x note: 0x%02x", chan, code, note);
@@ -853,7 +853,7 @@ void Synth::playMsgNow(Bit32u msg) {
 	playMsgOnPart(part, code, note, velocity);
 }
 
-void Synth::playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity) {
+void Synth::playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) {
 	Bit32u bend;
 
 	//printDebug("Synth::playMsgOnPart(%02x, %02x, %02x, %02x)", part, code, note, velocity);
@@ -995,7 +995,7 @@ void Synth::playSysexWithoutFraming(const Bit8u *sysex, Bit32u len) {
 	playSysexWithoutHeader(sysex[1], sysex[3], sysex + 4, len - 4);
 }
 
-void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, const Bit8u *sysex, Bit32u len) {
+void Synth::playSysexWithoutHeader(Bit8u device, Bit8u command, const Bit8u *sysex, Bit32u len) {
 	if (device > 0x10) {
 		// We have device ID 0x10 (default, but changeable, on real MT-32), < 0x10 is for channels
 		printDebug("playSysexWithoutHeader: Message is not intended for this device ID (provided: %02x, expected: 0x10 or channel)", (int)device);
@@ -1058,11 +1058,11 @@ void Synth::playSysexWithoutHeader(unsigned char device, unsigned char command, 
 	}
 }
 
-void Synth::readSysex(unsigned char /*device*/, const Bit8u * /*sysex*/, Bit32u /*len*/) const {
+void Synth::readSysex(Bit8u /*device*/, const Bit8u * /*sysex*/, Bit32u /*len*/) const {
 	// NYI
 }
 
-void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
+void Synth::writeSysex(Bit8u device, const Bit8u *sysex, Bit32u len) {
 	reportHandler->onMIDIMessagePlayed();
 	Bit32u addr = (sysex[0] << 16) | (sysex[1] << 8) | (sysex[2]);
 	addr = MT32EMU_MEMADDR(addr);
@@ -1441,7 +1441,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			int lastPart = off + len - SYSTEM_CHAN_ASSIGN_START_OFF;
 			if(lastPart > 8)
 				lastPart = 8;
-			refreshSystemChanAssign(firstPart, lastPart);
+			refreshSystemChanAssign((Bit8u)firstPart, (Bit8u)lastPart);
 		}
 		if (off <= SYSTEM_MASTER_VOL_OFF && off + len > SYSTEM_MASTER_VOL_OFF) {
 			refreshSystemMasterVol();
@@ -1521,11 +1521,11 @@ void Synth::refreshSystemReserveSettings() {
 	partialManager->setReserve(rset);
 }
 
-void Synth::refreshSystemChanAssign(unsigned int firstPart, unsigned int lastPart) {
+void Synth::refreshSystemChanAssign(Bit8u firstPart, Bit8u lastPart) {
 	memset(chantable, 0xFF, sizeof(chantable));
 
 	// CONFIRMED: In the case of assigning a channel to multiple parts, the lower part wins.
-	for (unsigned int i = 0; i <= 8; i++) {
+	for (Bit32u i = 0; i <= 8; i++) {
 		if (parts[i] != NULL && i >= firstPart && i <= lastPart) {
 			// CONFIRMED: Decay is started for all polys, and all controllers are reset, for every part whose assignment was touched by the sysex write.
 			parts[i]->allSoundOff();
@@ -1651,7 +1651,7 @@ bool MidiEventQueue::isFull() const {
 	return startPosition == ((endPosition + 1) & ringBufferMask);
 }
 
-unsigned int Synth::getStereoOutputSampleRate() const {
+Bit32u Synth::getStereoOutputSampleRate() const {
 	return (analog == NULL) ? SAMPLE_RATE : analog->getOutputSampleRate();
 }
 
@@ -1919,7 +1919,7 @@ bool Synth::isActive() const {
 	return false;
 }
 
-unsigned int Synth::getPartialCount() const {
+Bit32u Synth::getPartialCount() const {
 	return partialCount;
 }
 
@@ -1959,8 +1959,8 @@ void Synth::getPartialStates(Bit8u *partialStates) const {
 	}
 }
 
-unsigned int Synth::getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u *velocities) const {
-	unsigned int playingNotes = 0;
+Bit32u Synth::getPlayingNotes(Bit8u partNumber, Bit8u *keys, Bit8u *velocities) const {
+	Bit32u playingNotes = 0;
 	if (opened && (partNumber < 9)) {
 		const Part *part = parts[partNumber];
 		const Poly *poly = part->getFirstActivePoly();
@@ -1974,11 +1974,11 @@ unsigned int Synth::getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u 
 	return playingNotes;
 }
 
-const char *Synth::getPatchName(unsigned int partNumber) const {
+const char *Synth::getPatchName(Bit8u partNumber) const {
 	return (!opened || partNumber > 8) ? NULL : parts[partNumber]->getCurrentInstr();
 }
 
-const Part *Synth::getPart(unsigned int partNum) const {
+const Part *Synth::getPart(Bit8u partNum) const {
 	if (partNum > 8) {
 		return NULL;
 	}

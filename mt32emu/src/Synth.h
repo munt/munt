@@ -68,7 +68,7 @@ const Bit8u SYSEX_CMD_EOD = 0x45; // End of data
 const Bit8u SYSEX_CMD_ERR = 0x4E; // Communications error
 const Bit8u SYSEX_CMD_RJC = 0x4F; // Rejection
 
-const unsigned int CONTROL_ROM_SIZE = 64 * 1024;
+const Bit32u CONTROL_ROM_SIZE = 64 * 1024;
 
 // Set of multiplexed output streams appeared at the DAC entrance.
 template <class T>
@@ -102,8 +102,8 @@ protected:
 	virtual void onNewReverbMode(Bit8u /* mode */) {}
 	virtual void onNewReverbTime(Bit8u /* time */) {}
 	virtual void onNewReverbLevel(Bit8u /* level */) {}
-	virtual void onPolyStateChanged(int /* partNum */) {}
-	virtual void onProgramChanged(int /* partNum */, const char * /* soundGroupName */, const char * /* patchName */) {}
+	virtual void onPolyStateChanged(Bit8u /* partNum */) {}
+	virtual void onProgramChanged(Bit8u /* partNum */, const char * /* soundGroupName */, const char * /* patchName */) {}
 };
 
 class Synth {
@@ -141,7 +141,7 @@ private:
 	Bit8u soundGroupIx[128]; // For each standard timbre
 	const char (*soundGroupNames)[9]; // Array
 
-	unsigned int partialCount;
+	Bit32u partialCount;
 	Bit8u chantable[16]; // NOTE: value above 8 means that the channel is not assigned
 
 	MidiEventQueue *midiQueue;
@@ -181,7 +181,7 @@ private:
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
 	bool isAbortingPoly() const;
 
-	void readSysex(unsigned char channel, const Bit8u *sysex, Bit32u len) const;
+	void readSysex(Bit8u channel, const Bit8u *sysex, Bit32u len) const;
 	void initMemoryRegions();
 	void deleteMemoryRegions();
 	MemoryRegion *findMemoryRegion(Bit32u addr);
@@ -192,26 +192,26 @@ private:
 	bool loadPCMROM(const ROMImage &pcmROMImage);
 
 	bool initPCMList(Bit16u mapAddress, Bit16u count);
-	bool initTimbres(Bit16u mapAddress, Bit16u offset, int timbreCount, int startTimbre, bool compressed);
-	bool initCompressedTimbre(int drumNum, const Bit8u *mem, unsigned int memLen);
+	bool initTimbres(Bit16u mapAddress, Bit16u offset, Bit16u timbreCount, Bit16u startTimbre, bool compressed);
+	bool initCompressedTimbre(Bit16u drumNum, const Bit8u *mem, Bit32u memLen);
 	void initSoundGroups(char newSoundGroupNames[][9]);
 
 	void refreshSystemMasterTune();
 	void refreshSystemReverbParameters();
 	void refreshSystemReserveSettings();
-	void refreshSystemChanAssign(unsigned int firstPart, unsigned int lastPart);
+	void refreshSystemChanAssign(Bit8u firstPart, Bit8u lastPart);
 	void refreshSystemMasterVol();
 	void refreshSystem();
 	void reset();
 
 	void printPartialUsage(Bit32u sampleOffset = 0);
 
-	void polyStateChanged(int partNum);
-	void newTimbreSet(int partNum, Bit8u timbreGroup, Bit8u timbreNumber, const char patchName[]);
+	void polyStateChanged(Bit8u partNum);
+	void newTimbreSet(Bit8u partNum, Bit8u timbreGroup, Bit8u timbreNumber, const char patchName[]);
 	void printDebug(const char *fmt, ...);
 
 	// partNum should be 0..7 for Part 1..8, or 8 for Rhythm
-	const Part *getPart(unsigned int partNum) const;
+	const Part *getPart(Bit8u partNum) const;
 
 public:
 	static inline Bit16s clipSampleEx(Bit32s sampleEx) {
@@ -253,7 +253,7 @@ public:
 
 	// Returns output sample rate used in emulation of stereo analog circuitry of hardware units.
 	// See comment for AnalogOutputMode.
-	MT32EMU_EXPORT static unsigned int getStereoOutputSampleRate(AnalogOutputMode analogOutputMode);
+	MT32EMU_EXPORT static Bit32u getStereoOutputSampleRate(AnalogOutputMode analogOutputMode);
 
 	// Optionally sets callbacks for reporting various errors, information and debug messages
 	MT32EMU_EXPORT Synth(ReportHandler *useReportHandler = NULL);
@@ -264,7 +264,7 @@ public:
 	// controlROMImage and pcmROMImage represent Control and PCM ROM images for use by synth.
 	// usePartialCount sets the maximum number of partials playing simultaneously for this session (optional).
 	// analogOutputMode sets the mode for emulation of analogue circuitry of the hardware units (optional).
-	MT32EMU_EXPORT bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount = DEFAULT_MAX_PARTIALS, AnalogOutputMode analogOutputMode = AnalogOutputMode_COARSE);
+	MT32EMU_EXPORT bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, Bit32u usePartialCount = DEFAULT_MAX_PARTIALS, AnalogOutputMode analogOutputMode = AnalogOutputMode_COARSE);
 
 	// Overloaded method which opens the synth with default partial count.
 	MT32EMU_EXPORT bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, AnalogOutputMode analogOutputMode);
@@ -311,7 +311,7 @@ public:
 	MT32EMU_EXPORT void playMsgNow(Bit32u msg);
 	// Sends unpacked short MIDI message to the synth for immediate playback. The message must contain a status byte.
 	// See the WARNING above.
-	MT32EMU_EXPORT void playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity);
+	MT32EMU_EXPORT void playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity);
 
 	// Sends a single well formed System Exclusive MIDI message for immediate processing. The length is in bytes.
 	// See the WARNING above.
@@ -321,10 +321,10 @@ public:
 	MT32EMU_EXPORT void playSysexWithoutFraming(const Bit8u *sysex, Bit32u len);
 	// Sends inner body of a System Exclusive MIDI message for direct processing. The length is in bytes.
 	// See the WARNING above.
-	MT32EMU_EXPORT void playSysexWithoutHeader(unsigned char device, unsigned char command, const Bit8u *sysex, Bit32u len);
+	MT32EMU_EXPORT void playSysexWithoutHeader(Bit8u device, Bit8u command, const Bit8u *sysex, Bit32u len);
 	// Sends inner body of a System Exclusive MIDI message for direct processing. The length is in bytes.
 	// See the WARNING above.
-	MT32EMU_EXPORT void writeSysex(unsigned char channel, const Bit8u *sysex, Bit32u len);
+	MT32EMU_EXPORT void writeSysex(Bit8u channel, const Bit8u *sysex, Bit32u len);
 
 	// Allows to disable wet reverb output altogether.
 	MT32EMU_EXPORT void setReverbEnabled(bool reverbEnabled);
@@ -382,7 +382,7 @@ public:
 
 	// Returns actual sample rate used in emulation of stereo analog circuitry of hardware units.
 	// See comment for render() below.
-	MT32EMU_EXPORT unsigned int getStereoOutputSampleRate() const;
+	MT32EMU_EXPORT Bit32u getStereoOutputSampleRate() const;
 
 	// Renders samples to the specified output stream as if they were sampled at the analog stereo output.
 	// When AnalogOutputMode is set to ACCURATE (OVERSAMPLED), the output signal is upsampled to 48 (96) kHz in order
@@ -414,7 +414,7 @@ public:
 	MT32EMU_EXPORT bool isActive() const;
 
 	// Returns the maximum number of partials playing simultaneously.
-	MT32EMU_EXPORT unsigned int getPartialCount() const;
+	MT32EMU_EXPORT Bit32u getPartialCount() const;
 
 	// Fills in current states of all the parts into the array provided. The array must have at least 9 entries to fit values for all the parts.
 	// If the value returned for a part is true, there is at least one active non-releasing partial playing on this part.
@@ -438,11 +438,11 @@ public:
 	// to accommodate data for all the playing notes. The maximum number of simultaneously playing notes cannot exceed the number of partials.
 	// Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
 	// Returns the number of currently playing notes on the specified part.
-	MT32EMU_EXPORT unsigned int getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u *velocities) const;
+	MT32EMU_EXPORT Bit32u getPlayingNotes(Bit8u partNumber, Bit8u *keys, Bit8u *velocities) const;
 
 	// Returns name of the patch set on the specified part.
 	// Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
-	MT32EMU_EXPORT const char *getPatchName(unsigned int partNumber) const;
+	MT32EMU_EXPORT const char *getPatchName(Bit8u partNumber) const;
 
 	// Stores internal state of emulated synth into an array provided (as it would be acquired from hardware).
 	MT32EMU_EXPORT void readMemory(Bit32u addr, Bit32u len, Bit8u *data);
