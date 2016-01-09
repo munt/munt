@@ -1439,8 +1439,8 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			if(firstPart < 0)
 				firstPart = 0;
 			int lastPart = off + len - SYSTEM_CHAN_ASSIGN_START_OFF;
-			if(lastPart > 9)
-				lastPart = 9;
+			if(lastPart > 8)
+				lastPart = 8;
 			refreshSystemChanAssign(firstPart, lastPart);
 		}
 		if (off <= SYSTEM_MASTER_VOL_OFF && off + len > SYSTEM_MASTER_VOL_OFF) {
