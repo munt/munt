@@ -63,7 +63,7 @@ public:
 	void playShortMessageAt(mt32emu_bit32u message, mt32emu_bit32u timestamp) { c.i->v0->playShortMessageAt(c.d, message, timestamp); }
 	mt32emu_return_code playMsg(mt32emu_bit32u msg) { return c.i->v0->playMsg(c.d, msg); }
 	mt32emu_return_code playSysex(const mt32emu_bit8u *sysex, mt32emu_bit32u len) { return c.i->v0->playSysex(c.d, sysex, len); }
-	mt32emu_return_code playMsgAt(mt32emu_bit32u msg, mt32emu_bit32u timestamp) { return c.i->v0->playMsg(c.d, msg); }
+	mt32emu_return_code playMsgAt(mt32emu_bit32u msg, mt32emu_bit32u timestamp) { return c.i->v0->playMsgAt(c.d, msg, timestamp); }
 	mt32emu_return_code playSysexAt(const mt32emu_bit8u *sysex, mt32emu_bit32u len, mt32emu_bit32u timestamp) { return c.i->v0->playSysexAt(c.d, sysex, len, timestamp); }
 
 	void playMsgNow(mt32emu_bit32u msg) { c.i->v0->playMsgNow(c.d, msg); }
