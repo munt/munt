@@ -388,6 +388,7 @@ mt32emu_context mt32emu_create_synth(const mt32emu_report_handler_i *report_hand
 
 void mt32emu_free_synth(mt32emu_context context) {
 	mt32emu_data *data = context.d;
+	if (data == NULL) return;
 	if (data->controlROMImage != NULL) {
 		delete data->controlROMImage->getFile();
 		ROMImage::freeROMImage(data->controlROMImage);
@@ -405,6 +406,7 @@ void mt32emu_free_synth(mt32emu_context context) {
 	delete data->reportHandler;
 	data->reportHandler = NULL;
 	delete data;
+	context.d = NULL;
 }
 
 mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest) {
