@@ -35,7 +35,7 @@ extern "C" {
 #endif
 
 /** Initialises a new emulation context and installs custom report handler if non-NULL. */
-MT32EMU_EXPORT mt32emu_context mt32emu_create_synth(const mt32emu_report_handler_i *report_handler);
+MT32EMU_EXPORT mt32emu_context mt32emu_create_context(const mt32emu_report_handler_i *report_handler);
 
 #if MT32EMU_EXPORTS_TYPE == 2
 #undef MT32EMU_EXPORT
@@ -43,7 +43,7 @@ MT32EMU_EXPORT mt32emu_context mt32emu_create_synth(const mt32emu_report_handler
 #endif
 
 /** Closes and destroys emulation context. */
-MT32EMU_EXPORT void mt32emu_free_synth(mt32emu_context context);
+MT32EMU_EXPORT void mt32emu_free_context(mt32emu_context context);
 
 /**
 * Returns library version as an integer in format: 0x00MMmmpp, where:
