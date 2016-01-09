@@ -32,7 +32,7 @@ namespace MT32Emu {
 class ReportHandlerAdapter;
 class MidiStreamParserAdapter;
 
-static mt32emu_interface_version getSynthVersionID(const mt32emu_interface **);
+static mt32emu_synth_version getSynthVersionID(const mt32emu_const_context);
 static mt32emu_bit32u getLibraryVersionInt(mt32emu_const_context);
 static const char *getLibraryVersionString(mt32emu_const_context);
 static mt32emu_report_handler_version getSupportedReportHandlerVersionID(mt32emu_const_context);
@@ -339,10 +339,8 @@ static mt32emu_return_code addROMFile(mt32emu_data *data, File *file) {
 	return MT32EMU_RC_OK; // No support for reverb ROM yet.
 }
 
-mt32emu_interface_version getSynthVersionID(const mt32emu_interface **) {
-	mt32emu_interface_version v;
-	v.s = MT32EMU_SYNTH_VERSION_CURRENT;
-	return v;
+mt32emu_synth_version getSynthVersionID(const mt32emu_const_context) {
+	return MT32EMU_SYNTH_VERSION_CURRENT;
 }
 
 mt32emu_bit32u getLibraryVersionInt(mt32emu_const_context) {
