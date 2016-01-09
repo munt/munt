@@ -112,7 +112,7 @@ public:
 	void close();
 	void mute();
 	void setParameters(Bit8u time, Bit8u level);
-	void process(const Sample *inLeft, const Sample *inRight, Sample *outLeft, Sample *outRight, unsigned long numSamples);
+	void process(const Sample *inLeft, const Sample *inRight, Sample *outLeft, Sample *outRight, Bit32u numSamples);
 	bool isActive() const;
 	bool isMT32Compatible(const ReverbMode mode) const;
 };

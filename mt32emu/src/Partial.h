@@ -42,7 +42,7 @@ private:
 	const int debugPartialNum; // Only used for debugging
 	// Number of the sample currently being rendered by produceOutput(), or 0 if no run is in progress
 	// This is only kept available for debugging purposes.
-	unsigned long sampleNum;
+	Bit32u sampleNum;
 
 	// Actually, this is a 4-bit register but we abuse this to emulate inverted mixing.
 	// Also we double the value to enable INACCURATE_SMOOTH_PAN, with respect to MoK.
@@ -87,7 +87,7 @@ public:
 	~Partial();
 
 	int debugGetPartialNum() const;
-	unsigned long debugGetSampleNum() const;
+	Bit32u debugGetSampleNum() const;
 
 	int getOwnerPart() const;
 	const Poly *getPoly() const;
@@ -110,7 +110,7 @@ public:
 	// Returns true only if data written to buffer
 	// This function (unlike the one below it) returns processed stereo samples
 	// made from combining this single partial with its pair, if it has one.
-	bool produceOutput(Sample *leftBuf, Sample *rightBuf, unsigned long length);
+	bool produceOutput(Sample *leftBuf, Sample *rightBuf, Bit32u length);
 }; // class Partial
 
 } // namespace MT32Emu

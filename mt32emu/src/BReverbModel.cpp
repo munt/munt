@@ -433,7 +433,7 @@ bool BReverbModel::isMT32Compatible(const ReverbMode mode) const {
 	return &currentSettings == &getMT32Settings(mode);
 }
 
-void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *outLeft, Sample *outRight, unsigned long numSamples) {
+void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *outLeft, Sample *outRight, Bit32u numSamples) {
 	if (combs == NULL) {
 		Synth::muteSampleBuffer(outLeft, numSamples);
 		Synth::muteSampleBuffer(outRight, numSamples);

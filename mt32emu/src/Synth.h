@@ -204,7 +204,7 @@ private:
 	void refreshSystem();
 	void reset();
 
-	void printPartialUsage(unsigned long sampleOffset = 0);
+	void printPartialUsage(Bit32u sampleOffset = 0);
 
 	void polyStateChanged(int partNum);
 	void newTimbreSet(int partNum, Bit8u timbreGroup, Bit8u timbreNumber, const char patchName[]);

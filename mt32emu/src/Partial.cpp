@@ -59,7 +59,7 @@ int Partial::debugGetPartialNum() const {
 }
 
 // Only used for debugging purposes
-unsigned long Partial::debugGetSampleNum() const {
+Bit32u Partial::debugGetSampleNum() const {
 	return sampleNum;
 }
 
@@ -271,7 +271,7 @@ void Partial::backupCache(const PatchCache &cache) {
 	}
 }
 
-bool Partial::produceOutput(Sample *leftBuf, Sample *rightBuf, unsigned long length) {
+bool Partial::produceOutput(Sample *leftBuf, Sample *rightBuf, Bit32u length) {
 	if (!isActive() || alreadyOutputed || isRingModulatingSlave()) {
 		return false;
 	}
