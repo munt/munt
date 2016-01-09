@@ -843,8 +843,8 @@ void Synth::playMsgNow(Bit32u msg) {
 
 	//printDebug("Playing chan %d, code 0x%01x note: 0x%02x", chan, code, note);
 
-	Bit8s part = chantable[chan];
-	if (part < 0 || part > 8) {
+	Bit8u part = chantable[chan];
+	if (part > 8) {
 #if MT32EMU_MONITOR_MIDI > 0
 		printDebug("Play msg on unreg chan %d (%d): code=0x%01x, vel=%d", chan, part, code, velocity);
 #endif
@@ -1078,7 +1078,7 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 #endif
 		if (/*addr >= MT32EMU_MEMADDR(0x000000) && */addr < MT32EMU_MEMADDR(0x010000)) {
 			int offset;
-			if (chantable[device] == -1) {
+			if (chantable[device] > 8) {
 #if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Channel not mapped to a part... 0 offset)");
 #endif
@@ -1099,7 +1099,7 @@ void Synth::writeSysex(unsigned char device, const Bit8u *sysex, Bit32u len) {
 			addr += MT32EMU_MEMADDR(0x030110) - MT32EMU_MEMADDR(0x010000);
 		} else if (/*addr >= MT32EMU_MEMADDR(0x020000) && */ addr < MT32EMU_MEMADDR(0x030000)) {
 			int offset;
-			if (chantable[device] == -1) {
+			if (chantable[device] > 8) {
 #if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Channel not mapped to a part... 0 offset)");
 #endif
@@ -1522,7 +1522,7 @@ void Synth::refreshSystemReserveSettings() {
 }
 
 void Synth::refreshSystemChanAssign(unsigned int firstPart, unsigned int lastPart) {
-	memset(chantable, -1, sizeof(chantable));
+	memset(chantable, 0xFF, sizeof(chantable));
 
 	// CONFIRMED: In the case of assigning a channel to multiple parts, the lower part wins.
 	for (unsigned int i = 0; i <= 8; i++) {
@@ -1531,9 +1531,9 @@ void Synth::refreshSystemChanAssign(unsigned int firstPart, unsigned int lastPar
 			parts[i]->allSoundOff();
 			parts[i]->resetAllControllers();
 		}
-		int chan = mt32ram.system.chanAssign[i];
-		if (chan != 16 && chantable[chan] == -1) {
-			chantable[chan] = i;
+		Bit8u chan = mt32ram.system.chanAssign[i];
+		if (chan < 16 && chantable[chan] > 8) {
+			chantable[chan] = (Bit8u)i;
 		}
 	}
 

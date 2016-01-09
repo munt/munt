@@ -142,7 +142,7 @@ private:
 	const char (*soundGroupNames)[9]; // Array
 
 	unsigned int partialCount;
-	Bit8s chantable[32]; // FIXME: Need explanation why 32 is set, obviously it should be 16
+	Bit8u chantable[16]; // NOTE: value above 8 means that the channel is not assigned
 
 	MidiEventQueue *midiQueue;
 	volatile Bit32u lastReceivedMIDIEventTimestamp;
