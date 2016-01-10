@@ -15,7 +15,7 @@ private:
 	};
 
 	static void *processingThread(void *userData);
-	static void enumPorts(QList<QString> &midiPortNames);
+	static void enumPorts(QStringList &midiPortNames);
 
 	QList<OSSMidiPortData *> sessions;
 
