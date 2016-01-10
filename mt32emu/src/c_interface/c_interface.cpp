@@ -213,7 +213,7 @@ private:
 		}
 	}
 
-	void onPolyStateChanged(int partNum) {
+	void onPolyStateChanged(Bit8u partNum) {
 		if (delegate->v0->onPolyStateChanged == NULL) {
 			ReportHandler::onPolyStateChanged(partNum);
 		} else {
@@ -221,7 +221,7 @@ private:
 		}
 	}
 
-	void onProgramChanged(int partNum, const char *soundGroupName, const char *patchName) {
+	void onProgramChanged(Bit8u partNum, const char *soundGroupName, const char *patchName) {
 		if (delegate->v0->onProgramChanged == NULL) {
 			ReportHandler::onProgramChanged(partNum, soundGroupName, patchName);
 		} else {
@@ -425,11 +425,11 @@ void mt32emu_get_rom_info(mt32emu_const_context context, mt32emu_rom_info *rom_i
 	}
 }
 
-mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const unsigned int *partial_count, const mt32emu_analog_output_mode *analog_output_mode) {
+mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const mt32emu_bit32u *partial_count, const mt32emu_analog_output_mode *analog_output_mode) {
 	if ((context->controlROMImage == NULL) || (context->pcmROMImage == NULL)) {
 		return MT32EMU_RC_MISSING_ROMS;
 	}
-	unsigned int partialCount = (partial_count == NULL) ? DEFAULT_MAX_PARTIALS : *partial_count;
+	Bit32u partialCount = (partial_count == NULL) ? DEFAULT_MAX_PARTIALS : *partial_count;
 	AnalogOutputMode analogOutputMode = (analog_output_mode == NULL) ? AnalogOutputMode_COARSE : (AnalogOutputMode)*analog_output_mode;
 	if (context->synth->open(*context->controlROMImage, *context->pcmROMImage, partialCount, analogOutputMode)) {
 		return MT32EMU_RC_OK;
@@ -447,11 +447,11 @@ mt32emu_boolean mt32emu_is_open(mt32emu_const_context context) {
 	return context->synth->isOpen() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
-unsigned int mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode) {
+mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode) {
 	return Synth::getStereoOutputSampleRate((AnalogOutputMode)analog_output_mode);
 }
 
-unsigned int mt32emu_get_actual_stereo_output_samplerate(mt32emu_const_context context) {
+mt32emu_bit32u mt32emu_get_actual_stereo_output_samplerate(mt32emu_const_context context) {
 	return context->synth->getStereoOutputSampleRate();
 }
 
@@ -520,7 +520,7 @@ void mt32emu_play_msg_now(mt32emu_const_context context, mt32emu_bit32u msg) {
 	context->synth->playMsgNow(msg);
 }
 
-void mt32emu_play_msg_on_part(mt32emu_const_context context, unsigned char part, unsigned char code, unsigned char note, unsigned char velocity) {
+void mt32emu_play_msg_on_part(mt32emu_const_context context, mt32emu_bit8u part, mt32emu_bit8u code, mt32emu_bit8u note, mt32emu_bit8u velocity) {
 	context->synth->playMsgOnPart(part, code, note, velocity);
 }
 
@@ -528,7 +528,7 @@ void mt32emu_play_sysex_now(mt32emu_const_context context, const mt32emu_bit8u *
 	context->synth->playSysexNow(sysex, len);
 }
 
-void mt32emu_write_sysex(mt32emu_const_context context, unsigned char channel, const mt32emu_bit8u *sysex, mt32emu_bit32u len) {
+void mt32emu_write_sysex(mt32emu_const_context context, mt32emu_bit8u channel, const mt32emu_bit8u *sysex, mt32emu_bit32u len) {
 	context->synth->writeSysex(channel, sysex, len);
 }
 
@@ -624,7 +624,7 @@ mt32emu_boolean mt32emu_is_active(mt32emu_const_context context) {
 	return context->synth->isActive() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
-unsigned int mt32emu_get_partial_count(mt32emu_const_context context) {
+mt32emu_bit32u mt32emu_get_partial_count(mt32emu_const_context context) {
 	return context->synth->getPartialCount();
 }
 
@@ -636,11 +636,11 @@ void mt32emu_get_partial_states(mt32emu_const_context context, mt32emu_bit8u *pa
 	context->synth->getPartialStates(partial_states);
 }
 
-unsigned int mt32emu_get_playing_notes(mt32emu_const_context context, unsigned int part_number, mt32emu_bit8u *keys, mt32emu_bit8u *velocities) {
+mt32emu_bit32u mt32emu_get_playing_notes(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u *keys, mt32emu_bit8u *velocities) {
 	return context->synth->getPlayingNotes(part_number, keys, velocities);
 }
 
-const char *mt32emu_get_patch_name(mt32emu_const_context context, unsigned int part_number) {
+const char *mt32emu_get_patch_name(mt32emu_const_context context, mt32emu_bit8u part_number) {
 	return context->synth->getPatchName(part_number);
 }
 

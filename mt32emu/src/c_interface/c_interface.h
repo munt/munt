@@ -87,7 +87,7 @@ MT32EMU_EXPORT void mt32emu_get_rom_info(mt32emu_const_context context, mt32emu_
  * If either partial_count and/or analog_output_mode arguments is set to NULL, the default value will be used.
  * Returns MT32EMU_RC_OK upon success.
  */
-MT32EMU_EXPORT mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const unsigned int *partial_count, const mt32emu_analog_output_mode *analog_output_mode);
+MT32EMU_EXPORT mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const mt32emu_bit32u *partial_count, const mt32emu_analog_output_mode *analog_output_mode);
 
 /** Closes the emulation context freeing allocated resources. Added ROMs remain unaffected and ready for reuse. */
 MT32EMU_EXPORT void mt32emu_close_synth(mt32emu_const_context context);
@@ -99,13 +99,13 @@ MT32EMU_EXPORT mt32emu_boolean mt32emu_is_open(mt32emu_const_context context);
  * Returns output sample rate used in emulation of stereo analog circuitry of hardware units for particular analog_output_mode.
  * See comment for mt32emu_analog_output_mode.
  */
-MT32EMU_EXPORT unsigned int mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode);
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode);
 
 /**
  * Returns actual output sample rate used in emulation of stereo analog circuitry of hardware units.
  * See comment for mt32emu_analog_output_mode.
  */
-MT32EMU_EXPORT unsigned int mt32emu_get_actual_stereo_output_samplerate(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_actual_stereo_output_samplerate(mt32emu_const_context context);
 
 /** All the enqueued events are processed by the synth immediately. */
 MT32EMU_EXPORT void mt32emu_flush_midi_queue(mt32emu_const_context context);
@@ -189,7 +189,7 @@ MT32EMU_EXPORT void mt32emu_play_msg_now(mt32emu_const_context context, mt32emu_
  * Sends unpacked short MIDI message to the synth for immediate playback. The message must contain a status byte.
  * See the WARNING above.
  */
-MT32EMU_EXPORT void mt32emu_play_msg_on_part(mt32emu_const_context context, unsigned char part, unsigned char code, unsigned char note, unsigned char velocity);
+MT32EMU_EXPORT void mt32emu_play_msg_on_part(mt32emu_const_context context, mt32emu_bit8u part, mt32emu_bit8u code, mt32emu_bit8u note, mt32emu_bit8u velocity);
 
 /**
  * Sends a single well formed System Exclusive MIDI message for immediate processing. The length is in bytes.
@@ -200,7 +200,7 @@ MT32EMU_EXPORT void mt32emu_play_sysex_now(mt32emu_const_context context, const 
  * Sends inner body of a System Exclusive MIDI message for direct processing. The length is in bytes.
  * See the WARNING above.
  */
-MT32EMU_EXPORT void mt32emu_write_sysex(mt32emu_const_context context, unsigned char channel, const mt32emu_bit8u *sysex, mt32emu_bit32u len);
+MT32EMU_EXPORT void mt32emu_write_sysex(mt32emu_const_context context, mt32emu_bit8u channel, const mt32emu_bit8u *sysex, mt32emu_bit32u len);
 
 /** Allows to disable wet reverb output altogether. */
 MT32EMU_EXPORT void mt32emu_set_reverb_enabled(mt32emu_const_context context, const mt32emu_boolean reverb_enabled);
@@ -294,7 +294,7 @@ MT32EMU_EXPORT mt32emu_boolean mt32emu_has_active_partials(mt32emu_const_context
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_active(mt32emu_const_context context);
 
 /** Returns the maximum number of partials playing simultaneously. */
-MT32EMU_EXPORT unsigned int mt32emu_get_partial_count(mt32emu_const_context context);
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_partial_count(mt32emu_const_context context);
 
 /**
  * Returns current states of all the parts as a bit set. The least significant bit corresponds to the state of part 1,
@@ -317,13 +317,13 @@ MT32EMU_EXPORT void mt32emu_get_partial_states(mt32emu_const_context context, mt
  * Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
  * Returns the number of currently playing notes on the specified part.
  */
-MT32EMU_EXPORT unsigned int mt32emu_get_playing_notes(mt32emu_const_context context, unsigned int part_number, mt32emu_bit8u *keys, mt32emu_bit8u *velocities);
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_playing_notes(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u *keys, mt32emu_bit8u *velocities);
 
 /**
  * Returns name of the patch set on the specified part.
  * Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
  */
-MT32EMU_EXPORT const char *mt32emu_get_patch_name(mt32emu_const_context context, unsigned int part_number);
+MT32EMU_EXPORT const char *mt32emu_get_patch_name(mt32emu_const_context context, mt32emu_bit8u part_number);
 
 /** Stores internal state of emulated synth into an array provided (as it would be acquired from hardware). */
 MT32EMU_EXPORT void mt32emu_read_memory(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data);

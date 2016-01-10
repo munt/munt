@@ -43,33 +43,33 @@ public:
 	~Service() { if (c.d != NULL) c.i->v0->freeContext(c); }
 
 	void freeContext() { if (c.d != NULL) { c.i->v0->freeContext(c); c.d = NULL; } }
-	mt32emu_bit32u getLibraryVersionInt() { return c.i->v0->getLibraryVersionInt(); }
+	Bit32u getLibraryVersionInt() { return c.i->v0->getLibraryVersionInt(); }
 	const char *getLibraryVersionString() { return c.i->v0->getLibraryVersionString(); }
-	mt32emu_return_code addROMData(const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest) { return c.i->v0->addROMData(c, data, data_size, sha1_digest); }
+	mt32emu_return_code addROMData(const Bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest) { return c.i->v0->addROMData(c, data, data_size, sha1_digest); }
 	mt32emu_return_code addROMFile(const char *filename) { return c.i->v0->addROMFile(c, filename); }
 	void getROMInfo(mt32emu_rom_info *rom_info) { c.i->v0->getROMInfo(c.d, rom_info); }
-	mt32emu_return_code openSynth(const unsigned int *partial_count, const mt32emu_analog_output_mode *analog_output_mode) { return c.i->v0->openSynth(c.d, partial_count, analog_output_mode); }
+	mt32emu_return_code openSynth(const Bit32u *partial_count, const mt32emu_analog_output_mode *analog_output_mode) { return c.i->v0->openSynth(c.d, partial_count, analog_output_mode); }
 	void closeSynth() { c.i->v0->closeSynth(c.d); }
 	mt32emu_boolean isOpen() { return c.i->v0->isOpen(c.d); }
-	unsigned int getStereoOutputSamplerate(const mt32emu_analog_output_mode analog_output_mode) { return c.i->v0->getStereoOutputSamplerate(analog_output_mode); }
-	unsigned int getActualStereoOutputSamplerate() { return c.i->v0->getActualStereoOutputSamplerate(c.d); }
+	Bit32u getStereoOutputSamplerate(const mt32emu_analog_output_mode analog_output_mode) { return c.i->v0->getStereoOutputSamplerate(analog_output_mode); }
+	Bit32u getActualStereoOutputSamplerate() { return c.i->v0->getActualStereoOutputSamplerate(c.d); }
 	void flushMIDIQueue() { c.i->v0->flushMIDIQueue(c.d); }
-	mt32emu_bit32u setMIDIEventQueueSize(const mt32emu_bit32u queue_size) { return c.i->v0->setMIDIEventQueueSize(c.d, queue_size); }
+	Bit32u setMIDIEventQueueSize(const Bit32u queue_size) { return c.i->v0->setMIDIEventQueueSize(c.d, queue_size); }
 	mt32emu_midi_receiver_version setMIDIReceiver(const mt32emu_midi_receiver_i *midi_receiver) { return c.i->v0->setMIDIReceiver(c.d, midi_receiver); }
 
-	void parseStream(const mt32emu_bit8u *stream, mt32emu_bit32u length) { c.i->v0->parseStream(c.d, stream, length); }
-	void parseStream_At(const mt32emu_bit8u *stream, mt32emu_bit32u length, mt32emu_bit32u timestamp) { c.i->v0->parseStream_At(c.d, stream, length, timestamp); }
-	void playShortMessage(mt32emu_bit32u message) { c.i->v0->playShortMessage(c.d, message); }
-	void playShortMessageAt(mt32emu_bit32u message, mt32emu_bit32u timestamp) { c.i->v0->playShortMessageAt(c.d, message, timestamp); }
-	mt32emu_return_code playMsg(mt32emu_bit32u msg) { return c.i->v0->playMsg(c.d, msg); }
-	mt32emu_return_code playSysex(const mt32emu_bit8u *sysex, mt32emu_bit32u len) { return c.i->v0->playSysex(c.d, sysex, len); }
-	mt32emu_return_code playMsgAt(mt32emu_bit32u msg, mt32emu_bit32u timestamp) { return c.i->v0->playMsgAt(c.d, msg, timestamp); }
-	mt32emu_return_code playSysexAt(const mt32emu_bit8u *sysex, mt32emu_bit32u len, mt32emu_bit32u timestamp) { return c.i->v0->playSysexAt(c.d, sysex, len, timestamp); }
+	void parseStream(const Bit8u *stream, Bit32u length) { c.i->v0->parseStream(c.d, stream, length); }
+	void parseStream_At(const Bit8u *stream, Bit32u length, Bit32u timestamp) { c.i->v0->parseStream_At(c.d, stream, length, timestamp); }
+	void playShortMessage(Bit32u message) { c.i->v0->playShortMessage(c.d, message); }
+	void playShortMessageAt(Bit32u message, Bit32u timestamp) { c.i->v0->playShortMessageAt(c.d, message, timestamp); }
+	mt32emu_return_code playMsg(Bit32u msg) { return c.i->v0->playMsg(c.d, msg); }
+	mt32emu_return_code playSysex(const Bit8u *sysex, Bit32u len) { return c.i->v0->playSysex(c.d, sysex, len); }
+	mt32emu_return_code playMsgAt(Bit32u msg, Bit32u timestamp) { return c.i->v0->playMsgAt(c.d, msg, timestamp); }
+	mt32emu_return_code playSysexAt(const Bit8u *sysex, Bit32u len, Bit32u timestamp) { return c.i->v0->playSysexAt(c.d, sysex, len, timestamp); }
 
-	void playMsgNow(mt32emu_bit32u msg) { c.i->v0->playMsgNow(c.d, msg); }
-	void playMsgOnPart(unsigned char part, unsigned char code, unsigned char note, unsigned char velocity) { c.i->v0->playMsgOnPart(c.d, part, code, note, velocity); }
-	void playSysexNow(const mt32emu_bit8u *sysex, mt32emu_bit32u len) { c.i->v0->playSysexNow(c.d, sysex, len); }
-	void writeSysex(unsigned char channel, const mt32emu_bit8u *sysex, mt32emu_bit32u len) { c.i->v0->writeSysex(c.d, channel, sysex, len); }
+	void playMsgNow(Bit32u msg) { c.i->v0->playMsgNow(c.d, msg); }
+	void playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) { c.i->v0->playMsgOnPart(c.d, part, code, note, velocity); }
+	void playSysexNow(const Bit8u *sysex, Bit32u len) { c.i->v0->playSysexNow(c.d, sysex, len); }
+	void writeSysex(Bit8u channel, const Bit8u *sysex, Bit32u len) { c.i->v0->writeSysex(c.d, channel, sysex, len); }
 
 	void setReverbEnabled(const mt32emu_boolean reverb_enabled) { c.i->v0->setReverbEnabled(c.d, reverb_enabled); }
 	mt32emu_boolean isReverbEnabled() { return c.i->v0->isReverbEnabled(c.d); }
@@ -93,19 +93,19 @@ public:
 	void setReversedStereoEnabled(const mt32emu_boolean enabled) { c.i->v0->setReversedStereoEnabled(c.d, enabled); }
 	mt32emu_boolean isReversedStereoEnabled() { return c.i->v0->isReversedStereoEnabled(c.d); }
 
-	void renderBit16s(mt32emu_bit16s *stream, mt32emu_bit32u len) { c.i->v0->renderBit16s(c.d, stream, len); }
-	void renderFloat(float *stream, mt32emu_bit32u len) { c.i->v0->renderFloat(c.d, stream, len); }
-	void renderBit16sStreams(const mt32emu_dac_output_bit16s_streams *streams, mt32emu_bit32u len) { c.i->v0->renderBit16sStreams(c.d, streams, len); }
-	void renderFloatStreams(const mt32emu_dac_output_float_streams *streams, mt32emu_bit32u len) { c.i->v0->renderFloatStreams(c.d, streams, len); }
+	void renderBit16s(Bit16s *stream, Bit32u len) { c.i->v0->renderBit16s(c.d, stream, len); }
+	void renderFloat(float *stream, Bit32u len) { c.i->v0->renderFloat(c.d, stream, len); }
+	void renderBit16sStreams(const mt32emu_dac_output_bit16s_streams *streams, Bit32u len) { c.i->v0->renderBit16sStreams(c.d, streams, len); }
+	void renderFloatStreams(const mt32emu_dac_output_float_streams *streams, Bit32u len) { c.i->v0->renderFloatStreams(c.d, streams, len); }
 
 	mt32emu_boolean hasActivePartials() { return c.i->v0->hasActivePartials(c.d); }
 	mt32emu_boolean isActive() { return c.i->v0->isActive(c.d); }
-	unsigned int getPartialCount() { return c.i->v0->getPartialCount(c.d); }
-	mt32emu_bit32u getPartStates() { return c.i->v0->getPartStates(c.d); }
-	void getPartialStates(mt32emu_bit8u *partial_states) { c.i->v0->getPartialStates(c.d, partial_states); }
-	unsigned int getPlayingNotes(unsigned int part_number, mt32emu_bit8u *keys, mt32emu_bit8u *velocities) { return c.i->v0->getPlayingNotes(c.d, part_number, keys, velocities); }
-	const char *getPatchName(unsigned int part_number) { return c.i->v0->getPatchName(c.d, part_number); }
-	void readMemory(mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data) { c.i->v0->readMemory(c.d, addr, len, data); }
+	Bit32u getPartialCount() { return c.i->v0->getPartialCount(c.d); }
+	Bit32u getPartStates() { return c.i->v0->getPartStates(c.d); }
+	void getPartialStates(Bit8u *partial_states) { c.i->v0->getPartialStates(c.d, partial_states); }
+	Bit32u getPlayingNotes(Bit8u part_number, Bit8u *keys, Bit8u *velocities) { return c.i->v0->getPlayingNotes(c.d, part_number, keys, velocities); }
+	const char *getPatchName(Bit8u part_number) { return c.i->v0->getPatchName(c.d, part_number); }
+	void readMemory(Bit32u addr, Bit32u len, Bit8u *data) { c.i->v0->readMemory(c.d, addr, len, data); }
 	mt32emu_report_handler_version getSupportedReportHandlerVersionID() { return c.i->v0->getSupportedReportHandlerVersionID(); }
 
 private:
