@@ -145,7 +145,7 @@ void TVP::reset(const Part *usePart, const TimbreParam::PartialParam *usePartial
 	phase = 0;
 
 	if (partialParam->pitchEnv.timeKeyfollow) {
-		timeKeyfollowSubtraction = (key - 60) >> (5 - partialParam->pitchEnv.timeKeyfollow); // PORTABILITY NOTE: Assumes arithmetic shift
+		timeKeyfollowSubtraction = (Bit32s)(key - 60) >> (5 - partialParam->pitchEnv.timeKeyfollow); // PORTABILITY NOTE: Assumes arithmetic shift
 	} else {
 		timeKeyfollowSubtraction = 0;
 	}
