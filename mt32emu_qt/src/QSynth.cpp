@@ -86,11 +86,11 @@ void QReportHandler::onNewReverbLevel(Bit8u level) {
 	emit reverbLevelChanged(level);
 }
 
-void QReportHandler::onPolyStateChanged(int partNum) {
+void QReportHandler::onPolyStateChanged(Bit8u partNum) {
 	emit polyStateChanged(partNum);
 }
 
-void QReportHandler::onProgramChanged(int partNum, const char soundGroupName[], const char patchName[]) {
+void QReportHandler::onProgramChanged(Bit8u partNum, const char soundGroupName[], const char patchName[]) {
 	emit programChanged(partNum, QString().fromLocal8Bit(soundGroupName), QString().fromLocal8Bit(patchName));
 }
 

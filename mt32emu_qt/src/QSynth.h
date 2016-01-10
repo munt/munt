@@ -56,8 +56,8 @@ public:
 	void onNewReverbMode(MT32Emu::Bit8u mode);
 	void onNewReverbTime(MT32Emu::Bit8u time);
 	void onNewReverbLevel(MT32Emu::Bit8u level);
-	void onPolyStateChanged(int partNum);
-	void onProgramChanged(int partNum, const char soundGroupName[], const char patchName[]);
+	void onPolyStateChanged(MT32Emu::Bit8u partNum);
+	void onProgramChanged(MT32Emu::Bit8u partNum, const char soundGroupName[], const char patchName[]);
 
 signals:
 	void balloonMessageAppeared(const QString &title, const QString &text);
