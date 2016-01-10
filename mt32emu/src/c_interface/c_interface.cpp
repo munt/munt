@@ -36,7 +36,7 @@ static mt32emu_service_version getSynthVersionID(const mt32emu_const_context) {
 	return MT32EMU_SERVICE_VERSION_CURRENT;
 }
 
-static const mt32emu_synth_i_v0 SYNTH_VTABLE = {
+static const mt32emu_service_i_v0 SYNTH_VTABLE = {
 	getSynthVersionID,
 	mt32emu_free_context,
 	mt32emu_get_library_version_int,
@@ -99,7 +99,7 @@ static const mt32emu_synth_i_v0 SYNTH_VTABLE = {
 } // namespace MT32Emu
 
 struct mt32emu_data {
-	mt32emu_synth_i i; // vtable placeholder
+	mt32emu_service_i i; // vtable placeholder
 	ReportHandlerAdapter *reportHandler;
 	Synth *synth;
 	const ROMImage *controlROMImage;

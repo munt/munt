@@ -192,7 +192,7 @@ union mt32emu_midi_receiver_i {
 	const mt32emu_midi_receiver_i_v0 *v0;
 };
 
-/* === Synth Interface === */
+/* === Service Interface === */
 
 /**
  * Basic interface that defines all the library services (initial version).
@@ -270,7 +270,7 @@ typedef struct {
 	const char *(*getPatchName)(mt32emu_const_context context, mt32emu_bit8u part_number);
 	void (*readMemory)(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data);
 	mt32emu_report_handler_version (*getSupportedReportHandlerVersionID)();
-} mt32emu_synth_i_v0;
+} mt32emu_service_i_v0;
 
 /**
  * Extensible interface for receiving MIDI messages.
@@ -278,11 +278,11 @@ typedef struct {
  * Elements are to be addressed using the tag of the interface version when they were introduced.
  */
 typedef union {
-	const mt32emu_synth_i_v0 *v0;
-} mt32emu_synth_i;
+	const mt32emu_service_i_v0 *v0;
+} mt32emu_service_i;
 
 union mt32emu_context {
-	const mt32emu_synth_i *i;
+	const mt32emu_service_i *i;
 	struct mt32emu_data *d;
 };
 
