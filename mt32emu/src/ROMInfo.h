@@ -46,7 +46,7 @@ public:
 	// Allows retrieving a NULL-terminated list of ROMInfos for a range of types and pairTypes
 	// (specified by bitmasks)
 	// Useful for GUI/console app to output information on what ROMs it supports
-	MT32EMU_EXPORT static const ROMInfo** getROMInfoList(unsigned int types, unsigned int pairTypes);
+	MT32EMU_EXPORT static const ROMInfo** getROMInfoList(Bit32u types, Bit32u pairTypes);
 
 	// Frees the list of ROMInfos given
 	MT32EMU_EXPORT static void freeROMInfoList(const ROMInfo **romInfos);
