@@ -47,7 +47,9 @@ Tables::Tables() {
 		envLogarithmicTime[lf] = (Bit8u)ceil(64.0f + LOG2F((float)lf) * 8.0f);
 	}
 
-#ifdef EMULATE_LAPC_I // Dummy #ifdef - we'll have runtime emulation mode selection in future.
+#if 0
+	// The table below is to be used in conjunction with emulation of VCA of newer generation units which is currently missing.
+	// These relatively small values are rather intended to fine-tune the overall amplification of the VCA.
 	// CONFIRMED: Based on a table found by Mok in the LAPC-I control ROM
 	// Note that this matches the MT-32 table, but with the values clamped to a maximum of 8.
 	memset(masterVolToAmpSubtraction, 8, 71);
