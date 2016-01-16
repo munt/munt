@@ -83,7 +83,7 @@ Additional dependencies maybe needed (depending on the platform):
 License
 =======
 
-Copyright (C) 2011-2015 Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011-2016 Jerome Fisher, Sergey V. Mikayev
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
