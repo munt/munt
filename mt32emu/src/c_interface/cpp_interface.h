@@ -22,7 +22,6 @@
 
 #include "../globals.h"
 #include "c_types.h"
-#include "c_interface.h"
 
 #include "../Types.h"
 #include "../Enumerations.h"

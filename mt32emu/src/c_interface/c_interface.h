@@ -24,11 +24,7 @@
 #include "c_types.h"
 
 #undef MT32EMU_EXPORT
-#if MT32EMU_EXPORTS_TYPE == 0
-#define MT32EMU_EXPORT
-#else
 #define MT32EMU_EXPORT MT32EMU_EXPORT_ATTRIBUTE
-#endif
 
 #ifdef __cplusplus
 extern "C" {

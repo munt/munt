@@ -14,7 +14,7 @@
 	  - introduced C-compatible API as a facade, that allows using the library with programs written in other languages
 	    as well as provides for consistent well-defined ABI for the library as a shared object;
 	  - C-compatible API also involves COM-like interfaces to simplify usage of the library as a plugin loaded in run-time;
-	  - three new build options libmt32emu_SHARED, libmt32emu_C_INTERFACE and libmt32emu_PLUGIN_INTERFACE intended
+	  - three new build options libmt32emu_SHARED, libmt32emu_C_INTERFACE and libmt32emu_CPP_INTERFACE intended
 	    to configure whether to build a statically or dynamically linked library, whether to include C-compatible API,
 	    and whether to expose C functions other than the class factory (that in turn allows to reduce the symbol table).
 

@@ -18,6 +18,8 @@
 #ifndef MT32EMU_GLOBALS_H
 #define MT32EMU_GLOBALS_H
 
+#include "config.h"
+
 /* Support for compiling shared library. */
 #ifdef MT32EMU_SHARED
 #if defined _WIN32 || defined __CYGWIN__
@@ -41,10 +43,10 @@
 #define MT32EMU_EXPORT_ATTRIBUTE
 #endif /* #ifdef MT32EMU_SHARED */
 
-#if MT32EMU_EXPORTS_TYPE == 0
-#define MT32EMU_EXPORT MT32EMU_EXPORT_ATTRIBUTE
-#else
+#if MT32EMU_EXPORTS_TYPE == 1 || MT32EMU_EXPORTS_TYPE == 2
 #define MT32EMU_EXPORT
+#else
+#define MT32EMU_EXPORT MT32EMU_EXPORT_ATTRIBUTE
 #endif
 
 /* Useful constants */
@@ -112,6 +114,6 @@ const unsigned int SYSEX_BUFFER_SIZE = MT32EMU_SYSEX_BUFFER_SIZE;
 #undef MT32EMU_SYSEX_BUFFER_SIZE
 }
 
-#endif /* #if defined(__cplusplus) && !MT32EMU_C_INTERFACE */
+#endif /* #if defined(__cplusplus) && MT32EMU_API_TYPE != 1 */
 
 #endif /* #ifndef MT32EMU_GLOBALS_H */

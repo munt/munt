@@ -23,6 +23,7 @@
 #include "../Synth.h"
 #include "../MidiStreamParser.h"
 
+#include "c_types.h"
 #include "c_interface.h"
 
 using namespace MT32Emu;

@@ -5,11 +5,6 @@ set(libmt32emu_VERSION_MINOR 5)
 set(libmt32emu_VERSION_PATCH 0)
 set(libmt32emu_VERSION "${libmt32emu_VERSION_MAJOR}.${libmt32emu_VERSION_MINOR}.${libmt32emu_VERSION_PATCH}")
 
-add_definitions(-DMT32EMU_VERSION_MAJOR=${libmt32emu_VERSION_MAJOR})
-add_definitions(-DMT32EMU_VERSION_MINOR=${libmt32emu_VERSION_MINOR})
-add_definitions(-DMT32EMU_VERSION_PATCH=${libmt32emu_VERSION_PATCH})
-add_definitions(-DMT32EMU_VERSION="${libmt32emu_VERSION}")
-
 if(${munt_WITH_MT32EMU_SMF2WAV} OR ${munt_WITH_MT32EMU_QT})
   set(libmt32emu_STANDALONE_BUILD FALSE)
 else()
@@ -17,17 +12,16 @@ else()
 endif()
 
 option(libmt32emu_SHARED "Build shared library" ${libmt32emu_STANDALONE_BUILD})
+option(libmt32emu_C_INTERFACE "Provide C-compatible API" TRUE)
 
-if(${libmt32emu_SHARED} AND NOT ${libmt32emu_STANDALONE_BUILD})
-  if(${libmt32emu_C_INTERFACE} OR ${libmt32emu_PLUGIN_INTERFACE})
-    message(STATUS "Options libmt32emu_C_INTERFACE and libmt32emu_PLUGIN_INTERFACE only supported for static library builds or stand-alone shared library builds, ignored")
-    set(libmt32emu_C_INTERFACE FALSE)
-    set(libmt32emu_PLUGIN_INTERFACE FALSE)
-  endif(${libmt32emu_C_INTERFACE} OR ${libmt32emu_PLUGIN_INTERFACE})
-else(${libmt32emu_SHARED} AND NOT ${libmt32emu_STANDALONE_BUILD})
-  option(libmt32emu_C_INTERFACE "Provide C compatible external interface" ${libmt32emu_SHARED})
-  option(libmt32emu_PLUGIN_INTERFACE "Provide plugin external interface via C++ abstract classes, implies libmt32emu_C_INTERFACE=FALSE" FALSE)
-endif(${libmt32emu_SHARED} AND NOT ${libmt32emu_STANDALONE_BUILD})
+if(${libmt32emu_SHARED} AND ${libmt32emu_STANDALONE_BUILD})
+  option(libmt32emu_CPP_INTERFACE "Provide C++ classes (compiler-specific ABI)" TRUE)
+else(${libmt32emu_SHARED} AND ${libmt32emu_STANDALONE_BUILD})
+  if(NOT ${libmt32emu_CPP_INTERFACE})
+    message(STATUS "Option libmt32emu_CPP_INTERFACE implied TRUE for static library builds and for non-stand-alone shared library builds")
+  endif(NOT ${libmt32emu_CPP_INTERFACE})
+  set(libmt32emu_CPP_INTERFACE TRUE)
+endif(${libmt32emu_SHARED} AND ${libmt32emu_STANDALONE_BUILD})
 
 set(libmt32emu_SOURCES
   src/Analog.cpp
@@ -50,14 +44,14 @@ set(libmt32emu_SOURCES
   src/sha1/sha1.cpp
 )
 
-# Headers that always need to be installed:
+# Public headers that always need to be installed:
 set(libmt32emu_COMMON_HEADERS
   mt32emu.h
   globals.h
   Enumerations.h
 )
 
-# Headers used by C++ clients:
+# Public headers used by C++ clients:
 set(libmt32emu_CPP_HEADERS
   File.h
   FileStream.h
@@ -67,35 +61,49 @@ set(libmt32emu_CPP_HEADERS
   Types.h
 )
 
-# Headers that support C-compatible and plugin-style API:
+# Public headers that support C-compatible and plugin-style API:
 set(libmt32emu_C_HEADERS
   c_interface/c_interface.h
   c_interface/c_types.h
   c_interface/cpp_interface.h
 )
 
-if(libmt32emu_C_INTERFACE OR libmt32emu_PLUGIN_INTERFACE)
+if(libmt32emu_CPP_INTERFACE AND NOT libmt32emu_C_INTERFACE)
+  # C++ API type
+  set(libmt32emu_EXPORTS_TYPE 0)
+
+  set(libmt32emu_HEADERS
+    ${libmt32emu_COMMON_HEADERS}
+    ${libmt32emu_CPP_HEADERS}
+  )
+else(libmt32emu_CPP_INTERFACE AND NOT libmt32emu_C_INTERFACE)
   list(APPEND libmt32emu_SOURCES
     src/c_interface/c_interface.cpp
   )
-  if(libmt32emu_SHARED)
-    set(libmt32emu_HEADERS
-      ${libmt32emu_COMMON_HEADERS}
-      ${libmt32emu_C_HEADERS}
-    )
-  else(libmt32emu_SHARED)
+  # All API types
+  if(libmt32emu_CPP_INTERFACE)
+    set(libmt32emu_EXPORTS_TYPE 3)
+
     set(libmt32emu_HEADERS
       ${libmt32emu_COMMON_HEADERS}
       ${libmt32emu_CPP_HEADERS}
       ${libmt32emu_C_HEADERS}
     )
-  endif(libmt32emu_SHARED)
-else(libmt32emu_C_INTERFACE OR libmt32emu_PLUGIN_INTERFACE)
-  set(libmt32emu_HEADERS
-    ${libmt32emu_COMMON_HEADERS}
-    ${libmt32emu_CPP_HEADERS}
-  )
-endif(libmt32emu_C_INTERFACE OR libmt32emu_PLUGIN_INTERFACE)
+  else(libmt32emu_CPP_INTERFACE)
+    if(libmt32emu_C_INTERFACE)
+      # C API type
+      set(libmt32emu_EXPORTS_TYPE 1)
+    else(libmt32emu_C_INTERFACE)
+      # Plugin API type
+      set(libmt32emu_EXPORTS_TYPE 2)
+    endif(libmt32emu_C_INTERFACE)
+
+    set(libmt32emu_HEADERS
+      ${libmt32emu_COMMON_HEADERS}
+      ${libmt32emu_C_HEADERS}
+    )
+  endif(libmt32emu_CPP_INTERFACE)
+endif(libmt32emu_CPP_INTERFACE AND NOT libmt32emu_C_INTERFACE)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor -Wshadow -ansi -pedantic)
@@ -105,24 +113,19 @@ if(MSVC)
   add_definitions(-D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1)
 endif()
 
+if(libmt32emu_SHARED)
+  add_definitions(-DMT32EMU_SHARED)
+  set(libmt32emu_BUILD_TYPE SHARED)
+  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+endif(libmt32emu_SHARED)
+
 file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu)
 foreach(HEADER ${libmt32emu_HEADERS})
   configure_file("src/${HEADER}" "include/mt32emu/${HEADER}" COPYONLY)
 endforeach(HEADER)
 
-if(libmt32emu_SHARED)
-  if(libmt32emu_C_INTERFACE)
-    add_definitions(-DMT32EMU_EXPORTS_TYPE=1)
-  elseif(libmt32emu_PLUGIN_INTERFACE)
-    add_definitions(-DMT32EMU_EXPORTS_TYPE=2)
-  else(libmt32emu_C_INTERFACE)
-    add_definitions(-DMT32EMU_EXPORTS_TYPE=0)
-  endif(libmt32emu_C_INTERFACE)
-
-  add_definitions(-DMT32EMU_SHARED)
-  set(libmt32emu_BUILD_TYPE SHARED)
-  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-endif(libmt32emu_SHARED)
+configure_file("src/config.h.in" "include/mt32emu/config.h")
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu)
 
 add_library(mt32emu ${libmt32emu_BUILD_TYPE} ${libmt32emu_SOURCES})
 
@@ -148,10 +151,8 @@ install(FILES
 
 # Locations are exported for the benefit of a higher-level CMakeLists.txt.
 # These lines are irrelevant if compiling stand-alone.
-if(NOT libmt32emu_STANDALONE_BUILD)
-  set(MT32EMU_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" CACHE PATH "")
-  set(MT32EMU_LIBRARY $<TARGET_LINKER_FILE:mt32emu> CACHE FILEPATH "")
-endif()
+set(MT32EMU_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" CACHE PATH "")
+set(MT32EMU_LIBRARY $<TARGET_LINKER_FILE:mt32emu> CACHE FILEPATH "")
 
 # build a CPack driven installer package
 set(CPACK_PACKAGE_VERSION_MAJOR "${libmt32emu_VERSION_MAJOR}")
