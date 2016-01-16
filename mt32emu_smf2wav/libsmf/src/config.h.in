@@ -1,1 +1,1 @@
-#define PACKAGE_VERSION "@libsmfmunt_VERSION_MAJOR@.@libsmfmunt_VERSION_MINOR"
+#define PACKAGE_VERSION "@libsmf_VERSION_MAJOR@.@libsmf_VERSION_MINOR@"
