@@ -24,10 +24,6 @@
 #include <windows.h>
 #endif
 
-#ifndef GIT_HASH
-#define GIT_HASH "Unknown"
-#endif
-
 #ifndef BUILD_DATE
 #ifdef __DATE__
 #define BUILD_DATE __DATE__
@@ -116,14 +112,12 @@ void MainWindow::on_actionAbout_triggered()
 	QMessageBox::about(this, "About",
 		"Munt - Roland (R) MT-32 sound module emulator\n"
 		"\n"
-		"Munt Library Version " + QString(MT32Emu::Synth::getLibraryVersionString()) + "\n"
 		"Munt mt32emu_qt GUI Application Version " APP_VERSION "\n"
-		"Qt Library Version " QT_VERSION_STR "\n"
+		"Munt Library Version " + QString(MT32Emu::Synth::getLibraryVersionString()) + "\n"
+		"Qt Library Version " + qVersion() + "\n"
 		"\n"
-		"Build Info:\n"
-		"  Arch:\t" BUILD_SYSTEM " " + QString::number(QSysInfo::WordSize) + "-bit\n"
-		"  Hash:\t" GIT_HASH "\n"
-		"  Date:\t" BUILD_DATE "\n"
+		"Build Arch: " BUILD_SYSTEM " " + QString::number(QSysInfo::WordSize) + "-bit\n"
+		"Build Date: " BUILD_DATE "\n"
 		"\n"
 		"Copyright (C) 2011-2016 Jerome Fisher, Sergey V. Mikayev\n"
 		"\n"
