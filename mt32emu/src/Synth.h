@@ -398,12 +398,12 @@ public:
 	// NULL may be specified in place of any or all of the stream buffers to skip it.
 	// The length is in samples, not bytes. Uses NATIVE byte ordering.
 	MT32EMU_EXPORT void renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
-	MT32EMU_EXPORT void renderStreams(const DACOutputStreams<Bit16s> &streams, Bit32u len) {
+	void renderStreams(const DACOutputStreams<Bit16s> &streams, Bit32u len) {
 		renderStreams(streams.nonReverbLeft, streams.nonReverbRight, streams.reverbDryLeft, streams.reverbDryRight, streams.reverbWetLeft, streams.reverbWetRight, len);
 	}
 	// Same as above but outputs to float streams.
 	MT32EMU_EXPORT void renderStreams(float *nonReverbLeft, float *nonReverbRight, float *reverbDryLeft, float *reverbDryRight, float *reverbWetLeft, float *reverbWetRight, Bit32u len);
-	MT32EMU_EXPORT void renderStreams(const DACOutputStreams<float> &streams, Bit32u len) {
+	void renderStreams(const DACOutputStreams<float> &streams, Bit32u len) {
 		renderStreams(streams.nonReverbLeft, streams.nonReverbRight, streams.reverbDryLeft, streams.reverbDryRight, streams.reverbWetLeft, streams.reverbWetRight, len);
 	}
 
