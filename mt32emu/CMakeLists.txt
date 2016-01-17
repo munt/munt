@@ -23,6 +23,8 @@ else(${libmt32emu_SHARED} AND ${libmt32emu_STANDALONE_BUILD})
   set(libmt32emu_CPP_INTERFACE TRUE)
 endif(${libmt32emu_SHARED} AND ${libmt32emu_STANDALONE_BUILD})
 
+set(LIB_INSTALL_DIR lib CACHE PATH "Relative installation path to libraries")
+
 set(libmt32emu_SOURCES
   src/Analog.cpp
   src/BReverbModel.cpp
@@ -135,8 +137,8 @@ set_target_properties(mt32emu
 )
 
 install(TARGETS mt32emu
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+  LIBRARY DESTINATION ${LIB_INSTALL_DIR}
   RUNTIME DESTINATION bin
 )
 install(DIRECTORY
