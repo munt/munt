@@ -67,10 +67,10 @@ void SincResampler::I::computeResampleFactors(const double inputFrequency, const
 		double inputToOutputRatio = inputFrequency / outputFrequency;
 		for (unsigned int i = 1; i <= MAX_NUMBER_OF_PHASES; ++i) {
 			double testFactor = inputToOutputRatio * i;
-			if (round(RATIONAL_RATIO_ACCURACY_FACTOR * testFactor) == RATIONAL_RATIO_ACCURACY_FACTOR * round(testFactor)) {
+			if (floor(RATIONAL_RATIO_ACCURACY_FACTOR * testFactor + 0.5) == RATIONAL_RATIO_ACCURACY_FACTOR * floor(testFactor + 0.5)) {
 				// inputToOutputRatio found to be rational within accuracy
 				upsampleFactor = i;
-				downsampleFactor = round(testFactor);
+				downsampleFactor = floor(testFactor + 0.5);
 				return;
 			}
 		}
