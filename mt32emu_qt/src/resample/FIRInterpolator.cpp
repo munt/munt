@@ -28,7 +28,7 @@ FIRInterpolator::C::C(const unsigned int upsampleFactor, const double downsample
 	numberOfTaps = kernelLength;
 	numberOfPhases = upsampleFactor;
 	phaseIncrement = downsampleFactor;
-	unsigned int minDelayLineLength = (unsigned int)ceil(kernelLength / upsampleFactor);
+	unsigned int minDelayLineLength = (unsigned int)ceil((double)kernelLength / upsampleFactor);
 	unsigned int delayLineLength = 2;
 	while (delayLineLength < minDelayLineLength) delayLineLength <<= 1;
 	delayLineMask = delayLineLength - 1;
