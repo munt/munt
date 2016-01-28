@@ -694,7 +694,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	setReverbOutputGain(reverbOutputGain);
 
 	opened = true;
-	isEnabled = false;
+	activated = false;
 
 #if MT32EMU_MONITOR_INIT
 	printDebug("*** Initialisation complete ***");
@@ -819,7 +819,7 @@ bool Synth::playMsg(Bit32u msg, Bit32u timestamp) {
 	if (midiDelayMode != MIDIDelayMode_IMMEDIATE) {
 		timestamp = addMIDIInterfaceDelay(getShortMessageLength(msg), timestamp);
 	}
-	if (!isEnabled) isEnabled = true;
+	if (!activated) activated = true;
 	return midiQueue->pushShortMessage(msg, timestamp);
 }
 
@@ -832,7 +832,7 @@ bool Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
 	if (midiDelayMode == MIDIDelayMode_DELAY_ALL) {
 		timestamp = addMIDIInterfaceDelay(len, timestamp);
 	}
-	if (!isEnabled) isEnabled = true;
+	if (!activated) activated = true;
 	return midiQueue->pushSysex(sysex, len, timestamp);
 }
 
@@ -844,7 +844,7 @@ void Synth::playMsgNow(Bit32u msg) {
 	Bit8u chan = (Bit8u)(msg & 0x00000F);
 	Bit8u note = (Bit8u)((msg & 0x007F00) >> 8);
 	Bit8u velocity = (Bit8u)((msg & 0x7F0000) >> 16);
-	if (!isEnabled) isEnabled = true;
+	if (!activated) activated = true;
 
 	//printDebug("Playing chan %d, code 0x%01x note: 0x%02x", chan, code, note);
 
@@ -1578,7 +1578,7 @@ void Synth::reset() {
 		}
 	}
 	refreshSystem();
-	isEnabled = false;
+	activated = false;
 }
 
 MidiEvent::~MidiEvent() {
@@ -1665,7 +1665,7 @@ Bit32u Synth::getStereoOutputSampleRate() const {
 }
 
 void Renderer::render(SampleFormatConverter &converter, Bit32u len) {
-	if (!synth.isEnabled) {
+	if (!synth.activated) {
 		synth.renderedSampleCount += synth.analog->getDACStreamsLength(len);
 		synth.analog->process(NULL, NULL, NULL, NULL, NULL, NULL, NULL, len);
 		converter.addSilence(len << 1);
@@ -1844,7 +1844,7 @@ void Renderer::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sa
 	if (reverbDryLeft == NULL) reverbDryLeft = tmpBufReverbDryLeft;
 	if (reverbDryRight == NULL) reverbDryRight = tmpBufReverbDryRight;
 
-	if (synth.isEnabled) {
+	if (synth.activated) {
 		Synth::muteSampleBuffer(nonReverbLeft, len);
 		Synth::muteSampleBuffer(nonReverbRight, len);
 		Synth::muteSampleBuffer(reverbDryLeft, len);
@@ -1921,7 +1921,7 @@ bool Synth::isAbortingPoly() const {
 	return abortingPoly != NULL;
 }
 
-bool Synth::isActive() const {
+bool Synth::isActive() {
 	if (!opened) {
 		return false;
 	}
@@ -1931,7 +1931,7 @@ bool Synth::isActive() const {
 	if (isReverbEnabled() && reverbModel->isActive()) {
 		return true;
 	}
-	isEnabled = false;
+	activated = false;
 	return false;
 }
 

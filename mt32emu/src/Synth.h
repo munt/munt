@@ -128,8 +128,6 @@ private:
 
 	Bit8u *paddedTimbreMaxTable;
 
-	bool isEnabled;
-
 	PCMWaveEntry *pcmWaves; // Array
 
 	const ControlROMFeatureSet *controlROMFeatures;
@@ -163,6 +161,7 @@ private:
 	bool reversedStereoEnabled;
 
 	bool opened;
+	bool activated;
 
 	bool isDefaultReportHandler;
 	ReportHandler *reportHandler;
@@ -410,8 +409,10 @@ public:
 	// Returns true when there is at least one active partial, otherwise false.
 	MT32EMU_EXPORT bool hasActivePartials() const;
 
-	// Returns true if hasActivePartials() returns true, or reverb is (somewhat unreliably) detected as being active.
-	MT32EMU_EXPORT bool isActive() const;
+	// Returns true if the synth is active and subsequent calls to render() may result in non-trivial output (i.e. silence).
+	// The synth is considered active when either there are pending MIDI events in the queue, there is at least one active partial,
+	// or the reverb is (somewhat unreliably) detected as being active.
+	MT32EMU_EXPORT bool isActive();
 
 	// Returns the maximum number of partials playing simultaneously.
 	MT32EMU_EXPORT Bit32u getPartialCount() const;
