@@ -541,6 +541,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	if (!loadControlROM(controlROMImage)) {
 		printDebug("Init Error - Missing or invalid Control ROM image");
 		reportHandler->onErrorControlROM();
+		close(true);
 		return false;
 	}
 
@@ -558,6 +559,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	if (!loadPCMROM(pcmROMImage)) {
 		printDebug("Init Error - Missing PCM ROM image");
 		reportHandler->onErrorPCMROM();
+		close(true);
 		return false;
 	}
 
@@ -574,6 +576,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	printDebug("Initialising Timbre Bank A");
 #endif
 	if (!initTimbres(controlROMMap->timbreAMap, controlROMMap->timbreAOffset, 0x40, 0, controlROMMap->timbreACompressed)) {
+		close(true);
 		return false;
 	}
 
@@ -581,6 +584,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	printDebug("Initialising Timbre Bank B");
 #endif
 	if (!initTimbres(controlROMMap->timbreBMap, controlROMMap->timbreBOffset, 0x40, 64, controlROMMap->timbreBCompressed)) {
+		close(true);
 		return false;
 	}
 
@@ -588,6 +592,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	printDebug("Initialising Timbre Bank R");
 #endif
 	if (!initTimbres(controlROMMap->timbreRMap, 0, controlROMMap->timbreRCount, 192, true)) {
+		close(true);
 		return false;
 	}
 
@@ -1901,6 +1906,9 @@ void Synth::printPartialUsage(Bit32u sampleOffset) {
 }
 
 bool Synth::hasActivePartials() const {
+	if (!opened) {
+		return false;
+	}
 	for (unsigned int partialNum = 0; partialNum < getPartialCount(); partialNum++) {
 		if (partialManager->getPartial(partialNum)->isActive()) {
 			return true;
