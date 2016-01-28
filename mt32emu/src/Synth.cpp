@@ -1928,9 +1928,10 @@ bool Synth::isActive() const {
 	if (!midiQueue->isEmpty() || hasActivePartials()) {
 		return true;
 	}
-	if (isReverbEnabled()) {
-		return reverbModel->isActive();
+	if (isReverbEnabled() && reverbModel->isActive()) {
+		return true;
 	}
+	isEnabled = false;
 	return false;
 }
 
