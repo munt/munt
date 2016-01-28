@@ -1637,7 +1637,7 @@ bool MidiEventQueue::pushSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32
 }
 
 const MidiEvent *MidiEventQueue::peekMidiEvent() {
-	return (startPosition == endPosition) ? NULL : &ringBuffer[startPosition];
+	return isEmpty() ? NULL : &ringBuffer[startPosition];
 }
 
 void MidiEventQueue::dropMidiEvent() {
@@ -1914,7 +1914,10 @@ bool Synth::isAbortingPoly() const {
 }
 
 bool Synth::isActive() const {
-	if (hasActivePartials() || (midiQueue != NULL && !midiQueue->isEmpty())) {
+	if (!opened) {
+		return false;
+	}
+	if (!midiQueue->isEmpty() || hasActivePartials()) {
 		return true;
 	}
 	if (isReverbEnabled()) {
