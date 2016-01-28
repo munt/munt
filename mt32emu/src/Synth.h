@@ -275,6 +275,9 @@ public:
 	// Returns true if the synth is in completely initialized state, otherwise returns false.
 	MT32EMU_EXPORT bool isOpen() const;
 
+	// Returns true if the internal MIDI event queue is empty, otherwise returns false.
+	MT32EMU_EXPORT bool queueIsEmpty() const;
+
 	// All the enqueued events are processed by the synth immediately.
 	MT32EMU_EXPORT void flushMIDIQueue();
 

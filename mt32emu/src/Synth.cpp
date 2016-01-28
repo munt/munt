@@ -742,6 +742,10 @@ bool Synth::isOpen() const {
 	return opened;
 }
 
+bool Synth::queueIsEmpty() const {
+	return midiQueue == NULL || midiQueue->isEmpty();
+}
+
 void Synth::flushMIDIQueue() {
 	if (midiQueue != NULL) {
 		for (;;) {
@@ -1649,6 +1653,10 @@ void MidiEventQueue::dropMidiEvent() {
 
 bool MidiEventQueue::isFull() const {
 	return startPosition == ((endPosition + 1) & ringBufferMask);
+}
+
+bool MidiEventQueue::isEmpty() const {
+	return startPosition == endPosition;
 }
 
 Bit32u Synth::getStereoOutputSampleRate() const {
