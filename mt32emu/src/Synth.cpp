@@ -1651,6 +1651,10 @@ bool MidiEventQueue::isFull() const {
 	return startPosition == ((endPosition + 1) & ringBufferMask);
 }
 
+bool MidiEventQueue::isEmpty() const {
+	return startPosition == endPosition;
+}
+
 Bit32u Synth::getStereoOutputSampleRate() const {
 	return (analog == NULL) ? SAMPLE_RATE : analog->getOutputSampleRate();
 }
@@ -1910,7 +1914,7 @@ bool Synth::isAbortingPoly() const {
 }
 
 bool Synth::isActive() const {
-	if (hasActivePartials()) {
+	if (hasActivePartials() || (midiQueue != NULL && !midiQueue->isEmpty())) {
 		return true;
 	}
 	if (isReverbEnabled()) {
