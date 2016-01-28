@@ -63,6 +63,7 @@ public:
 	const MidiEvent *peekMidiEvent();
 	void dropMidiEvent();
 	bool isFull() const;
+	bool isEmpty() const;
 };
 
 } // namespace MT32Emu
