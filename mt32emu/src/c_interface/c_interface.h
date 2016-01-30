@@ -30,13 +30,16 @@
 extern "C" {
 #endif
 
-/** Initialises a new emulation context and installs custom report handler if non-NULL. */
-MT32EMU_EXPORT mt32emu_context mt32emu_create_context(const mt32emu_report_handler_i *report_handler);
+/** Returns mt32emu_service_i interface. */
+MT32EMU_EXPORT const mt32emu_service_i mt32emu_get_service_i();
 
 #if MT32EMU_EXPORTS_TYPE == 2
 #undef MT32EMU_EXPORT
 #define MT32EMU_EXPORT
 #endif
+
+/** Initialises a new emulation context and installs custom report handler if non-NULL. */
+MT32EMU_EXPORT mt32emu_context mt32emu_create_context(const mt32emu_report_handler_i *report_handler);
 
 /** Closes and destroys emulation context. */
 MT32EMU_EXPORT void mt32emu_free_context(mt32emu_context context);

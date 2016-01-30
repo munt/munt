@@ -59,7 +59,7 @@ typedef enum {
 } mt32emu_return_code;
 
 /** Emulation context */
-typedef union mt32emu_context mt32emu_context;
+typedef struct mt32emu_data *mt32emu_context;
 typedef const struct mt32emu_data *mt32emu_const_context;
 
 /* Convenience aliases */
@@ -205,6 +205,7 @@ typedef struct {
 	/** Returns the actual interface version ID */
 	mt32emu_service_version (*getVersionID)(const mt32emu_const_context context);
 
+	mt32emu_context (*createContext)(const mt32emu_report_handler_i *report_handler);
 	void (*freeContext)(mt32emu_context context);
 	mt32emu_bit32u (*getLibraryVersionInt)();
 	const char *(*getLibraryVersionString)();
@@ -280,10 +281,5 @@ typedef struct {
 typedef union {
 	const mt32emu_service_i_v0 *v0;
 } mt32emu_service_i;
-
-union mt32emu_context {
-	const mt32emu_service_i *i;
-	struct mt32emu_data *d;
-};
 
 #endif /* #ifndef MT32EMU_C_TYPES_H */

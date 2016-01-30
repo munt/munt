@@ -39,6 +39,7 @@ static mt32emu_service_version getSynthVersionID(const mt32emu_const_context) {
 
 static const mt32emu_service_i_v0 SYNTH_VTABLE = {
 	getSynthVersionID,
+	mt32emu_create_context,
 	mt32emu_free_context,
 	mt32emu_get_library_version_int,
 	mt32emu_get_library_version_string,
@@ -100,7 +101,6 @@ static const mt32emu_service_i_v0 SYNTH_VTABLE = {
 } // namespace MT32Emu
 
 struct mt32emu_data {
-	mt32emu_service_i i; // vtable placeholder
 	ReportHandlerAdapter *reportHandler;
 	Synth *synth;
 	const ROMImage *controlROMImage;
@@ -344,21 +344,23 @@ static mt32emu_return_code addROMFile(mt32emu_data *data, File *file) {
 
 extern "C" {
 
+const mt32emu_service_i mt32emu_get_service_i() {
+	mt32emu_service_i i = { &SYNTH_VTABLE };
+	return i;
+}
+
 mt32emu_context mt32emu_create_context(const mt32emu_report_handler_i *report_handler) {
 	mt32emu_data *data = new mt32emu_data;
-	data->i.v0 = &SYNTH_VTABLE;
 	data->reportHandler = (report_handler != NULL) ? new DelegatingReportHandlerAdapter(report_handler) : new ReportHandlerAdapter;
 	data->synth = new Synth(data->reportHandler);
 	data->midiParser = new MidiStreamParserAdapter(data);
 	data->controlROMImage = NULL;
 	data->pcmROMImage = NULL;
-	mt32emu_context context;
-	context.d = data;
-	return context;
+	return data;
 }
 
-void mt32emu_free_context(mt32emu_context context) {
-	mt32emu_data *data = context.d;
+void mt32emu_free_context(mt32emu_context data) {
+	if (data == NULL) return;
 	if (data->controlROMImage != NULL) {
 		delete data->controlROMImage->getFile();
 		ROMImage::freeROMImage(data->controlROMImage);
@@ -387,7 +389,7 @@ const char *mt32emu_get_library_version_string() {
 }
 
 mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest) {
-	return addROMFile(context.d, new ArrayFile(data, data_size, *sha1_digest));
+	return addROMFile(context, new ArrayFile(data, data_size, *sha1_digest));
 }
 
 mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *filename) {
@@ -395,7 +397,7 @@ mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *fi
 	FileStream *fs = new FileStream;
 	if (fs->open(filename)) {
 		if (fs->getData() != NULL) {
-			rc = addROMFile(context.d, fs);
+			rc = addROMFile(context, fs);
 			if (rc > 0) return rc;
 		} else {
 			rc = MT32EMU_RC_FILE_NOT_LOADED;
