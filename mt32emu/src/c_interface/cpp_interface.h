@@ -28,6 +28,8 @@
 
 namespace MT32Emu {
 
+static const mt32emu_report_handler_i NULL_REPORT_HANDLER = { NULL };
+
 /**
  * The class below correspond to the mt32emu_synth_i interface defined in c_types.h and provided for convenience when using C++.
  * The approach used makes no assumption of any internal class data memory layout, since the C++ standard does not
@@ -43,7 +45,7 @@ public:
 	~Service() { if (c != NULL) i.v0->freeContext(c); }
 
 	mt32emu_context getContext() { return c; }
-	void createContext(const mt32emu_report_handler_i *report_handler = NULL) { if (c != NULL) i.v0->freeContext(c); c = i.v0->createContext(report_handler); }
+	void createContext(mt32emu_report_handler_i report_handler = NULL_REPORT_HANDLER, void *instanceData = NULL) { if (c != NULL) i.v0->freeContext(c); c = i.v0->createContext(report_handler, instanceData); }
 	void freeContext() { if (c != NULL) { i.v0->freeContext(c); c = NULL; } }
 	Bit32u getLibraryVersionInt() { return i.v0->getLibraryVersionInt(); }
 	const char *getLibraryVersionString() { return i.v0->getLibraryVersionString(); }
@@ -57,7 +59,7 @@ public:
 	Bit32u getActualStereoOutputSamplerate() { return i.v0->getActualStereoOutputSamplerate(c); }
 	void flushMIDIQueue() { i.v0->flushMIDIQueue(c); }
 	Bit32u setMIDIEventQueueSize(const Bit32u queue_size) { return i.v0->setMIDIEventQueueSize(c, queue_size); }
-	mt32emu_midi_receiver_version setMIDIReceiver(const mt32emu_midi_receiver_i *midi_receiver) { return i.v0->setMIDIReceiver(c, midi_receiver); }
+	mt32emu_midi_receiver_version setMIDIReceiver(mt32emu_midi_receiver_i midi_receiver, void *instanceData) { return i.v0->setMIDIReceiver(c, midi_receiver, instanceData); }
 
 	void parseStream(const Bit8u *stream, Bit32u length) { i.v0->parseStream(c, stream, length); }
 	void parseStream_At(const Bit8u *stream, Bit32u length, Bit32u timestamp) { i.v0->parseStream_At(c, stream, length, timestamp); }

@@ -33,7 +33,7 @@ namespace MT32Emu {
 class ReportHandlerAdapter;
 class MidiStreamParserAdapter;
 
-static mt32emu_service_version getSynthVersionID(const mt32emu_const_context) {
+static mt32emu_service_version getSynthVersionID(mt32emu_service_i) {
 	return MT32EMU_SERVICE_VERSION_CURRENT;
 }
 
@@ -127,128 +127,133 @@ public:
 
 class DelegatingReportHandlerAdapter : public ReportHandlerAdapter {
 public:
-	DelegatingReportHandlerAdapter(const mt32emu_report_handler_i *use_report_handler) :
-		delegate(use_report_handler) {}
+	DelegatingReportHandlerAdapter(mt32emu_report_handler_i useReportHandler, void *useInstanceData) :
+		delegate(useReportHandler), instanceData(useInstanceData) {}
 
 protected:
-	const mt32emu_report_handler_i * const delegate;
+	const mt32emu_report_handler_i delegate;
+	void * const instanceData;
 
 private:
 	void printDebug(const char *fmt, va_list list) {
-		if (delegate->v0->printDebug == NULL) {
+		if (delegate.v0->printDebug == NULL) {
 			ReportHandler::printDebug(fmt, list);
 		} else {
-			delegate->v0->printDebug(delegate, fmt, list);
+			delegate.v0->printDebug(instanceData, fmt, list);
 		}
 	}
 
 	void onErrorControlROM() {
-		if (delegate->v0->onErrorControlROM == NULL) {
+		if (delegate.v0->onErrorControlROM == NULL) {
 			ReportHandler::onErrorControlROM();
 		} else {
-			delegate->v0->onErrorControlROM(delegate);
+			delegate.v0->onErrorControlROM(instanceData);
 		}
 	}
 
 	void onErrorPCMROM() {
-		if (delegate->v0->onErrorPCMROM == NULL) {
+		if (delegate.v0->onErrorPCMROM == NULL) {
 			ReportHandler::onErrorPCMROM();
 		} else {
-			delegate->v0->onErrorPCMROM(delegate);
+			delegate.v0->onErrorPCMROM(instanceData);
 		}
 	}
 
 	void showLCDMessage(const char *message) {
-		if (delegate->v0->showLCDMessage == NULL) {
+		if (delegate.v0->showLCDMessage == NULL) {
 			ReportHandler::showLCDMessage(message);
 		} else {
-			delegate->v0->showLCDMessage(delegate, message);
+			delegate.v0->showLCDMessage(instanceData, message);
 		}
 	}
 
 	void onMIDIMessagePlayed() {
-		if (delegate->v0->onMIDIMessagePlayed == NULL) {
+		if (delegate.v0->onMIDIMessagePlayed == NULL) {
 			ReportHandler::onMIDIMessagePlayed();
 		} else {
-			delegate->v0->onMIDIMessagePlayed(delegate);
+			delegate.v0->onMIDIMessagePlayed(instanceData);
 		}
 	}
 
 	void onDeviceReset() {
-		if (delegate->v0->onDeviceReset == NULL) {
+		if (delegate.v0->onDeviceReset == NULL) {
 			ReportHandler::onDeviceReset();
 		} else {
-			delegate->v0->onDeviceReset(delegate);
+			delegate.v0->onDeviceReset(instanceData);
 		}
 	}
 
 	void onDeviceReconfig() {
-		if (delegate->v0->onDeviceReconfig == NULL) {
+		if (delegate.v0->onDeviceReconfig == NULL) {
 			ReportHandler::onDeviceReconfig();
 		} else {
-			delegate->v0->onDeviceReconfig(delegate);
+			delegate.v0->onDeviceReconfig(instanceData);
 		}
 	}
 
 	void onNewReverbMode(Bit8u mode) {
-		if (delegate->v0->onNewReverbMode == NULL) {
+		if (delegate.v0->onNewReverbMode == NULL) {
 			ReportHandler::onNewReverbMode(mode);
 		} else {
-			delegate->v0->onNewReverbMode(delegate, mode);
+			delegate.v0->onNewReverbMode(instanceData, mode);
 		}
 	}
 
 	void onNewReverbTime(Bit8u time) {
-		if (delegate->v0->onNewReverbTime == NULL) {
+		if (delegate.v0->onNewReverbTime == NULL) {
 			ReportHandler::onNewReverbTime(time);
 		} else {
-			delegate->v0->onNewReverbTime(delegate, time);
+			delegate.v0->onNewReverbTime(instanceData, time);
 		}
 	}
 
 	void onNewReverbLevel(Bit8u level) {
-		if (delegate->v0->onNewReverbLevel == NULL) {
+		if (delegate.v0->onNewReverbLevel == NULL) {
 			ReportHandler::onNewReverbLevel(level);
 		} else {
-			delegate->v0->onNewReverbLevel(delegate, level);
+			delegate.v0->onNewReverbLevel(instanceData, level);
 		}
 	}
 
 	void onPolyStateChanged(Bit8u partNum) {
-		if (delegate->v0->onPolyStateChanged == NULL) {
+		if (delegate.v0->onPolyStateChanged == NULL) {
 			ReportHandler::onPolyStateChanged(partNum);
 		} else {
-			delegate->v0->onPolyStateChanged(delegate, partNum);
+			delegate.v0->onPolyStateChanged(instanceData, partNum);
 		}
 	}
 
 	void onProgramChanged(Bit8u partNum, const char *soundGroupName, const char *patchName) {
-		if (delegate->v0->onProgramChanged == NULL) {
+		if (delegate.v0->onProgramChanged == NULL) {
 			ReportHandler::onProgramChanged(partNum, soundGroupName, patchName);
 		} else {
-			delegate->v0->onProgramChanged(delegate, partNum, soundGroupName, patchName);
+			delegate.v0->onProgramChanged(instanceData, partNum, soundGroupName, patchName);
 		}
 	}
 
 	void onMIDIQueueOverflow() {
-		if (delegate->v0->onMIDIQueueOverflow != NULL) {
-			delegate->v0->onMIDIQueueOverflow(delegate);
+		if (delegate.v0->onMIDIQueueOverflow != NULL) {
+			delegate.v0->onMIDIQueueOverflow(instanceData);
 		}
 	}
 
 	void onMIDISystemRealtime(Bit8u systemRealtime) {
-		if (delegate->v0->onMIDISystemRealtime != NULL) {
-			delegate->v0->onMIDISystemRealtime(delegate, systemRealtime);
+		if (delegate.v0->onMIDISystemRealtime != NULL) {
+			delegate.v0->onMIDISystemRealtime(instanceData, systemRealtime);
 		}
 	}
 };
 
 class MidiStreamParserAdapter : public MidiStreamParser {
 public:
-	MidiStreamParserAdapter(const mt32emu_data *useData) : delegate(NULL), d(*useData), timestampSet(false) {}
+	MidiStreamParserAdapter(const mt32emu_data *useData) : d(*useData), timestampSet(false) {
+		delegate.v0 = NULL;
+		instanceData = NULL;
+	}
 
-	void setMIDIReceiver(const mt32emu_midi_receiver_i *newMIDIReceiver) {
+	void setMIDIReceiver(mt32emu_midi_receiver_i newMIDIReceiver, void *newInstanceData) {
 		delegate = newMIDIReceiver;
+		instanceData = newInstanceData;
 	}
 
 	void setTimestamp(const Bit32u useTimestamp) {
@@ -261,16 +266,17 @@ public:
 	}
 
 protected:
-	const mt32emu_midi_receiver_i *delegate;
 	const mt32emu_data &d;
+	mt32emu_midi_receiver_i delegate;
+	void *instanceData;
 
 private:
 	bool timestampSet;
 	Bit32u timestamp;
 
 	void handleShortMessage(const Bit32u message) {
-		if (delegate != NULL) {
-			delegate->v0->handleShortMessage(delegate, message);
+		if (delegate.v0 != NULL) {
+			delegate.v0->handleShortMessage(instanceData, message);
 			return;
 		}
 
@@ -284,8 +290,8 @@ private:
 	}
 
 	void handleSysex(const Bit8u *stream, const Bit32u length) {
-		if (delegate != NULL) {
-			delegate->v0->handleSysex(delegate, stream, length);
+		if (delegate.v0 != NULL) {
+			delegate.v0->handleSysex(instanceData, stream, length);
 			return;
 		}
 
@@ -299,8 +305,8 @@ private:
 	}
 
 	void handleSystemRealtimeMessage(const Bit8u realtime) {
-		if (delegate != NULL) {
-			delegate->v0->handleSystemRealtimeMessage(delegate, realtime);
+		if (delegate.v0 != NULL) {
+			delegate.v0->handleSystemRealtimeMessage(instanceData, realtime);
 			return;
 		}
 
@@ -349,9 +355,9 @@ const mt32emu_service_i mt32emu_get_service_i() {
 	return i;
 }
 
-mt32emu_context mt32emu_create_context(const mt32emu_report_handler_i *report_handler) {
+mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instanceData) {
 	mt32emu_data *data = new mt32emu_data;
-	data->reportHandler = (report_handler != NULL) ? new DelegatingReportHandlerAdapter(report_handler) : new ReportHandlerAdapter;
+	data->reportHandler = (report_handler.v0 != NULL) ? new DelegatingReportHandlerAdapter(report_handler, instanceData) : new ReportHandlerAdapter;
 	data->synth = new Synth(data->reportHandler);
 	data->midiParser = new MidiStreamParserAdapter(data);
 	data->controlROMImage = NULL;
@@ -464,8 +470,8 @@ mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_context context, 
 	return context->synth->setMIDIEventQueueSize(queue_size);
 }
 
-mt32emu_midi_receiver_version mt32emu_set_midi_receiver(mt32emu_const_context context, const mt32emu_midi_receiver_i *midi_receiver) {
-	context->midiParser->setMIDIReceiver(midi_receiver);
+mt32emu_midi_receiver_version mt32emu_set_midi_receiver(mt32emu_const_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData) {
+	context->midiParser->setMIDIReceiver(midi_receiver, instanceData);
 	return MT32EMU_MIDI_RECEIVER_VERSION_CURRENT;
 }
 
