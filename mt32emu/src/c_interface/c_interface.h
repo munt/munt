@@ -335,6 +335,12 @@ MT32EMU_EXPORT void mt32emu_read_memory(mt32emu_const_context context, mt32emu_b
  */
 MT32EMU_EXPORT mt32emu_report_handler_version mt32emu_get_supported_report_handler_version();
 
+/**
+ * Returns the version ID of mt32emu_midi_receiver_version_i interface the library has been compiled with.
+ * This allows a client to fall-back gracefully instead of silently not receiving expected event reports.
+ */
+MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version();
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

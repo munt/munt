@@ -653,4 +653,8 @@ mt32emu_report_handler_version mt32emu_get_supported_report_handler_version() {
 	return MT32EMU_REPORT_HANDLER_VERSION_CURRENT;
 }
 
+mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version() {
+	return MT32EMU_MIDI_RECEIVER_VERSION_CURRENT;
+}
+
 } // extern "C"
