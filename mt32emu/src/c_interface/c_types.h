@@ -200,7 +200,7 @@ typedef union mt32emu_service_i mt32emu_service_i;
  * Basic interface that defines all the library services (initial version).
  * The members closely resemble C functions declared in c_interface.h, and the intention is to provide for easier
  * access when the library is dynamically loaded in run-time, e.g. as a plugin. This way the client only needs
- * to bind to mt32emu_create_context() factory function instead of binding to each function it needs to use.
+ * to bind to mt32emu_get_service_i() function instead of binding to each function it needs to use.
  * See c_interface.h for parameter description.
  */
 typedef struct {
@@ -221,7 +221,7 @@ typedef struct {
 	mt32emu_bit32u (*getActualStereoOutputSamplerate)(mt32emu_const_context context);
 	void (*flushMIDIQueue)(mt32emu_const_context context);
 	mt32emu_bit32u (*setMIDIEventQueueSize)(mt32emu_const_context context, const mt32emu_bit32u queue_size);
-	mt32emu_midi_receiver_version (*setMIDIReceiver)(mt32emu_const_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData);
+	void (*setMIDIReceiver)(mt32emu_const_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData);
 
 	void (*parseStream)(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length);
 	void (*parseStream_At)(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length, mt32emu_bit32u timestamp);
@@ -273,6 +273,7 @@ typedef struct {
 	const char *(*getPatchName)(mt32emu_const_context context, mt32emu_bit8u part_number);
 	void (*readMemory)(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data);
 	mt32emu_report_handler_version (*getSupportedReportHandlerVersionID)();
+	mt32emu_midi_receiver_version (*getSupportedMIDIReceiverVersionID)();
 } mt32emu_service_i_v0;
 
 /**

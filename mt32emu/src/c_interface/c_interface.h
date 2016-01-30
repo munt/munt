@@ -121,10 +121,8 @@ MT32EMU_EXPORT mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_co
  * MIDI stream parser is involved when functions mt32emu_parse_stream() and mt32emu_play_short_message() or the likes are called.
  * By default, parsed short MIDI messages and System Exclusive messages are sent to the synth input MIDI queue.
  * This function allows to override default behaviour. If midi_receiver argument is set to NULL, the default behaviour is restored.
- * Returns the version ID of mt32emu_midi_receiver_i interface the library has been compiled with, so the client can fall-back gracefully
- * instead of silently not receiving expected MIDI messages.
  */
-MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_set_midi_receiver(mt32emu_const_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData);
+MT32EMU_EXPORT void mt32emu_set_midi_receiver(mt32emu_const_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData);
 
 /* Enqueues a MIDI event for subsequent playback.
  * The MIDI event will be processed not before the specified timestamp.
@@ -337,7 +335,7 @@ MT32EMU_EXPORT mt32emu_report_handler_version mt32emu_get_supported_report_handl
 
 /**
  * Returns the version ID of mt32emu_midi_receiver_version_i interface the library has been compiled with.
- * This allows a client to fall-back gracefully instead of silently not receiving expected event reports.
+ * This allows a client to fall-back gracefully instead of silently not receiving expected MIDI messages.
  */
 MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version();
 

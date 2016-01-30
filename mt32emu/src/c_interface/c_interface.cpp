@@ -95,7 +95,8 @@ static const mt32emu_service_i_v0 SYNTH_VTABLE = {
 	mt32emu_get_playing_notes,
 	mt32emu_get_patch_name,
 	mt32emu_read_memory,
-	mt32emu_get_supported_report_handler_version
+	mt32emu_get_supported_report_handler_version,
+	mt32emu_get_supported_midi_receiver_version
 };
 
 } // namespace MT32Emu
@@ -470,9 +471,8 @@ mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_context context, 
 	return context->synth->setMIDIEventQueueSize(queue_size);
 }
 
-mt32emu_midi_receiver_version mt32emu_set_midi_receiver(mt32emu_const_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData) {
+void mt32emu_set_midi_receiver(mt32emu_const_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData) {
 	context->midiParser->setMIDIReceiver(midi_receiver, instanceData);
-	return MT32EMU_MIDI_RECEIVER_VERSION_CURRENT;
 }
 
 void mt32emu_parse_stream(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length) {

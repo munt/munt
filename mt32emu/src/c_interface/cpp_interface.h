@@ -59,7 +59,7 @@ public:
 	Bit32u getActualStereoOutputSamplerate() { return i.v0->getActualStereoOutputSamplerate(c); }
 	void flushMIDIQueue() { i.v0->flushMIDIQueue(c); }
 	Bit32u setMIDIEventQueueSize(const Bit32u queue_size) { return i.v0->setMIDIEventQueueSize(c, queue_size); }
-	mt32emu_midi_receiver_version setMIDIReceiver(mt32emu_midi_receiver_i midi_receiver, void *instanceData) { return i.v0->setMIDIReceiver(c, midi_receiver, instanceData); }
+	void setMIDIReceiver(mt32emu_midi_receiver_i midi_receiver, void *instanceData) { i.v0->setMIDIReceiver(c, midi_receiver, instanceData); }
 
 	void parseStream(const Bit8u *stream, Bit32u length) { i.v0->parseStream(c, stream, length); }
 	void parseStream_At(const Bit8u *stream, Bit32u length, Bit32u timestamp) { i.v0->parseStream_At(c, stream, length, timestamp); }
@@ -111,6 +111,7 @@ public:
 	const char *getPatchName(Bit8u part_number) { return i.v0->getPatchName(c, part_number); }
 	void readMemory(Bit32u addr, Bit32u len, Bit8u *data) { i.v0->readMemory(c, addr, len, data); }
 	mt32emu_report_handler_version getSupportedReportHandlerVersionID() { return i.v0->getSupportedReportHandlerVersionID(); }
+	mt32emu_midi_receiver_version getSupportedMIDIReceiverVersionID() { return i.v0->getSupportedMIDIReceiverVersionID(); }
 
 private:
 	static mt32emu_service_i i;
