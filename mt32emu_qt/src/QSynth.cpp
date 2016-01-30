@@ -226,8 +226,6 @@ bool QSynth::open(uint targetSampleRate, SampleRateConverter::SRCQuality srcQual
 		}
 		return true;
 	}
-	// We're now in a partially-open state - better to properly close.
-	synth->close(true);
 	delete synth;
 	synth = new Synth(&reportHandler);
 	return false;
@@ -432,8 +430,6 @@ bool QSynth::reset() {
 	synth->close();
 	// Do not delete synth here to keep the rendered frame counter value, audioStream is also alive during reset
 	if (!synth->open(*controlROMImage, *pcmROMImage, actualAnalogOutputMode)) {
-		// We're now in a partially-open state - better to properly close.
-		synth->close(true);
 		delete synth;
 		synth = new Synth(&reportHandler);
 		synthMutex->unlock();

@@ -202,6 +202,7 @@ private:
 	void refreshSystemMasterVol();
 	void refreshSystem();
 	void reset();
+	void dispose();
 
 	void printPartialUsage(Bit32u sampleOffset = 0);
 
@@ -269,7 +270,7 @@ public:
 	MT32EMU_EXPORT bool open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, AnalogOutputMode analogOutputMode);
 
 	// Closes the MT-32 and deallocates any memory used by the synthesizer
-	MT32EMU_EXPORT void close(bool forced = false);
+	MT32EMU_EXPORT void close();
 
 	// Returns true if the synth is in completely initialized state, otherwise returns false.
 	MT32EMU_EXPORT bool isOpen() const;

@@ -210,7 +210,7 @@ Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams), mt32def
 }
 
 Synth::~Synth() {
-	close(true); // Make sure we're closed and everything is freed
+	close(); // Make sure we're closed and everything is freed
 	if (isDefaultReportHandler) {
 		delete reportHandler;
 	}
@@ -541,7 +541,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	if (!loadControlROM(controlROMImage)) {
 		printDebug("Init Error - Missing or invalid Control ROM image");
 		reportHandler->onErrorControlROM();
-		close(true);
+		dispose();
 		return false;
 	}
 
@@ -559,7 +559,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	if (!loadPCMROM(pcmROMImage)) {
 		printDebug("Init Error - Missing PCM ROM image");
 		reportHandler->onErrorPCMROM();
-		close(true);
+		dispose();
 		return false;
 	}
 
@@ -576,7 +576,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	printDebug("Initialising Timbre Bank A");
 #endif
 	if (!initTimbres(controlROMMap->timbreAMap, controlROMMap->timbreAOffset, 0x40, 0, controlROMMap->timbreACompressed)) {
-		close(true);
+		dispose();
 		return false;
 	}
 
@@ -584,7 +584,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	printDebug("Initialising Timbre Bank B");
 #endif
 	if (!initTimbres(controlROMMap->timbreBMap, controlROMMap->timbreBOffset, 0x40, 64, controlROMMap->timbreBCompressed)) {
-		close(true);
+		dispose();
 		return false;
 	}
 
@@ -592,7 +592,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	printDebug("Initialising Timbre Bank R");
 #endif
 	if (!initTimbres(controlROMMap->timbreRMap, 0, controlROMMap->timbreRCount, 192, true)) {
-		close(true);
+		dispose();
 		return false;
 	}
 
@@ -702,11 +702,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 	return true;
 }
 
-void Synth::close(bool forced) {
-	if (!forced && !opened) {
-		return;
-	}
-
+void Synth::dispose() {
 	opened = false;
 
 	delete midiQueue;
@@ -741,6 +737,12 @@ void Synth::close(bool forced) {
 	reverbModel = NULL;
 	controlROMFeatures = NULL;
 	controlROMMap = NULL;
+}
+
+void Synth::close() {
+	if (opened) {
+		dispose();
+	}
 }
 
 bool Synth::isOpen() const {

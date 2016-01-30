@@ -435,8 +435,6 @@ mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const mt32
 	if (context->synth->open(*context->controlROMImage, *context->pcmROMImage, partialCount, analogOutputMode)) {
 		return MT32EMU_RC_OK;
 	}
-	// We're now in a partially-open state - better to properly close.
-	context->synth->close(true);
 	return MT32EMU_RC_FAILED;
 }
 
