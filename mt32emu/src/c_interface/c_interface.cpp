@@ -30,7 +30,6 @@ using namespace MT32Emu;
 
 namespace MT32Emu {
 
-class ReportHandlerAdapter;
 class MidiStreamParserAdapter;
 
 static mt32emu_service_version getSynthVersionID(mt32emu_service_i) {
@@ -104,7 +103,7 @@ static const mt32emu_service_i_v0 SYNTH_VTABLE = {
 } // namespace MT32Emu
 
 struct mt32emu_data {
-	ReportHandlerAdapter *reportHandler;
+	ReportHandler *reportHandler;
 	Synth *synth;
 	const ROMImage *controlROMImage;
 	const ROMImage *pcmROMImage;
@@ -117,20 +116,7 @@ struct mt32emu_data {
 
 namespace MT32Emu {
 
-class ReportHandlerAdapter : public ReportHandler {
-public:
-	virtual void printDebug(const char *fmt, ...) {
-		va_list ap;
-		va_start(ap, fmt);
-		printDebug(fmt, ap);
-		va_end(ap);
-	}
-
-	virtual bool onMIDIQueueOverflow() { return false; }
-	virtual void onMIDISystemRealtime(Bit8u /* systemRealtime */) {}
-};
-
-class DelegatingReportHandlerAdapter : public ReportHandlerAdapter {
+class DelegatingReportHandlerAdapter : public ReportHandler {
 public:
 	DelegatingReportHandlerAdapter(mt32emu_report_handler_i useReportHandler, void *useInstanceData) :
 		delegate(useReportHandler), instanceData(useInstanceData) {}
@@ -177,6 +163,21 @@ private:
 			ReportHandler::onMIDIMessagePlayed();
 		} else {
 			delegate.v0->onMIDIMessagePlayed(instanceData);
+		}
+	}
+
+	bool onMIDIQueueOverflow() {
+		if (delegate.v0->onMIDIQueueOverflow == NULL) {
+			return ReportHandler::onMIDIQueueOverflow();
+		}
+		return delegate.v0->onMIDIQueueOverflow(instanceData) != MT32EMU_BOOL_FALSE;
+	}
+
+	void onMIDISystemRealtime(Bit8u systemRealtime) {
+		if (delegate.v0->onMIDISystemRealtime == NULL) {
+			ReportHandler::onMIDISystemRealtime(systemRealtime);
+		} else {
+			delegate.v0->onMIDISystemRealtime(instanceData, systemRealtime);
 		}
 	}
 
@@ -235,19 +236,6 @@ private:
 			delegate.v0->onProgramChanged(instanceData, partNum, soundGroupName, patchName);
 		}
 	}
-
-	bool onMIDIQueueOverflow() {
-		if (delegate.v0->onMIDIQueueOverflow != NULL) {
-			return delegate.v0->onMIDIQueueOverflow(instanceData) != MT32EMU_BOOL_FALSE;
-		}
-		return ReportHandlerAdapter::onMIDIQueueOverflow();
-	}
-
-	void onMIDISystemRealtime(Bit8u systemRealtime) {
-		if (delegate.v0->onMIDISystemRealtime != NULL) {
-			delegate.v0->onMIDISystemRealtime(instanceData, systemRealtime);
-		}
-	}
 };
 
 class MidiStreamParserAdapter : public MidiStreamParser {
@@ -291,7 +279,7 @@ protected:
 	}
 
 	void printDebug(const char *debugMessage) {
-		d.reportHandler->printDebug(debugMessage);
+		d.reportHandler->printDebug("%s", (va_list)&debugMessage);
 	}
 
 private:
@@ -394,7 +382,7 @@ mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_
 
 mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instanceData) {
 	mt32emu_data *data = new mt32emu_data;
-	data->reportHandler = (report_handler.v0 != NULL) ? new DelegatingReportHandlerAdapter(report_handler, instanceData) : new ReportHandlerAdapter;
+	data->reportHandler = (report_handler.v0 != NULL) ? new DelegatingReportHandlerAdapter(report_handler, instanceData) : new ReportHandler;
 	data->synth = new Synth(data->reportHandler);
 	data->midiParser = new MidiStreamParserAdapter(data);
 	data->controlROMImage = NULL;
@@ -531,34 +519,22 @@ void mt32emu_play_short_message_at(mt32emu_const_context context, mt32emu_bit32u
 
 mt32emu_return_code mt32emu_play_msg(mt32emu_const_context context, mt32emu_bit32u msg) {
 	if (!context->synth->isOpen()) return MT32EMU_RC_NOT_OPENED;
-	do {
-		if (context->synth->playMsg(msg)) return MT32EMU_RC_OK;
-	} while (context->reportHandler->onMIDIQueueOverflow());
-	return MT32EMU_RC_QUEUE_FULL;
+	return (context->synth->playMsg(msg)) ? MT32EMU_RC_OK : MT32EMU_RC_QUEUE_FULL;
 }
 
 mt32emu_return_code mt32emu_play_sysex(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len) {
 	if (!context->synth->isOpen()) return MT32EMU_RC_NOT_OPENED;
-	do {
-		if (context->synth->playSysex(sysex, len)) return MT32EMU_RC_OK;
-	} while (context->reportHandler->onMIDIQueueOverflow());
-	return MT32EMU_RC_QUEUE_FULL;
+	return (context->synth->playSysex(sysex, len)) ? MT32EMU_RC_OK : MT32EMU_RC_QUEUE_FULL;
 }
 
 mt32emu_return_code mt32emu_play_msg_at(mt32emu_const_context context, mt32emu_bit32u msg, mt32emu_bit32u timestamp) {
 	if (!context->synth->isOpen()) return MT32EMU_RC_NOT_OPENED;
-	do {
-		if (context->synth->playMsg(msg, timestamp)) return MT32EMU_RC_OK;
-	} while (context->reportHandler->onMIDIQueueOverflow());
-	return MT32EMU_RC_QUEUE_FULL;
+	return (context->synth->playMsg(msg, timestamp)) ? MT32EMU_RC_OK : MT32EMU_RC_QUEUE_FULL;
 }
 
 mt32emu_return_code mt32emu_play_sysex_at(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len, mt32emu_bit32u timestamp) {
 	if (!context->synth->isOpen()) return MT32EMU_RC_NOT_OPENED;
-	do {
-		if (context->synth->playSysex(sysex, len, timestamp)) return MT32EMU_RC_OK;
-	} while (context->reportHandler->onMIDIQueueOverflow());
-	return MT32EMU_RC_QUEUE_FULL;
+	return (context->synth->playSysex(sysex, len, timestamp)) ? MT32EMU_RC_OK : MT32EMU_RC_QUEUE_FULL;
 }
 
 void mt32emu_play_msg_now(mt32emu_const_context context, mt32emu_bit32u msg) {

@@ -81,27 +81,33 @@ struct DACOutputStreams {
 	T *reverbWetRight;
 };
 
+// Class for the client to supply callbacks for reporting various errors and information
 class MT32EMU_EXPORT ReportHandler {
-friend class Synth;
-
 public:
 	virtual ~ReportHandler() {}
 
-protected:
-
 	// Callback for debug messages, in vprintf() format
 	virtual void printDebug(const char *fmt, va_list list);
-
-	// Callbacks for reporting various errors and information
+	// Callbacks for reporting errors
 	virtual void onErrorControlROM() {}
 	virtual void onErrorPCMROM() {}
+	// Callback for reporting about displaying a new custom message on LCD
 	virtual void showLCDMessage(const char *message);
+	// Callback for reporting actual processing of a MIDI message
 	virtual void onMIDIMessagePlayed() {}
+	// Callback for reporting an overflow of the input MIDI queue.
+	// Returns true if a recovery action was taken and yet another attempt to enqueue the MIDI event is desired.
+	virtual bool onMIDIQueueOverflow() { return false; }
+	// Callback invoked when a System Realtime MIDI message is detected at the input.
+	virtual void onMIDISystemRealtime(Bit8u /* systemRealtime */) {}
+	// Callbacks for reporting system events
 	virtual void onDeviceReset() {}
 	virtual void onDeviceReconfig() {}
+	// Callbacks for reporting changes of reverb settings
 	virtual void onNewReverbMode(Bit8u /* mode */) {}
 	virtual void onNewReverbTime(Bit8u /* time */) {}
 	virtual void onNewReverbLevel(Bit8u /* level */) {}
+	// Callbacks for reporting various information
 	virtual void onPolyStateChanged(Bit8u /* partNum */) {}
 	virtual void onProgramChanged(Bit8u /* partNum */, const char * /* soundGroupName */, const char * /* patchName */) {}
 };

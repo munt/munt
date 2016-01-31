@@ -138,8 +138,8 @@ typedef struct {
 	void (*onMIDIMessagePlayed)(void *instanceData);
 	/**
 	 * Callback for reporting an overflow of the input MIDI queue.
-	 * Returns a boolean value that means whether a recovery action was taken
-	 * and yet another attempt to enqueue the MIDI event is derired.
+	 * Returns MT32EMU_BOOL_TRUE if a recovery action was taken
+	 * and yet another attempt to enqueue the MIDI event is desired.
 	 */
 	mt32emu_boolean (*onMIDIQueueOverflow)(void *instanceData);
 	/**

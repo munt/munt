@@ -817,12 +817,19 @@ bool Synth::playMsg(Bit32u msg) {
 }
 
 bool Synth::playMsg(Bit32u msg, Bit32u timestamp) {
+	if ((msg & 0xF8) == 0xF8) {
+		reportHandler->onMIDISystemRealtime((Bit8u)msg);
+		return true;
+	}
 	if (midiQueue == NULL) return false;
 	if (midiDelayMode != MIDIDelayMode_IMMEDIATE) {
 		timestamp = addMIDIInterfaceDelay(getShortMessageLength(msg), timestamp);
 	}
 	if (!activated) activated = true;
-	return midiQueue->pushShortMessage(msg, timestamp);
+	do {
+		if (midiQueue->pushShortMessage(msg, timestamp)) return true;
+	} while (reportHandler->onMIDIQueueOverflow());
+	return false;
 }
 
 bool Synth::playSysex(const Bit8u *sysex, Bit32u len) {
@@ -835,7 +842,10 @@ bool Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
 		timestamp = addMIDIInterfaceDelay(len, timestamp);
 	}
 	if (!activated) activated = true;
-	return midiQueue->pushSysex(sysex, len, timestamp);
+	do {
+		if (midiQueue->pushSysex(sysex, len, timestamp)) return true;
+	} while (reportHandler->onMIDIQueueOverflow());
+	return false;
 }
 
 void Synth::playMsgNow(Bit32u msg) {
