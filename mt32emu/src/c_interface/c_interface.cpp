@@ -36,7 +36,7 @@ static mt32emu_service_version getSynthVersionID(mt32emu_service_i) {
 	return MT32EMU_SERVICE_VERSION_CURRENT;
 }
 
-static const mt32emu_service_i_v0 SYNTH_VTABLE = {
+static const mt32emu_service_i_v0 SERVICE_VTABLE = {
 	getSynthVersionID,
 	mt32emu_get_supported_report_handler_version,
 	mt32emu_get_supported_midi_receiver_version,
@@ -356,7 +356,7 @@ static mt32emu_return_code addROMFile(mt32emu_data *data, File *file) {
 extern "C" {
 
 const mt32emu_service_i mt32emu_get_service_i() {
-	mt32emu_service_i i = { &SYNTH_VTABLE };
+	mt32emu_service_i i = { &SERVICE_VTABLE };
 	return i;
 }
 

@@ -31,7 +31,7 @@ namespace MT32Emu {
 static const mt32emu_report_handler_i NULL_REPORT_HANDLER = { NULL };
 
 /**
- * The class below correspond to the mt32emu_synth_i interface defined in c_types.h and provided for convenience when using C++.
+ * The class below correspond to the mt32emu_service_i interface defined in c_types.h and provided for convenience when using C++.
  * The approach used makes no assumption of any internal class data memory layout, since the C++ standard does not
  * provide any detail in this area and leaves it up to the implementation. Therefore, this way portability is guaranteed,
  * despite the implementation may be a little inefficient.

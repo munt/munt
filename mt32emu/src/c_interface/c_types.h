@@ -285,7 +285,7 @@ typedef struct {
 } mt32emu_service_i_v0;
 
 /**
- * Extensible interface for receiving MIDI messages.
+ * Extensible interface for all the library services.
  * Union intended to view an interface of any subsequent version as any parent interface not requiring a cast.
  * Elements are to be addressed using the tag of the interface version when they were introduced.
  */
