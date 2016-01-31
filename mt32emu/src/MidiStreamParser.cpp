@@ -80,7 +80,7 @@ void MidiStreamParserImpl::processShortMessage(const Bit32u message) {
 		midiReceiver.handleSystemRealtimeMessage(status);
 	} else if (processStatusByte(status)) {
 		midiReceiver.handleShortMessage((message << 8) | status);
-	} else {
+	} else if (0x80 <= status) { // If no running status available yet, skip this message
 		midiReceiver.handleShortMessage(message);
 	}
 }
@@ -126,7 +126,7 @@ bool MidiStreamParserImpl::processStatusByte(Bit8u &status) {
 Bit32u MidiStreamParserImpl::parseShortMessageStatus(const Bit8u stream[]) {
 	Bit8u status = *stream;
 	Bit32u parsedLength = processStatusByte(status) ? 0 : 1;
-	if (0x80 <= status) { // No running status available yet, skip one byte
+	if (0x80 <= status) { // If no running status available yet, skip one byte
 		*streamBuffer = status;
 		++streamBufferSize;
 	}
