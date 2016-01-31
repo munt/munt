@@ -150,7 +150,7 @@ MT32EMU_EXPORT mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_co
  * By default, parsed short MIDI messages and System Exclusive messages are sent to the synth input MIDI queue.
  * This function allows to override default behaviour. If midi_receiver argument is set to NULL, the default behaviour is restored.
  */
-MT32EMU_EXPORT void mt32emu_set_midi_receiver(mt32emu_const_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData);
+MT32EMU_EXPORT void mt32emu_set_midi_receiver(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData);
 
 /* Enqueues a MIDI event for subsequent playback.
  * The MIDI event will be processed not before the specified timestamp.
@@ -164,6 +164,7 @@ MT32EMU_EXPORT void mt32emu_set_midi_receiver(mt32emu_const_context context, mt3
 /**
  * Parses a block of raw MIDI bytes and enqueues parsed MIDI messages for further processing ASAP.
  * SysEx messages are allowed to be fragmented across several calls to this method. Running status is also handled for short messages.
+ * When a System Realtime MIDI message is parsed, onMIDISystemRealtime callback is invoked.
  * NOTE: the total length of a SysEx message being fragmented shall not exceed MT32EMU_MAX_STREAM_BUFFER_SIZE (32768 bytes).
  */
 MT32EMU_EXPORT void mt32emu_parse_stream(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length);
@@ -186,6 +187,7 @@ MT32EMU_EXPORT void mt32emu_play_short_message(mt32emu_const_context context, mt
 /**
  * Enqueues a single mt32emu_bit32u-encoded short MIDI message to play at specified time with full processing.
  * The short MIDI message may contain no status byte, the running status is used in this case.
+ * When the argument is a System Realtime MIDI message, onMIDISystemRealtime callback is invoked.
  */
 MT32EMU_EXPORT void mt32emu_play_short_message_at(mt32emu_const_context context, mt32emu_bit32u message, mt32emu_bit32u timestamp);
 

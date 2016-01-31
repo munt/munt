@@ -136,8 +136,12 @@ typedef struct {
 	void (*showLCDMessage)(void *instanceData, const char *message);
 	/** Callback for reporting actual processing of a MIDI message */
 	void (*onMIDIMessagePlayed)(void *instanceData);
-	/** Callback for reporting an overflow of the input MIDI queue */
-	void (*onMIDIQueueOverflow)(void *instanceData);
+	/**
+	 * Callback for reporting an overflow of the input MIDI queue.
+	 * Returns a boolean value that means whether a recovery action was taken
+	 * and yet another attempt to enqueue the MIDI event is derired.
+	 */
+	mt32emu_boolean (*onMIDIQueueOverflow)(void *instanceData);
 	/**
 	 * Callback invoked when a System Realtime MIDI message is detected in functions
 	 * mt32emu_parse_stream and mt32emu_play_short_message and the likes.
@@ -227,7 +231,7 @@ typedef struct {
 	mt32emu_bit32u (*getActualStereoOutputSamplerate)(mt32emu_const_context context);
 	void (*flushMIDIQueue)(mt32emu_const_context context);
 	mt32emu_bit32u (*setMIDIEventQueueSize)(mt32emu_const_context context, const mt32emu_bit32u queue_size);
-	void (*setMIDIReceiver)(mt32emu_const_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData);
+	void (*setMIDIReceiver)(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData);
 
 	void (*parseStream)(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length);
 	void (*parseStream_At)(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length, mt32emu_bit32u timestamp);
