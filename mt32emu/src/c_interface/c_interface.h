@@ -76,7 +76,7 @@ MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu
 /* == Context-dependent functions == */
 
 /** Initialises a new emulation context and installs custom report handler if non-NULL. */
-MT32EMU_EXPORT mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instanceData);
+MT32EMU_EXPORT mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instance_data);
 
 /** Closes and destroys emulation context. */
 MT32EMU_EXPORT void mt32emu_free_context(mt32emu_context context);
@@ -150,7 +150,7 @@ MT32EMU_EXPORT mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_co
  * By default, parsed short MIDI messages and System Exclusive messages are sent to the synth input MIDI queue.
  * This function allows to override default behaviour. If midi_receiver argument is set to NULL, the default behaviour is restored.
  */
-MT32EMU_EXPORT void mt32emu_set_midi_receiver(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData);
+MT32EMU_EXPORT void mt32emu_set_midi_receiver(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instance_data);
 
 /* Enqueues a MIDI event for subsequent playback.
  * The MIDI event will be processed not before the specified timestamp.
@@ -238,7 +238,7 @@ MT32EMU_EXPORT mt32emu_boolean mt32emu_is_reverb_enabled(mt32emu_const_context c
  * This mode is in effect until it is turned off. When the synth is re-opened, the override mode is unchanged but the state
  * of the reverb model is reset to default.
  */
-MT32EMU_EXPORT void mt32emu_set_reverb_overridden(mt32emu_const_context context, const mt32emu_boolean reverbOverridden);
+MT32EMU_EXPORT void mt32emu_set_reverb_overridden(mt32emu_const_context context, const mt32emu_boolean reverb_overridden);
 /** Returns whether reverb settings are overridden. */
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_reverb_overridden(mt32emu_const_context context);
 /**

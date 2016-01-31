@@ -328,9 +328,9 @@ mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_
 	return Synth::getStereoOutputSampleRate(static_cast<AnalogOutputMode>(analog_output_mode));
 }
 
-mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instanceData) {
+mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instance_data) {
 	mt32emu_data *data = new mt32emu_data;
-	data->reportHandler = (report_handler.v0 != NULL) ? new DelegatingReportHandlerAdapter(report_handler, instanceData) : new ReportHandler;
+	data->reportHandler = (report_handler.v0 != NULL) ? new DelegatingReportHandlerAdapter(report_handler, instance_data) : new ReportHandler;
 	data->synth = new Synth(data->reportHandler);
 	data->midiParser = new DefaultMidiStreamParser(*data->synth);
 	data->controlROMImage = NULL;
@@ -440,9 +440,9 @@ mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_context context, 
 	return context->synth->setMIDIEventQueueSize(queue_size);
 }
 
-void mt32emu_set_midi_receiver(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData) {
+void mt32emu_set_midi_receiver(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instance_data) {
 	delete context->midiParser;
-	context->midiParser = (midi_receiver.v0 != NULL) ? new DelegatingMidiStreamParser(context, midi_receiver, instanceData) : new DefaultMidiStreamParser(*context->synth);
+	context->midiParser = (midi_receiver.v0 != NULL) ? new DelegatingMidiStreamParser(context, midi_receiver, instance_data) : new DefaultMidiStreamParser(*context->synth);
 }
 
 void mt32emu_parse_stream(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length) {
@@ -509,8 +509,8 @@ mt32emu_boolean mt32emu_is_reverb_enabled(mt32emu_const_context context) {
 	return context->synth->isReverbEnabled() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
-void mt32emu_set_reverb_overridden(mt32emu_const_context context, const mt32emu_boolean reverbOverridden) {
-	context->synth->setReverbOverridden(reverbOverridden != MT32EMU_BOOL_FALSE);
+void mt32emu_set_reverb_overridden(mt32emu_const_context context, const mt32emu_boolean reverb_overridden) {
+	context->synth->setReverbOverridden(reverb_overridden != MT32EMU_BOOL_FALSE);
 }
 
 mt32emu_boolean mt32emu_is_reverb_overridden(mt32emu_const_context context) {

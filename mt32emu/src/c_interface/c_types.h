@@ -128,35 +128,35 @@ typedef struct {
 	mt32emu_report_handler_version (*getVersionID)(mt32emu_report_handler_i i);
 
 	/** Callback for debug messages, in vprintf() format */
-	void (*printDebug)(void *instanceData, const char *fmt, va_list list);
+	void (*printDebug)(void *instance_data, const char *fmt, va_list list);
 	/** Callbacks for reporting errors */
-	void (*onErrorControlROM)(void *instanceData);
-	void (*onErrorPCMROM)(void *instanceData);
+	void (*onErrorControlROM)(void *instance_data);
+	void (*onErrorPCMROM)(void *instance_data);
 	/** Callback for reporting about displaying a new custom message on LCD */
-	void (*showLCDMessage)(void *instanceData, const char *message);
+	void (*showLCDMessage)(void *instance_data, const char *message);
 	/** Callback for reporting actual processing of a MIDI message */
-	void (*onMIDIMessagePlayed)(void *instanceData);
+	void (*onMIDIMessagePlayed)(void *instance_data);
 	/**
 	 * Callback for reporting an overflow of the input MIDI queue.
 	 * Returns MT32EMU_BOOL_TRUE if a recovery action was taken
 	 * and yet another attempt to enqueue the MIDI event is desired.
 	 */
-	mt32emu_boolean (*onMIDIQueueOverflow)(void *instanceData);
+	mt32emu_boolean (*onMIDIQueueOverflow)(void *instance_data);
 	/**
 	 * Callback invoked when a System Realtime MIDI message is detected in functions
 	 * mt32emu_parse_stream and mt32emu_play_short_message and the likes.
 	 */
-	void (*onMIDISystemRealtime)(void *instanceData, mt32emu_bit8u systemRealtime);
+	void (*onMIDISystemRealtime)(void *instance_data, mt32emu_bit8u system_realtime);
 	/** Callbacks for reporting system events */
-	void (*onDeviceReset)(void *instanceData);
-	void (*onDeviceReconfig)(void *instanceData);
+	void (*onDeviceReset)(void *instance_data);
+	void (*onDeviceReconfig)(void *instance_data);
 	/** Callbacks for reporting changes of reverb settings */
-	void (*onNewReverbMode)(void *instanceData, mt32emu_bit8u mode);
-	void (*onNewReverbTime)(void *instanceData, mt32emu_bit8u time);
-	void (*onNewReverbLevel)(void *instanceData, mt32emu_bit8u level);
+	void (*onNewReverbMode)(void *instance_data, mt32emu_bit8u mode);
+	void (*onNewReverbTime)(void *instance_data, mt32emu_bit8u time);
+	void (*onNewReverbLevel)(void *instance_data, mt32emu_bit8u level);
 	/** Callbacks for reporting various information */
-	void (*onPolyStateChanged)(void *instanceData, mt32emu_bit8u partNum);
-	void (*onProgramChanged)(void *instanceData, mt32emu_bit8u partNum, const char *soundGroupName, const char *patchName);
+	void (*onPolyStateChanged)(void *instance_data, mt32emu_bit8u part_num);
+	void (*onProgramChanged)(void *instance_data, mt32emu_bit8u part_num, const char *sound_group_name, const char *patch_name);
 } mt32emu_report_handler_i_v0;
 
 /**
@@ -178,13 +178,13 @@ typedef struct {
 	mt32emu_midi_receiver_version (*getVersionID)(mt32emu_midi_receiver_i i);
 
 	/** Invoked when a complete short MIDI message is parsed in the input MIDI stream. */
-	void (*handleShortMessage)(void *instanceData, const mt32emu_bit32u message);
+	void (*handleShortMessage)(void *instance_data, const mt32emu_bit32u message);
 
 	/** Invoked when a complete well-formed System Exclusive MIDI message is parsed in the input MIDI stream. */
-	void (*handleSysex)(void *instanceData, const mt32emu_bit8u stream[], const mt32emu_bit32u length);
+	void (*handleSysex)(void *instance_data, const mt32emu_bit8u stream[], const mt32emu_bit32u length);
 
 	/** Invoked when a System Realtime MIDI message is parsed in the input MIDI stream. */
-	void (*handleSystemRealtimeMessage)(void *instanceData, const mt32emu_bit8u realtime);
+	void (*handleSystemRealtimeMessage)(void *instance_data, const mt32emu_bit8u realtime);
 } mt32emu_midi_receiver_i_v0;
 
 /**
@@ -218,7 +218,7 @@ typedef struct {
 
 	mt32emu_bit32u (*getStereoOutputSamplerate)(const mt32emu_analog_output_mode analog_output_mode);
 
-	mt32emu_context (*createContext)(mt32emu_report_handler_i report_handler, void *instanceData);
+	mt32emu_context (*createContext)(mt32emu_report_handler_i report_handler, void *instance_data);
 	void (*freeContext)(mt32emu_context context);
 	mt32emu_return_code (*addROMData)(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest);
 	mt32emu_return_code (*addROMFile)(mt32emu_context context, const char *filename);
@@ -231,7 +231,7 @@ typedef struct {
 	mt32emu_bit32u (*getActualStereoOutputSamplerate)(mt32emu_const_context context);
 	void (*flushMIDIQueue)(mt32emu_const_context context);
 	mt32emu_bit32u (*setMIDIEventQueueSize)(mt32emu_const_context context, const mt32emu_bit32u queue_size);
-	void (*setMIDIReceiver)(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData);
+	void (*setMIDIReceiver)(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instance_data);
 
 	void (*parseStream)(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length);
 	void (*parseStream_At)(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length, mt32emu_bit32u timestamp);
@@ -249,7 +249,7 @@ typedef struct {
 
 	void (*setReverbEnabled)(mt32emu_const_context context, const mt32emu_boolean reverb_enabled);
 	mt32emu_boolean (*isReverbEnabled)(mt32emu_const_context context);
-	void (*setReverbOverridden)(mt32emu_const_context context, const mt32emu_boolean reverbOverridden);
+	void (*setReverbOverridden)(mt32emu_const_context context, const mt32emu_boolean reverb_overridden);
 	mt32emu_boolean (*isReverbOverridden)(mt32emu_const_context context);
 	void (*setReverbCompatibilityMode)(mt32emu_const_context context, const mt32emu_boolean mt32_compatible_mode);
 	mt32emu_boolean (*isMT32ReverbCompatibilityMode)(mt32emu_const_context context);
