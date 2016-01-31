@@ -41,21 +41,27 @@ class Service {
 public:
 	static void setInterface(mt32emu_service_i interface) { i = interface; }
 
+	static mt32emu_service_version getVersionID() { return i.v0->getVersionID(i); }
+	static mt32emu_report_handler_version getSupportedReportHandlerVersionID() { return i.v0->getSupportedReportHandlerVersionID(); }
+	static mt32emu_midi_receiver_version getSupportedMIDIReceiverVersionID() { return i.v0->getSupportedMIDIReceiverVersionID(); }
+
+	static Bit32u getLibraryVersionInt() { return i.v0->getLibraryVersionInt(); }
+	static const char *getLibraryVersionString() { return i.v0->getLibraryVersionString(); }
+
+	static Bit32u getStereoOutputSamplerate(const mt32emu_analog_output_mode analog_output_mode) { return i.v0->getStereoOutputSamplerate(analog_output_mode); }
+
 	explicit Service(mt32emu_context context = NULL) : c(context) {}
 	~Service() { if (c != NULL) i.v0->freeContext(c); }
 
 	mt32emu_context getContext() { return c; }
 	void createContext(mt32emu_report_handler_i report_handler = NULL_REPORT_HANDLER, void *instanceData = NULL) { if (c != NULL) i.v0->freeContext(c); c = i.v0->createContext(report_handler, instanceData); }
 	void freeContext() { if (c != NULL) { i.v0->freeContext(c); c = NULL; } }
-	Bit32u getLibraryVersionInt() { return i.v0->getLibraryVersionInt(); }
-	const char *getLibraryVersionString() { return i.v0->getLibraryVersionString(); }
 	mt32emu_return_code addROMData(const Bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest = NULL) { return i.v0->addROMData(c, data, data_size, sha1_digest); }
 	mt32emu_return_code addROMFile(const char *filename) { return i.v0->addROMFile(c, filename); }
 	void getROMInfo(mt32emu_rom_info *rom_info) { i.v0->getROMInfo(c, rom_info); }
 	mt32emu_return_code openSynth(const Bit32u *partial_count, const mt32emu_analog_output_mode *analog_output_mode) { return i.v0->openSynth(c, partial_count, analog_output_mode); }
 	void closeSynth() { i.v0->closeSynth(c); }
 	mt32emu_boolean isOpen() { return i.v0->isOpen(c); }
-	Bit32u getStereoOutputSamplerate(const mt32emu_analog_output_mode analog_output_mode) { return i.v0->getStereoOutputSamplerate(analog_output_mode); }
 	Bit32u getActualStereoOutputSamplerate() { return i.v0->getActualStereoOutputSamplerate(c); }
 	void flushMIDIQueue() { i.v0->flushMIDIQueue(c); }
 	Bit32u setMIDIEventQueueSize(const Bit32u queue_size) { return i.v0->setMIDIEventQueueSize(c, queue_size); }
@@ -110,8 +116,6 @@ public:
 	Bit32u getPlayingNotes(Bit8u part_number, Bit8u *keys, Bit8u *velocities) { return i.v0->getPlayingNotes(c, part_number, keys, velocities); }
 	const char *getPatchName(Bit8u part_number) { return i.v0->getPatchName(c, part_number); }
 	void readMemory(Bit32u addr, Bit32u len, Bit8u *data) { i.v0->readMemory(c, addr, len, data); }
-	mt32emu_report_handler_version getSupportedReportHandlerVersionID() { return i.v0->getSupportedReportHandlerVersionID(); }
-	mt32emu_midi_receiver_version getSupportedMIDIReceiverVersionID() { return i.v0->getSupportedMIDIReceiverVersionID(); }
 
 private:
 	static mt32emu_service_i i;

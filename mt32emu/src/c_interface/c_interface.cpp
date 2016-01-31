@@ -39,17 +39,19 @@ static mt32emu_service_version getSynthVersionID(mt32emu_service_i) {
 
 static const mt32emu_service_i_v0 SYNTH_VTABLE = {
 	getSynthVersionID,
-	mt32emu_create_context,
-	mt32emu_free_context,
+	mt32emu_get_supported_report_handler_version,
+	mt32emu_get_supported_midi_receiver_version,
 	mt32emu_get_library_version_int,
 	mt32emu_get_library_version_string,
+	mt32emu_get_stereo_output_samplerate,
+	mt32emu_create_context,
+	mt32emu_free_context,
 	mt32emu_add_rom_data,
 	mt32emu_add_rom_file,
 	mt32emu_get_rom_info,
 	mt32emu_open_synth,
 	mt32emu_close_synth,
 	mt32emu_is_open,
-	mt32emu_get_stereo_output_samplerate,
 	mt32emu_get_actual_stereo_output_samplerate,
 	mt32emu_flush_midi_queue,
 	mt32emu_set_midi_event_queue_size,
@@ -94,9 +96,7 @@ static const mt32emu_service_i_v0 SYNTH_VTABLE = {
 	mt32emu_get_partial_states,
 	mt32emu_get_playing_notes,
 	mt32emu_get_patch_name,
-	mt32emu_read_memory,
-	mt32emu_get_supported_report_handler_version,
-	mt32emu_get_supported_midi_receiver_version
+	mt32emu_read_memory
 };
 
 } // namespace MT32Emu
@@ -356,6 +356,26 @@ const mt32emu_service_i mt32emu_get_service_i() {
 	return i;
 }
 
+mt32emu_report_handler_version mt32emu_get_supported_report_handler_version() {
+	return MT32EMU_REPORT_HANDLER_VERSION_CURRENT;
+}
+
+mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version() {
+	return MT32EMU_MIDI_RECEIVER_VERSION_CURRENT;
+}
+
+mt32emu_bit32u mt32emu_get_library_version_int() {
+	return Synth::getLibraryVersionInt();
+}
+
+const char *mt32emu_get_library_version_string() {
+	return Synth::getLibraryVersionString();
+}
+
+mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode) {
+	return Synth::getStereoOutputSampleRate((AnalogOutputMode)analog_output_mode);
+}
+
 mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instanceData) {
 	mt32emu_data *data = new mt32emu_data;
 	data->reportHandler = (report_handler.v0 != NULL) ? new DelegatingReportHandlerAdapter(report_handler, instanceData) : new ReportHandlerAdapter;
@@ -385,14 +405,6 @@ void mt32emu_free_context(mt32emu_context data) {
 	delete data->reportHandler;
 	data->reportHandler = NULL;
 	delete data;
-}
-
-mt32emu_bit32u mt32emu_get_library_version_int() {
-	return Synth::getLibraryVersionInt();
-}
-
-const char *mt32emu_get_library_version_string() {
-	return Synth::getLibraryVersionString();
 }
 
 mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest) {
@@ -454,10 +466,6 @@ void mt32emu_close_synth(mt32emu_const_context context) {
 
 mt32emu_boolean mt32emu_is_open(mt32emu_const_context context) {
 	return context->synth->isOpen() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
-}
-
-mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode) {
-	return Synth::getStereoOutputSampleRate((AnalogOutputMode)analog_output_mode);
 }
 
 mt32emu_bit32u mt32emu_get_actual_stereo_output_samplerate(mt32emu_const_context context) {
@@ -654,14 +662,6 @@ const char *mt32emu_get_patch_name(mt32emu_const_context context, mt32emu_bit8u 
 
 void mt32emu_read_memory(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data) {
 	context->synth->readMemory(addr, len, data);
-}
-
-mt32emu_report_handler_version mt32emu_get_supported_report_handler_version() {
-	return MT32EMU_REPORT_HANDLER_VERSION_CURRENT;
-}
-
-mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version() {
-	return MT32EMU_MIDI_RECEIVER_VERSION_CURRENT;
 }
 
 } // extern "C"

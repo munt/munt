@@ -206,18 +206,22 @@ typedef union mt32emu_service_i mt32emu_service_i;
 typedef struct {
 	/** Returns the actual interface version ID */
 	mt32emu_service_version (*getVersionID)(mt32emu_service_i i);
+	mt32emu_report_handler_version (*getSupportedReportHandlerVersionID)();
+	mt32emu_midi_receiver_version (*getSupportedMIDIReceiverVersionID)();
+
+	mt32emu_bit32u (*getLibraryVersionInt)();
+	const char *(*getLibraryVersionString)();
+
+	mt32emu_bit32u (*getStereoOutputSamplerate)(const mt32emu_analog_output_mode analog_output_mode);
 
 	mt32emu_context (*createContext)(mt32emu_report_handler_i report_handler, void *instanceData);
 	void (*freeContext)(mt32emu_context context);
-	mt32emu_bit32u (*getLibraryVersionInt)();
-	const char *(*getLibraryVersionString)();
 	mt32emu_return_code (*addROMData)(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest);
 	mt32emu_return_code (*addROMFile)(mt32emu_context context, const char *filename);
 	void (*getROMInfo)(mt32emu_const_context context, mt32emu_rom_info *rom_info);
 	mt32emu_return_code (*openSynth)(mt32emu_const_context context, const mt32emu_bit32u *partial_count, const mt32emu_analog_output_mode *analog_output_mode);
 	void (*closeSynth)(mt32emu_const_context context);
 	mt32emu_boolean (*isOpen)(mt32emu_const_context context);
-	mt32emu_bit32u (*getStereoOutputSamplerate)(const mt32emu_analog_output_mode analog_output_mode);
 	mt32emu_bit32u (*getActualStereoOutputSamplerate)(mt32emu_const_context context);
 	void (*flushMIDIQueue)(mt32emu_const_context context);
 	mt32emu_bit32u (*setMIDIEventQueueSize)(mt32emu_const_context context, const mt32emu_bit32u queue_size);
@@ -272,8 +276,6 @@ typedef struct {
 	mt32emu_bit32u (*getPlayingNotes)(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u *keys, mt32emu_bit8u *velocities);
 	const char *(*getPatchName)(mt32emu_const_context context, mt32emu_bit8u part_number);
 	void (*readMemory)(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data);
-	mt32emu_report_handler_version (*getSupportedReportHandlerVersionID)();
-	mt32emu_midi_receiver_version (*getSupportedMIDIReceiverVersionID)();
 } mt32emu_service_i_v0;
 
 /**
