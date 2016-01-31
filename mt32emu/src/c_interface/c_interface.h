@@ -30,6 +30,10 @@
 extern "C" {
 #endif
 
+/* == Context-independent functions == */
+
+/* === Interface handling === */
+
 /** Returns mt32emu_service_i interface. */
 MT32EMU_EXPORT const mt32emu_service_i mt32emu_get_service_i();
 
@@ -38,24 +42,44 @@ MT32EMU_EXPORT const mt32emu_service_i mt32emu_get_service_i();
 #define MT32EMU_EXPORT
 #endif
 
+/**
+ * Returns the version ID of mt32emu_report_handler_i interface the library has been compiled with.
+ * This allows a client to fall-back gracefully instead of silently not receiving expected event reports.
+ */
+MT32EMU_EXPORT mt32emu_report_handler_version mt32emu_get_supported_report_handler_version();
+
+/**
+ * Returns the version ID of mt32emu_midi_receiver_version_i interface the library has been compiled with.
+ * This allows a client to fall-back gracefully instead of silently not receiving expected MIDI messages.
+ */
+MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version();
+
+/**
+ * Returns library version as an integer in format: 0x00MMmmpp, where:
+ * MM - major version number
+ * mm - minor version number
+ * pp - patch number
+ */
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_library_version_int();
+
+/**
+ * Returns library version as a C-string in format: "MAJOR.MINOR.PATCH".
+ */
+MT32EMU_EXPORT const char *mt32emu_get_library_version_string();
+
+/**
+ * Returns output sample rate used in emulation of stereo analog circuitry of hardware units for particular analog_output_mode.
+ * See comment for mt32emu_analog_output_mode.
+ */
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode);
+
+/* == Context-dependent functions == */
+
 /** Initialises a new emulation context and installs custom report handler if non-NULL. */
 MT32EMU_EXPORT mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instanceData);
 
 /** Closes and destroys emulation context. */
 MT32EMU_EXPORT void mt32emu_free_context(mt32emu_context context);
-
-/**
-* Returns library version as an integer in format: 0x00MMmmpp, where:
-* MM - major version number
-* mm - minor version number
-* pp - patch number
-*/
-MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_library_version_int();
-
-/**
-* Returns library version as a C-string in format: "MAJOR.MINOR.PATCH".
-*/
-MT32EMU_EXPORT const char *mt32emu_get_library_version_string();
 
 /**
  * Adds new ROM identified by its SHA1 digest to the emulation context replacing previously added ROM of the same type if any.
@@ -93,12 +117,6 @@ MT32EMU_EXPORT void mt32emu_close_synth(mt32emu_const_context context);
 
 /** Returns true if the synth is in completely initialized state, otherwise returns false. */
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_open(mt32emu_const_context context);
-
-/**
- * Returns output sample rate used in emulation of stereo analog circuitry of hardware units for particular analog_output_mode.
- * See comment for mt32emu_analog_output_mode.
- */
-MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode);
 
 /**
  * Returns actual output sample rate used in emulation of stereo analog circuitry of hardware units.
@@ -324,20 +342,6 @@ MT32EMU_EXPORT const char *mt32emu_get_patch_name(mt32emu_const_context context,
 
 /** Stores internal state of emulated synth into an array provided (as it would be acquired from hardware). */
 MT32EMU_EXPORT void mt32emu_read_memory(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data);
-
-/* === Interface handling === */
-
-/**
- * Returns the version ID of mt32emu_report_handler_i interface the library has been compiled with.
- * This allows a client to fall-back gracefully instead of silently not receiving expected event reports.
- */
-MT32EMU_EXPORT mt32emu_report_handler_version mt32emu_get_supported_report_handler_version();
-
-/**
- * Returns the version ID of mt32emu_midi_receiver_version_i interface the library has been compiled with.
- * This allows a client to fall-back gracefully instead of silently not receiving expected MIDI messages.
- */
-MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version();
 
 #ifdef __cplusplus
 } // extern "C"
