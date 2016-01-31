@@ -1925,10 +1925,6 @@ bool Synth::hasActivePartials() const {
 	return false;
 }
 
-bool Synth::isAbortingPoly() const {
-	return abortingPoly != NULL;
-}
-
 bool Synth::isActive() {
 	if (!opened) {
 		return false;

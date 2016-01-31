@@ -185,7 +185,7 @@ private:
 	Renderer &renderer;
 
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
-	inline bool isAbortingPoly() const;
+	bool isAbortingPoly() const { return abortingPoly != NULL; }
 
 	void readSysex(Bit8u channel, const Bit8u *sysex, Bit32u len) const;
 	void initMemoryRegions();
