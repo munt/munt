@@ -59,7 +59,9 @@ public:
 	mt32emu_return_code addROMData(const Bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest = NULL) { return i.v0->addROMData(c, data, data_size, sha1_digest); }
 	mt32emu_return_code addROMFile(const char *filename) { return i.v0->addROMFile(c, filename); }
 	void getROMInfo(mt32emu_rom_info *rom_info) { i.v0->getROMInfo(c, rom_info); }
-	mt32emu_return_code openSynth(const Bit32u *partial_count, const mt32emu_analog_output_mode *analog_output_mode) { return i.v0->openSynth(c, partial_count, analog_output_mode); }
+	void setPartialCount(const Bit32u partial_count) { i.v0->setPartialCount(c, partial_count); }
+	void setAnalogOutputMode(const AnalogOutputMode analog_output_mode) { i.v0->setAnalogOutputMode(c, static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
+	mt32emu_return_code openSynth() { return i.v0->openSynth(c); }
 	void closeSynth() { i.v0->closeSynth(c); }
 	mt32emu_boolean isOpen() { return i.v0->isOpen(c); }
 	Bit32u getActualStereoOutputSamplerate() { return i.v0->getActualStereoOutputSamplerate(c); }

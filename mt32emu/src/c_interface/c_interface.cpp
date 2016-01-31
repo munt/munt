@@ -49,6 +49,8 @@ static const mt32emu_service_i_v0 SYNTH_VTABLE = {
 	mt32emu_add_rom_data,
 	mt32emu_add_rom_file,
 	mt32emu_get_rom_info,
+	mt32emu_set_partial_count,
+	mt32emu_set_analog_output_mode,
 	mt32emu_open_synth,
 	mt32emu_close_synth,
 	mt32emu_is_open,
@@ -107,6 +109,8 @@ struct mt32emu_data {
 	const ROMImage *controlROMImage;
 	const ROMImage *pcmROMImage;
 	MidiStreamParserAdapter *midiParser;
+	Bit32u partialCount;
+	AnalogOutputMode analogOutputMode;
 };
 
 // Internal C++ utility stuff
@@ -383,6 +387,8 @@ mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, 
 	data->midiParser = new MidiStreamParserAdapter(data);
 	data->controlROMImage = NULL;
 	data->pcmROMImage = NULL;
+	data->partialCount = DEFAULT_MAX_PARTIALS;
+	data->analogOutputMode = AnalogOutputMode_COARSE;
 	return data;
 }
 
@@ -448,13 +454,19 @@ void mt32emu_get_rom_info(mt32emu_const_context context, mt32emu_rom_info *rom_i
 	}
 }
 
-mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const mt32emu_bit32u *partial_count, const mt32emu_analog_output_mode *analog_output_mode) {
+void mt32emu_set_partial_count(mt32emu_context context, const mt32emu_bit32u partial_count) {
+	context->partialCount = partial_count;
+}
+
+void mt32emu_set_analog_output_mode(mt32emu_context context, const mt32emu_analog_output_mode analog_output_mode) {
+	context->analogOutputMode = static_cast<AnalogOutputMode>(analog_output_mode);
+}
+
+mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context) {
 	if ((context->controlROMImage == NULL) || (context->pcmROMImage == NULL)) {
 		return MT32EMU_RC_MISSING_ROMS;
 	}
-	Bit32u partialCount = (partial_count == NULL) ? DEFAULT_MAX_PARTIALS : *partial_count;
-	AnalogOutputMode analogOutputMode = (analog_output_mode == NULL) ? AnalogOutputMode_COARSE : (AnalogOutputMode)*analog_output_mode;
-	if (context->synth->open(*context->controlROMImage, *context->pcmROMImage, partialCount, analogOutputMode)) {
+	if (context->synth->open(*context->controlROMImage, *context->pcmROMImage, context->partialCount, context->analogOutputMode)) {
 		return MT32EMU_RC_OK;
 	}
 	return MT32EMU_RC_FAILED;

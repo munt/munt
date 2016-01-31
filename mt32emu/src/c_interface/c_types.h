@@ -219,7 +219,9 @@ typedef struct {
 	mt32emu_return_code (*addROMData)(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest);
 	mt32emu_return_code (*addROMFile)(mt32emu_context context, const char *filename);
 	void (*getROMInfo)(mt32emu_const_context context, mt32emu_rom_info *rom_info);
-	mt32emu_return_code (*openSynth)(mt32emu_const_context context, const mt32emu_bit32u *partial_count, const mt32emu_analog_output_mode *analog_output_mode);
+	void (*setPartialCount)(mt32emu_context context, const mt32emu_bit32u partial_count);
+	void (*setAnalogOutputMode)(mt32emu_context context, const mt32emu_analog_output_mode analog_output_mode);
+	mt32emu_return_code (*openSynth)(mt32emu_const_context context);
 	void (*closeSynth)(mt32emu_const_context context);
 	mt32emu_boolean (*isOpen)(mt32emu_const_context context);
 	mt32emu_bit32u (*getActualStereoOutputSamplerate)(mt32emu_const_context context);

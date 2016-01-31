@@ -104,13 +104,23 @@ MT32EMU_EXPORT mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context,
 MT32EMU_EXPORT void mt32emu_get_rom_info(mt32emu_const_context context, mt32emu_rom_info *rom_info);
 
 /**
- * Prepares the emulation context to receive MIDI messages and produce output audio data using aforehand added set of ROMs.
- * partial_count sets the maximum number of partials playing simultaneously for this session (optional).
- * analog_output_mode sets the mode for emulation of analogue circuitry of the hardware units (optional).
- * If either partial_count and/or analog_output_mode arguments is set to NULL, the default value will be used.
+ * Allows to override the default maximum number of partials playing simultaneously within the emulation session.
+ * This function doesn't immediately change the state of already opened synth. Newly set vale will take effect upon next call of mt32emu_open_synth().
+ */
+MT32EMU_EXPORT void mt32emu_set_partial_count(mt32emu_context context, const mt32emu_bit32u partial_count);
+
+/**
+ * Allows to override the default mode for emulation of analogue circuitry of the hardware units within the emulation session.
+ * This function doesn't immediately change the state of already opened synth. Newly set vale will take effect upon next call of mt32emu_open_synth().
+ */
+MT32EMU_EXPORT void mt32emu_set_analog_output_mode(mt32emu_context context, const mt32emu_analog_output_mode analog_output_mode);
+
+/**
+ * Prepares the emulation context to receive MIDI messages and produce output audio data using aforehand added set of ROMs,
+ * and optionally set the maximum partial count and the analog output mode.
  * Returns MT32EMU_RC_OK upon success.
  */
-MT32EMU_EXPORT mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context, const mt32emu_bit32u *partial_count, const mt32emu_analog_output_mode *analog_output_mode);
+MT32EMU_EXPORT mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context);
 
 /** Closes the emulation context freeing allocated resources. Added ROMs remain unaffected and ready for reuse. */
 MT32EMU_EXPORT void mt32emu_close_synth(mt32emu_const_context context);
