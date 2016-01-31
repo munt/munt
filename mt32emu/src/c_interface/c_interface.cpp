@@ -377,7 +377,7 @@ const char *mt32emu_get_library_version_string() {
 }
 
 mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode) {
-	return Synth::getStereoOutputSampleRate((AnalogOutputMode)analog_output_mode);
+	return Synth::getStereoOutputSampleRate(static_cast<AnalogOutputMode>(analog_output_mode));
 }
 
 mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instanceData) {
@@ -589,19 +589,19 @@ mt32emu_boolean mt32emu_is_default_reverb_mt32_compatible(mt32emu_const_context 
 }
 
 void mt32emu_set_dac_input_mode(mt32emu_const_context context, const mt32emu_dac_input_mode mode) {
-	context->synth->setDACInputMode((DACInputMode)mode);
+	context->synth->setDACInputMode(static_cast<DACInputMode>(mode));
 }
 
 mt32emu_dac_input_mode mt32emu_get_dac_input_mode(mt32emu_const_context context) {
-	return (mt32emu_dac_input_mode)context->synth->getDACInputMode();
+	return static_cast<mt32emu_dac_input_mode>(context->synth->getDACInputMode());
 }
 
 void mt32emu_set_midi_delay_mode(mt32emu_const_context context, const mt32emu_midi_delay_mode mode) {
-	context->synth->setMIDIDelayMode((MIDIDelayMode)mode);
+	context->synth->setMIDIDelayMode(static_cast<MIDIDelayMode>(mode));
 }
 
 mt32emu_midi_delay_mode mt32emu_get_midi_delay_mode(mt32emu_const_context context) {
-	return (mt32emu_midi_delay_mode)context->synth->getMIDIDelayMode();
+	return static_cast<mt32emu_midi_delay_mode>(context->synth->getMIDIDelayMode());
 }
 
 void mt32emu_set_output_gain(mt32emu_const_context context, float gain) {

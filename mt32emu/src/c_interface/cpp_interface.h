@@ -48,7 +48,7 @@ public:
 	static Bit32u getLibraryVersionInt() { return i.v0->getLibraryVersionInt(); }
 	static const char *getLibraryVersionString() { return i.v0->getLibraryVersionString(); }
 
-	static Bit32u getStereoOutputSamplerate(const mt32emu_analog_output_mode analog_output_mode) { return i.v0->getStereoOutputSamplerate(analog_output_mode); }
+	static Bit32u getStereoOutputSamplerate(const AnalogOutputMode analog_output_mode) { return i.v0->getStereoOutputSamplerate(static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
 
 	explicit Service(mt32emu_context context = NULL) : c(context) {}
 	~Service() { if (c != NULL) i.v0->freeContext(c); }
@@ -91,11 +91,11 @@ public:
 	mt32emu_boolean isMT32ReverbCompatibilityMode() { return i.v0->isMT32ReverbCompatibilityMode(c); }
 	mt32emu_boolean isDefaultReverbMT32Compatible() { return i.v0->isDefaultReverbMT32Compatible(c); }
 
-	void setDACInputMode(const mt32emu_dac_input_mode mode) { i.v0->setDACInputMode(c, mode); }
-	mt32emu_dac_input_mode getDACInputMode() { return i.v0->getDACInputMode(c); }
+	void setDACInputMode(const DACInputMode mode) { i.v0->setDACInputMode(c, static_cast<mt32emu_dac_input_mode>(mode)); }
+	DACInputMode getDACInputMode() { return static_cast<DACInputMode>(i.v0->getDACInputMode(c)); }
 
-	void setMIDIDelayMode(const mt32emu_midi_delay_mode mode) { i.v0->setMIDIDelayMode(c, mode); }
-	mt32emu_midi_delay_mode getMIDIDelayMode() { return i.v0->getMIDIDelayMode(c); }
+	void setMIDIDelayMode(const MIDIDelayMode mode) { i.v0->setMIDIDelayMode(c, static_cast<mt32emu_midi_delay_mode>(mode)); }
+	MIDIDelayMode getMIDIDelayMode() { return static_cast<MIDIDelayMode>(i.v0->getMIDIDelayMode(c)); }
 
 	void setOutputGain(float gain) { i.v0->setOutputGain(c, gain); }
 	float getOutputGain() { return i.v0->getOutputGain(c); }
