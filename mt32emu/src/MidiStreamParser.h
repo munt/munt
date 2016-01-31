@@ -23,6 +23,8 @@
 
 namespace MT32Emu {
 
+class Synth;
+
 // Interface for a user-supplied class to receive parsed well-formed MIDI messages.
 class MT32EMU_EXPORT MidiReceiver {
 public:
@@ -94,6 +96,24 @@ public:
 	// If a longer SysEx occurs, streamBuffer is reallocated to the maximum size of MAX_STREAM_BUFFER_SIZE (32768 bytes).
 	// Default capacity is SYSEX_BUFFER_SIZE (1000 bytes) which is enough to fit SysEx messages in common use.
 	explicit MidiStreamParser(Bit32u initialStreamBufferCapacity = SYSEX_BUFFER_SIZE);
+};
+
+class MT32EMU_EXPORT DefaultMidiStreamParser : public MidiStreamParser {
+public:
+	explicit DefaultMidiStreamParser(Synth &synth, Bit32u initialStreamBufferCapacity = SYSEX_BUFFER_SIZE);
+	void setTimestamp(const Bit32u useTimestamp);
+	void resetTimestamp();
+
+protected:
+	void handleShortMessage(const Bit32u message);
+	void handleSysex(const Bit8u *stream, const Bit32u length);
+	void handleSystemRealtimeMessage(const Bit8u realtime);
+	void printDebug(const char *debugMessage);
+
+private:
+	Synth &synth;
+	bool timestampSet;
+	Bit32u timestamp;
 };
 
 } // namespace MT32Emu

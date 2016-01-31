@@ -113,6 +113,7 @@ public:
 };
 
 class Synth {
+friend class DefaultMidiStreamParser;
 friend class Part;
 friend class Partial;
 friend class PartialManager;

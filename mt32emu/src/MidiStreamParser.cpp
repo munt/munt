@@ -25,6 +25,48 @@
 
 using namespace MT32Emu;
 
+DefaultMidiStreamParser::DefaultMidiStreamParser(Synth &useSynth, Bit32u initialStreamBufferCapacity) :
+	MidiStreamParser(initialStreamBufferCapacity), synth(useSynth), timestampSet(false) {}
+
+void DefaultMidiStreamParser::setTimestamp(const Bit32u useTimestamp) {
+	timestampSet = true;
+	timestamp = useTimestamp;
+}
+
+void DefaultMidiStreamParser::resetTimestamp() {
+	timestampSet = false;
+}
+
+void DefaultMidiStreamParser::handleShortMessage(const Bit32u message) {
+	do {
+		if (timestampSet) {
+			if (synth.playMsg(message, timestamp)) return;
+		}
+		else {
+			if (synth.playMsg(message)) return;
+		}
+	} while (synth.reportHandler->onMIDIQueueOverflow());
+}
+
+void DefaultMidiStreamParser::handleSysex(const Bit8u *stream, const Bit32u length) {
+	do {
+		if (timestampSet) {
+			if (synth.playSysex(stream, length, timestamp)) return;
+		}
+		else {
+			if (synth.playSysex(stream, length)) return;
+		}
+	} while (synth.reportHandler->onMIDIQueueOverflow());
+}
+
+void DefaultMidiStreamParser::handleSystemRealtimeMessage(const Bit8u realtime) {
+	synth.reportHandler->onMIDISystemRealtime(realtime);
+}
+
+void DefaultMidiStreamParser::printDebug(const char *debugMessage) {
+	synth.printDebug("%s", debugMessage);
+}
+
 MidiStreamParser::MidiStreamParser(Bit32u initialStreamBufferCapacity) :
 	MidiStreamParserImpl(*this, *this, initialStreamBufferCapacity) {}
 

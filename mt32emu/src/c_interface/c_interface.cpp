@@ -30,8 +30,6 @@ using namespace MT32Emu;
 
 namespace MT32Emu {
 
-class MidiStreamParserAdapter;
-
 static mt32emu_service_version getSynthVersionID(mt32emu_service_i) {
 	return MT32EMU_SERVICE_VERSION_CURRENT;
 }
@@ -107,7 +105,7 @@ struct mt32emu_data {
 	Synth *synth;
 	const ROMImage *controlROMImage;
 	const ROMImage *pcmROMImage;
-	MidiStreamParserAdapter *midiParser;
+	DefaultMidiStreamParser *midiParser;
 	Bit32u partialCount;
 	AnalogOutputMode analogOutputMode;
 };
@@ -238,60 +236,10 @@ private:
 	}
 };
 
-class MidiStreamParserAdapter : public MidiStreamParser {
-public:
-	MidiStreamParserAdapter(const mt32emu_data *useData) : d(*useData), timestampSet(false) {}
-
-	void setTimestamp(const Bit32u useTimestamp) {
-		timestampSet = true;
-		timestamp = useTimestamp;
-	}
-
-	void resetTimestamp() {
-		timestampSet = false;
-	}
-
-protected:
-	void handleShortMessage(const Bit32u message) {
-		do {
-			if (timestampSet) {
-				if (d.synth->playMsg(message, timestamp)) return;
-			}
-			else {
-				if (d.synth->playMsg(message)) return;
-			}
-		} while (d.reportHandler->onMIDIQueueOverflow());
-	}
-
-	void handleSysex(const Bit8u *stream, const Bit32u length) {
-		do {
-			if (timestampSet) {
-				if (d.synth->playSysex(stream, length, timestamp)) return;
-			}
-			else {
-				if (d.synth->playSysex(stream, length)) return;
-			}
-		} while (d.reportHandler->onMIDIQueueOverflow());
-	}
-
-	void handleSystemRealtimeMessage(const Bit8u realtime) {
-		d.reportHandler->onMIDISystemRealtime(realtime);
-	}
-
-	void printDebug(const char *debugMessage) {
-		d.reportHandler->printDebug("%s", (va_list)&debugMessage);
-	}
-
-private:
-	const mt32emu_data &d;
-	bool timestampSet;
-	Bit32u timestamp;
-};
-
-class DelegatingMidiStreamParser : public MidiStreamParserAdapter {
+class DelegatingMidiStreamParser : public DefaultMidiStreamParser {
 public:
 	DelegatingMidiStreamParser(const mt32emu_data *useData, mt32emu_midi_receiver_i useMIDIReceiver, void *useInstanceData) :
-		MidiStreamParserAdapter(useData), delegate(useMIDIReceiver), instanceData(useInstanceData) {}
+		DefaultMidiStreamParser(*useData->synth), delegate(useMIDIReceiver), instanceData(useInstanceData) {}
 
 protected:
 	mt32emu_midi_receiver_i delegate;
@@ -300,7 +248,7 @@ protected:
 private:
 	void handleShortMessage(const Bit32u message) {
 		if (delegate.v0->handleShortMessage == NULL) {
-			MidiStreamParserAdapter::handleShortMessage(message);
+			DefaultMidiStreamParser::handleShortMessage(message);
 		} else {
 			delegate.v0->handleShortMessage(instanceData, message);
 		}
@@ -308,7 +256,7 @@ private:
 
 	void handleSysex(const Bit8u *stream, const Bit32u length) {
 		if (delegate.v0->handleSysex == NULL) {
-			MidiStreamParserAdapter::handleSysex(stream, length);
+			DefaultMidiStreamParser::handleSysex(stream, length);
 		} else {
 			delegate.v0->handleSysex(instanceData, stream, length);
 		}
@@ -316,7 +264,7 @@ private:
 
 	void handleSystemRealtimeMessage(const Bit8u realtime) {
 		if (delegate.v0->handleSystemRealtimeMessage == NULL) {
-			MidiStreamParserAdapter::handleSystemRealtimeMessage(realtime);
+			DefaultMidiStreamParser::handleSystemRealtimeMessage(realtime);
 		} else {
 			delegate.v0->handleSystemRealtimeMessage(instanceData, realtime);
 		}
@@ -384,7 +332,7 @@ mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, 
 	mt32emu_data *data = new mt32emu_data;
 	data->reportHandler = (report_handler.v0 != NULL) ? new DelegatingReportHandlerAdapter(report_handler, instanceData) : new ReportHandler;
 	data->synth = new Synth(data->reportHandler);
-	data->midiParser = new MidiStreamParserAdapter(data);
+	data->midiParser = new DefaultMidiStreamParser(*data->synth);
 	data->controlROMImage = NULL;
 	data->pcmROMImage = NULL;
 	data->partialCount = DEFAULT_MAX_PARTIALS;
@@ -494,7 +442,7 @@ mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_context context, 
 
 void mt32emu_set_midi_receiver(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instanceData) {
 	delete context->midiParser;
-	context->midiParser = (midi_receiver.v0 != NULL) ? new DelegatingMidiStreamParser(context, midi_receiver, instanceData) : new MidiStreamParserAdapter(context);
+	context->midiParser = (midi_receiver.v0 != NULL) ? new DelegatingMidiStreamParser(context, midi_receiver, instanceData) : new DefaultMidiStreamParser(*context->synth);
 }
 
 void mt32emu_parse_stream(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length) {
