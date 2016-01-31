@@ -185,7 +185,7 @@ private:
 	Renderer &renderer;
 
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
-	bool isAbortingPoly() const;
+	inline bool isAbortingPoly() const;
 
 	void readSysex(Bit8u channel, const Bit8u *sysex, Bit32u len) const;
 	void initMemoryRegions();
@@ -213,7 +213,6 @@ private:
 
 	void printPartialUsage(Bit32u sampleOffset = 0);
 
-	void polyStateChanged(Bit8u partNum);
 	void newTimbreSet(Bit8u partNum, Bit8u timbreGroup, Bit8u timbreNumber, const char patchName[]);
 	void printDebug(const char *fmt, ...);
 
@@ -263,7 +262,7 @@ public:
 	MT32EMU_EXPORT static Bit32u getStereoOutputSampleRate(AnalogOutputMode analogOutputMode);
 
 	// Optionally sets callbacks for reporting various errors, information and debug messages
-	MT32EMU_EXPORT Synth(ReportHandler *useReportHandler = NULL);
+	MT32EMU_EXPORT explicit Synth(ReportHandler *useReportHandler = NULL);
 	MT32EMU_EXPORT ~Synth();
 
 	// Used to initialise the MT-32. Must be called before any other function.

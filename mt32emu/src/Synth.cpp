@@ -228,10 +228,6 @@ void ReportHandler::printDebug(const char *fmt, va_list list) {
 	printf("\n");
 }
 
-void Synth::polyStateChanged(Bit8u partNum) {
-	reportHandler->onPolyStateChanged(partNum);
-}
-
 void Synth::newTimbreSet(Bit8u partNum, Bit8u timbreGroup, Bit8u timbreNumber, const char patchName[]) {
 	const char *soundGroupName;
 	switch (timbreGroup) {

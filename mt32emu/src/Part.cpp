@@ -511,7 +511,7 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 #if MT32EMU_MONITOR_PARTIALS > 1
 	synth->printPartialUsage();
 #endif
-	synth->polyStateChanged(partNum);
+	synth->reportHandler->onPolyStateChanged((Bit8u)partNum);
 }
 
 void Part::allNotesOff() {
@@ -597,7 +597,7 @@ void Part::partialDeactivated(Poly *poly) {
 	if (!poly->isActive()) {
 		activePolys.remove(poly);
 		synth->partialManager->polyFreed(poly);
-		synth->polyStateChanged(partNum);
+		synth->reportHandler->onPolyStateChanged((Bit8u)partNum);
 	}
 }
 
