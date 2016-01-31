@@ -396,6 +396,7 @@ const char *mt32emu_get_library_version_string() {
 }
 
 mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest) {
+	if (sha1_digest == NULL) return addROMFile(context, new ArrayFile(data, data_size));
 	return addROMFile(context, new ArrayFile(data, data_size, *sha1_digest));
 }
 
