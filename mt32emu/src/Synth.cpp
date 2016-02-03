@@ -1586,7 +1586,7 @@ void Synth::reset() {
 		}
 	}
 	refreshSystem();
-	activated = false;
+	isActive();
 }
 
 MidiEvent::~MidiEvent() {
