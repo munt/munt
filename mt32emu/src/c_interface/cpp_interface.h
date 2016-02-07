@@ -26,6 +26,75 @@
 #include "../Types.h"
 #include "../Enumerations.h"
 
+#if MT32EMU_API_TYPE == 2
+
+#define mt32emu_get_supported_report_handler_version i.v0->getSupportedReportHandlerVersionID
+#define mt32emu_get_supported_midi_receiver_version i.v0->getSupportedMIDIReceiverVersionID
+#define mt32emu_get_library_version_int i.v0->getLibraryVersionInt
+#define mt32emu_get_library_version_string i.v0->getLibraryVersionString
+#define mt32emu_get_stereo_output_samplerate i.v0->getStereoOutputSamplerate
+#define mt32emu_create_context i.v0->createContext
+#define mt32emu_free_context i.v0->freeContext
+#define mt32emu_add_rom_data i.v0->addROMData
+#define mt32emu_add_rom_file i.v0->addROMFile
+#define mt32emu_get_rom_info i.v0->getROMInfo
+#define mt32emu_set_partial_count i.v0->setPartialCount
+#define mt32emu_set_analog_output_mode i.v0->setAnalogOutputMode
+#define mt32emu_open_synth i.v0->openSynth
+#define mt32emu_close_synth i.v0->closeSynth
+#define mt32emu_is_open i.v0->isOpen
+#define mt32emu_get_actual_stereo_output_samplerate i.v0->getActualStereoOutputSamplerate
+#define mt32emu_flush_midi_queue i.v0->flushMIDIQueue
+#define mt32emu_set_midi_event_queue_size i.v0->setMIDIEventQueueSize
+#define mt32emu_set_midi_receiver i.v0->setMIDIReceiver
+#define mt32emu_parse_stream i.v0->parseStream
+#define mt32emu_parse_stream_at i.v0->parseStream_At
+#define mt32emu_play_short_message i.v0->playShortMessage
+#define mt32emu_play_short_message_at i.v0->playShortMessageAt
+#define mt32emu_play_msg i.v0->playMsg
+#define mt32emu_play_sysex i.v0->playSysex
+#define mt32emu_play_msg_at i.v0->playMsgAt
+#define mt32emu_play_sysex_at i.v0->playSysexAt
+#define mt32emu_play_msg_now i.v0->playMsgNow
+#define mt32emu_play_msg_on_part i.v0->playMsgOnPart
+#define mt32emu_play_sysex_now i.v0->playSysexNow
+#define mt32emu_write_sysex i.v0->writeSysex
+#define mt32emu_set_reverb_enabled i.v0->setReverbEnabled
+#define mt32emu_is_reverb_enabled i.v0->isReverbEnabled
+#define mt32emu_set_reverb_overridden i.v0->setReverbOverridden
+#define mt32emu_is_reverb_overridden i.v0->isReverbOverridden
+#define mt32emu_set_reverb_compatibility_mode i.v0->setReverbCompatibilityMode
+#define mt32emu_is_mt32_reverb_compatibility_mode i.v0->isMT32ReverbCompatibilityMode
+#define mt32emu_is_default_reverb_mt32_compatible i.v0->isDefaultReverbMT32Compatible
+#define mt32emu_set_dac_input_mode i.v0->setDACInputMode
+#define mt32emu_get_dac_input_mode i.v0->getDACInputMode
+#define mt32emu_set_midi_delay_mode i.v0->setMIDIDelayMode
+#define mt32emu_get_midi_delay_mode i.v0->getMIDIDelayMode
+#define mt32emu_set_output_gain i.v0->setOutputGain
+#define mt32emu_get_output_gain i.v0->getOutputGain
+#define mt32emu_set_reverb_output_gain i.v0->setReverbOutputGain
+#define mt32emu_get_reverb_output_gain i.v0->getReverbOutputGain
+#define mt32emu_set_reversed_stereo_enabled i.v0->setReversedStereoEnabled
+#define mt32emu_is_reversed_stereo_enabled i.v0->isReversedStereoEnabled
+#define mt32emu_render_bit16s i.v0->renderBit16s
+#define mt32emu_render_float i.v0->renderFloat
+#define mt32emu_render_bit16s_streams i.v0->renderBit16sStreams
+#define mt32emu_render_float_streams i.v0->renderFloatStreams
+#define mt32emu_has_active_partials i.v0->hasActivePartials
+#define mt32emu_is_active i.v0->isActive
+#define mt32emu_get_partial_count i.v0->getPartialCount
+#define mt32emu_get_part_states i.v0->getPartStates
+#define mt32emu_get_partial_states i.v0->getPartialStates
+#define mt32emu_get_playing_notes i.v0->getPlayingNotes
+#define mt32emu_get_patch_name i.v0->getPatchName
+#define mt32emu_read_memory i.v0->readMemory
+
+#else // #if MT32EMU_API_TYPE == 2
+
+#include "c_interface.h"
+
+#endif // #if MT32EMU_API_TYPE == 2
+
 namespace MT32Emu {
 
 static const mt32emu_report_handler_i NULL_REPORT_HANDLER = { NULL };
@@ -39,93 +108,166 @@ static const mt32emu_report_handler_i NULL_REPORT_HANDLER = { NULL };
  */
 class Service {
 public:
+#if MT32EMU_API_TYPE == 2
 	explicit Service(mt32emu_service_i interface, mt32emu_context context = NULL) : i(interface), c(context) {}
-	~Service() { if (c != NULL) i.v0->freeContext(c); }
+#else
+	explicit Service(mt32emu_context context = NULL) : c(context) {}
+#endif
+	~Service() { if (c != NULL) mt32emu_free_context(c); }
 
 	// Context-independent methods
 
+#if MT32EMU_API_TYPE == 2
 	mt32emu_service_version getVersionID() { return i.v0->getVersionID(i); }
-	mt32emu_report_handler_version getSupportedReportHandlerVersionID() { return i.v0->getSupportedReportHandlerVersionID(); }
-	mt32emu_midi_receiver_version getSupportedMIDIReceiverVersionID() { return i.v0->getSupportedMIDIReceiverVersionID(); }
+#endif
+	mt32emu_report_handler_version getSupportedReportHandlerVersionID() { return mt32emu_get_supported_report_handler_version(); }
+	mt32emu_midi_receiver_version getSupportedMIDIReceiverVersionID() { return mt32emu_get_supported_midi_receiver_version(); }
 
-	Bit32u getLibraryVersionInt() { return i.v0->getLibraryVersionInt(); }
-	const char *getLibraryVersionString() { return i.v0->getLibraryVersionString(); }
+	Bit32u getLibraryVersionInt() { return mt32emu_get_library_version_int(); }
+	const char *getLibraryVersionString() { return mt32emu_get_library_version_string(); }
 
-	Bit32u getStereoOutputSamplerate(const AnalogOutputMode analog_output_mode) { return i.v0->getStereoOutputSamplerate(static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
+	Bit32u getStereoOutputSamplerate(const AnalogOutputMode analog_output_mode) { return mt32emu_get_stereo_output_samplerate(static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
 
 	// Context-dependent methods
 
 	mt32emu_context getContext() { return c; }
-	void createContext(mt32emu_report_handler_i report_handler = NULL_REPORT_HANDLER, void *instance_data = NULL) { if (c != NULL) i.v0->freeContext(c); c = i.v0->createContext(report_handler, instance_data); }
-	void freeContext() { if (c != NULL) { i.v0->freeContext(c); c = NULL; } }
-	mt32emu_return_code addROMData(const Bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest = NULL) { return i.v0->addROMData(c, data, data_size, sha1_digest); }
-	mt32emu_return_code addROMFile(const char *filename) { return i.v0->addROMFile(c, filename); }
-	void getROMInfo(mt32emu_rom_info *rom_info) { i.v0->getROMInfo(c, rom_info); }
-	void setPartialCount(const Bit32u partial_count) { i.v0->setPartialCount(c, partial_count); }
-	void setAnalogOutputMode(const AnalogOutputMode analog_output_mode) { i.v0->setAnalogOutputMode(c, static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
-	mt32emu_return_code openSynth() { return i.v0->openSynth(c); }
-	void closeSynth() { i.v0->closeSynth(c); }
-	bool isOpen() { return i.v0->isOpen(c) != MT32EMU_BOOL_FALSE; }
-	Bit32u getActualStereoOutputSamplerate() { return i.v0->getActualStereoOutputSamplerate(c); }
-	void flushMIDIQueue() { i.v0->flushMIDIQueue(c); }
-	Bit32u setMIDIEventQueueSize(const Bit32u queue_size) { return i.v0->setMIDIEventQueueSize(c, queue_size); }
-	void setMIDIReceiver(mt32emu_midi_receiver_i midi_receiver, void *instance_data) { i.v0->setMIDIReceiver(c, midi_receiver, instance_data); }
+	void createContext(mt32emu_report_handler_i report_handler = NULL_REPORT_HANDLER, void *instance_data = NULL) { if (c != NULL) mt32emu_free_context(c); c = mt32emu_create_context(report_handler, instance_data); }
+	void freeContext() { if (c != NULL) { mt32emu_free_context(c); c = NULL; } }
+	mt32emu_return_code addROMData(const Bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest = NULL) { return mt32emu_add_rom_data(c, data, data_size, sha1_digest); }
+	mt32emu_return_code addROMFile(const char *filename) { return mt32emu_add_rom_file(c, filename); }
+	void getROMInfo(mt32emu_rom_info *rom_info) { mt32emu_get_rom_info(c, rom_info); }
+	void setPartialCount(const Bit32u partial_count) { mt32emu_set_partial_count(c, partial_count); }
+	void setAnalogOutputMode(const AnalogOutputMode analog_output_mode) { mt32emu_set_analog_output_mode(c, static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
+	mt32emu_return_code openSynth() { return mt32emu_open_synth(c); }
+	void closeSynth() { mt32emu_close_synth(c); }
+	bool isOpen() { return mt32emu_is_open(c) != MT32EMU_BOOL_FALSE; }
+	Bit32u getActualStereoOutputSamplerate() { return mt32emu_get_actual_stereo_output_samplerate(c); }
+	void flushMIDIQueue() { mt32emu_flush_midi_queue(c); }
+	Bit32u setMIDIEventQueueSize(const Bit32u queue_size) { return mt32emu_set_midi_event_queue_size(c, queue_size); }
+	void setMIDIReceiver(mt32emu_midi_receiver_i midi_receiver, void *instance_data) { mt32emu_set_midi_receiver(c, midi_receiver, instance_data); }
 
-	void parseStream(const Bit8u *stream, Bit32u length) { i.v0->parseStream(c, stream, length); }
-	void parseStream_At(const Bit8u *stream, Bit32u length, Bit32u timestamp) { i.v0->parseStream_At(c, stream, length, timestamp); }
-	void playShortMessage(Bit32u message) { i.v0->playShortMessage(c, message); }
-	void playShortMessageAt(Bit32u message, Bit32u timestamp) { i.v0->playShortMessageAt(c, message, timestamp); }
-	mt32emu_return_code playMsg(Bit32u msg) { return i.v0->playMsg(c, msg); }
-	mt32emu_return_code playSysex(const Bit8u *sysex, Bit32u len) { return i.v0->playSysex(c, sysex, len); }
-	mt32emu_return_code playMsgAt(Bit32u msg, Bit32u timestamp) { return i.v0->playMsgAt(c, msg, timestamp); }
-	mt32emu_return_code playSysexAt(const Bit8u *sysex, Bit32u len, Bit32u timestamp) { return i.v0->playSysexAt(c, sysex, len, timestamp); }
+	void parseStream(const Bit8u *stream, Bit32u length) { mt32emu_parse_stream(c, stream, length); }
+	void parseStream_At(const Bit8u *stream, Bit32u length, Bit32u timestamp) { mt32emu_parse_stream_at(c, stream, length, timestamp); }
+	void playShortMessage(Bit32u message) { mt32emu_play_short_message(c, message); }
+	void playShortMessageAt(Bit32u message, Bit32u timestamp) { mt32emu_play_short_message_at(c, message, timestamp); }
+	mt32emu_return_code playMsg(Bit32u msg) { return mt32emu_play_msg(c, msg); }
+	mt32emu_return_code playSysex(const Bit8u *sysex, Bit32u len) { return mt32emu_play_sysex(c, sysex, len); }
+	mt32emu_return_code playMsgAt(Bit32u msg, Bit32u timestamp) { return mt32emu_play_msg_at(c, msg, timestamp); }
+	mt32emu_return_code playSysexAt(const Bit8u *sysex, Bit32u len, Bit32u timestamp) { return mt32emu_play_sysex_at(c, sysex, len, timestamp); }
 
-	void playMsgNow(Bit32u msg) { i.v0->playMsgNow(c, msg); }
-	void playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) { i.v0->playMsgOnPart(c, part, code, note, velocity); }
-	void playSysexNow(const Bit8u *sysex, Bit32u len) { i.v0->playSysexNow(c, sysex, len); }
-	void writeSysex(Bit8u channel, const Bit8u *sysex, Bit32u len) { i.v0->writeSysex(c, channel, sysex, len); }
+	void playMsgNow(Bit32u msg) { mt32emu_play_msg_now(c, msg); }
+	void playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) { mt32emu_play_msg_on_part(c, part, code, note, velocity); }
+	void playSysexNow(const Bit8u *sysex, Bit32u len) { mt32emu_play_sysex_now(c, sysex, len); }
+	void writeSysex(Bit8u channel, const Bit8u *sysex, Bit32u len) { mt32emu_write_sysex(c, channel, sysex, len); }
 
-	void setReverbEnabled(const bool reverb_enabled) { i.v0->setReverbEnabled(c, reverb_enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
-	bool isReverbEnabled() { return i.v0->isReverbEnabled(c) != MT32EMU_BOOL_FALSE; }
-	void setReverbOverridden(const bool reverb_overridden) { i.v0->setReverbOverridden(c, reverb_overridden ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
-	bool isReverbOverridden() { return i.v0->isReverbOverridden(c) != MT32EMU_BOOL_FALSE; }
-	void setReverbCompatibilityMode(const bool mt32_compatible_mode) { i.v0->setReverbCompatibilityMode(c, mt32_compatible_mode ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
-	bool isMT32ReverbCompatibilityMode() { return i.v0->isMT32ReverbCompatibilityMode(c) != MT32EMU_BOOL_FALSE; }
-	bool isDefaultReverbMT32Compatible() { return i.v0->isDefaultReverbMT32Compatible(c) != MT32EMU_BOOL_FALSE; }
+	void setReverbEnabled(const bool reverb_enabled) { mt32emu_set_reverb_enabled(c, reverb_enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
+	bool isReverbEnabled() { return mt32emu_is_reverb_enabled(c) != MT32EMU_BOOL_FALSE; }
+	void setReverbOverridden(const bool reverb_overridden) { mt32emu_set_reverb_overridden(c, reverb_overridden ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
+	bool isReverbOverridden() { return mt32emu_is_reverb_overridden(c) != MT32EMU_BOOL_FALSE; }
+	void setReverbCompatibilityMode(const bool mt32_compatible_mode) { mt32emu_set_reverb_compatibility_mode(c, mt32_compatible_mode ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
+	bool isMT32ReverbCompatibilityMode() { return mt32emu_is_mt32_reverb_compatibility_mode(c) != MT32EMU_BOOL_FALSE; }
+	bool isDefaultReverbMT32Compatible() { return mt32emu_is_default_reverb_mt32_compatible(c) != MT32EMU_BOOL_FALSE; }
 
-	void setDACInputMode(const DACInputMode mode) { i.v0->setDACInputMode(c, static_cast<mt32emu_dac_input_mode>(mode)); }
-	DACInputMode getDACInputMode() { return static_cast<DACInputMode>(i.v0->getDACInputMode(c)); }
+	void setDACInputMode(const DACInputMode mode) { mt32emu_set_dac_input_mode(c, static_cast<mt32emu_dac_input_mode>(mode)); }
+	DACInputMode getDACInputMode() { return static_cast<DACInputMode>(mt32emu_get_dac_input_mode(c)); }
 
-	void setMIDIDelayMode(const MIDIDelayMode mode) { i.v0->setMIDIDelayMode(c, static_cast<mt32emu_midi_delay_mode>(mode)); }
-	MIDIDelayMode getMIDIDelayMode() { return static_cast<MIDIDelayMode>(i.v0->getMIDIDelayMode(c)); }
+	void setMIDIDelayMode(const MIDIDelayMode mode) { mt32emu_set_midi_delay_mode(c, static_cast<mt32emu_midi_delay_mode>(mode)); }
+	MIDIDelayMode getMIDIDelayMode() { return static_cast<MIDIDelayMode>(mt32emu_get_midi_delay_mode(c)); }
 
-	void setOutputGain(float gain) { i.v0->setOutputGain(c, gain); }
-	float getOutputGain() { return i.v0->getOutputGain(c); }
-	void setReverbOutputGain(float gain) { i.v0->setReverbOutputGain(c, gain); }
-	float getReverbOutputGain() { return i.v0->getReverbOutputGain(c); }
+	void setOutputGain(float gain) { mt32emu_set_output_gain(c, gain); }
+	float getOutputGain() { return mt32emu_get_output_gain(c); }
+	void setReverbOutputGain(float gain) { mt32emu_set_reverb_output_gain(c, gain); }
+	float getReverbOutputGain() { return mt32emu_get_reverb_output_gain(c); }
 
-	void setReversedStereoEnabled(const bool enabled) { i.v0->setReversedStereoEnabled(c, enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
-	bool isReversedStereoEnabled() { return i.v0->isReversedStereoEnabled(c) != MT32EMU_BOOL_FALSE; }
+	void setReversedStereoEnabled(const bool enabled) { mt32emu_set_reversed_stereo_enabled(c, enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
+	bool isReversedStereoEnabled() { return mt32emu_is_reversed_stereo_enabled(c) != MT32EMU_BOOL_FALSE; }
 
-	void renderBit16s(Bit16s *stream, Bit32u len) { i.v0->renderBit16s(c, stream, len); }
-	void renderFloat(float *stream, Bit32u len) { i.v0->renderFloat(c, stream, len); }
-	void renderBit16sStreams(const mt32emu_dac_output_bit16s_streams *streams, Bit32u len) { i.v0->renderBit16sStreams(c, streams, len); }
-	void renderFloatStreams(const mt32emu_dac_output_float_streams *streams, Bit32u len) { i.v0->renderFloatStreams(c, streams, len); }
+	void renderBit16s(Bit16s *stream, Bit32u len) { mt32emu_render_bit16s(c, stream, len); }
+	void renderFloat(float *stream, Bit32u len) { mt32emu_render_float(c, stream, len); }
+	void renderBit16sStreams(const mt32emu_dac_output_bit16s_streams *streams, Bit32u len) { mt32emu_render_bit16s_streams(c, streams, len); }
+	void renderFloatStreams(const mt32emu_dac_output_float_streams *streams, Bit32u len) { mt32emu_render_float_streams(c, streams, len); }
 
-	bool hasActivePartials() { return i.v0->hasActivePartials(c) != MT32EMU_BOOL_FALSE; }
-	bool isActive() { return i.v0->isActive(c) != MT32EMU_BOOL_FALSE; }
-	Bit32u getPartialCount() { return i.v0->getPartialCount(c); }
-	Bit32u getPartStates() { return i.v0->getPartStates(c); }
-	void getPartialStates(Bit8u *partial_states) { i.v0->getPartialStates(c, partial_states); }
-	Bit32u getPlayingNotes(Bit8u part_number, Bit8u *keys, Bit8u *velocities) { return i.v0->getPlayingNotes(c, part_number, keys, velocities); }
-	const char *getPatchName(Bit8u part_number) { return i.v0->getPatchName(c, part_number); }
-	void readMemory(Bit32u addr, Bit32u len, Bit8u *data) { i.v0->readMemory(c, addr, len, data); }
+	bool hasActivePartials() { return mt32emu_has_active_partials(c) != MT32EMU_BOOL_FALSE; }
+	bool isActive() { return mt32emu_is_active(c) != MT32EMU_BOOL_FALSE; }
+	Bit32u getPartialCount() { return mt32emu_get_partial_count(c); }
+	Bit32u getPartStates() { return mt32emu_get_part_states(c); }
+	void getPartialStates(Bit8u *partial_states) { mt32emu_get_partial_states(c, partial_states); }
+	Bit32u getPlayingNotes(Bit8u part_number, Bit8u *keys, Bit8u *velocities) { return mt32emu_get_playing_notes(c, part_number, keys, velocities); }
+	const char *getPatchName(Bit8u part_number) { return mt32emu_get_patch_name(c, part_number); }
+	void readMemory(Bit32u addr, Bit32u len, Bit8u *data) { mt32emu_read_memory(c, addr, len, data); }
 
 private:
+#if MT32EMU_API_TYPE == 2
 	const mt32emu_service_i i;
+#endif
 	mt32emu_context c;
 };
 
 } // namespace MT32Emu
+
+#if MT32EMU_API_TYPE == 2
+
+#undef mt32emu_get_supported_report_handler_version
+#undef mt32emu_get_supported_midi_receiver_version
+#undef mt32emu_get_library_version_int
+#undef mt32emu_get_library_version_string
+#undef mt32emu_get_stereo_output_samplerate
+#undef mt32emu_create_context
+#undef mt32emu_free_context
+#undef mt32emu_add_rom_data
+#undef mt32emu_add_rom_file
+#undef mt32emu_get_rom_info
+#undef mt32emu_set_partial_count
+#undef mt32emu_set_analog_output_mode
+#undef mt32emu_open_synth
+#undef mt32emu_close_synth
+#undef mt32emu_is_open
+#undef mt32emu_get_actual_stereo_output_samplerate
+#undef mt32emu_flush_midi_queue
+#undef mt32emu_set_midi_event_queue_size
+#undef mt32emu_set_midi_receiver
+#undef mt32emu_parse_stream
+#undef mt32emu_parse_stream_at
+#undef mt32emu_play_short_message
+#undef mt32emu_play_short_message_at
+#undef mt32emu_play_msg
+#undef mt32emu_play_sysex
+#undef mt32emu_play_msg_at
+#undef mt32emu_play_sysex_at
+#undef mt32emu_play_msg_now
+#undef mt32emu_play_msg_on_part
+#undef mt32emu_play_sysex_now
+#undef mt32emu_write_sysex
+#undef mt32emu_set_reverb_enabled
+#undef mt32emu_is_reverb_enabled
+#undef mt32emu_set_reverb_overridden
+#undef mt32emu_is_reverb_overridden
+#undef mt32emu_set_reverb_compatibility_mode
+#undef mt32emu_is_mt32_reverb_compatibility_mode
+#undef mt32emu_is_default_reverb_mt32_compatible
+#undef mt32emu_set_dac_input_mode
+#undef mt32emu_get_dac_input_mode
+#undef mt32emu_set_midi_delay_mode
+#undef mt32emu_get_midi_delay_mode
+#undef mt32emu_set_output_gain
+#undef mt32emu_get_output_gain
+#undef mt32emu_set_reverb_output_gain
+#undef mt32emu_get_reverb_output_gain
+#undef mt32emu_set_reversed_stereo_enabled
+#undef mt32emu_is_reversed_stereo_enabled
+#undef mt32emu_render_bit16s
+#undef mt32emu_render_float
+#undef mt32emu_render_bit16s_streams
+#undef mt32emu_render_float_streams
+#undef mt32emu_has_active_partials
+#undef mt32emu_is_active
+#undef mt32emu_get_partial_count
+#undef mt32emu_get_part_states
+#undef mt32emu_get_partial_states
+#undef mt32emu_get_playing_notes
+#undef mt32emu_get_patch_name
+#undef mt32emu_read_memory
+
+#endif // #if MT32EMU_API_TYPE == 2
 
 #endif /* #ifndef MT32EMU_CPP_INTERFACE_H */
