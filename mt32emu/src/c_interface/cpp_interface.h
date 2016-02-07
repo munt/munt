@@ -39,19 +39,21 @@ static const mt32emu_report_handler_i NULL_REPORT_HANDLER = { NULL };
  */
 class Service {
 public:
-	static void setInterface(mt32emu_service_i interface) { i = interface; }
-
-	static mt32emu_service_version getVersionID() { return i.v0->getVersionID(i); }
-	static mt32emu_report_handler_version getSupportedReportHandlerVersionID() { return i.v0->getSupportedReportHandlerVersionID(); }
-	static mt32emu_midi_receiver_version getSupportedMIDIReceiverVersionID() { return i.v0->getSupportedMIDIReceiverVersionID(); }
-
-	static Bit32u getLibraryVersionInt() { return i.v0->getLibraryVersionInt(); }
-	static const char *getLibraryVersionString() { return i.v0->getLibraryVersionString(); }
-
-	static Bit32u getStereoOutputSamplerate(const AnalogOutputMode analog_output_mode) { return i.v0->getStereoOutputSamplerate(static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
-
-	explicit Service(mt32emu_context context = NULL) : c(context) {}
+	explicit Service(mt32emu_service_i interface, mt32emu_context context = NULL) : i(interface), c(context) {}
 	~Service() { if (c != NULL) i.v0->freeContext(c); }
+
+	// Context-independent methods
+
+	mt32emu_service_version getVersionID() { return i.v0->getVersionID(i); }
+	mt32emu_report_handler_version getSupportedReportHandlerVersionID() { return i.v0->getSupportedReportHandlerVersionID(); }
+	mt32emu_midi_receiver_version getSupportedMIDIReceiverVersionID() { return i.v0->getSupportedMIDIReceiverVersionID(); }
+
+	Bit32u getLibraryVersionInt() { return i.v0->getLibraryVersionInt(); }
+	const char *getLibraryVersionString() { return i.v0->getLibraryVersionString(); }
+
+	Bit32u getStereoOutputSamplerate(const AnalogOutputMode analog_output_mode) { return i.v0->getStereoOutputSamplerate(static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
+
+	// Context-dependent methods
 
 	mt32emu_context getContext() { return c; }
 	void createContext(mt32emu_report_handler_i report_handler = NULL_REPORT_HANDLER, void *instance_data = NULL) { if (c != NULL) i.v0->freeContext(c); c = i.v0->createContext(report_handler, instance_data); }
@@ -120,12 +122,9 @@ public:
 	void readMemory(Bit32u addr, Bit32u len, Bit8u *data) { i.v0->readMemory(c, addr, len, data); }
 
 private:
-	static mt32emu_service_i i;
-
+	const mt32emu_service_i i;
 	mt32emu_context c;
 };
-
-mt32emu_service_i Service::i;
 
 } // namespace MT32Emu
 
