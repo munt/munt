@@ -31,6 +31,9 @@
  * 2: Use plugin-like API via C-interface wrapped in a C++ class. This is mainly intended
  *    for a shared library being dynamically loaded in run-time. To get access to all the library
  *    services, a client application only needs to bind with a single factory function.
+ * 3: Use optimised C++ API compatible with the plugin API (type 2). The facade class also wraps
+ *    the C functions but they are invoked directly. This enables the compiler to generate better
+ *    code for the library when linked statically yet being consistent with the plugin-like API.
  */
 
 #ifdef MT32EMU_API_TYPE
@@ -40,12 +43,12 @@
 #error Incompatible setting MT32EMU_API_TYPE=1
 #elif MT32EMU_API_TYPE == 2 && (MT32EMU_EXPORTS_TYPE == 0)
 #error Incompatible setting MT32EMU_API_TYPE=2
+#elif MT32EMU_API_TYPE == 3 && (MT32EMU_EXPORTS_TYPE == 0)
+#error Incompatible setting MT32EMU_API_TYPE=3
 #endif
 #else /* #ifdef MT32EMU_API_TYPE */
-#if MT32EMU_EXPORTS_TYPE == 1
-#define MT32EMU_API_TYPE 1
-#elif MT32EMU_EXPORTS_TYPE == 2
-#define MT32EMU_API_TYPE 2
+#if 0 < MT32EMU_EXPORTS_TYPE && MT32EMU_EXPORTS_TYPE < 3
+#define MT32EMU_API_TYPE MT32EMU_EXPORTS_TYPE
 #else
 #define MT32EMU_API_TYPE 0
 #endif
@@ -62,7 +65,7 @@
 
 #include "c_interface/c_interface.h"
 
-#elif MT32EMU_API_TYPE == 2
+#elif MT32EMU_API_TYPE == 2 || MT32EMU_API_TYPE == 3
 
 #include "c_interface/cpp_interface.h"
 
