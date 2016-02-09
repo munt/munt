@@ -59,7 +59,7 @@ public:
 /**
  * LA32WaveGenerator is aimed to represent the exact model of LA32 wave generator.
  * The output square wave is created by adding high / low linear segments in-between
- * the rising and falling cosine segments. Basically, it’s very similar to the phase distortion synthesis.
+ * the rising and falling cosine segments. Basically, it's very similar to the phase distortion synthesis.
  * Behaviour of a true resonance filter is emulated by adding decaying sine wave.
  * The beginning and the ending of the resonant sine is multiplied by a cosine window.
  * To synthesise sawtooth waves, the resulting square wave is multiplied by synchronous cosine wave.
