@@ -169,7 +169,8 @@ struct MemParams {
 }; // struct MemParams
 
 struct SoundGroup {
-	Bit16u timbreNumberTableAddr;
+	Bit8u timbreNumberTableAddrLow;
+	Bit8u timbreNumberTableAddrHigh;
 	Bit8u displayPosition;
 	Bit8u name[9];
 	Bit8u timbreCount;
