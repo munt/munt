@@ -25,6 +25,12 @@ static const unsigned char WAVE_HEADER[] = {
 	0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x44, 0xAC, 0x00, 0x00, 0x10, 0xB1, 0x02, 0x00,
 	0x04, 0x00, 0x10, 0x00, 0x64, 0x61, 0x74, 0x61, 0x00, 0x00, 0x00, 0x00
 };
+static const unsigned int RIFF_PAYLOAD_SIZE_OFFSET = 4;
+static const unsigned int RIFF_HEADER_LENGTH = 8;
+static const unsigned int WAVE_SAMPLE_RATE_OFFSET = 24;
+static const unsigned int WAVE_BYTE_RATE_OFFSET = 28;
+static const unsigned int WAVE_DATA_SIZE_OFFSET = 40;
+static const unsigned int WAVE_HEADER_LENGTH = 44;
 
 AudioFileWriter::AudioFileWriter() : synth(NULL), buffer(NULL), parsers(NULL) {
 	connect(this, SIGNAL(parsingFailed(const QString &, const QString &)), Master::getInstance(), SLOT(showBalloon(const QString &, const QString &)));
@@ -106,8 +112,7 @@ void AudioFileWriter::stop() {
 
 void AudioFileWriter::run() {
 	QFile file(outFileName);
-	bool waveMode = false;
-	if (outFileName.endsWith(".wav")) waveMode = true;
+	bool waveMode = outFileName.endsWith(".wav");
 	if (!file.open(QIODevice::WriteOnly)) {
 		qDebug() << "AudioFileWriter: Can't open file for writing:" << outFileName;
 		synth->close();
@@ -116,7 +121,7 @@ void AudioFileWriter::run() {
 		}
 		return;
 	}
-	if (waveMode) file.seek(44);
+	if (waveMode) file.seek(WAVE_HEADER_LENGTH);
 	MasterClockNanos startNanos = MasterClock::getClockNanos();
 	MasterClockNanos firstSampleNanos = 0;
 	MasterClockNanos midiTick = 0;
@@ -227,14 +232,14 @@ void AudioFileWriter::run() {
 	if (!realtimeMode) qDebug() << "AudioFileWriter: Elapsed seconds: " << 1e-9 * (MasterClock::getClockNanos() - startNanos);
 	if (waveMode) {
 		unsigned char *charBuffer = (unsigned char *)buffer;
-		memcpy(charBuffer, WAVE_HEADER, 44);
+		memcpy(charBuffer, WAVE_HEADER, WAVE_HEADER_LENGTH);
 		quint32 fileSize = (quint32)file.size();
-		qToLittleEndian(fileSize - 8, charBuffer + 4);
-		qToLittleEndian(fileSize - 44, charBuffer + 40);
-		qToLittleEndian(sampleRate, charBuffer + 24);
-		qToLittleEndian(sampleRate * FRAME_SIZE, charBuffer + 28);
+		qToLittleEndian(fileSize - RIFF_HEADER_LENGTH, charBuffer + RIFF_PAYLOAD_SIZE_OFFSET);
+		qToLittleEndian(fileSize - WAVE_HEADER_LENGTH, charBuffer + WAVE_DATA_SIZE_OFFSET);
+		qToLittleEndian(sampleRate, charBuffer + WAVE_SAMPLE_RATE_OFFSET);
+		qToLittleEndian(sampleRate * FRAME_SIZE, charBuffer + WAVE_BYTE_RATE_OFFSET);
 		file.seek(0);
-		file.write((char *)charBuffer, 44);
+		file.write((char *)charBuffer, WAVE_HEADER_LENGTH);
 	}
 	file.close();
 	synth->close();
