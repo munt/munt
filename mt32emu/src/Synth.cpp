@@ -852,7 +852,6 @@ void Synth::playMsgNow(Bit32u msg) {
 	Bit8u chan = (Bit8u)(msg & 0x00000F);
 	Bit8u note = (Bit8u)((msg & 0x007F00) >> 8);
 	Bit8u velocity = (Bit8u)((msg & 0x7F0000) >> 16);
-	if (!activated) activated = true;
 
 	//printDebug("Playing chan %d, code 0x%01x note: 0x%02x", chan, code, note);
 
@@ -869,6 +868,7 @@ void Synth::playMsgNow(Bit32u msg) {
 void Synth::playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) {
 	Bit32u bend;
 
+	if (!activated) activated = true;
 	//printDebug("Synth::playMsgOnPart(%02x, %02x, %02x, %02x)", part, code, note, velocity);
 	switch (code) {
 	case 0x8:
