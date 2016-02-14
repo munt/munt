@@ -7,7 +7,7 @@ class AudioFileWriter {
 public:
 	static void convertSamplesFromNativeEndian(qint16 *buffer, uint sampleCount, QSysInfo::Endian targetByteOrder);
 
-	AudioFileWriter(uint sampleRate, QString &fileName);
+	AudioFileWriter(uint sampleRate, const QString &fileName);
 	virtual ~AudioFileWriter();
 
 	bool open(bool skipInitialSilence = true);

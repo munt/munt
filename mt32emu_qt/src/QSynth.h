@@ -6,6 +6,8 @@
 
 #include "resample/SampleRateConverter.h"
 
+class AudioFileWriter;
+
 enum SynthState {
 	SynthState_CLOSED,
 	SynthState_OPEN,
@@ -99,6 +101,7 @@ private:
 
 	double sampleRateRatio;
 	SampleRateConverter *sampleRateConverter;
+	AudioFileWriter *audioRecorder;
 
 	void setState(SynthState newState);
 	void freeROMImages();
@@ -144,6 +147,10 @@ public:
 	unsigned int getPartialCount() const;
 	unsigned int getSynthSampleRate() const;
 	bool isActive() const;
+
+	void startRecordingAudio(const QString &fileName);
+	void stopRecordingAudio();
+	bool isRecordingAudio() const;
 
 signals:
 	void stateChanged(SynthState state);

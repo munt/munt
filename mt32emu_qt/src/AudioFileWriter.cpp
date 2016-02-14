@@ -43,7 +43,7 @@ void AudioFileWriter::convertSamplesFromNativeEndian(qint16 *buffer, uint sample
 	}
 }
 
-AudioFileWriter::AudioFileWriter(uint sampleRate, QString &fileName) :
+AudioFileWriter::AudioFileWriter(uint sampleRate, const QString &fileName) :
 	sampleRate(sampleRate), fileName(fileName), waveMode(fileName.endsWith(".wav")), file(fileName)
 {}
 
