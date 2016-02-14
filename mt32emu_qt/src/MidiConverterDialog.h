@@ -26,7 +26,7 @@ protected:
 
 private:
 	Ui::MidiConverterDialog *ui;
-	AudioFileWriter converter;
+	AudioFileRenderer converter;
 	bool batchMode;
 
 	void enableControls(bool enable);

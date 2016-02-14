@@ -3,16 +3,35 @@
 
 #include <QtCore>
 
-#include "MasterClock.h"
-#include "MidiParser.h"
-#include "QSynth.h"
+class AudioFileWriter {
+public:
+	static void convertSamplesFromNativeEndian(qint16 *buffer, uint sampleCount, QSysInfo::Endian targetByteOrder);
 
-class AudioFileWriter : public QThread {
+	AudioFileWriter(uint sampleRate, QString &fileName);
+	virtual ~AudioFileWriter();
+
+	bool open(bool skipInitialSilence = true);
+	bool write(qint16 *buffer, uint framesToWrite);
+	void close();
+
+private:
+	const uint sampleRate;
+	const QString fileName;
+	const bool waveMode;
+	QFile file;
+	bool skipSilence;
+};
+
+class MidiParser;
+class QSynth;
+
+class AudioFileRenderer : public QThread {
 	Q_OBJECT
 
 public:
-	explicit AudioFileWriter();
-	~AudioFileWriter();
+	AudioFileRenderer();
+	~AudioFileRenderer();
+
 	bool convertMIDIFiles(QString useOutFileName, QStringList useMIDIFileNameList, QString synthProfileName, quint32 bufferSize = 65536);
 	void startRealtimeProcessing(QSynth *useSynth, quint32 useSampleRate, QString useOutFileName, quint32 bufferSize);
 	void stop();
@@ -22,15 +41,14 @@ protected:
 
 private:
 	QSynth *synth;
-	unsigned int sampleRate;
-	unsigned int bufferSize;
+	uint sampleRate;
 	QString outFileName;
+	unsigned int bufferSize;
 	qint16 *buffer;
 	MidiParser *parsers;
 	uint parsersCount;
 	bool realtimeMode;
 	volatile bool stopProcessing;
-
 
 signals:
 	void parsingFailed(const QString &, const QString &);

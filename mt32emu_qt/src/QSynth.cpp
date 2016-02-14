@@ -94,14 +94,6 @@ void QReportHandler::onProgramChanged(Bit8u partNum, const char soundGroupName[]
 	emit programChanged(partNum, QString().fromLocal8Bit(soundGroupName), QString().fromLocal8Bit(patchName));
 }
 
-void QSynth::convertSamplesFromNativeEndian(Bit16s *buffer, uint sampleCount, QSysInfo::Endian targetByteOrder) {
-	if (QSysInfo::ByteOrder == targetByteOrder) return;
-	while ((sampleCount--) > 0) {
-		Bit16s tmp = qbswap<Bit16s>(*buffer);
-		*(buffer++) = tmp;
-	}
-}
-
 QSynth::QSynth(QObject *parent) :
 	QObject(parent), state(SynthState_CLOSED), midiMutex(QMutex::Recursive),
 	controlROMImage(NULL), pcmROMImage(NULL), reportHandler(this), sampleRateConverter(NULL)

@@ -39,8 +39,6 @@ struct SynthProfile {
 	bool engageChannel1OnOpen;
 };
 
-class SampleRateConverter;
-
 class QReportHandler : public QObject, public MT32Emu::ReportHandler {
 	Q_OBJECT
 
@@ -107,8 +105,6 @@ private:
 	MT32Emu::Bit32u convertOutputToSynthTimestamp(quint64 timestamp);
 
 public:
-	static void convertSamplesFromNativeEndian(MT32Emu::Bit16s *buffer, uint sampleCount, QSysInfo::Endian targetByteOrder);
-
 	QSynth(QObject *parent = NULL);
 	~QSynth();
 	bool isOpen() const;

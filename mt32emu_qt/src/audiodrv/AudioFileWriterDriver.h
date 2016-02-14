@@ -13,7 +13,7 @@ class AudioFileWriterDevice;
 
 class AudioFileWriterStream : public AudioStream {
 private:
-	AudioFileWriter writer;
+	AudioFileRenderer writer;
 
 public:
 	AudioFileWriterStream(const AudioDriverSettings &settings, QSynth &useSynth, const quint32 useSampleRate);
