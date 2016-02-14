@@ -5,13 +5,13 @@
 
 class AudioFileWriter {
 public:
-	static void convertSamplesFromNativeEndian(qint16 *buffer, uint sampleCount, QSysInfo::Endian targetByteOrder);
+	static bool convertSamplesFromNativeEndian(const qint16 *sourceBuffer, qint16 *targetBuffer, uint sampleCount, QSysInfo::Endian targetByteOrder);
 
 	AudioFileWriter(uint sampleRate, const QString &fileName);
 	virtual ~AudioFileWriter();
 
 	bool open(bool skipInitialSilence = true);
-	bool write(qint16 *buffer, uint framesToWrite);
+	bool write(const qint16 *buffer, uint framesToWrite);
 	void close();
 
 private:

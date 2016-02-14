@@ -35,12 +35,12 @@ static const unsigned int WAVE_BYTE_RATE_OFFSET = 28;
 static const unsigned int WAVE_DATA_SIZE_OFFSET = 40;
 static const unsigned int WAVE_HEADER_LENGTH = 44;
 
-void AudioFileWriter::convertSamplesFromNativeEndian(qint16 *buffer, uint sampleCount, QSysInfo::Endian targetByteOrder) {
-	if (QSysInfo::ByteOrder == targetByteOrder) return;
+bool AudioFileWriter::convertSamplesFromNativeEndian(const qint16 *sourceBuffer, qint16 *targetBuffer, uint sampleCount, QSysInfo::Endian targetByteOrder) {
+	if (QSysInfo::ByteOrder == targetByteOrder) return false;
 	while ((sampleCount--) > 0) {
-		qint16 tmp = qbswap<>(*buffer);
-		*(buffer++) = tmp;
+		*(targetBuffer++) = qbswap<>(*(sourceBuffer++));
 	}
+	return true;
 }
 
 AudioFileWriter::AudioFileWriter(uint sampleRate, const QString &fileName) :
@@ -62,33 +62,45 @@ bool AudioFileWriter::open(bool skipInitialSilence) {
 }
 
 // Writes samples in native byte order
-bool AudioFileWriter::write(qint16 *buffer, uint framesToWrite) {
-	convertSamplesFromNativeEndian(buffer, framesToWrite << 1, waveMode ? QSysInfo::LittleEndian : QSysInfo::BigEndian);
-	qint32 *startPos = (qint32 *)buffer;
+bool AudioFileWriter::write(const qint16 *buffer, uint totalFrames) {
+	static const uint MAX_FRAMES_PER_RUN = 4096;
+
+	if (!file.isOpen()) return false;
+
+	const qint32 *startPos = (const qint32 *)buffer;
 	if (skipSilence) {
-		qint32 *endPos = startPos + framesToWrite;
-		framesToWrite = 0;
-		for (qint32 *p = startPos; p < endPos; p++) {
+		const qint32 *endPos = startPos + totalFrames;
+		totalFrames = 0;
+		for (const qint32 *p = startPos; p < endPos; p++) {
 			if (*p != 0) {
 				skipSilence = false;
-				framesToWrite = endPos - p;
-				startPos = p;
+				totalFrames = endPos - p;
+				buffer = (const qint16 *)p;
 				break;
 			}
 		}
 	}
 
-	char *bufferPos = (char *)startPos;
-	qint64 bytesToWrite = framesToWrite * FRAME_SIZE;
-	while (bytesToWrite > 0) {
-		qint64 bytesWritten = file.write(bufferPos, bytesToWrite);
-		if (bytesWritten == -1) {
-			qDebug() << "AudioFileWriter: error writing into the audio file:" << file.errorString();
-			file.close();
-			return false;
+	qint16 cnvBuffer[MAX_FRAMES_PER_RUN << 1];
+	while (totalFrames > 0) {
+		uint framesToWrite = qMin(MAX_FRAMES_PER_RUN, totalFrames);
+		bool converted = convertSamplesFromNativeEndian(buffer, cnvBuffer, framesToWrite << 1, waveMode ? QSysInfo::LittleEndian : QSysInfo::BigEndian);
+		if (!converted) framesToWrite = totalFrames;
+
+		const char *bufferPos = (const char *)(converted ? cnvBuffer : buffer);
+		qint64 bytesToWrite = framesToWrite * FRAME_SIZE;
+		while (bytesToWrite > 0) {
+			qint64 bytesWritten = file.write(bufferPos, bytesToWrite);
+			if (bytesWritten == -1) {
+				qDebug() << "AudioFileWriter: error writing into the audio file:" << file.errorString();
+				file.close();
+				return false;
+			}
+			bytesToWrite -= bytesWritten;
+			bufferPos += bytesWritten;
 		}
-		bytesToWrite -= bytesWritten;
-		bufferPos += bytesWritten;
+		buffer += framesToWrite << 1;
+		totalFrames -= framesToWrite;
 	}
 	return true;
 }

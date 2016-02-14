@@ -70,6 +70,10 @@ public:
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 	void setAnalogOutputMode(MT32Emu::AnalogOutputMode analogOutputMode);
 
+	void startRecordingAudio(const QString &fileName);
+	void stopRecordingAudio();
+	bool isRecordingAudio() const;
+
 	void addMidiSession(MidiSession *midiSession);
 	void removeMidiSession(MidiSession *midiSession);
 	void setMidiSessionName(MidiSession *midiSession, QString name);

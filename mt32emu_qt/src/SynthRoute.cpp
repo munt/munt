@@ -310,3 +310,15 @@ void SynthRoute::getPartialStates(PartialState *partialStates) const {
 unsigned int SynthRoute::getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const {
 	return qSynth.getPlayingNotes(partNumber, keys, velocities);
 }
+
+void SynthRoute::startRecordingAudio(const QString &fileName) {
+	qSynth.startRecordingAudio(fileName);
+}
+
+void SynthRoute::stopRecordingAudio() {
+	qSynth.stopRecordingAudio();
+}
+
+bool SynthRoute::isRecordingAudio() const {
+	return qSynth.isRecordingAudio();
+}

@@ -185,12 +185,11 @@ void QSynth::render(Bit16s *buffer, uint length) {
 	} else {
 		synth->render(buffer, length);
 	}
+	if (isRecordingAudio()) {
+		if (!audioRecorder->write(buffer, length)) stopRecordingAudio();
+	}
 	synthMutex->unlock();
 	emit audioBlockRendered();
-
-	if (isRecordingAudio()) {
-		audioRecorder->write(buffer, length);
-	}
 }
 
 bool QSynth::open(uint targetSampleRate, SampleRateConverter::SRCQuality srcQuality, const QString useSynthProfileName) {
@@ -466,7 +465,6 @@ void QSynth::close() {
 	midiMutex.unlock();
 	setState(SynthState_CLOSED);
 	freeROMImages();
-	stopRecordingAudio();
 }
 
 void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
@@ -540,16 +538,23 @@ const QReportHandler *QSynth::getReportHandler() const {
 }
 
 void QSynth::startRecordingAudio(const QString &fileName) {
+	synthMutex->lock();
+	stopRecordingAudio();
 	audioRecorder = new AudioFileWriter((uint)qRound(SAMPLE_RATE / sampleRateRatio), fileName);
 	audioRecorder->open();
+	synthMutex->unlock();
 }
 
 void QSynth::stopRecordingAudio() {
-	if (isRecordingAudio()) {
-		audioRecorder->close();
-		delete audioRecorder;
-		audioRecorder = NULL;
+	synthMutex->lock();
+	if (!isRecordingAudio()) {
+		synthMutex->unlock();
+		return;
 	}
+	audioRecorder->close();
+	delete audioRecorder;
+	audioRecorder = NULL;
+	synthMutex->unlock();
 }
 
 bool QSynth::isRecordingAudio() const {

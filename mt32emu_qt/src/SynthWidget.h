@@ -57,6 +57,7 @@ private slots:
 	void on_midiRemove_clicked();
 	void on_midiProperties_clicked();
 	void on_midiRecord_clicked();
+	void on_audioRecord_clicked();
 	void on_masterVolumeSlider_valueChanged(int newValue);
 	void on_detailsButton_clicked();
 	void handleSynthRouteState(SynthRouteState state);

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>654</width>
-    <height>499</height>
+    <height>501</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -92,7 +92,7 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
            <widget class="QLabel" name="label_5">
             <property name="sizePolicy">
@@ -123,14 +123,22 @@
          </layout>
         </item>
         <item>
-         <widget class="QPushButton" name="audioPropertiesButton">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Properties</string>
-          </property>
-         </widget>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QPushButton" name="audioPropertiesButton">
+            <property name="text">
+             <string>Properties</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="audioRecord">
+            <property name="text">
+             <string>Record</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
