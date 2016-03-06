@@ -261,6 +261,7 @@ void Synth::printDebug(const char *fmt, ...) {
 }
 
 void Synth::setReverbEnabled(bool newReverbEnabled) {
+	if (!opened) return;
 	if (isReverbEnabled() == newReverbEnabled) return;
 	if (newReverbEnabled) {
 		bool oldReverbOverridden = reverbOverridden;
@@ -288,6 +289,7 @@ bool Synth::isReverbOverridden() const {
 }
 
 void Synth::setReverbCompatibilityMode(bool mt32CompatibleMode) {
+	if (!opened) return;
 	if (reverbModels[REVERB_MODE_ROOM] != NULL) {
 		if (isMT32ReverbCompatibilityMode() == mt32CompatibleMode) return;
 		setReverbEnabled(false);
@@ -845,6 +847,8 @@ bool Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
 }
 
 void Synth::playMsgNow(Bit32u msg) {
+	if (!opened) return;
+
 	// NOTE: Active sense IS implemented in real hardware. However, realtime processing is clearly out of the library scope.
 	//       It is assumed that realtime consumers of the library respond to these MIDI events as appropriate.
 
@@ -866,6 +870,8 @@ void Synth::playMsgNow(Bit32u msg) {
 }
 
 void Synth::playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) {
+	if (!opened) return;
+
 	Bit32u bend;
 
 	if (!activated) activated = true;
@@ -1076,6 +1082,7 @@ void Synth::readSysex(Bit8u /*device*/, const Bit8u * /*sysex*/, Bit32u /*len*/)
 }
 
 void Synth::writeSysex(Bit8u device, const Bit8u *sysex, Bit32u len) {
+	if (!opened) return;
 	reportHandler->onMIDIMessagePlayed();
 	Bit32u addr = (sysex[0] << 16) | (sysex[1] << 8) | (sysex[2]);
 	addr = MT32EMU_MEMADDR(addr);
@@ -1159,6 +1166,7 @@ void Synth::writeSysex(Bit8u device, const Bit8u *sysex, Bit32u len) {
 }
 
 void Synth::readMemory(Bit32u addr, Bit32u len, Bit8u *data) {
+	if (!opened) return;
 	const MemoryRegion *region = findMemoryRegion(addr);
 	if (region != NULL) {
 		readMemoryRegion(region, addr, len, data);
@@ -1571,6 +1579,7 @@ void Synth::refreshSystem() {
 }
 
 void Synth::reset() {
+	if (!opened) return;
 #if MT32EMU_MONITOR_SYSEX > 0
 	printDebug("RESET");
 #endif
@@ -1673,6 +1682,11 @@ Bit32u Synth::getStereoOutputSampleRate() const {
 }
 
 void Renderer::render(SampleFormatConverter &converter, Bit32u len) {
+	if (!synth.opened) {
+		converter.addSilence(len << 1);
+		return;
+	}
+
 	if (!synth.activated) {
 		synth.renderedSampleCount += synth.analog->getDACStreamsLength(len);
 		synth.analog->process(NULL, NULL, NULL, NULL, NULL, NULL, NULL, len);
@@ -1718,6 +1732,16 @@ void Renderer::renderStreams(
 	SampleFormatConverter &reverbWetLeft, SampleFormatConverter &reverbWetRight,
 	Bit32u len)
 {
+	if (!synth.opened) {
+		nonReverbLeft.addSilence(len);
+		nonReverbRight.addSilence(len);
+		reverbDryLeft.addSilence(len);
+		reverbDryRight.addSilence(len);
+		reverbWetLeft.addSilence(len);
+		reverbWetRight.addSilence(len);
+		return;
+	}
+
 	while (len > 0) {
 		// We need to ensure zero-duration notes will play so add minimum 1-sample delay.
 		Bit32u thisLen = 1;
@@ -1944,6 +1968,10 @@ Bit32u Synth::getPartialCount() const {
 }
 
 void Synth::getPartStates(bool *partStates) const {
+	if (!opened) {
+		memset(partStates, 0, 9 * sizeof(bool));
+		return;
+	}
 	for (int partNumber = 0; partNumber < 9; partNumber++) {
 		const Part *part = parts[partNumber];
 		partStates[partNumber] = part->getActiveNonReleasingPartialCount() > 0;
@@ -1951,6 +1979,7 @@ void Synth::getPartStates(bool *partStates) const {
 }
 
 Bit32u Synth::getPartStates() const {
+	if (!opened) return 0;
 	bool partStates[9];
 	getPartStates(partStates);
 	Bit32u bitSet = 0;
@@ -1961,12 +1990,20 @@ Bit32u Synth::getPartStates() const {
 }
 
 void Synth::getPartialStates(PartialState *partialStates) const {
+	if (!opened) {
+		memset(partialStates, 0, partialCount * sizeof(PartialState));
+		return;
+	}
 	for (unsigned int partialNum = 0; partialNum < partialCount; partialNum++) {
 		partialStates[partialNum] = getPartialState(partialManager, partialNum);
 	}
 }
 
 void Synth::getPartialStates(Bit8u *partialStates) const {
+	if (!opened) {
+		memset(partialStates, 0, ((partialCount + 3) >> 2));
+		return;
+	}
 	for (unsigned int quartNum = 0; (4 * quartNum) < partialCount; quartNum++) {
 		Bit8u packedStates = 0;
 		for (unsigned int i = 0; i < 4; i++) {
