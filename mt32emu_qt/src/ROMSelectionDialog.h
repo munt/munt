@@ -16,7 +16,7 @@ class ROMSelectionDialog : public QDialog
 	Q_OBJECT
 
 public:
-	explicit ROMSelectionDialog(SynthProfile &synthProfile, QWidget *parent = 0);
+	ROMSelectionDialog(SynthProfile &synthProfile, QWidget *parent);
 	~ROMSelectionDialog();
 	void loadROMInfos();
 

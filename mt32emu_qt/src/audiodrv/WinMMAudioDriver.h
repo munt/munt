@@ -18,8 +18,6 @@ class WinMMAudioDevice;
 class WinMMAudioStream;
 
 class WinMMAudioProcessor : public QThread {
-	Q_OBJECT
-
 public:
 	WinMMAudioProcessor(WinMMAudioStream &stream);
 

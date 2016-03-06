@@ -15,7 +15,7 @@ class SynthPropertiesDialog : public QDialog
 	Q_OBJECT
 
 public:
-	explicit SynthPropertiesDialog(QWidget *parent = 0, SynthRoute *useSynthRoute = NULL);
+	SynthPropertiesDialog(QWidget *parent, SynthRoute *useSynthRoute);
 	~SynthPropertiesDialog();
 
 protected:

@@ -14,8 +14,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <process.h>
-
 #include "WinMMAudioDriver.h"
 #include "../QSynth.h"
 #include "../Master.h"

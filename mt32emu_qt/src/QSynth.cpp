@@ -427,8 +427,6 @@ bool QSynth::reset() {
 	synth->close();
 	// Do not delete synth here to keep the rendered frame counter value, audioStream is also alive during reset
 	if (!synth->open(*controlROMImage, *pcmROMImage, actualAnalogOutputMode)) {
-		delete synth;
-		synth = new Synth(&reportHandler);
 		synthMutex->unlock();
 		midiMutex.unlock();
 		setState(SynthState_CLOSED);
