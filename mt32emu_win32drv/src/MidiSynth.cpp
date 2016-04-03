@@ -549,7 +549,7 @@ int MidiSynth::Init() {
 	}
 	synth = new Synth(&reportHandler);
 	if (!synth->open(*controlROM, *pcmROM, analogOutputMode)) {
-		synth->close(true);
+		synth->close();
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
 	}
@@ -587,7 +587,7 @@ int MidiSynth::Reset() {
 	synthEvent.Wait();
 	synth->close();
 	if (!synth->open(*controlROM, *pcmROM, analogOutputMode)) {
-		synth->close(true);
+		synth->close();
 		synthEvent.Release();
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
