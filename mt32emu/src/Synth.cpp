@@ -289,7 +289,6 @@ bool Synth::isReverbOverridden() const {
 }
 
 void Synth::setReverbCompatibilityMode(bool mt32CompatibleMode) {
-	if (!opened) return;
 	if (reverbModels[REVERB_MODE_ROOM] != NULL) {
 		if (isMT32ReverbCompatibilityMode() == mt32CompatibleMode) return;
 		setReverbEnabled(false);
