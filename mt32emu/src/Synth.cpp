@@ -289,26 +289,15 @@ bool Synth::isReverbOverridden() const {
 }
 
 void Synth::setReverbCompatibilityMode(bool mt32CompatibleMode) {
-	if (reverbModels[REVERB_MODE_ROOM] != NULL) {
-		if (isMT32ReverbCompatibilityMode() == mt32CompatibleMode) return;
-		setReverbEnabled(false);
-		for (int i = 0; i < 4; i++) {
-			delete reverbModels[i];
-		}
+	if (!opened || (isMT32ReverbCompatibilityMode() == mt32CompatibleMode)) return;
+	bool oldReverbEnabled = isReverbEnabled();
+	setReverbEnabled(false);
+	for (int i = 0; i < 4; i++) {
+		delete reverbModels[i];
 	}
-	reverbModels[REVERB_MODE_ROOM] = new BReverbModel(REVERB_MODE_ROOM, mt32CompatibleMode);
-	reverbModels[REVERB_MODE_HALL] = new BReverbModel(REVERB_MODE_HALL, mt32CompatibleMode);
-	reverbModels[REVERB_MODE_PLATE] = new BReverbModel(REVERB_MODE_PLATE, mt32CompatibleMode);
-	reverbModels[REVERB_MODE_TAP_DELAY] = new BReverbModel(REVERB_MODE_TAP_DELAY, mt32CompatibleMode);
-#if !MT32EMU_REDUCE_REVERB_MEMORY
-	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
-		reverbModels[i]->open();
-	}
-#endif
-	if (opened) {
-		setReverbOutputGain(reverbOutputGain);
-		setReverbEnabled(true);
-	}
+	initReverbModels(mt32CompatibleMode);
+	setReverbEnabled(oldReverbEnabled);
+	setReverbOutputGain(reverbOutputGain);
 }
 
 bool Synth::isMT32ReverbCompatibilityMode() const {
@@ -510,6 +499,18 @@ bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, Bit16u count, Bit16u s
 	return true;
 }
 
+void Synth::initReverbModels(bool mt32CompatibleMode) {
+	reverbModels[REVERB_MODE_ROOM] = new BReverbModel(REVERB_MODE_ROOM, mt32CompatibleMode);
+	reverbModels[REVERB_MODE_HALL] = new BReverbModel(REVERB_MODE_HALL, mt32CompatibleMode);
+	reverbModels[REVERB_MODE_PLATE] = new BReverbModel(REVERB_MODE_PLATE, mt32CompatibleMode);
+	reverbModels[REVERB_MODE_TAP_DELAY] = new BReverbModel(REVERB_MODE_TAP_DELAY, mt32CompatibleMode);
+#if !MT32EMU_REDUCE_REVERB_MEMORY
+	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
+		reverbModels[i]->open();
+	}
+#endif
+}
+
 void Synth::initSoundGroups(char newSoundGroupNames[][9]) {
 	memcpy(soundGroupIx, &controlROMData[controlROMMap->soundGroupsTable - sizeof(soundGroupIx)], sizeof(soundGroupIx));
 	const SoundGroup *table = (SoundGroup *)&controlROMData[controlROMMap->soundGroupsTable];
@@ -567,7 +568,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, u
 #if MT32EMU_MONITOR_INIT
 	printDebug("Using %s Compatible Reverb Models", mt32CompatibleReverb ? "MT-32" : "CM-32L");
 #endif
-	setReverbCompatibilityMode(mt32CompatibleReverb);
+	initReverbModels(mt32CompatibleReverb);
 
 #if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Timbre Bank A");
