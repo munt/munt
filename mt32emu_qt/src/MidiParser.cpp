@@ -169,7 +169,7 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 	if (runningStatus != 0x2F) {
 		qDebug() << "MidiParser: End-of-track Meta-event isn't the last event, file is probably corrupted.";
 	}
-	delete trackData;
+	delete[] trackData;
 	qDebug() << "MidiParser: Parsed" << midiEventList.count() << "MIDI events";
 	return true;
 }
@@ -259,7 +259,7 @@ bool MidiParser::parseSysex() {
 		}
 	}
 	qDebug() << "MidiParser: Loaded sysex events:" << midiEventList.count();
-	delete fileData;
+	delete[] fileData;
 	return true;
 }
 
