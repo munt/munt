@@ -10,12 +10,39 @@ into a driver or an application. "Official" driver for Windows and a cross-platf
 UI-enabled application are available in the Munt project and use this library:
 mt32emu_win32drv and mt32emu_qt respectively.
 
+
+Building
+========
+
 mt32emu requires CMake to build. See http://www.cmake.org/ for details. For a
-simple in-tree build, you can probably just do:
+simple in-tree build in a POSIX environment, you can probably just do:
 
 cmake -DCMAKE_BUILD_TYPE:STRING=Release .
 make
 sudo make install
+
+The library can be built either statically or dynamically linked. In order to facilitate
+usage of the library with programs written in other languages, a C-compatible API is provided
+as a wrapper for C++ classes. It forms a well-defined ABI as well as makes it easier to use
+the library as a plugin loaded in run-time.
+
+The build script recognises the following configuration options to control the build:
+
+  * libmt32emu_SHARED - specifies whether to build a statically or dynamically linked library
+  * libmt32emu_C_INTERFACE - specifies whether to include C-compatible API
+  * libmt32emu_CPP_INTERFACE - specifies whether to expose C++ classes in the shared library
+    (old-fashioned C++ API, compiler-specific ABI).
+
+The options can be set in various ways:
+
+  * specified directly as the command line arguments within the cmake command
+  * by editing CMakeCache.txt file that CMake creates in the target directory
+  * using the CMake GUI
+
+By default, a shared library is created that exposes all the supported API.
+However, the compiler optimisations are typically disabled. In order to get
+a well-performing binary, be sure to set the value of the CMAKE_BUILD_TYPE variable
+to Release or customise the compiler options otherwise.
 
 
 Hardware requirements

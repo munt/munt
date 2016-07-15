@@ -15,6 +15,18 @@ Note that only SMF files designed for the Roland MT-32 and compatible devices
 are likely to produce pleasing output. The MT-32 is *not* a General MIDI device.
 
 
+Building
+========
+
+mt32emu-smf2wav requires CMake to build. See http://www.cmake.org/ for details.
+GLIB is a required dependency. Can be found at http://www.gtk.org/.
+For a simple in-tree build in a POSIX environment, you can probably just do:
+
+cmake -DCMAKE_BUILD_TYPE:STRING=Release .
+make
+sudo make install
+
+
 License
 =======
 
