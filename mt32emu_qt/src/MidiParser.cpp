@@ -65,7 +65,7 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 	quint32 trackLen = qFromBigEndian<quint32>((uchar *)&header[4]);
 	char *trackData = new char[trackLen];
 	if (!readFile(trackData, trackLen)) {
-		delete trackData;
+		delete[] trackData;
 		return false;
 	}
 
@@ -243,7 +243,7 @@ bool MidiParser::parseSysex() {
 	file.seek(0);
 	char *fileData = new char[fileSize];
 	if (!readFile(fileData, fileSize)) {
-		delete fileData;
+		delete[] fileData;
 		return false;
 	}
 	int sysexBeginIx = -1;
