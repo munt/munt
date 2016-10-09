@@ -81,6 +81,9 @@ private:
 	MidiReceiver &midiReceiver;
 	MidiReporter &midiReporter;
 
+	// Binary compatibility helper.
+	void *reserved;
+
 	bool checkStreamBufferCapacity(const bool preserveContent);
 	bool processStatusByte(Bit8u &status);
 	Bit32u parseShortMessageStatus(const Bit8u stream[]);

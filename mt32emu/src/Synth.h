@@ -124,6 +124,8 @@ friend class TVA;
 friend class TVP;
 
 private:
+	// **************************** Implementation fields **************************
+
 	PatchTempMemoryRegion *patchTempMemoryRegion;
 	RhythmTempMemoryRegion *rhythmTempMemoryRegion;
 	TimbreTempMemoryRegion *timbreTempMemoryRegion;
@@ -183,6 +185,11 @@ private:
 
 	Analog *analog;
 	Renderer &renderer;
+
+	// Binary compatibility helper.
+	void *reserved;
+
+	// **************************** Implementation methods **************************
 
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
 	bool isAbortingPoly() const { return abortingPoly != NULL; }

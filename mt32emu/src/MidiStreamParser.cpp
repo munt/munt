@@ -79,6 +79,8 @@ MidiStreamParserImpl::MidiStreamParserImpl(MidiReceiver &useReceiver, MidiReport
 	streamBuffer = new Bit8u[streamBufferCapacity];
 	streamBufferSize = 0;
 	runningStatus = 0;
+
+	reserved = NULL;
 }
 
 MidiStreamParserImpl::~MidiStreamParserImpl() {

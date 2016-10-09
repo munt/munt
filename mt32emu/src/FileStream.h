@@ -36,7 +36,7 @@ public:
 	MT32EMU_EXPORT void close();
 
 private:
-	std::ifstream ifsp;
+	std::ifstream &ifsp;
 	const Bit8u *data;
 	size_t size;
 };

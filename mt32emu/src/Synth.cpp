@@ -207,6 +207,8 @@ Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams), mt32def
 	lastReceivedMIDIEventTimestamp = 0;
 	memset(parts, 0, sizeof(parts));
 	renderedSampleCount = 0;
+
+	reserved = NULL;
 }
 
 Synth::~Synth() {

@@ -24,11 +24,11 @@
 
 namespace MT32Emu {
 
-AbstractFile::AbstractFile() : sha1DigestCalculated(false) {
+AbstractFile::AbstractFile() : sha1DigestCalculated(false), reserved(NULL) {
 	sha1Digest[0] = 0;
 }
 
-AbstractFile::AbstractFile(const SHA1Digest &useSHA1Digest) : sha1DigestCalculated(true) {
+AbstractFile::AbstractFile(const SHA1Digest &useSHA1Digest) : sha1DigestCalculated(true), reserved(NULL) {
 	memcpy(sha1Digest, useSHA1Digest, sizeof(SHA1Digest) - 1);
 	sha1Digest[sizeof(SHA1Digest) - 1] = 0; // Ensure terminator char.
 }

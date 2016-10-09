@@ -23,11 +23,12 @@ namespace MT32Emu {
 
 using std::ios_base;
 
-FileStream::FileStream() : data(NULL), size(0)
+FileStream::FileStream() : ifsp(*new std::ifstream), data(NULL), size(0)
 {}
 
 FileStream::~FileStream() {
 	// destructor closes ifsp
+	delete &ifsp;
 	delete[] data;
 }
 
