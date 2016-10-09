@@ -25,9 +25,7 @@
 
 using namespace MT32Emu;
 
-static const int CHECKBOX_COLUMN = 0;
 static const int FILENAME_COLUMN = 1;
-static const int ROM_TYPE_COLUMN = 4;
 
 ROMSelectionDialog::ROMSelectionDialog(SynthProfile &useSynthProfile, QWidget *parent) :
 		QDialog(parent),
