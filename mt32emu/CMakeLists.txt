@@ -136,7 +136,7 @@ set_target_properties(mt32emu
   SOVERSION ${libmt32emu_VERSION_MAJOR}
 )
 
-if(CMAKE_SYSTEM_NAME STREQUAL Windows OR CYGWIN)
+if(libmt32emu_SHARED AND (CMAKE_SYSTEM_NAME STREQUAL Windows OR CYGWIN))
   set_target_properties(mt32emu
     PROPERTIES OUTPUT_NAME mt32emu-${libmt32emu_VERSION_MAJOR}
   )
