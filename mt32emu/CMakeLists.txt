@@ -138,7 +138,7 @@ set_target_properties(mt32emu
 
 if(libmt32emu_SHARED AND CMAKE_SYSTEM_NAME STREQUAL Windows)
   set_target_properties(mt32emu
-    PROPERTIES OUTPUT_NAME mt32emu-${libmt32emu_VERSION_MAJOR}
+    PROPERTIES RUNTIME_OUTPUT_NAME mt32emu-${libmt32emu_VERSION_MAJOR}
   )
 endif()
 
