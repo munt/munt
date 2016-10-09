@@ -134,8 +134,13 @@ add_library(mt32emu ${libmt32emu_BUILD_TYPE} ${libmt32emu_SOURCES})
 set_target_properties(mt32emu
   PROPERTIES VERSION ${libmt32emu_VERSION}
   SOVERSION ${libmt32emu_VERSION_MAJOR}
-  RUNTIME_OUTPUT_NAME mt32emu-${libmt32emu_VERSION_MAJOR}
 )
+
+if(CMAKE_SYSTEM_NAME STREQUAL Windows OR CYGWIN)
+  set_target_properties(mt32emu
+    PROPERTIES OUTPUT_NAME mt32emu-${libmt32emu_VERSION_MAJOR}
+  )
+endif()
 
 install(TARGETS mt32emu
   ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
