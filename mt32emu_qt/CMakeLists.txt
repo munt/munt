@@ -14,7 +14,7 @@ else()
   set(LINUX_FOUND FALSE)
 endif()
 
-option(mt32emu-qt_WITH_QT5 "Prefer Qt5 if Qt4 is also available" FALSE)
+option(mt32emu-qt_WITH_QT5 "Prefer Qt5 if Qt4 is also available" TRUE)
 option(mt32emu-qt_WITH_ALSA_MIDI_SEQUENCER "Use ALSA MIDI sequencer" ${LINUX_FOUND})
 option(mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING "Load PulseAudio library dynamically" TRUE)
 option(mt32emu-qt_WITH_DEBUG_WINCONSOLE "Use console for showing debug output on Windows" FALSE)
