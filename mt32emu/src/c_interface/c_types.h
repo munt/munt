@@ -74,8 +74,10 @@ typedef enum mt32emu_partial_state mt32emu_partial_state;
 typedef struct {
 	const char *control_rom_id;
 	const char *control_rom_description;
+	const char *control_rom_sha1_digest;
 	const char *pcm_rom_id;
 	const char *pcm_rom_description;
+	const char *pcm_rom_sha1_digest;
 } mt32emu_rom_info;
 
 /** Set of multiplexed output bit16s streams appeared at the DAC entrance. */

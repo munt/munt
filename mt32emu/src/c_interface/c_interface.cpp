@@ -388,17 +388,21 @@ void mt32emu_get_rom_info(mt32emu_const_context context, mt32emu_rom_info *rom_i
 	if (romInfo != NULL) {
 		rom_info->control_rom_id = romInfo->shortName;
 		rom_info->control_rom_description = romInfo->description;
+		rom_info->control_rom_sha1_digest = romInfo->sha1Digest;
 	} else {
 		rom_info->control_rom_id = NULL;
 		rom_info->control_rom_description = NULL;
+		rom_info->control_rom_sha1_digest = NULL;
 	}
 	romInfo = context->pcmROMImage == NULL ? NULL : context->pcmROMImage->getROMInfo();
 	if (romInfo != NULL) {
 		rom_info->pcm_rom_id = romInfo->shortName;
 		rom_info->pcm_rom_description = romInfo->description;
+		rom_info->pcm_rom_sha1_digest = romInfo->sha1Digest;
 	} else {
 		rom_info->pcm_rom_id = NULL;
 		rom_info->pcm_rom_description = NULL;
+		rom_info->pcm_rom_sha1_digest = NULL;
 	}
 }
 
