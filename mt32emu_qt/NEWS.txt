@@ -1,5 +1,8 @@
-	1.4 Current
+2016-10-22:
 
+	1.4.0 released.
+
+	* Updated mt32emu library to version 2.0.0.
 	* Added support of ALSA raw MIDI ports in ALSA MIDI driver. Configuration option mt32emu-qt_WITH_ALSA_MIDI_DRIVER
 	  renamed to mt32emu-qt_WITH_ALSA_MIDI_SEQUENCER for consistency, and is now set to TRUE by default on Linux systems only.
 	* Added handling of fragmented SysExes in ALSA MIDI driver.

@@ -1,4 +1,6 @@
-	1.2 Current
+2016-10-22:
+
+	1.2.0 released.
 
 	* Fixed possible crashes when reloading settings to the internal synth upon MIDI port re-opening in some cases.
 	* Updated mt32emu library to version 2.0.0.
