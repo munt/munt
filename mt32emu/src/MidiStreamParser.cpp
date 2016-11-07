@@ -73,7 +73,7 @@ MidiStreamParser::MidiStreamParser(Bit32u initialStreamBufferCapacity) :
 MidiStreamParserImpl::MidiStreamParserImpl(MidiReceiver &useReceiver, MidiReporter &useReporter, Bit32u initialStreamBufferCapacity) :
 	midiReceiver(useReceiver), midiReporter(useReporter)
 {
-	if (initialStreamBufferCapacity < (Bit32u)SYSEX_BUFFER_SIZE) initialStreamBufferCapacity = SYSEX_BUFFER_SIZE;
+	if (initialStreamBufferCapacity < Bit32u(SYSEX_BUFFER_SIZE)) initialStreamBufferCapacity = SYSEX_BUFFER_SIZE;
 	if (MAX_STREAM_BUFFER_SIZE < initialStreamBufferCapacity) initialStreamBufferCapacity = MAX_STREAM_BUFFER_SIZE;
 	streamBufferCapacity = initialStreamBufferCapacity;
 	streamBuffer = new Bit8u[streamBufferCapacity];
@@ -119,7 +119,7 @@ void MidiStreamParserImpl::parseStream(const Bit8u *stream, Bit32u length) {
 
 void MidiStreamParserImpl::processShortMessage(const Bit32u message) {
 	// Adds running status to the MIDI message if it doesn't contain one
-	Bit8u status = (Bit8u)message;
+	Bit8u status = Bit8u(message);
 	if (0xF8 <= status) {
 		midiReceiver.handleSystemRealtimeMessage(status);
 	} else if (processStatusByte(status)) {

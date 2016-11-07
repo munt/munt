@@ -95,7 +95,7 @@ static int calcVeloAmpSubtraction(Bit8u veloSensitivity, unsigned int velocity) 
 	// FIXME:KG: Better variable names
 	int velocityMult = veloSensitivity - 50;
 	int absVelocityMult = velocityMult < 0 ? -velocityMult : velocityMult;
-	velocityMult = (signed)((unsigned)(velocityMult * ((signed)velocity - 64)) << 2);
+	velocityMult = signed(unsigned(velocityMult * (signed(velocity) - 64)) << 2);
 	return absVelocityMult - (velocityMult >> 8); // PORTABILITY NOTE: Assumes arithmetic shift
 }
 
@@ -186,7 +186,7 @@ void TVA::reset(const Part *newPart, const TimbreParam::PartialParam *newPartial
 	// "Go downward as quickly as possible".
 	// Since the current value is 0, the LA32Ramp will notice that we're already at or below the target and trying to go downward,
 	// and therefore jump to the target immediately and raise an interrupt.
-	startRamp((Bit8u)newTarget, 0x80 | 127, newPhase);
+	startRamp(Bit8u(newTarget), 0x80 | 127, newPhase);
 }
 
 void TVA::startAbort() {
@@ -229,9 +229,9 @@ void TVA::recalcSustain() {
 	// Calculate an increment to get to the new amp value in a short, more or less consistent amount of time
 	Bit8u newIncrement;
 	if (targetDelta >= 0) {
-		newIncrement = tables->envLogarithmicTime[(Bit8u)targetDelta] - 2;
+		newIncrement = tables->envLogarithmicTime[Bit8u(targetDelta)] - 2;
 	} else {
-		newIncrement = (tables->envLogarithmicTime[(Bit8u)-targetDelta] - 2) | 0x80;
+		newIncrement = (tables->envLogarithmicTime[Bit8u(-targetDelta)] - 2) | 0x80;
 	}
 	// Configure so that once the transition's complete and nextPhase() is called, we'll just re-enter sustain phase (or decay phase, depending on parameters at the time).
 	startRamp(newTarget, newIncrement, TVA_PHASE_SUSTAIN - 1);
@@ -315,7 +315,7 @@ void TVA::nextPhase() {
 		int envTimeSetting = partialParam->tva.envTime[envPointIndex];
 
 		if (newPhase == TVA_PHASE_ATTACK) {
-			envTimeSetting -= ((signed)partial->getPoly()->getVelocity() - 64) >> (6 - partialParam->tva.envTimeVeloSensitivity); // PORTABILITY NOTE: Assumes arithmetic shift
+			envTimeSetting -= (signed(partial->getPoly()->getVelocity()) - 64) >> (6 - partialParam->tva.envTimeVeloSensitivity); // PORTABILITY NOTE: Assumes arithmetic shift
 
 			if (envTimeSetting <= 0 && partialParam->tva.envTime[envPointIndex] != 0) {
 				envTimeSetting = 1;
@@ -342,14 +342,14 @@ void TVA::nextPhase() {
 					}
 				}
 				targetDelta = -targetDelta;
-				newIncrement = tables->envLogarithmicTime[(Bit8u)targetDelta] - envTimeSetting;
+				newIncrement = tables->envLogarithmicTime[Bit8u(targetDelta)] - envTimeSetting;
 				if (newIncrement <= 0) {
 					newIncrement = 1;
 				}
 				newIncrement = newIncrement | 0x80;
 			} else {
 				// FIXME: The last 22 or so entries in this table are 128 - surely that fucks things up, since that ends up being -128 signed?
-				newIncrement = tables->envLogarithmicTime[(Bit8u)targetDelta] - envTimeSetting;
+				newIncrement = tables->envLogarithmicTime[Bit8u(targetDelta)] - envTimeSetting;
 				if (newIncrement <= 0) {
 					newIncrement = 1;
 				}
@@ -364,7 +364,7 @@ void TVA::nextPhase() {
 		}
 	}
 
-	startRamp((Bit8u)newTarget, (Bit8u)newIncrement, newPhase);
+	startRamp(Bit8u(newTarget), Bit8u(newIncrement), newPhase);
 }
 
 } // namespace MT32Emu

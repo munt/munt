@@ -63,7 +63,7 @@ TVP::TVP(const Partial *usePartial) :
 static Bit16s keyToPitch(unsigned int key) {
 	// We're using a table to do: return round_to_nearest_or_even((key - 60) * (4096.0 / 12.0))
 	// Banker's rounding is just slightly annoying to do in C++
-	int k = (int)key;
+	int k = int(key);
 	Bit16s pitch = keyToPitchTable[abs(k - 60)];
 	return key < 60 ? -pitch : pitch;
 }
@@ -87,7 +87,7 @@ static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialPa
 
 	const ControlROMPCMStruct *controlROMPCMStruct = partial->getControlROMPCMStruct();
 	if (controlROMPCMStruct != NULL) {
-		basePitch += (Bit32s)((((Bit32s)controlROMPCMStruct->pitchMSB) << 8) | (Bit32s)controlROMPCMStruct->pitchLSB);
+		basePitch += (Bit32s(controlROMPCMStruct->pitchMSB) << 8) | Bit32s(controlROMPCMStruct->pitchLSB);
 	} else {
 		if ((partialParam->wg.waveform & 1) == 0) {
 			basePitch += 37133; // This puts Middle C at around 261.64Hz (assuming no other modifications, masterTune of 64, etc.)
@@ -103,7 +103,7 @@ static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialPa
 	if (basePitch > 59392) {
 		basePitch = 59392;
 	}
-	return (Bit32u)basePitch;
+	return Bit32u(basePitch);
 }
 
 static Bit32u calcVeloMult(Bit8u veloSensitivity, unsigned int velocity) {
@@ -124,7 +124,7 @@ static Bit32u calcVeloMult(Bit8u veloSensitivity, unsigned int velocity) {
 static Bit32s calcTargetPitchOffsetWithoutLFO(const TimbreParam::PartialParam *partialParam, int levelIndex, unsigned int velocity) {
 	int veloMult = calcVeloMult(partialParam->pitchEnv.veloSensitivity, velocity);
 	int targetPitchOffsetWithoutLFO = partialParam->pitchEnv.level[levelIndex] - 50;
-	targetPitchOffsetWithoutLFO = (Bit32s)(targetPitchOffsetWithoutLFO * veloMult) >> (16 - partialParam->pitchEnv.depth); // PORTABILITY NOTE: Assumes arithmetic shift
+	targetPitchOffsetWithoutLFO = (targetPitchOffsetWithoutLFO * veloMult) >> (16 - partialParam->pitchEnv.depth); // PORTABILITY NOTE: Assumes arithmetic shift
 	return targetPitchOffsetWithoutLFO;
 }
 
@@ -145,7 +145,7 @@ void TVP::reset(const Part *usePart, const TimbreParam::PartialParam *usePartial
 	phase = 0;
 
 	if (partialParam->pitchEnv.timeKeyfollow) {
-		timeKeyfollowSubtraction = (Bit32s)(key - 60) >> (5 - partialParam->pitchEnv.timeKeyfollow); // PORTABILITY NOTE: Assumes arithmetic shift
+		timeKeyfollowSubtraction = Bit32s(key - 60) >> (5 - partialParam->pitchEnv.timeKeyfollow); // PORTABILITY NOTE: Assumes arithmetic shift
 	} else {
 		timeKeyfollowSubtraction = 0;
 	}
@@ -183,7 +183,7 @@ void TVP::updatePitch() {
 			newPitch = 59392;
 		}
 	}
-	pitch = (Bit16u)newPitch;
+	pitch = Bit16u(newPitch);
 
 	// FIXME: We're doing this here because that's what the CM-32L does - we should probably move this somewhere more appropriate in future.
 	partial->getTVA()->recalcSustain();
@@ -321,7 +321,7 @@ void TVP::process() {
 		negativeBigTicksRemaining = negativeBigTicksRemaining >> rightShifts; // PORTABILITY NOTE: Assumes arithmetic shift
 		rightShifts = 13;
 	}
-	int newResult = ((Bit32s)(negativeBigTicksRemaining * pitchOffsetChangePerBigTick)) >> rightShifts; // PORTABILITY NOTE: Assumes arithmetic shift
+	int newResult = (negativeBigTicksRemaining * pitchOffsetChangePerBigTick) >> rightShifts; // PORTABILITY NOTE: Assumes arithmetic shift
 	newResult += targetPitchOffsetWithoutLFO + lfoPitchOffset;
 	currentPitchOffset = newResult;
 	updatePitch();

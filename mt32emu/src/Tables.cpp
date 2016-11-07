@@ -33,18 +33,18 @@ Tables::Tables() {
 	int lf;
 	for (lf = 0; lf <= 100; lf++) {
 		// CONFIRMED:KG: This matches a ROM table found by Mok
-		float fVal = (2.0f - LOG10F((float)lf + 1.0f)) * 128.0f;
-		int val = (int)(fVal + 1.0);
+		float fVal = (2.0f - LOG10F(lf + 1.0f)) * 128.0f;
+		int val = int(fVal + 1.0);
 		if (val > 255) {
 			val = 255;
 		}
-		levelToAmpSubtraction[lf] = (Bit8u)val;
+		levelToAmpSubtraction[lf] = Bit8u(val);
 	}
 
 	envLogarithmicTime[0] = 64;
 	for (lf = 1; lf <= 255; lf++) {
 		// CONFIRMED:KG: This matches a ROM table found by Mok
-		envLogarithmicTime[lf] = (Bit8u)ceil(64.0f + LOG2F((float)lf) * 8.0f);
+		envLogarithmicTime[lf] = Bit8u(ceil(64.0f + LOG2F(float(lf)) * 8.0f));
 	}
 
 #if 0
@@ -65,12 +65,12 @@ Tables::Tables() {
 	// CONFIRMED: Based on a table found by Mok in the MT-32 control ROM
 	masterVolToAmpSubtraction[0] = 255;
 	for (int masterVol = 1; masterVol <= 100; masterVol++) {
-		masterVolToAmpSubtraction[masterVol] = (Bit8u)(106.31 - 16.0f * LOG2F((float)masterVol));
+		masterVolToAmpSubtraction[masterVol] = Bit8u(106.31 - 16.0f * LOG2F(float(masterVol)));
 	}
 #endif
 
 	for (int i = 0; i <= 100; i++) {
-		pulseWidth100To255[i] = (Bit8u)(i * 255 / 100.0f + 0.5f);
+		pulseWidth100To255[i] = Bit8u(i * 255 / 100.0f + 0.5f);
 		//synth->printDebug("%d: %d", i, pulseWidth100To255[i]);
 	}
 

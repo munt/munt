@@ -116,7 +116,7 @@ Bit32s Part::getPitchBend() const {
 
 void Part::setBend(unsigned int midiBend) {
 	// CONFIRMED:
-	pitchBend = (((signed)midiBend - 8192) * pitchBenderRange) >> 14; // PORTABILITY NOTE: Assumes arithmetic shift
+	pitchBend = ((static_cast<signed>(midiBend) - 8192) * pitchBenderRange) >> 14; // PORTABILITY NOTE: Assumes arithmetic shift
 }
 
 Bit8u Part::getModulation() const {
@@ -124,7 +124,7 @@ Bit8u Part::getModulation() const {
 }
 
 void Part::setModulation(unsigned int midiModulation) {
-	modulation = (Bit8u)midiModulation;
+	modulation = Bit8u(midiModulation);
 }
 
 void Part::resetAllControllers() {
@@ -259,26 +259,26 @@ void Part::cacheTimbre(PatchCache cache[4], const TimbreParam *timbre) {
 
 		switch (t) {
 		case 0:
-			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.partialStructure12] & 0x2) ? true : false;
-			cache[t].structureMix = PartialMixStruct[(int)timbre->common.partialStructure12];
+			cache[t].PCMPartial = (PartialStruct[int(timbre->common.partialStructure12)] & 0x2) ? true : false;
+			cache[t].structureMix = PartialMixStruct[int(timbre->common.partialStructure12)];
 			cache[t].structurePosition = 0;
 			cache[t].structurePair = 1;
 			break;
 		case 1:
-			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.partialStructure12] & 0x1) ? true : false;
-			cache[t].structureMix = PartialMixStruct[(int)timbre->common.partialStructure12];
+			cache[t].PCMPartial = (PartialStruct[int(timbre->common.partialStructure12)] & 0x1) ? true : false;
+			cache[t].structureMix = PartialMixStruct[int(timbre->common.partialStructure12)];
 			cache[t].structurePosition = 1;
 			cache[t].structurePair = 0;
 			break;
 		case 2:
-			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.partialStructure34] & 0x2) ? true : false;
-			cache[t].structureMix = PartialMixStruct[(int)timbre->common.partialStructure34];
+			cache[t].PCMPartial = (PartialStruct[int(timbre->common.partialStructure34)] & 0x2) ? true : false;
+			cache[t].structureMix = PartialMixStruct[int(timbre->common.partialStructure34)];
 			cache[t].structurePosition = 0;
 			cache[t].structurePair = 3;
 			break;
 		case 3:
-			cache[t].PCMPartial = (PartialStruct[(int)timbre->common.partialStructure34] & 0x1) ? true : false;
-			cache[t].structureMix = PartialMixStruct[(int)timbre->common.partialStructure34];
+			cache[t].PCMPartial = (PartialStruct[int(timbre->common.partialStructure34)] & 0x1) ? true : false;
+			cache[t].structureMix = PartialMixStruct[int(timbre->common.partialStructure34)];
 			cache[t].structurePosition = 1;
 			cache[t].structurePair = 2;
 			break;
@@ -312,7 +312,7 @@ const char *Part::getName() const {
 
 void Part::setVolume(unsigned int midiVolume) {
 	// CONFIRMED: This calculation matches the table used in the control ROM
-	patchTemp->outputLevel = (Bit8u)(midiVolume * 100 / 127);
+	patchTemp->outputLevel = Bit8u((midiVolume * 100 / 127));
 	//synth->printDebug("%s (%s): Set volume to %d", name, currentInstr, midiVolume);
 }
 
@@ -326,7 +326,7 @@ Bit8u Part::getExpression() const {
 
 void Part::setExpression(unsigned int midiExpression) {
 	// CONFIRMED: This calculation matches the table used in the control ROM
-	expression = (Bit8u)(midiExpression * 100 / 127);
+	expression = Bit8u((midiExpression * 100 / 127));
 }
 
 void RhythmPart::setPan(unsigned int midiPan) {
@@ -341,9 +341,9 @@ void Part::setPan(unsigned int midiPan) {
 	// NOTE: Panning is inverted compared to GM.
 
 	// CM-32L: Divide by 8.5
-	patchTemp->panpot = (Bit8u)((midiPan << 3) / 68);
+	patchTemp->panpot = Bit8u(((midiPan << 3) / 68));
 	// FIXME: MT-32: Divide by 9
-	//patchTemp->panpot = (Bit8u)(midiPan / 9);
+	//patchTemp->panpot = Bit8u((midiPan / 9));
 
 	//synth->printDebug("%s (%s): Set pan to %d", name, currentInstr, panpot);
 }
@@ -511,7 +511,7 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 #if MT32EMU_MONITOR_PARTIALS > 1
 	synth->printPartialUsage();
 #endif
-	synth->reportHandler->onPolyStateChanged((Bit8u)partNum);
+	synth->reportHandler->onPolyStateChanged(Bit8u(partNum));
 }
 
 void Part::allNotesOff() {
@@ -597,7 +597,7 @@ void Part::partialDeactivated(Poly *poly) {
 	if (!poly->isActive()) {
 		activePolys.remove(poly);
 		synth->partialManager->polyFreed(poly);
-		synth->reportHandler->onPolyStateChanged((Bit8u)partNum);
+		synth->reportHandler->onPolyStateChanged(Bit8u(partNum));
 	}
 }
 

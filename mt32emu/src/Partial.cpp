@@ -318,8 +318,8 @@ bool Partial::produceOutput(Sample *leftBuf, Sample *rightBuf, Bit32u length) {
 		// Though, it is unknown whether this overflow is exploited somewhere.
 		Sample leftOut = Sample((sample * leftPanValue) >> 8);
 		Sample rightOut = Sample((sample * rightPanValue) >> 8);
-		*leftBuf = Synth::clipSampleEx((SampleEx)*leftBuf + (SampleEx)leftOut);
-		*rightBuf = Synth::clipSampleEx((SampleEx)*rightBuf + (SampleEx)rightOut);
+		*leftBuf = Synth::clipSampleEx(SampleEx(*leftBuf) + SampleEx(leftOut));
+		*rightBuf = Synth::clipSampleEx(SampleEx(*rightBuf) + SampleEx(rightOut));
 		leftBuf++;
 		rightBuf++;
 #endif

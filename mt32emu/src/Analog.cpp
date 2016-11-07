@@ -182,8 +182,8 @@ void Analog::process(Sample *outStream, const Sample *nonReverbLeft, const Sampl
 			outSampleL = leftChannelLPF.process(0);
 			outSampleR = rightChannelLPF.process(0);
 		} else {
-			SampleEx inSampleL = ((SampleEx)*(nonReverbLeft++) + (SampleEx)*(reverbDryLeft++)) * synthGain + (SampleEx)*(reverbWetLeft++) * reverbGain;
-			SampleEx inSampleR = ((SampleEx)*(nonReverbRight++) + (SampleEx)*(reverbDryRight++)) * synthGain + (SampleEx)*(reverbWetRight++) * reverbGain;
+			SampleEx inSampleL = (SampleEx(*(nonReverbLeft++)) + SampleEx(*(reverbDryLeft++))) * synthGain + SampleEx(*(reverbWetLeft++)) * reverbGain;
+			SampleEx inSampleR = (SampleEx(*(nonReverbRight++)) + SampleEx(*(reverbDryRight++))) * synthGain + SampleEx(*(reverbWetRight++)) * reverbGain;
 
 #if !MT32EMU_USE_FLOAT_SAMPLES
 			inSampleL >>= OUTPUT_GAIN_FRACTION_BITS;

@@ -40,7 +40,7 @@ size_t FileStream::getSize() {
 		return 0;
 	}
 	ifsp.seekg(0, ios_base::end);
-	size = (size_t)ifsp.tellg();
+	size = size_t(ifsp.tellg());
 	return size;
 }
 
@@ -59,8 +59,8 @@ const Bit8u *FileStream::getData() {
 		return NULL;
 	}
 	ifsp.seekg(0);
-	ifsp.read((char *)fileData, (std::streamsize)size);
-	if ((size_t)ifsp.tellg() != size) {
+	ifsp.read(reinterpret_cast<char *>(fileData), std::streamsize(size));
+	if (size_t(ifsp.tellg()) != size) {
 		delete[] fileData;
 		return NULL;
 	}

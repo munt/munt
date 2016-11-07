@@ -54,7 +54,7 @@ Bit16s LA32Utilites::unlog(const LogSample &logSample) {
 
 void LA32Utilites::addLogSamples(LogSample &logSample1, const LogSample &logSample2) {
 	Bit32u logSampleValue = logSample1.logValue + logSample2.logValue;
-	logSample1.logValue = logSampleValue < 65536 ? (Bit16u)logSampleValue : 65535;
+	logSample1.logValue = logSampleValue < 65536 ? Bit16u(logSampleValue) : 65535;
 	logSample1.sign = logSample1.sign == logSample2.sign ? LogSample::POSITIVE : LogSample::NEGATIVE;
 }
 
@@ -134,9 +134,7 @@ void LA32WaveGenerator::advancePosition() {
 	Bit32u lowLinearLength = (resonanceWaveLengthFactor << 8) - 4 * SINE_SEGMENT_RELATIVE_LENGTH - highLinearLength;
 	computePositions(highLinearLength, lowLinearLength, resonanceWaveLengthFactor);
 
-	// resonancePhase computation hack
-	int *resonancePhaseAlias = (int *)&resonancePhase;
-	*resonancePhaseAlias = ((resonanceSinePosition >> 18) + (phase > POSITIVE_FALLING_SINE_SEGMENT ? 2 : 0)) & 3;
+	resonancePhase = static_cast<ResonantPhase_t>(((resonanceSinePosition >> 18) + (phase > POSITIVE_FALLING_SINE_SEGMENT ? 2 : 0)) & 3);
 }
 
 void LA32WaveGenerator::generateNextSquareWaveLogSample() {
@@ -162,7 +160,7 @@ void LA32WaveGenerator::generateNextSquareWaveLogSample() {
 		logSampleValue += (MIDDLE_CUTOFF_VALUE - cutoffVal) >> 9;
 	}
 
-	squareLogSample.logValue = logSampleValue < 65536 ? (Bit16u)logSampleValue : 65535;
+	squareLogSample.logValue = logSampleValue < 65536 ? Bit16u(logSampleValue) : 65535;
 	squareLogSample.sign = phase < NEGATIVE_FALLING_SINE_SEGMENT ? LogSample::POSITIVE : LogSample::NEGATIVE;
 }
 
@@ -202,7 +200,7 @@ void LA32WaveGenerator::generateNextResonanceWaveLogSample() {
 	// After all the amp decrements are added, it should be safe now to adjust the amp of the resonance wave to what we see on captures
 	logSampleValue -= 1 << 12;
 
-	resonanceLogSample.logValue = logSampleValue < 65536 ? (Bit16u)logSampleValue : 65535;
+	resonanceLogSample.logValue = logSampleValue < 65536 ? Bit16u(logSampleValue) : 65535;
 	resonanceLogSample.sign = resonancePhase < NEGATIVE_FALLING_RESONANCE_SINE_SEGMENT ? LogSample::POSITIVE : LogSample::NEGATIVE;
 }
 
@@ -220,7 +218,7 @@ void LA32WaveGenerator::generateNextSawtoothCosineLogSample(LogSample &logSample
 void LA32WaveGenerator::pcmSampleToLogSample(LogSample &logSample, const Bit16s pcmSample) const {
 	Bit32u logSampleValue = (32787 - (pcmSample & 32767)) << 1;
 	logSampleValue += amp >> 10;
-	logSample.logValue = logSampleValue < 65536 ? (Bit16u)logSampleValue : 65535;
+	logSample.logValue = logSampleValue < 65536 ? Bit16u(logSampleValue) : 65535;
 	logSample.sign = pcmSample < 0 ? LogSample::NEGATIVE : LogSample::POSITIVE;
 }
 
@@ -381,7 +379,7 @@ Bit16s LA32PartialPair::unlogAndMixWGOutput(const LA32WaveGenerator &wg) {
 	Bit16s firstSample = LA32Utilites::unlog(wg.getOutputLogSample(true));
 	Bit16s secondSample = LA32Utilites::unlog(wg.getOutputLogSample(false));
 	if (wg.isPCMWave()) {
-		return Bit16s(firstSample + ((Bit32s(secondSample - firstSample) * wg.getPCMInterpolationFactor()) >> 7));
+		return Bit16s(firstSample + (((secondSample - firstSample) * wg.getPCMInterpolationFactor()) >> 7));
 	}
 	return firstSample + secondSample;
 }
@@ -411,7 +409,7 @@ Bit16s LA32PartialPair::nextOutSample() {
 	Bit16s slaveSample = slave.isPCMWave() ? LA32Utilites::unlog(slave.getOutputLogSample(true)) : unlogAndMixWGOutput(slave);
 	slaveSample <<= 2;
 	slaveSample >>= 2;
-	Bit16s ringModulatedSample = Bit16s(((Bit32s)masterSample * (Bit32s)slaveSample) >> 13);
+	Bit16s ringModulatedSample = Bit16s((Bit32s(masterSample) * Bit32s(slaveSample)) >> 13);
 	return mixed ? nonOverdrivenMasterSample + ringModulatedSample : ringModulatedSample;
 }
 
