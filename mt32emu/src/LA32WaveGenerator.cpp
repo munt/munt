@@ -134,7 +134,7 @@ void LA32WaveGenerator::advancePosition() {
 	Bit32u lowLinearLength = (resonanceWaveLengthFactor << 8) - 4 * SINE_SEGMENT_RELATIVE_LENGTH - highLinearLength;
 	computePositions(highLinearLength, lowLinearLength, resonanceWaveLengthFactor);
 
-	resonancePhase = static_cast<ResonantPhase_t>(((resonanceSinePosition >> 18) + (phase > POSITIVE_FALLING_SINE_SEGMENT ? 2 : 0)) & 3);
+	resonancePhase = ResonancePhase(((resonanceSinePosition >> 18) + (phase > POSITIVE_FALLING_SINE_SEGMENT ? 2 : 0)) & 3);
 }
 
 void LA32WaveGenerator::generateNextSquareWaveLogSample() {

@@ -147,13 +147,12 @@ class LA32WaveGenerator {
 	} phase;
 
 	// Current phase of the resonance wave
-	enum ResonantPhase_t {
+	enum ResonancePhase {
 		POSITIVE_RISING_RESONANCE_SINE_SEGMENT,
 		POSITIVE_FALLING_RESONANCE_SINE_SEGMENT,
 		NEGATIVE_FALLING_RESONANCE_SINE_SEGMENT,
 		NEGATIVE_RISING_RESONANCE_SINE_SEGMENT
-	};
-	ResonantPhase_t resonancePhase;
+	} resonancePhase;
 
 	// Resulting log-space samples of the square and resonance waves
 	LogSample squareLogSample;
