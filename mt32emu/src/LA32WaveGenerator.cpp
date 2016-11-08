@@ -379,7 +379,7 @@ Bit16s LA32PartialPair::unlogAndMixWGOutput(const LA32WaveGenerator &wg) {
 	Bit16s firstSample = LA32Utilites::unlog(wg.getOutputLogSample(true));
 	Bit16s secondSample = LA32Utilites::unlog(wg.getOutputLogSample(false));
 	if (wg.isPCMWave()) {
-		return Bit16s(firstSample + (((secondSample - firstSample) * wg.getPCMInterpolationFactor()) >> 7));
+		return Bit16s(firstSample + (((Bit32s(secondSample) - Bit32s(firstSample)) * wg.getPCMInterpolationFactor()) >> 7));
 	}
 	return firstSample + secondSample;
 }
