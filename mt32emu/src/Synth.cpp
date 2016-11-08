@@ -35,7 +35,7 @@
 namespace MT32Emu {
 
 // MIDI interface data transfer rate in samples. Used to simulate the transfer delay.
-static const double MIDI_DATA_TRANSFER_RATE = (double)SAMPLE_RATE / 31250.0 * 8.0;
+static const double MIDI_DATA_TRANSFER_RATE = double(SAMPLE_RATE) / 31250.0 * 8.0;
 
 // FIXME: there should be more specific feature sets for various MT-32 control ROM versions
 static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = { true, true, true };
@@ -427,7 +427,7 @@ bool Synth::loadPCMROM(const ROMImage &pcmROMImage) {
 			} else {
 				bit = (c >> (7 - (order[u] - 8))) & 0x1;
 			}
-			log = log | (Bit16s)(bit << (15 - u));
+			log = log | Bit16s(bit << (15 - u));
 		}
 		pcmROMData[i] = log;
 	}
@@ -435,7 +435,7 @@ bool Synth::loadPCMROM(const ROMImage &pcmROMImage) {
 }
 
 bool Synth::initPCMList(Bit16u mapAddress, Bit16u count) {
-	ControlROMPCMStruct *tps = (ControlROMPCMStruct *)&controlROMData[mapAddress];
+	ControlROMPCMStruct *tps = reinterpret_cast<ControlROMPCMStruct *>(&controlROMData[mapAddress]);
 	for (int i = 0; i < count; i++) {
 		Bit32u rAddr = tps[i].pos * 0x800;
 		Bit32u rLenExp = (tps[i].len & 0x70) >> 4;
@@ -515,7 +515,7 @@ void Synth::initReverbModels(bool mt32CompatibleMode) {
 
 void Synth::initSoundGroups(char newSoundGroupNames[][9]) {
 	memcpy(soundGroupIx, &controlROMData[controlROMMap->soundGroupsTable - sizeof(soundGroupIx)], sizeof(soundGroupIx));
-	const SoundGroup *table = (SoundGroup *)&controlROMData[controlROMMap->soundGroupsTable];
+	const SoundGroup *table = reinterpret_cast<SoundGroup *>(&controlROMData[controlROMMap->soundGroupsTable]);
 	for (unsigned int i = 0; i < controlROMMap->soundGroupsCount; i++) {
 		memcpy(&newSoundGroupNames[i][0], table[i].name, sizeof(table[i].name));
 	}
@@ -802,7 +802,7 @@ Bit32u Synth::getShortMessageLength(Bit32u msg) {
 }
 
 Bit32u Synth::addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp) {
-	Bit32u transferTime =  Bit32u((double)len * MIDI_DATA_TRANSFER_RATE);
+	Bit32u transferTime =  Bit32u(double(len) * MIDI_DATA_TRANSFER_RATE);
 	// Dealing with wrapping
 	if (Bit32s(timestamp - lastReceivedMIDIEventTimestamp) < 0) {
 		timestamp = lastReceivedMIDIEventTimestamp;
@@ -818,7 +818,7 @@ bool Synth::playMsg(Bit32u msg) {
 
 bool Synth::playMsg(Bit32u msg, Bit32u timestamp) {
 	if ((msg & 0xF8) == 0xF8) {
-		reportHandler->onMIDISystemRealtime((Bit8u)msg);
+		reportHandler->onMIDISystemRealtime(Bit8u(msg));
 		return true;
 	}
 	if (midiQueue == NULL) return false;
@@ -854,10 +854,10 @@ void Synth::playMsgNow(Bit32u msg) {
 	// NOTE: Active sense IS implemented in real hardware. However, realtime processing is clearly out of the library scope.
 	//       It is assumed that realtime consumers of the library respond to these MIDI events as appropriate.
 
-	Bit8u code = (Bit8u)((msg & 0x0000F0) >> 4);
-	Bit8u chan = (Bit8u)(msg & 0x00000F);
-	Bit8u note = (Bit8u)((msg & 0x007F00) >> 8);
-	Bit8u velocity = (Bit8u)((msg & 0x7F0000) >> 16);
+	Bit8u code = Bit8u((msg & 0x0000F0) >> 4);
+	Bit8u chan = Bit8u(msg & 0x00000F);
+	Bit8u note = Bit8u((msg & 0x007F00) >> 8);
+	Bit8u velocity = Bit8u((msg & 0x7F0000) >> 16);
 
 	//printDebug("Playing chan %d, code 0x%01x note: 0x%02x", chan, code, note);
 
@@ -1003,14 +1003,14 @@ void Synth::playSysexWithoutFraming(const Bit8u *sysex, Bit32u len) {
 		return;
 	}
 	if (sysex[0] != SYSEX_MANUFACTURER_ROLAND) {
-		printDebug("playSysexWithoutFraming: Header not intended for this device manufacturer: %02x %02x %02x %02x", (int)sysex[0], (int)sysex[1], (int)sysex[2], (int)sysex[3]);
+		printDebug("playSysexWithoutFraming: Header not intended for this device manufacturer: %02x %02x %02x %02x", int(sysex[0]), int(sysex[1]), int(sysex[2]), int(sysex[3]));
 		return;
 	}
 	if (sysex[2] == SYSEX_MDL_D50) {
-		printDebug("playSysexWithoutFraming: Header is intended for model D-50 (not yet supported): %02x %02x %02x %02x", (int)sysex[0], (int)sysex[1], (int)sysex[2], (int)sysex[3]);
+		printDebug("playSysexWithoutFraming: Header is intended for model D-50 (not yet supported): %02x %02x %02x %02x", int(sysex[0]), int(sysex[1]), int(sysex[2]), int(sysex[3]));
 		return;
 	} else if (sysex[2] != SYSEX_MDL_MT32) {
-		printDebug("playSysexWithoutFraming: Header not intended for model MT-32: %02x %02x %02x %02x", (int)sysex[0], (int)sysex[1], (int)sysex[2], (int)sysex[3]);
+		printDebug("playSysexWithoutFraming: Header not intended for model MT-32: %02x %02x %02x %02x", int(sysex[0]), int(sysex[1]), int(sysex[2]), int(sysex[3]));
 		return;
 	}
 	playSysexWithoutHeader(sysex[1], sysex[3], sysex + 4, len - 4);
@@ -1019,7 +1019,7 @@ void Synth::playSysexWithoutFraming(const Bit8u *sysex, Bit32u len) {
 void Synth::playSysexWithoutHeader(Bit8u device, Bit8u command, const Bit8u *sysex, Bit32u len) {
 	if (device > 0x10) {
 		// We have device ID 0x10 (default, but changeable, on real MT-32), < 0x10 is for channels
-		printDebug("playSysexWithoutHeader: Message is not intended for this device ID (provided: %02x, expected: 0x10 or channel)", (int)device);
+		printDebug("playSysexWithoutHeader: Message is not intended for this device ID (provided: %02x, expected: 0x10 or channel)", int(device));
 		return;
 	}
 	// This is checked early in the real devices (before any sysex length checks or further processing)
@@ -1187,12 +1187,12 @@ void Synth::initMemoryRegions() {
 		pos += sizeof(TimbreParam::PartialParam);
 	}
 	memset(&paddedTimbreMaxTable[pos], 0, 10); // Padding
-	patchTempMemoryRegion = new PatchTempMemoryRegion(this, (Bit8u *)&mt32ram.patchTemp[0], &controlROMData[controlROMMap->patchMaxTable]);
-	rhythmTempMemoryRegion = new RhythmTempMemoryRegion(this, (Bit8u *)&mt32ram.rhythmTemp[0], &controlROMData[controlROMMap->rhythmMaxTable]);
-	timbreTempMemoryRegion = new TimbreTempMemoryRegion(this, (Bit8u *)&mt32ram.timbreTemp[0], paddedTimbreMaxTable);
-	patchesMemoryRegion = new PatchesMemoryRegion(this, (Bit8u *)&mt32ram.patches[0], &controlROMData[controlROMMap->patchMaxTable]);
-	timbresMemoryRegion = new TimbresMemoryRegion(this, (Bit8u *)&mt32ram.timbres[0], paddedTimbreMaxTable);
-	systemMemoryRegion = new SystemMemoryRegion(this, (Bit8u *)&mt32ram.system, &controlROMData[controlROMMap->systemMaxTable]);
+	patchTempMemoryRegion = new PatchTempMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.patchTemp[0]), &controlROMData[controlROMMap->patchMaxTable]);
+	rhythmTempMemoryRegion = new RhythmTempMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.rhythmTemp[0]), &controlROMData[controlROMMap->rhythmMaxTable]);
+	timbreTempMemoryRegion = new TimbreTempMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.timbreTemp[0]), paddedTimbreMaxTable);
+	patchesMemoryRegion = new PatchesMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.patches[0]), &controlROMData[controlROMMap->patchMaxTable]);
+	timbresMemoryRegion = new TimbresMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.timbres[0]), paddedTimbreMaxTable);
+	systemMemoryRegion = new SystemMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.system), &controlROMData[controlROMMap->systemMaxTable]);
 	displayMemoryRegion = new DisplayMemoryRegion(this);
 	resetMemoryRegion = new ResetMemoryRegion(this);
 }
@@ -1254,7 +1254,7 @@ void Synth::readMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u len
 		for (m = 0; m < len; m += 2) {
 			data[m] = 0xff;
 			if (m + 1 < len) {
-				data[m+1] = (Bit8u)region->type;
+				data[m+1] = Bit8u(region->type);
 			}
 		}
 	}
@@ -1464,7 +1464,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			int lastPart = off + len - SYSTEM_CHAN_ASSIGN_START_OFF;
 			if(lastPart > 8)
 				lastPart = 8;
-			refreshSystemChanAssign((Bit8u)firstPart, (Bit8u)lastPart);
+			refreshSystemChanAssign(Bit8u(firstPart), Bit8u(lastPart));
 		}
 		if (off <= SYSTEM_MASTER_VOL_OFF && off + len > SYSTEM_MASTER_VOL_OFF) {
 			refreshSystemMasterVol();
@@ -1556,7 +1556,7 @@ void Synth::refreshSystemChanAssign(Bit8u firstPart, Bit8u lastPart) {
 		}
 		Bit8u chan = mt32ram.system.chanAssign[i];
 		if (chan < 16 && chantable[chan] > 8) {
-			chantable[chan] = (Bit8u)i;
+			chantable[chan] = Bit8u(i);
 		}
 	}
 
@@ -1752,7 +1752,7 @@ void Renderer::renderStreams(
 			Bit32s samplesToNextEvent = (nextEvent != NULL) ? Bit32s(nextEvent->timestamp - synth.renderedSampleCount) : MAX_SAMPLES_PER_RUN;
 			if (samplesToNextEvent > 0) {
 				thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
-				if (thisLen > (Bit32u)samplesToNextEvent) {
+				if (thisLen > Bit32u(samplesToNextEvent)) {
 					thisLen = samplesToNextEvent;
 				}
 			} else {
@@ -2024,8 +2024,8 @@ Bit32u Synth::getPlayingNotes(Bit8u partNumber, Bit8u *keys, Bit8u *velocities) 
 		const Part *part = parts[partNumber];
 		const Poly *poly = part->getFirstActivePoly();
 		while (poly != NULL) {
-			keys[playingNotes] = (Bit8u)poly->getKey();
-			velocities[playingNotes] = (Bit8u)poly->getVelocity();
+			keys[playingNotes] = Bit8u(poly->getKey());
+			velocities[playingNotes] = Bit8u(poly->getVelocity());
 			playingNotes++;
 			poly = poly->getNext();
 		}

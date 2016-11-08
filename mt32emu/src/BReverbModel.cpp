@@ -192,7 +192,7 @@ static Sample weirdMul(Sample a, Bit8u addMask, Bit8u carryMask) {
 	}
 	return res;
 #else
-	return Sample(((Bit32s)a * addMask) >> 8);
+	return Sample((Bit32s(a) * addMask) >> 8);
 #endif
 }
 
@@ -504,9 +504,9 @@ void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *
 				 *   Analysing of the algorithm suggests that the overflow is most probable when the combs output is added below.
 				 *   So, despite this isn't actually accurate, we only add the check here for performance reasons.
 				 */
-				Sample outSample = Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx((SampleEx)outL1 + SampleEx(outL1 >> 1)) + (SampleEx)outL2) + SampleEx(outL2 >> 1)) + (SampleEx)outL3);
+				Sample outSample = Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx(SampleEx(outL1) + (outL1 >> 1)) + SampleEx(outL2)) + (outL2 >> 1)) + SampleEx(outL3));
 #else
-				Sample outSample = Synth::clipSampleEx((SampleEx)outL1 + SampleEx(outL1 >> 1) + (SampleEx)outL2 + SampleEx(outL2 >> 1) + (SampleEx)outL3);
+				Sample outSample = Synth::clipSampleEx(SampleEx(outL1) + (outL1 >> 1) + SampleEx(outL2) + (outL2 >> 1) + SampleEx(outL3));
 #endif
 				*(outLeft++) = weirdMul(outSample, wetLevel, 0xFF);
 			}
@@ -518,9 +518,9 @@ void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *
 				Sample outSample = 1.5f * (outR1 + outR2) + outR3;
 #elif MT32EMU_BOSS_REVERB_PRECISE_MODE
 				// See the note above for the left channel output.
-				Sample outSample = Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx((SampleEx)outR1 + SampleEx(outR1 >> 1)) + (SampleEx)outR2) + SampleEx(outR2 >> 1)) + (SampleEx)outR3);
+				Sample outSample = Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx(SampleEx(outR1) + (outR1 >> 1)) + SampleEx(outR2)) + (outR2 >> 1)) + SampleEx(outR3));
 #else
-				Sample outSample = Synth::clipSampleEx((SampleEx)outR1 + SampleEx(outR1 >> 1) + (SampleEx)outR2 + SampleEx(outR2 >> 1) + (SampleEx)outR3);
+				Sample outSample = Synth::clipSampleEx(SampleEx(outR1) + (outR1 >> 1) + SampleEx(outR2) + (outR2 >> 1) + SampleEx(outR3));
 #endif
 				*(outRight++) = weirdMul(outSample, wetLevel, 0xFF);
 			}

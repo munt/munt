@@ -51,7 +51,7 @@ const File::SHA1Digest &AbstractFile::getSHA1() {
 
 	unsigned char fileDigest[20];
 
-	sha1::calc(data, (int)size, fileDigest);
+	sha1::calc(data, int(size), fileDigest);
 	sha1::toHexString(fileDigest, sha1Digest);
 	return sha1Digest;
 }

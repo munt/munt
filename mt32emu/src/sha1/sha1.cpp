@@ -121,7 +121,7 @@ namespace sha1
         unsigned int result[5] = { 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 };
 
         // Cast the void src pointer to be the byte array we can work with.
-        const unsigned char* sarray = (const unsigned char*) src;
+        const unsigned char* sarray = static_cast<const unsigned char*>(src);
 
         // The reusable round buffer
         unsigned int w[80];
@@ -139,10 +139,10 @@ namespace sha1
             for (int roundPos = 0; currentBlock < endCurrentBlock; currentBlock += 4)
             {
                 // This line will swap endian on big endian and keep endian on little endian.
-                w[roundPos++] = (unsigned int) sarray[currentBlock + 3]
-                        | (((unsigned int) sarray[currentBlock + 2]) << 8)
-                        | (((unsigned int) sarray[currentBlock + 1]) << 16)
-                        | (((unsigned int) sarray[currentBlock]) << 24);
+                w[roundPos++] = static_cast<unsigned int>(sarray[currentBlock + 3])
+                        | (static_cast<unsigned int>(sarray[currentBlock + 2]) << 8)
+                        | (static_cast<unsigned int>(sarray[currentBlock + 1]) << 16)
+                        | (static_cast<unsigned int>(sarray[currentBlock]) << 24);
             }
             innerHash(result, w);
         }
@@ -153,7 +153,7 @@ namespace sha1
         int lastBlockBytes = 0;
         for (;lastBlockBytes < endCurrentBlock; ++lastBlockBytes)
         {
-            w[lastBlockBytes >> 2] |= (unsigned int) sarray[lastBlockBytes + currentBlock] << ((3 - (lastBlockBytes & 3)) << 3);
+            w[lastBlockBytes >> 2] |= static_cast<unsigned int>(sarray[lastBlockBytes + currentBlock]) << ((3 - (lastBlockBytes & 3)) << 3);
         }
         w[lastBlockBytes >> 2] |= 0x80 << ((3 - (lastBlockBytes & 3)) << 3);
         if (endCurrentBlock >= 56)
