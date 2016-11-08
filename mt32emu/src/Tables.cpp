@@ -30,10 +30,9 @@ const Tables &Tables::getInstance() {
 }
 
 Tables::Tables() {
-	int lf;
-	for (lf = 0; lf <= 100; lf++) {
+	for (int lf = 0; lf <= 100; lf++) {
 		// CONFIRMED:KG: This matches a ROM table found by Mok
-		float fVal = (2.0f - LOG10F(lf + 1.0f)) * 128.0f;
+		float fVal = (2.0f - LOG10F(float(lf) + 1.0f)) * 128.0f;
 		int val = int(fVal + 1.0);
 		if (val > 255) {
 			val = 255;
@@ -42,7 +41,7 @@ Tables::Tables() {
 	}
 
 	envLogarithmicTime[0] = 64;
-	for (lf = 1; lf <= 255; lf++) {
+	for (int lf = 1; lf <= 255; lf++) {
 		// CONFIRMED:KG: This matches a ROM table found by Mok
 		envLogarithmicTime[lf] = Bit8u(ceil(64.0f + LOG2F(float(lf)) * 8.0f));
 	}
