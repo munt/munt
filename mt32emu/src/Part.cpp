@@ -116,7 +116,7 @@ Bit32s Part::getPitchBend() const {
 
 void Part::setBend(unsigned int midiBend) {
 	// CONFIRMED:
-	pitchBend = ((static_cast<signed>(midiBend) - 8192) * pitchBenderRange) >> 14; // PORTABILITY NOTE: Assumes arithmetic shift
+	pitchBend = ((signed(midiBend) - 8192) * pitchBenderRange) >> 14; // PORTABILITY NOTE: Assumes arithmetic shift
 }
 
 Bit8u Part::getModulation() const {
