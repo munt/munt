@@ -73,7 +73,7 @@ MidiStreamParser::MidiStreamParser(Bit32u initialStreamBufferCapacity) :
 MidiStreamParserImpl::MidiStreamParserImpl(MidiReceiver &useReceiver, MidiReporter &useReporter, Bit32u initialStreamBufferCapacity) :
 	midiReceiver(useReceiver), midiReporter(useReporter)
 {
-	if (initialStreamBufferCapacity < Bit32u(SYSEX_BUFFER_SIZE)) initialStreamBufferCapacity = SYSEX_BUFFER_SIZE;
+	if (initialStreamBufferCapacity < SYSEX_BUFFER_SIZE) initialStreamBufferCapacity = SYSEX_BUFFER_SIZE;
 	if (MAX_STREAM_BUFFER_SIZE < initialStreamBufferCapacity) initialStreamBufferCapacity = MAX_STREAM_BUFFER_SIZE;
 	streamBufferCapacity = initialStreamBufferCapacity;
 	streamBuffer = new Bit8u[streamBufferCapacity];
