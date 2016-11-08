@@ -312,7 +312,7 @@ const char *Part::getName() const {
 
 void Part::setVolume(unsigned int midiVolume) {
 	// CONFIRMED: This calculation matches the table used in the control ROM
-	patchTemp->outputLevel = Bit8u((midiVolume * 100 / 127));
+	patchTemp->outputLevel = Bit8u(midiVolume * 100 / 127);
 	//synth->printDebug("%s (%s): Set volume to %d", name, currentInstr, midiVolume);
 }
 
@@ -326,7 +326,7 @@ Bit8u Part::getExpression() const {
 
 void Part::setExpression(unsigned int midiExpression) {
 	// CONFIRMED: This calculation matches the table used in the control ROM
-	expression = Bit8u((midiExpression * 100 / 127));
+	expression = Bit8u(midiExpression * 100 / 127);
 }
 
 void RhythmPart::setPan(unsigned int midiPan) {
@@ -341,9 +341,9 @@ void Part::setPan(unsigned int midiPan) {
 	// NOTE: Panning is inverted compared to GM.
 
 	// CM-32L: Divide by 8.5
-	patchTemp->panpot = Bit8u(((midiPan << 3) / 68));
+	patchTemp->panpot = Bit8u((midiPan << 3) / 68);
 	// FIXME: MT-32: Divide by 9
-	//patchTemp->panpot = Bit8u((midiPan / 9));
+	//patchTemp->panpot = Bit8u(midiPan / 9);
 
 	//synth->printDebug("%s (%s): Set pan to %d", name, currentInstr, panpot);
 }
