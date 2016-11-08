@@ -504,9 +504,9 @@ void BReverbModel::process(const Sample *inLeft, const Sample *inRight, Sample *
 				 *   Analysing of the algorithm suggests that the overflow is most probable when the combs output is added below.
 				 *   So, despite this isn't actually accurate, we only add the check here for performance reasons.
 				 */
-				Sample outSample = Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx(SampleEx(outL1) + (outL1 >> 1)) + SampleEx(outL2)) + (outL2 >> 1)) + SampleEx(outL3));
+				Sample outSample = Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx(Synth::clipSampleEx(SampleEx(outL1) + (SampleEx(outL1) >> 1)) + SampleEx(outL2)) + (SampleEx(outL2) >> 1)) + SampleEx(outL3));
 #else
-				Sample outSample = Synth::clipSampleEx(SampleEx(outL1) + (outL1 >> 1) + SampleEx(outL2) + (outL2 >> 1) + SampleEx(outL3));
+				Sample outSample = Synth::clipSampleEx(SampleEx(outL1) + (SampleEx(outL1) >> 1) + SampleEx(outL2) + (SampleEx(outL2) >> 1) + SampleEx(outL3));
 #endif
 				*(outLeft++) = weirdMul(outSample, wetLevel, 0xFF);
 			}
