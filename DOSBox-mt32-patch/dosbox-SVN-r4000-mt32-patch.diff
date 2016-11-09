@@ -1,9 +1,3 @@
-commit feddff63cd05b91ffea6181efbae173935c3aff2
-Author: sergm <sergm@bigmir.net>
-Date:   Mon Dec 8 10:31:44 2014 +0200
-
-    mt32emu patch
-
 diff --git a/src/Makefile.am b/src/Makefile.am
 index 184469e..286638d 100644
 --- a/src/Makefile.am
@@ -15,7 +9,7 @@ index 184469e..286638d 100644
 -
 +LIBS +=  -lmt32emu
 diff --git a/src/dosbox.cpp b/src/dosbox.cpp
-index 83e6f43..d049aee 100644
+index 1462fae..f69eb3c 100644
 --- a/src/dosbox.cpp
 +++ b/src/dosbox.cpp
 @@ -491,7 +491,7 @@ void DOSBOX_Init(void) {
@@ -48,7 +42,7 @@ index 3fed5e6..ca36a07 100644
 +	midi_coremidi.h midi_mt32.h midi_mt32.cpp sdl_gui.cpp dosbox_splash.h
  
 diff --git a/src/gui/midi.cpp b/src/gui/midi.cpp
-index e7cc6d4..d908446 100644
+index 57181e0..3bc943b 100644
 --- a/src/gui/midi.cpp
 +++ b/src/gui/midi.cpp
 @@ -91,6 +91,9 @@ MidiHandler Midi_none;
