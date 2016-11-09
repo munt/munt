@@ -331,7 +331,7 @@ index 0000000..eb8bf8f
 +		char s[1024];
 +		strcpy(s, "MT32: ");
 +		vsnprintf(s + 6, 1017, fmt, list);
-+		LOG_MSG(s);
++		LOG_MSG("%s", s);
 +	}
 +}
 diff --git a/src/gui/midi_mt32.h b/src/gui/midi_mt32.h
