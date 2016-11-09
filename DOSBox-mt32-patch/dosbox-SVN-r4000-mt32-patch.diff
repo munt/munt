@@ -57,10 +57,10 @@ index 57181e0..3bc943b 100644
  void MIDI_RawOutByte(Bit8u data) {
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 0000000..eb8bf8f
+index 0000000..25a30d1
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
-@@ -0,0 +1,265 @@
+@@ -0,0 +1,264 @@
 +#include <SDL_thread.h>
 +#include <SDL_endian.h>
 +#include "control.h"
@@ -321,9 +321,8 @@ index 0000000..eb8bf8f
 +	MidiHandler_mt32 &midiHandler_mt32 = MidiHandler_mt32::GetInstance();
 +	if (midiHandler_mt32.noise) {
 +		char s[1024];
-+		strcpy(s, "MT32: ");
-+		vsnprintf(s + 6, 1017, fmt, list);
-+		LOG_MSG(s);
++		vsnprintf(s, 1023, fmt, list);
++		LOG_MSG("MT32: %s", s);
 +	}
 +}
 diff --git a/src/gui/midi_mt32.h b/src/gui/midi_mt32.h
