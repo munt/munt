@@ -20,9 +20,8 @@ private:
 	QMidiEventList midiEventList;
 	QFile file;
 	MasterClockNanos startNanos, endNanos;
-	uint division;
 
-	bool writeHeader();
+	bool writeHeader(uint division);
 	bool writeTrack(MasterClockNanos midiTick);
 	bool writeFile(const char *data, qint64 len);
 	void writeVarLenInt(uchar * &data, quint32 value);
