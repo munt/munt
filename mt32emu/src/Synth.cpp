@@ -63,13 +63,15 @@ static inline PartialState getPartialState(PartialManager *partialManager, unsig
 	return partial->isActive() ? PARTIAL_PHASE_TO_STATE[partial->getTVA()->getPhase()] : PartialState_INACTIVE;
 }
 
+#if MT32EMU_USE_FLOAT_SAMPLES
 static inline Bit16s convertSample(float sample) {
 	return Synth::clipSampleEx(Bit32s(sample * 16384.0f)); // This multiplier takes into account the DAC bit shift
 }
-
+#else
 static inline float convertSample(Bit16s sample) {
 	return float(sample) / 16384.0f; // This multiplier takes into account the DAC bit shift
 }
+#endif
 
 class SampleFormatConverter {
 protected:
