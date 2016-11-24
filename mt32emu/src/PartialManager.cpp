@@ -280,7 +280,7 @@ void PartialManager::polyFreed(Poly *poly) {
 			const Poly *activePoly = synth->getPart(partNum)->getFirstActivePoly();
 			Bit32u polyCount = 0;
 			while (activePoly != NULL) {
-				activePoly->getNext();
+				activePoly = activePoly->getNext();
 				polyCount++;
 			}
 			synth->printDebug("Part: %i, active poly count: %i\n", partNum, polyCount);
