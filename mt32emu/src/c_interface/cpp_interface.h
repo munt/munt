@@ -33,6 +33,7 @@
 #define mt32emu_get_library_version_int i.v0->getLibraryVersionInt
 #define mt32emu_get_library_version_string i.v0->getLibraryVersionString
 #define mt32emu_get_stereo_output_samplerate i.v0->getStereoOutputSamplerate
+#define mt32emu_calc_sysex_checksum i.v0->calcSysexChecksum
 #define mt32emu_create_context i.v0->createContext
 #define mt32emu_free_context i.v0->freeContext
 #define mt32emu_add_rom_data i.v0->addROMData
@@ -55,6 +56,7 @@
 #define mt32emu_play_sysex i.v0->playSysex
 #define mt32emu_play_msg_at i.v0->playMsgAt
 #define mt32emu_play_sysex_at i.v0->playSysexAt
+#define mt32emu_play_sysex_without_framing i.v0->playSysexWithoutFraming
 #define mt32emu_play_msg_now i.v0->playMsgNow
 #define mt32emu_play_msg_on_part i.v0->playMsgOnPart
 #define mt32emu_play_sysex_now i.v0->playSysexNow
@@ -172,6 +174,8 @@ public:
 
 	Bit32u getStereoOutputSamplerate(const AnalogOutputMode analog_output_mode) { return mt32emu_get_stereo_output_samplerate(static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
 
+	Bit8u calcSysexChecksum(const Bit8u *data, const Bit32u len, const Bit8u initChecksum) { return mt32emu_calc_sysex_checksum(data, len, initChecksum); }
+
 	// Context-dependent methods
 
 	mt32emu_context getContext() { return c; }
@@ -200,6 +204,7 @@ public:
 	mt32emu_return_code playSysex(const Bit8u *sysex, Bit32u len) { return mt32emu_play_sysex(c, sysex, len); }
 	mt32emu_return_code playMsgAt(Bit32u msg, Bit32u timestamp) { return mt32emu_play_msg_at(c, msg, timestamp); }
 	mt32emu_return_code playSysexAt(const Bit8u *sysex, Bit32u len, Bit32u timestamp) { return mt32emu_play_sysex_at(c, sysex, len, timestamp); }
+	mt32emu_return_code playSysexWithoutFraming(const Bit8u *sysex, Bit32u len) { return mt32emu_play_sysex_without_framing(c, sysex, len); }
 
 	void playMsgNow(Bit32u msg) { mt32emu_play_msg_now(c, msg); }
 	void playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) { mt32emu_play_msg_on_part(c, part, code, note, velocity); }
@@ -375,6 +380,7 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_get_library_version_int
 #undef mt32emu_get_library_version_string
 #undef mt32emu_get_stereo_output_samplerate
+#undef mt32emu_calc_sysex_checksum
 #undef mt32emu_create_context
 #undef mt32emu_free_context
 #undef mt32emu_add_rom_data
@@ -397,6 +403,7 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_play_sysex
 #undef mt32emu_play_msg_at
 #undef mt32emu_play_sysex_at
+#undef mt32emu_play_sysex_without_framing
 #undef mt32emu_play_msg_now
 #undef mt32emu_play_msg_on_part
 #undef mt32emu_play_sysex_now
