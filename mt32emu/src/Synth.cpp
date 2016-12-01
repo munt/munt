@@ -2093,6 +2093,7 @@ void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src,
 #if MT32EMU_MONITOR_SYSEX > 0
 		synth->printDebug("write[%d]: unwritable region: entry=%d, off=%d, len=%d", type, entry, off, len);
 #endif
+		return;
 	}
 
 	for (unsigned int i = 0; i < len; i++) {
