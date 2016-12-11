@@ -1,3 +1,12 @@
+2016-12-11:
+
+	2.0.1 released.
+
+	* Disamibugated names of classes ReportHandler and MidiReceiver. In cpp_interface.h, these classes are now named
+	  IReportHandler and IMidiReceiver in accordance. This fixes linkage errors that may previously arise
+	  when an implementation attempted to extend one of these classes.
+	* Various other minor code improvements that render no functional changes.
+
 2016-10-22:
 
 	2.0.0 released.

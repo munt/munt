@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 project(libmt32emu CXX)
 set(libmt32emu_VERSION_MAJOR 2)
 set(libmt32emu_VERSION_MINOR 0)
-set(libmt32emu_VERSION_PATCH 0)
+set(libmt32emu_VERSION_PATCH 1)
 set(libmt32emu_VERSION "${libmt32emu_VERSION_MAJOR}.${libmt32emu_VERSION_MINOR}.${libmt32emu_VERSION_PATCH}")
 
 if(${munt_WITH_MT32EMU_SMF2WAV} OR ${munt_WITH_MT32EMU_QT})
