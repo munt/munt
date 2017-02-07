@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/")
+
 project(libmt32emu CXX)
 set(libmt32emu_VERSION_MAJOR 2)
 set(libmt32emu_VERSION_MINOR 0)
@@ -13,6 +16,7 @@ endif()
 
 option(libmt32emu_SHARED "Build shared library" ${libmt32emu_STANDALONE_BUILD})
 option(libmt32emu_C_INTERFACE "Provide C-compatible API" TRUE)
+option(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER "Use built-in sample rate conversion" TRUE)
 
 if(${libmt32emu_SHARED} AND ${libmt32emu_STANDALONE_BUILD})
   option(libmt32emu_CPP_INTERFACE "Provide C++ classes (compiler-specific ABI)" TRUE)
@@ -44,6 +48,7 @@ set(libmt32emu_SOURCES
   src/TVF.cpp
   src/TVP.cpp
   src/sha1/sha1.cpp
+  src/SampleRateConverter.cpp
 )
 
 # Public headers that always need to be installed:
@@ -59,6 +64,7 @@ set(libmt32emu_CPP_HEADERS
   FileStream.h
   MidiStreamParser.h
   ROMInfo.h
+  SampleRateConverter.h
   Synth.h
   Types.h
 )
@@ -129,7 +135,60 @@ endforeach(HEADER)
 configure_file("src/config.h.in" "include/mt32emu/config.h")
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu)
 
+if(NOT ${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
+  # Prefer using SOXR if it is available
+  find_package(LibSoxr)
+  if(LIBSOXR_FOUND)
+    add_definitions(-DMT32EMU_WITH_LIBSOXR_RESAMPLER)
+    set(libmt32emu_EXT_LIBS ${libmt32emu_EXT_LIBS} ${LIBSOXR_LIBRARY})
+    include_directories(${LIBSOXR_INCLUDE_DIR})
+    set(${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SOURCES}
+      src/srchelper/SoxrAdapter.cpp
+    )
+  else(LIBSOXR_FOUND)
+    message(STATUS "Could NOT find libsoxr")
+
+    # Try Samplerate if SOXR is unavailable
+    find_package(LibSamplerate)
+    if(LIBSAMPLERATE_FOUND)
+      add_definitions(-DMT32EMU_WITH_LIBSAMPLERATE_RESAMPLER)
+      set(libmt32emu_EXT_LIBS ${libmt32emu_EXT_LIBS} ${LIBSAMPLERATE_LIBRARY})
+      include_directories(${LIBSAMPLERATE_INCLUDE_DIR})
+      set(${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SOURCES}
+        src/srchelper/SamplerateAdapter.cpp
+      )
+    else(LIBSAMPLERATE_FOUND)
+      message(STATUS "Could NOT find libsamplerate")
+      set(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER "TRUE")
+    endif(LIBSAMPLERATE_FOUND)
+  endif(LIBSOXR_FOUND)
+endif(NOT ${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
+
+if(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
+  include_directories(src/srchelper/srctools/include)
+  set(${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SOURCES}
+    src/srchelper/srctools/src/FIRResampler.cpp
+    src/srchelper/srctools/src/SincResampler.cpp
+    src/srchelper/srctools/src/IIR2xResampler.cpp
+    src/srchelper/srctools/src/LinearResampler.cpp
+    src/srchelper/srctools/src/ResamplerModel.cpp
+    src/srchelper/InternalResampler.cpp
+  )
+endif(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
+
 add_library(mt32emu ${libmt32emu_BUILD_TYPE} ${libmt32emu_SOURCES})
+
+if(libmt32emu_EXT_LIBS)
+  if(libmt32emu_SHARED)
+    target_link_libraries(mt32emu
+      ${libmt32emu_EXT_LIBS}
+    )
+  else(libmt32emu_SHARED)
+    # Locations are exported for the benefit of a higher-level CMakeLists.txt.
+    # This is irrelevant if compiling stand-alone.
+    set(MT32EMU_EXT_LIBS ${libmt32emu_EXT_LIBS} CACHE FILEPATH "")
+  endif(libmt32emu_SHARED)
+endif(libmt32emu_EXT_LIBS)
 
 set_target_properties(mt32emu
   PROPERTIES VERSION ${libmt32emu_VERSION}

@@ -1,3 +1,9 @@
+CURRENT:
+
+	* Added sample rate conversion feature that allows to convert the synthesiser output to any desired sample rate.
+	  It can either utilise an external library (e.g. libsoxr or libsamplerate) or use an internal implementation.
+	  This behaviour is controlled by a build option libmt32emu_WITH_INTERNAL_RESAMPLER (enabled by default).
+
 2017-02-25:
 
 	2.0.2 released.

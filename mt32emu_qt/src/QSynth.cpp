@@ -192,7 +192,7 @@ void QSynth::render(Bit16s *buffer, uint length) {
 	emit audioBlockRendered();
 }
 
-bool QSynth::open(uint targetSampleRate, SampleRateConverter::SRCQuality srcQuality, const QString useSynthProfileName) {
+bool QSynth::open(uint targetSampleRate, SampleRateConverter::Quality srcQuality, const QString useSynthProfileName) {
 	if (isOpen()) {
 		return true;
 	}
@@ -207,7 +207,11 @@ bool QSynth::open(uint targetSampleRate, SampleRateConverter::SRCQuality srcQual
 		freeROMImages();
 		return false;
 	}
-	actualAnalogOutputMode = SampleRateConverter::chooseActualAnalogOutputMode(synthProfile.analogOutputMode, targetSampleRate, srcQuality);
+	actualAnalogOutputMode = synthProfile.analogOutputMode;
+	const AnalogOutputMode bestAnalogOutputMode = SampleRateConverter::getBestAnalogOutputMode(targetSampleRate);
+	if (actualAnalogOutputMode == AnalogOutputMode_ACCURATE && bestAnalogOutputMode == AnalogOutputMode_OVERSAMPLED) {
+		actualAnalogOutputMode = bestAnalogOutputMode;
+	}
 	static const char *ANALOG_OUTPUT_MODES[] = {"Digital only", "Coarse", "Accurate", "Oversampled2x"};
 	qDebug() << "Using Analogue output mode:" << ANALOG_OUTPUT_MODES[actualAnalogOutputMode];
 	if (synth->open(*controlROMImage, *pcmROMImage, actualAnalogOutputMode)) {
@@ -216,7 +220,7 @@ bool QSynth::open(uint targetSampleRate, SampleRateConverter::SRCQuality srcQual
 		setSynthProfile(synthProfile, synthProfileName);
 		if (engageChannel1OnOpen) resetMIDIChannelsAssignment(true);
 		if (targetSampleRate > 0 && targetSampleRate != getSynthSampleRate()) {
-			sampleRateConverter = SampleRateConverter::createSampleRateConverter(synth, targetSampleRate, srcQuality);
+			sampleRateConverter = new SampleRateConverter(*synth, targetSampleRate, srcQuality);
 			sampleRateRatio = SAMPLE_RATE / (double)targetSampleRate;
 		} else {
 			sampleRateRatio = SAMPLE_RATE / (double)getSynthSampleRate();

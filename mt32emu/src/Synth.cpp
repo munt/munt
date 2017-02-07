@@ -63,16 +63,6 @@ static inline PartialState getPartialState(PartialManager *partialManager, unsig
 	return partial->isActive() ? PARTIAL_PHASE_TO_STATE[partial->getTVA()->getPhase()] : PartialState_INACTIVE;
 }
 
-#if MT32EMU_USE_FLOAT_SAMPLES
-static inline Bit16s convertSample(float sample) {
-	return Synth::clipSampleEx(Bit32s(sample * 16384.0f)); // This multiplier takes into account the DAC bit shift
-}
-#else
-static inline float convertSample(Bit16s sample) {
-	return float(sample) / 16384.0f; // This multiplier takes into account the DAC bit shift
-}
-#endif
-
 class SampleFormatConverter {
 protected:
 #if MT32EMU_USE_FLOAT_SAMPLES
@@ -98,7 +88,7 @@ public:
 		}
 		Sample *inBuffer = sampleBuffer;
 		while (len--) {
-			*(outBuffer++) = convertSample(*(inBuffer++));
+			*(outBuffer++) = Synth::convertSample(*(inBuffer++));
 		}
 	}
 
@@ -527,7 +517,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, A
 	return open(controlROMImage, pcmROMImage, DEFAULT_MAX_PARTIALS, analogOutputMode);
 }
 
-bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, unsigned int usePartialCount, AnalogOutputMode analogOutputMode) {
+bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, Bit32u usePartialCount, AnalogOutputMode analogOutputMode) {
 	if (opened) {
 		return false;
 	}

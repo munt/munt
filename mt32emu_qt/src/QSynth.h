@@ -4,8 +4,6 @@
 #include <QtCore>
 #include <mt32emu/mt32emu.h>
 
-#include "resample/SampleRateConverter.h"
-
 class AudioFileWriter;
 
 enum SynthState {
@@ -100,7 +98,7 @@ private:
 	QString synthProfileName;
 
 	double sampleRateRatio;
-	SampleRateConverter *sampleRateConverter;
+	MT32Emu::SampleRateConverter *sampleRateConverter;
 	AudioFileWriter *audioRecorder;
 
 	void setState(SynthState newState);
@@ -111,7 +109,7 @@ public:
 	QSynth(QObject *parent = NULL);
 	~QSynth();
 	bool isOpen() const;
-	bool open(uint targetSampleRate, SampleRateConverter::SRCQuality srcQuality = SampleRateConverter::SRC_GOOD, const QString useSynthProfileName = "");
+	bool open(uint targetSampleRate, MT32Emu::SampleRateConverter::Quality srcQuality = MT32Emu::SampleRateConverter::GOOD, const QString useSynthProfileName = "");
 	void close();
 	bool reset();
 

@@ -158,7 +158,7 @@ bool AudioFileRenderer::convertMIDIFiles(QString useOutFileName, QStringList mid
 		delete synth;
 	}
 	synth = new QSynth(this);
-	if (!synth->open(0, SampleRateConverter::SRC_BEST, synthProfileName)) {
+	if (!synth->open(0, MT32Emu::SampleRateConverter::BEST, synthProfileName)) {
 		synth->close();
 		delete synth;
 		synth = NULL;
