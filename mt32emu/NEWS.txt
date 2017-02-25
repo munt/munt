@@ -1,3 +1,10 @@
+2017-02-25:
+
+	2.0.2 released.
+
+	* Fixed a bug in handling of the rhythm part that enabled playing uninitialised timbres when using MT-32 control ROMs
+	  and setting timbre numbers >= 94 in the rhythm set up area.
+
 2016-12-11:
 
 	2.0.1 released.
