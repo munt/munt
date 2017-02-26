@@ -16,7 +16,7 @@
 
 #include "SampleRateConverter.h"
 
-#if  MT32EMU_WITH_LIBSOXR_RESAMPLER
+#if MT32EMU_WITH_LIBSOXR_RESAMPLER
 #include "srchelper/SoxrAdapter.h"
 #elif MT32EMU_WITH_LIBSAMPLERATE_RESAMPLER
 #include "srchelper/SamplerateAdapter.h"
