@@ -18,7 +18,7 @@
 #define SAMPLE_RATE_CONVERTER_H
 
 #include "globals.h"
-#include "types.h"
+#include "Types.h"
 #include "Enumerations.h"
 
 namespace MT32Emu {
