@@ -1738,12 +1738,6 @@ void Renderer::renderStreams(
 		return;
 	}
 
-	DACOutputStreams<Sample> streams = {
-		nonReverbLeft.sampleBuffer, nonReverbRight.sampleBuffer,
-		reverbDryLeft.sampleBuffer, reverbDryRight.sampleBuffer,
-		reverbWetLeft.sampleBuffer, reverbWetRight.sampleBuffer
-	};
-
 	while (len > 0) {
 		// We need to ensure zero-duration notes will play so add minimum 1-sample delay.
 		Bit32u thisLen = 1;
@@ -1769,6 +1763,11 @@ void Renderer::renderStreams(
 				}
 			}
 		}
+		DACOutputStreams<Sample> streams = {
+			nonReverbLeft.sampleBuffer, nonReverbRight.sampleBuffer,
+			reverbDryLeft.sampleBuffer, reverbDryRight.sampleBuffer,
+			reverbWetLeft.sampleBuffer, reverbWetRight.sampleBuffer
+		};
 		doRenderStreams(streams, thisLen);
 		nonReverbLeft.convert(thisLen);
 		nonReverbRight.convert(thisLen);
