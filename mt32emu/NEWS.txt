@@ -4,6 +4,10 @@ CURRENT:
 	  It can either utilise an external library (e.g. libsoxr or libsamplerate) or use an internal implementation.
 	  This behaviour is controlled by a build option libmt32emu_WITH_INTERNAL_RESAMPLER (enabled by default).
 
+2017-02-27:
+
+	* Renderer now uses pre-allocated temporary sample buffers thus reducing the amount of memory used on the stack.
+
 2017-02-25:
 
 	2.0.2 released.
