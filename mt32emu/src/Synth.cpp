@@ -123,6 +123,12 @@ public:
 class Renderer {
 	Synth &synth;
 
+	// These buffers are used for building the output streams as they are found at the DAC entrance.
+	// The output is mixed down to stereo interleaved further in the analog circuitry emulation.
+	Sample tmpNonReverbLeft[MAX_SAMPLES_PER_RUN], tmpNonReverbRight[MAX_SAMPLES_PER_RUN];
+	Sample tmpReverbDryLeft[MAX_SAMPLES_PER_RUN], tmpReverbDryRight[MAX_SAMPLES_PER_RUN];
+	Sample tmpReverbWetLeft[MAX_SAMPLES_PER_RUN], tmpReverbWetRight[MAX_SAMPLES_PER_RUN];
+
 public:
 	Renderer(Synth &useSynth) : synth(useSynth) {}
 
@@ -130,7 +136,7 @@ public:
 	void renderStreams(SampleFormatConverter &nonReverbLeft, SampleFormatConverter &nonReverbRight, SampleFormatConverter &reverbDryLeft, SampleFormatConverter &reverbDryRight, SampleFormatConverter &reverbWetLeft, SampleFormatConverter &reverbWetRight, Bit32u len);
 	void produceLA32Output(Sample *buffer, Bit32u len);
 	void convertSamplesToOutput(Sample *buffer, Bit32u len);
-	void doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len);
+	void doRenderStreams(DACOutputStreams<Sample> &streams, Bit32u len);
 };
 
 Bit32u Synth::getLibraryVersionInt() {
@@ -1688,12 +1694,8 @@ void Renderer::render(SampleFormatConverter &converter, Bit32u len) {
 		return;
 	}
 
-	// As in AnalogOutputMode_ACCURATE mode output is upsampled, buffer size MAX_SAMPLES_PER_RUN is more than enough.
-	Sample tmpNonReverbLeft[MAX_SAMPLES_PER_RUN], tmpNonReverbRight[MAX_SAMPLES_PER_RUN];
-	Sample tmpReverbDryLeft[MAX_SAMPLES_PER_RUN], tmpReverbDryRight[MAX_SAMPLES_PER_RUN];
-	Sample tmpReverbWetLeft[MAX_SAMPLES_PER_RUN], tmpReverbWetRight[MAX_SAMPLES_PER_RUN];
-
 	while (len > 0) {
+		// As in AnalogOutputMode_ACCURATE mode output is upsampled, MAX_SAMPLES_PER_RUN is more than enough for the temp buffers.
 		Bit32u thisPassLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
 		synth.renderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, synth.analog->getDACStreamsLength(thisPassLen));
 		synth.analog->process(converter.sampleBuffer, tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisPassLen);
@@ -1736,6 +1738,12 @@ void Renderer::renderStreams(
 		return;
 	}
 
+	DACOutputStreams<Sample> streams = {
+		nonReverbLeft.sampleBuffer, nonReverbRight.sampleBuffer,
+		reverbDryLeft.sampleBuffer, reverbDryRight.sampleBuffer,
+		reverbWetLeft.sampleBuffer, reverbWetRight.sampleBuffer
+	};
+
 	while (len > 0) {
 		// We need to ensure zero-duration notes will play so add minimum 1-sample delay.
 		Bit32u thisLen = 1;
@@ -1761,11 +1769,7 @@ void Renderer::renderStreams(
 				}
 			}
 		}
-		doRenderStreams(
-			nonReverbLeft.sampleBuffer, nonReverbRight.sampleBuffer,
-			reverbDryLeft.sampleBuffer, reverbDryRight.sampleBuffer,
-			reverbWetLeft.sampleBuffer, reverbWetRight.sampleBuffer,
-			thisLen);
+		doRenderStreams(streams, thisLen);
 		nonReverbLeft.convert(thisLen);
 		nonReverbRight.convert(thisLen);
 		reverbDryLeft.convert(thisLen);
@@ -1860,17 +1864,14 @@ void Renderer::convertSamplesToOutput(Sample *buffer, Bit32u len) {
 #endif
 }
 
-void Renderer::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sample *reverbDryLeft, Sample *reverbDryRight, Sample *reverbWetLeft, Sample *reverbWetRight, Bit32u len) {
-	// Even if LA32 output isn't desired, we proceed anyway with temp buffers
-	Sample tmpBufNonReverbLeft[MAX_SAMPLES_PER_RUN], tmpBufNonReverbRight[MAX_SAMPLES_PER_RUN];
-	if (nonReverbLeft == NULL) nonReverbLeft = tmpBufNonReverbLeft;
-	if (nonReverbRight == NULL) nonReverbRight = tmpBufNonReverbRight;
-
-	Sample tmpBufReverbDryLeft[MAX_SAMPLES_PER_RUN], tmpBufReverbDryRight[MAX_SAMPLES_PER_RUN];
-	if (reverbDryLeft == NULL) reverbDryLeft = tmpBufReverbDryLeft;
-	if (reverbDryRight == NULL) reverbDryRight = tmpBufReverbDryRight;
-
+void Renderer::doRenderStreams(DACOutputStreams<Sample> &streams, Bit32u len) {
 	if (synth.activated) {
+		// Even if LA32 output isn't desired, we proceed anyway with temp buffers
+		Sample *nonReverbLeft = streams.nonReverbLeft == NULL ? tmpNonReverbLeft : streams.nonReverbLeft;
+		Sample *nonReverbRight = streams.nonReverbRight == NULL ? tmpNonReverbRight : streams.nonReverbRight;
+		Sample *reverbDryLeft = streams.reverbDryLeft == NULL ? tmpReverbDryLeft : streams.reverbDryLeft;
+		Sample *reverbDryRight = streams.reverbDryRight == NULL ? tmpReverbDryRight : streams.reverbDryRight;
+
 		Synth::muteSampleBuffer(nonReverbLeft, len);
 		Synth::muteSampleBuffer(nonReverbRight, len);
 		Synth::muteSampleBuffer(reverbDryLeft, len);
@@ -1888,33 +1889,32 @@ void Renderer::doRenderStreams(Sample *nonReverbLeft, Sample *nonReverbRight, Sa
 		produceLA32Output(reverbDryRight, len);
 
 		if (synth.isReverbEnabled()) {
-			synth.reverbModel->process(reverbDryLeft, reverbDryRight, reverbWetLeft, reverbWetRight, len);
-			if (reverbWetLeft != NULL) convertSamplesToOutput(reverbWetLeft, len);
-			if (reverbWetRight != NULL) convertSamplesToOutput(reverbWetRight, len);
+			synth.reverbModel->process(reverbDryLeft, reverbDryRight, streams.reverbWetLeft, streams.reverbWetRight, len);
+			if (streams.reverbWetLeft != NULL) convertSamplesToOutput(streams.reverbWetLeft, len);
+			if (streams.reverbWetRight != NULL) convertSamplesToOutput(streams.reverbWetRight, len);
 		} else {
-			Synth::muteSampleBuffer(reverbWetLeft, len);
-			Synth::muteSampleBuffer(reverbWetRight, len);
+			Synth::muteSampleBuffer(streams.reverbWetLeft, len);
+			Synth::muteSampleBuffer(streams.reverbWetRight, len);
 		}
 
 		// Don't bother with conversion if the output is going to be unused
-		if (nonReverbLeft != tmpBufNonReverbLeft) {
+		if (streams.nonReverbLeft != NULL) {
 			produceLA32Output(nonReverbLeft, len);
 			convertSamplesToOutput(nonReverbLeft, len);
 		}
-		if (nonReverbRight != tmpBufNonReverbRight) {
+		if (streams.nonReverbRight != NULL) {
 			produceLA32Output(nonReverbRight, len);
 			convertSamplesToOutput(nonReverbRight, len);
 		}
-		if (reverbDryLeft != tmpBufReverbDryLeft) convertSamplesToOutput(reverbDryLeft, len);
-		if (reverbDryRight != tmpBufReverbDryRight) convertSamplesToOutput(reverbDryRight, len);
+		if (streams.reverbDryLeft != NULL) convertSamplesToOutput(reverbDryLeft, len);
+		if (streams.reverbDryRight != NULL) convertSamplesToOutput(reverbDryRight, len);
 	} else {
-		// Avoid muting buffers that wasn't requested
-		if (nonReverbLeft != tmpBufNonReverbLeft) Synth::muteSampleBuffer(nonReverbLeft, len);
-		if (nonReverbRight != tmpBufNonReverbRight) Synth::muteSampleBuffer(nonReverbRight, len);
-		if (reverbDryLeft != tmpBufReverbDryLeft) Synth::muteSampleBuffer(reverbDryLeft, len);
-		if (reverbDryRight != tmpBufReverbDryRight) Synth::muteSampleBuffer(reverbDryRight, len);
-		Synth::muteSampleBuffer(reverbWetLeft, len);
-		Synth::muteSampleBuffer(reverbWetRight, len);
+		Synth::muteSampleBuffer(streams.nonReverbLeft, len);
+		Synth::muteSampleBuffer(streams.nonReverbRight, len);
+		Synth::muteSampleBuffer(streams.reverbDryLeft, len);
+		Synth::muteSampleBuffer(streams.reverbDryRight, len);
+		Synth::muteSampleBuffer(streams.reverbWetLeft, len);
+		Synth::muteSampleBuffer(streams.reverbWetRight, len);
 	}
 
 	synth.partialManager->clearAlreadyOutputed();
