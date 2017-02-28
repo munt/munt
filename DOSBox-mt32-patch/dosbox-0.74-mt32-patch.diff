@@ -59,10 +59,10 @@ index 61d15e5..0ec8ebc 100644
  	Bitu cmd_len;
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 0000000..25a30d1
+index 0000000..9271f33
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
-@@ -0,0 +1,264 @@
+@@ -0,0 +1,269 @@
 +#include <SDL_thread.h>
 +#include <SDL_endian.h>
 +#include "control.h"
@@ -151,23 +151,26 @@ index 0000000..25a30d1
 +	renderInThread = section->Get_bool("mt32.thread");
 +
 +	if (noise) LOG_MSG("MT32: Set maximum number of partials %d", synth->getPartialCount());
-+	if (noise) LOG_MSG("MT32: Adding mixer channel at sample rate %d", synth->getStereoOutputSampleRate());
-+	chan = MIXER_AddChannel(mixerCallBack, synth->getStereoOutputSampleRate(), "MT32");
++
++	Bitu sampleRate = section->Get_int("mt32.rate");
++	src = new MT32Emu::SampleRateConverter(*synth, sampleRate, (MT32Emu::SampleRateConverter::Quality)section->Get_int("mt32.src.quality"));
++	if (noise) LOG_MSG("MT32: Adding mixer channel at sample rate %d", sampleRate);
++	chan = MIXER_AddChannel(mixerCallBack, sampleRate, "MT32");
++
 +	if (renderInThread) {
 +		stopProcessing = false;
 +		playPos = 0;
-+		sampleRateRatio = MT32Emu::SAMPLE_RATE / (double)synth->getStereoOutputSampleRate();
 +		int chunkSize = section->Get_int("mt32.chunk");
-+		minimumRenderFrames = (chunkSize * synth->getStereoOutputSampleRate()) / MILLIS_PER_SECOND;
++		minimumRenderFrames = (chunkSize * sampleRate) / MILLIS_PER_SECOND;
 +		int latency = section->Get_int("mt32.prebuffer");
 +		if (latency <= chunkSize) {
 +			latency = 2 * chunkSize;
 +			LOG_MSG("MT32: chunk length must be less than prebuffer length, prebuffer length reset to %i ms.", latency);
 +		}
-+		framesPerAudioBuffer = (latency * synth->getStereoOutputSampleRate()) / MILLIS_PER_SECOND;
++		framesPerAudioBuffer = (latency * sampleRate) / MILLIS_PER_SECOND;
 +		audioBufferSize = framesPerAudioBuffer << 1;
 +		audioBuffer = new Bit16s[audioBufferSize];
-+		synth->render(audioBuffer, framesPerAudioBuffer - 1);
++		src->getOutputSamples(audioBuffer, framesPerAudioBuffer - 1);
 +		renderPos = (framesPerAudioBuffer - 1) << 1;
 +		playedBuffers = 1;
 +		lock = SDL_CreateMutex();
@@ -199,6 +202,8 @@ index 0000000..25a30d1
 +	}
 +	MIXER_DelChannel(chan);
 +	chan = NULL;
++	delete src;
++	src = NULL;
 +	synth->close();
 +	delete synth;
 +	synth = NULL;
@@ -238,7 +243,7 @@ index 0000000..25a30d1
 +	strcat(pathName, fileName);
 +}
 +
-+MidiHandler_mt32::MidiHandler_mt32() : open(false), chan(NULL), synth(NULL), thread(NULL) {
++MidiHandler_mt32::MidiHandler_mt32() : open(false), chan(NULL), synth(NULL), src(NULL), thread(NULL) {
 +}
 +
 +MidiHandler_mt32::~MidiHandler_mt32() {
@@ -274,7 +279,7 @@ index 0000000..25a30d1
 +			SDL_UnlockMutex(lock);
 +		}
 +	} else {
-+		synth->render((Bit16s *)MixTemp, len);
++		src->getOutputSamples((Bit16s *)MixTemp, len);
 +		chan->AddSamples_s16(len, (Bit16s *)MixTemp);
 +	}
 +}
@@ -296,7 +301,7 @@ index 0000000..25a30d1
 +			SDL_CondWait(framesInBufferChanged, lock);
 +			SDL_UnlockMutex(lock);
 +		} else {
-+			synth->render(audioBuffer + renderPosSnap, framesToRender);
++			src->getOutputSamples(audioBuffer + renderPosSnap, framesToRender);
 +			renderPos = (renderPosSnap + samplesToRender) % audioBufferSize;
 +			if (renderPosSnap == playPos) {
 +				SDL_LockMutex(lock);
@@ -329,7 +334,7 @@ index 0000000..25a30d1
 +}
 diff --git a/src/gui/midi_mt32.h b/src/gui/midi_mt32.h
 new file mode 100644
-index 0000000..5ceabe7
+index 0000000..087f5a1
 --- /dev/null
 +++ b/src/gui/midi_mt32.h
 @@ -0,0 +1,57 @@
@@ -354,6 +359,7 @@ index 0000000..5ceabe7
 +private:
 +	MixerChannel *chan;
 +	MT32Emu::Synth *synth;
++	MT32Emu::SampleRateConverter *src;
 +	SDL_Thread *thread;
 +	SDL_mutex *lock;
 +	SDL_cond *framesInBufferChanged;
@@ -361,7 +367,6 @@ index 0000000..5ceabe7
 +	Bitu audioBufferSize;
 +	Bitu framesPerAudioBuffer;
 +	Bitu minimumRenderFrames;
-+	double sampleRateRatio;
 +	volatile Bitu renderPos, playPos, playedBuffers;
 +	volatile bool stopProcessing;
 +	bool open, noise, renderInThread;
@@ -382,7 +387,7 @@ index 0000000..5ceabe7
 +	~MidiHandler_mt32();
 +
 +	Bit32u inline getMidiEventTimestamp() {
-+		return Bit32u((playedBuffers * framesPerAudioBuffer + (playPos >> 1)) * sampleRateRatio);
++		return Bit32u(src->convertOutputToSynthTimestamp(playedBuffers * framesPerAudioBuffer + (playPos >> 1)));
 +	}
 +
 +	void handleMixerCallBack(Bitu len);
@@ -392,10 +397,10 @@ index 0000000..5ceabe7
 +#endif /* DOSBOX_MIDI_MT32_H */
 diff --git a/src/mt32options.h b/src/mt32options.h
 new file mode 100644
-index 0000000..8508215
+index 0000000..1039d03
 --- /dev/null
 +++ b/src/mt32options.h
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,108 @@
 +Pstring = secprop->Add_string("mt32.romdir",Property::Changeable::WhenIdle,"");
 +Pstring->Set_help("Name of the directory where MT-32 Control and PCM ROM files can be found. Emulation requires these files to work.\n"
 +	"  Accepted file names are as follows:\n"
@@ -494,3 +499,13 @@ index 0000000..8508215
 +Pint = secprop->Add_int("mt32.reverb.level",Property::Changeable::WhenIdle,3);
 +Pint->Set_values(mt32reverbLevels);
 +Pint->Set_help("MT-32 reverb level");
++
++Pint = secprop->Add_int("mt32.rate", Property::Changeable::WhenIdle, 44100);
++Pint->Set_values(rates);
++Pint->Set_help("Sample rate of MT-32 emulation.");
++
++const char *mt32srcQuality[] = {"0", "1", "2", "3",0};
++Pint = secprop->Add_int("mt32.src.quality", Property::Changeable::WhenIdle, 2);
++Pint->Set_values(mt32srcQuality);
++Pint->Set_help("MT-32 sample rate conversion quality\n"
++	"Value '0' is for the fastest conversion, value '3' provides for the best conversion quality. Default is 2.");
