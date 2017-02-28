@@ -14,8 +14,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SAMPLE_RATE_CONVERTER_H
-#define SAMPLE_RATE_CONVERTER_H
+#ifndef MT32EMU_SAMPLE_RATE_CONVERTER_H
+#define MT32EMU_SAMPLE_RATE_CONVERTER_H
 
 #include "globals.h"
 #include "Types.h"
@@ -75,4 +75,4 @@ private:
 
 } // namespace MT32Emu
 
-#endif // SAMPLE_RATE_CONVERTER_H
+#endif // MT32EMU_SAMPLE_RATE_CONVERTER_H

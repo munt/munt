@@ -14,8 +14,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SAMPLERATE_ADAPTER_H
-#define SAMPLERATE_ADAPTER_H
+#ifndef MT32EMU_SAMPLERATE_ADAPTER_H
+#define MT32EMU_SAMPLERATE_ADAPTER_H
 
 #include <samplerate.h>
 
@@ -43,4 +43,4 @@ private:
 
 } // namespace MT32Emu
 
-#endif // SAMPLERATE_ADAPTER_H
+#endif // MT32EMU_SAMPLERATE_ADAPTER_H

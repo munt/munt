@@ -14,8 +14,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RESAMPLER_STAGE_H
-#define RESAMPLER_STAGE_H
+#ifndef SRCTOOLS_RESAMPLER_STAGE_H
+#define SRCTOOLS_RESAMPLER_STAGE_H
 
 #include "FloatSampleProvider.h"
 
@@ -35,4 +35,4 @@ public:
 
 } // namespace SRCTools
 
-#endif // RESAMPLER_STAGE_H
+#endif // SRCTOOLS_RESAMPLER_STAGE_H

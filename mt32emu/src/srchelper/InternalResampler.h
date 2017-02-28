@@ -14,8 +14,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INTERNAL_RESAMPLER_H
-#define INTERNAL_RESAMPLER_H
+#ifndef MT32EMU_INTERNAL_RESAMPLER_H
+#define MT32EMU_INTERNAL_RESAMPLER_H
 
 #include "../SampleRateConverter.h"
 
@@ -39,4 +39,4 @@ private:
 
 } // namespace MT32Emu
 
-#endif // INTERNAL_RESAMPLER_H
+#endif // MT32EMU_INTERNAL_RESAMPLER_H
