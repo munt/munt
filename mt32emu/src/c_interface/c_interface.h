@@ -105,13 +105,13 @@ MT32EMU_EXPORT void mt32emu_get_rom_info(mt32emu_const_context context, mt32emu_
 
 /**
  * Allows to override the default maximum number of partials playing simultaneously within the emulation session.
- * This function doesn't immediately change the state of already opened synth. Newly set vale will take effect upon next call of mt32emu_open_synth().
+ * This function doesn't immediately change the state of already opened synth. Newly set value will take effect upon next call of mt32emu_open_synth().
  */
 MT32EMU_EXPORT void mt32emu_set_partial_count(mt32emu_context context, const mt32emu_bit32u partial_count);
 
 /**
  * Allows to override the default mode for emulation of analogue circuitry of the hardware units within the emulation session.
- * This function doesn't immediately change the state of already opened synth. Newly set vale will take effect upon next call of mt32emu_open_synth().
+ * This function doesn't immediately change the state of already opened synth. Newly set value will take effect upon next call of mt32emu_open_synth().
  */
 MT32EMU_EXPORT void mt32emu_set_analog_output_mode(mt32emu_context context, const mt32emu_analog_output_mode analog_output_mode);
 
