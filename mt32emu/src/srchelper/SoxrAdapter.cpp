@@ -23,7 +23,7 @@ using namespace MT32Emu;
 static const unsigned int CHANNEL_COUNT = 2;
 
 size_t SoxrAdapter::getInputSamples(void *input_fn_state, soxr_in_t *data, size_t requested_len) {
-	unsigned int length = requested_len < 1 ? 1 : (MAX_SAMPLES_PER_RUN < requested_len ? MAX_SAMPLES_PER_RUN : requested_len);
+	unsigned int length = requested_len < 1 ? 1 : (MAX_SAMPLES_PER_RUN < requested_len ? MAX_SAMPLES_PER_RUN : static_cast<unsigned int>(requested_len));
 	SoxrAdapter *instance = static_cast<SoxrAdapter *>(input_fn_state);
 	instance->synth.render(instance->inBuffer, length);
 	*data = instance->inBuffer;
