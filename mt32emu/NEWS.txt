@@ -6,6 +6,12 @@ CURRENT:
 	  The internal implementation is derived from that previously added in mt32emu-qt application and aims
 	  to provide for good performance yet lower the added latency at the expense of phase linearity.
 
+2017-03-05:
+
+	2.0.4 released.
+
+	* Fixed API Configuration compatibility check for mode MT32EMU_API_TYPE 3.
+
 2017-02-27:
 
 	2.0.3 released.
