@@ -1,4 +1,12 @@
+2017-03-05:
+
+	2.0.4 released.
+
+	* Fixed API Configuration compatibility check for mode MT32EMU_API_TYPE 3.
+
 2017-02-27:
+
+	2.0.3 released.
 
 	* Renderer now uses pre-allocated temporary sample buffers thus reducing the amount of memory used on the stack.
 

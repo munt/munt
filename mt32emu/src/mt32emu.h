@@ -43,7 +43,7 @@
 #error Incompatible setting MT32EMU_API_TYPE=1
 #elif MT32EMU_API_TYPE == 2 && (MT32EMU_EXPORTS_TYPE == 0)
 #error Incompatible setting MT32EMU_API_TYPE=2
-#elif MT32EMU_API_TYPE == 3 && (MT32EMU_EXPORTS_TYPE == 0)
+#elif MT32EMU_API_TYPE == 3 && (MT32EMU_EXPORTS_TYPE == 0 || MT32EMU_EXPORTS_TYPE == 2)
 #error Incompatible setting MT32EMU_API_TYPE=3
 #endif
 #else /* #ifdef MT32EMU_API_TYPE */
