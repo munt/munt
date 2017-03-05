@@ -73,6 +73,9 @@ MT32EMU_EXPORT const char *mt32emu_get_library_version_string();
  */
 MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode);
 
+/** Calculates and returns the checksum of the given sysex message. */
+MT32EMU_EXPORT mt32emu_bit8u mt32emu_calc_sysex_checksum(const mt32emu_bit8u *data, const mt32emu_bit32u len, const mt32emu_bit8u initChecksum);
+
 /* == Context-dependent functions == */
 
 /** Initialises a new emulation context and installs custom report handler if non-NULL. */
@@ -195,6 +198,8 @@ MT32EMU_EXPORT void mt32emu_play_short_message_at(mt32emu_const_context context,
 MT32EMU_EXPORT mt32emu_return_code mt32emu_play_msg(mt32emu_const_context context, mt32emu_bit32u msg);
 /** Enqueues a single well formed System Exclusive MIDI message to be processed ASAP. */
 MT32EMU_EXPORT mt32emu_return_code mt32emu_play_sysex(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len);
+/** Enqueues a frameless System Exclusive MIDI message to be processed ASAP. */
+MT32EMU_EXPORT mt32emu_return_code mt32emu_play_sysex_without_framing(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len);
 
 /** Enqueues a single short MIDI message to play at specified time. The message must contain a status byte. */
 MT32EMU_EXPORT mt32emu_return_code mt32emu_play_msg_at(mt32emu_const_context context, mt32emu_bit32u msg, mt32emu_bit32u timestamp);

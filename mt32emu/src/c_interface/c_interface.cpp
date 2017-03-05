@@ -328,6 +328,10 @@ mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_
 	return Synth::getStereoOutputSampleRate(static_cast<AnalogOutputMode>(analog_output_mode));
 }
 
+mt32emu_bit8u mt32emu_calc_sysex_checksum(const mt32emu_bit8u *data, const mt32emu_bit32u len, const mt32emu_bit8u initChecksum) {
+	return Synth::calcSysexChecksum(data, len, initChecksum);
+}
+
 mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instance_data) {
 	mt32emu_data *data = new mt32emu_data;
 	data->reportHandler = (report_handler.v0 != NULL) ? new DelegatingReportHandlerAdapter(report_handler, instance_data) : new ReportHandler;
@@ -477,6 +481,12 @@ mt32emu_return_code mt32emu_play_msg(mt32emu_const_context context, mt32emu_bit3
 mt32emu_return_code mt32emu_play_sysex(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len) {
 	if (!context->synth->isOpen()) return MT32EMU_RC_NOT_OPENED;
 	return (context->synth->playSysex(sysex, len)) ? MT32EMU_RC_OK : MT32EMU_RC_QUEUE_FULL;
+}
+
+mt32emu_return_code mt32emu_play_sysex_without_framing(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len) {
+	if (!context->synth->isOpen()) return MT32EMU_RC_NOT_OPENED;
+	context->synth->playSysexWithoutFraming(sysex, len);
+	return MT32EMU_RC_OK;
 }
 
 mt32emu_return_code mt32emu_play_msg_at(mt32emu_const_context context, mt32emu_bit32u msg, mt32emu_bit32u timestamp) {
