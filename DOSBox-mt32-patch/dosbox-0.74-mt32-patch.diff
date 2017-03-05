@@ -59,7 +59,7 @@ index 61d15e5..0ec8ebc 100644
  	Bitu cmd_len;
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 0000000..9271f33
+index 0000000..7c34fca
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
 @@ -0,0 +1,269 @@
@@ -152,8 +152,8 @@ index 0000000..9271f33
 +
 +	if (noise) LOG_MSG("MT32: Set maximum number of partials %d", synth->getPartialCount());
 +
-+	Bitu sampleRate = section->Get_int("mt32.rate");
-+	src = new MT32Emu::SampleRateConverter(*synth, sampleRate, (MT32Emu::SampleRateConverter::Quality)section->Get_int("mt32.src.quality"));
++	int sampleRate = section->Get_int("mt32.rate");
++	src = new MT32Emu::SampleRateConverter(*synth, sampleRate, (MT32Emu::SamplerateConversionQuality)section->Get_int("mt32.src.quality"));
 +	if (noise) LOG_MSG("MT32: Adding mixer channel at sample rate %d", sampleRate);
 +	chan = MIXER_AddChannel(mixerCallBack, sampleRate, "MT32");
 +
