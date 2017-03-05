@@ -28,11 +28,19 @@
 
 #if MT32EMU_API_TYPE == 2
 
+extern "C" {
+
+/** Returns mt32emu_service_i interface. */
+mt32emu_service_i mt32emu_get_service_i();
+
+}
+
 #define mt32emu_get_supported_report_handler_version i.v0->getSupportedReportHandlerVersionID
 #define mt32emu_get_supported_midi_receiver_version i.v0->getSupportedMIDIReceiverVersionID
 #define mt32emu_get_library_version_int i.v0->getLibraryVersionInt
 #define mt32emu_get_library_version_string i.v0->getLibraryVersionString
 #define mt32emu_get_stereo_output_samplerate i.v0->getStereoOutputSamplerate
+#define mt32emu_get_best_analog_output_mode iV1()->getBestAnalogOutputMode
 #define mt32emu_create_context i.v0->createContext
 #define mt32emu_free_context i.v0->freeContext
 #define mt32emu_add_rom_data i.v0->addROMData
@@ -40,10 +48,14 @@
 #define mt32emu_get_rom_info i.v0->getROMInfo
 #define mt32emu_set_partial_count i.v0->setPartialCount
 #define mt32emu_set_analog_output_mode i.v0->setAnalogOutputMode
+#define mt32emu_set_stereo_output_samplerate iV1()->setStereoOutputSampleRate
+#define mt32emu_set_samplerate_conversion_quality iV1()->setSamplerateConversionQuality
 #define mt32emu_open_synth i.v0->openSynth
 #define mt32emu_close_synth i.v0->closeSynth
 #define mt32emu_is_open i.v0->isOpen
 #define mt32emu_get_actual_stereo_output_samplerate i.v0->getActualStereoOutputSamplerate
+#define mt32emu_convert_output_to_synth_timestamp iV1()->convertOutputToSynthTimestamp
+#define mt32emu_convert_synth_to_output_timestamp iV1()->convertSynthToOutputTimestamp
 #define mt32emu_flush_midi_queue i.v0->flushMIDIQueue
 #define mt32emu_set_midi_event_queue_size i.v0->setMIDIEventQueueSize
 #define mt32emu_set_midi_receiver i.v0->setMIDIReceiver
@@ -171,6 +183,7 @@ public:
 	const char *getLibraryVersionString() { return mt32emu_get_library_version_string(); }
 
 	Bit32u getStereoOutputSamplerate(const AnalogOutputMode analog_output_mode) { return mt32emu_get_stereo_output_samplerate(static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
+	AnalogOutputMode getBestAnalogOutputMode(const double target_samplerate) { return static_cast<AnalogOutputMode>(mt32emu_get_best_analog_output_mode(target_samplerate)); }
 
 	// Context-dependent methods
 
@@ -183,10 +196,14 @@ public:
 	void getROMInfo(mt32emu_rom_info *rom_info) { mt32emu_get_rom_info(c, rom_info); }
 	void setPartialCount(const Bit32u partial_count) { mt32emu_set_partial_count(c, partial_count); }
 	void setAnalogOutputMode(const AnalogOutputMode analog_output_mode) { mt32emu_set_analog_output_mode(c, static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
+	void setStereoOutputSampleRate(const double samplerate) { mt32emu_set_stereo_output_samplerate(c, samplerate); }
+	void setSamplerateConversionQuality(const SamplerateConversionQuality quality) { mt32emu_set_samplerate_conversion_quality(c, static_cast<mt32emu_samplerate_conversion_quality>(quality)); }
 	mt32emu_return_code openSynth() { return mt32emu_open_synth(c); }
 	void closeSynth() { mt32emu_close_synth(c); }
 	bool isOpen() { return mt32emu_is_open(c) != MT32EMU_BOOL_FALSE; }
 	Bit32u getActualStereoOutputSamplerate() { return mt32emu_get_actual_stereo_output_samplerate(c); }
+	Bit32u convertOutputToSynthTimestamp(mt32emu_const_context context, Bit32u output_timestamp) { mt32emu_convert_output_to_synth_timestamp(c, output_timestamp); }
+	Bit32u convertSynthToOutputTimestamp(mt32emu_const_context context, Bit32u synth_timestamp) { mt32emu_convert_synth_to_output_timestamp(c, synth_timestamp); }
 	void flushMIDIQueue() { mt32emu_flush_midi_queue(c); }
 	Bit32u setMIDIEventQueueSize(const Bit32u queue_size) { return mt32emu_set_midi_event_queue_size(c, queue_size); }
 	void setMIDIReceiver(mt32emu_midi_receiver_i midi_receiver, void *instance_data) { mt32emu_set_midi_receiver(c, midi_receiver, instance_data); }
@@ -247,6 +264,10 @@ private:
 	const mt32emu_service_i i;
 #endif
 	mt32emu_context c;
+
+#if MT32EMU_API_TYPE == 2
+	const mt32emu_service_i_v1 *iV1() { return (getVersionID() < MT32EMU_SERVICE_VERSION_1) ? NULL : i.v1; }
+#endif
 };
 
 namespace CppInterfaceImpl {
@@ -375,6 +396,7 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_get_library_version_int
 #undef mt32emu_get_library_version_string
 #undef mt32emu_get_stereo_output_samplerate
+#undef mt32emu_get_best_analog_output_mode
 #undef mt32emu_create_context
 #undef mt32emu_free_context
 #undef mt32emu_add_rom_data
@@ -382,10 +404,14 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_get_rom_info
 #undef mt32emu_set_partial_count
 #undef mt32emu_set_analog_output_mode
+#undef mt32emu_set_stereo_output_samplerate
+#undef mt32emu_set_samplerate_conversion_quality
 #undef mt32emu_open_synth
 #undef mt32emu_close_synth
 #undef mt32emu_is_open
 #undef mt32emu_get_actual_stereo_output_samplerate
+#undef mt32emu_convert_output_to_synth_timestamp
+#undef mt32emu_convert_synth_to_output_timestamp
 #undef mt32emu_flush_midi_queue
 #undef mt32emu_set_midi_event_queue_size
 #undef mt32emu_set_midi_receiver

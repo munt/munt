@@ -192,7 +192,7 @@ void QSynth::render(Bit16s *buffer, uint length) {
 	emit audioBlockRendered();
 }
 
-bool QSynth::open(uint targetSampleRate, SampleRateConverter::Quality srcQuality, const QString useSynthProfileName) {
+bool QSynth::open(uint targetSampleRate, SamplerateConversionQuality srcQuality, const QString useSynthProfileName) {
 	if (isOpen()) {
 		return true;
 	}

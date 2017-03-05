@@ -144,7 +144,7 @@ void AudioDriver::loadAudioSettings() {
 	QSettings *qSettings = Master::getInstance()->getSettings();
 	QString prefix = "Audio/" + id;
 	settings.sampleRate = qSettings->value(prefix + "/SampleRate", 0).toUInt();
-	settings.srcQuality = MT32Emu::SampleRateConverter::Quality(qSettings->value(prefix + "/SRCQuality", MT32Emu::SampleRateConverter::GOOD).toUInt());
+	settings.srcQuality = MT32Emu::SamplerateConversionQuality(qSettings->value(prefix + "/SRCQuality", MT32Emu::SamplerateConversionQuality_GOOD).toUInt());
 	settings.chunkLen = qSettings->value(prefix + "/ChunkLen").toInt();
 	settings.audioLatency = qSettings->value(prefix + "/AudioLatency").toInt();
 	settings.midiLatency = qSettings->value(prefix + "/MidiLatency").toInt();

@@ -25,7 +25,7 @@ namespace MT32Emu {
 
 class SamplerateAdapter {
 public:
-	SamplerateAdapter(Synth &synth, double targetSampleRate, SampleRateConverter::Quality quality);
+	SamplerateAdapter(Synth &synth, double targetSampleRate, SamplerateConversionQuality quality);
 	~SamplerateAdapter();
 
 	void getOutputSamples(float *outBuffer, unsigned int length);

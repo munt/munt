@@ -27,7 +27,7 @@ class Synth;
 
 class InternalResampler {
 public:
-	InternalResampler(Synth &synth, double targetSampleRate, SampleRateConverter::Quality quality);
+	InternalResampler(Synth &synth, double targetSampleRate, SamplerateConversionQuality quality);
 	~InternalResampler();
 
 	void getOutputSamples(float *buffer, unsigned int length);

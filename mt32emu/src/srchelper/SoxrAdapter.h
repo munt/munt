@@ -25,7 +25,7 @@ namespace MT32Emu {
 
 class SoxrAdapter {
 public:
-	SoxrAdapter(Synth &synth, double targetSampleRate, SampleRateConverter::Quality quality);
+	SoxrAdapter(Synth &synth, double targetSampleRate, SamplerateConversionQuality quality);
 	~SoxrAdapter();
 
 	void getOutputSamples(float *buffer, unsigned int length);

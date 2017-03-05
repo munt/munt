@@ -33,7 +33,7 @@ AudioPropertiesDialog::~AudioPropertiesDialog()
 
 void AudioPropertiesDialog::getData(AudioDriverSettings &driverSettings) {
 	driverSettings.sampleRate = ui->sampleRate->currentText().toUInt();
-	driverSettings.srcQuality = MT32Emu::SampleRateConverter::Quality(ui->srcQuality->currentIndex());
+	driverSettings.srcQuality = MT32Emu::SamplerateConversionQuality(ui->srcQuality->currentIndex());
 	driverSettings.chunkLen = ui->chunkLen->text().toInt();
 	driverSettings.audioLatency = ui->audioLatency->text().toInt();
 	driverSettings.midiLatency = ui->midiLatency->text().toInt();

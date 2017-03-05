@@ -33,21 +33,13 @@ class Synth;
  */
 class MT32EMU_EXPORT SampleRateConverter {
 public:
-	enum Quality {
-		// Use this only when the speed is more important than the audio quality.
-		FASTEST,
-		FAST,
-		GOOD,
-		BEST
-	};
-
 	// Returns the value of AnalogOutputMode for which the output signal may retain its full frequency spectrum
 	// at the sample rate specified by the targetSampleRate argument.
 	static AnalogOutputMode getBestAnalogOutputMode(double targetSampleRate);
 
 	// Creates a SampleRateConverter instance that converts output signal from the synth to the given sample rate
 	// with the specified conversion quality.
-	SampleRateConverter(Synth &synth, double targetSampleRate, Quality quality);
+	SampleRateConverter(Synth &synth, double targetSampleRate, SamplerateConversionQuality quality);
 	~SampleRateConverter();
 
 	// Fills the provided output buffer with the results of the sample rate conversion.

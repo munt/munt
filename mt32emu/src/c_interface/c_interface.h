@@ -35,7 +35,7 @@ extern "C" {
 /* === Interface handling === */
 
 /** Returns mt32emu_service_i interface. */
-MT32EMU_EXPORT const mt32emu_service_i mt32emu_get_service_i();
+MT32EMU_EXPORT mt32emu_service_i mt32emu_get_service_i();
 
 #if MT32EMU_EXPORTS_TYPE == 2
 #undef MT32EMU_EXPORT
@@ -72,6 +72,13 @@ MT32EMU_EXPORT const char *mt32emu_get_library_version_string();
  * See comment for mt32emu_analog_output_mode.
  */
 MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_mode analog_output_mode);
+
+/**
+ * Returns the value of analog_output_mode for which the output signal may retain its full frequency spectrum
+ * at the sample rate specified by the target_samplerate argument.
+ * See comment for mt32emu_analog_output_mode.
+ */
+MT32EMU_EXPORT mt32emu_analog_output_mode mt32emu_get_best_analog_output_mode(const double target_samplerate);
 
 /* == Context-dependent functions == */
 
@@ -116,6 +123,26 @@ MT32EMU_EXPORT void mt32emu_set_partial_count(mt32emu_context context, const mt3
 MT32EMU_EXPORT void mt32emu_set_analog_output_mode(mt32emu_context context, const mt32emu_analog_output_mode analog_output_mode);
 
 /**
+ * Allows to convert the synthesiser output to any desired sample rate. The samplerate conversion
+ * processes the completely mixed stereo output signal as it passes the analogue circuit emulation,
+ * so emulating the synthesiser output signal passing further through an ADC. When the samplerate
+ * argument is set to 0, the default output sample rate is used which depends on the current
+ * mode of analog circuitry emulation. See mt32emu_analog_output_mode.
+ * This function doesn't immediately change the state of already opened synth.
+ * Newly set value will take effect upon next call of mt32emu_open_synth().
+ */
+MT32EMU_EXPORT void mt32emu_set_stereo_output_samplerate(mt32emu_context context, const double samplerate);
+
+/**
+ * Several samplerate conversion quality options are provided which allow to trade-off the conversion speed vs.
+ * the retained passband width. All the options except FASTEST guarantee full suppression of the aliasing noise
+ * in terms of the 16-bit integer samples.
+ * This function doesn't immediately change the state of already opened synth.
+ * Newly set value will take effect upon next call of mt32emu_open_synth().
+ */
+MT32EMU_EXPORT void mt32emu_set_samplerate_conversion_quality(mt32emu_context context, const mt32emu_samplerate_conversion_quality quality);
+
+/**
  * Prepares the emulation context to receive MIDI messages and produce output audio data using aforehand added set of ROMs,
  * and optionally set the maximum partial count and the analog output mode.
  * Returns MT32EMU_RC_OK upon success.
@@ -129,10 +156,27 @@ MT32EMU_EXPORT void mt32emu_close_synth(mt32emu_const_context context);
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_open(mt32emu_const_context context);
 
 /**
- * Returns actual output sample rate used in emulation of stereo analog circuitry of hardware units.
- * See comment for mt32emu_analog_output_mode.
+ * Returns actual sample rate of the fully processed output stereo signal.
+ * If samplerate conversion is used (i.e. when mt32emu_set_stereo_output_samplerate() has been invoked with a non-zero value),
+ * the returned value is the desired output samplerate rounded down to the closest integer.
+ * Otherwise, the output samplerate is choosen depending on the emulation mode of stereo analog circuitry of hardware units.
+ * See comment for mt32emu_analog_output_mode for more info.
  */
 MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_actual_stereo_output_samplerate(mt32emu_const_context context);
+
+/**
+ * Returns the number of samples produced at the internal synth sample rate (32000 Hz)
+ * that correspond to the given number of samples at the output sample rate.
+ * Intended to facilitate audio time synchronisation.
+ */
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_convert_output_to_synth_timestamp(mt32emu_const_context context, mt32emu_bit32u output_timestamp);
+
+/**
+ * Returns the number of samples produced at the output sample rate
+ * that correspond to the given number of samples at the internal synth sample rate (32000 Hz).
+ * Intended to facilitate audio time synchronisation.
+ */
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_convert_synth_to_output_timestamp(mt32emu_const_context context, mt32emu_bit32u synth_timestamp);
 
 /** All the enqueued events are processed by the synth immediately. */
 MT32EMU_EXPORT void mt32emu_flush_midi_queue(mt32emu_const_context context);
@@ -294,10 +338,9 @@ MT32EMU_EXPORT void mt32emu_set_reversed_stereo_enabled(mt32emu_const_context co
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_reversed_stereo_enabled(mt32emu_const_context context);
 
 /**
- * Renders samples to the specified output stream as if they were sampled at the analog stereo output.
- * When mt32emu_analog_output_mode is set to ACCURATE (OVERSAMPLED), the output signal is upsampled to 48 (96) kHz in order
- * to retain emulation accuracy in whole audible frequency spectra. Otherwise, native digital signal sample rate is retained.
- * mt32emu_get_actual_stereo_output_samplerate() can be used to query actual sample rate of the output signal.
+ * Renders samples to the specified output stream as if they were sampled at the analog stereo output at the desired sample rate.
+ * If the output sample rate is not specified explicitly, the default output sample rate is used which depends on the current
+ * mode of analog circuitry emulation. See mt32emu_analog_output_mode.
  * The length is in frames, not bytes (in 16-bit stereo, one frame is 4 bytes). Uses NATIVE byte ordering.
  */
 MT32EMU_EXPORT void mt32emu_render_bit16s(mt32emu_const_context context, mt32emu_bit16s *stream, mt32emu_bit32u len);

@@ -28,7 +28,7 @@
 
 using namespace MT32Emu;
 
-static inline void *createDelegate(Synth &synth, double targetSampleRate, SampleRateConverter::Quality quality) {
+static inline void *createDelegate(Synth &synth, double targetSampleRate, SamplerateConversionQuality quality) {
 #if MT32EMU_WITH_LIBSOXR_RESAMPLER
 	return new SoxrAdapter(synth, targetSampleRate, quality);
 #elif MT32EMU_WITH_LIBSAMPLERATE_RESAMPLER
@@ -47,7 +47,7 @@ AnalogOutputMode SampleRateConverter::getBestAnalogOutputMode(double targetSampl
 	return AnalogOutputMode_COARSE;
 }
 
-SampleRateConverter::SampleRateConverter(Synth &useSynth, double targetSampleRate, Quality useQuality) :
+SampleRateConverter::SampleRateConverter(Synth &useSynth, double targetSampleRate, SamplerateConversionQuality useQuality) :
 	synthInternalToTargetSampleRateRatio(SAMPLE_RATE / targetSampleRate),
 	srcDelegate(createDelegate(useSynth, targetSampleRate, useQuality))
 {}
