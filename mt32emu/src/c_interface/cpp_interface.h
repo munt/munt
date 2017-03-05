@@ -202,8 +202,8 @@ public:
 	void closeSynth() { mt32emu_close_synth(c); }
 	bool isOpen() { return mt32emu_is_open(c) != MT32EMU_BOOL_FALSE; }
 	Bit32u getActualStereoOutputSamplerate() { return mt32emu_get_actual_stereo_output_samplerate(c); }
-	Bit32u convertOutputToSynthTimestamp(mt32emu_const_context context, Bit32u output_timestamp) { mt32emu_convert_output_to_synth_timestamp(c, output_timestamp); }
-	Bit32u convertSynthToOutputTimestamp(mt32emu_const_context context, Bit32u synth_timestamp) { mt32emu_convert_synth_to_output_timestamp(c, synth_timestamp); }
+	Bit32u convertOutputToSynthTimestamp(Bit32u output_timestamp) { return mt32emu_convert_output_to_synth_timestamp(c, output_timestamp); }
+	Bit32u convertSynthToOutputTimestamp(Bit32u synth_timestamp) { return mt32emu_convert_synth_to_output_timestamp(c, synth_timestamp); }
 	void flushMIDIQueue() { mt32emu_flush_midi_queue(c); }
 	Bit32u setMIDIEventQueueSize(const Bit32u queue_size) { return mt32emu_set_midi_event_queue_size(c, queue_size); }
 	void setMIDIReceiver(mt32emu_midi_receiver_i midi_receiver, void *instance_data) { mt32emu_set_midi_receiver(c, midi_receiver, instance_data); }
