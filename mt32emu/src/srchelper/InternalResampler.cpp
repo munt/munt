@@ -19,7 +19,7 @@
 #include <SincResampler.h>
 #include <ResamplerModel.h>
 
-#include "Synth.h"
+#include "../Synth.h"
 
 using namespace SRCTools;
 

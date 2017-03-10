@@ -16,7 +16,7 @@
 
 #include "SoxrAdapter.h"
 
-#include "Synth.h"
+#include "../Synth.h"
 
 using namespace MT32Emu;
 

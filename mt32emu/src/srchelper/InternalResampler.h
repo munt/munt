@@ -17,7 +17,7 @@
 #ifndef MT32EMU_INTERNAL_RESAMPLER_H
 #define MT32EMU_INTERNAL_RESAMPLER_H
 
-#include "../SampleRateConverter.h"
+#include "../Enumerations.h"
 
 #include "FloatSampleProvider.h"
 

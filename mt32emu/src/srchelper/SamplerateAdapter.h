@@ -19,9 +19,11 @@
 
 #include <samplerate.h>
 
-#include "../SampleRateConverter.h"
+#include "../Enumerations.h"
 
 namespace MT32Emu {
+
+class Synth;
 
 class SamplerateAdapter {
 public:

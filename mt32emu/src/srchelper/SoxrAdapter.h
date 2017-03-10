@@ -19,9 +19,11 @@
 
 #include <soxr.h>
 
-#include "../SampleRateConverter.h"
+#include "../Enumerations.h"
 
 namespace MT32Emu {
+
+class Synth;
 
 class SoxrAdapter {
 public:
