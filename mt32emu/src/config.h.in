@@ -23,6 +23,16 @@
 #define MT32EMU_VERSION_MINOR @libmt32emu_VERSION_MINOR@
 #define MT32EMU_VERSION_PATCH @libmt32emu_VERSION_PATCH@
 
+/* Library Exports Configuration
+ *
+ * This reflects the API types actually provided by the library build.
+ * 0: The full-featured C++ API is only available in this build. The client application may ONLY use MT32EMU_API_TYPE 0.
+ * 1: The C-compatible API is only available. The library is built as a shared object, only C functions are exported,
+ *    and thus the client application may NOT use MT32EMU_API_TYPE 0.
+ * 2: The C-compatible API is only available. The library is built as a shared object, only the factory function
+ *    is exported, and thus the client application may ONLY use MT32EMU_API_TYPE 2.
+ * 3: All the available API types are provided by the library build.
+ */
 #define MT32EMU_EXPORTS_TYPE  @libmt32emu_EXPORTS_TYPE@
 
 #endif
