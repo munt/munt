@@ -62,6 +62,7 @@ public:
 
 private:
 	const double synthInternalToTargetSampleRateRatio;
+	const bool useSynthDelegate;
 	void * const srcDelegate;
 }; // class SampleRateConverter
 

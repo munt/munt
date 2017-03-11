@@ -167,7 +167,7 @@ bool QSynth::playMIDISysex(const Bit8u *sysex, Bit32u sysexLen, quint64 timestam
 }
 
 Bit32u QSynth::convertOutputToSynthTimestamp(quint64 timestamp) {
-	return Bit32u(timestamp * sampleRateRatio);
+	return Bit32u(sampleRateConverter->convertOutputToSynthTimestamp(timestamp));
 }
 
 void QSynth::render(Bit16s *buffer, uint length) {
@@ -180,11 +180,7 @@ void QSynth::render(Bit16s *buffer, uint length) {
 		emit audioBlockRendered();
 		return;
 	}
-	if (sampleRateConverter != NULL) {
-		sampleRateConverter->getOutputSamples(buffer, length);
-	} else {
-		synth->render(buffer, length);
-	}
+	sampleRateConverter->getOutputSamples(buffer, length);
 	if (isRecordingAudio()) {
 		if (!audioRecorder->write(buffer, length)) stopRecordingAudio();
 	}
@@ -219,12 +215,8 @@ bool QSynth::open(uint targetSampleRate, SamplerateConversionQuality srcQuality,
 		reportHandler.onDeviceReconfig();
 		setSynthProfile(synthProfile, synthProfileName);
 		if (engageChannel1OnOpen) resetMIDIChannelsAssignment(true);
-		if (targetSampleRate > 0 && targetSampleRate != getSynthSampleRate()) {
-			sampleRateConverter = new SampleRateConverter(*synth, targetSampleRate, srcQuality);
-			sampleRateRatio = SAMPLE_RATE / (double)targetSampleRate;
-		} else {
-			sampleRateRatio = SAMPLE_RATE / (double)getSynthSampleRate();
-		}
+		if (targetSampleRate == 0) targetSampleRate = getSynthSampleRate();
+		sampleRateConverter = new SampleRateConverter(*synth, targetSampleRate, srcQuality);
 		return true;
 	}
 	delete synth;
@@ -459,10 +451,8 @@ void QSynth::close() {
 	// This effectively resets rendered frame counter, audioStream is also going down
 	delete synth;
 	synth = new Synth(&reportHandler);
-	if (sampleRateConverter != NULL) {
-		delete sampleRateConverter;
-		sampleRateConverter = NULL;
-	}
+	delete sampleRateConverter;
+	sampleRateConverter = NULL;
 	synthMutex->unlock();
 	midiMutex.unlock();
 	setState(SynthState_CLOSED);
@@ -542,7 +532,7 @@ const QReportHandler *QSynth::getReportHandler() const {
 void QSynth::startRecordingAudio(const QString &fileName) {
 	synthMutex->lock();
 	stopRecordingAudio();
-	audioRecorder = new AudioFileWriter((uint)qRound(SAMPLE_RATE / sampleRateRatio), fileName);
+	audioRecorder = new AudioFileWriter(sampleRateConverter->convertSynthToOutputTimestamp(SAMPLE_RATE), fileName);
 	audioRecorder->open();
 	synthMutex->unlock();
 }

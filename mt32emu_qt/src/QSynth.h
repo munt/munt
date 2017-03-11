@@ -97,7 +97,6 @@ private:
 	QReportHandler reportHandler;
 	QString synthProfileName;
 
-	double sampleRateRatio;
 	MT32Emu::SampleRateConverter *sampleRateConverter;
 	AudioFileWriter *audioRecorder;
 

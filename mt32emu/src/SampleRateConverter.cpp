@@ -49,20 +49,28 @@ AnalogOutputMode SampleRateConverter::getBestAnalogOutputMode(double targetSampl
 
 SampleRateConverter::SampleRateConverter(Synth &useSynth, double targetSampleRate, SamplerateConversionQuality useQuality) :
 	synthInternalToTargetSampleRateRatio(SAMPLE_RATE / targetSampleRate),
-	srcDelegate(createDelegate(useSynth, targetSampleRate, useQuality))
+	useSynthDelegate(useSynth.getStereoOutputSampleRate() == targetSampleRate),
+	srcDelegate(useSynthDelegate ? &useSynth : createDelegate(useSynth, targetSampleRate, useQuality))
 {}
 
 SampleRateConverter::~SampleRateConverter() {
+	if (!useSynthDelegate) {
 #if MT32EMU_WITH_LIBSOXR_RESAMPLER
-	delete static_cast<SoxrAdapter *>(srcDelegate);
+		delete static_cast<SoxrAdapter *>(srcDelegate);
 #elif MT32EMU_WITH_LIBSAMPLERATE_RESAMPLER
-	delete static_cast<SamplerateAdapter *>(srcDelegate);
+		delete static_cast<SamplerateAdapter *>(srcDelegate);
 #else
-	delete static_cast<InternalResampler *>(srcDelegate);
+		delete static_cast<InternalResampler *>(srcDelegate);
 #endif
+	}
 }
 
 void SampleRateConverter::getOutputSamples(float *buffer, unsigned int length) {
+	if (useSynthDelegate) {
+		static_cast<Synth *>(srcDelegate)->render(buffer, length);
+		return;
+	}
+
 #if MT32EMU_WITH_LIBSOXR_RESAMPLER
 	static_cast<SoxrAdapter *>(srcDelegate)->getOutputSamples(buffer, length);
 #elif MT32EMU_WITH_LIBSAMPLERATE_RESAMPLER
@@ -74,6 +82,11 @@ void SampleRateConverter::getOutputSamples(float *buffer, unsigned int length) {
 
 void SampleRateConverter::getOutputSamples(Bit16s *outBuffer, unsigned int length) {
 	static const unsigned int CHANNEL_COUNT = 2;
+
+	if (useSynthDelegate) {
+		static_cast<Synth *>(srcDelegate)->render(outBuffer, length);
+		return;
+	}
 
 	float floatBuffer[CHANNEL_COUNT * MAX_SAMPLES_PER_RUN];
 	while (length > 0) {
