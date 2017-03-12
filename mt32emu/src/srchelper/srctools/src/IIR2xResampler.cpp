@@ -132,7 +132,7 @@ IIRResampler::~IIRResampler() {
 
 IIR2xInterpolator::IIR2xInterpolator(const Quality quality) :
 	IIRResampler(quality),
-	phase()
+	phase(1)
 {
 	for (unsigned int chIx = 0; chIx < IIR_RESAMPER_CHANNEL_COUNT; ++chIx) {
 		lastInputSamples[chIx] = 0;
@@ -141,7 +141,7 @@ IIR2xInterpolator::IIR2xInterpolator(const Quality quality) :
 
 IIR2xInterpolator::IIR2xInterpolator(const unsigned int useSectionsCount, const IIRCoefficient useFIR, const IIRSection useSections[]) :
 	IIRResampler(useSectionsCount, useFIR, useSections),
-	phase()
+	phase(1)
 {
 	for (unsigned int chIx = 0; chIx < IIR_RESAMPER_CHANNEL_COUNT; ++chIx) {
 		lastInputSamples[chIx] = 0;
