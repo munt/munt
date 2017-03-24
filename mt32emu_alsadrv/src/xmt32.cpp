@@ -486,6 +486,10 @@ void usage(char *argv[])
 	printf("-g factor    : Gain multiplier (default: 1.0) \n");
 
 	printf("\n");
+	printf("-o           : Load MT32 Firmware \n");
+	printf("-c           : Load CM32L Firmware (Default) \n");
+
+	printf("\n");
 	exit(1);
 }
 
@@ -494,6 +498,7 @@ int main(int argc, char *argv[])
 {
 	pthread_t visthread;
 	int i;
+	int mode=2;
 		
 	/* parse the options */
 	for (i = 1; i < argc; i++)
@@ -503,7 +508,13 @@ int main(int argc, char *argv[])
 		
 		switch(argv[i][1])
 		{
-                    case 'w':
+		    case 'o':
+			mode=2;
+			break;
+		    case 'c':
+			mode=1;
+			break;
+		    case 'w':
 			i++; if (i == argc) usage(argv);
 			recwav_filename = (char *)malloc(strlen(argv[i]) + 1);
 			strcpy(recwav_filename, argv[i]);
@@ -570,7 +581,7 @@ int main(int argc, char *argv[])
 		usleep(10000);
 	}
 	
-	process_loop(xreverb_switch);
+	process_loop(xreverb_switch, mode);
 	
 	return 0;
 }

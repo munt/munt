@@ -136,6 +136,10 @@ void usage(char *argv[])
 	printf("-g factor    : Gain multiplier (default: 1.0) \n");
 
 	printf("\n");
+	printf("-o           : Load MT32 Firmware \n");
+	printf("-c           : Load CM32L Firmware (Default) \n");
+
+	printf("\n");
 	
 	printf("\n");
 	exit(1);
@@ -145,6 +149,7 @@ int main(int argc, char **argv)
 {	
 	int reverb_switch = 1;
 	int i;
+	int mode=2;
 	
 	/* parse the options */
 	for (i = 1; i < argc; i++)
@@ -154,6 +159,12 @@ int main(int argc, char **argv)
 		
 		switch(argv[i][1])
 		{
+		    case 'o':
+			mode=2;
+			break;
+		    case 'c':
+			mode=1;
+			break;
 		    case 'w':
 			i++;
 			if (i == argc) 
@@ -217,7 +228,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	
-	process_loop(reverb_switch);
+	process_loop(reverb_switch, mode);
 	
 	return 0;
 }

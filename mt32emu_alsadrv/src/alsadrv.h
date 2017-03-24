@@ -87,7 +87,7 @@ extern char *pcm_name;
 extern double gain_multiplier;
 
 int init_alsadrv();
-int process_loop(int rv);
+int process_loop(int rv, int mode);
 
 extern MT32Emu::Synth *mt32;
 

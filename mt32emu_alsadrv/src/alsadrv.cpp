@@ -949,7 +949,7 @@ int init_alsadrv()
 	return 0;
 }
 
-void reload_mt32_core(int rv)
+void reload_mt32_core(int rv, int mode)
 {
 	/* delete core if there is already an instance of it */
 	if (mt32 != NULL)
@@ -966,27 +966,42 @@ void reload_mt32_core(int rv)
 	MT32Emu::FileStream pcmROMFile;
 
 	char controlROMFileName[256];
-	strcpy(controlROMFileName, rom_path);
-	strcat(controlROMFileName, "CM32L_CONTROL.ROM");
-	if (!controlROMFile.open(controlROMFileName)) {
+	if (mode==1) {
+	  strcpy(controlROMFileName, rom_path);
+	  strcat(controlROMFileName, "CM32L_CONTROL.ROM");
+	}
+	else if (mode==2) {
 		strcpy(controlROMFileName, rom_path);
 		strcat(controlROMFileName, "MT32_CONTROL.ROM");
-		if (!controlROMFile.open(controlROMFileName)) {
+	}
+	else {
+		report(DRV_MT32ROMFAIL, "Control");
+		exit(1);
+	}
+
+	if (!controlROMFile.open(controlROMFileName)) {
 			report(DRV_MT32ROMFAIL, "Control");
 			exit(1);
-		}
 	}
 
 	char pcmROMFileName[256];
-	strcpy(pcmROMFileName, rom_path);
-	strcat(pcmROMFileName, "CM32L_PCM.ROM");
-	if (!pcmROMFile.open(pcmROMFileName)) {
+
+	if (mode==1) {
+		strcpy(pcmROMFileName, rom_path);
+		strcat(pcmROMFileName, "CM32L_PCM.ROM");
+	}
+	else if (mode==2) {
 		strcpy(pcmROMFileName, rom_path);
 		strcat(pcmROMFileName, "MT32_PCM.ROM");
-		if (!pcmROMFile.open(pcmROMFileName)) {
+	}
+	else {
+		report(DRV_MT32ROMFAIL, "PCM");
+		exit(1);
+	}
+
+	if (!pcmROMFile.open(pcmROMFileName)) {
 			report(DRV_MT32ROMFAIL, "PCM");
 			exit(1);
-		}
 	}
 
 	const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
@@ -1012,7 +1027,7 @@ void reload_mt32_core(int rv)
 	mt32->setReverbOutputGain(gain_multiplier);
 }
 
-int process_loop(int rv) 
+int process_loop(int rv, int mode)
 {
 	unsigned char processbuffer[FRAGMENT_SIZE];
 	unsigned int msg;
@@ -1032,7 +1047,7 @@ int process_loop(int rv)
 	rv_level = 3;
 	consumer_types = 0;
 	
-	reload_mt32_core(rv);			
+	reload_mt32_core(rv, mode);
 	
 	/* setup poll info */
 	event_poll.fd = eventpipe[0];
@@ -1186,7 +1201,7 @@ int process_loop(int rv)
 			break;
 		
 		    case EVENT_RESET:
-			reload_mt32_core(rv);
+			reload_mt32_core(rv, mode);
 			break;			
 			
 		    case EVENT_WAVREC_ON:
