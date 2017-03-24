@@ -484,14 +484,14 @@ void usage(char *argv[])
 
 	printf("\n");
 	printf("-g factor    : Gain multiplier (default: 1.0) \n");
-	printf("-l mode      : Analog emulation mode (0 - Digital, 1 - Coarse,"
+	printf("-l mode      : Analog emulation mode (0 - Digital, 1 - Coarse,\n"
 	       "               2 - Accurate, 3 - Oversampled 2x, default: 2)\n");
 
 	printf("\n");
-	printf("-f romdir    : Directory with ROM files to load"
+	printf("-f romdir    : Directory with ROM files to load\n"
 	       "               (default: '/usr/share/mt32-rom-data/')\n");
-	printf("-o romsearch : Search algorithm to use when loading ROM files:"
-	       "               (0 - try both but CM32-L first, 1 - CM32-L only,"
+	printf("-o romsearch : Search algorithm to use when loading ROM files:\n"
+	       "               (0 - try both but CM32-L first, 1 - CM32-L only,\n"
 	       "                2 - MT-32 only, default: 0)\n");
 
 	printf("\n");
