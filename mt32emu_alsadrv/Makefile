@@ -1,4 +1,4 @@
-CXXFLAGS=-O2 -DANALOG_MODE=2
+CXXFLAGS=-O2 -Wno-write-strings -Wno-unused-result -Wno-deprecated-declarations
 LIBS=-lmt32emu -lm -lasound -lpthread
 XLIBS=-L/usr/X11R6/lib -lX11 -lXt -lXpm
 
@@ -20,9 +20,6 @@ xmt32: $(OBJS) $(XOBJ) src/xmt32.cpp
 install:
 	install mt32d /usr/local/bin
 	install xmt32 /usr/local/bin
-	install -d roms /usr/share/mt32-rom-data
-	cd roms; install * /usr/share/mt32-rom-data
-	cd /usr/share/mt32-rom-data; chmod 644 *
 
 clean:
 	rm -f *.o *~

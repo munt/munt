@@ -134,10 +134,15 @@ void usage(char *argv[])
 	
 	printf("\n");
 	printf("-g factor    : Gain multiplier (default: 1.0) \n");
+	printf("-l mode      : Analog emulation mode (0 - Digital, 1 - Coarse,"
+	       "               2 - Accurate, 3 - Oversampled 2x, default: 2)\n");
 
 	printf("\n");
-	printf("-o           : Load MT32 Firmware \n");
-	printf("-c           : Load CM32L Firmware (Default) \n");
+	printf("-f romdir    : Directory with ROM files to load"
+	       "               (default: '/usr/share/mt32-rom-data/')\n");
+	printf("-o romsearch : Search algorithm to use when loading ROM files:"
+	       "               (0 - try both but CM32-L first, 1 - CM32-L only,"
+	       "                2 - MT-32 only, default: 0)\n");
 
 	printf("\n");
 	
@@ -149,8 +154,7 @@ int main(int argc, char **argv)
 {	
 	int reverb_switch = 1;
 	int i;
-	int mode=2;
-	
+
 	/* parse the options */
 	for (i = 1; i < argc; i++)
 	{
@@ -159,12 +163,6 @@ int main(int argc, char **argv)
 		
 		switch(argv[i][1])
 		{
-		    case 'o':
-			mode=2;
-			break;
-		    case 'c':
-			mode=1;
-			break;
 		    case 'w':
 			i++;
 			if (i == argc) 
@@ -216,6 +214,22 @@ int main(int argc, char **argv)
 		    case 'g': i++; if (i == argc) usage(argv);
 			gain_multiplier = atof(argv[i]);
 			break;
+		    case 'l': i++; if (i == argc) usage(argv);
+			analog_output_mode = MT32Emu::AnalogOutputMode(atoi(argv[i]));
+			if (analog_output_mode < MT32Emu::AnalogOutputMode_DIGITAL_ONLY
+					|| MT32Emu::AnalogOutputMode_OVERSAMPLED < analog_output_mode) usage(argv);
+			sample_rate = MT32Emu::Synth::getStereoOutputSampleRate(analog_output_mode);
+			break;
+
+		    case 'f': i++; if (i == argc) usage(argv);
+			rom_dir = new char[strlen(argv[i]) + 1];
+			strcpy(rom_dir, argv[i]);
+			break;
+		    case 'o': i++; if (i == argc) usage(argv);
+			rom_search_type = rom_search_type_t(atoi(argv[i]));
+			if (rom_search_type < ROM_SEARCH_TYPE_DEFAULT
+					|| ROM_SEARCH_TYPE_MT32_ONLY < rom_search_type) usage(argv);
+			break;
 
 		    default:
 			usage(argv);
@@ -228,7 +242,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	
-	process_loop(reverb_switch, mode);
+	process_loop(reverb_switch);
 	
 	return 0;
 }

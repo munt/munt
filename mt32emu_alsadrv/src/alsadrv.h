@@ -80,19 +80,25 @@ void send_rvtime_sysex(int newtime);
 void send_rvlevel_sysex(int newlevel);
 
 extern int alsa_buffer_size;
-extern char rom_path[];
 extern int eventpipe[];
 extern char *pcm_name;
 
 extern double gain_multiplier;
+extern MT32Emu::AnalogOutputMode analog_output_mode;
+extern unsigned int sample_rate;
+
+extern char *rom_dir;
+extern enum rom_search_type_t {
+	ROM_SEARCH_TYPE_DEFAULT,
+	ROM_SEARCH_TYPE_CM32L_ONLY,
+	ROM_SEARCH_TYPE_MT32_ONLY
+} rom_search_type;
 
 int init_alsadrv();
-int process_loop(int rv, int mode);
+int process_loop(int rv);
 
 extern MT32Emu::Synth *mt32;
 
 
 
 #endif
-
-
