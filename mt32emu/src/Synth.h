@@ -165,6 +165,7 @@ private:
 
 	MIDIDelayMode midiDelayMode;
 	DACInputMode dacInputMode;
+	RendererType selectedRendererType;
 
 	float outputGain;
 	float reverbOutputGain;
@@ -186,7 +187,7 @@ private:
 	Poly *abortingPoly;
 
 	Analog *analog;
-	Renderer &renderer;
+	Renderer *renderer;
 
 	// Binary compatibility helper.
 	void *reserved;
@@ -404,6 +405,14 @@ public:
 	// Returns whether left and right output channels are swapped.
 	MT32EMU_EXPORT bool isReversedStereoEnabled() const;
 
+	// Selects new type of the wave generator and renderer to be used during subsequent calls to open().
+	// By default, RendererType_BIT16S is selected.
+	// See RendererType for details.
+	MT32EMU_EXPORT void selectRendererType(RendererType);
+	// Returns previously selected type of the wave generator and renderer.
+	// See RendererType for details.
+	MT32EMU_EXPORT RendererType getSelectedRendererType() const;
+
 	// Returns actual sample rate used in emulation of stereo analog circuitry of hardware units.
 	// See comment for render() below.
 	MT32EMU_EXPORT Bit32u getStereoOutputSampleRate() const;
@@ -422,14 +431,10 @@ public:
 	// NULL may be specified in place of any or all of the stream buffers to skip it.
 	// The length is in samples, not bytes. Uses NATIVE byte ordering.
 	MT32EMU_EXPORT void renderStreams(Bit16s *nonReverbLeft, Bit16s *nonReverbRight, Bit16s *reverbDryLeft, Bit16s *reverbDryRight, Bit16s *reverbWetLeft, Bit16s *reverbWetRight, Bit32u len);
-	void renderStreams(const DACOutputStreams<Bit16s> &streams, Bit32u len) {
-		renderStreams(streams.nonReverbLeft, streams.nonReverbRight, streams.reverbDryLeft, streams.reverbDryRight, streams.reverbWetLeft, streams.reverbWetRight, len);
-	}
+	MT32EMU_EXPORT void renderStreams(const DACOutputStreams<Bit16s> &streams, Bit32u len);
 	// Same as above but outputs to float streams.
 	MT32EMU_EXPORT void renderStreams(float *nonReverbLeft, float *nonReverbRight, float *reverbDryLeft, float *reverbDryRight, float *reverbWetLeft, float *reverbWetRight, Bit32u len);
-	void renderStreams(const DACOutputStreams<float> &streams, Bit32u len) {
-		renderStreams(streams.nonReverbLeft, streams.nonReverbRight, streams.reverbDryLeft, streams.reverbDryRight, streams.reverbWetLeft, streams.reverbWetRight, len);
-	}
+	MT32EMU_EXPORT void renderStreams(const DACOutputStreams<float> &streams, Bit32u len);
 
 	// Returns true when there is at least one active partial, otherwise false.
 	MT32EMU_EXPORT bool hasActivePartials() const;

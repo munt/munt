@@ -33,7 +33,22 @@ namespace MT32Emu {
 static const Bit8u PAN_NUMERATOR_MASTER[] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7};
 static const Bit8u PAN_NUMERATOR_SLAVE[]  = {0, 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7, 7};
 
-static const Bit32s PAN_FACTORS[] = {0, 18, 37, 55, 73, 91, 110, 128, 146, 165, 183, 201, 219, 238, 256};
+// We assume the pan is applied using the same 13-bit multiplier circuit that is also used for ring modulation
+// because of the observed sample overflow, so the panSetting values are likely mapped in a similar way via a LUT.
+// FIXME: Sample analysis suggests that the use of panSetting is linear, but there are some quirks that still need to be resolved.
+static Bit32s getPANFactor(Bit32s panSetting) {
+	static const Bit32s PAN_FACTORS_COUNT = 15;
+	static Bit32s PAN_FACTORS[PAN_FACTORS_COUNT];
+	static bool firstRun = true;
+
+	if (firstRun) {
+		firstRun = false;
+		for (Bit32u i = 1; i < PAN_FACTORS_COUNT; i++) {
+			PAN_FACTORS[i] = Bit32s(0.5 + i * 8192.0 / double(PAN_FACTORS_COUNT - 1));
+		}
+	}
+	return PAN_FACTORS[panSetting];
+}
 
 Partial::Partial(Synth *useSynth, int useDebugPartialNum) :
 	synth(useSynth), debugPartialNum(useDebugPartialNum), sampleNum(0) {
@@ -45,9 +60,20 @@ Partial::Partial(Synth *useSynth, int useDebugPartialNum) :
 	ownerPart = -1;
 	poly = NULL;
 	pair = NULL;
+	switch (synth->getSelectedRendererType()) {
+	case RendererType_BIT16S:
+		la32Pair = new LA32IntPartialPair;
+		break;
+	case RendererType_FLOAT:
+		la32Pair = new LA32FloatPartialPair;
+		break;
+	default:
+		la32Pair = NULL;
+	}
 }
 
 Partial::~Partial() {
+	delete la32Pair;
 	delete tva;
 	delete tvp;
 	delete tvf;
@@ -93,9 +119,9 @@ void Partial::deactivate() {
 	synth->printPartialUsage(sampleNum);
 #endif
 	if (isRingModulatingSlave()) {
-		pair->la32Pair.deactivate(LA32PartialPair::SLAVE);
+		pair->la32Pair->deactivate(LA32PartialPair::SLAVE);
 	} else {
-		la32Pair.deactivate(LA32PartialPair::MASTER);
+		la32Pair->deactivate(LA32PartialPair::MASTER);
 		if (hasRingModulatingSlave()) {
 			pair->deactivate();
 			pair = NULL;
@@ -137,10 +163,10 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	leftPanValue = synth->reversedStereoEnabled ? 14 - panSetting : panSetting;
 	rightPanValue = 14 - leftPanValue;
 
-#if !MT32EMU_USE_FLOAT_SAMPLES
-	leftPanValue = PAN_FACTORS[leftPanValue];
-	rightPanValue = PAN_FACTORS[rightPanValue];
-#endif
+	if (synth->getSelectedRendererType() == RendererType_BIT16S) {
+		leftPanValue = getPANFactor(leftPanValue);
+		rightPanValue = getPANFactor(rightPanValue);
+	}
 
 	// SEMI-CONFIRMED: From sample analysis:
 	// Found that timbres with 3 or 4 partials (i.e. one using two partial pairs) are mixed in two different ways.
@@ -192,11 +218,11 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	LA32PartialPair *useLA32Pair;
 	if (isRingModulatingSlave()) {
 		pairType = LA32PartialPair::SLAVE;
-		useLA32Pair = &pair->la32Pair;
+		useLA32Pair = pair->la32Pair;
 	} else {
 		pairType = LA32PartialPair::MASTER;
-		la32Pair.init(hasRingModulatingSlave(), mixType == 1);
-		useLA32Pair = &la32Pair;
+		la32Pair->init(hasRingModulatingSlave(), mixType == 1);
+		useLA32Pair = la32Pair;
 	}
 	if (isPCM()) {
 		useLA32Pair->initPCM(pairType, &synth->pcmROMData[pcmWave->addr], pcmWave->len, pcmWave->loop);
@@ -204,7 +230,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 		useLA32Pair->initSynth(pairType, (patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
 	}
 	if (!hasRingModulatingSlave()) {
-		la32Pair.deactivate(LA32PartialPair::SLAVE);
+		la32Pair->deactivate(LA32PartialPair::SLAVE);
 	}
 }
 
@@ -271,7 +297,7 @@ void Partial::backupCache(const PatchCache &cache) {
 	}
 }
 
-bool Partial::produceOutput(Sample *leftBuf, Sample *rightBuf, Bit32u length) {
+bool Partial::canProduceOutput() {
 	if (!isActive() || alreadyOutputed || isRingModulatingSlave()) {
 		return false;
 	}
@@ -279,53 +305,80 @@ bool Partial::produceOutput(Sample *leftBuf, Sample *rightBuf, Bit32u length) {
 		synth->printDebug("[Partial %d] *** ERROR: poly is NULL at Partial::produceOutput()!", debugPartialNum);
 		return false;
 	}
+	return true;
+}
+
+template <class LA32PairImpl>
+bool Partial::generateNextSample(LA32PairImpl *la32PairImpl) {
+	if (!tva->isPlaying() || !la32PairImpl->isActive(LA32PartialPair::MASTER)) {
+		deactivate();
+		return false;
+	}
+	la32PairImpl->generateNextSample(LA32PartialPair::MASTER, getAmpValue(), tvp->nextPitch(), getCutoffValue());
+	if (hasRingModulatingSlave()) {
+		la32PairImpl->generateNextSample(LA32PartialPair::SLAVE, pair->getAmpValue(), pair->tvp->nextPitch(), pair->getCutoffValue());
+		if (!pair->tva->isPlaying() || !la32PairImpl->isActive(LA32PartialPair::SLAVE)) {
+			pair->deactivate();
+			if (mixType == 2) {
+				deactivate();
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+void Partial::produceAndMixSample(IntSample *&leftBuf, IntSample *&rightBuf, LA32IntPartialPair *la32IntPair) {
+	IntSampleEx sample = la32IntPair->nextOutSample();
+
+	// FIXME: LA32 may produce distorted sound in case if the absolute value of maximal amplitude of the input exceeds 8191
+	// when the panning value is non-zero. Most probably the distortion occurs in the same way it does with ring modulation,
+	// and it seems to be caused by limited precision of the common multiplication circuit.
+	// From analysis of this overflow, it is obvious that the right channel output is actually found
+	// by subtraction of the left channel output from the input.
+	// Though, it is unknown whether this overflow is exploited somewhere.
+
+	IntSampleEx leftOut = ((sample * leftPanValue) >> 13) + IntSampleEx(*leftBuf);
+	IntSampleEx rightOut = ((sample * rightPanValue) >> 13) + IntSampleEx(*rightBuf);
+	*(leftBuf++) = Synth::clipSampleEx(leftOut);
+	*(rightBuf++) = Synth::clipSampleEx(rightOut);
+}
+
+void Partial::produceAndMixSample(FloatSample *&leftBuf, FloatSample *&rightBuf, LA32FloatPartialPair *la32FloatPair) {
+	FloatSample sample = la32FloatPair->nextOutSample();
+	FloatSample leftOut = (sample * leftPanValue) / 14.0f;
+	FloatSample rightOut = (sample * rightPanValue) / 14.0f;
+	*(leftBuf++) += leftOut;
+	*(rightBuf++) += rightOut;
+}
+
+template <class Sample, class LA32PairImpl>
+bool Partial::doProduceOutput(Sample *leftBuf, Sample *rightBuf, Bit32u length, LA32PairImpl *la32PairImpl) {
+	if (!canProduceOutput()) return false;
 	alreadyOutputed = true;
 
 	for (sampleNum = 0; sampleNum < length; sampleNum++) {
-		if (!tva->isPlaying() || !la32Pair.isActive(LA32PartialPair::MASTER)) {
-			deactivate();
-			break;
-		}
-		la32Pair.generateNextSample(LA32PartialPair::MASTER, getAmpValue(), tvp->nextPitch(), getCutoffValue());
-		if (hasRingModulatingSlave()) {
-			la32Pair.generateNextSample(LA32PartialPair::SLAVE, pair->getAmpValue(), pair->tvp->nextPitch(), pair->getCutoffValue());
-			if (!pair->tva->isPlaying() || !la32Pair.isActive(LA32PartialPair::SLAVE)) {
-				pair->deactivate();
-				if (mixType == 2) {
-					deactivate();
-					break;
-				}
-			}
-		}
-
-		// Although, LA32 applies panning itself, we assume here it is applied in the mixer, not within a pair.
-		// Applying the pan value in the log-space looks like a waste of unlog resources. Though, it needs clarification.
-		Sample sample = la32Pair.nextOutSample();
-
-		// FIXME: Sample analysis suggests that the use of panVal is linear, but there are some quirks that still need to be resolved.
-#if MT32EMU_USE_FLOAT_SAMPLES
-		Sample leftOut = (sample * (float)leftPanValue) / 14.0f;
-		Sample rightOut = (sample * (float)rightPanValue) / 14.0f;
-		*(leftBuf++) += leftOut;
-		*(rightBuf++) += rightOut;
-#else
-		// FIXME: Dividing by 7 (or by 14 in a Mok-friendly way) looks of course pointless. Need clarification.
-		// FIXME2: LA32 may produce distorted sound in case if the absolute value of maximal amplitude of the input exceeds 8191
-		// when the panning value is non-zero. Most probably the distortion occurs in the same way it does with ring modulation,
-		// and it seems to be caused by limited precision of the common multiplication circuit.
-		// From analysis of this overflow, it is obvious that the right channel output is actually found
-		// by subtraction of the left channel output from the input.
-		// Though, it is unknown whether this overflow is exploited somewhere.
-		Sample leftOut = Sample((sample * leftPanValue) >> 8);
-		Sample rightOut = Sample((sample * rightPanValue) >> 8);
-		*leftBuf = Synth::clipSampleEx(SampleEx(*leftBuf) + SampleEx(leftOut));
-		*rightBuf = Synth::clipSampleEx(SampleEx(*rightBuf) + SampleEx(rightOut));
-		leftBuf++;
-		rightBuf++;
-#endif
+		if (!generateNextSample(la32PairImpl)) break;
+		produceAndMixSample(leftBuf, rightBuf, la32PairImpl);
 	}
 	sampleNum = 0;
 	return true;
+}
+
+bool Partial::produceOutput(IntSample *leftBuf, IntSample *rightBuf, Bit32u length) {
+	if (synth->getSelectedRendererType() != RendererType_BIT16S) {
+		synth->printDebug("Partial: Invalid call to produceOutput()!\n", synth->getSelectedRendererType());
+		return false;
+	}
+	return doProduceOutput(leftBuf, rightBuf, length, static_cast<LA32IntPartialPair *>(la32Pair));
+}
+
+bool Partial::produceOutput(FloatSample *leftBuf, FloatSample *rightBuf, Bit32u length) {
+	if (synth->getSelectedRendererType() != RendererType_FLOAT) {
+		synth->printDebug("Partial: Invalid call to produceOutput()!\n", synth->getSelectedRendererType());
+		return false;
+	}
+	return doProduceOutput(leftBuf, rightBuf, length, static_cast<LA32FloatPartialPair *>(la32Pair));
 }
 
 bool Partial::shouldReverb() {

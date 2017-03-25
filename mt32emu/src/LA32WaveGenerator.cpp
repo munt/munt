@@ -22,12 +22,6 @@
 #include "LA32WaveGenerator.h"
 #include "Tables.h"
 
-#if MT32EMU_USE_FLOAT_SAMPLES
-#define MT32EMU_LA32_WAVE_GENERATOR_CPP
-#include "LA32FloatWaveGenerator.cpp"
-#undef MT32EMU_LA32_WAVE_GENERATOR_CPP
-#else
-
 namespace MT32Emu {
 
 static const Bit32u SINE_SEGMENT_RELATIVE_LENGTH = 1 << 18;
@@ -343,12 +337,12 @@ Bit32u LA32WaveGenerator::getPCMInterpolationFactor() const {
 	return pcmInterpolationFactor;
 }
 
-void LA32PartialPair::init(const bool useRingModulated, const bool useMixed) {
+void LA32IntPartialPair::init(const bool useRingModulated, const bool useMixed) {
 	ringModulated = useRingModulated;
 	mixed = useMixed;
 }
 
-void LA32PartialPair::initSynth(const PairType useMaster, const bool sawtoothWaveform, const Bit8u pulseWidth, const Bit8u resonance) {
+void LA32IntPartialPair::initSynth(const PairType useMaster, const bool sawtoothWaveform, const Bit8u pulseWidth, const Bit8u resonance) {
 	if (useMaster == MASTER) {
 		master.initSynth(sawtoothWaveform, pulseWidth, resonance);
 	} else {
@@ -356,7 +350,7 @@ void LA32PartialPair::initSynth(const PairType useMaster, const bool sawtoothWav
 	}
 }
 
-void LA32PartialPair::initPCM(const PairType useMaster, const Bit16s *pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped) {
+void LA32IntPartialPair::initPCM(const PairType useMaster, const Bit16s *pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped) {
 	if (useMaster == MASTER) {
 		master.initPCM(pcmWaveAddress, pcmWaveLength, pcmWaveLooped, true);
 	} else {
@@ -364,7 +358,7 @@ void LA32PartialPair::initPCM(const PairType useMaster, const Bit16s *pcmWaveAdd
 	}
 }
 
-void LA32PartialPair::generateNextSample(const PairType useMaster, const Bit32u amp, const Bit16u pitch, const Bit32u cutoff) {
+void LA32IntPartialPair::generateNextSample(const PairType useMaster, const Bit32u amp, const Bit16u pitch, const Bit32u cutoff) {
 	if (useMaster == MASTER) {
 		master.generateNextSample(amp, pitch, cutoff);
 	} else {
@@ -372,7 +366,7 @@ void LA32PartialPair::generateNextSample(const PairType useMaster, const Bit32u 
 	}
 }
 
-Bit16s LA32PartialPair::unlogAndMixWGOutput(const LA32WaveGenerator &wg) {
+Bit16s LA32IntPartialPair::unlogAndMixWGOutput(const LA32WaveGenerator &wg) {
 	if (!wg.isActive()) {
 		return 0;
 	}
@@ -384,7 +378,7 @@ Bit16s LA32PartialPair::unlogAndMixWGOutput(const LA32WaveGenerator &wg) {
 	return firstSample + secondSample;
 }
 
-Bit16s LA32PartialPair::nextOutSample() {
+Bit16s LA32IntPartialPair::nextOutSample() {
 	if (!ringModulated) {
 		return unlogAndMixWGOutput(master) + unlogAndMixWGOutput(slave);
 	}
@@ -413,7 +407,7 @@ Bit16s LA32PartialPair::nextOutSample() {
 	return mixed ? nonOverdrivenMasterSample + ringModulatedSample : ringModulatedSample;
 }
 
-void LA32PartialPair::deactivate(const PairType useMaster) {
+void LA32IntPartialPair::deactivate(const PairType useMaster) {
 	if (useMaster == MASTER) {
 		master.deactivate();
 	} else {
@@ -421,10 +415,8 @@ void LA32PartialPair::deactivate(const PairType useMaster) {
 	}
 }
 
-bool LA32PartialPair::isActive(const PairType useMaster) const {
+bool LA32IntPartialPair::isActive(const PairType useMaster) const {
 	return useMaster == MASTER ? master.isActive() : slave.isActive();
 }
 
 } // namespace MT32Emu
-
-#endif // #if MT32EMU_USE_FLOAT_SAMPLES

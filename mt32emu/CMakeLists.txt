@@ -34,6 +34,7 @@ set(libmt32emu_SOURCES
   src/BReverbModel.cpp
   src/File.cpp
   src/FileStream.cpp
+  src/LA32FloatWaveGenerator.cpp
   src/LA32Ramp.cpp
   src/LA32WaveGenerator.cpp
   src/MidiStreamParser.cpp

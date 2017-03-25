@@ -24,6 +24,7 @@
 #include "Structures.h"
 #include "LA32Ramp.h"
 #include "LA32WaveGenerator.h"
+#include "LA32FloatWaveGenerator.h"
 
 namespace MT32Emu {
 
@@ -72,13 +73,21 @@ private:
 	LA32Ramp cutoffModifierRamp;
 
 	// TODO: This should be owned by PartialPair
-	LA32PartialPair la32Pair;
+	LA32PartialPair *la32Pair;
 
 	const PatchCache *patchCache;
 	PatchCache cachebackup;
 
 	Bit32u getAmpValue();
 	Bit32u getCutoffValue();
+
+	template <class Sample, class LA32PairImpl>
+	bool doProduceOutput(Sample *leftBuf, Sample *rightBuf, Bit32u length, LA32PairImpl *la32PairImpl);
+	bool canProduceOutput();
+	template <class LA32PairImpl>
+	bool generateNextSample(LA32PairImpl *la32PairImpl);
+	void produceAndMixSample(IntSample *&leftBuf, IntSample *&rightBuf, LA32IntPartialPair *la32IntPair);
+	void produceAndMixSample(FloatSample *&leftBuf, FloatSample *&rightBuf, LA32FloatPartialPair *la32FloatPair);
 
 public:
 	bool alreadyOutputed;
@@ -108,9 +117,10 @@ public:
 	void backupCache(const PatchCache &cache);
 
 	// Returns true only if data written to buffer
-	// This function (unlike the one below it) returns processed stereo samples
+	// These functions produce processed stereo samples
 	// made from combining this single partial with its pair, if it has one.
-	bool produceOutput(Sample *leftBuf, Sample *rightBuf, Bit32u length);
+	bool produceOutput(IntSample *leftBuf, IntSample *rightBuf, Bit32u length);
+	bool produceOutput(FloatSample *leftBuf, FloatSample *rightBuf, Bit32u length);
 }; // class Partial
 
 } // namespace MT32Emu

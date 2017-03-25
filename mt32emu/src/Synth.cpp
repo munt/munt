@@ -63,80 +63,106 @@ static inline PartialState getPartialState(PartialManager *partialManager, unsig
 	return partial->isActive() ? PARTIAL_PHASE_TO_STATE[partial->getTVA()->getPhase()] : PartialState_INACTIVE;
 }
 
-class SampleFormatConverter {
-protected:
-#if MT32EMU_USE_FLOAT_SAMPLES
-	Bit16s *outBuffer;
-#else
-	float *outBuffer;
-#endif
+template <class I, class O>
+static inline void convertSampleFormat(const I *inBuffer, O *outBuffer, const Bit32u len) {
+	if (inBuffer == NULL || outBuffer == NULL) return;
 
-public:
-	Sample *sampleBuffer;
-
-	SampleFormatConverter(Sample *buffer) : outBuffer(NULL), sampleBuffer(buffer) {}
-
-	inline bool isConversionNeeded() {
-		return outBuffer != NULL;
+	const I *inBufferEnd = inBuffer + len;
+	while (inBuffer < inBufferEnd) {
+		*(outBuffer++) = Synth::convertSample(*(inBuffer++));
 	}
-
-	inline void convert(Bit32u len) {
-		if (sampleBuffer == NULL) return;
-		if (outBuffer == NULL) {
-			sampleBuffer += len;
-			return;
-		}
-		Sample *inBuffer = sampleBuffer;
-		while (len--) {
-			*(outBuffer++) = Synth::convertSample(*(inBuffer++));
-		}
-	}
-
-	inline void addSilence(Bit32u len) {
-		if (outBuffer != NULL) {
-			Synth::muteSampleBuffer(outBuffer, len);
-			outBuffer += len;
-		} else if (sampleBuffer != NULL) {
-			Synth::muteSampleBuffer(sampleBuffer, len);
-			sampleBuffer += len;
-		}
-	}
-};
-
-template <int BUFFER_SIZE_MULTIPLIER = 1>
-class BufferedSampleFormatConverter : public SampleFormatConverter {
-	Sample renderingBuffer[BUFFER_SIZE_MULTIPLIER * MAX_SAMPLES_PER_RUN];
-
-public:
-#if MT32EMU_USE_FLOAT_SAMPLES
-	BufferedSampleFormatConverter(Bit16s *buffer)
-#else
-	BufferedSampleFormatConverter(float *buffer)
-#endif
-		: SampleFormatConverter(renderingBuffer)
-	{
-		outBuffer = buffer;
-		if (buffer == NULL) sampleBuffer = NULL;
-	}
-};
+}
 
 class Renderer {
+protected:
 	Synth &synth;
 
+	void printDebug(const char *msg) const {
+		synth.printDebug(msg);
+	}
+
+	bool isActivated() const {
+		return synth.activated;
+	}
+
+	bool isAbortingPoly() const {
+		return synth.isAbortingPoly();
+	}
+
+	Analog &getAnalog() const {
+		return *synth.analog;
+	}
+
+	MidiEventQueue &getMidiQueue() {
+		return *synth.midiQueue;
+	}
+
+	PartialManager &getPartialManager() {
+		return *synth.partialManager;
+	}
+
+	BReverbModel &getReverbModel() {
+		return *synth.reverbModel;
+	}
+
+	Bit32u getRenderedSampleCount() {
+		return synth.renderedSampleCount;
+	}
+
+	void incRenderedSampleCount(const Bit32u count) {
+		synth.renderedSampleCount += count;
+	}
+
+public:
+	Renderer(Synth &useSynth) : synth(useSynth) {}
+
+	virtual ~Renderer() {}
+
+	virtual void render(IntSample *stereoStream, Bit32u len) = 0;
+	virtual void render(FloatSample *stereoStream, Bit32u len) = 0;
+	virtual void renderStreams(const DACOutputStreams<IntSample> &streams, Bit32u len) = 0;
+	virtual void renderStreams(const DACOutputStreams<FloatSample> &streams, Bit32u len) = 0;
+};
+
+template <class Sample>
+class RendererImpl : public Renderer {
 	// These buffers are used for building the output streams as they are found at the DAC entrance.
 	// The output is mixed down to stereo interleaved further in the analog circuitry emulation.
 	Sample tmpNonReverbLeft[MAX_SAMPLES_PER_RUN], tmpNonReverbRight[MAX_SAMPLES_PER_RUN];
 	Sample tmpReverbDryLeft[MAX_SAMPLES_PER_RUN], tmpReverbDryRight[MAX_SAMPLES_PER_RUN];
 	Sample tmpReverbWetLeft[MAX_SAMPLES_PER_RUN], tmpReverbWetRight[MAX_SAMPLES_PER_RUN];
 
-public:
-	Renderer(Synth &useSynth) : synth(useSynth) {}
+	const DACOutputStreams<Sample> tmpBuffers;
+	DACOutputStreams<Sample> createTmpBuffers() {
+		DACOutputStreams<Sample> buffers = {
+			tmpNonReverbLeft, tmpNonReverbRight,
+			tmpReverbDryLeft, tmpReverbDryRight,
+			tmpReverbWetLeft, tmpReverbWetRight
+		};
+		return buffers;
+	}
 
-	void render(SampleFormatConverter &converter, Bit32u len);
-	void renderStreams(SampleFormatConverter &nonReverbLeft, SampleFormatConverter &nonReverbRight, SampleFormatConverter &reverbDryLeft, SampleFormatConverter &reverbDryRight, SampleFormatConverter &reverbWetLeft, SampleFormatConverter &reverbWetRight, Bit32u len);
+public:
+	RendererImpl(Synth &useSynth) :
+		Renderer(useSynth),
+		tmpBuffers(createTmpBuffers())
+	{}
+
+	void render(IntSample *stereoStream, Bit32u len);
+	void render(FloatSample *stereoStream, Bit32u len);
+	void renderStreams(const DACOutputStreams<IntSample> &streams, Bit32u len);
+	void renderStreams(const DACOutputStreams<FloatSample> &streams, Bit32u len);
+
+	template <class O>
+	void doRenderAndConvert(O *stereoStream, Bit32u len);
+	void doRender(Sample *stereoStream, Bit32u len);
+
+	template <class O>
+	void doRenderAndConvertStreams(const DACOutputStreams<O> &streams, Bit32u len);
+	void doRenderStreams(const DACOutputStreams<Sample> &streams, Bit32u len);
 	void produceLA32Output(Sample *buffer, Bit32u len);
 	void convertSamplesToOutput(Sample *buffer, Bit32u len);
-	void doRenderStreams(DACOutputStreams<Sample> &streams, Bit32u len);
+	void produceStreams(const DACOutputStreams<Sample> &streams, Bit32u len);
 };
 
 Bit32u Synth::getLibraryVersionInt() {
@@ -161,7 +187,7 @@ Bit32u Synth::getStereoOutputSampleRate(AnalogOutputMode analogOutputMode) {
 	return SAMPLE_RATES[analogOutputMode];
 }
 
-Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams), mt32default(*new MemParams), renderer(*new Renderer(*this)) {
+Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams), mt32default(*new MemParams) {
 	opened = false;
 	reverbOverridden = false;
 	partialCount = DEFAULT_MAX_PARTIALS;
@@ -181,11 +207,13 @@ Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams), mt32def
 	}
 	reverbModel = NULL;
 	analog = NULL;
+	renderer = NULL;
 	setDACInputMode(DACInputMode_NICE);
 	setMIDIDelayMode(MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY);
 	setOutputGain(1.0f);
 	setReverbOutputGain(1.0f);
 	setReversedStereoEnabled(false);
+	selectRendererType(RendererType_BIT16S);
 
 	patchTempMemoryRegion = NULL;
 	rhythmTempMemoryRegion = NULL;
@@ -216,7 +244,6 @@ Synth::~Synth() {
 	}
 	delete &mt32ram;
 	delete &mt32default;
-	delete &renderer;
 }
 
 void ReportHandler::showLCDMessage(const char *data) {
@@ -309,12 +336,12 @@ bool Synth::isDefaultReverbMT32Compatible() const {
 }
 
 void Synth::setDACInputMode(DACInputMode mode) {
-#if MT32EMU_USE_FLOAT_SAMPLES
+if (selectedRendererType == RendererType_FLOAT) {
 	// We aren't emulating these in float mode, so better to inform the invoker
 	if ((mode == DACInputMode_GENERATION1) || (mode == DACInputMode_GENERATION2)) {
 		mode = DACInputMode_NICE;
 	}
-#endif
+}
 	dacInputMode = mode;
 }
 
@@ -500,10 +527,10 @@ bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, Bit16u count, Bit16u s
 }
 
 void Synth::initReverbModels(bool mt32CompatibleMode) {
-	reverbModels[REVERB_MODE_ROOM] = new BReverbModel(REVERB_MODE_ROOM, mt32CompatibleMode);
-	reverbModels[REVERB_MODE_HALL] = new BReverbModel(REVERB_MODE_HALL, mt32CompatibleMode);
-	reverbModels[REVERB_MODE_PLATE] = new BReverbModel(REVERB_MODE_PLATE, mt32CompatibleMode);
-	reverbModels[REVERB_MODE_TAP_DELAY] = new BReverbModel(REVERB_MODE_TAP_DELAY, mt32CompatibleMode);
+	reverbModels[REVERB_MODE_ROOM] = BReverbModel::createBReverbModel(REVERB_MODE_ROOM, mt32CompatibleMode, selectedRendererType);
+	reverbModels[REVERB_MODE_HALL] = BReverbModel::createBReverbModel(REVERB_MODE_HALL, mt32CompatibleMode, selectedRendererType);
+	reverbModels[REVERB_MODE_PLATE] = BReverbModel::createBReverbModel(REVERB_MODE_PLATE, mt32CompatibleMode, selectedRendererType);
+	reverbModels[REVERB_MODE_TAP_DELAY] = BReverbModel::createBReverbModel(REVERB_MODE_TAP_DELAY, mt32CompatibleMode, selectedRendererType);
 #if !MT32EMU_REDUCE_REVERB_MEMORY
 	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
 		reverbModels[i]->open();
@@ -687,9 +714,22 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 
 	midiQueue = new MidiEventQueue();
 
-	analog = new Analog(analogOutputMode, controlROMFeatures->oldMT32AnalogLPF);
+	analog = Analog::createAnalog(analogOutputMode, controlROMFeatures->oldMT32AnalogLPF, selectedRendererType);
 	setOutputGain(outputGain);
 	setReverbOutputGain(reverbOutputGain);
+
+	switch (selectedRendererType) {
+		case RendererType_BIT16S:
+			renderer = new RendererImpl<IntSample>(*this);
+			break;
+		case RendererType_FLOAT:
+			renderer = new RendererImpl<FloatSample>(*this);
+			break;
+		default:
+			printDebug("Synth: Unknown renderer type %i\n", selectedRendererType);
+			dispose();
+			return false;
+	}
 
 	opened = true;
 	activated = false;
@@ -705,6 +745,9 @@ void Synth::dispose() {
 
 	delete midiQueue;
 	midiQueue = NULL;
+
+	delete renderer;
+	renderer = NULL;
 
 	delete analog;
 	analog = NULL;
@@ -1677,73 +1720,115 @@ bool MidiEventQueue::isEmpty() const {
 	return startPosition == endPosition;
 }
 
+void Synth::selectRendererType(RendererType newRendererType) {
+	selectedRendererType = newRendererType;
+}
+
+RendererType Synth::getSelectedRendererType() const {
+	return selectedRendererType;
+}
+
 Bit32u Synth::getStereoOutputSampleRate() const {
 	return (analog == NULL) ? SAMPLE_RATE : analog->getOutputSampleRate();
 }
 
-void Renderer::render(SampleFormatConverter &converter, Bit32u len) {
-	if (!synth.opened) {
-		converter.addSilence(len << 1);
-		return;
-	}
-
-	if (!synth.activated) {
-		synth.renderedSampleCount += synth.analog->getDACStreamsLength(len);
-		synth.analog->process(NULL, NULL, NULL, NULL, NULL, NULL, NULL, len);
-		converter.addSilence(len << 1);
+template <class Sample>
+void RendererImpl<Sample>::doRender(Sample *stereoStream, Bit32u len) {
+	if (!isActivated()) {
+		incRenderedSampleCount(getAnalog().getDACStreamsLength(len));
+		if (!getAnalog().process(NULL, NULL, NULL, NULL, NULL, NULL, stereoStream, len)) {
+			printDebug("RendererImpl: Invalid call to Analog::process()!\n");
+		}
+		Synth::muteSampleBuffer(stereoStream, len << 1);
 		return;
 	}
 
 	while (len > 0) {
 		// As in AnalogOutputMode_ACCURATE mode output is upsampled, MAX_SAMPLES_PER_RUN is more than enough for the temp buffers.
 		Bit32u thisPassLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
-		synth.renderStreams(tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, synth.analog->getDACStreamsLength(thisPassLen));
-		synth.analog->process(converter.sampleBuffer, tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisPassLen);
-		converter.convert(thisPassLen << 1);
+		doRenderStreams(tmpBuffers, getAnalog().getDACStreamsLength(thisPassLen));
+		if (!getAnalog().process(stereoStream, tmpNonReverbLeft, tmpNonReverbRight, tmpReverbDryLeft, tmpReverbDryRight, tmpReverbWetLeft, tmpReverbWetRight, thisPassLen)) {
+			printDebug("RendererImpl: Invalid call to Analog::process()!\n");
+			Synth::muteSampleBuffer(stereoStream, len << 1);
+			return;
+		}
+		stereoStream += thisPassLen << 1;
 		len -= thisPassLen;
 	}
 }
 
+template <class Sample>
+template <class O>
+void RendererImpl<Sample>::doRenderAndConvert(O *stereoStream, Bit32u len) {
+	Sample renderingBuffer[MAX_SAMPLES_PER_RUN << 1];
+	doRender(renderingBuffer, len);
+	convertSampleFormat(renderingBuffer, stereoStream, len << 1);
+}
+
+template<>
+void RendererImpl<IntSample>::render(IntSample *stereoStream, Bit32u len) {
+	doRender(stereoStream, len);
+}
+
+template<>
+void RendererImpl<IntSample>::render(FloatSample *stereoStream, Bit32u len) {
+	doRenderAndConvert(stereoStream, len);
+}
+
+template<>
+void RendererImpl<FloatSample>::render(IntSample *stereoStream, Bit32u len) {
+	doRenderAndConvert(stereoStream, len);
+}
+
+template<>
+void RendererImpl<FloatSample>::render(FloatSample *stereoStream, Bit32u len) {
+	doRender(stereoStream, len);
+}
+
+template <class S>
+static inline void renderStereo(bool opened, Renderer *renderer, S *stream, Bit32u len) {
+	if (opened) {
+		renderer->render(stream, len);
+	} else {
+		Synth::muteSampleBuffer(stream, len << 1);
+	}
+}
+
 void Synth::render(Bit16s *stream, Bit32u len) {
-#if MT32EMU_USE_FLOAT_SAMPLES
-	BufferedSampleFormatConverter<2> converter(stream);
-#else
-	SampleFormatConverter converter(stream);
-#endif
-	renderer.render(converter, len);
+	renderStereo(opened, renderer, stream, len);
 }
 
 void Synth::render(float *stream, Bit32u len) {
-#if MT32EMU_USE_FLOAT_SAMPLES
-	SampleFormatConverter converter(stream);
-#else
-	BufferedSampleFormatConverter<2> converter(stream);
-#endif
-	renderer.render(converter, len);
+	renderStereo(opened, renderer, stream, len);
 }
 
-void Renderer::renderStreams(
-	SampleFormatConverter &nonReverbLeft, SampleFormatConverter &nonReverbRight,
-	SampleFormatConverter &reverbDryLeft, SampleFormatConverter &reverbDryRight,
-	SampleFormatConverter &reverbWetLeft, SampleFormatConverter &reverbWetRight,
-	Bit32u len)
-{
-	if (!synth.opened) {
-		nonReverbLeft.addSilence(len);
-		nonReverbRight.addSilence(len);
-		reverbDryLeft.addSilence(len);
-		reverbDryRight.addSilence(len);
-		reverbWetLeft.addSilence(len);
-		reverbWetRight.addSilence(len);
-		return;
+template <class Sample>
+static inline void advanceStream(Sample *&stream, Bit32u len) {
+	if (stream != NULL) {
+		stream += len;
 	}
+}
 
+template <class Sample>
+static inline void muteStreams(const DACOutputStreams<Sample> &streams, Bit32u len) {
+	Synth::muteSampleBuffer(streams.nonReverbLeft, len);
+	Synth::muteSampleBuffer(streams.nonReverbRight, len);
+	Synth::muteSampleBuffer(streams.reverbDryLeft, len);
+	Synth::muteSampleBuffer(streams.reverbDryRight, len);
+	Synth::muteSampleBuffer(streams.reverbWetLeft, len);
+	Synth::muteSampleBuffer(streams.reverbWetRight, len);
+}
+
+template <class Sample>
+void RendererImpl<Sample>::doRenderStreams(const DACOutputStreams<Sample> &streams, Bit32u len)
+{
+	DACOutputStreams<Sample> tmpStreams = streams;
 	while (len > 0) {
 		// We need to ensure zero-duration notes will play so add minimum 1-sample delay.
 		Bit32u thisLen = 1;
-		if (!synth.isAbortingPoly()) {
-			const MidiEvent *nextEvent = synth.midiQueue->peekMidiEvent();
-			Bit32s samplesToNextEvent = (nextEvent != NULL) ? Bit32s(nextEvent->timestamp - synth.renderedSampleCount) : MAX_SAMPLES_PER_RUN;
+		if (!isAbortingPoly()) {
+			const MidiEvent *nextEvent = getMidiQueue().peekMidiEvent();
+			Bit32s samplesToNextEvent = (nextEvent != NULL) ? Bit32s(nextEvent->timestamp - getRenderedSampleCount()) : MAX_SAMPLES_PER_RUN;
 			if (samplesToNextEvent > 0) {
 				thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
 				if (thisLen > Bit32u(samplesToNextEvent)) {
@@ -1754,29 +1839,84 @@ void Renderer::renderStreams(
 					synth.playMsgNow(nextEvent->shortMessageData);
 					// If a poly is aborting we don't drop the event from the queue.
 					// Instead, we'll return to it again when the abortion is done.
-					if (!synth.isAbortingPoly()) {
-						synth.midiQueue->dropMidiEvent();
+					if (!isAbortingPoly()) {
+						getMidiQueue().dropMidiEvent();
 					}
 				} else {
 					synth.playSysexNow(nextEvent->sysexData, nextEvent->sysexLength);
-					synth.midiQueue->dropMidiEvent();
+					getMidiQueue().dropMidiEvent();
 				}
 			}
 		}
-		DACOutputStreams<Sample> streams = {
-			nonReverbLeft.sampleBuffer, nonReverbRight.sampleBuffer,
-			reverbDryLeft.sampleBuffer, reverbDryRight.sampleBuffer,
-			reverbWetLeft.sampleBuffer, reverbWetRight.sampleBuffer
-		};
-		doRenderStreams(streams, thisLen);
-		nonReverbLeft.convert(thisLen);
-		nonReverbRight.convert(thisLen);
-		reverbDryLeft.convert(thisLen);
-		reverbDryRight.convert(thisLen);
-		reverbWetLeft.convert(thisLen);
-		reverbWetRight.convert(thisLen);
+		produceStreams(tmpStreams, thisLen);
+		advanceStream(tmpStreams.nonReverbLeft, thisLen);
+		advanceStream(tmpStreams.nonReverbRight, thisLen);
+		advanceStream(tmpStreams.reverbDryLeft, thisLen);
+		advanceStream(tmpStreams.reverbDryRight, thisLen);
+		advanceStream(tmpStreams.reverbWetLeft, thisLen);
+		advanceStream(tmpStreams.reverbWetRight, thisLen);
 		len -= thisLen;
 	}
+}
+
+template <class Sample>
+template <class O>
+void RendererImpl<Sample>::doRenderAndConvertStreams(const DACOutputStreams<O> &streams, Bit32u len) {
+	Sample cnvNonReverbLeft[MAX_SAMPLES_PER_RUN], cnvNonReverbRight[MAX_SAMPLES_PER_RUN];
+	Sample cnvReverbDryLeft[MAX_SAMPLES_PER_RUN], cnvReverbDryRight[MAX_SAMPLES_PER_RUN];
+	Sample cnvReverbWetLeft[MAX_SAMPLES_PER_RUN], cnvReverbWetRight[MAX_SAMPLES_PER_RUN];
+
+	const DACOutputStreams<Sample> cnvStreams = {
+		cnvNonReverbLeft, cnvNonReverbRight,
+		cnvReverbDryLeft, cnvReverbDryRight,
+		cnvReverbWetLeft, cnvReverbWetRight
+	};
+
+	doRenderStreams(cnvStreams, len);
+
+	convertSampleFormat(cnvNonReverbLeft, streams.nonReverbLeft, len);
+	convertSampleFormat(cnvNonReverbRight, streams.nonReverbRight, len);
+	convertSampleFormat(cnvReverbDryLeft, streams.reverbDryLeft, len);
+	convertSampleFormat(cnvReverbDryRight, streams.reverbDryRight, len);
+	convertSampleFormat(cnvReverbWetLeft, streams.reverbWetLeft, len);
+	convertSampleFormat(cnvReverbWetRight, streams.reverbWetRight, len);
+}
+
+template<>
+void RendererImpl<IntSample>::renderStreams(const DACOutputStreams<IntSample> &streams, Bit32u len) {
+	doRenderStreams(streams, len);
+}
+
+template<>
+void RendererImpl<IntSample>::renderStreams(const DACOutputStreams<FloatSample> &streams, Bit32u len) {
+	doRenderAndConvertStreams(streams, len);
+}
+
+template<>
+void RendererImpl<FloatSample>::renderStreams(const DACOutputStreams<IntSample> &streams, Bit32u len) {
+	doRenderAndConvertStreams(streams, len);
+}
+
+template<>
+void RendererImpl<FloatSample>::renderStreams(const DACOutputStreams<FloatSample> &streams, Bit32u len) {
+	doRenderStreams(streams, len);
+}
+
+template <class S>
+static inline void renderStreams(bool opened, Renderer *renderer, const DACOutputStreams<S> &streams, Bit32u len) {
+	if (opened) {
+		renderer->renderStreams(streams, len);
+	} else {
+		muteStreams(streams, len);
+	}
+}
+
+void Synth::renderStreams(const DACOutputStreams<Bit16s> &streams, Bit32u len) {
+	MT32Emu::renderStreams(opened, renderer, streams, len);
+}
+
+void Synth::renderStreams(const DACOutputStreams<float> &streams, Bit32u len) {
+	MT32Emu::renderStreams(opened, renderer, streams, len);
 }
 
 void Synth::renderStreams(
@@ -1785,20 +1925,12 @@ void Synth::renderStreams(
 	Bit16s *reverbWetLeft, Bit16s *reverbWetRight,
 	Bit32u len)
 {
-#if MT32EMU_USE_FLOAT_SAMPLES
-	BufferedSampleFormatConverter<> convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
-	BufferedSampleFormatConverter<> convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
-	BufferedSampleFormatConverter<> convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
-#else
-	SampleFormatConverter convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
-	SampleFormatConverter convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
-	SampleFormatConverter convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
-#endif
-	renderer.renderStreams(
-		convNonReverbLeft, convNonReverbRight,
-		convReverbDryLeft, convReverbDryRight,
-		convReverbWetLeft, convReverbWetRight,
-		len);
+	DACOutputStreams<IntSample> streams = {
+		nonReverbLeft, nonReverbRight,
+		reverbDryLeft, reverbDryRight,
+		reverbWetLeft, reverbWetRight
+	};
+	renderStreams(streams, len);
 }
 
 void Synth::renderStreams(
@@ -1807,30 +1939,19 @@ void Synth::renderStreams(
 	float *reverbWetLeft, float *reverbWetRight,
 	Bit32u len)
 {
-#if MT32EMU_USE_FLOAT_SAMPLES
-	SampleFormatConverter convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
-	SampleFormatConverter convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
-	SampleFormatConverter convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
-#else
-	BufferedSampleFormatConverter<> convNonReverbLeft(nonReverbLeft), convNonReverbRight(nonReverbRight);
-	BufferedSampleFormatConverter<> convReverbDryLeft(reverbDryLeft), convReverbDryRight(reverbDryRight);
-	BufferedSampleFormatConverter<> convReverbWetLeft(reverbWetLeft), convReverbWetRight(reverbWetRight);
-#endif
-	renderer.renderStreams(
-		convNonReverbLeft, convNonReverbRight,
-		convReverbDryLeft, convReverbDryRight,
-		convReverbWetLeft, convReverbWetRight,
-		len);
+	DACOutputStreams<FloatSample> streams = {
+		nonReverbLeft, nonReverbRight,
+		reverbDryLeft, reverbDryRight,
+		reverbWetLeft, reverbWetRight
+	};
+	renderStreams(streams, len);
 }
 
 // In GENERATION2 units, the output from LA32 goes to the Boss chip already bit-shifted.
 // In NICE mode, it's also better to increase volume before the reverb processing to preserve accuracy.
-void Renderer::produceLA32Output(Sample *buffer, Bit32u len) {
-#if MT32EMU_USE_FLOAT_SAMPLES
-	(void)buffer;
-	(void)len;
-#else
-	switch (synth.dacInputMode) {
+template <>
+void RendererImpl<IntSample>::produceLA32Output(IntSample *buffer, Bit32u len) {
+	switch (synth.getDACInputMode()) {
 		case DACInputMode_GENERATION2:
 			while (len--) {
 				*buffer = (*buffer & 0x8000) | ((*buffer << 1) & 0x7FFE) | ((*buffer >> 14) & 0x0001);
@@ -1839,32 +1960,36 @@ void Renderer::produceLA32Output(Sample *buffer, Bit32u len) {
 			break;
 		case DACInputMode_NICE:
 			while (len--) {
-				*buffer = Synth::clipSampleEx(SampleEx(*buffer) << 1);
+				*buffer = Synth::clipSampleEx(IntSampleEx(*buffer) << 1);
 				++buffer;
 			}
 			break;
 		default:
 			break;
 	}
-#endif
 }
 
-void Renderer::convertSamplesToOutput(Sample *buffer, Bit32u len) {
-#if MT32EMU_USE_FLOAT_SAMPLES
-	(void)buffer;
-	(void)len;
-#else
-	if (synth.dacInputMode == DACInputMode_GENERATION1) {
+template <>
+void RendererImpl<IntSample>::convertSamplesToOutput(IntSample *buffer, Bit32u len) {
+	if (synth.getDACInputMode() == DACInputMode_GENERATION1) {
 		while (len--) {
-			*buffer = Sample((*buffer & 0x8000) | ((*buffer << 1) & 0x7FFE));
+			*buffer = IntSample((*buffer & 0x8000) | ((*buffer << 1) & 0x7FFE));
 			++buffer;
 		}
 	}
-#endif
 }
 
-void Renderer::doRenderStreams(DACOutputStreams<Sample> &streams, Bit32u len) {
-	if (synth.activated) {
+template <>
+void RendererImpl<FloatSample>::produceLA32Output(FloatSample *, Bit32u) {
+}
+
+template <>
+void RendererImpl<FloatSample>::convertSamplesToOutput(FloatSample *, Bit32u) {
+}
+
+template <class Sample>
+void RendererImpl<Sample>::produceStreams(const DACOutputStreams<Sample> &streams, Bit32u len) {
+	if (isActivated()) {
 		// Even if LA32 output isn't desired, we proceed anyway with temp buffers
 		Sample *nonReverbLeft = streams.nonReverbLeft == NULL ? tmpNonReverbLeft : streams.nonReverbLeft;
 		Sample *nonReverbRight = streams.nonReverbRight == NULL ? tmpNonReverbRight : streams.nonReverbRight;
@@ -1877,10 +2002,10 @@ void Renderer::doRenderStreams(DACOutputStreams<Sample> &streams, Bit32u len) {
 		Synth::muteSampleBuffer(reverbDryRight, len);
 
 		for (unsigned int i = 0; i < synth.getPartialCount(); i++) {
-			if (synth.partialManager->shouldReverb(i)) {
-				synth.partialManager->produceOutput(i, reverbDryLeft, reverbDryRight, len);
+			if (getPartialManager().shouldReverb(i)) {
+				getPartialManager().produceOutput(i, reverbDryLeft, reverbDryRight, len);
 			} else {
-				synth.partialManager->produceOutput(i, nonReverbLeft, nonReverbRight, len);
+				getPartialManager().produceOutput(i, nonReverbLeft, nonReverbRight, len);
 			}
 		}
 
@@ -1888,7 +2013,9 @@ void Renderer::doRenderStreams(DACOutputStreams<Sample> &streams, Bit32u len) {
 		produceLA32Output(reverbDryRight, len);
 
 		if (synth.isReverbEnabled()) {
-			synth.reverbModel->process(reverbDryLeft, reverbDryRight, streams.reverbWetLeft, streams.reverbWetRight, len);
+			if (!getReverbModel().process(reverbDryLeft, reverbDryRight, streams.reverbWetLeft, streams.reverbWetRight, len)) {
+				printDebug("RendererImpl: Invalid call to BReverbModel::process()!\n");
+			}
 			if (streams.reverbWetLeft != NULL) convertSamplesToOutput(streams.reverbWetLeft, len);
 			if (streams.reverbWetRight != NULL) convertSamplesToOutput(streams.reverbWetRight, len);
 		} else {
@@ -1908,16 +2035,11 @@ void Renderer::doRenderStreams(DACOutputStreams<Sample> &streams, Bit32u len) {
 		if (streams.reverbDryLeft != NULL) convertSamplesToOutput(reverbDryLeft, len);
 		if (streams.reverbDryRight != NULL) convertSamplesToOutput(reverbDryRight, len);
 	} else {
-		Synth::muteSampleBuffer(streams.nonReverbLeft, len);
-		Synth::muteSampleBuffer(streams.nonReverbRight, len);
-		Synth::muteSampleBuffer(streams.reverbDryLeft, len);
-		Synth::muteSampleBuffer(streams.reverbDryRight, len);
-		Synth::muteSampleBuffer(streams.reverbWetLeft, len);
-		Synth::muteSampleBuffer(streams.reverbWetRight, len);
+		muteStreams(streams, len);
 	}
 
-	synth.partialManager->clearAlreadyOutputed();
-	synth.renderedSampleCount += len;
+	getPartialManager().clearAlreadyOutputed();
+	incRenderedSampleCount(len);
 }
 
 void Synth::printPartialUsage(Bit32u sampleOffset) {
