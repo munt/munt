@@ -30,6 +30,7 @@ namespace MT32Emu {
 
 class Analog;
 class BReverbModel;
+class Extensions;
 class MemoryRegion;
 class MidiEventQueue;
 class Part;
@@ -165,7 +166,6 @@ private:
 
 	MIDIDelayMode midiDelayMode;
 	DACInputMode dacInputMode;
-	RendererType selectedRendererType;
 
 	float outputGain;
 	float reverbOutputGain;
@@ -190,7 +190,7 @@ private:
 	Renderer *renderer;
 
 	// Binary compatibility helper.
-	void *reserved;
+	Extensions &extensions;
 
 	// **************************** Implementation methods **************************
 

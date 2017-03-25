@@ -165,6 +165,11 @@ public:
 	void produceStreams(const DACOutputStreams<Sample> &streams, Bit32u len);
 };
 
+class Extensions {
+public:
+	RendererType selectedRendererType;
+};
+
 Bit32u Synth::getLibraryVersionInt() {
 	return (MT32EMU_VERSION_MAJOR << 16) | (MT32EMU_VERSION_MINOR << 8) | (MT32EMU_VERSION_PATCH);
 }
@@ -187,7 +192,11 @@ Bit32u Synth::getStereoOutputSampleRate(AnalogOutputMode analogOutputMode) {
 	return SAMPLE_RATES[analogOutputMode];
 }
 
-Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams), mt32default(*new MemParams) {
+Synth::Synth(ReportHandler *useReportHandler) :
+	mt32ram(*new MemParams),
+	mt32default(*new MemParams),
+	extensions(*new Extensions)
+{
 	opened = false;
 	reverbOverridden = false;
 	partialCount = DEFAULT_MAX_PARTIALS;
@@ -233,8 +242,6 @@ Synth::Synth(ReportHandler *useReportHandler) : mt32ram(*new MemParams), mt32def
 	lastReceivedMIDIEventTimestamp = 0;
 	memset(parts, 0, sizeof(parts));
 	renderedSampleCount = 0;
-
-	reserved = NULL;
 }
 
 Synth::~Synth() {
@@ -244,6 +251,7 @@ Synth::~Synth() {
 	}
 	delete &mt32ram;
 	delete &mt32default;
+	delete &extensions;
 }
 
 void ReportHandler::showLCDMessage(const char *data) {
@@ -336,7 +344,7 @@ bool Synth::isDefaultReverbMT32Compatible() const {
 }
 
 void Synth::setDACInputMode(DACInputMode mode) {
-if (selectedRendererType == RendererType_FLOAT) {
+if (getSelectedRendererType() == RendererType_FLOAT) {
 	// We aren't emulating these in float mode, so better to inform the invoker
 	if ((mode == DACInputMode_GENERATION1) || (mode == DACInputMode_GENERATION2)) {
 		mode = DACInputMode_NICE;
@@ -527,10 +535,10 @@ bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, Bit16u count, Bit16u s
 }
 
 void Synth::initReverbModels(bool mt32CompatibleMode) {
-	reverbModels[REVERB_MODE_ROOM] = BReverbModel::createBReverbModel(REVERB_MODE_ROOM, mt32CompatibleMode, selectedRendererType);
-	reverbModels[REVERB_MODE_HALL] = BReverbModel::createBReverbModel(REVERB_MODE_HALL, mt32CompatibleMode, selectedRendererType);
-	reverbModels[REVERB_MODE_PLATE] = BReverbModel::createBReverbModel(REVERB_MODE_PLATE, mt32CompatibleMode, selectedRendererType);
-	reverbModels[REVERB_MODE_TAP_DELAY] = BReverbModel::createBReverbModel(REVERB_MODE_TAP_DELAY, mt32CompatibleMode, selectedRendererType);
+	reverbModels[REVERB_MODE_ROOM] = BReverbModel::createBReverbModel(REVERB_MODE_ROOM, mt32CompatibleMode, getSelectedRendererType());
+	reverbModels[REVERB_MODE_HALL] = BReverbModel::createBReverbModel(REVERB_MODE_HALL, mt32CompatibleMode, getSelectedRendererType());
+	reverbModels[REVERB_MODE_PLATE] = BReverbModel::createBReverbModel(REVERB_MODE_PLATE, mt32CompatibleMode, getSelectedRendererType());
+	reverbModels[REVERB_MODE_TAP_DELAY] = BReverbModel::createBReverbModel(REVERB_MODE_TAP_DELAY, mt32CompatibleMode, getSelectedRendererType());
 #if !MT32EMU_REDUCE_REVERB_MEMORY
 	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
 		reverbModels[i]->open();
@@ -714,11 +722,11 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 
 	midiQueue = new MidiEventQueue();
 
-	analog = Analog::createAnalog(analogOutputMode, controlROMFeatures->oldMT32AnalogLPF, selectedRendererType);
+	analog = Analog::createAnalog(analogOutputMode, controlROMFeatures->oldMT32AnalogLPF, getSelectedRendererType());
 	setOutputGain(outputGain);
 	setReverbOutputGain(reverbOutputGain);
 
-	switch (selectedRendererType) {
+	switch (getSelectedRendererType()) {
 		case RendererType_BIT16S:
 			renderer = new RendererImpl<IntSample>(*this);
 			break;
@@ -726,7 +734,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 			renderer = new RendererImpl<FloatSample>(*this);
 			break;
 		default:
-			printDebug("Synth: Unknown renderer type %i\n", selectedRendererType);
+			printDebug("Synth: Unknown renderer type %i\n", getSelectedRendererType());
 			dispose();
 			return false;
 	}
@@ -1721,11 +1729,11 @@ bool MidiEventQueue::isEmpty() const {
 }
 
 void Synth::selectRendererType(RendererType newRendererType) {
-	selectedRendererType = newRendererType;
+	extensions.selectedRendererType = newRendererType;
 }
 
 RendererType Synth::getSelectedRendererType() const {
-	return selectedRendererType;
+	return extensions.selectedRendererType;
 }
 
 Bit32u Synth::getStereoOutputSampleRate() const {
