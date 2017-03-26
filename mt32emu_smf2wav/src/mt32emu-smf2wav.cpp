@@ -62,6 +62,13 @@ static const MT32Emu::RendererType RENDERER_TYPES[] = {
 	MT32Emu::RendererType_FLOAT
 };
 
+static const MT32Emu::SamplerateConversionQuality SRC_QUALITIES[] = {
+	MT32Emu::SamplerateConversionQuality_FASTEST,
+	MT32Emu::SamplerateConversionQuality_FAST,
+	MT32Emu::SamplerateConversionQuality_GOOD,
+	MT32Emu::SamplerateConversionQuality_BEST
+};
+
 struct Options {
 	gchar **inputFilenames;
 	gchar *outputFilename;
@@ -75,6 +82,7 @@ struct Options {
 	MT32Emu::DACInputMode dacInputMode;
 	MT32Emu::AnalogOutputMode analogOutputMode;
 	MT32Emu::RendererType rendererType;
+	MT32Emu::SamplerateConversionQuality srcQuality;
 	int rawChannelMap[8];
 	int rawChannelCount;
 
@@ -113,6 +121,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	gint dacInputModeIx = 0;
 	gint analogOutputModeIx = 0;
 	gint rendererTypeIx = 0;
+	gint srcQualityIx = 2;
 	gint bufferFrameCount = DEFAULT_BUFFER_SIZE;
 	gint renderMinFrames = 0;
 	gint renderMaxFrames = -1;
@@ -128,6 +137,8 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	options->dacInputMode = DAC_INPUT_MODES[0];
 	options->analogOutputMode = ANALOG_OUTPUT_MODES[0];
 	options->rendererType = RENDERER_TYPES[0];
+	options->srcQuality = SRC_QUALITIES[2];
+	options->sampleRate = 0;
 	options->rawChannelCount = 0;
 
 	options->recordMaxStartSilentFrames = 0;
@@ -146,7 +157,13 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		// buffer-size determines the maximum number of frames to be rendered by the emulator in one pass.
 		// This can have a big impact on performance (Generally more at a time=better).
 		{"buffer-size", 'b', 0, G_OPTION_ARG_INT, &bufferFrameCount, "Buffer size in frames (minimum: 1)", "<frame_count>"},  // FIXME: Show default
-//		{"sample-rate", 'r', 0, G_OPTION_ARG_INT, &options->sampleRate, "Sample rate in Hz (minimum: 1, default: auto)", "<sample_rate>"},
+		{"sample-rate", 'p', 0, G_OPTION_ARG_INT, &options->sampleRate, "Sample rate in Hz (minimum: 1, default: auto)", "<sample_rate>"},
+
+		{"src-quality", 'q', 0, G_OPTION_ARG_INT, &srcQualityIx, "Sample rate conversion quality (default: 2)\n"
+		 "                 0: FASTEST\n"
+		 "                 1: FAST\n"
+		 "                 2: GOOD\n"
+		 "                 3: BEST", "<src_quality>"},
 
 		{"analog-output-mode", 'a', 0, G_OPTION_ARG_INT, &analogOutputModeIx, "Analogue low-pass filter emulation mode (default: 0)\n"
 		 "                 0: DISABLED\n"
@@ -202,6 +219,10 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	}
 	if (rendererTypeIx < 0 || rendererTypeIx > 1) {
 		fprintf(stderr, "renderer-type must be either 0 or 1\n");
+		parseSuccess = false;
+	}
+	if (srcQualityIx < 0 || srcQualityIx > 3) {
+		fprintf(stderr, "src-quality must be between 0 and 3\n");
 		parseSuccess = false;
 	}
 	if (dacInputModeIx < 0 || dacInputModeIx > 3) {
@@ -263,6 +284,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	}
 	options->analogOutputMode = ANALOG_OUTPUT_MODES[analogOutputModeIx];
 	options->rendererType = RENDERER_TYPES[rendererTypeIx];
+	options->srcQuality = SRC_QUALITIES[srcQualityIx];
 	g_strfreev(rawStreams);
 	if (options->rawChannelCount > 0) {
 		options->dacInputMode = MT32Emu::DACInputMode_PURE;
@@ -683,6 +705,8 @@ int main(int argc, char *argv[]) {
 			return 1;
 		}
 	}
+	service.setStereoOutputSampleRate(options.sampleRate);
+	service.setSamplerateConversionQuality(options.srcQuality);
 	service.setAnalogOutputMode(options.analogOutputMode);
 	service.selectRendererType(options.rendererType);
 	if (service.openSynth() == MT32EMU_RC_OK) {
