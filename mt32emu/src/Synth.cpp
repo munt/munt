@@ -723,9 +723,15 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 	switch (getSelectedRendererType()) {
 		case RendererType_BIT16S:
 			renderer = new RendererImpl<IntSample>(*this);
+#if MT32EMU_MONITOR_INIT
+			printDebug("Using integer 16-bit samples in renderer and wave generator");
+#endif
 			break;
 		case RendererType_FLOAT:
 			renderer = new RendererImpl<FloatSample>(*this);
+#if MT32EMU_MONITOR_INIT
+			printDebug("Using float 32-bit samples in renderer and wave generator");
+#endif
 			break;
 		default:
 			printDebug("Synth: Unknown renderer type %i\n", getSelectedRendererType());
