@@ -51,7 +51,8 @@ static Bit32s getPANFactor(Bit32s panSetting) {
 }
 
 Partial::Partial(Synth *useSynth, int useDebugPartialNum) :
-	synth(useSynth), debugPartialNum(useDebugPartialNum), sampleNum(0) {
+	synth(useSynth), debugPartialNum(useDebugPartialNum), sampleNum(0),
+	floatMode(useSynth->getSelectedRendererType() == RendererType_FLOAT) {
 	// Initialisation of tva, tvp and tvf uses 'this' pointer
 	// and thus should not be in the initializer list to avoid a compiler warning
 	tva = new TVA(this, &ampRamp);
@@ -163,7 +164,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	leftPanValue = synth->reversedStereoEnabled ? 14 - panSetting : panSetting;
 	rightPanValue = 14 - leftPanValue;
 
-	if (synth->getSelectedRendererType() == RendererType_BIT16S) {
+	if (!floatMode) {
 		leftPanValue = getPANFactor(leftPanValue);
 		rightPanValue = getPANFactor(rightPanValue);
 	}
@@ -366,7 +367,7 @@ bool Partial::doProduceOutput(Sample *leftBuf, Sample *rightBuf, Bit32u length, 
 }
 
 bool Partial::produceOutput(IntSample *leftBuf, IntSample *rightBuf, Bit32u length) {
-	if (synth->getSelectedRendererType() != RendererType_BIT16S) {
+	if (floatMode) {
 		synth->printDebug("Partial: Invalid call to produceOutput()!\n", synth->getSelectedRendererType());
 		return false;
 	}
@@ -374,7 +375,7 @@ bool Partial::produceOutput(IntSample *leftBuf, IntSample *rightBuf, Bit32u leng
 }
 
 bool Partial::produceOutput(FloatSample *leftBuf, FloatSample *rightBuf, Bit32u length) {
-	if (synth->getSelectedRendererType() != RendererType_FLOAT) {
+	if (!floatMode) {
 		synth->printDebug("Partial: Invalid call to produceOutput()!\n", synth->getSelectedRendererType());
 		return false;
 	}

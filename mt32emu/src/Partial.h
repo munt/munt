@@ -74,6 +74,7 @@ private:
 
 	// TODO: This should be owned by PartialPair
 	LA32PartialPair *la32Pair;
+	const bool floatMode;
 
 	const PatchCache *patchCache;
 	PatchCache cachebackup;
