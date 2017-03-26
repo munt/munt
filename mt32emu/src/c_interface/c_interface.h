@@ -143,6 +143,19 @@ MT32EMU_EXPORT void mt32emu_set_stereo_output_samplerate(mt32emu_context context
 MT32EMU_EXPORT void mt32emu_set_samplerate_conversion_quality(mt32emu_context context, const mt32emu_samplerate_conversion_quality quality);
 
 /**
+ * Selects new type of the wave generator and renderer to be used during subsequent calls to mt32emu_open_synth().
+ * By default, MT32EMU_RT_BIT16S is selected.
+ * See mt32emu_renderer_type for details.
+ */
+MT32EMU_EXPORT void mt32emu_select_renderer_type(mt32emu_context context, const mt32emu_renderer_type renderer_type);
+
+/**
+ * Returns previously selected type of the wave generator and renderer.
+ * See mt32emu_renderer_type for details.
+ */
+MT32EMU_EXPORT mt32emu_renderer_type mt32emu_get_selected_renderer_type(mt32emu_context context);
+
+/**
  * Prepares the emulation context to receive MIDI messages and produce output audio data using aforehand added set of ROMs,
  * and optionally set the maximum partial count and the analog output mode.
  * Returns MT32EMU_RC_OK upon success.

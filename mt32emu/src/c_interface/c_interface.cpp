@@ -106,6 +106,8 @@ static const mt32emu_service_i_v1 SERVICE_VTABLE = {
 	mt32emu_get_best_analog_output_mode,
 	mt32emu_set_stereo_output_samplerate,
 	mt32emu_set_samplerate_conversion_quality,
+	mt32emu_select_renderer_type,
+	mt32emu_get_selected_renderer_type,
 	mt32emu_convert_output_to_synth_timestamp,
 	mt32emu_convert_synth_to_output_timestamp
 };
@@ -452,6 +454,14 @@ void mt32emu_set_stereo_output_samplerate(mt32emu_context context, const double 
 
 void mt32emu_set_samplerate_conversion_quality(mt32emu_context context, const mt32emu_samplerate_conversion_quality quality) {
 	context->srcState->srcQuality = SamplerateConversionQuality(quality);
+}
+
+void mt32emu_select_renderer_type(mt32emu_context context, const mt32emu_renderer_type renderer_type) {
+	context->synth->selectRendererType(static_cast<RendererType>(renderer_type));
+}
+
+mt32emu_renderer_type mt32emu_get_selected_renderer_type(mt32emu_context context) {
+	return static_cast<mt32emu_renderer_type>(context->synth->getSelectedRendererType());
 }
 
 mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context) {

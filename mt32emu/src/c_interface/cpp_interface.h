@@ -50,6 +50,8 @@ mt32emu_service_i mt32emu_get_service_i();
 #define mt32emu_set_analog_output_mode i.v0->setAnalogOutputMode
 #define mt32emu_set_stereo_output_samplerate iV1()->setStereoOutputSampleRate
 #define mt32emu_set_samplerate_conversion_quality iV1()->setSamplerateConversionQuality
+#define mt32emu_select_renderer_type iV1()->selectRendererType
+#define mt32emu_get_selected_renderer_type iV1()->getSelectedRendererType
 #define mt32emu_open_synth i.v0->openSynth
 #define mt32emu_close_synth i.v0->closeSynth
 #define mt32emu_is_open i.v0->isOpen
@@ -198,6 +200,8 @@ public:
 	void setAnalogOutputMode(const AnalogOutputMode analog_output_mode) { mt32emu_set_analog_output_mode(c, static_cast<mt32emu_analog_output_mode>(analog_output_mode)); }
 	void setStereoOutputSampleRate(const double samplerate) { mt32emu_set_stereo_output_samplerate(c, samplerate); }
 	void setSamplerateConversionQuality(const SamplerateConversionQuality quality) { mt32emu_set_samplerate_conversion_quality(c, static_cast<mt32emu_samplerate_conversion_quality>(quality)); }
+	void selectRendererType(const RendererType newRendererType) { mt32emu_select_renderer_type(c, static_cast<mt32emu_renderer_type>(newRendererType)); }
+	RendererType getSelectedRendererType() { return static_cast<RendererType>(mt32emu_get_selected_renderer_type(c)); }
 	mt32emu_return_code openSynth() { return mt32emu_open_synth(c); }
 	void closeSynth() { mt32emu_close_synth(c); }
 	bool isOpen() { return mt32emu_is_open(c) != MT32EMU_BOOL_FALSE; }
@@ -406,6 +410,8 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_set_analog_output_mode
 #undef mt32emu_set_stereo_output_samplerate
 #undef mt32emu_set_samplerate_conversion_quality
+#undef mt32emu_select_renderer_type
+#undef mt32emu_get_selected_renderer_type
 #undef mt32emu_open_synth
 #undef mt32emu_close_synth
 #undef mt32emu_is_open

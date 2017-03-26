@@ -69,6 +69,7 @@ typedef enum mt32emu_dac_input_mode mt32emu_dac_input_mode;
 typedef enum mt32emu_midi_delay_mode mt32emu_midi_delay_mode;
 typedef enum mt32emu_partial_state mt32emu_partial_state;
 typedef enum mt32emu_samplerate_conversion_quality mt32emu_samplerate_conversion_quality;
+typedef enum mt32emu_renderer_type mt32emu_renderer_type;
 #endif
 
 /** Contains identifiers and descriptions of ROM files being used. */
@@ -291,6 +292,8 @@ typedef union mt32emu_service_i mt32emu_service_i;
 	mt32emu_analog_output_mode (*getBestAnalogOutputMode)(const double target_samplerate); \
 	void (*setStereoOutputSampleRate)(mt32emu_context context, const double samplerate); \
 	void (*setSamplerateConversionQuality)(mt32emu_context context, const mt32emu_samplerate_conversion_quality quality); \
+	void (*selectRendererType)(mt32emu_context context, mt32emu_renderer_type renderer_type); \
+	mt32emu_renderer_type (*getSelectedRendererType)(mt32emu_context context); \
 	mt32emu_bit32u (*convertOutputToSynthTimestamp)(mt32emu_const_context context, mt32emu_bit32u output_timestamp); \
 	mt32emu_bit32u (*convertSynthToOutputTimestamp)(mt32emu_const_context context, mt32emu_bit32u synth_timestamp);
 
