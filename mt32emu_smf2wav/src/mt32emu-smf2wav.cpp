@@ -157,7 +157,8 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		// buffer-size determines the maximum number of frames to be rendered by the emulator in one pass.
 		// This can have a big impact on performance (Generally more at a time=better).
 		{"buffer-size", 'b', 0, G_OPTION_ARG_INT, &bufferFrameCount, "Buffer size in frames (minimum: 1)", "<frame_count>"},  // FIXME: Show default
-		{"sample-rate", 'p', 0, G_OPTION_ARG_INT, &options->sampleRate, "Sample rate in Hz (minimum: 1, default: auto)", "<sample_rate>"},
+		{"sample-rate", 'p', 0, G_OPTION_ARG_INT, &options->sampleRate, "Sample rate in Hz (minimum: 1, default: auto)"
+		 "                Ignored if -w is used (in which case auto is always used)\n", "<sample_rate>"},
 
 		{"src-quality", 'q', 0, G_OPTION_ARG_INT, &srcQualityIx, "Sample rate conversion quality (default: 2)\n"
 		 "                 0: FASTEST\n"
@@ -166,6 +167,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		 "                 3: BEST", "<src_quality>"},
 
 		{"analog-output-mode", 'a', 0, G_OPTION_ARG_INT, &analogOutputModeIx, "Analogue low-pass filter emulation mode (default: 0)\n"
+		 "                Ignored if -w is used (in which case 0/DISABLED is always used)\n"
 		 "                 0: DISABLED\n"
 		 "                 1: COARSE\n"
 		 "                 2: ACCURATE\n"
@@ -288,6 +290,8 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	g_strfreev(rawStreams);
 	if (options->rawChannelCount > 0) {
 		options->dacInputMode = MT32Emu::DACInputMode_PURE;
+		options->analogOutputMode = MT32Emu::AnalogOutputMode_DIGITAL_ONLY;
+		options->sampleRate = 0;
 	} else {
 		options->dacInputMode = DAC_INPUT_MODES[dacInputModeIx];
 	}
