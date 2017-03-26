@@ -210,6 +210,7 @@ bool QSynth::open(uint targetSampleRate, SamplerateConversionQuality srcQuality,
 	}
 	static const char *ANALOG_OUTPUT_MODES[] = {"Digital only", "Coarse", "Accurate", "Oversampled2x"};
 	qDebug() << "Using Analogue output mode:" << ANALOG_OUTPUT_MODES[actualAnalogOutputMode];
+	qDebug() << "Using Renderer Type:" << (synthProfile.rendererType ? "Float 32-bit" : "Integer 16-bit");
 	if (synth->open(*controlROMImage, *pcmROMImage, actualAnalogOutputMode)) {
 		setState(SynthState_OPEN);
 		reportHandler.onDeviceReconfig();
@@ -360,6 +361,10 @@ void QSynth::setAnalogOutputMode(MT32Emu::AnalogOutputMode useAnalogOutputMode) 
 	analogOutputMode = useAnalogOutputMode;
 }
 
+void QSynth::setRendererType(MT32Emu::RendererType useRendererType) {
+	synth->selectRendererType(useRendererType);
+}
+
 const QString QSynth::getPatchName(int partNum) const {
 	synthMutex->lock();
 	QString name = isOpen() ? QString().fromLocal8Bit(synth->getPatchName(partNum)) : QString("Channel %1").arg(partNum + 1);
@@ -469,6 +474,7 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.emuDACInputMode = synth->getDACInputMode();
 	synthProfile.midiDelayMode = synth->getMIDIDelayMode();
 	synthProfile.analogOutputMode = analogOutputMode;
+	synthProfile.rendererType = synth->getSelectedRendererType();
 	synthProfile.reverbCompatibilityMode = reverbCompatibilityMode;
 	synthProfile.outputGain = synth->getOutputGain();
 	synthProfile.reverbOutputGain = synth->getReverbOutputGain();
@@ -505,6 +511,7 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	setMIDIDelayMode(synthProfile.midiDelayMode);
 	setDACInputMode(synthProfile.emuDACInputMode);
 	setAnalogOutputMode(synthProfile.analogOutputMode);
+	setRendererType(synthProfile.rendererType);
 	setOutputGain(synthProfile.outputGain);
 	setReverbOutputGain(synthProfile.reverbOutputGain);
 	setReverbOverridden(synthProfile.reverbOverridden);

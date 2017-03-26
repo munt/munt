@@ -283,6 +283,10 @@ void SynthRoute::setAnalogOutputMode(AnalogOutputMode analogOutputMode) {
 	qSynth.setAnalogOutputMode(analogOutputMode);
 }
 
+void SynthRoute::setRendererType(RendererType rendererType) {
+	qSynth.setRendererType(rendererType);
+}
+
 void SynthRoute::getSynthProfile(SynthProfile &synthProfile) const {
 	qSynth.getSynthProfile(synthProfile);
 }

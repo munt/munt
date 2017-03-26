@@ -69,6 +69,7 @@ public:
 	void setMIDIDelayMode(MT32Emu::MIDIDelayMode midiDelayMode);
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 	void setAnalogOutputMode(MT32Emu::AnalogOutputMode analogOutputMode);
+	void setRendererType(MT32Emu::RendererType rendererType);
 
 	void startRecordingAudio(const QString &fileName);
 	void stopRecordingAudio();

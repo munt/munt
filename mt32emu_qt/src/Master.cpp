@@ -417,6 +417,7 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	synthProfile.emuDACInputMode = (MT32Emu::DACInputMode)settings->value("emuDACInputMode", MT32Emu::DACInputMode_NICE).toInt();
 	synthProfile.midiDelayMode = (MT32Emu::MIDIDelayMode)settings->value("midiDelayMode", MT32Emu::MIDIDelayMode_DELAY_SHORT_MESSAGES_ONLY).toInt();
 	synthProfile.analogOutputMode = (MT32Emu::AnalogOutputMode)settings->value("analogOutputMode", MT32Emu::AnalogOutputMode_ACCURATE).toInt();
+	synthProfile.rendererType = (MT32Emu::RendererType)settings->value("rendererType", MT32Emu::RendererType_BIT16S).toInt();
 	synthProfile.reverbCompatibilityMode = (ReverbCompatibilityMode)settings->value("reverbCompatibilityMode", ReverbCompatibilityMode_DEFAULT).toInt();
 	synthProfile.reverbEnabled = settings->value("reverbEnabled", true).toBool();
 	synthProfile.reverbOverridden = settings->value("reverbOverridden", false).toBool();
@@ -448,6 +449,7 @@ void Master::storeSynthProfile(const SynthProfile &synthProfile, QString name) c
 	settings->setValue("emuDACInputMode", synthProfile.emuDACInputMode);
 	settings->setValue("midiDelayMode", synthProfile.midiDelayMode);
 	settings->setValue("analogOutputMode", synthProfile.analogOutputMode);
+	settings->setValue("rendererType", synthProfile.rendererType);
 	settings->setValue("reverbCompatibilityMode", synthProfile.reverbCompatibilityMode);
 	settings->setValue("reverbEnabled", synthProfile.reverbEnabled);
 	settings->setValue("reverbOverridden", synthProfile.reverbOverridden);

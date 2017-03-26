@@ -34,6 +34,79 @@
      <property name="fieldGrowthPolicy">
       <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
      </property>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>ROM Set:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QLabel" name="romSetLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="text">
+          <string>Unknown</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="changeROMSetButton">
+         <property name="toolTip">
+          <string>Set of ROM images to use in emulation.
+
+Takes effect after reopening the Synth.</string>
+         </property>
+         <property name="text">
+          <string>Change</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="midiDelayEmuLabel">
+       <property name="text">
+        <string>MIDI Delay Mode:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QComboBox" name="midiDelayEmuComboBox">
+       <property name="toolTip">
+        <string>MIDI interface delay emulation mode
+
+Incoming MIDI events will be delayed as if they are transferred via a real MIDI cable</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>Process all MIDI events immediately</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Delay short MIDI messages only</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Delay any MIDI events</string>
+        </property>
+       </item>
+      </widget>
+     </item>
      <item row="2" column="0">
       <widget class="QLabel" name="dacEmuLabel">
        <property name="text">
@@ -68,6 +141,30 @@
        <property name="tristate">
         <bool>true</bool>
        </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QComboBox" name="reverbCompatibilityComboBox">
+       <property name="toolTip">
+        <string>Reverb Compatibility Mode
+
+Select reverb model tunings to accurately emulate reverb chip of older units (like MT-32 v.1 or v.2) vs. newer units (including CM-32L).</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>Default - depends on control ROM version</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>MT-32 Compatible</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>CM-32L/LAPC-I Compatible</string>
+        </property>
+       </item>
       </widget>
      </item>
      <item row="4" column="0">
@@ -147,144 +244,6 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="label_5">
-       <property name="text">
-        <string>Output Gain</string>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="1">
-      <widget class="QSlider" name="outputGainSlider">
-       <property name="maximum">
-        <number>400</number>
-       </property>
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="tickPosition">
-        <enum>QSlider::TicksAbove</enum>
-       </property>
-       <property name="tickInterval">
-        <number>100</number>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="0">
-      <widget class="QLabel" name="label_6">
-       <property name="text">
-        <string>Reverb Output Gain</string>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="1">
-      <widget class="QSlider" name="reverbOutputGainSlider">
-       <property name="maximum">
-        <number>400</number>
-       </property>
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="tickPosition">
-        <enum>QSlider::TicksAbove</enum>
-       </property>
-       <property name="tickInterval">
-        <number>100</number>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>ROM Set:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QLabel" name="romSetLabel">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="text">
-          <string>Unknown</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="changeROMSetButton">
-         <property name="text">
-          <string>Change</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="midiDelayEmuLabel">
-       <property name="text">
-        <string>MIDI Delay Mode:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QComboBox" name="midiDelayEmuComboBox">
-       <property name="toolTip">
-        <string>MIDI interface delay emulation mode
-
-Incoming MIDI events will be delayed as if they are transferred via a real MIDI cable</string>
-       </property>
-       <item>
-        <property name="text">
-         <string>Process all MIDI events immediately</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Delay short MIDI messages only</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Delay any MIDI events</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QComboBox" name="reverbCompatibilityComboBox">
-       <property name="toolTip">
-        <string>Reverb Compatibility Mode
-
-Select reverb model tunings to accurately emulate reverb chip of older units (like MT-32 v.1 or v.2) vs. newer units (including CM-32L).</string>
-       </property>
-       <item>
-        <property name="text">
-         <string>Default - depends on control ROM version</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>MT-32 Compatible</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>CM-32L/LAPC-I Compatible</string>
-        </property>
-       </item>
-      </widget>
-     </item>
      <item row="7" column="0">
       <widget class="QLabel" name="label_8">
        <property name="text">
@@ -316,7 +275,90 @@ Takes effect after reopening the Synth.</string>
        </item>
       </widget>
      </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="label_9">
+       <property name="text">
+        <string>Renderer Type</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QComboBox" name="rendererTypeComboBox">
+       <property name="toolTip">
+        <string>Allows selecting between the available types of the wave generator
+model and the sample renderer.
+
+Integer 16-bit: 16-bit signed samples are used in the renderer.
+The wave generator uses a more accurate model based on logarithmic
+fixed-point computations and the LUTs found in the real hardware.
+Provides for the maximum emulation accuracy and speed.
+
+Float 32-bit: 32-bit floating point samples are used in the renderer.
+The wave generator uses less accurate simplified emulation model.
+This model produces output signal with better sound quality than
+the real hardware in terms of introducing less noise.
+
+Takes effect after reopening the Synth.</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>Integer 16-bit</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Float 32-bit</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="9" column="0">
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Output Gain</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="1">
+      <widget class="QSlider" name="outputGainSlider">
+       <property name="maximum">
+        <number>400</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="tickPosition">
+        <enum>QSlider::TicksAbove</enum>
+       </property>
+       <property name="tickInterval">
+        <number>100</number>
+       </property>
+      </widget>
+     </item>
      <item row="10" column="0">
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>Reverb Output Gain</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="1">
+      <widget class="QSlider" name="reverbOutputGainSlider">
+       <property name="maximum">
+        <number>400</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="tickPosition">
+        <enum>QSlider::TicksAbove</enum>
+       </property>
+       <property name="tickInterval">
+        <number>100</number>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="0">
       <widget class="QCheckBox" name="reverseStereoCheckBox">
        <property name="text">
         <string>Reverse Stereo</string>
@@ -326,7 +368,7 @@ Takes effect after reopening the Synth.</string>
        </property>
       </widget>
      </item>
-     <item row="10" column="1">
+     <item row="11" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
         <widget class="QPushButton" name="assignChannels2_10Button">
@@ -350,7 +392,7 @@ Takes effect after reopening the Synth.</string>
        </item>
       </layout>
      </item>
-     <item row="11" column="1">
+     <item row="12" column="1">
       <widget class="QCheckBox" name="engageChannel1CheckBox">
        <property name="text">
         <string>Use alternative channel assignment on synth start</string>
@@ -412,16 +454,16 @@ Takes effect after reopening the Synth.</string>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>buttonBox</tabstop>
   <tabstop>changeROMSetButton</tabstop>
   <tabstop>midiDelayEmuComboBox</tabstop>
   <tabstop>dacEmuComboBox</tabstop>
   <tabstop>reverbCheckBox</tabstop>
   <tabstop>reverbCompatibilityComboBox</tabstop>
-  <tabstop>reverbModeComboBox</tabstop>
   <tabstop>reverbTimeSlider</tabstop>
+  <tabstop>reverbModeComboBox</tabstop>
   <tabstop>reverbLevelSlider</tabstop>
   <tabstop>analogComboBox</tabstop>
+  <tabstop>rendererTypeComboBox</tabstop>
   <tabstop>outputGainSlider</tabstop>
   <tabstop>reverbOutputGainSlider</tabstop>
   <tabstop>reverseStereoCheckBox</tabstop>

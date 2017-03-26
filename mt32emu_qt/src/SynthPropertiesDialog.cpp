@@ -76,6 +76,10 @@ void SynthPropertiesDialog::on_analogComboBox_currentIndexChanged(int index) {
 	synthRoute->setAnalogOutputMode(MT32Emu::AnalogOutputMode(2 - index));
 }
 
+void SynthPropertiesDialog::on_rendererTypeComboBox_currentIndexChanged(int index) {
+	synthRoute->setRendererType(MT32Emu::RendererType(index));
+}
+
 void SynthPropertiesDialog::on_reverbCompatibilityComboBox_currentIndexChanged(int index) {
 	synthRoute->setReverbCompatibilityMode((ReverbCompatibilityMode)index);
 }
@@ -201,6 +205,7 @@ void SynthPropertiesDialog::restoreDefaults() {
 	ui->midiDelayEmuComboBox->setCurrentIndex(1);
 	ui->dacEmuComboBox->setCurrentIndex(0);
 	ui->analogComboBox->setCurrentIndex(0);
+	ui->rendererTypeComboBox->setCurrentIndex(0);
 	ui->reverbCheckBox->setCheckState(Qt::Checked);
 	ui->reverbCompatibilityComboBox->setCurrentIndex(0);
 	ui->reverbModeComboBox->setCurrentIndex(0);
@@ -220,6 +225,7 @@ void SynthPropertiesDialog::loadSynthProfile(bool reloadFromSynthRoute) {
 	ui->midiDelayEmuComboBox->setCurrentIndex(synthProfile.midiDelayMode);
 	ui->dacEmuComboBox->setCurrentIndex(synthProfile.emuDACInputMode == MT32Emu::DACInputMode_NICE ? MT32Emu::DACInputMode_NICE : synthProfile.emuDACInputMode - 1);
 	ui->analogComboBox->setCurrentIndex(2 - synthProfile.analogOutputMode);
+	ui->rendererTypeComboBox->setCurrentIndex(synthProfile.rendererType);
 	ui->reverbCompatibilityComboBox->setCurrentIndex(synthProfile.reverbCompatibilityMode);
 	ui->reverbCheckBox->setCheckState(Qt::Checked);
 	ui->reverbModeComboBox->setCurrentIndex(synthProfile.reverbMode);
