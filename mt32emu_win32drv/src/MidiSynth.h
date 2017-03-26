@@ -34,6 +34,7 @@ private:
 	DACInputMode emuDACInputMode;
 	MIDIDelayMode midiDelayMode;
 	AnalogOutputMode analogOutputMode;
+	RendererType rendererType;
 	float outputGain;
 	float reverbOutputGain;
 	bool reverbEnabled;

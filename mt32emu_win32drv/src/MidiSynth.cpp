@@ -479,6 +479,7 @@ void MidiSynth::ReloadSettings() {
 		// Preserve AnalogOutputMode (and sample rate) in case of reset
 		analogOutputMode = (AnalogOutputMode)LoadIntValue(hRegProfile, "analogOutputMode", AnalogOutputMode_ACCURATE);
 	}
+	rendererType = (RendererType)LoadIntValue(hRegProfile, "rendererType", RendererType_BIT16S);
 
 	if (!resetEnabled && synth != NULL) return;
 	char romDir[256];
@@ -548,6 +549,7 @@ int MidiSynth::Init() {
 		return 1;
 	}
 	synth = new Synth(&reportHandler);
+	synth->selectRendererType(rendererType);
 	if (!synth->open(*controlROM, *pcmROM, analogOutputMode)) {
 		synth->close();
 		MessageBox(NULL, L"Can't open Synth", L"MT32", MB_OK | MB_ICONEXCLAMATION);
@@ -586,6 +588,7 @@ int MidiSynth::Reset() {
 
 	synthEvent.Wait();
 	synth->close();
+	synth->selectRendererType(rendererType);
 	if (!synth->open(*controlROM, *pcmROM, analogOutputMode)) {
 		synth->close();
 		synthEvent.Release();
