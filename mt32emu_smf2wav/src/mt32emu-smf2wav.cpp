@@ -24,6 +24,7 @@
 
 #include <glib.h>
 
+#define MT32EMU_API_TYPE 3
 #include <mt32emu/mt32emu.h>
 
 #include "smf.h"
@@ -80,7 +81,7 @@ struct Options {
 struct State {
 	MT32Emu::Bit16s *stereoSampleBuffer;
 	MT32Emu::Bit16s *rawSampleBuffer[6];
-	MT32Emu::Synth *synth;
+	MT32Emu::Service &service;
 	FILE *outputFile;
 	bool lastInputFile;
 	bool firstNoiseEncountered;
@@ -331,7 +332,7 @@ static bool loadFile(MT32Emu::Bit8u *&fileBuffer, gsize &fileBufferLength, const
 	return true;
 }
 
-static bool playSysexFileBuffer(MT32Emu::Synth *synth, const gchar *displayFilename, MT32Emu::Bit8u *fileBuffer, gsize fileBufferLength) {
+static bool playSysexFileBuffer(MT32Emu::Service &service, const gchar *displayFilename, MT32Emu::Bit8u *fileBuffer, gsize fileBufferLength) {
 	long start = -1;
 	for (gsize i = 0; i < fileBufferLength; i++) {
 		if (fileBuffer[i] == 0xF0) {
@@ -344,7 +345,7 @@ static bool playSysexFileBuffer(MT32Emu::Synth *synth, const gchar *displayFilen
 			if (start == -1) {
 				fprintf(stderr, "Ended a sysex message without a start byte - sysex file '%s' may be in an unsupported format.\n", displayFilename);
 			} else {
-				synth->playSysexNow((MT32Emu::Bit8u*)(fileBuffer + start), i - start + 1);
+				service.playSysexNow((MT32Emu::Bit8u*)(fileBuffer + start), i - start + 1);
 			}
 			start = -1;
 		}
@@ -388,7 +389,7 @@ static void renderStereo(unsigned int frameCount, const Options &options, State 
 	state.renderedFrames += frameCount;
 	while (frameCount > 0) {
 		unsigned int renderedFramesThisPass = MIN(frameCount, options.bufferFrameCount);
-		state.synth->render(state.stereoSampleBuffer, renderedFramesThisPass);
+		state.service.renderBit16s(state.stereoSampleBuffer, renderedFramesThisPass);
 		for (unsigned int i = 0; i < renderedFramesThisPass; i++) {
 			unsigned int leftIx = i * 2;
 			unsigned int rightIx = leftIx + 1;
@@ -412,7 +413,8 @@ static void renderRaw(unsigned int frameCount, const Options &options, State &st
 	state.renderedFrames += frameCount;
 	while (frameCount > 0) {
 		unsigned int renderedFramesThisPass = MIN(frameCount, options.bufferFrameCount);
-		state.synth->renderStreams(state.rawSampleBuffer[0], state.rawSampleBuffer[1], state.rawSampleBuffer[2], state.rawSampleBuffer[3], state.rawSampleBuffer[4], state.rawSampleBuffer[5], renderedFramesThisPass);
+		mt32emu_dac_output_bit16s_streams streams = {state.rawSampleBuffer[0], state.rawSampleBuffer[1], state.rawSampleBuffer[2], state.rawSampleBuffer[3], state.rawSampleBuffer[4], state.rawSampleBuffer[5]};
+		state.service.renderBit16sStreams(&streams, renderedFramesThisPass);
 		for (unsigned int i = 0; i < renderedFramesThisPass; i++) {
 			bool allSilent = false;
 			for (int chanMapIx = 0; chanMapIx < options.rawChannelCount; chanMapIx++) {
@@ -519,7 +521,7 @@ static void playSMF(smf_t *smf, const Options &options, State &state) {
 				len = unterminatedSysexLen;
 			}
 			if (!unterminated) {
-				state.synth->playSysex(buf, len);
+				state.service.playSysex(buf, len);
 				if (addUnterminated) {
 					delete[] unterminatedSysex;
 					unterminatedSysex = NULL;
@@ -538,22 +540,22 @@ static void playSMF(smf_t *smf, const Options &options, State &state) {
 				for (int i = 0; i < event->midi_buffer_length; i++) {
 					msg |= (event->midi_buffer[i] << (8 * i));
 				}
-				state.synth->playMsg(msg);
+				state.service.playMsg(msg);
 			}
 		}
 	}
 	flushSilence(MIDI_ENDED, options, state);
 	if (options.sendAllNotesOff) {
 		for (unsigned char part = 0; part < 9; part++) {
-			state.synth->playMsg(0x0040B0 & part); // Release sustain pedal
-			state.synth->playMsg(0x007BB0 & part); // All notes off
+			state.service.playMsg(0x0040B0 & part); // Release sustain pedal
+			state.service.playMsg(0x007BB0 & part); // All notes off
 		}
 	}
 	if (state.lastInputFile && options.renderMinFrames > state.renderedFrames) {
 		render(options.renderMinFrames - state.renderedFrames, options, state);
 	}
 	if (options.waitForLA32) {
-		while (state.renderedFrames < options.renderMaxFrames && state.synth->hasActivePartials()) {
+		while (state.renderedFrames < options.renderMaxFrames && state.service.hasActivePartials()) {
 			// FIXME: Rendering one sample at a time is very inefficient, but it's important for
 			// some tests to be able to see the precise frame when partials become inactive.
 			// Perhaps we should add a renderWhilePartialsActive() to Synth
@@ -564,7 +566,7 @@ static void playSMF(smf_t *smf, const Options &options, State &state) {
 		flushSilence(LA32_INACTIVE, options, state);
 		if (options.waitForReverb) {
 			unsigned int reverbEndFrames = MIN(MAX_REVERB_END_FRAMES, options.bufferFrameCount);
-			while (state.renderedFrames < options.renderMaxFrames && state.synth->isActive()) {
+			while (state.renderedFrames < options.renderMaxFrames && state.service.isActive()) {
 				// Render a healthy number of frames while waiting for reverb to become inactive.
 				// Note that once we've detected inactivity, silent samples will not be written.
 				unsigned int renderLength = reverbEndFrames;
@@ -575,7 +577,7 @@ static void playSMF(smf_t *smf, const Options &options, State &state) {
 			}
 		}
 	}
-	if (!state.synth->isActive()) {
+	if (!state.service.isActive()) {
 		state.unwrittenSilentFrames = 0;
 	}
 	delete[] unterminatedSysex;
@@ -588,7 +590,7 @@ static bool playFile(const gchar *inputFilename, const gchar *displayInputFilena
 		return false;
 	}
 	if (fileBuffer[0] == 0xF0) {
-		return playSysexFileBuffer(state.synth, displayInputFilename, fileBuffer, fileBufferLength);
+		return playSysexFileBuffer(state.service, displayInputFilename, fileBuffer, fileBufferLength);
 	}
 	smf_t *smf = smf_load_from_memory(fileBuffer, fileBufferLength);
 	if (smf != NULL) {
@@ -608,9 +610,10 @@ static bool playFile(const gchar *inputFilename, const gchar *displayInputFilena
 
 int main(int argc, char *argv[]) {
 	Options options;
+	MT32Emu::Service service;
 	printf("Munt MT32Emu MIDI to Wave Conversion Utility. Version %s\n", VERSION);
 	printf("  Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>\n");
-	printf("Using Munt MT32Emu Library Version %s, libsmf Version %s\n", MT32Emu::Synth::getLibraryVersionString(), smf_get_version());
+	printf("Using Munt MT32Emu Library Version %s, libsmf Version %s\n", service.getLibraryVersionString(), smf_get_version());
 	if (!parseOptions(argc, argv, &options)) {
 		return -1;
 	}
@@ -634,38 +637,35 @@ int main(int argc, char *argv[]) {
 	}
 	displayOutputFilename = g_filename_display_name(outputFilename);
 
+	service.createContext();
 	gchar *baseDir = options.romDir;
 	if (baseDir == NULL)
 		baseDir = (gchar *)"";
 	gchar pathName[2048];
-	MT32Emu::FileStream controlROMFile;
-	MT32Emu::FileStream pcmROMFile;
 	g_strlcpy(pathName, baseDir, 2048);
 	g_strlcat(pathName, "CM32L_CONTROL.ROM", 2048);
-	if (!controlROMFile.open(pathName)) {
+	if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_CONTROL_ROM) {
 		g_strlcpy(pathName, baseDir, 2048);
 		g_strlcat(pathName, "MT32_CONTROL.ROM", 2048);
-		if (!controlROMFile.open(pathName)) {
+		if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_CONTROL_ROM) {
 			fprintf(stderr, "Control ROM not found.\n");
 			return 1;
 		}
 	}
 	g_strlcpy(pathName, baseDir, 2048);
 	g_strlcat(pathName, "CM32L_PCM.ROM", 2048);
-	if (!pcmROMFile.open(pathName)) {
+	if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_PCM_ROM) {
 		g_strlcpy(pathName, baseDir, 2048);
 		g_strlcat(pathName, "MT32_PCM.ROM", 2048);
-		if (!pcmROMFile.open(pathName)) {
+		if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_PCM_ROM) {
 			fprintf(stderr, "PCM ROM not found.\n");
 			return 1;
 		}
 	}
-	const MT32Emu::ROMImage *controlROMImage = MT32Emu::ROMImage::makeROMImage(&controlROMFile);
-	const MT32Emu::ROMImage *pcmROMImage = MT32Emu::ROMImage::makeROMImage(&pcmROMFile);
-	MT32Emu::Synth *synth = new MT32Emu::Synth();
-	if (synth->open(*controlROMImage, *pcmROMImage, options.analogOutputMode)) {
-		synth->setDACInputMode(options.dacInputMode);
-		options.sampleRate = synth->getStereoOutputSampleRate();
+	service.setAnalogOutputMode(options.analogOutputMode);
+	if (service.openSynth() == MT32EMU_RC_OK) {
+		service.setDACInputMode(options.dacInputMode);
+		options.sampleRate = service.getActualStereoOutputSamplerate();
 		printf("Using output sample rate %d Hz\n", options.sampleRate);
 
 		FILE *outputFile;
@@ -689,7 +689,7 @@ int main(int argc, char *argv[]) {
 
 		if (outputFile != NULL) {
 			if (options.rawChannelCount > 0 || writeWAVEHeader(outputFile, options.sampleRate)) {
-				State state = {NULL, {NULL, NULL, NULL, NULL, NULL, NULL}, synth, outputFile, false, false, 0, 0, 0};
+				State state = {NULL, {NULL, NULL, NULL, NULL, NULL, NULL}, service, outputFile, false, false, 0, 0, 0};
 				state.outputFile = outputFile;
 				if (options.rawChannelCount > 0) {
 					state.rawSampleBuffer[0] = new MT32Emu::Bit16s[options.bufferFrameCount];
@@ -730,9 +730,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		fprintf(stderr, "Error opening MT32Emu synthesizer.\n");
 	}
-	delete synth;
-	MT32Emu::ROMImage::freeROMImage(controlROMImage);
-	MT32Emu::ROMImage::freeROMImage(pcmROMImage);
+	service.freeContext();
 
 	if(options.outputFilename == NULL && outputFilename != NULL) {
 		free(outputFilename);
