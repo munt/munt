@@ -27,6 +27,10 @@
 #define MT32EMU_API_TYPE 3
 #include <mt32emu/mt32emu.h>
 
+#if MT32EMU_VERSION_MAJOR != 2 || MT32EMU_VERSION_MINOR < 1
+#error Incompatible mt32emu library version
+#endif
+
 #include "smf.h"
 
 static const int DEFAULT_BUFFER_SIZE = 128 * 1024;
@@ -53,6 +57,11 @@ static const MT32Emu::AnalogOutputMode ANALOG_OUTPUT_MODES[] = {
 	MT32Emu::AnalogOutputMode_OVERSAMPLED
 };
 
+static const MT32Emu::RendererType RENDERER_TYPES[] = {
+	MT32Emu::RendererType_BIT16S,
+	MT32Emu::RendererType_FLOAT
+};
+
 struct Options {
 	gchar **inputFilenames;
 	gchar *outputFilename;
@@ -65,6 +74,7 @@ struct Options {
 
 	MT32Emu::DACInputMode dacInputMode;
 	MT32Emu::AnalogOutputMode analogOutputMode;
+	MT32Emu::RendererType rendererType;
 	int rawChannelMap[8];
 	int rawChannelCount;
 
@@ -102,6 +112,7 @@ static void freeOptions(Options *options) {
 static bool parseOptions(int argc, char *argv[], Options *options) {
 	gint dacInputModeIx = 0;
 	gint analogOutputModeIx = 0;
+	gint rendererTypeIx = 0;
 	gint bufferFrameCount = DEFAULT_BUFFER_SIZE;
 	gint renderMinFrames = 0;
 	gint renderMaxFrames = -1;
@@ -116,6 +127,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 
 	options->dacInputMode = DAC_INPUT_MODES[0];
 	options->analogOutputMode = ANALOG_OUTPUT_MODES[0];
+	options->rendererType = RENDERER_TYPES[0];
 	options->rawChannelCount = 0;
 
 	options->recordMaxStartSilentFrames = 0;
@@ -141,6 +153,10 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		 "                 1: COARSE\n"
 		 "                 2: ACCURATE\n"
 		 "                 3: OVERSAMPLED", "<analog_output_mode>"},
+
+		{"renderer-type", 'r', 0, G_OPTION_ARG_INT, &rendererTypeIx, "Type of samples to use in renderer and wave generator (default: 0)\n"
+		 "                 0: Integer 16-bit\n"
+		 "                 1: Float 32-bit\n", "<renderer_type>"},
 
 		{"dac-input-mode", 'd', 0, G_OPTION_ARG_INT, &dacInputModeIx, "LA-32 to DAC input mode (default: 0)\n"
 		 "                Ignored if -w is used (in which case 1/PURE is always used)\n"
@@ -182,6 +198,10 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	}
 	if (analogOutputModeIx < 0 || analogOutputModeIx > 3) {
 		fprintf(stderr, "analog-output-mode must be between 0 and 3\n");
+		parseSuccess = false;
+	}
+	if (rendererTypeIx < 0 || rendererTypeIx > 1) {
+		fprintf(stderr, "renderer-type must be either 0 or 1\n");
 		parseSuccess = false;
 	}
 	if (dacInputModeIx < 0 || dacInputModeIx > 3) {
@@ -242,6 +262,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		parseSuccess = false;
 	}
 	options->analogOutputMode = ANALOG_OUTPUT_MODES[analogOutputModeIx];
+	options->rendererType = RENDERER_TYPES[rendererTypeIx];
 	g_strfreev(rawStreams);
 	if (options->rawChannelCount > 0) {
 		options->dacInputMode = MT32Emu::DACInputMode_PURE;
@@ -663,6 +684,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	service.setAnalogOutputMode(options.analogOutputMode);
+	service.selectRendererType(options.rendererType);
 	if (service.openSynth() == MT32EMU_RC_OK) {
 		service.setDACInputMode(options.dacInputMode);
 		options.sampleRate = service.getActualStereoOutputSamplerate();
