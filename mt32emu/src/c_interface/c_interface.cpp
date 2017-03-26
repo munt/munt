@@ -491,14 +491,14 @@ mt32emu_bit32u mt32emu_get_actual_stereo_output_samplerate(mt32emu_const_context
 	if (context->srcState->src == NULL) {
 		return context->synth->getStereoOutputSampleRate();
 	}
-	return mt32emu_bit32u(context->srcState->src->convertSynthToOutputTimestamp(SAMPLE_RATE));
+	return mt32emu_bit32u(0.5 + context->srcState->src->convertSynthToOutputTimestamp(SAMPLE_RATE));
 }
 
 mt32emu_bit32u mt32emu_convert_output_to_synth_timestamp(mt32emu_const_context context, mt32emu_bit32u output_timestamp) {
 	if (context->srcState->src == NULL) {
 		return output_timestamp;
 	}
-	return mt32emu_bit32u(context->srcState->src->convertOutputToSynthTimestamp(output_timestamp));
+	return mt32emu_bit32u(0.5 + context->srcState->src->convertOutputToSynthTimestamp(output_timestamp));
 }
 
 mt32emu_bit32u mt32emu_convert_synth_to_output_timestamp(mt32emu_const_context context, mt32emu_bit32u synth_timestamp) {
