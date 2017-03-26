@@ -1763,8 +1763,13 @@ template <class Sample>
 template <class O>
 void RendererImpl<Sample>::doRenderAndConvert(O *stereoStream, Bit32u len) {
 	Sample renderingBuffer[MAX_SAMPLES_PER_RUN << 1];
-	doRender(renderingBuffer, len);
-	convertSampleFormat(renderingBuffer, stereoStream, len << 1);
+	while (len > 0) {
+		Bit32u thisPassLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
+		doRender(renderingBuffer, thisPassLen);
+		convertSampleFormat(renderingBuffer, stereoStream, thisPassLen << 1);
+		stereoStream += thisPassLen << 1;
+		len -= thisPassLen;
+	}
 }
 
 template<>
@@ -1812,6 +1817,16 @@ static inline void advanceStream(Sample *&stream, Bit32u len) {
 }
 
 template <class Sample>
+static inline void advanceStreams(DACOutputStreams<Sample> &streams, Bit32u len) {
+	advanceStream(streams.nonReverbLeft, len);
+	advanceStream(streams.nonReverbRight, len);
+	advanceStream(streams.reverbDryLeft, len);
+	advanceStream(streams.reverbDryRight, len);
+	advanceStream(streams.reverbWetLeft, len);
+	advanceStream(streams.reverbWetRight, len);
+}
+
+template <class Sample>
 static inline void muteStreams(const DACOutputStreams<Sample> &streams, Bit32u len) {
 	Synth::muteSampleBuffer(streams.nonReverbLeft, len);
 	Synth::muteSampleBuffer(streams.nonReverbRight, len);
@@ -1819,6 +1834,16 @@ static inline void muteStreams(const DACOutputStreams<Sample> &streams, Bit32u l
 	Synth::muteSampleBuffer(streams.reverbDryRight, len);
 	Synth::muteSampleBuffer(streams.reverbWetLeft, len);
 	Synth::muteSampleBuffer(streams.reverbWetRight, len);
+}
+
+template <class I, class O>
+static inline void convertStreamsFormat(const DACOutputStreams<I> &inStreams, const DACOutputStreams<O> &outStreams, Bit32u len) {
+	convertSampleFormat(inStreams.nonReverbLeft, outStreams.nonReverbLeft, len);
+	convertSampleFormat(inStreams.nonReverbRight, outStreams.nonReverbRight, len);
+	convertSampleFormat(inStreams.reverbDryLeft, outStreams.reverbDryLeft, len);
+	convertSampleFormat(inStreams.reverbDryRight, outStreams.reverbDryRight, len);
+	convertSampleFormat(inStreams.reverbWetLeft, outStreams.reverbWetLeft, len);
+	convertSampleFormat(inStreams.reverbWetRight, outStreams.reverbWetRight, len);
 }
 
 template <class Sample>
@@ -1851,12 +1876,7 @@ void RendererImpl<Sample>::doRenderStreams(const DACOutputStreams<Sample> &strea
 			}
 		}
 		produceStreams(tmpStreams, thisLen);
-		advanceStream(tmpStreams.nonReverbLeft, thisLen);
-		advanceStream(tmpStreams.nonReverbRight, thisLen);
-		advanceStream(tmpStreams.reverbDryLeft, thisLen);
-		advanceStream(tmpStreams.reverbDryRight, thisLen);
-		advanceStream(tmpStreams.reverbWetLeft, thisLen);
-		advanceStream(tmpStreams.reverbWetRight, thisLen);
+		advanceStreams(tmpStreams, thisLen);
 		len -= thisLen;
 	}
 }
@@ -1874,14 +1894,15 @@ void RendererImpl<Sample>::doRenderAndConvertStreams(const DACOutputStreams<O> &
 		cnvReverbWetLeft, cnvReverbWetRight
 	};
 
-	doRenderStreams(cnvStreams, len);
+	DACOutputStreams<O> tmpStreams = streams;
 
-	convertSampleFormat(cnvNonReverbLeft, streams.nonReverbLeft, len);
-	convertSampleFormat(cnvNonReverbRight, streams.nonReverbRight, len);
-	convertSampleFormat(cnvReverbDryLeft, streams.reverbDryLeft, len);
-	convertSampleFormat(cnvReverbDryRight, streams.reverbDryRight, len);
-	convertSampleFormat(cnvReverbWetLeft, streams.reverbWetLeft, len);
-	convertSampleFormat(cnvReverbWetRight, streams.reverbWetRight, len);
+	while (len > 0) {
+		Bit32u thisPassLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
+		doRenderStreams(cnvStreams, thisPassLen);
+		convertStreamsFormat(cnvStreams, tmpStreams, thisPassLen);
+		advanceStreams(tmpStreams, thisPassLen);
+		len -= thisPassLen;
+	}
 }
 
 template<>
