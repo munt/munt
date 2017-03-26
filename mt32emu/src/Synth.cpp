@@ -344,12 +344,6 @@ bool Synth::isDefaultReverbMT32Compatible() const {
 }
 
 void Synth::setDACInputMode(DACInputMode mode) {
-if (getSelectedRendererType() == RendererType_FLOAT) {
-	// We aren't emulating these in float mode, so better to inform the invoker
-	if ((mode == DACInputMode_GENERATION1) || (mode == DACInputMode_GENERATION2)) {
-		mode = DACInputMode_NICE;
-	}
-}
 	dacInputMode = mode;
 }
 
@@ -1987,12 +1981,33 @@ void RendererImpl<IntSample>::convertSamplesToOutput(IntSample *buffer, Bit32u l
 	}
 }
 
-template <>
-void RendererImpl<FloatSample>::produceLA32Output(FloatSample *, Bit32u) {
+static inline float produceDistortedSample(float sample) {
+	if (sample < -2.0f) {
+		return sample + 4.0f;
+	} else if (2.0f < sample) {
+		return sample - 4.0f;
+	}
+	return sample;
 }
 
 template <>
-void RendererImpl<FloatSample>::convertSamplesToOutput(FloatSample *, Bit32u) {
+void RendererImpl<FloatSample>::produceLA32Output(FloatSample *buffer, Bit32u len) {
+	if (synth.getDACInputMode() == DACInputMode_GENERATION2) {
+		while (len--) {
+			*buffer = produceDistortedSample(*buffer);
+			buffer++;
+		}
+	}
+}
+
+template <>
+void RendererImpl<FloatSample>::convertSamplesToOutput(FloatSample *buffer, Bit32u len) {
+	if (synth.getDACInputMode() == DACInputMode_GENERATION1) {
+		while (len--) {
+			*buffer = produceDistortedSample(*buffer);
+			buffer++;
+		}
+	}
 }
 
 template <class Sample>
