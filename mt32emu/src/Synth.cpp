@@ -717,6 +717,10 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 	midiQueue = new MidiEventQueue();
 
 	analog = Analog::createAnalog(analogOutputMode, controlROMFeatures->oldMT32AnalogLPF, getSelectedRendererType());
+#if MT32EMU_MONITOR_INIT
+	static const char *ANALOG_OUTPUT_MODES[] = { "Digital only", "Coarse", "Accurate", "Oversampled2x" };
+	printDebug("Using Analog output mode %s", ANALOG_OUTPUT_MODES[analogOutputMode]);
+#endif
 	setOutputGain(outputGain);
 	setReverbOutputGain(reverbOutputGain);
 
