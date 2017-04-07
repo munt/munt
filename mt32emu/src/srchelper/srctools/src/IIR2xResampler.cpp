@@ -21,7 +21,7 @@
 namespace SRCTools {
 
 	// Avoid denormals degrading performance, using biased input
-	static const BufferedSample BIAS = 1e-35f;
+	static const BufferedSample BIAS = 1e-20f;
 
 	// Sharp elliptic filter with symmetric ripple: N=18, Ap=As=-106 dB, fp=0.238, fs = 0.25 (in terms of sample rate)
 	static const IIRCoefficient FIR_BEST = 0.0014313792470984f;

@@ -37,6 +37,9 @@ static const Bit32u PROCESS_DELAY = 1;
 static const Bit32u MODE_3_ADDITIONAL_DELAY = 1;
 static const Bit32u MODE_3_FEEDBACK_DELAY = 1;
 
+// Avoid denormals degrading performance, using biased input
+static const FloatSample BIAS = 1e-20f;
+
 struct BReverbSettings {
 	const Bit32u numberOfAllpasses;
 	const Bit32u * const allpassSizes;
@@ -230,6 +233,14 @@ static inline IntSample quarterSample(IntSample sample) {
 
 static inline FloatSample quarterSample(FloatSample sample) {
 	return 0.25f * sample;
+}
+
+static inline IntSample addDCBias(IntSample sample) {
+	return sample;
+}
+
+static inline FloatSample addDCBias(FloatSample sample) {
+	return sample + BIAS;
 }
 
 static inline IntSample addAllpassNoise(IntSample sample) {
@@ -564,7 +575,7 @@ public:
 			}
 
 			// Looks like dryAmp doesn't change in MT-32 but it does in CM-32L / LAPC-I
-			dry = weirdMul(dry, dryAmp, 0xFF);
+			dry = weirdMul(addDCBias(dry), dryAmp, 0xFF);
 
 			if (tapDelayMode) {
 				TapDelayCombFilter<Sample> *comb = static_cast<TapDelayCombFilter<Sample> *>(*combs);
