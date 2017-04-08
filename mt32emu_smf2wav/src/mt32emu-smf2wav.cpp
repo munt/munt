@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <cerrno>
+#include <cfloat>
 #include <climits>
 #include <cmath>
 #include <cstdio>
@@ -31,6 +32,10 @@
 
 #if MT32EMU_VERSION_MAJOR != 2 || MT32EMU_VERSION_MINOR < 1
 #error Incompatible mt32emu library version
+#endif
+
+#if defined FLT_RADIX && FLT_RADIX != 2
+#error Binary floating point support required
 #endif
 
 #include "smf.h"
@@ -508,7 +513,7 @@ static inline bool isSilence(void * const sampleBuffer, const int sampleIx, cons
 static inline MT32Emu::Bit32u makeIeeeFloat(float sample) {
 	MT32Emu::Bit32u floatBits = 0;
 	// In this context, all the denormals, INFs and NaNs are treated as silence.
-	if (_finite(sample)) {
+	if (sample == sample && sample != 0 && abs(sample) <= FLT_MAX) {
 		int exp;
 		float m = frexp(sample, &exp);
 		// By the standard, the exp bias is 127, but since the mantissa is in the range [0.5..1], the correct exp bias is one less.
