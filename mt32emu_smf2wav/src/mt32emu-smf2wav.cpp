@@ -885,13 +885,17 @@ int main(int argc, char *argv[]) {
 					inputFilename++;
 					g_free(displayInputFilename);
 				}
-				delete[] state.stereoSampleBuffer;
-				delete[] state.rawSampleBuffer[0];
-				delete[] state.rawSampleBuffer[1];
-				delete[] state.rawSampleBuffer[2];
-				delete[] state.rawSampleBuffer[3];
-				delete[] state.rawSampleBuffer[4];
-				delete[] state.rawSampleBuffer[5];
+				if (options.outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32) {
+					delete[] static_cast<float *>(state.stereoSampleBuffer);
+					for (int i = 0; i < 6; i++) {
+						delete[] static_cast<float *>(state.rawSampleBuffer[i]);
+					}
+				} else {
+					delete[] static_cast<MT32Emu::Bit16s *>(state.stereoSampleBuffer);
+					for (int i = 0; i < 6; i++) {
+						delete[] static_cast<MT32Emu::Bit16s *>(state.rawSampleBuffer[i]);
+					}
+				}
 				if (options.rawChannelCount == 0 && !fillWAVESizes(outputFile, state.writtenFrames, options.outputSampleFormat)) {
 					fprintf(stderr, "Error writing final sizes to WAVE header\n");
 				}
