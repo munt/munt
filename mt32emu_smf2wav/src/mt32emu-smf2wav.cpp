@@ -513,12 +513,12 @@ static inline bool isSilence(void * const sampleBuffer, const int sampleIx, cons
 static inline MT32Emu::Bit32u makeIeeeFloat(float sample) {
 	MT32Emu::Bit32u floatBits = 0;
 	// In this context, all the denormals, INFs and NaNs are treated as silence.
-	if (sample == sample && sample != 0 && abs(sample) <= FLT_MAX) {
+	if (sample == sample && sample != 0 && fabs(sample) <= FLT_MAX) {
 		int exp;
 		float m = frexp(sample, &exp);
 		// By the standard, the exp bias is 127, but since the mantissa is in the range [0.5..1], the correct exp bias is one less.
 		exp += 127 - 1;
-		float absm = abs(m);
+		float absm = fabs(m);
 		if ((0.5 <= absm) && (0 < exp) && (exp < 255)) {
 			int sgn = m < 0 ? 1 : 0;
 			int intm = int(absm * (1 << 24)) & ((1 << 23) - 1);
