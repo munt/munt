@@ -281,59 +281,59 @@ static mt32emu_report_handler_version getReportHandlerVersionID(mt32emu_report_h
 }
 
 static void printDebug(void *instance_data, const char *fmt, va_list list) {
-	((IReportHandler *)instance_data)->printDebug(fmt, list);
+	static_cast<IReportHandler *>(instance_data)->printDebug(fmt, list);
 }
 
 static void onErrorControlROM(void *instance_data) {
-	((IReportHandler *)instance_data)->onErrorControlROM();
+	static_cast<IReportHandler *>(instance_data)->onErrorControlROM();
 }
 
 static void onErrorPCMROM(void *instance_data) {
-	((IReportHandler *)instance_data)->onErrorPCMROM();
+	static_cast<IReportHandler *>(instance_data)->onErrorPCMROM();
 }
 
 static void showLCDMessage(void *instance_data, const char *message) {
-	((IReportHandler *)instance_data)->showLCDMessage(message);
+	static_cast<IReportHandler *>(instance_data)->showLCDMessage(message);
 }
 
 static void onMIDIMessagePlayed(void *instance_data) {
-	((IReportHandler *)instance_data)->onMIDIMessagePlayed();
+	static_cast<IReportHandler *>(instance_data)->onMIDIMessagePlayed();
 }
 
 static mt32emu_boolean onMIDIQueueOverflow(void *instance_data) {
-	return ((IReportHandler *)instance_data)->onMIDIQueueOverflow() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
+	return static_cast<IReportHandler *>(instance_data)->onMIDIQueueOverflow() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
 static void onMIDISystemRealtime(void *instance_data, mt32emu_bit8u system_realtime) {
-	((IReportHandler *)instance_data)->onMIDISystemRealtime(system_realtime);
+	static_cast<IReportHandler *>(instance_data)->onMIDISystemRealtime(system_realtime);
 }
 
 static void onDeviceReset(void *instance_data) {
-	((IReportHandler *)instance_data)->onDeviceReset();
+	static_cast<IReportHandler *>(instance_data)->onDeviceReset();
 }
 
 static void onDeviceReconfig(void *instance_data) {
-	((IReportHandler *)instance_data)->onDeviceReconfig();
+	static_cast<IReportHandler *>(instance_data)->onDeviceReconfig();
 }
 
 static void onNewReverbMode(void *instance_data, mt32emu_bit8u mode) {
-	((IReportHandler *)instance_data)->onNewReverbMode(mode);
+	static_cast<IReportHandler *>(instance_data)->onNewReverbMode(mode);
 }
 
 static void onNewReverbTime(void *instance_data, mt32emu_bit8u time) {
-	((IReportHandler *)instance_data)->onNewReverbTime(time);
+	static_cast<IReportHandler *>(instance_data)->onNewReverbTime(time);
 }
 
 static void onNewReverbLevel(void *instance_data, mt32emu_bit8u level) {
-	((IReportHandler *)instance_data)->onNewReverbLevel(level);
+	static_cast<IReportHandler *>(instance_data)->onNewReverbLevel(level);
 }
 
 static void onPolyStateChanged(void *instance_data, mt32emu_bit8u part_num) {
-	((IReportHandler *)instance_data)->onPolyStateChanged(part_num);
+	static_cast<IReportHandler *>(instance_data)->onPolyStateChanged(part_num);
 }
 
 static void onProgramChanged(void *instance_data, mt32emu_bit8u part_num, const char *sound_group_name, const char *patch_name) {
-	((IReportHandler *)instance_data)->onProgramChanged(part_num, sound_group_name, patch_name);
+	static_cast<IReportHandler *>(instance_data)->onProgramChanged(part_num, sound_group_name, patch_name);
 }
 
 static mt32emu_report_handler_i getReportHandlerThunk() {
@@ -365,15 +365,15 @@ static mt32emu_midi_receiver_version getMidiReceiverVersionID(mt32emu_midi_recei
 }
 
 static void handleShortMessage(void *instance_data, const mt32emu_bit32u message) {
-	((IMidiReceiver *)instance_data)->handleShortMessage(message);
+	static_cast<IMidiReceiver *>(instance_data)->handleShortMessage(message);
 }
 
 static void handleSysex(void *instance_data, const mt32emu_bit8u stream[], const mt32emu_bit32u length) {
-	((IMidiReceiver *)instance_data)->handleSysex(stream, length);
+	static_cast<IMidiReceiver *>(instance_data)->handleSysex(stream, length);
 }
 
 static void handleSystemRealtimeMessage(void *instance_data, const mt32emu_bit8u realtime) {
-	((IMidiReceiver *)instance_data)->handleSystemRealtimeMessage(realtime);
+	static_cast<IMidiReceiver *>(instance_data)->handleSystemRealtimeMessage(realtime);
 }
 
 static mt32emu_midi_receiver_i getMidiReceiverThunk() {
