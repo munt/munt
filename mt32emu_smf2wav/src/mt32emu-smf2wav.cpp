@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2009, 2011 Jerome Fisher
+ * Copyright (C) 2012-2017 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
 #include <cassert>
 #include <cerrno>
 #include <climits>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -39,9 +41,17 @@ static const int DEFAULT_BUFFER_SIZE = 128 * 1024;
 static const unsigned int MAX_REVERB_END_FRAMES = 8192;
 
 static const int HEADEROFFS_RIFFLEN = 4;
+static const int HEADEROFFS_FORMAT_TAG = 20;
 static const int HEADEROFFS_SAMPLERATE = 24;
 static const int HEADEROFFS_BYTERATE = 28;
+static const int HEADEROFFS_BLOCK_ALIGN = 32;
+static const int HEADEROFFS_BIT_DEPTH = 34;
 static const int HEADEROFFS_DATALEN = 40;
+
+enum OUTPUT_SAMPLE_FORMAT {
+	OUTPUT_SAMPLE_FORMAT_SINT16 = 0,
+	OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32 = 1
+};
 
 static const MT32Emu::DACInputMode DAC_INPUT_MODES[] = {
 	MT32Emu::DACInputMode_NICE,
@@ -78,6 +88,7 @@ struct Options {
 	gchar *romDir;
 	unsigned int bufferFrameCount;
 	gint sampleRate;
+	OUTPUT_SAMPLE_FORMAT outputSampleFormat;
 
 	MT32Emu::DACInputMode dacInputMode;
 	MT32Emu::AnalogOutputMode analogOutputMode;
@@ -97,8 +108,8 @@ struct Options {
 };
 
 struct State {
-	MT32Emu::Bit16s *stereoSampleBuffer;
-	MT32Emu::Bit16s *rawSampleBuffer[6];
+	void *stereoSampleBuffer;
+	void *rawSampleBuffer[6];
 	MT32Emu::Service &service;
 	FILE *outputFile;
 	bool lastInputFile;
@@ -122,6 +133,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	gint analogOutputModeIx = 0;
 	gint rendererTypeIx = 0;
 	gint srcQualityIx = 2;
+	gint outputSampleFormat = OUTPUT_SAMPLE_FORMAT_SINT16;
 	gint bufferFrameCount = DEFAULT_BUFFER_SIZE;
 	gint renderMinFrames = 0;
 	gint renderMaxFrames = -1;
@@ -140,6 +152,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	options->srcQuality = SRC_QUALITIES[2];
 	options->sampleRate = 0;
 	options->rawChannelCount = 0;
+	options->outputSampleFormat = OUTPUT_SAMPLE_FORMAT_SINT16;
 
 	options->recordMaxStartSilentFrames = 0;
 	options->recordMaxEndSilentFrames = 0;
@@ -176,6 +189,10 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		{"renderer-type", 'r', 0, G_OPTION_ARG_INT, &rendererTypeIx, "Type of samples to use in renderer and wave generator (default: 0)\n"
 		 "                 0: Integer 16-bit\n"
 		 "                 1: Float 32-bit\n", "<renderer_type>"},
+
+		{"output-sample-format", 0, 0, G_OPTION_ARG_INT, &outputSampleFormat, "Format of output samples (default: 0)\n"
+		"                 0: Signed Integer 16-bit\n"
+		"                 1: IEEE 754 Float 32-bit\n", "<output_sample_format>"},
 
 		{"dac-input-mode", 'd', 0, G_OPTION_ARG_INT, &dacInputModeIx, "LA-32 to DAC input mode (default: 0)\n"
 		 "                Ignored if -w is used (in which case 1/PURE is always used)\n"
@@ -221,6 +238,10 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	}
 	if (rendererTypeIx < 0 || rendererTypeIx > 1) {
 		fprintf(stderr, "renderer-type must be either 0 or 1\n");
+		parseSuccess = false;
+	}
+	if (outputSampleFormat < OUTPUT_SAMPLE_FORMAT_SINT16 || outputSampleFormat > OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32) {
+		fprintf(stderr, "output-sample-format must be either 0 or 1\n");
 		parseSuccess = false;
 	}
 	if (srcQualityIx < 0 || srcQualityIx > 3) {
@@ -286,6 +307,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	}
 	options->analogOutputMode = ANALOG_OUTPUT_MODES[analogOutputModeIx];
 	options->rendererType = RENDERER_TYPES[rendererTypeIx];
+	options->outputSampleFormat = static_cast<OUTPUT_SAMPLE_FORMAT>(outputSampleFormat);
 	options->srcQuality = SRC_QUALITIES[srcQualityIx];
 	g_strfreev(rawStreams);
 	if (options->rawChannelCount > 0) {
@@ -308,8 +330,12 @@ static long secondsToSamples(double seconds, int sampleRate) {
 	return long(seconds * sampleRate);
 }
 
-static bool writeWAVEHeader(FILE *outputFile, int sampleRate) {
-	int byteRate = sampleRate * 4;
+static bool writeWAVEHeader(FILE *outputFile, int sampleRate, OUTPUT_SAMPLE_FORMAT outputSampleFormat) {
+	const int channelCount = 2;
+	const int bitDepth = outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32 ? 32 : 16;
+	const int frameSize = channelCount * (bitDepth / 8);
+	const int byteRate = sampleRate * frameSize;
+
 	// All values are little-endian
 	unsigned char waveHeader[] = {
 		'R','I','F','F',
@@ -319,7 +345,7 @@ static bool writeWAVEHeader(FILE *outputFile, int sampleRate) {
 		// "fmt " chunk
 		'f','m','t',' ',
 		0x10, 0x00, 0x00, 0x00, // 0x00000010 - 16 byte chunk
-		0x01, 0x00, // 0x0001 - PCM/Uncompressed
+		0x01, 0x00, // 0x0001 - PCM/Uncompressed; 0x0003 - WAVE_FORMAT_IEEE_FLOAT
 		0x02, 0x00, // 0x0002 - 2 channels
 		0x00, 0x7D, 0x00, 0x00, // 0x00007D00 - 32kHz, overwritten by real sample rate below
 		0x00, 0xF4, 0x01, 0x00, // 0x0001F400 - 128000 bytes/sec, overwritten with real value below
@@ -330,6 +356,7 @@ static bool writeWAVEHeader(FILE *outputFile, int sampleRate) {
 		'd','a','t','a',
 		0x00, 0x00, 0x00, 0x00 // Chunk length, to be filled in later
 	};
+	waveHeader[HEADEROFFS_FORMAT_TAG] = outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32 ? 3 : 1;
 	waveHeader[HEADEROFFS_SAMPLERATE] = sampleRate & 0xFF;
 	waveHeader[HEADEROFFS_SAMPLERATE + 1] = (sampleRate >> 8) & 0xFF;
 	waveHeader[HEADEROFFS_SAMPLERATE + 2] = (sampleRate >> 16) & 0xFF;
@@ -338,12 +365,17 @@ static bool writeWAVEHeader(FILE *outputFile, int sampleRate) {
 	waveHeader[HEADEROFFS_BYTERATE + 1] = (byteRate >> 8) & 0xFF;
 	waveHeader[HEADEROFFS_BYTERATE + 2] = (byteRate >> 16) & 0xFF;
 	waveHeader[HEADEROFFS_BYTERATE + 3] = (byteRate >> 24) & 0xFF;
+	waveHeader[HEADEROFFS_BLOCK_ALIGN] = frameSize & 0xFF;
+	waveHeader[HEADEROFFS_BLOCK_ALIGN + 1] = (frameSize >> 8) & 0xFF;
+	waveHeader[HEADEROFFS_BIT_DEPTH] = bitDepth & 0xFF;
+	waveHeader[HEADEROFFS_BIT_DEPTH + 1] = (bitDepth >> 8) & 0xFF;
 	return fwrite(waveHeader, 1, sizeof(waveHeader), outputFile) == sizeof(waveHeader);
 }
 
-static bool fillWAVESizes(FILE *outputFile, int numFrames) {
+static bool fillWAVESizes(FILE *outputFile, int numFrames, OUTPUT_SAMPLE_FORMAT outputSampleFormat) {
 	// FIXME: Check return codes, etc.
-	int dataSize = numFrames * 4;
+	const int frameSize = outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32 ? 8 : 4;
+	int dataSize = numFrames * frameSize;
 	int riffSize = dataSize + 28;
 	if (fseek(outputFile, HEADEROFFS_RIFFLEN, SEEK_SET))
 		return false;
@@ -426,30 +458,116 @@ static void flushSilence(Occasion occasion, const Options &options, State &state
 		state.unwrittenSilentFrames -= writtenFrames;
 		break;
 	}
-	for (unsigned long i = 0; i < writtenFrames * sizeof(MT32Emu::Bit16s) * channelCount; i++) {
+	const int sampleSize = options.outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32 ? 4 : 2;
+	for (unsigned long i = 0; i < writtenFrames * sampleSize * channelCount; i++) {
 		fputc(0, state.outputFile);
 	}
 	state.writtenFrames += writtenFrames;
+}
+
+static inline void renderStereo(MT32Emu::Service &service, void *stereoSampleBuffer, const unsigned int frameCount, const OUTPUT_SAMPLE_FORMAT outputSampleFormat) {
+	if (outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32) {
+		service.renderFloat(static_cast<float *>(stereoSampleBuffer), frameCount);
+	} else {
+		service.renderBit16s(static_cast<MT32Emu::Bit16s *>(stereoSampleBuffer), frameCount);
+	}
+}
+
+static inline void renderRaw(MT32Emu::Service &service, void *rawSampleBuffer[], const unsigned int frameCount, const OUTPUT_SAMPLE_FORMAT outputSampleFormat) {
+	if (outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32) {
+		mt32emu_dac_output_float_streams streams = {
+			static_cast<float *>(rawSampleBuffer[0]),
+			static_cast<float *>(rawSampleBuffer[1]),
+			static_cast<float *>(rawSampleBuffer[2]),
+			static_cast<float *>(rawSampleBuffer[3]),
+			static_cast<float *>(rawSampleBuffer[4]),
+			static_cast<float *>(rawSampleBuffer[5])
+		};
+		service.renderFloatStreams(&streams, frameCount);
+	} else {
+		mt32emu_dac_output_bit16s_streams streams = {
+			static_cast<MT32Emu::Bit16s *>(rawSampleBuffer[0]),
+			static_cast<MT32Emu::Bit16s *>(rawSampleBuffer[1]),
+			static_cast<MT32Emu::Bit16s *>(rawSampleBuffer[2]),
+			static_cast<MT32Emu::Bit16s *>(rawSampleBuffer[3]),
+			static_cast<MT32Emu::Bit16s *>(rawSampleBuffer[4]),
+			static_cast<MT32Emu::Bit16s *>(rawSampleBuffer[5])
+		};
+		service.renderBit16sStreams(&streams, frameCount);
+	}
+}
+
+static inline bool isSilence(void * const sampleBuffer, const int sampleIx, const OUTPUT_SAMPLE_FORMAT outputSampleFormat) {
+	if (outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32) {
+		return static_cast<float *>(sampleBuffer)[sampleIx] == 0;
+	} else {
+		return static_cast<MT32Emu::Bit16s *>(sampleBuffer)[sampleIx] == 0;
+	}
+}
+
+static inline MT32Emu::Bit32u makeIeeeFloat(float sample) {
+	MT32Emu::Bit32u floatBits = 0;
+	// In this context, all the denormals, INFs and NaNs are treated as silence.
+	if (_finite(sample)) {
+		int exp;
+		float m = frexp(sample, &exp);
+		// By the standard, the exp bias is 127, but since the mantissa is in the range [0.5..1], the correct exp bias is one less.
+		exp += 127 - 1;
+		float absm = abs(m);
+		if ((0.5 <= absm) && (0 < exp) && (exp < 255)) {
+			int sgn = m < 0 ? 1 : 0;
+			int intm = int(absm * (1 << 24)) & ((1 << 23) - 1);
+			floatBits = (sgn << 31) | (exp << 23) | (intm);
+		}
+	}
+	return floatBits;
+}
+
+static inline void putSampleLE(void * const sampleBuffer, const int sampleIx, FILE *outputFile, const OUTPUT_SAMPLE_FORMAT outputSampleFormat) {
+	if (outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32) {
+		MT32Emu::Bit32u sample = makeIeeeFloat(static_cast<float *>(sampleBuffer)[sampleIx]);
+		fputc(sample & 0xFF, outputFile);
+		fputc((sample >> 8) & 0xFF, outputFile);
+		fputc((sample >> 16) & 0xFF, outputFile);
+		fputc((sample >> 24) & 0xFF, outputFile);
+	} else {
+		MT32Emu::Bit16s sample = static_cast<MT32Emu::Bit16s *>(sampleBuffer)[sampleIx];
+		fputc(sample & 0xFF, outputFile);
+		fputc((sample >> 8) & 0xFF, outputFile);
+	}
+}
+
+static inline void putSampleBE(void * const sampleBuffer, const int sampleIx, FILE *outputFile, const OUTPUT_SAMPLE_FORMAT outputSampleFormat) {
+	if (outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32) {
+		MT32Emu::Bit32u sample = makeIeeeFloat(static_cast<float *>(sampleBuffer)[sampleIx]);
+		fputc((sample >> 24) & 0xFF, outputFile);
+		fputc((sample >> 16) & 0xFF, outputFile);
+		fputc((sample >> 8) & 0xFF, outputFile);
+		fputc(sample & 0xFF, outputFile);
+	} else {
+		MT32Emu::Bit16s sample = static_cast<MT32Emu::Bit16s *>(sampleBuffer)[sampleIx];
+		fputc((sample >> 8) & 0xFF, outputFile);
+		fputc(sample & 0xFF, outputFile);
+	}
 }
 
 static void renderStereo(unsigned int frameCount, const Options &options, State &state) {
 	state.renderedFrames += frameCount;
 	while (frameCount > 0) {
 		unsigned int renderedFramesThisPass = MIN(frameCount, options.bufferFrameCount);
-		state.service.renderBit16s(state.stereoSampleBuffer, renderedFramesThisPass);
+		renderStereo(state.service, state.stereoSampleBuffer, renderedFramesThisPass, options.outputSampleFormat);
 		for (unsigned int i = 0; i < renderedFramesThisPass; i++) {
 			unsigned int leftIx = i * 2;
 			unsigned int rightIx = leftIx + 1;
-			bool silent = state.stereoSampleBuffer[leftIx] == 0 && state.stereoSampleBuffer[rightIx] == 0;
+			bool silent = isSilence(state.stereoSampleBuffer, leftIx, options.outputSampleFormat)
+				&& isSilence(state.stereoSampleBuffer, rightIx, options.outputSampleFormat);
 			if (silent) {
 				state.unwrittenSilentFrames++;
 				continue;
 			}
 			flushSilence(NOISE_DETECTED, options, state);
-			fputc(state.stereoSampleBuffer[leftIx] & 0xFF, state.outputFile);
-			fputc((state.stereoSampleBuffer[leftIx] >> 8) & 0xFF, state.outputFile);
-			fputc(state.stereoSampleBuffer[rightIx] & 0xFF, state.outputFile);
-			fputc((state.stereoSampleBuffer[rightIx] >> 8) & 0xFF, state.outputFile);
+			putSampleLE(state.stereoSampleBuffer, leftIx, state.outputFile, options.outputSampleFormat);
+			putSampleLE(state.stereoSampleBuffer, rightIx, state.outputFile, options.outputSampleFormat);
 			state.writtenFrames++;
 		}
 		frameCount -= renderedFramesThisPass;
@@ -460,16 +578,13 @@ static void renderRaw(unsigned int frameCount, const Options &options, State &st
 	state.renderedFrames += frameCount;
 	while (frameCount > 0) {
 		unsigned int renderedFramesThisPass = MIN(frameCount, options.bufferFrameCount);
-		mt32emu_dac_output_bit16s_streams streams = {state.rawSampleBuffer[0], state.rawSampleBuffer[1], state.rawSampleBuffer[2], state.rawSampleBuffer[3], state.rawSampleBuffer[4], state.rawSampleBuffer[5]};
-		state.service.renderBit16sStreams(&streams, renderedFramesThisPass);
+		renderRaw(state.service, state.rawSampleBuffer, renderedFramesThisPass, options.outputSampleFormat);
 		for (unsigned int i = 0; i < renderedFramesThisPass; i++) {
-			bool allSilent = false;
+			bool allSilent = true;
 			for (int chanMapIx = 0; chanMapIx < options.rawChannelCount; chanMapIx++) {
-				if (options.rawChannelMap[chanMapIx] >= 0 && state.rawSampleBuffer[options.rawChannelMap[chanMapIx]][i] != 0) {
+				if (options.rawChannelMap[chanMapIx] >= 0 && !isSilence(state.rawSampleBuffer[options.rawChannelMap[chanMapIx]], i, options.outputSampleFormat)) {
+					allSilent = false;
 					break;
-				}
-				if (chanMapIx == options.rawChannelCount - 1) {
-					allSilent = true;
 				}
 			}
 			if (allSilent) {
@@ -479,12 +594,12 @@ static void renderRaw(unsigned int frameCount, const Options &options, State &st
 			flushSilence(NOISE_DETECTED, options, state);
 			for (int chanMapIx = 0; chanMapIx < options.rawChannelCount; chanMapIx++) {
 				if (options.rawChannelMap[chanMapIx] < 0) {
-					fputc(0, state.outputFile);
-					fputc(0, state.outputFile);
+					const int sampleSize = options.outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32 ? 4 : 2;
+					for (int sampleIx = 0; sampleIx < sampleSize; sampleIx++) {
+						fputc(0, state.outputFile);
+					}
 				} else {
-					MT32Emu::Bit16s sample = state.rawSampleBuffer[options.rawChannelMap[chanMapIx]][i];
-					fputc((sample >> 8) & 0xFF, state.outputFile);
-					fputc(sample & 0xFF, state.outputFile);
+					putSampleBE(state.rawSampleBuffer[options.rawChannelMap[chanMapIx]], i, state.outputFile, options.outputSampleFormat);
 				}
 			}
 			state.writtenFrames++;
@@ -660,6 +775,7 @@ int main(int argc, char *argv[]) {
 	MT32Emu::Service service;
 	printf("Munt MT32Emu MIDI to Wave Conversion Utility. Version %s\n", VERSION);
 	printf("  Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>\n");
+	printf("  Copyright (C) 2012-2017 Jerome Fisher, Sergey V. Mikayev\n");
 	printf("Using Munt MT32Emu Library Version %s, libsmf Version %s\n", service.getLibraryVersionString(), smf_get_version());
 	if (!parseOptions(argc, argv, &options)) {
 		return -1;
@@ -738,18 +854,23 @@ int main(int argc, char *argv[]) {
 		clock_t startTime = clock();
 
 		if (outputFile != NULL) {
-			if (options.rawChannelCount > 0 || writeWAVEHeader(outputFile, options.sampleRate)) {
+			if (options.rawChannelCount > 0 || writeWAVEHeader(outputFile, options.sampleRate, options.outputSampleFormat)) {
 				State state = {NULL, {NULL, NULL, NULL, NULL, NULL, NULL}, service, outputFile, false, false, 0, 0, 0};
 				state.outputFile = outputFile;
 				if (options.rawChannelCount > 0) {
-					state.rawSampleBuffer[0] = new MT32Emu::Bit16s[options.bufferFrameCount];
-					state.rawSampleBuffer[1] = new MT32Emu::Bit16s[options.bufferFrameCount];
-					state.rawSampleBuffer[2] = new MT32Emu::Bit16s[options.bufferFrameCount];
-					state.rawSampleBuffer[3] = new MT32Emu::Bit16s[options.bufferFrameCount];
-					state.rawSampleBuffer[4] = new MT32Emu::Bit16s[options.bufferFrameCount];
-					state.rawSampleBuffer[5] = new MT32Emu::Bit16s[options.bufferFrameCount];
+					for (int i = 0; i < 6; i++) {
+						if (options.outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32) {
+							state.rawSampleBuffer[i] = new float[options.bufferFrameCount];
+						} else {
+							state.rawSampleBuffer[i] = new MT32Emu::Bit16s[options.bufferFrameCount];
+						}
+					}
 				} else {
-					state.stereoSampleBuffer = new MT32Emu::Bit16s[options.bufferFrameCount * 2];
+					if (options.outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32) {
+						state.stereoSampleBuffer = new float[options.bufferFrameCount * 2];
+					} else {
+						state.stereoSampleBuffer = new MT32Emu::Bit16s[options.bufferFrameCount * 2];
+					}
 				}
 				gchar **inputFilename = options.inputFilenames;
 				while (*inputFilename != NULL) {
@@ -766,7 +887,7 @@ int main(int argc, char *argv[]) {
 				delete[] state.rawSampleBuffer[3];
 				delete[] state.rawSampleBuffer[4];
 				delete[] state.rawSampleBuffer[5];
-				if (options.rawChannelCount == 0 && !fillWAVESizes(outputFile, state.writtenFrames)) {
+				if (options.rawChannelCount == 0 && !fillWAVESizes(outputFile, state.writtenFrames, options.outputSampleFormat)) {
 					fprintf(stderr, "Error writing final sizes to WAVE header\n");
 				}
 			} else {
