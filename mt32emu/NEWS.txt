@@ -1,10 +1,14 @@
-CURRENT:
+2017-04-09:
+
+	2.1.0 released.
 
 	* Added sample rate conversion feature that allows converting the synthesiser output to any desired sample rate.
 	  It can either utilise an external library (e.g. libsoxr or libsamplerate) or use an internal implementation.
 	  This behaviour is controlled by a build option libmt32emu_WITH_INTERNAL_RESAMPLER (enabled by default).
 	  The internal implementation is derived from that previously added in mt32emu-qt application and aims
 	  to provide for good performance yet lower the added latency at the expense of phase linearity.
+	* The types of the rendering engine and of the wave generator can now be triggered in runtime. Nuked
+	  MT32EMU_USE_FLOAT_SAMPLES preprocessor definition.
 
 2017-03-05:
 

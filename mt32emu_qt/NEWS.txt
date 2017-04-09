@@ -1,3 +1,11 @@
+2017-04-09:
+
+	1.5.0 released.
+
+	* Updated mt32emu library to version 2.1.0.
+	* Moved sample rate conversion feature from mt32emu-qt to the libmt32emu, so it can be easily used in other applications.
+	* Added an option to select the renderer type in the synth properties (preserved in the profile).
+
 2016-10-22:
 
 	1.4.0 released.
