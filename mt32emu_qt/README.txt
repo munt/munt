@@ -73,17 +73,10 @@ Additional dependencies maybe needed (depending on the platform):
 3) PulseAudio - sound system for POSIX OSes - provides for accurate audio rendering
    @ http://www.pulseaudio.org/ or http://www.freedesktop.org/wiki/Software/PulseAudio
 
-4) libsoxr - The SoX Resampler library - to perform fast and high quality sample-rate conversion
-   @ http://sourceforge.net/projects/soxr/
-
-5) libsamplerate - Secret Rabbit Code - Sample Rate Converter
-   @ http://www.mega-nerd.com/SRC/
-
 The build script recognises the following configuration options to control the build:
 
   * mt32emu-qt_WITH_QT5 - to prefer version 5 of Qt over version 4 if both are available"
   * mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING - whether to load PulseAudio library dynamically (if available)
-  * mt32emu-qt_WITH_INTERNAL_RESAMPLER - whether to use the internal resampler or an external resampling library
   * mt32emu-qt_WITH_DEBUG_WINCONSOLE - enables a console for showing debug output on Windows systems
   * mt32emu-qt_WITH_ALSA_MIDI_SEQUENCER - specifies whether to use the ALSA MIDI sequencer or raw ALSA MIDI ports
     (for Linux targets only)

@@ -44,6 +44,18 @@ However, the compiler optimisations are typically disabled. In order to get
 a well-performing binary, be sure to set the value of the CMAKE_BUILD_TYPE variable
 to Release or customise the compiler options otherwise.
 
+Besides, an external sample rate conversion library may be used as an optional dependency
+to facilitate converting the synthesiser output to any desired sample rate. By default,
+an internal implementation provides this function. This can be overridden by disabling
+the build option libmt32emu_WITH_INTERNAL_RESAMPLER. The following sample rate
+conversion libraries are supported directly:
+
+1) libsoxr - The SoX Resampler library - to perform fast and high quality sample rate conversion
+   @ http://sourceforge.net/projects/soxr/
+
+2) libsamplerate - Secret Rabbit Code - Sample Rate Converter that is widely available
+   @ http://www.mega-nerd.com/SRC/
+
 
 Hardware requirements
 =====================
