@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake
 
 project(mt32emu-qt)
 set(mt32emu_qt_VERSION_MAJOR 1)
-set(mt32emu_qt_VERSION_MINOR 4)
+set(mt32emu_qt_VERSION_MINOR 5)
 set(mt32emu_qt_VERSION_PATCH 0)
 set(mt32emu_qt_VERSION "${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
 

@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake
 
 project(mt32emu-smf2wav CXX)
 set(mt32emu_smf2wav_VERSION_MAJOR 1)
-set(mt32emu_smf2wav_VERSION_MINOR 2)
+set(mt32emu_smf2wav_VERSION_MINOR 3)
 set(mt32emu_smf2wav_VERSION_PATCH 0)
 set(mt32emu_smf2wav_VERSION "${mt32emu_smf2wav_VERSION_MAJOR}.${mt32emu_smf2wav_VERSION_MINOR}.${mt32emu_smf2wav_VERSION_PATCH}")
 
