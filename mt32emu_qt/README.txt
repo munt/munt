@@ -98,7 +98,7 @@ may come in handy.
 License
 =======
 
-Copyright (C) 2011-2016 Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011-2017 Jerome Fisher, Sergey V. Mikayev
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

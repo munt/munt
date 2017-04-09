@@ -1,7 +1,7 @@
 /* Copyright (C) 2003 Tristan
  * Copyright (C) 2004, 2005 Tristan, Jerome Fisher
  * Copyright (C) 2008, 2011 Tristan, Jerome Fisher, Jörg Walter
- * Copyright (C) 2013-2015 Tristan, Jerome Fisher, Jörg Walter, Sergey V. Mikayev
+ * Copyright (C) 2013-2017 Tristan, Jerome Fisher, Jörg Walter, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by

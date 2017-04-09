@@ -1,10 +1,11 @@
 mt32emu-smf2wav
 Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>
+Copyright (C) 2012-2017 Jerome Fisher, Sergey V. Mikayev
 
 Links with the mt32emu library from the Munt project.
 http://munt.sourceforge.net/
 Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
-Copyright (C) 2011 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011-2017 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
 
 Incorporates the majority of the libsmf library v1.2.
 http://libsmf.sourceforge.net/
