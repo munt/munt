@@ -6,11 +6,11 @@
 #
 
 PORTNAME=	mt32emu-qt
-PORTVERSION=	1.4.0
+PORTVERSION=	1.5.0
 CATEGORIES=	audio
 MASTER_SITES=	https://github.com/munt/munt/archive/
 FETCH_ARGS=	-a
-DISTFILES=	munt_2_0_0.tar.gz
+DISTFILES=	munt_2_1_0.tar.gz
 
 MAINTAINER=	sergm@muntemu.org
 COMMENT=	Main MT-32 emulation application using libmt32emu
@@ -38,7 +38,6 @@ post-extract:
 
 do-configure:
 		cd $(WRKSRC); \
-		cmake -D CMAKE_BUILD_TYPE:STRING=$(CMAKE_BUILD_TYPE) \
-			-D mt32emu-qt_WITH_ALSA_MIDI_SEQUENCER:BOOL=OFF $(WRKDIR)/munt-munt_2_0_0/mt32emu_qt
+		cmake -D CMAKE_BUILD_TYPE:STRING=$(CMAKE_BUILD_TYPE) $(WRKDIR)/munt-munt_2_1_0/mt32emu_qt
 
 .include <bsd.port.mk>
