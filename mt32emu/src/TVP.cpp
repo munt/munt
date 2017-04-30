@@ -173,15 +173,16 @@ void TVP::updatePitch() {
 	if ((partialParam->wg.pitchBenderEnabled & 1) != 0) {
 		newPitch += part->getPitchBend();
 	}
-	if (newPitch < 0) {
+
+	// MT-32 GEN0 does 16-bit calculations here, allowing an integer overflow.
+	// This quirk is exploited e.g. in Colonel's Bequest timbres "Lightning" and "SwmpBackgr".
+	if (partial->getSynth()->controlROMFeatures->quirkPitchEnvelopeOverflow) {
+		newPitch = Bit16u(newPitch);
+	} else if (newPitch < 0) {
 		newPitch = 0;
 	}
-
-	// Skipping this check seems about right emulation of MT-32 GEN0 quirk exploited in Colonel's Bequest timbre "Lightning"
-	if (partial->getSynth()->controlROMFeatures->quirkPitchEnvelopeOverflow == 0) {
-		if (newPitch > 59392) {
-			newPitch = 59392;
-		}
+	if (newPitch > 59392) {
+		newPitch = 59392;
 	}
 	pitch = Bit16u(newPitch);
 
