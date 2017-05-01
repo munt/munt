@@ -99,10 +99,10 @@ static int calcVeloAmpSubtraction(Bit8u veloSensitivity, unsigned int velocity) 
 	return absVelocityMult - (velocityMult >> 8); // PORTABILITY NOTE: Assumes arithmetic shift
 }
 
-static int calcBasicAmp(const Tables *tables, const Partial *partial, const MemParams::System *system, const TimbreParam::PartialParam *partialParam, const MemParams::PatchTemp *patchTemp, const MemParams::RhythmTemp *rhythmTemp, int biasAmpSubtraction, int veloAmpSubtraction, Bit8u expression) {
+static int calcBasicAmp(const Tables *tables, const Partial *partial, const MemParams::System *system, const TimbreParam::PartialParam *partialParam, const MemParams::PatchTemp *patchTemp, const MemParams::RhythmTemp *rhythmTemp, int biasAmpSubtraction, int veloAmpSubtraction, Bit8u expression, bool hasRingModQuirk) {
 	int amp = 155;
 
-	if (!partial->isRingModulatingSlave()) {
+	if (!(hasRingModQuirk ? partial->isRingModulatingNoMix() : partial->isRingModulatingSlave())) {
 		amp -= tables->masterVolToAmpSubtraction[system->masterVol];
 		if (amp < 0) {
 			return 0;
@@ -169,7 +169,7 @@ void TVA::reset(const Part *newPart, const TimbreParam::PartialParam *newPartial
 	biasAmpSubtraction = calcBiasAmpSubtractions(partialParam, key);
 	veloAmpSubtraction = calcVeloAmpSubtraction(partialParam->tva.veloSensitivity, velocity);
 
-	int newTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, newRhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
+	int newTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, newRhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression(), partial->getSynth()->controlROMFeatures->quirkRingModulationNoMix);
 	int newPhase;
 	if (partialParam->tva.envTime[0] == 0) {
 		// Initially go to the TVA_PHASE_ATTACK target amp, and spend the next phase going from there to the TVA_PHASE_2 target amp
@@ -221,7 +221,7 @@ void TVA::recalcSustain() {
 	}
 	// We're sustaining. Recalculate all the values
 	const Tables *tables = &Tables::getInstance();
-	int newTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
+	int newTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression(), partial->getSynth()->controlROMFeatures->quirkRingModulationNoMix);
 	newTarget += partialParam->tva.envLevel[3];
 	// Since we're in TVA_PHASE_SUSTAIN at this point, we know that target has been reached and an interrupt fired, so we can rely on it being the current amp.
 	int targetDelta = newTarget - target;
@@ -260,7 +260,7 @@ void TVA::nextPhase() {
 	}
 
 	bool allLevelsZeroFromNowOn = false;
-	if (partialParam->tva.envLevel[3] == 0) {
+	if (!partial->getSynth()->controlROMFeatures->quirkTVAZeroEnvLevels && partialParam->tva.envLevel[3] == 0) {
 		if (newPhase == TVA_PHASE_4) {
 			allLevelsZeroFromNowOn = true;
 		} else if (partialParam->tva.envLevel[2] == 0) {
@@ -283,7 +283,7 @@ void TVA::nextPhase() {
 	int envPointIndex = phase;
 
 	if (!allLevelsZeroFromNowOn) {
-		newTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression());
+		newTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression(), partial->getSynth()->controlROMFeatures->quirkRingModulationNoMix);
 
 		if (newPhase == TVA_PHASE_SUSTAIN || newPhase == TVA_PHASE_RELEASE) {
 			if (partialParam->tva.envLevel[3] == 0) {

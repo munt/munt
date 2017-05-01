@@ -38,8 +38,8 @@ namespace MT32Emu {
 static const double MIDI_DATA_TRANSFER_RATE = double(SAMPLE_RATE) / 31250.0 * 8.0;
 
 // FIXME: there should be more specific feature sets for various MT-32 control ROM versions
-static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = { true, true, true };
-static const ControlROMFeatureSet CM32L_COMPATIBLE = { false, false, false };
+static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = { true, true, true, true, true };
+static const ControlROMFeatureSet CM32L_COMPATIBLE = { false, false, false, false, false };
 
 static const ControlROMMap ControlROMMaps[7] = {
 	//     ID                Features        PCMmap  PCMc  tmbrA  tmbrAO, tmbrAC tmbrB   tmbrBO  tmbrBC tmbrR   trC rhythm rhyC  rsrv   panpot   prog   rhyMax  patMax  sysMax  timMax  sndGrp sGC
