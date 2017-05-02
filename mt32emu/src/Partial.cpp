@@ -264,16 +264,16 @@ Bit32u Partial::getCutoffValue() {
 	return (tvf->getBaseCutoff() << 18) + cutoffModifierRampVal;
 }
 
-bool Partial::isRingModulatingNoMix() const {
-	return pair != NULL && mixType == 2;
-}
-
 bool Partial::hasRingModulatingSlave() const {
 	return pair != NULL && structurePosition == 0 && (mixType == 1 || mixType == 2);
 }
 
 bool Partial::isRingModulatingSlave() const {
 	return pair != NULL && structurePosition == 1 && (mixType == 1 || mixType == 2);
+}
+
+bool Partial::isRingModulatingNoMix() const {
+	return pair != NULL && ((structurePosition == 1 && mixType == 1) || mixType == 2);
 }
 
 bool Partial::isPCM() const {
