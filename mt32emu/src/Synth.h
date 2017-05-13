@@ -124,6 +124,7 @@ friend class RhythmPart;
 friend class SamplerateAdapter;
 friend class SoxrAdapter;
 friend class TVA;
+friend class TVF;
 friend class TVP;
 
 private:
