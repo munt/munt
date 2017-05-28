@@ -330,7 +330,6 @@ MT32EMU_EXPORT mt32emu_midi_delay_mode mt32emu_get_midi_delay_mode(mt32emu_const
  * Sets output gain factor for synth output channels. Applied to all output samples and unrelated with the synth's Master volume,
  * it rather corresponds to the gain of the output analog circuitry of the hardware units. However, together with mt32emu_set_reverb_output_gain()
  * it offers to the user a capability to control the gain of reverb and non-reverb output channels independently.
- * Ignored in MT32EMU_DAC_PURE mode.
  */
 MT32EMU_EXPORT void mt32emu_set_output_gain(mt32emu_const_context context, float gain);
 /** Returns current output gain factor for synth output channels. */
@@ -345,7 +344,6 @@ MT32EMU_EXPORT float mt32emu_get_output_gain(mt32emu_const_context context);
  * corresponds to the level of digital capture. Although, according to the CM-64 PCB schematic,
  * there is a difference in the reverb analogue circuit, and the resulting output gain is 0.68
  * of that for LA32 analogue output. This factor is applied to the reverb output gain.
- * Ignored in MT32EMU_DAC_PURE mode.
  */
 MT32EMU_EXPORT void mt32emu_set_reverb_output_gain(mt32emu_const_context context, float gain);
 /** Returns current output gain factor for reverb wet output channels. */

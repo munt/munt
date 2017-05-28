@@ -387,7 +387,6 @@ public:
 	// Sets output gain factor for synth output channels. Applied to all output samples and unrelated with the synth's Master volume,
 	// it rather corresponds to the gain of the output analog circuitry of the hardware units. However, together with setReverbOutputGain()
 	// it offers to the user a capability to control the gain of reverb and non-reverb output channels independently.
-	// Ignored in DACInputMode_PURE
 	MT32EMU_EXPORT void setOutputGain(float gain);
 	// Returns current output gain factor for synth output channels.
 	MT32EMU_EXPORT float getOutputGain() const;
@@ -400,7 +399,6 @@ public:
 	// corresponds to the level of digital capture. Although, according to the CM-64 PCB schematic,
 	// there is a difference in the reverb analogue circuit, and the resulting output gain is 0.68
 	// of that for LA32 analogue output. This factor is applied to the reverb output gain.
-	// Ignored in DACInputMode_PURE
 	MT32EMU_EXPORT void setReverbOutputGain(float gain);
 	// Returns current output gain factor for reverb wet output channels.
 	MT32EMU_EXPORT float getReverbOutputGain() const;
