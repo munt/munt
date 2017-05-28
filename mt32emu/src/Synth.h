@@ -309,6 +309,10 @@ public:
 	// Returns the actual queue size being used.
 	MT32EMU_EXPORT Bit32u setMIDIEventQueueSize(Bit32u);
 
+	// Returns current value of the global counter of samples rendered since the synth was created (at the native sample rate 32000 Hz).
+	// This method helps to compute accurate timestamp of a MIDI message to use with the methods below.
+	MT32EMU_EXPORT Bit32u getInternalRenderedSampleCount() const;
+
 	// Enqueues a MIDI event for subsequent playback.
 	// The MIDI event will be processed not before the specified timestamp.
 	// The timestamp is measured as the global rendered sample count since the synth was created (at the native sample rate 32000 Hz).

@@ -120,7 +120,8 @@ typedef enum {
 typedef enum {
 	MT32EMU_SERVICE_VERSION_0 = 0,
 	MT32EMU_SERVICE_VERSION_1 = 1,
-	MT32EMU_SERVICE_VERSION_CURRENT = MT32EMU_SERVICE_VERSION_1
+	MT32EMU_SERVICE_VERSION_2 = 2,
+	MT32EMU_SERVICE_VERSION_CURRENT = MT32EMU_SERVICE_VERSION_2
 } mt32emu_service_version;
 
 /* === Report Handler Interface === */
@@ -297,6 +298,9 @@ typedef union mt32emu_service_i mt32emu_service_i;
 	mt32emu_bit32u (*convertOutputToSynthTimestamp)(mt32emu_const_context context, mt32emu_bit32u output_timestamp); \
 	mt32emu_bit32u (*convertSynthToOutputTimestamp)(mt32emu_const_context context, mt32emu_bit32u synth_timestamp);
 
+#define MT32EMU_SERVICE_I_V2 \
+	mt32emu_bit32u (*getInternalRenderedSampleCount)(mt32emu_const_context context);
+
 typedef struct {
 	MT32EMU_SERVICE_I_V0
 } mt32emu_service_i_v0;
@@ -306,6 +310,12 @@ typedef struct {
 	MT32EMU_SERVICE_I_V1
 } mt32emu_service_i_v1;
 
+typedef struct {
+	MT32EMU_SERVICE_I_V0
+	MT32EMU_SERVICE_I_V1
+	MT32EMU_SERVICE_I_V2
+} mt32emu_service_i_v2;
+
 /**
  * Extensible interface for all the library services.
  * Union intended to view an interface of any subsequent version as any parent interface not requiring a cast.
@@ -314,6 +324,7 @@ typedef struct {
 union mt32emu_service_i {
 	const mt32emu_service_i_v0 *v0;
 	const mt32emu_service_i_v1 *v1;
+	const mt32emu_service_i_v2 *v2;
 };
 
 #undef MT32EMU_SERVICE_I_V0

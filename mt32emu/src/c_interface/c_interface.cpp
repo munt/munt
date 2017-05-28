@@ -41,7 +41,7 @@ static mt32emu_service_version getSynthVersionID(mt32emu_service_i) {
 	return MT32EMU_SERVICE_VERSION_CURRENT;
 }
 
-static const mt32emu_service_i_v1 SERVICE_VTABLE = {
+static const mt32emu_service_i_v2 SERVICE_VTABLE = {
 	getSynthVersionID,
 	mt32emu_get_supported_report_handler_version,
 	mt32emu_get_supported_midi_receiver_version,
@@ -109,7 +109,8 @@ static const mt32emu_service_i_v1 SERVICE_VTABLE = {
 	mt32emu_select_renderer_type,
 	mt32emu_get_selected_renderer_type,
 	mt32emu_convert_output_to_synth_timestamp,
-	mt32emu_convert_synth_to_output_timestamp
+	mt32emu_convert_synth_to_output_timestamp,
+	mt32emu_get_internal_rendered_sample_count
 };
 
 } // namespace MT32Emu
@@ -320,7 +321,7 @@ extern "C" {
 
 mt32emu_service_i mt32emu_get_service_i() {
 	mt32emu_service_i i;
-	i.v1 = &SERVICE_VTABLE;
+	i.v2 = &SERVICE_VTABLE;
 	return i;
 }
 
@@ -519,6 +520,10 @@ mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_context context, 
 void mt32emu_set_midi_receiver(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instance_data) {
 	delete context->midiParser;
 	context->midiParser = (midi_receiver.v0 != NULL) ? new DelegatingMidiStreamParser(context, midi_receiver, instance_data) : new DefaultMidiStreamParser(*context->synth);
+}
+
+mt32emu_bit32u mt32emu_get_internal_rendered_sample_count(mt32emu_const_context context) {
+	return context->synth->getInternalRenderedSampleCount();
 }
 
 void mt32emu_parse_stream(mt32emu_const_context context, const mt32emu_bit8u *stream, mt32emu_bit32u length) {

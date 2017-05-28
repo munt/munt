@@ -865,6 +865,10 @@ Bit32u Synth::addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp) {
 	return timestamp;
 }
 
+Bit32u Synth::getInternalRenderedSampleCount() const {
+	return renderedSampleCount;
+}
+
 bool Synth::playMsg(Bit32u msg) {
 	return playMsg(msg, renderedSampleCount);
 }

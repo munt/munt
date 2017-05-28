@@ -209,6 +209,12 @@ MT32EMU_EXPORT mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_co
  */
 MT32EMU_EXPORT void mt32emu_set_midi_receiver(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instance_data);
 
+/**
+ * Returns current value of the global counter of samples rendered since the synth was created (at the native sample rate 32000 Hz).
+ * This method helps to compute accurate timestamp of a MIDI message to use with the methods below.
+ */
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_internal_rendered_sample_count(mt32emu_const_context context);
+
 /* Enqueues a MIDI event for subsequent playback.
  * The MIDI event will be processed not before the specified timestamp.
  * The timestamp is measured as the global rendered sample count since the synth was created (at the native sample rate 32000 Hz).

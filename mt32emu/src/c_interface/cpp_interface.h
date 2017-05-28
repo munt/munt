@@ -61,6 +61,7 @@ mt32emu_service_i mt32emu_get_service_i();
 #define mt32emu_flush_midi_queue i.v0->flushMIDIQueue
 #define mt32emu_set_midi_event_queue_size i.v0->setMIDIEventQueueSize
 #define mt32emu_set_midi_receiver i.v0->setMIDIReceiver
+#define mt32emu_get_internal_rendered_sample_count iV2()->getInternalRenderedSampleCount
 #define mt32emu_parse_stream i.v0->parseStream
 #define mt32emu_parse_stream_at i.v0->parseStream_At
 #define mt32emu_play_short_message i.v0->playShortMessage
@@ -213,6 +214,7 @@ public:
 	void setMIDIReceiver(mt32emu_midi_receiver_i midi_receiver, void *instance_data) { mt32emu_set_midi_receiver(c, midi_receiver, instance_data); }
 	void setMIDIReceiver(IMidiReceiver &midi_receiver) { setMIDIReceiver(CppInterfaceImpl::getMidiReceiverThunk(), &midi_receiver); }
 
+	Bit32u getInternalRenderedSampleCount() { return mt32emu_get_internal_rendered_sample_count(c); }
 	void parseStream(const Bit8u *stream, Bit32u length) { mt32emu_parse_stream(c, stream, length); }
 	void parseStream_At(const Bit8u *stream, Bit32u length, Bit32u timestamp) { mt32emu_parse_stream_at(c, stream, length, timestamp); }
 	void playShortMessage(Bit32u message) { mt32emu_play_short_message(c, message); }
@@ -421,6 +423,7 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_flush_midi_queue
 #undef mt32emu_set_midi_event_queue_size
 #undef mt32emu_set_midi_receiver
+#undef mt32emu_get_internal_rendered_sample_count
 #undef mt32emu_parse_stream
 #undef mt32emu_parse_stream_at
 #undef mt32emu_play_short_message
