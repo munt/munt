@@ -328,8 +328,13 @@ static inline float produceDistortedSample(float sample) {
 }
 
 float LA32FloatPartialPair::nextOutSample() {
+	// Note, LA32FloatWaveGenerator produces each sample normalised in terms of a single playing partial,
+	// so the unity sample corresponds to the internal LA32 logarithmic fixed-point unity sample.
+	// However, each logarithmic sample is then unlogged to a 14-bit signed integer value, i.e. the max absolute value is 8192.
+	// Thus, considering that samples are further mapped to a 16-bit signed integer,
+	// we apply a conversion factor 0.25 to produce properly normalised float samples.
 	if (!ringModulated) {
-		return masterOutputSample + slaveOutputSample;
+		return 0.25f * (masterOutputSample + slaveOutputSample);
 	}
 	/*
 	 * SEMI-CONFIRMED: Ring modulation model derived from sample analysis of specially constructed patches which exploit distortion.
@@ -340,7 +345,7 @@ float LA32FloatPartialPair::nextOutSample() {
 	 * Most probably the overflow is caused by limited precision of the multiplication circuit as the very similar distortion occurs with panning.
 	 */
 	float ringModulatedSample = produceDistortedSample(masterOutputSample) * produceDistortedSample(slaveOutputSample);
-	return mixed ? masterOutputSample + ringModulatedSample : ringModulatedSample;
+	return 0.25f * (mixed ? masterOutputSample + ringModulatedSample : ringModulatedSample);
 }
 
 void LA32FloatPartialPair::deactivate(const PairType useMaster) {

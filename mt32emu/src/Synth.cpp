@@ -2017,21 +2017,35 @@ void RendererImpl<IntSample>::convertSamplesToOutput(IntSample *buffer, Bit32u l
 }
 
 static inline float produceDistortedSample(float sample) {
-	if (sample < -2.0f) {
-		return sample + 4.0f;
-	} else if (2.0f < sample) {
-		return sample - 4.0f;
+	// Here we roughly simulate the distortion caused by the DAC bit shift.
+	if (sample < -1.0f) {
+		return sample + 2.0f;
+	} else if (1.0f < sample) {
+		return sample - 2.0f;
 	}
 	return sample;
 }
 
 template <>
 void RendererImpl<FloatSample>::produceLA32Output(FloatSample *buffer, Bit32u len) {
-	if (synth.getDACInputMode() == DACInputMode_GENERATION2) {
+	switch (synth.getDACInputMode()) {
+	case DACInputMode_NICE:
+		// Note, we do not do any clamping for floats here to avoid introducing distortions.
+		// This means that the output signal may actually overshoot the unity when the volume is set too high.
+		// We leave it up to the consumer whether the output is to be clamped or properly normalised further on.
 		while (len--) {
-			*buffer = produceDistortedSample(*buffer);
+			*buffer *= 2.0f;
 			buffer++;
 		}
+		break;
+	case DACInputMode_GENERATION2:
+		while (len--) {
+			*buffer = produceDistortedSample(2.0f * *buffer);
+			buffer++;
+		}
+		break;
+	default:
+		break;
 	}
 }
 
@@ -2039,7 +2053,7 @@ template <>
 void RendererImpl<FloatSample>::convertSamplesToOutput(FloatSample *buffer, Bit32u len) {
 	if (synth.getDACInputMode() == DACInputMode_GENERATION1) {
 		while (len--) {
-			*buffer = produceDistortedSample(*buffer);
+			*buffer = produceDistortedSample(2.0f * *buffer);
 			buffer++;
 		}
 	}

@@ -259,11 +259,11 @@ public:
 	}
 
 	static inline Bit16s convertSample(float sample) {
-		return Synth::clipSampleEx(Bit32s(sample * 16384.0f)); // This multiplier takes into account the DAC bit shift
+		return Synth::clipSampleEx(Bit32s(sample * 32768.0f)); // This multiplier corresponds to normalised floats
 	}
 
 	static inline float convertSample(Bit16s sample) {
-		return float(sample) / 16384.0f; // This multiplier takes into account the DAC bit shift
+		return float(sample) / 32768.0f; // This multiplier corresponds to normalised floats
 	}
 
 	// Returns library version as an integer in format: 0x00MMmmpp, where:
