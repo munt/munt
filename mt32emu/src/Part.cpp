@@ -340,10 +340,13 @@ void RhythmPart::setPan(unsigned int midiPan) {
 void Part::setPan(unsigned int midiPan) {
 	// NOTE: Panning is inverted compared to GM.
 
-	// CM-32L: Divide by 8.5
-	patchTemp->panpot = Bit8u((midiPan << 3) / 68);
-	// FIXME: MT-32: Divide by 9
-	//patchTemp->panpot = Bit8u(midiPan / 9);
+	if (synth->controlROMFeatures->quirkPanMult) {
+		// MT-32: Divide by 9
+		patchTemp->panpot = Bit8u(midiPan / 9);
+	} else {
+		// CM-32L: Divide by 8.5
+		patchTemp->panpot = Bit8u((midiPan << 3) / 68);
+	}
 
 	//synth->printDebug("%s (%s): Set pan to %d", name, currentInstr, panpot);
 }
