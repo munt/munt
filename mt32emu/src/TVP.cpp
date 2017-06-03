@@ -107,9 +107,13 @@ static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialPa
 }
 
 static Bit32u calcVeloMult(Bit8u veloSensitivity, unsigned int velocity) {
-	if (veloSensitivity == 0 || veloSensitivity > 3) {
-		// Note that on CM-32L/LAPC-I veloSensitivity is never > 3, since it's clipped to 3 by the max tables.
+	if (veloSensitivity == 0) {
 		return 21845; // aka floor(4096 / 12 * 64), aka ~64 semitones
+	}
+	if (veloSensitivity > 3) {
+		// Note that on CM-32L/LAPC-I veloSensitivity is never > 3, since it's clipped to 3 by the max tables.
+		// MT-32 GEN0 has a bug here that leads to undefined behaviour. However, in most cases, it is effectively equivalent to clipping.
+		veloSensitivity = 3;
 	}
 	// When velocity is 127, the multiplier is 21845, aka ~64 semitones (regardless of veloSensitivity).
 	// The lower the velocity, the lower the multiplier. The veloSensitivity determines the amount decreased per velocity value.
