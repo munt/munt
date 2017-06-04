@@ -43,6 +43,7 @@ static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = {
 	true, // quirkRingModulationNoMix
 	true, // quirkTVAZeroEnvLevels
 	true, // quirkPanMult
+	true, // quirkKeyShift
 	true, // defaultReverbMT32Compatible
 	true // oldMT32AnalogLPF
 };
@@ -51,6 +52,7 @@ static const ControlROMFeatureSet CM32L_COMPATIBLE = {
 	false, // quirkRingModulationNoMix
 	false, // quirkTVAZeroEnvLevels
 	false, // quirkPanMult
+	false, // quirkKeyShift
 	false, // defaultReverbMT32Compatible
 	false // oldMT32AnalogLPF
 };

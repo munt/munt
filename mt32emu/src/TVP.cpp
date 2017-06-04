@@ -76,13 +76,15 @@ static inline Bit32s fineToPitch(Bit8u fine) {
 	return (fine - 50) * 4096 / 1200; // One cent per fine offset
 }
 
-static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialParam *partialParam, const MemParams::PatchTemp *patchTemp, unsigned int key) {
+static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialParam *partialParam, const MemParams::PatchTemp *patchTemp, unsigned int key, bool quirkKeyShift) {
 	Bit32s basePitch = keyToPitch(key);
 	basePitch = (basePitch * pitchKeyfollowMult[partialParam->wg.pitchKeyfollow]) >> 13; // PORTABILITY NOTE: Assumes arithmetic shift
 	basePitch += coarseToPitch(partialParam->wg.pitchCoarse);
 	basePitch += fineToPitch(partialParam->wg.pitchFine);
-	// NOTE:Mok: This is done on MT-32, but not LAPC-I:
-	//pitch += coarseToPitch(patchTemp->patch.keyShift + 12);
+	if (quirkKeyShift) {
+		// NOTE:Mok: This is done on MT-32, but not LAPC-I:
+		basePitch += coarseToPitch(patchTemp->patch.keyShift + 12);
+	}
 	basePitch += fineToPitch(patchTemp->patch.fineTune);
 
 	const ControlROMPCMStruct *controlROMPCMStruct = partial->getControlROMPCMStruct();
@@ -143,7 +145,7 @@ void TVP::reset(const Part *usePart, const TimbreParam::PartialParam *usePartial
 	// FIXME: We're using a per-TVP timer instead of a system-wide one for convenience.
 	timeElapsed = 0;
 
-	basePitch = calcBasePitch(partial, partialParam, patchTemp, key);
+	basePitch = calcBasePitch(partial, partialParam, patchTemp, key, partial->getSynth()->controlROMFeatures->quirkKeyShift);
 	currentPitchOffset = calcTargetPitchOffsetWithoutLFO(partialParam, 0, velocity);
 	targetPitchOffsetWithoutLFO = currentPitchOffset;
 	phase = 0;
