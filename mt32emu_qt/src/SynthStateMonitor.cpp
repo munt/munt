@@ -20,8 +20,8 @@
 #include "ui_SynthWidget.h"
 #include "font_6x8.h"
 
-static const MasterClockNanos LCD_MESSAGE_DISPLAYING_NANOS = 2 * MasterClock::NANOS_PER_SECOND;
-static const MasterClockNanos LCD_TIMBRE_NAME_DISPLAYING_NANOS = 1 * MasterClock::NANOS_PER_SECOND;
+static const MasterClockNanos LCD_MESSAGE_DISPLAYING_NANOS = 200 * MasterClock::NANOS_PER_MILLISECOND;
+static const MasterClockNanos LCD_TIMBRE_NAME_DISPLAYING_NANOS = 1200 * MasterClock::NANOS_PER_MILLISECOND;
 static const MasterClockNanos MIDI_MESSAGE_LED_MINIMUM_NANOS = 60 * MasterClock::NANOS_PER_MILLISECOND;
 static const MasterClockNanos MINIMUM_UPDATE_INTERVAL_NANOS = 30 * MasterClock::NANOS_PER_MILLISECOND;
 
@@ -144,10 +144,7 @@ void SynthStateMonitor::handleUpdate() {
 	for (unsigned int partNum = 0; partNum < 9; partNum++) {
 		midiMessageOn = midiMessageOn || partActiveNonReleasing[partNum];
 	}
-	MasterClockNanos nanosSinceLastLCDStateChange = nanosNow - lcdWidget.lcdStateStartNanos;
-	if (((lcdWidget.lcdState == LCDWidget::DISPLAYING_MESSAGE) && (nanosSinceLastLCDStateChange > LCD_MESSAGE_DISPLAYING_NANOS))
-		|| ((lcdWidget.lcdState == LCDWidget::DISPLAYING_TIMBRE_NAME) && (nanosSinceLastLCDStateChange > LCD_TIMBRE_NAME_DISPLAYING_NANOS)))
-	{
+	if ((lcdWidget.lcdState == LCDWidget::DISPLAYING_TIMBRE_NAME) && (nanosNow - lcdWidget.lcdStateStartNanos > LCD_TIMBRE_NAME_DISPLAYING_NANOS)) {
 		lcdWidget.setPartStateLCDText();
 	}
 	if (lcdWidget.lcdState == LCDWidget::DISPLAYING_PART_STATE) {
@@ -278,7 +275,8 @@ void LCDWidget::handleLCDMessageDisplayed(const QString useText) {
 
 void LCDWidget::handleMasterVolumeChanged(int volume) {
 	masterVolume = volume;
-	if (lcdState == DISPLAYING_PART_STATE) {
+	MasterClockNanos nanosNow = MasterClock::getClockNanos();
+	if ((lcdState != DISPLAYING_MESSAGE) || (nanosNow - lcdStateStartNanos > LCD_MESSAGE_DISPLAYING_NANOS)) {
 		setPartStateLCDText();
 		update();
 	}
