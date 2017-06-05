@@ -1,0 +1,24 @@
+//
+//  Prefix header
+//
+//  The contents of this file are implicitly included at the beginning of every source file.
+//
+
+#ifdef __OBJC__
+    #import <Cocoa/Cocoa.h>
+#endif
+
+#if !defined(__COREAUDIO_USE_FLAT_INCLUDES__)
+#include <CoreAudio/CoreAudioTypes.h>
+#include <CoreFoundation/CoreFoundation.h>
+#else
+#include <CoreAudioTypes.h>
+#include <CoreFoundation.h>
+#endif
+
+#include <CoreServices/CoreServices.h>
+#include <CoreAudio/CoreAudio.h>
+#include <AudioUnit/AudioUnit.h>
+
+
+#include <AudioToolbox/AudioToolbox.h>
