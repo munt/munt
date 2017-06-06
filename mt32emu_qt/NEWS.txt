@@ -1,3 +1,7 @@
+1.5.1-current:
+
+	* Improved a bit the LCD emulation to better match behaviour of old MT-32 units.
+
 2017-04-09:
 
 	1.5.0 released.

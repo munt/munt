@@ -1,3 +1,14 @@
+2.2-current:
+
+	* Added emulation of a number of MT-32 GEN0 quirks that is enabled when loading e.g. Control ROM v1.07,
+	  so many patches specific for old MT-32 are now played correctly. Thanks go to NewRisingSun for providing
+	  the test set of those patches. See http://www.vogons.org/viewtopic.php?p=578873#p578873 for more details.
+	* Fixed sample format conversion implementation, so that integer samples are converted to normalised
+	  float samples as well as float samples are still converted to full-range integer ones.
+	  LA32FloatWaveGenerator now produces output at 0.25 volume that corresponds to the fact that each partial
+	  in LA32 uses only 14-bit samples. Still, no clamping is applied in DACInputMode_NICE mode for floats,
+	  so the output samples may overshoot a little for tunes with the volume set too high.
+
 2017-04-09:
 
 	2.1.0 released.
