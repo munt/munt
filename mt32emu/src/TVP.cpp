@@ -112,19 +112,19 @@ static Bit32u calcVeloMult(Bit8u veloSensitivity, unsigned int velocity) {
 	if (veloSensitivity == 0) {
 		return 21845; // aka floor(4096 / 12 * 64), aka ~64 semitones
 	}
+	unsigned int reversedVelocity = 127 - velocity;
+	unsigned int scaledReversedVelocity;
 	if (veloSensitivity > 3) {
 		// Note that on CM-32L/LAPC-I veloSensitivity is never > 3, since it's clipped to 3 by the max tables.
-		// MT-32 GEN0 has a bug here that leads to undefined behaviour. However, in most cases, it is effectively equivalent to clipping.
-		veloSensitivity = 3;
+		// MT-32 GEN0 has a bug here that leads to unspecified behaviour. We assume it is as follows.
+		scaledReversedVelocity = (reversedVelocity << 8) >> ((3 - veloSensitivity) & 0x1f);
+	} else {
+		scaledReversedVelocity = reversedVelocity << (5 + veloSensitivity);
 	}
 	// When velocity is 127, the multiplier is 21845, aka ~64 semitones (regardless of veloSensitivity).
 	// The lower the velocity, the lower the multiplier. The veloSensitivity determines the amount decreased per velocity value.
-	// The minimum multiplier (with velocity 0, veloSensitivity 3) is 170 (~half a semitone).
-	Bit32u veloMult = 32768;
-	veloMult -= (127 - velocity) << (5 + veloSensitivity);
-	veloMult *= 21845;
-	veloMult >>= 15;
-	return veloMult;
+	// The minimum multiplier on CM-32L/LAPC-I (with velocity 0, veloSensitivity 3) is 170 (~half a semitone).
+	return ((32768 - scaledReversedVelocity) * 21845) >> 15;
 }
 
 static Bit32s calcTargetPitchOffsetWithoutLFO(const TimbreParam::PartialParam *partialParam, int levelIndex, unsigned int velocity) {
