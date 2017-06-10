@@ -38,12 +38,14 @@ private:
 	MidiPlayerDialog *midiPlayerDialog;
 	MidiConverterDialog *midiConverterDialog;
 
+	bool showROMSelectionDialog();
 	void trayIconContextMenu();
 
 private slots:
 	void on_actionAbout_triggered();
 	void handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice);
 	void handleSynthRouteRemoved(SynthRoute *synthRoute);
+	void handleROMSLoadFailed(bool &recoveryAttempted);
 	void on_menuMIDI_aboutToShow();
 	void on_actionNew_MIDI_port_triggered();
 	void on_actionTest_MIDI_Driver_toggled(bool checked);

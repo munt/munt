@@ -307,11 +307,11 @@ void SynthWidget::on_detailsButton_clicked() {
 
 void SynthWidget::setEmuModeText() {
 	QString emuMode;
-	SynthProfile synthProfile;
-	synthRoute->getSynthProfile(synthProfile);
-	if (synthProfile.controlROMImage == NULL) emuMode = "Unknown";
-	else emuMode = synthProfile.controlROMImage->getROMInfo()->description;
-	ui->synthEmuModeLabel->setText(emuMode + " Emulation Mode");
+	const MT32Emu::ROMImage *controlROMImage = NULL;
+	const MT32Emu::ROMImage *pcmROMImage = NULL;
+	synthRoute->getROMImages(controlROMImage, pcmROMImage);
+	emuMode = controlROMImage == NULL ? "Unknown" : controlROMImage->getROMInfo()->description;
+	ui->synthEmuModeLabel->setText("Emulation Mode: " + emuMode);
 }
 
 const QIcon &SynthWidget::getSynthDetailsIcon(bool visible) {

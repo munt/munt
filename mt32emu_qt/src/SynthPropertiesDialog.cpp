@@ -106,7 +106,6 @@ void SynthPropertiesDialog::on_buttonBox_clicked(QAbstractButton *button) {
 void SynthPropertiesDialog::on_profileComboBox_currentIndexChanged(int) {
 	Master &master = *Master::getInstance();
 	QString name = ui->profileComboBox->currentText();
-	synthRoute->getSynthProfile(synthProfile);
 	master.loadSynthProfile(synthProfile, name);
 	synthRoute->setSynthProfile(synthProfile, name);
 	ui->profileCheckBox->setChecked(name == master.getDefaultSynthProfileName());
@@ -251,8 +250,6 @@ void SynthPropertiesDialog::saveSynthProfile() {
 	Master &master = *Master::getInstance();
 	QString name = ui->profileComboBox->currentText();
 	master.storeSynthProfile(newSynthProfile, name);
-	synthProfile.controlROMImage = NULL;
-	synthProfile.pcmROMImage = NULL;
 	master.loadSynthProfile(synthProfile, name);
 	synthRoute->setSynthProfile(synthProfile, name);
 	if (ui->profileCheckBox->isChecked()) master.setDefaultSynthProfileName(name);
@@ -278,7 +275,7 @@ void SynthPropertiesDialog::refreshProfileCombo(QString name) {
 
 QString SynthPropertiesDialog::getROMSetDescription() {
 	MT32Emu::FileStream file;
-	if (file.open((synthProfile.romDir.absolutePath() + QDir::separator() + synthProfile.controlROMFileName).toUtf8())) {
+	if (file.open(Master::getROMPathName(synthProfile.romDir, synthProfile.controlROMFileName).toUtf8())) {
 		const MT32Emu::ROMInfo *romInfo = MT32Emu::ROMInfo::getROMInfo(&file);
 		if (romInfo != NULL) {
 			QString des = romInfo->description;

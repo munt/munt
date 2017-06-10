@@ -22,8 +22,6 @@ struct SynthProfile {
 	QDir romDir;
 	QString controlROMFileName;
 	QString pcmROMFileName;
-	const MT32Emu::ROMImage *controlROMImage;
-	const MT32Emu::ROMImage *pcmROMImage;
 	MT32Emu::DACInputMode emuDACInputMode;
 	MT32Emu::MIDIDelayMode midiDelayMode;
 	MT32Emu::AnalogOutputMode analogOutputMode;
@@ -109,7 +107,7 @@ public:
 	QSynth(QObject *parent = NULL);
 	~QSynth();
 	bool isOpen() const;
-	bool open(uint targetSampleRate, MT32Emu::SamplerateConversionQuality srcQuality = MT32Emu::SamplerateConversionQuality_GOOD, const QString useSynthProfileName = "");
+	bool open(uint targetSampleRate = 0, MT32Emu::SamplerateConversionQuality srcQuality = MT32Emu::SamplerateConversionQuality_GOOD, const QString useSynthProfileName = "");
 	void close();
 	bool reset();
 
@@ -124,6 +122,8 @@ public:
 
 	void getSynthProfile(SynthProfile &synthProfile) const;
 	void setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName);
+
+	void getROMImages(const MT32Emu::ROMImage *&controlROMImage, const MT32Emu::ROMImage *&pcmROMImage) const;
 
 	void setMasterVolume(int masterVolume);
 	void setOutputGain(float outputGain);

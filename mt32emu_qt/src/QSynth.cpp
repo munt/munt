@@ -32,6 +32,14 @@
 
 using namespace MT32Emu;
 
+static const ROMImage *makeROMImage(const QDir &romDir, QString romFileName) {
+	FileStream *file = new FileStream;
+	if (file->open(Master::getROMPathName(romDir, romFileName).toUtf8())) {
+		return ROMImage::makeROMImage(file);
+	}
+	return NULL;
+}
+
 QReportHandler::QReportHandler(QObject *parent) : QObject(parent) {
 	connect(this, SIGNAL(balloonMessageAppeared(const QString &, const QString &)), Master::getInstance(), SLOT(showBalloon(const QString &, const QString &)));
 }
@@ -189,28 +197,33 @@ void QSynth::render(Bit16s *buffer, uint length) {
 }
 
 bool QSynth::open(uint targetSampleRate, SamplerateConversionQuality srcQuality, const QString useSynthProfileName) {
-	if (isOpen()) {
-		return true;
-	}
+	if (isOpen()) return true;
 
 	synthProfileName = useSynthProfileName;
 	SynthProfile synthProfile;
-	getSynthProfile(synthProfile);
-	Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);
-	setSynthProfile(synthProfile, synthProfileName);
-	if (controlROMImage == NULL || pcmROMImage == NULL) {
+
+	forever {
+		Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);
+		if (controlROMImage == NULL || pcmROMImage == NULL) Master::getInstance()->findROMImages(synthProfile, controlROMImage, pcmROMImage);
+		if (controlROMImage == NULL) controlROMImage = makeROMImage(synthProfile.romDir, synthProfile.controlROMFileName);
+		if (controlROMImage != NULL && pcmROMImage == NULL) pcmROMImage = makeROMImage(synthProfile.romDir, synthProfile.pcmROMFileName);
+		if (controlROMImage != NULL && pcmROMImage != NULL) break;
 		qDebug() << "Missing ROM files. Can't open synth :(";
 		freeROMImages();
-		return false;
+		if (!Master::getInstance()->handleROMSLoadFailed(synthProfileName)) return false;
 	}
+
 	actualAnalogOutputMode = synthProfile.analogOutputMode;
 	const AnalogOutputMode bestAnalogOutputMode = SampleRateConverter::getBestAnalogOutputMode(targetSampleRate);
 	if (actualAnalogOutputMode == AnalogOutputMode_ACCURATE && bestAnalogOutputMode == AnalogOutputMode_OVERSAMPLED) {
 		actualAnalogOutputMode = bestAnalogOutputMode;
 	}
+	setRendererType(synthProfile.rendererType);
+
 	static const char *ANALOG_OUTPUT_MODES[] = {"Digital only", "Coarse", "Accurate", "Oversampled2x"};
 	qDebug() << "Using Analogue output mode:" << ANALOG_OUTPUT_MODES[actualAnalogOutputMode];
 	qDebug() << "Using Renderer Type:" << (synthProfile.rendererType ? "Float 32-bit" : "Integer 16-bit");
+
 	if (synth->open(*controlROMImage, *pcmROMImage, actualAnalogOutputMode)) {
 		setState(SynthState_OPEN);
 		reportHandler.onDeviceReconfig();
@@ -469,8 +482,6 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.romDir = romDir;
 	synthProfile.controlROMFileName = controlROMFileName;
 	synthProfile.pcmROMFileName = pcmROMFileName;
-	synthProfile.controlROMImage = controlROMImage;
-	synthProfile.pcmROMImage = pcmROMImage;
 	synthProfile.emuDACInputMode = synth->getDACInputMode();
 	synthProfile.midiDelayMode = synth->getMIDIDelayMode();
 	synthProfile.analogOutputMode = analogOutputMode;
@@ -490,28 +501,18 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 
 void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName) {
 	synthProfileName = useSynthProfileName;
+
+	// Settings below do not take effect before re-open.
 	romDir = synthProfile.romDir;
 	controlROMFileName = synthProfile.controlROMFileName;
 	pcmROMFileName = synthProfile.pcmROMFileName;
-	if (controlROMImage == NULL || pcmROMImage == NULL) {
-		freeROMImages();
-		controlROMImage = synthProfile.controlROMImage;
-		pcmROMImage = synthProfile.pcmROMImage;
-	} else if (synthProfile.controlROMImage != NULL && synthProfile.pcmROMImage != NULL) {
-		bool controlROMChanged = strcmp((char *)controlROMImage->getROMInfo()->sha1Digest, (char *)synthProfile.controlROMImage->getROMInfo()->sha1Digest) != 0;
-		bool pcmROMChanged = strcmp((char *)pcmROMImage->getROMInfo()->sha1Digest, (char *)synthProfile.pcmROMImage->getROMInfo()->sha1Digest) != 0;
-		if (controlROMChanged || pcmROMChanged) {
-			freeROMImages();
-			controlROMImage = synthProfile.controlROMImage;
-			pcmROMImage = synthProfile.pcmROMImage;
-			reset();
-		}
-	}
+	setAnalogOutputMode(synthProfile.analogOutputMode);
+	setRendererType(synthProfile.rendererType);
+
+	// Settings below take effect immediately.
 	setReverbCompatibilityMode(synthProfile.reverbCompatibilityMode);
 	setMIDIDelayMode(synthProfile.midiDelayMode);
 	setDACInputMode(synthProfile.emuDACInputMode);
-	setAnalogOutputMode(synthProfile.analogOutputMode);
-	setRendererType(synthProfile.rendererType);
 	setOutputGain(synthProfile.outputGain);
 	setReverbOutputGain(synthProfile.reverbOutputGain);
 	setReverbOverridden(synthProfile.reverbOverridden);
@@ -521,6 +522,11 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	}
 	setReversedStereoEnabled(synthProfile.reversedStereoEnabled);
 	setInitialMIDIChannelsAssignment(synthProfile.engageChannel1OnOpen);
+}
+
+void QSynth::getROMImages(const MT32Emu::ROMImage *&cri, const MT32Emu::ROMImage *&pri) const {
+	cri = controlROMImage;
+	pri = pcmROMImage;
 }
 
 void QSynth::freeROMImages() {

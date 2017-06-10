@@ -326,59 +326,47 @@ const QStringList Master::enumSynthProfiles() const {
 	return profiles;
 }
 
-const QString Master::getROMPathName(const QDir &romDir, QString romFileName) const {
+const QString Master::getROMPathName(const QDir &romDir, QString romFileName) {
 	QString pathName = QDir::toNativeSeparators(romDir.absolutePath());
 	return pathName + QDir::separator() + romFileName;
 }
 
-void Master::makeROMImages(SynthProfile &synthProfile) {
-	freeROMImages(synthProfile.controlROMImage, synthProfile.pcmROMImage);
-
-	// FIXME: Probably there need to be a proper ROMImage cache with allocation counters
+void Master::findROMImages(const SynthProfile &synthProfile, const MT32Emu::ROMImage *&controlROMImage, const MT32Emu::ROMImage *&pcmROMImage) const {
+	if (controlROMImage != NULL && pcmROMImage != NULL) return;
+	const MT32Emu::ROMImage *synthControlROMImage = NULL;
+	const MT32Emu::ROMImage *synthPCMROMImage = NULL;
+	if (audioFileWriterSynth != NULL) {
+		audioFileWriterSynth->getROMImages(controlROMImage, pcmROMImage);
+		if (controlROMImage == NULL) controlROMImage = synthControlROMImage;
+		if (pcmROMImage == NULL) controlROMImage = synthPCMROMImage;
+	}
 	foreach (SynthRoute *synthRoute, synthRoutes) {
+		if (controlROMImage != NULL && pcmROMImage != NULL) return;
 		SynthProfile profile;
 		synthRoute->getSynthProfile(profile);
 		if (synthProfile.romDir != profile.romDir) continue;
-		if (synthProfile.controlROMFileName == profile.controlROMFileName) synthProfile.controlROMImage = profile.controlROMImage;
-		if (synthProfile.pcmROMFileName == profile.pcmROMFileName) synthProfile.pcmROMImage = profile.pcmROMImage;
-	}
-
-	MT32Emu::FileStream *file;
-	if (synthProfile.controlROMImage == NULL) {
-		file = new MT32Emu::FileStream();
-		if (file->open(getROMPathName(synthProfile.romDir, synthProfile.controlROMFileName).toUtf8())) {
-			synthProfile.controlROMImage = MT32Emu::ROMImage::makeROMImage(file);
-			if (synthProfile.controlROMImage->getROMInfo() == NULL) {
-				freeROMImages(synthProfile.controlROMImage, synthProfile.pcmROMImage);
-				return;
-			}
-		}
-	}
-	if (synthProfile.pcmROMImage == NULL) {
-		file = new MT32Emu::FileStream();
-		if (file->open(getROMPathName(synthProfile.romDir, synthProfile.pcmROMFileName).toUtf8())) {
-			synthProfile.pcmROMImage = MT32Emu::ROMImage::makeROMImage(file);
-			if (synthProfile.pcmROMImage->getROMInfo() == NULL) {
-				freeROMImages(synthProfile.controlROMImage, synthProfile.pcmROMImage);
-			}
-		}
+		synthRoute->getROMImages(synthControlROMImage, synthPCMROMImage);
+		if (controlROMImage == NULL && synthProfile.controlROMFileName == profile.controlROMFileName) controlROMImage = synthControlROMImage;
+		if (pcmROMImage == NULL && synthProfile.pcmROMFileName == profile.pcmROMFileName) pcmROMImage = synthPCMROMImage;
 	}
 }
 
-void Master::freeROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32Emu::ROMImage* &pcmROMImage) {
+void Master::freeROMImages(const MT32Emu::ROMImage *&controlROMImage, const MT32Emu::ROMImage *&pcmROMImage) const {
 	if (controlROMImage == NULL && pcmROMImage == NULL) return;
 	bool controlROMInUse = false;
 	bool pcmROMInUse = false;
-	SynthProfile synthProfile;
+	const MT32Emu::ROMImage *synthControlROMImage = NULL;
+	const MT32Emu::ROMImage *synthPCMROMImage = NULL;
 	if (audioFileWriterSynth != NULL) {
-		audioFileWriterSynth->getSynthProfile(synthProfile);
-		controlROMInUse = controlROMInUse || (synthProfile.controlROMImage == controlROMImage);
-		pcmROMInUse = pcmROMInUse || (synthProfile.pcmROMImage == pcmROMImage);
+		audioFileWriterSynth->getROMImages(synthControlROMImage, synthPCMROMImage);
+		controlROMInUse = controlROMInUse || (synthControlROMImage == controlROMImage);
+		pcmROMInUse = pcmROMInUse || (synthPCMROMImage == pcmROMImage);
 	}
 	foreach (SynthRoute *synthRoute, synthRoutes) {
-		synthRoute->getSynthProfile(synthProfile);
-		controlROMInUse = controlROMInUse || (synthProfile.controlROMImage == controlROMImage);
-		pcmROMInUse = pcmROMInUse || (synthProfile.pcmROMImage == pcmROMImage);
+		if (controlROMInUse && pcmROMInUse) break;
+		synthRoute->getROMImages(synthControlROMImage, synthPCMROMImage);
+		controlROMInUse = controlROMInUse || (synthControlROMImage == controlROMImage);
+		pcmROMInUse = pcmROMInUse || (synthPCMROMImage == pcmROMImage);
 	}
 	if (!controlROMInUse && controlROMImage != NULL) {
 		delete controlROMImage->getFile();
@@ -390,6 +378,15 @@ void Master::freeROMImages(const MT32Emu::ROMImage* &controlROMImage, const MT32
 		MT32Emu::ROMImage::freeROMImage(pcmROMImage);
 		pcmROMImage = NULL;
 	}
+}
+
+bool Master::handleROMSLoadFailed(QString usedSynthProfileName) {
+	if (usedSynthProfileName.isEmpty() || usedSynthProfileName == synthProfileName) {
+		bool recoveryAttempted = false;
+		emit romsLoadFailed(recoveryAttempted);
+		return recoveryAttempted;
+	}
+	return false;
 }
 
 QString Master::getDefaultROMSearchPath() {
@@ -406,10 +403,8 @@ QString Master::getDefaultROMSearchPath() {
 }
 
 void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
-	static bool romNotSetReported = false;
 	if (name.isEmpty()) name = synthProfileName;
 	settings->beginGroup("Profiles/" + name);
-
 	QString romPath = settings->value("romDir", "").toString();
 	synthProfile.romDir.setPath(romPath.isEmpty() ? getDefaultROMSearchPath(): romPath);
 	synthProfile.controlROMFileName = settings->value("controlROM", "MT32_CONTROL.ROM").toString();
@@ -429,15 +424,6 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	synthProfile.reversedStereoEnabled = settings->value("reversedStereoEnabled", false).toBool();
 	synthProfile.engageChannel1OnOpen = settings->value("engageChannel1OnOpen", false).toBool();
 	settings->endGroup();
-
-	makeROMImages(synthProfile);
-	if (romNotSetReported || name != synthProfileName) return;
-	if (synthProfile.controlROMImage == NULL || synthProfile.pcmROMImage == NULL) {
-		romNotSetReported = true;
-		emit romsNotSet();
-		loadSynthProfile(synthProfile, name);
-		romNotSetReported = false;
-	}
 }
 
 void Master::storeSynthProfile(const SynthProfile &synthProfile, QString name) const {

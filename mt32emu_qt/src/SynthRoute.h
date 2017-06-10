@@ -84,6 +84,7 @@ public:
 	MidiRecorder *getMidiRecorder();
 	void getSynthProfile(SynthProfile &synthProfile) const;
 	void setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName);
+	void getROMImages(const MT32Emu::ROMImage *&controlROMImage, const MT32Emu::ROMImage *&pcmROMImage) const;
 	bool connectSynth(const char *signal, const QObject *receiver, const char *slot) const;
 	bool connectReportHandler(const char *signal, const QObject *receiver, const char *slot) const;
 

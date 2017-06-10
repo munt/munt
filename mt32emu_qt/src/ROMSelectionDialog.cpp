@@ -96,7 +96,7 @@ void ROMSelectionDialog::refreshROMInfos() {
 	for (QStringListIterator it(dirEntries); it.hasNext();) {
 		QString fileName = it.next();
 		FileStream file;
-		if (!file.open((synthProfile.romDir.absolutePath() + QDir::separator() + fileName).toUtf8())) continue;
+		if (!file.open(Master::getROMPathName(synthProfile.romDir, fileName).toUtf8())) continue;
 		const ROMInfo *romInfoPtr = ROMInfo::getROMInfo(&file);
 		if (romInfoPtr == NULL) continue;
 		const ROMInfo &romInfo = *romInfoPtr;

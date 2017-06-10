@@ -295,6 +295,10 @@ void SynthRoute::setSynthProfile(const SynthProfile &synthProfile, QString useSy
 	qSynth.setSynthProfile(synthProfile, useSynthProfileName);
 }
 
+void SynthRoute::getROMImages(const MT32Emu::ROMImage *&controlROMImage, const MT32Emu::ROMImage *&pcmROMImage) const {
+	qSynth.getROMImages(controlROMImage, pcmROMImage);
+}
+
 unsigned int SynthRoute::getPartialCount() const {
 	return qSynth.getPartialCount();
 }

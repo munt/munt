@@ -54,7 +54,7 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
 	connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), SLOT(handleSynthRouteRemoved(SynthRoute *)));
 	connect(master, SIGNAL(synthRoutePinned()), SLOT(refreshTabNames()));
-	connect(master, SIGNAL(romsNotSet()), SLOT(on_actionROM_Configuration_triggered()));
+	connect(master, SIGNAL(romsLoadFailed(bool &)), SLOT(handleROMSLoadFailed(bool &)), Qt::DirectConnection);
 	connect(master, SIGNAL(playMidiFiles(const QStringList &)), SLOT(handlePlayMidiFiles(const QStringList &)), Qt::QueuedConnection);
 	connect(master, SIGNAL(convertMidiFiles(const QStringList &)), SLOT(handleConvertMidiFiles(const QStringList &)), Qt::QueuedConnection);
 	connect(master, SIGNAL(mainWindowTitleUpdated(const QString &)), SLOT(setWindowTitle(const QString &)));
@@ -163,6 +163,9 @@ void MainWindow::handleSynthRouteRemoved(SynthRoute *synthRoute) {
 	}
 }
 
+void MainWindow::handleROMSLoadFailed(bool &recoveryAttempted) {
+	recoveryAttempted = showROMSelectionDialog();
+}
 
 void MainWindow::on_menuMIDI_aboutToShow() {
 	ui->actionNew_MIDI_port->setEnabled(master->canCreateMidiPort());
@@ -222,17 +225,20 @@ void MainWindow::on_actionShow_connection_balloons_toggled(bool checked) {
 }
 
 void MainWindow::on_actionROM_Configuration_triggered() {
+	showROMSelectionDialog();
+}
+
+bool MainWindow::showROMSelectionDialog() {
 	Master &master = *Master::getInstance();
 	SynthProfile synthProfile;
-	synthProfile.controlROMImage = synthProfile.pcmROMImage = NULL;
-	master.disconnect(this, SLOT(on_actionROM_Configuration_triggered()));
 	master.loadSynthProfile(synthProfile, "");
-	connect(&master, SIGNAL(romsNotSet()), SLOT(on_actionROM_Configuration_triggered()));
 	ROMSelectionDialog rsd(synthProfile, this);
 	rsd.loadROMInfos();
 	if (rsd.exec() == QDialog::Accepted) {
 		master.storeSynthProfile(synthProfile, "");
+		return true;
 	}
+	return false;
 }
 
 void MainWindow::trayIconContextMenu() {
