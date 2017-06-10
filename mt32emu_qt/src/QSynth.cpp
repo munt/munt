@@ -213,7 +213,7 @@ bool QSynth::open(uint targetSampleRate, SamplerateConversionQuality srcQuality,
 		if (!Master::getInstance()->handleROMSLoadFailed(synthProfileName)) return false;
 	}
 
-	actualAnalogOutputMode = synthProfile.analogOutputMode;
+	MT32Emu::AnalogOutputMode actualAnalogOutputMode = synthProfile.analogOutputMode;
 	const AnalogOutputMode bestAnalogOutputMode = SampleRateConverter::getBestAnalogOutputMode(targetSampleRate);
 	if (actualAnalogOutputMode == AnalogOutputMode_ACCURATE && bestAnalogOutputMode == AnalogOutputMode_OVERSAMPLED) {
 		actualAnalogOutputMode = bestAnalogOutputMode;
@@ -432,25 +432,17 @@ bool QSynth::isActive() const {
 }
 
 bool QSynth::reset() {
-	if (!isOpen()) return true;
-
-	setState(SynthState_CLOSING);
+	static Bit8u sysex[] = { 0x7f, 0, 0 };
 
 	midiMutex.lock();
 	synthMutex->lock();
-	synth->close();
-	// Do not delete synth here to keep the rendered frame counter value, audioStream is also alive during reset
-	if (!synth->open(*controlROMImage, *pcmROMImage, actualAnalogOutputMode)) {
-		synthMutex->unlock();
-		midiMutex.unlock();
-		setState(SynthState_CLOSED);
-		return false;
+	if (isOpen()) {
+		setState(SynthState_CLOSING);
+		synth->writeSysex(16, sysex, 3);
+		setState(SynthState_OPEN);
 	}
 	synthMutex->unlock();
 	midiMutex.unlock();
-	reportHandler.onDeviceReconfig();
-
-	setState(SynthState_OPEN);
 	return true;
 }
 

@@ -88,7 +88,6 @@ private:
 	int reverbTime;
 	int reverbLevel;
 	MT32Emu::AnalogOutputMode analogOutputMode;
-	MT32Emu::AnalogOutputMode actualAnalogOutputMode;
 	ReverbCompatibilityMode reverbCompatibilityMode;
 	bool engageChannel1OnOpen;
 
