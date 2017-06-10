@@ -199,7 +199,7 @@ void QSynth::render(Bit16s *buffer, uint length) {
 bool QSynth::open(uint targetSampleRate, SamplerateConversionQuality srcQuality, const QString useSynthProfileName) {
 	if (isOpen()) return true;
 
-	synthProfileName = useSynthProfileName;
+	if (!useSynthProfileName.isEmpty()) synthProfileName = useSynthProfileName;
 	SynthProfile synthProfile;
 
 	forever {
