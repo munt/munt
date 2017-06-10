@@ -1,6 +1,9 @@
-1.5.1-current:
+1.6-current:
 
 	* Improved a bit the LCD emulation to better match behaviour of old MT-32 units.
+	* Improved synth profile handling. When a non-default synth profile is selected in the synth properties dialog,
+	  it is now used during synth re-opening (provided that it is pinned or an active MIDI session persists).
+	* Added support for SysEx fragments in standard MIDI files played using the internal MIDI player.
 
 2017-04-09:
 
