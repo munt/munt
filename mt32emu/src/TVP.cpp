@@ -183,7 +183,7 @@ void TVP::updatePitch() {
 	// MT-32 GEN0 does 16-bit calculations here, allowing an integer overflow.
 	// This quirk is exploited e.g. in Colonel's Bequest timbres "Lightning" and "SwmpBackgr".
 	if (partial->getSynth()->controlROMFeatures->quirkPitchEnvelopeOverflow) {
-		newPitch = Bit16u(newPitch);
+		newPitch = newPitch & 0xffff;
 	} else if (newPitch < 0) {
 		newPitch = 0;
 	}
