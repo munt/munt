@@ -893,7 +893,7 @@ bool Synth::playMsg(Bit32u msg) {
 
 bool Synth::playMsg(Bit32u msg, Bit32u timestamp) {
 	if ((msg & 0xF8) == 0xF8) {
-		reportHandler->onMIDISystemRealtime(Bit8u(msg));
+		reportHandler->onMIDISystemRealtime(Bit8u(msg & 0xFF));
 		return true;
 	}
 	if (midiQueue == NULL) return false;
