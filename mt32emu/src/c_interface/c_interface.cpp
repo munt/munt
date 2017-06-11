@@ -506,7 +506,7 @@ mt32emu_bit32u mt32emu_convert_synth_to_output_timestamp(mt32emu_const_context c
 	if (context->srcState->src == NULL) {
 		return synth_timestamp;
 	}
-	return mt32emu_bit32u(context->srcState->src->convertSynthToOutputTimestamp(synth_timestamp));
+	return mt32emu_bit32u(0.5 + context->srcState->src->convertSynthToOutputTimestamp(synth_timestamp));
 }
 
 void mt32emu_flush_midi_queue(mt32emu_const_context context) {
