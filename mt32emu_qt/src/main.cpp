@@ -19,8 +19,6 @@
 #include "MainWindow.h"
 #include "Master.h"
 
-using namespace MT32Emu;
-
 int main(int argv, char **args) {
 	QApplication app(argv, args);
 	app.setApplicationName("Munt mt32emu-qt");
