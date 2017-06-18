@@ -184,6 +184,7 @@ struct SoundGroup {
 #endif
 
 struct ControlROMFeatureSet {
+	unsigned int quirkBasePitchOverflow : 1;
 	unsigned int quirkPitchEnvelopeOverflow : 1;
 	unsigned int quirkRingModulationNoMix : 1;
 	unsigned int quirkTVAZeroEnvLevels : 1;

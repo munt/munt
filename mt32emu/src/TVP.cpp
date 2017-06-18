@@ -76,12 +76,12 @@ static inline Bit32s fineToPitch(Bit8u fine) {
 	return (fine - 50) * 4096 / 1200; // One cent per fine offset
 }
 
-static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialParam *partialParam, const MemParams::PatchTemp *patchTemp, unsigned int key, bool quirkKeyShift) {
+static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialParam *partialParam, const MemParams::PatchTemp *patchTemp, unsigned int key, const ControlROMFeatureSet *controlROMFeatures) {
 	Bit32s basePitch = keyToPitch(key);
 	basePitch = (basePitch * pitchKeyfollowMult[partialParam->wg.pitchKeyfollow]) >> 13; // PORTABILITY NOTE: Assumes arithmetic shift
 	basePitch += coarseToPitch(partialParam->wg.pitchCoarse);
 	basePitch += fineToPitch(partialParam->wg.pitchFine);
-	if (quirkKeyShift) {
+	if (controlROMFeatures->quirkKeyShift) {
 		// NOTE:Mok: This is done on MT-32, but not LAPC-I:
 		basePitch += coarseToPitch(patchTemp->patch.keyShift + 12);
 	}
@@ -99,7 +99,12 @@ static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialPa
 			basePitch += 33037;
 		}
 	}
-	if (basePitch < 0) {
+
+	// MT-32 GEN0 does 16-bit calculations here, allowing an integer overflow.
+	// This quirk is observable playing the patch defined for timbre "HIT BOTTOM" in Larry 3.
+	if (controlROMFeatures->quirkBasePitchOverflow) {
+		basePitch = basePitch & 0xffff;
+	} else if (basePitch < 0) {
 		basePitch = 0;
 	}
 	if (basePitch > 59392) {
@@ -145,7 +150,7 @@ void TVP::reset(const Part *usePart, const TimbreParam::PartialParam *usePartial
 	// FIXME: We're using a per-TVP timer instead of a system-wide one for convenience.
 	timeElapsed = 0;
 
-	basePitch = calcBasePitch(partial, partialParam, patchTemp, key, partial->getSynth()->controlROMFeatures->quirkKeyShift);
+	basePitch = calcBasePitch(partial, partialParam, patchTemp, key, partial->getSynth()->controlROMFeatures);
 	currentPitchOffset = calcTargetPitchOffsetWithoutLFO(partialParam, 0, velocity);
 	targetPitchOffsetWithoutLFO = currentPitchOffset;
 	phase = 0;

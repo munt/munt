@@ -39,6 +39,7 @@ static const double MIDI_DATA_TRANSFER_RATE = double(SAMPLE_RATE) / 31250.0 * 8.
 
 // FIXME: there should be more specific feature sets for various MT-32 control ROM versions
 static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = {
+	true, // quirkBasePitchOverflow
 	true, // quirkPitchEnvelopeOverflow
 	true, // quirkRingModulationNoMix
 	true, // quirkTVAZeroEnvLevels
@@ -49,6 +50,7 @@ static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = {
 	true // oldMT32AnalogLPF
 };
 static const ControlROMFeatureSet CM32L_COMPATIBLE = {
+	false, // quirkBasePitchOverflow
 	false, // quirkPitchEnvelopeOverflow
 	false, // quirkRingModulationNoMix
 	false, // quirkTVAZeroEnvLevels
