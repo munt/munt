@@ -51,13 +51,15 @@ static Bit16u keyToPitchTable[] = {
 	21845, 22187, 22528, 22869
 };
 
+// We want to do processing 4000 times per second. FIXME: This is pretty arbitrary.
+static const int NOMINAL_PROCESS_TIMER_PERIOD_SAMPLES = SAMPLE_RATE / 4000;
+
+// The timer runs at 500kHz. This is how much to increment it after 8 samples passes.
+// We multiply by 8 to get rid of the fraction and deal with just integers.
+static const int PROCESS_TIMER_INCREMENT_x8 = 8 * 500000 / SAMPLE_RATE;
+
 TVP::TVP(const Partial *usePartial) :
 	partial(usePartial), system(&usePartial->getSynth()->mt32ram.system) {
-	// We want to do processing 4000 times per second. FIXME: This is pretty arbitrary.
-	maxCounter = SAMPLE_RATE / 4000;
-	// The timer runs at 500kHz. We only need to bother updating it every maxCounter samples, before we do processing.
-	// This is how much to increment it by every maxCounter samples.
-	processTimerIncrement = 500000 * maxCounter / SAMPLE_RATE;
 }
 
 static Bit16s keyToPitch(unsigned int key) {
@@ -297,12 +299,15 @@ void TVP::startDecay() {
 
 Bit16u TVP::nextPitch() {
 	// We emulate MCU software timer using these counter and processTimerIncrement variables.
-	// The value of maxCounter approximates the period between subsequent firings of the timer that normally occur.
+	// The value of nominalProcessTimerPeriod approximates the period in samples
+	// between subsequent firings of the timer that normally occur.
 	// However, accurate emulation is quite complicated because the timer is not guaranteed to fire in time.
 	// This makes pitch variations on real unit non-deterministic and dependent on various factors.
 	if (counter == 0) {
-		counter = maxCounter;
 		timeElapsed = (timeElapsed + processTimerIncrement) & 0x00FFFFFF;
+		// This roughly emulates pitch deviations observed on real units when playing a single partial that uses TVP/LFO.
+		counter = NOMINAL_PROCESS_TIMER_PERIOD_SAMPLES + (rand() & 3);
+		processTimerIncrement = (PROCESS_TIMER_INCREMENT_x8 * counter) >> 3;
 		process();
 	}
 	counter--;
