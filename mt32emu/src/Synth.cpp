@@ -32,6 +32,10 @@
 #include "ROMInfo.h"
 #include "TVA.h"
 
+#if MT32EMU_MONITOR_SYSEX > 0
+#include "mmath.h"
+#endif
+
 namespace MT32Emu {
 
 // MIDI interface data transfer rate in samples. Used to simulate the transfer delay.
@@ -188,6 +192,7 @@ public:
 class Extensions {
 public:
 	RendererType selectedRendererType;
+	Bit32s masterTunePitchDelta;
 };
 
 Bit32u Synth::getLibraryVersionInt() {
@@ -699,6 +704,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 	bool oldReverbOverridden = reverbOverridden;
 	reverbOverridden = false;
 	refreshSystem();
+	resetMasterTunePitchDelta();
 	reverbOverridden = oldReverbOverridden;
 
 	char(*writableSoundGroupNames)[9] = new char[controlROMMap->soundGroupsCount][9];
@@ -1563,6 +1569,8 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 }
 
 void Synth::refreshSystemMasterTune() {
+	// 171 is ~half a semitone.
+	extensions.masterTunePitchDelta = ((mt32ram.system.masterTune - 64) * 171) >> 6; // PORTABILITY NOTE: Assumes arithmetic shift.
 #if MT32EMU_MONITOR_SYSEX > 0
 	//FIXME:KG: This is just an educated guess.
 	// The LAPC-I documentation claims a range of 427.5Hz-452.6Hz (similar to what we have here)
@@ -1674,7 +1682,23 @@ void Synth::reset() {
 		}
 	}
 	refreshSystem();
+	resetMasterTunePitchDelta();
 	isActive();
+}
+
+void Synth::resetMasterTunePitchDelta() {
+	// This effectively resets master tune to 440.0Hz.
+	// Despite that the manual claims 442.0Hz is the default setting for master tune,
+	// it doesn't actually take effect upon a reset due to a bug in the reset routine.
+	// CONFIRMED: This bug is present in all supported Control ROMs.
+	extensions.masterTunePitchDelta = 0;
+#if MT32EMU_MONITOR_SYSEX > 0
+	printDebug(" Actual Master Tune reset to 440.0");
+#endif
+}
+
+Bit32s Synth::getMasterTunePitchDelta() const {
+	return extensions.masterTunePitchDelta;
 }
 
 MidiEvent::~MidiEvent() {

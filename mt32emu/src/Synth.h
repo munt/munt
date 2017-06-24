@@ -231,6 +231,9 @@ private:
 	// partNum should be 0..7 for Part 1..8, or 8 for Rhythm
 	const Part *getPart(Bit8u partNum) const;
 
+	void resetMasterTunePitchDelta();
+	Bit32s getMasterTunePitchDelta() const;
+
 public:
 	static inline Bit16s clipSampleEx(Bit32s sampleEx) {
 		// Clamp values above 32767 to 32767, and values below -32768 to -32768

@@ -177,9 +177,9 @@ Bit32u TVP::getBasePitch() const {
 void TVP::updatePitch() {
 	Bit32s newPitch = basePitch + currentPitchOffset;
 	if (!partial->isPCM() || (partial->getControlROMPCMStruct()->len & 0x01) == 0) { // FIXME: Use !partial->pcmWaveEntry->unaffectedByMasterTune instead
-		// FIXME: masterTune recalculation doesn't really happen here, and there are various bugs not yet emulated
+		// FIXME: There are various bugs not yet emulated
 		// 171 is ~half a semitone.
-		newPitch += ((system->masterTune - 64) * 171) >> 6; // PORTABILITY NOTE: Assumes arithmetic shift.
+		newPitch += partial->getSynth()->getMasterTunePitchDelta();
 	}
 	if ((partialParam->wg.pitchBenderEnabled & 1) != 0) {
 		newPitch += part->getPitchBend();
