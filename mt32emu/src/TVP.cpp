@@ -296,13 +296,16 @@ void TVP::startDecay() {
 }
 
 Bit16u TVP::nextPitch() {
-	// FIXME: Write explanation of counter and time increment
+	// We emulate MCU software timer using these counter and processTimerIncrement variables.
+	// The value of maxCounter approximates the period between subsequent firings of the timer that normally occur.
+	// However, accurate emulation is quite complicated because the timer is not guaranteed to fire in time.
+	// This makes pitch variations on real unit non-deterministic and dependent on various factors.
 	if (counter == 0) {
-		timeElapsed += processTimerIncrement;
-		timeElapsed = timeElapsed & 0x00FFFFFF;
+		counter = maxCounter;
+		timeElapsed = (timeElapsed + processTimerIncrement) & 0x00FFFFFF;
 		process();
 	}
-	counter = (counter + 1) % maxCounter;
+	counter--;
 	return pitch;
 }
 
