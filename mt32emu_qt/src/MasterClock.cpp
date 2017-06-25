@@ -77,7 +77,6 @@ void MasterClock::init() {
 		qDebug() << "Monotonic clock is broken:" << errno;
 		return;
 	}
-qDebug() << _POSIX_C_SOURCE;
 	qDebug() << "Using POSIX monotonic clock. Found clock resolution:" << timespecToNanos(ts) << "nanos.";
 }
 
