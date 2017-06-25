@@ -165,12 +165,6 @@ float LA32FloatWaveGenerator::generateNextSample(const Bit32u ampVal, const Bit1
 			hLen = 0.0f;
 		}
 
-		// Ignore pulsewidths too high for given freq and cutoff
-		float lLen = waveLen - hLen - 2 * cosineLen;
-		if (lLen < 0.0f) {
-			lLen = 0.0f;
-		}
-
 		// Correct resAmp for cutoff in range 50..66
 		if ((cutoffVal >= MIDDLE_CUTOFF_VALUE) && (cutoffVal < RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE)) {
 			resAmp *= sin(FLOAT_PI * (cutoffVal - MIDDLE_CUTOFF_VALUE) / 32.0f);
