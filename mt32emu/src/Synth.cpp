@@ -102,7 +102,7 @@ protected:
 	Synth &synth;
 
 	void printDebug(const char *msg) const {
-		synth.printDebug(msg);
+		synth.printDebug("%s", msg);
 	}
 
 	bool isActivated() const {
