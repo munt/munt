@@ -193,6 +193,7 @@ class Extensions {
 public:
 	RendererType selectedRendererType;
 	Bit32s masterTunePitchDelta;
+	bool niceAmpRamp;
 };
 
 Bit32u Synth::getLibraryVersionInt() {
@@ -247,6 +248,7 @@ Synth::Synth(ReportHandler *useReportHandler) :
 	setOutputGain(1.0f);
 	setReverbOutputGain(1.0f);
 	setReversedStereoEnabled(false);
+	setNiceAmpRampEnabled(true);
 	selectRendererType(RendererType_BIT16S);
 
 	patchTempMemoryRegion = NULL;
@@ -410,6 +412,14 @@ void Synth::setReversedStereoEnabled(bool enabled) {
 
 bool Synth::isReversedStereoEnabled() const {
 	return reversedStereoEnabled;
+}
+
+void Synth::setNiceAmpRampEnabled(bool enabled) {
+	extensions.niceAmpRamp = enabled;
+}
+
+bool Synth::isNiceAmpRampEnabled() const {
+	return extensions.niceAmpRamp;
 }
 
 bool Synth::loadControlROM(const ROMImage &controlROMImage) {

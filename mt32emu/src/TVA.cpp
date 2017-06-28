@@ -223,8 +223,14 @@ void TVA::recalcSustain() {
 	const Tables *tables = &Tables::getInstance();
 	int newTarget = calcBasicAmp(tables, partial, system, partialParam, patchTemp, rhythmTemp, biasAmpSubtraction, veloAmpSubtraction, part->getExpression(), partial->getSynth()->controlROMFeatures->quirkRingModulationNoMix);
 	newTarget += partialParam->tva.envLevel[3];
-	// Since we're in TVA_PHASE_SUSTAIN at this point, we know that target has been reached and an interrupt fired, so we can rely on it being the current amp.
-	int targetDelta = newTarget - target;
+
+	// Although we're in TVA_PHASE_SUSTAIN at this point, we cannot be sure that there is no active ramp at the moment.
+	// In case the channel volume or the expression changes frequently, the previously started ramp may still be in progress.
+	// Real hardware units ignore this possibility and rely on the assumption that the target is the current amp.
+	// This is OK in most situations but when the ramp that is currently in progress needs to change direction
+	// due to a volume/expression update, this leads to a jump in the amp that is audible as an unpleasant click.
+	// To avoid that, we compare the newTarget with the the actual current ramp value and correct the direction if necessary.
+	int targetDelta = part->getSynth()->isNiceAmpRampEnabled() ? ampRamp->getDeltaToCurrent(newTarget) : newTarget - target;
 
 	// Calculate an increment to get to the new amp value in a short, more or less consistent amount of time
 	Bit8u newIncrement;

@@ -411,6 +411,16 @@ public:
 	// Returns whether left and right output channels are swapped.
 	MT32EMU_EXPORT bool isReversedStereoEnabled() const;
 
+	// Allows to toggle the NiceAmpRamp mode.
+	// In this mode, we want to ensure that amp ramp never jumps to the target
+	// value and always gradually increases or decreases. It seems that real units
+	// do not bother to always check if a newly started ramp leads to a jump.
+	// We also prefer the quality improvement over the emulation accuracy,
+	// so this mode is enabled by default.
+	MT32EMU_EXPORT void setNiceAmpRampEnabled(bool enabled);
+	// Returns whether NiceAmpRamp mode is enabled.
+	MT32EMU_EXPORT bool isNiceAmpRampEnabled() const;
+
 	// Selects new type of the wave generator and renderer to be used during subsequent calls to open().
 	// By default, RendererType_BIT16S is selected.
 	// See RendererType for details.
