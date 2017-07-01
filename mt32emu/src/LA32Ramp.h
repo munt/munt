@@ -39,7 +39,7 @@ public:
 	Bit32u nextValue();
 	bool checkInterrupt();
 	void reset();
-	Bit8u getDeltaToCurrent(Bit8u newTarget) const;
+	bool isBelowCurrent(Bit8u target) const;
 };
 
 } // namespace MT32Emu

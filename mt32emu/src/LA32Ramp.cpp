@@ -56,7 +56,7 @@ We haven't fully explored:
 namespace MT32Emu {
 
 // SEMI-CONFIRMED from sample analysis.
-const int TARGET_SHIFTS = 18;
+const unsigned int TARGET_SHIFTS = 18;
 const unsigned int MAX_CURRENT = 0xFF << TARGET_SHIFTS;
 
 // We simulate the delay in handling "target was reached" interrupts by waiting
@@ -157,8 +157,8 @@ void LA32Ramp::reset() {
 // However, this is a simple way to work around the specific behaviour of TVA
 // when in sustain phase which one normally wants to avoid.
 // See TVA::recalcSustain() for details.
-Bit8u LA32Ramp::getDeltaToCurrent(Bit8u newTarget) const {
-	return newTarget - (current >> TARGET_SHIFTS);
+bool LA32Ramp::isBelowCurrent(Bit8u target) const {
+	return Bit32u(target << TARGET_SHIFTS) < current;
 }
 
 } // namespace MT32Emu

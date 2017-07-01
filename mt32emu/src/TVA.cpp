@@ -230,15 +230,20 @@ void TVA::recalcSustain() {
 	// This is OK in most situations but when the ramp that is currently in progress needs to change direction
 	// due to a volume/expression update, this leads to a jump in the amp that is audible as an unpleasant click.
 	// To avoid that, we compare the newTarget with the the actual current ramp value and correct the direction if necessary.
-	int targetDelta = part->getSynth()->isNiceAmpRampEnabled() ? ampRamp->getDeltaToCurrent(newTarget) : newTarget - target;
+	int targetDelta = newTarget - target;
 
 	// Calculate an increment to get to the new amp value in a short, more or less consistent amount of time
 	Bit8u newIncrement;
-	if (targetDelta >= 0) {
+	bool descending = targetDelta < 0;
+	if (!descending) {
 		newIncrement = tables->envLogarithmicTime[Bit8u(targetDelta)] - 2;
 	} else {
 		newIncrement = (tables->envLogarithmicTime[Bit8u(-targetDelta)] - 2) | 0x80;
 	}
+	if (part->getSynth()->isNiceAmpRampEnabled() && (descending != ampRamp->isBelowCurrent(newTarget))) {
+		newIncrement ^= 0x80;
+	}
+
 	// Configure so that once the transition's complete and nextPhase() is called, we'll just re-enter sustain phase (or decay phase, depending on parameters at the time).
 	startRamp(newTarget, newIncrement, TVA_PHASE_SUSTAIN - 1);
 }
