@@ -8,6 +8,10 @@
 	  LA32FloatWaveGenerator now produces output at 0.25 volume that corresponds to the fact that each partial
 	  in LA32 uses only 14-bit samples. Still, no clamping is applied in DACInputMode_NICE mode for floats,
 	  so the output samples may overshoot a little for tunes with the volume set too high.
+	* Introduced "Nice Amp Ramp" mode intended to improve emulation of amplitude ramp in sustain phase.
+	  Quick changes of volume or expression on a MIDI channel may result in amp jumps on real hardware.
+	  When "Nice Amp Ramp" mode is enabled (default), amp changes gradually instead. Otherwise,
+	  the emulation accuracy is preserved.
 
 2017-04-09:
 

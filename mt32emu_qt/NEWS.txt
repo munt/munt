@@ -4,6 +4,7 @@
 	* Improved synth profile handling. When a non-default synth profile is selected in the synth properties dialog,
 	  it is now used during synth re-opening (provided that it is pinned or an active MIDI session persists).
 	* Added support for SysEx fragments in standard MIDI files played using the internal MIDI player.
+	* Added option "Nice Amp Ramp" in the Synth Properties dialog.
 
 2017-04-09:
 

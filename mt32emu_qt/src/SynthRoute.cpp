@@ -259,6 +259,10 @@ void SynthRoute::setReversedStereoEnabled(bool enabled) {
 	qSynth.setReversedStereoEnabled(enabled);
 }
 
+void SynthRoute::setNiceAmpRampEnabled(bool enabled) {
+	qSynth.setNiceAmpRampEnabled(enabled);
+}
+
 void SynthRoute::resetMIDIChannelsAssignment(bool engageChannel1) {
 	qSynth.resetMIDIChannelsAssignment(engageChannel1);
 }

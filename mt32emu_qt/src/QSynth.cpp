@@ -317,6 +317,16 @@ void QSynth::setReversedStereoEnabled(bool enabled) {
 	synthMutex->unlock();
 }
 
+void QSynth::setNiceAmpRampEnabled(bool enabled) {
+	synthMutex->lock();
+	if (!isOpen()) {
+		synthMutex->unlock();
+		return;
+	}
+	synth->setNiceAmpRampEnabled(enabled);
+	synthMutex->unlock();
+}
+
 void QSynth::resetMIDIChannelsAssignment(bool engageChannel1) {
 	static const Bit8u sysexStandardChannelAssignment[] = {0x10, 0x00, 0x0d, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
 	static const Bit8u sysexChannel1EngagedAssignment[] = {0x10, 0x00, 0x0d, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x09};
@@ -487,6 +497,7 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.reverbTime = reverbTime;
 	synthProfile.reverbLevel = reverbLevel;
 	synthProfile.reversedStereoEnabled = synth->isReversedStereoEnabled();
+	synthProfile.niceAmpRamp = synth->isNiceAmpRampEnabled();
 	synthProfile.engageChannel1OnOpen = engageChannel1OnOpen;
 	synthMutex->unlock();
 }
@@ -513,6 +524,7 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 		setReverbEnabled(synthProfile.reverbEnabled);
 	}
 	setReversedStereoEnabled(synthProfile.reversedStereoEnabled);
+	setNiceAmpRampEnabled(synthProfile.niceAmpRamp);
 	setInitialMIDIChannelsAssignment(synthProfile.engageChannel1OnOpen);
 }
 

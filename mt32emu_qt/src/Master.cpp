@@ -423,6 +423,7 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	synthProfile.reverbOutputGain = settings->value("reverbOutputGain", 1.0f).toFloat();
 	synthProfile.reversedStereoEnabled = settings->value("reversedStereoEnabled", false).toBool();
 	synthProfile.engageChannel1OnOpen = settings->value("engageChannel1OnOpen", false).toBool();
+	synthProfile.niceAmpRamp = settings->value("niceAmpRamp", true).toBool();
 	settings->endGroup();
 }
 
@@ -446,6 +447,7 @@ void Master::storeSynthProfile(const SynthProfile &synthProfile, QString name) c
 	settings->setValue("reverbOutputGain", QString().setNum(synthProfile.reverbOutputGain));
 	settings->setValue("reversedStereoEnabled", synthProfile.reversedStereoEnabled);
 	settings->setValue("engageChannel1OnOpen", synthProfile.engageChannel1OnOpen);
+	settings->setValue("niceAmpRamp", synthProfile.niceAmpRamp);
 	settings->endGroup();
 }
 

@@ -36,6 +36,7 @@ struct SynthProfile {
 	int reverbLevel;
 	bool reversedStereoEnabled;
 	bool engageChannel1OnOpen;
+	bool niceAmpRamp;
 };
 
 class QReportHandler : public QObject, public MT32Emu::ReportHandler {
@@ -131,6 +132,7 @@ public:
 	void setReverbOverridden(bool reverbOverridden);
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
 	void setReversedStereoEnabled(bool enabled);
+	void setNiceAmpRampEnabled(bool enabled);
 	void resetMIDIChannelsAssignment(bool engageChannel1);
 	void setInitialMIDIChannelsAssignment(bool engageChannel1);
 	void setReverbCompatibilityMode(ReverbCompatibilityMode reverbCompatibilityMode);
