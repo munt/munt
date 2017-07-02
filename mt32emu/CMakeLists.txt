@@ -114,7 +114,7 @@ else(libmt32emu_CPP_INTERFACE AND NOT libmt32emu_C_INTERFACE)
   endif(libmt32emu_CPP_INTERFACE)
 endif(libmt32emu_CPP_INTERFACE AND NOT libmt32emu_C_INTERFACE)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor -Wshadow -Wold-style-cast -ansi -pedantic)
 endif()
 

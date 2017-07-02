@@ -200,7 +200,7 @@ if(SYS_SOUNDCARD_FOUND)
   )
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor)
   if(NOT mt32emu-qt_REQUIRED_CPP11)
     add_definitions(-ansi)

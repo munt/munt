@@ -25,7 +25,7 @@ include_directories(${MT32EMU_INCLUDE_DIRS})
 include_directories(libsmf/src)
 add_subdirectory(libsmf)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES "(^|/)clang\\+\\+$")
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   add_definitions(-Wall -Wextra -Wnon-virtual-dtor -Wshadow -ansi -pedantic)
 endif()
 
