@@ -110,6 +110,7 @@ struct Options {
 	gboolean waitForLA32;
 	gboolean waitForReverb;
 	gboolean sendAllNotesOff;
+	gboolean niceAmpRamp;
 };
 
 struct State {
@@ -165,6 +166,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	options->waitForLA32 = true;
 	options->waitForReverb = true;
 	options->sendAllNotesOff = true;
+	options->niceAmpRamp = true;
 	// FIXME: Perhaps there's a nicer way to represent long argument descriptions...
 	GOptionEntry entries[] = {
 		{"output", 'o', 0, G_OPTION_ARG_FILENAME, &options->outputFilename, "Output file (default: last source file name with \".wav\" appended)", "<filename>"},
@@ -175,7 +177,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		// buffer-size determines the maximum number of frames to be rendered by the emulator in one pass.
 		// This can have a big impact on performance (Generally more at a time=better).
 		{"buffer-size", 'b', 0, G_OPTION_ARG_INT, &bufferFrameCount, "Buffer size in frames (minimum: 1)", "<frame_count>"},  // FIXME: Show default
-		{"sample-rate", 'p', 0, G_OPTION_ARG_INT, &options->sampleRate, "Sample rate in Hz (minimum: 1, default: auto)"
+		{"sample-rate", 'p', 0, G_OPTION_ARG_INT, &options->sampleRate, "Sample rate in Hz (minimum: 1, default: auto)\n"
 		 "                Ignored if -w is used (in which case auto is always used)\n", "<sample_rate>"},
 
 		{"src-quality", 'q', 0, G_OPTION_ARG_INT, &srcQualityIx, "Sample rate conversion quality (default: 2)\n"
@@ -225,6 +227,8 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		{"no-wait-for-reverb", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options->waitForReverb, "Don't wait for reverb to finish after each SMF file has ended.", NULL},
 		{"no-send-all-notes-off", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options->sendAllNotesOff, "Don't release the hold pedal and perform all-notes-off on all parts in the emulator at the end of each SMF file.\n"
 		 "                WARNING: Sound can theoretically continue forever if not limited by other options.", NULL},
+		{"no-nice-amp-ramp", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options->niceAmpRamp, "Emulate amplitude ramp accurately.\n"
+		 "                Quick changes of volume or expression on a MIDI channel may result in amp jumps which are avoided by default.", NULL},
 
 		{"s", 's', 0, G_OPTION_ARG_FILENAME, &deprecatedSysexFile, "[DEPRECATED] Play this SMF or sysex file before any other. DEPRECATED: Instead just specify the file first in the file list.", "<midi_file>"},
 		{G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &options->inputFilenames, NULL, "<midi_file> [midi_file...]"},
@@ -836,6 +840,9 @@ int main(int argc, char *argv[]) {
 	service.selectRendererType(options.rendererType);
 	if (service.openSynth() == MT32EMU_RC_OK) {
 		service.setDACInputMode(options.dacInputMode);
+		if (!options.niceAmpRamp) {
+			service.setNiceAmpRampEnabled(false);
+		}
 		options.sampleRate = service.getActualStereoOutputSamplerate();
 		printf("Using output sample rate %d Hz\n", options.sampleRate);
 
