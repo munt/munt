@@ -278,6 +278,7 @@ private:
 
 #if MT32EMU_API_TYPE == 2
 	const mt32emu_service_i_v1 *iV1() { return (getVersionID() < MT32EMU_SERVICE_VERSION_1) ? NULL : i.v1; }
+	const mt32emu_service_i_v2 *iV2() { return (getVersionID() < MT32EMU_SERVICE_VERSION_2) ? NULL : i.v2; }
 #endif
 };
 
