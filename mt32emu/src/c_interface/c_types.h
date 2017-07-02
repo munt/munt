@@ -299,7 +299,9 @@ typedef union mt32emu_service_i mt32emu_service_i;
 	mt32emu_bit32u (*convertSynthToOutputTimestamp)(mt32emu_const_context context, mt32emu_bit32u synth_timestamp);
 
 #define MT32EMU_SERVICE_I_V2 \
-	mt32emu_bit32u (*getInternalRenderedSampleCount)(mt32emu_const_context context);
+	mt32emu_bit32u (*getInternalRenderedSampleCount)(mt32emu_const_context context); \
+	void (*setNiceAmpRampEnabled)(mt32emu_const_context context, const mt32emu_boolean enabled); \
+	mt32emu_boolean (*isNiceAmpRampEnabled)(mt32emu_const_context context);
 
 typedef struct {
 	MT32EMU_SERVICE_I_V0

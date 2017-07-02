@@ -91,6 +91,8 @@ mt32emu_service_i mt32emu_get_service_i();
 #define mt32emu_get_reverb_output_gain i.v0->getReverbOutputGain
 #define mt32emu_set_reversed_stereo_enabled i.v0->setReversedStereoEnabled
 #define mt32emu_is_reversed_stereo_enabled i.v0->isReversedStereoEnabled
+#define mt32emu_set_nice_amp_ramp_enabled iV2()->setNiceAmpRampEnabled
+#define mt32emu_is_nice_amp_ramp_enabled iV2()->isNiceAmpRampEnabled
 #define mt32emu_render_bit16s i.v0->renderBit16s
 #define mt32emu_render_float i.v0->renderFloat
 #define mt32emu_render_bit16s_streams i.v0->renderBit16sStreams
@@ -250,6 +252,9 @@ public:
 
 	void setReversedStereoEnabled(const bool enabled) { mt32emu_set_reversed_stereo_enabled(c, enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
 	bool isReversedStereoEnabled() { return mt32emu_is_reversed_stereo_enabled(c) != MT32EMU_BOOL_FALSE; }
+
+	void setNiceAmpRampEnabled(const bool enabled) { mt32emu_set_nice_amp_ramp_enabled(c, enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
+	bool isNiceAmpRampEnabled() { return mt32emu_is_nice_amp_ramp_enabled(c) != MT32EMU_BOOL_FALSE; }
 
 	void renderBit16s(Bit16s *stream, Bit32u len) { mt32emu_render_bit16s(c, stream, len); }
 	void renderFloat(float *stream, Bit32u len) { mt32emu_render_float(c, stream, len); }
@@ -453,6 +458,8 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_get_reverb_output_gain
 #undef mt32emu_set_reversed_stereo_enabled
 #undef mt32emu_is_reversed_stereo_enabled
+#undef mt32emu_set_nice_amp_ramp_enabled
+#undef mt32emu_is_nice_amp_ramp_enabled
 #undef mt32emu_render_bit16s
 #undef mt32emu_render_float
 #undef mt32emu_render_bit16s_streams

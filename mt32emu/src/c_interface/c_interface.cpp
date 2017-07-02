@@ -110,7 +110,9 @@ static const mt32emu_service_i_v2 SERVICE_VTABLE = {
 	mt32emu_get_selected_renderer_type,
 	mt32emu_convert_output_to_synth_timestamp,
 	mt32emu_convert_synth_to_output_timestamp,
-	mt32emu_get_internal_rendered_sample_count
+	mt32emu_get_internal_rendered_sample_count,
+	mt32emu_set_nice_amp_ramp_enabled,
+	mt32emu_is_nice_amp_ramp_enabled
 };
 
 } // namespace MT32Emu
@@ -648,6 +650,14 @@ void mt32emu_set_reversed_stereo_enabled(mt32emu_const_context context, const mt
 
 mt32emu_boolean mt32emu_is_reversed_stereo_enabled(mt32emu_const_context context) {
 	return context->synth->isReversedStereoEnabled() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
+}
+
+void mt32emu_set_nice_amp_ramp_enabled(mt32emu_const_context context, const mt32emu_boolean enabled) {
+	context->synth->setNiceAmpRampEnabled(enabled != MT32EMU_BOOL_FALSE);
+}
+
+mt32emu_boolean mt32emu_is_nice_amp_ramp_enabled(mt32emu_const_context context) {
+	return context->synth->isNiceAmpRampEnabled() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
 void mt32emu_render_bit16s(mt32emu_const_context context, mt32emu_bit16s *stream, mt32emu_bit32u len) {

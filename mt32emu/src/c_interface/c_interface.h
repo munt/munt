@@ -355,6 +355,18 @@ MT32EMU_EXPORT void mt32emu_set_reversed_stereo_enabled(mt32emu_const_context co
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_reversed_stereo_enabled(mt32emu_const_context context);
 
 /**
+ * Allows to toggle the NiceAmpRamp mode.
+ * In this mode, we want to ensure that amp ramp never jumps to the target
+ * value and always gradually increases or decreases. It seems that real units
+ * do not bother to always check if a newly started ramp leads to a jump.
+ * We also prefer the quality improvement over the emulation accuracy,
+ * so this mode is enabled by default.
+ */
+MT32EMU_EXPORT void mt32emu_set_nice_amp_ramp_enabled(mt32emu_const_context context, const mt32emu_boolean enabled);
+/** Returns whether NiceAmpRamp mode is enabled. */
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_nice_amp_ramp_enabled(mt32emu_const_context context);
+
+/**
  * Renders samples to the specified output stream as if they were sampled at the analog stereo output at the desired sample rate.
  * If the output sample rate is not specified explicitly, the default output sample rate is used which depends on the current
  * mode of analog circuitry emulation. See mt32emu_analog_output_mode.
