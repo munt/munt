@@ -30,7 +30,7 @@
 #define MT32EMU_API_TYPE 3
 #include <mt32emu/mt32emu.h>
 
-#if MT32EMU_VERSION_MAJOR != 2 || MT32EMU_VERSION_MINOR < 1
+#if MT32EMU_VERSION_MAJOR != 2 || MT32EMU_VERSION_MINOR < 2
 #error Incompatible mt32emu library version
 #endif
 
