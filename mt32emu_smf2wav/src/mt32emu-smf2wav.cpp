@@ -423,13 +423,13 @@ static bool playSysexFileBuffer(MT32Emu::Service &service, const gchar *displayF
 			if (start != -1) {
 				fprintf(stderr, "Started a new sysex message before the last finished - sysex file '%s' may be in an unsupported format.\n", displayFilename);
 			}
-			start = i;
+			start = long(i);
 		}
 		else if (fileBuffer[i] == 0xF7) {
 			if (start == -1) {
 				fprintf(stderr, "Ended a sysex message without a start byte - sysex file '%s' may be in an unsupported format.\n", displayFilename);
 			} else {
-				service.playSysexNow((MT32Emu::Bit8u*)(fileBuffer + start), i - start + 1);
+				service.playSysexNow((MT32Emu::Bit8u*)(fileBuffer + start), MT32Emu::Bit32u(i - start + 1));
 			}
 			start = -1;
 		}
@@ -759,7 +759,7 @@ static bool playFile(const gchar *inputFilename, const gchar *displayInputFilena
 	if (fileBuffer[0] == 0xF0) {
 		return playSysexFileBuffer(state.service, displayInputFilename, fileBuffer, fileBufferLength);
 	}
-	smf_t *smf = smf_load_from_memory(fileBuffer, fileBufferLength);
+	smf_t *smf = smf_load_from_memory(fileBuffer, int(fileBufferLength));
 	if (smf != NULL) {
 		if (!options.quiet) {
 			char *decoded = smf_decode(smf);
@@ -791,10 +791,10 @@ int main(int argc, char *argv[]) {
 		outputFilename = options.outputFilename;
 	} else {
 		gchar *lastInputFilename = options.inputFilenames[g_strv_length(options.inputFilenames) - 1];
-		unsigned long allocLen = strlen(lastInputFilename) + 5;
+		size_t allocLen = strlen(lastInputFilename) + 5;
 		outputFilename = (gchar *)malloc(allocLen);
 		if(outputFilename == NULL) {
-			fprintf(stderr, "Error allocating %lu bytes for destination filename.\n", allocLen);
+			fprintf(stderr, "Error allocating %lu bytes for destination filename.\n", (unsigned long)allocLen);
 			return -1;
 		}
 		if (options.rawChannelCount > 0) {
