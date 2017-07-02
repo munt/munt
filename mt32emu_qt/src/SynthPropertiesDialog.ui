@@ -475,7 +475,7 @@ to trade-off the quality improvement over the emulation accuracy.</string>
   <tabstop>reverseStereoCheckBox</tabstop>
   <tabstop>assignChannels2_10Button</tabstop>
   <tabstop>assignChannels1_8_10Button</tabstop>
-  <tabstop>niceAmpRamp</tabstop>
+  <tabstop>niceAmpRampCheckBox</tabstop>
   <tabstop>engageChannel1CheckBox</tabstop>
   <tabstop>profileComboBox</tabstop>
   <tabstop>profileCheckBox</tabstop>
