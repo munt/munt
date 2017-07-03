@@ -30,6 +30,7 @@ private:
 	unsigned int settingsVersion;
 	bool useRingBuffer;
 	bool resetEnabled;
+	char audioDeviceName[MAXPNAMELEN];
 
 	DACInputMode emuDACInputMode;
 	MIDIDelayMode midiDelayMode;
@@ -44,6 +45,7 @@ private:
 	Bit8u reverbLevel;
 	unsigned int reverbCompatibilityMode;
 	bool reversedStereoEnabled;
+	bool niceAmpRamp;
 	double sampleRateRatio;
 
 	Bit16s *buffer;

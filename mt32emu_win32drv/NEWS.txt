@@ -1,3 +1,12 @@
+1.4-current
+
+	* Added support for the synth profile setting "niceAmpRamp".
+	* Implemented selection of output audio device using the setting "DefaultAudioDevice".
+	  Note, that audio devices listed for WinMMAudio API (a.k.a. "waveout") are only guaranteed
+	  to have identical device names and to be engaged. Other audio deivces for other audio APIs
+	  may provide slightly different device names. In such a case (or if the selected device
+	  is no longer available), the default wave mapper is used.
+
 2017-04-09:
 
 	1.3.0 released.
