@@ -96,8 +96,8 @@ private:
 			if (!lstrcmpiA(audioDeviceName, deviceInfo.szPname)) {
 				return deviceIndex;
 			}
-			return WAVE_MAPPER;
 		}
+		return WAVE_MAPPER;
 	}
 
 public:
