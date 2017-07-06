@@ -9,11 +9,11 @@ index 184469e..286638d 100644
 -
 +LIBS +=  -lmt32emu
 diff --git a/src/dosbox.cpp b/src/dosbox.cpp
-index 1462fae..f69eb3c 100644
+index 2f3b411..387927e 100644
 --- a/src/dosbox.cpp
 +++ b/src/dosbox.cpp
 @@ -491,7 +491,7 @@ void DOSBOX_Init(void) {
- 	
+ 
  	const char* mputypes[] = { "intelligent", "uart", "none",0};
  	// FIXME: add some way to offer the actually available choices.
 -	const char *devices[] = { "default", "win32", "alsa", "oss", "coreaudio", "coremidi","none", 0};
@@ -42,7 +42,7 @@ index 3fed5e6..ca36a07 100644
 +	midi_coremidi.h midi_mt32.h midi_mt32.cpp sdl_gui.cpp dosbox_splash.h
  
 diff --git a/src/gui/midi.cpp b/src/gui/midi.cpp
-index 57181e0..3bc943b 100644
+index f1d3e2f..17badd4 100644
 --- a/src/gui/midi.cpp
 +++ b/src/gui/midi.cpp
 @@ -91,6 +91,9 @@ MidiHandler Midi_none;
@@ -57,10 +57,10 @@ index 57181e0..3bc943b 100644
  void MIDI_RawOutByte(Bit8u data) {
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 0000000..3f66f66
+index 0000000..b036547
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
-@@ -0,0 +1,298 @@
+@@ -0,0 +1,299 @@
 +#include <SDL_thread.h>
 +#include <SDL_endian.h>
 +#include "control.h"
@@ -157,6 +157,7 @@ index 0000000..3f66f66
 +	service->setDACInputMode((MT32Emu::DACInputMode)section->Get_int("mt32.dac"));
 +
 +	service->setReversedStereoEnabled(section->Get_bool("mt32.reverse.stereo"));
++	service->setNiceAmpRampEnabled(section->Get_bool("mt32.niceampramp"));
 +	noise = section->Get_bool("mt32.verbose");
 +	renderInThread = section->Get_bool("mt32.thread");
 +
@@ -422,10 +423,10 @@ index 0000000..eb32729
 +#endif /* DOSBOX_MIDI_MT32_H */
 diff --git a/src/mt32options.h b/src/mt32options.h
 new file mode 100644
-index 0000000..1039d03
+index 0000000..c1efa29
 --- /dev/null
 +++ b/src/mt32options.h
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,115 @@
 +Pstring = secprop->Add_string("mt32.romdir",Property::Changeable::WhenIdle,"");
 +Pstring->Set_help("Name of the directory where MT-32 Control and PCM ROM files can be found. Emulation requires these files to work.\n"
 +	"  Accepted file names are as follows:\n"
@@ -534,3 +535,10 @@ index 0000000..1039d03
 +Pint->Set_values(mt32srcQuality);
 +Pint->Set_help("MT-32 sample rate conversion quality\n"
 +	"Value '0' is for the fastest conversion, value '3' provides for the best conversion quality. Default is 2.");
++
++Pbool = secprop->Add_bool("mt32.niceampramp", Property::Changeable::WhenIdle, true);
++Pbool->Set_help("Toggles \"Nice Amp Ramp\" mode that improves amplitude ramp for sustaining instruments.\n"
++	"Quick changes of volume or expression on a MIDI channel may result in amp jumps on real hardware.\n"
++	"When \"Nice Amp Ramp\" mode is enabled, amp changes gradually instead.\n"
++	"Otherwise, the emulation accuracy is preserved.\n"
++	"Default is true.");
