@@ -331,5 +331,6 @@ union mt32emu_service_i {
 
 #undef MT32EMU_SERVICE_I_V0
 #undef MT32EMU_SERVICE_I_V1
+#undef MT32EMU_SERVICE_I_V2
 
 #endif /* #ifndef MT32EMU_C_TYPES_H */

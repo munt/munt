@@ -25,7 +25,7 @@ QMidiEvent::QMidiEvent() {
 	msg = 0;
 	sysexLen = 0;
 	sysexData = NULL;
-};
+}
 
 QMidiEvent::QMidiEvent(const QMidiEvent &copyOf) {
 	timestamp = copyOf.timestamp;
@@ -39,7 +39,7 @@ QMidiEvent::QMidiEvent(const QMidiEvent &copyOf) {
 		sysexLen = 0;
 		sysexData = NULL;
 	}
-};
+}
 
 QMidiEvent::~QMidiEvent() {
 	if (sysexData != 0) {

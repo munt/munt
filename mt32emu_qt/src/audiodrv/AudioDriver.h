@@ -50,11 +50,11 @@ public:
 	const QString name;
 
 	AudioDevice(AudioDriver &driver, const QString name);
-	virtual ~AudioDevice() {};
+	virtual ~AudioDevice() {}
 	virtual AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const = 0;
 };
 
-Q_DECLARE_METATYPE(const AudioDevice *);
+Q_DECLARE_METATYPE(const AudioDevice *)
 
 struct AudioDriverSettings {
 	// The sample rate to use for instances of AudioStream being created
@@ -90,7 +90,7 @@ public:
 	static void migrateAudioSettingsFromVersion1();
 
 	AudioDriver(QString useID, QString useName);
-	virtual ~AudioDriver() {};
+	virtual ~AudioDriver() {}
 	virtual const QList<const AudioDevice *> createDeviceList() = 0;
 	virtual const AudioDriverSettings &getAudioSettings() const;
 	virtual void setAudioSettings(AudioDriverSettings &useSettings);
