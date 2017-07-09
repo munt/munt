@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>425</width>
-    <height>281</height>
+    <width>649</width>
+    <height>366</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -72,21 +72,54 @@
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
+          <widget class="QPushButton" name="newPcmButton">
+           <property name="text">
+            <string>New PCM</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="newGroupButton">
+           <property name="text">
+            <string>New Group</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="addMidiButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Add MIDI</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="addPcmButton">
+          <widget class="QPushButton" name="addInitButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
-            <string>Add PCM</string>
+            <string>Add init to all</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="editPcmButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Edit PCM</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="removeButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Remove</string>
            </property>
@@ -94,6 +127,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="clearButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Clear</string>
            </property>
@@ -101,6 +137,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="moveUpButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Up</string>
            </property>
@@ -108,6 +147,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="moveDownButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Down</string>
            </property>
@@ -155,7 +197,7 @@
        <item>
         <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>Synth Properties</string>
+          <string>Synth Profile</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -174,8 +216,11 @@
  <tabstops>
   <tabstop>midiList</tabstop>
   <tabstop>pcmList</tabstop>
+  <tabstop>newPcmButton</tabstop>
+  <tabstop>newGroupButton</tabstop>
   <tabstop>addMidiButton</tabstop>
-  <tabstop>addPcmButton</tabstop>
+  <tabstop>addInitButton</tabstop>
+  <tabstop>editPcmButton</tabstop>
   <tabstop>removeButton</tabstop>
   <tabstop>clearButton</tabstop>
   <tabstop>moveUpButton</tabstop>

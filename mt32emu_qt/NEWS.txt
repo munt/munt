@@ -5,6 +5,16 @@
 	  it is now used during synth re-opening (provided that it is pinned or an active MIDI session persists).
 	* Added support for SysEx fragments in standard MIDI files played using the internal MIDI player.
 	* Added option "Nice Amp Ramp" in the Synth Properties dialog.
+	* Improved "Standard MIDI file converter" dialog:
+	  - PCM targets are now automatically named, the path names are based on the most recent directory specified;
+	  - added possibility to quickly configure a group of MIDI files to convert to a PCM per file (with an accompanying SysEx);
+	  - added "Edit PCM" button to allow renaming the currently selected PCM target;
+	  - added "Add init to all" button that allows to quickly prepend a group of MIDI files with an initialisation SysEx/MIDI.
+	  - Improved Drag & Drop handling:
+	    - directory drops are now supported;
+	    - drops outside the "Source MIDI files" list now create a group;
+	    - when directories are dropped, SysEx files precede the rest within each directory;
+	    - drops inside the "Source MIDI files" list are position-aware.
 
 2017-04-09:
 

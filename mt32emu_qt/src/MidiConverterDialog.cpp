@@ -20,6 +20,14 @@
 #include "MidiConverterDialog.h"
 #include "Master.h"
 
+static inline bool isSyxFileName(const QString &fileName) {
+	return fileName.endsWith(".syx", Qt::CaseInsensitive);
+}
+
+static inline bool isSmfFileName(const QString &fileName) {
+	return fileName.endsWith(".mid", Qt::CaseInsensitive) || fileName.endsWith(".smf", Qt::CaseInsensitive);
+}
+
 MidiConverterDialog::MidiConverterDialog(Master *master, QWidget *parent) : QDialog(parent), ui(new Ui::MidiConverterDialog), batchMode(false) {
 	ui->setupUi(this);
 	loadProfileCombo();
@@ -34,55 +42,119 @@ MidiConverterDialog::~MidiConverterDialog() {
 }
 
 void MidiConverterDialog::on_addMidiButton_clicked() {
-	static QString currentDir = Master::getInstance()->getSettings()->value("Master/LastAddMidiFileDir").toString();
+	if (ui->pcmList->count() == 0) return;
+	const QStringList fileNames = showAddMidiFilesDialog();
+	ui->midiList->addItems(fileNames);
+}
+
+void MidiConverterDialog::on_newPcmButton_clicked() {
+	const QStringList fileNames = showAddMidiFilesDialog();
+	if (fileNames.isEmpty()) return;
+	newPcmFile(fileNames.last());
+	ui->midiList->addItems(fileNames);
+	ui->midiList->setCurrentRow(ui->midiList->count() - 1);
+}
+
+void MidiConverterDialog::on_newGroupButton_clicked() {
+	const QStringList fileNames = showAddMidiFilesDialog();
+	if (!fileNames.isEmpty()) {
+		newPcmFileGroup(fileNames);
+	}
+}
+
+void MidiConverterDialog::on_addInitButton_clicked() {
+	const QStringList fileNames = showAddMidiFilesDialog();
+	if (fileNames.isEmpty()) return;
+
+	for (int i = 0; i < ui->pcmList->count(); i++) {
+		if (ui->pcmList->currentRow() == i) {
+			ui->midiList->insertItems(0, fileNames);
+		} else {
+			QStringList midiFileNames = ui->pcmList->item(i)->data(Qt::UserRole).value<QStringList>();
+			ui->pcmList->item(i)->setData(Qt::UserRole, fileNames + midiFileNames);
+		}
+	}
+}
+
+QStringList MidiConverterDialog::showAddMidiFilesDialog() {
+	QString currentDir = Master::getInstance()->getSettings()->value("Master/LastAddMidiFileDir").toString();
 	QStringList fileNames = QFileDialog::getOpenFileNames(this, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
 	if (!fileNames.isEmpty()) {
 		currentDir = QDir(fileNames.first()).absolutePath();
 		Master::getInstance()->getSettings()->setValue("Master/LastAddMidiFileDir", currentDir);
-		if (ui->pcmList->count() == 0) addPcmFile(currentDir);
-		if (ui->pcmList->count() > 0) {
-			ui->midiList->addItems(fileNames);
+	}
+	return fileNames;
+}
+
+void MidiConverterDialog::newPcmFile(const QString &proposedPCMFileName) {
+	QString pcmFileName = QFileInfo(proposedPCMFileName).fileName();
+	if (isSmfFileName(pcmFileName) || isSyxFileName(pcmFileName)) {
+		pcmFileName.truncate(pcmFileName.length() - 4);
+	}
+	pcmFileName += ".wav";
+
+	const QDir pcmFileDir = QFileInfo(Master::getInstance()->getSettings()->value("Master/LastAddPcmFileDir").toString()).dir();
+	if (pcmFileDir.exists()) {
+		pcmFileName = pcmFileDir.filePath(pcmFileName);
+	}
+
+	ui->pcmList->addItem(pcmFileName);
+	ui->pcmList->setCurrentRow(ui->pcmList->count() - 1);
+}
+
+void MidiConverterDialog::newPcmFileGroup(const QStringList &fileNames) {
+	QStringList syxFileNames;
+	foreach (QString fileName, fileNames) {
+		if (isSyxFileName(fileName)) {
+			syxFileNames += fileName;
+		} else {
+			newPcmFile(fileName);
+			if (!syxFileNames.isEmpty()) {
+				ui->midiList->addItems(syxFileNames);
+				syxFileNames.clear();
+			}
+			ui->midiList->addItem(fileName);
 		}
+	}
+
+	if (ui->midiList->count() > 0) {
+		ui->midiList->addItems(syxFileNames);
+		ui->midiList->setCurrentRow(ui->midiList->count() - 1);
 	}
 }
 
-void MidiConverterDialog::addPcmFile(QString proposedPCMFileName) {
-	static QString currentDir = Master::getInstance()->getSettings()->value("Master/LastAddPcmFileDir").toString();
-	if (proposedPCMFileName.isEmpty()) {
-		proposedPCMFileName = currentDir;
-	} else {
-		if (proposedPCMFileName.endsWith(".mid") || proposedPCMFileName.endsWith(".smf") || proposedPCMFileName.endsWith(".syx")) {
-			proposedPCMFileName.truncate(proposedPCMFileName.length() - 4);
-		}
-		proposedPCMFileName += ".wav";
-	}
-	QString fileName = QFileDialog::getSaveFileName(this, NULL, proposedPCMFileName, "*.wav *.raw;;*.wav;;*.raw;;*.*");
-	if (!fileName.isEmpty()) {
-		currentDir = QDir(fileName).absolutePath();
-		Master::getInstance()->getSettings()->setValue("Master/LastAddPcmFileDir", currentDir);
-		ui->pcmList->addItem(fileName);
-		ui->pcmList->setCurrentRow(ui->pcmList->count() - 1);
-	}
-}
-
-void MidiConverterDialog::on_addPcmButton_clicked() {
-	addPcmFile(QString());
+void MidiConverterDialog::on_editPcmButton_clicked() {
+	if (ui->pcmList->count() == 0) return;
+	QListWidgetItem *currentPcmItem = ui->pcmList->currentItem();
+	QString pcmFileName = currentPcmItem->text();
+	QString newFileName = QFileDialog::getSaveFileName(this, NULL, pcmFileName, "*.wav *.raw;;*.wav;;*.raw;;*.*");
+	if (newFileName.isEmpty()) return;
+	QString newPcmFileDir = QDir(newFileName).absolutePath();
+	Master::getInstance()->getSettings()->setValue("Master/LastAddPcmFileDir", newPcmFileDir);
+	currentPcmItem->setText(newFileName);
 }
 
 void MidiConverterDialog::on_removeButton_clicked() {
-	if (ui->pcmList->count() == 0) return;
 	if (ui->midiList->count() > 0) {
 		delete ui->midiList->takeItem(ui->midiList->currentRow());
-	} else {
+		if (ui->midiList->count() > 0) return;
+	}
+	if (ui->pcmList->count() > 0) {
 		delete ui->pcmList->takeItem(ui->pcmList->currentRow());
+		if (ui->midiList->count() > 0) {
+			ui->midiList->setCurrentRow(0);
+		}
 	}
 }
 
 void MidiConverterDialog::on_clearButton_clicked() {
-	if (ui->midiList->count() > 0) {
-		ui->midiList->clear();
-	} else {
-		ui->pcmList->clear();
+	if (ui->midiList->count() == 0) return;
+	ui->midiList->clear();
+	if (ui->pcmList->count() > 0) {
+		delete ui->pcmList->takeItem(ui->pcmList->currentRow());
+		if (ui->midiList->count() > 0) {
+			ui->midiList->setCurrentRow(0);
+		}
 	}
 }
 
@@ -139,19 +211,31 @@ void MidiConverterDialog::loadProfileCombo() {
 	}
 }
 
+void MidiConverterDialog::on_midiList_currentItemChanged(QListWidgetItem *current, QListWidgetItem *) {
+	bool enabled = current != NULL && !ui->stopButton->isEnabled();
+	ui->removeButton->setEnabled(enabled);
+	ui->clearButton->setEnabled(enabled);
+	ui->moveUpButton->setEnabled(enabled);
+	ui->moveDownButton->setEnabled(enabled);
+}
+
 void MidiConverterDialog::on_pcmList_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous) {
 	const QStringList midiFileNames = getMidiFileNames();
 	ui->midiList->clear();
 	if (previous != NULL) {
 		previous->setData(Qt::UserRole, midiFileNames);
 	}
-	if (current == NULL) {
-		ui->startButton->setEnabled(false);
-		return;
-	}
-	ui->startButton->setEnabled(true);
-	const QStringList newMidiFileNames = (QStringList)current->data(Qt::UserRole).value<QStringList>();
+	bool enabled = current != NULL && !ui->stopButton->isEnabled();
+	ui->startButton->setEnabled(enabled);
+	ui->addMidiButton->setEnabled(enabled);
+	ui->addInitButton->setEnabled(enabled);
+	ui->editPcmButton->setEnabled(enabled);
+	if (current == NULL) return;
+	const QStringList newMidiFileNames = current->data(Qt::UserRole).value<QStringList>();
 	ui->midiList->addItems(newMidiFileNames);
+	if (ui->midiList->count() > 0) {
+		ui->midiList->setCurrentRow(0);
+	}
 }
 
 void MidiConverterDialog::handleConversionFinished() {
@@ -177,12 +261,15 @@ void MidiConverterDialog::enableControls(bool enable) {
 	ui->profileComboBox->setEnabled(enable);
 	ui->midiList->setEnabled(enable);
 	ui->pcmList->setEnabled(enable);
-	ui->addMidiButton->setEnabled(enable);
-	ui->addPcmButton->setEnabled(enable);
-	ui->removeButton->setEnabled(enable);
-	ui->clearButton->setEnabled(enable);
-	ui->moveUpButton->setEnabled(enable);
-	ui->moveDownButton->setEnabled(enable);
+	ui->newPcmButton->setEnabled(enable);
+	ui->newGroupButton->setEnabled(enable);
+	ui->addMidiButton->setEnabled(enable && ui->pcmList->count() > 0);
+	ui->addInitButton->setEnabled(enable && ui->pcmList->count() > 0);
+	ui->editPcmButton->setEnabled(enable && ui->pcmList->count() > 0);
+	ui->removeButton->setEnabled(enable && ui->midiList->count() > 0);
+	ui->clearButton->setEnabled(enable && ui->midiList->count() > 0);
+	ui->moveUpButton->setEnabled(enable && ui->midiList->count() > 0);
+	ui->moveDownButton->setEnabled(enable && ui->midiList->count() > 0);
 }
 
 void MidiConverterDialog::startConversion(const QStringList &fileList) {
@@ -196,7 +283,7 @@ void MidiConverterDialog::startConversion(const QStringList &fileList) {
 	batchMode = true;
 }
 
-const QStringList MidiConverterDialog::getMidiFileNames() {
+QStringList MidiConverterDialog::getMidiFileNames() {
 	QStringList list;
 	for (int i = 0; i < ui->midiList->count(); i++) {
 		list.append(ui->midiList->item(i)->text());
@@ -216,17 +303,43 @@ void MidiConverterDialog::dropEvent(QDropEvent *e) {
 	Master::isSupportedDropEvent(e);
 	if (!e->isAccepted()) return;
 	QList<QUrl> urls = e->mimeData()->urls();
+	QStringList fileNames;
 	for (int i = 0; i < urls.size(); i++) {
 		QUrl url = urls.at(i);
 		if (url.scheme() != "file") continue;
-		QString fileName = url.toLocalFile();
-		if (ui->pcmList->count() == 0) {
-			addPcmFile(fileName);
+		QString pathName = url.toLocalFile();
+		QDir dir = QDir(pathName);
+		if (dir.exists()) {
+			if (!dir.isReadable()) continue;
+			QStringList syxFileNames = dir.entryList(QStringList() << "*.syx");
+			QStringList midiFileNames = dir.entryList(QStringList() << "*.mid" << "*.smf");
+			foreach (QString midiFileName, syxFileNames + midiFileNames) {
+				fileNames += dir.absoluteFilePath(midiFileName);
+			}
+		} else {
+			fileNames += pathName;
 		}
-		if (ui->pcmList->count() == 0) {
-			e->ignore();
-			return;
-		}
-		ui->midiList->addItem(fileName);
+	}
+	if (fileNames.isEmpty()) {
+		e->ignore();
+		return;
+	}
+
+	const QPoint pos = e->pos();
+	const bool dropToMidiList = ui->midiList->geometry().contains(pos);
+	if (!dropToMidiList) {
+		newPcmFileGroup(fileNames);
+		return;
+	}
+	if (ui->pcmList->count() == 0) {
+		newPcmFile(fileNames.last());
+	}
+	QListWidgetItem *dropItem = ui->midiList->itemAt(ui->midiList->mapFromParent(pos));
+	if (dropItem != NULL) {
+		int dropRow = ui->midiList->row(dropItem);
+		ui->midiList->insertItems(dropRow, fileNames);
+	} else {
+		ui->midiList->addItems(fileNames);
+		ui->midiList->setCurrentRow(ui->midiList->count() - 1);
 	}
 }
