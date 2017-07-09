@@ -238,9 +238,10 @@ void MidiPlayerDialog::addPathName(const QString &fileName) {
 	QDir dir = QDir(fileName);
 	if (dir.exists()) {
 		if (dir.isReadable()) {
-			QStringList fileNames = dir.entryList(QStringList() << "*.mid" << "*.smf" << "*.syx");
-			foreach (QString fileName, fileNames) {
-				ui->playList->addItem(dir.absolutePath() + "/" + fileName);
+			QStringList syxFileNames = dir.entryList(QStringList() << "*.syx");
+			QStringList midiFileNames = dir.entryList(QStringList() << "*.mid" << "*.smf");
+			foreach (QString fileName, syxFileNames + midiFileNames) {
+				ui->playList->addItem(dir.absoluteFilePath(fileName));
 			}
 		}
 	} else {
