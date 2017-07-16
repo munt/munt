@@ -26,17 +26,18 @@ protected:
 
 private:
 	Ui::MidiPlayerDialog *ui;
+	QString standardTitle;
 	SMFDriver smfDriver;
-	bool advancePlayList;
+	bool stopped;
 	bool sliderUpdating;
 	bool paused;
-	int rowPlaying;
+	const QListWidgetItem *currentItem;
 
-	void addPathName(const QString &fileName);
+	void updateCurrentItem();
 
 private slots:
 	void on_playList_currentRowChanged(int currentRow);
-	void on_playList_doubleClicked(const QModelIndex &index);
+	void on_playList_activated(const QModelIndex &index);
 	void on_addButton_clicked();
 	void on_addListButton_clicked();
 	void on_removeButton_clicked();

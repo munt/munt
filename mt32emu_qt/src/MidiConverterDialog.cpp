@@ -302,24 +302,7 @@ void MidiConverterDialog::dragMoveEvent(QDragMoveEvent *e) {
 void MidiConverterDialog::dropEvent(QDropEvent *e) {
 	Master::isSupportedDropEvent(e);
 	if (!e->isAccepted()) return;
-	QList<QUrl> urls = e->mimeData()->urls();
-	QStringList fileNames;
-	for (int i = 0; i < urls.size(); i++) {
-		QUrl url = urls.at(i);
-		if (url.scheme() != "file") continue;
-		QString pathName = url.toLocalFile();
-		QDir dir = QDir(pathName);
-		if (dir.exists()) {
-			if (!dir.isReadable()) continue;
-			QStringList syxFileNames = dir.entryList(QStringList() << "*.syx");
-			QStringList midiFileNames = dir.entryList(QStringList() << "*.mid" << "*.smf");
-			foreach (QString midiFileName, syxFileNames + midiFileNames) {
-				fileNames += dir.absoluteFilePath(midiFileName);
-			}
-		} else {
-			fileNames += pathName;
-		}
-	}
+	QStringList fileNames = Master::parseMidiListFromUrls(e->mimeData()->urls());
 	if (fileNames.isEmpty()) {
 		e->ignore();
 		return;

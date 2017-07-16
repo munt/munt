@@ -15,6 +15,17 @@
 	    - drops outside the "Source MIDI files" list now create a group;
 	    - when directories are dropped, SysEx files precede the rest within each directory;
 	    - drops inside the "Source MIDI files" list are position-aware.
+	* Improved "MIDI Player" dialog:
+	  - dialog title now shows the name of the currently playing file or when playback is stopped, the file scheduled
+	    for playing;
+	  - clicking the "Play" button now ignores the currently selected item in the playlist,
+	    instead, the file scheduled for playing is considered;
+	  - pressing Enter or double-clicking an item in the playlist still starts playback with this item;
+	  - currently playing item now persists after most of playlist edits, except when it is removed from the list.
+	    In this case, playback finishes after that item.
+	  - Improved Drag & Drop handling:
+	    - when directories are dropped, SysEx files precede the rest within each directory;
+	    - drops inside the playlist are now position-aware.
 
 2017-04-09:
 

@@ -579,3 +579,45 @@ void Master::isSupportedDropEvent(QDropEvent *e) {
 	}
 	e->accept();
 }
+
+QStringList Master::parseMidiListFromUrls(const QList<QUrl> urls) {
+	QStringList fileNames;
+	for (int i = 0; i < urls.size(); i++) {
+		QUrl url = urls.at(i);
+		if (url.scheme() == "file") {
+			fileNames += parseMidiListFromPathName(url.toLocalFile());
+		}
+	}
+	return fileNames;
+}
+
+QStringList Master::parseMidiListFromPathName(const QString pathName) {
+	QStringList fileNames;
+	QDir dir = QDir(pathName);
+	if (dir.exists()) {
+		if (!dir.isReadable()) return fileNames;
+		QStringList syxFileNames = dir.entryList(QStringList() << "*.syx");
+		QStringList midiFileNames = dir.entryList(QStringList() << "*.mid" << "*.smf");
+		foreach(QString midiFileName, syxFileNames + midiFileNames) {
+			fileNames += dir.absoluteFilePath(midiFileName);
+		}
+		return fileNames;
+	}
+	if (pathName.endsWith(".pls", Qt::CaseInsensitive)) {
+		QFile listFile(pathName);
+		if (!listFile.open(QIODevice::ReadOnly)) {
+			qDebug() << "Couldn't open file" << pathName + ", ignored";
+			return fileNames;
+		}
+		QTextStream listStream(&listFile);
+		while (!listStream.atEnd()) {
+			QString s = listStream.readLine();
+			if (!s.isEmpty()) {
+				fileNames += s;
+			}
+		}
+	} else {
+		fileNames += pathName;
+	}
+	return fileNames;
+}

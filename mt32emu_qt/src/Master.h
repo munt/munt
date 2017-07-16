@@ -46,6 +46,8 @@ private:
 public:
 	static Master *getInstance();
 	static void isSupportedDropEvent(QDropEvent *e);
+	static QStringList parseMidiListFromUrls(const QList<QUrl> urls);
+	static QStringList parseMidiListFromPathName(const QString pathName);
 	static const QString getROMPathName(const QDir &romDir, QString romFileName);
 
 	// May only be called from the application thread
