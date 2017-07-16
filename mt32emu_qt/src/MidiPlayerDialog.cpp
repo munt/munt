@@ -85,6 +85,7 @@ void MidiPlayerDialog::on_removeButton_clicked() {
 		updateCurrentItem();
 		// This ensures that playback will finish after the removed item.
 		currentItem = NULL;
+		setWindowTitle(standardTitle);
 	}
 	delete item;
 }
