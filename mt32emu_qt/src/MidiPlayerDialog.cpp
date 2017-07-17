@@ -127,11 +127,15 @@ void MidiPlayerDialog::on_moveDownButton_clicked() {
 }
 
 void MidiPlayerDialog::on_playButton_clicked() {
-	if (currentItem == NULL) return;
 	if (paused) {
 		paused = !paused;
 		smfDriver.pause(paused);
 		return;
+	}
+	if (currentItem == NULL) {
+		currentItem = ui->playList->currentItem();
+		if (currentItem == NULL) return;
+		updateCurrentItem();
 	}
 	int initialPosition = 0;
 	if (stopped) {
@@ -145,7 +149,7 @@ void MidiPlayerDialog::on_playButton_clicked() {
 }
 
 void MidiPlayerDialog::on_pauseButton_clicked() {
-	if (currentItem != NULL) {
+	if (!stopped) {
 		paused = !paused;
 		smfDriver.pause(paused);
 	}
