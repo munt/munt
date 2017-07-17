@@ -83,9 +83,11 @@ void MidiPlayerDialog::on_removeButton_clicked() {
 	if (currentItem == item) {
 		currentItem = NULL;
 		updateCurrentItem();
-		// This ensures that playback will finish after the removed item.
-		currentItem = NULL;
-		setWindowTitle(standardTitle);
+		if (!stopped) {
+			// This ensures that playback will finish after the removed item.
+			currentItem = NULL;
+			setWindowTitle(standardTitle);
+		}
 	}
 	delete item;
 }
@@ -154,6 +156,7 @@ void MidiPlayerDialog::on_stopButton_clicked() {
 	if (!stopped) {
 		stopped = true;
 		smfDriver.stop();
+		updateCurrentItem();
 	}
 	ui->tempoSpinBox->setValue(MidiParser::DEFAULT_BPM);
 }
