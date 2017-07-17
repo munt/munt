@@ -20,7 +20,7 @@
 	    for playing;
 	  - clicking the "Play" button now ignores the currently selected item in the playlist,
 	    instead, the file scheduled for playing is considered;
-	  - pressing Enter or double-clicking an item in the playlist still starts playback with this item;
+	  - pressing Enter or double-clicking (depends on platform) an item in the playlist still starts playback with this item;
 	  - currently playing item now persists after most of playlist edits, except when it is removed from the list.
 	    In this case, playback finishes after that item.
 	  - Improved Drag & Drop handling:
