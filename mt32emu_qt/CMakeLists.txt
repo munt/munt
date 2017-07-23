@@ -19,6 +19,11 @@ option(mt32emu-qt_WITH_ALSA_MIDI_SEQUENCER "Use ALSA MIDI sequencer" ${LINUX_FOU
 option(mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING "Load PulseAudio library dynamically" TRUE)
 option(mt32emu-qt_WITH_DEBUG_WINCONSOLE "Use console for showing debug output on Windows" FALSE)
 
+if(MSVC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
+  set(${PROJECT_NAME}_PRECOMPILED_HEADER "" CACHE FILEPATH "Header file to use as precompiled header, included before each source file")
+  mark_as_advanced(${PROJECT_NAME}_PRECOMPILED_HEADER)
+endif()
+
 add_definitions(-DAPP_VERSION="${mt32emu_qt_VERSION}")
 add_definitions(-DBUILD_SYSTEM="${CMAKE_SYSTEM_NAME}")
 
@@ -222,7 +227,60 @@ endif()
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+if(${PROJECT_NAME}_PRECOMPILED_HEADER)
+  set(${PROJECT_NAME}_PRECOMPILED_HEADER_SRC ${CMAKE_CURRENT_BINARY_DIR}/pch.cpp)
+  file(WRITE ${${PROJECT_NAME}_PRECOMPILED_HEADER_SRC} "")
+
+  if(MSVC)
+    set(${PROJECT_NAME}_PRECOMPILED_HEADER_PCH ${CMAKE_CURRENT_BINARY_DIR}/pch.pch)
+
+    add_compile_options(-Yu${${PROJECT_NAME}_PRECOMPILED_HEADER} -FI${${PROJECT_NAME}_PRECOMPILED_HEADER} -Fp${${PROJECT_NAME}_PRECOMPILED_HEADER_PCH})
+    set_source_files_properties(pch.cpp
+      PROPERTIES
+        COMPILE_FLAGS -Yc"${${PROJECT_NAME}_PRECOMPILED_HEADER}"
+        OBJECT_DEPENDS ${${PROJECT_NAME}_PRECOMPILED_HEADER}
+        SKIP_AUTOMOC TRUE
+    )
+
+    # This is only necessary for NMake generator
+    set_source_files_properties(${mt32emu_qt_SOURCES}
+      PROPERTIES
+        OBJECT_DEPENDS ${${PROJECT_NAME}_PRECOMPILED_HEADER}
+    )
+  else(MSVC)
+    add_compile_options(-Winvalid-pch)
+
+    # We could generate PCH file right from the specified header but it turns out awkward to compile within cmake.
+    # There are various quite complex solutions around to overcome this issue. But it seems to be much easier to just compile
+    # an empty .cpp file while setting the language to treat it as a header.
+    set_source_files_properties(pch.cpp
+      PROPERTIES
+        COMPILE_FLAGS "-x c++-header -include ${${PROJECT_NAME}_PRECOMPILED_HEADER}"
+        KEEP_EXTENSION TRUE
+        OBJECT_DEPENDS ${${PROJECT_NAME}_PRECOMPILED_HEADER}
+        SKIP_AUTOMOC TRUE
+    )
+
+    # We also need to exclude generated PCH file from the link phase. Instead of creating another target and synchronising
+    # a lot of compile properties, we simply compile our empty .cpp file and use the output for linking.
+    set(${PROJECT_NAME}_PRECOMPILED_HEADER_PCH ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${PROJECT_NAME}.dir/pch.cpp)
+    add_custom_command(OUTPUT pch.h.gch
+      COMMAND ${CMAKE_COMMAND} -E rename ${${PROJECT_NAME}_PRECOMPILED_HEADER_PCH} pch.h.gch
+      COMMAND ${CMAKE_CXX_COMPILER} -c -o ${${PROJECT_NAME}_PRECOMPILED_HEADER_PCH} ${${PROJECT_NAME}_PRECOMPILED_HEADER_SRC}
+      COMMAND ${CMAKE_COMMAND} -E touch pch.h.gch
+      DEPENDS ${${PROJECT_NAME}_PRECOMPILED_HEADER_PCH}
+    )
+
+    set_source_files_properties(${mt32emu_qt_SOURCES}
+      PROPERTIES
+        COMPILE_FLAGS "-include pch.h"
+        OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/pch.h.gch
+    )
+  endif(MSVC)
+endif(${PROJECT_NAME}_PRECOMPILED_HEADER)
+
 add_executable(mt32emu-qt
+  ${${PROJECT_NAME}_PRECOMPILED_HEADER_SRC}
   ${mt32emu_qt_FORMS_HEADERS}
   ${mt32emu_qt_SOURCES}
   ${mt32emu_qt_RC}
