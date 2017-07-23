@@ -14,6 +14,10 @@ configure_file(
 )
 include_directories("${PROJECT_BINARY_DIR}")
 
+if(MSVC)
+  add_definitions(-D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1 -D_CRT_SECURE_NO_WARNINGS=1)
+endif()
+
 add_library(smf
   src/smf.c
   src/smf_decode.c
