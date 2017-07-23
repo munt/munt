@@ -256,14 +256,13 @@ if(${PROJECT_NAME}_PRECOMPILED_HEADER)
     set_source_files_properties(pch.cpp
       PROPERTIES
         COMPILE_FLAGS "-x c++-header -include ${${PROJECT_NAME}_PRECOMPILED_HEADER}"
-        KEEP_EXTENSION TRUE
         OBJECT_DEPENDS ${${PROJECT_NAME}_PRECOMPILED_HEADER}
         SKIP_AUTOMOC TRUE
     )
 
     # We also need to exclude generated PCH file from the link phase. Instead of creating another target and synchronising
     # a lot of compile properties, we simply compile our empty .cpp file and use the output for linking.
-    set(${PROJECT_NAME}_PRECOMPILED_HEADER_PCH ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${PROJECT_NAME}.dir/pch.cpp)
+    set(${PROJECT_NAME}_PRECOMPILED_HEADER_PCH ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${PROJECT_NAME}.dir/pch.cpp${CMAKE_CXX_OUTPUT_EXTENSION})
     add_custom_command(OUTPUT pch.h.gch
       COMMAND ${CMAKE_COMMAND} -E rename ${${PROJECT_NAME}_PRECOMPILED_HEADER_PCH} pch.h.gch
       COMMAND ${CMAKE_CXX_COMPILER} -c -o ${${PROJECT_NAME}_PRECOMPILED_HEADER_PCH} ${${PROJECT_NAME}_PRECOMPILED_HEADER_SRC}
