@@ -247,7 +247,7 @@ if(${PROJECT_NAME}_PRECOMPILED_HEADER)
       PROPERTIES
         OBJECT_DEPENDS ${${PROJECT_NAME}_PRECOMPILED_HEADER}
     )
-  else(MSVC)
+  elseif(NOT XCODE)
     add_compile_options(-Winvalid-pch)
 
     # We could generate PCH file right from the specified header but it turns out awkward to compile within cmake.
@@ -284,6 +284,14 @@ add_executable(mt32emu-qt
   ${mt32emu_qt_SOURCES}
   ${mt32emu_qt_RC}
 )
+
+if(${PROJECT_NAME}_PRECOMPILED_HEADER AND XCODE)
+  set_target_properties(${PROJECT_NAME}
+    PROPERTIES
+      XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES"
+      XCODE_ATTRIBUTE_GCC_PREFIX_HEADER "${${PROJECT_NAME}_PRECOMPILED_HEADER}"
+  )
+endif()
 
 target_link_libraries(mt32emu-qt
   ${EXT_LIBS}
