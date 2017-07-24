@@ -46,13 +46,11 @@ PLIST_DIRS=	include/mt32emu/c_interface \
 		share/doc/munt/libmt32emu \
 		share/doc/munt
 
-CMAKE_BUILD_TYPE?=	Release
-
 post-extract:
 		mkdir $(WRKSRC)
 
 do-configure:
 		cd $(WRKSRC); \
-		cmake -D CMAKE_BUILD_TYPE:STRING=$(CMAKE_BUILD_TYPE) $(WRKDIR)/munt-munt_2_1_0/mt32emu
+		cmake $(CMAKE_ARGS) $(WRKDIR)/munt-munt_2_1_0/mt32emu
 
 .include <bsd.port.mk>

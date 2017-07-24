@@ -31,13 +31,11 @@ PLIST_FILES=	bin/mt32emu-qt \
 PLIST_DIRS=	share/doc/munt/mt32emu-qt \
 		share/doc/munt
 
-CMAKE_BUILD_TYPE?=	Release
-
 post-extract:
 		mkdir $(WRKSRC)
 
 do-configure:
 		cd $(WRKSRC); \
-		cmake -D CMAKE_BUILD_TYPE:STRING=$(CMAKE_BUILD_TYPE) $(WRKDIR)/munt-munt_2_1_0/mt32emu_qt
+		cmake $(CMAKE_ARGS) $(WRKDIR)/munt-munt_2_1_0/mt32emu_qt
 
 .include <bsd.port.mk>
