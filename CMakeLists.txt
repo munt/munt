@@ -20,7 +20,6 @@ if(munt_WITH_MT32EMU_QT)
 endif()
 
 # build a CPack driven installer package
-include(InstallRequiredSystemLibraries)
 set(CPACK_PACKAGE_VERSION_MAJOR "${munt_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${munt_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${munt_VERSION_PATCH}")
