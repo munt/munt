@@ -1,5 +1,9 @@
-A multi-platform software synthesiser emulating (currently inaccurately)
-pre-GM MIDI devices such as the Roland MT-32, CM-32L, CM-64 and LAPC-I.
-In no way endorsed by or affiliated with Roland Corp.
+mt32emu-smf2wav is a part of the Munt project, a multi-platform software
+synthesiser emulating (approximately) pre-GM MIDI devices such as
+the Roland MT-32, CM-32L, CM-64 and LAPC-I. In no way endorsed by
+or affiliated with Roland Corp.
+
+mt32emu-smf2wav makes use of libmt32emu to produce a WAVE file from
+a Standard MIDI File.
 
 WWW: http://munt.sourceforge.net/
