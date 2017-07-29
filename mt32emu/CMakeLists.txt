@@ -20,14 +20,19 @@ option(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER "Use built-in sample rate convers
 option(libmt32emu_REQUIRE_ANSI "Require ANSI C++ compatibility when compiling with GNU C++ or Clang" TRUE)
 mark_as_advanced(libmt32emu_REQUIRE_ANSI)
 
-if(${libmt32emu_SHARED} AND ${libmt32emu_STANDALONE_BUILD})
+if(munt_WITH_MT32EMU_SMF2WAV AND NOT libmt32emu_C_INTERFACE)
+  message(STATUS "Option libmt32emu_C_INTERFACE implied TRUE when building for mt32emu_smf2wav")
+  set(libmt32emu_C_INTERFACE TRUE)
+endif()
+
+if(${libmt32emu_SHARED} AND NOT ${munt_WITH_MT32EMU_QT})
   option(libmt32emu_CPP_INTERFACE "Provide C++ classes (compiler-specific ABI)" TRUE)
-else(${libmt32emu_SHARED} AND ${libmt32emu_STANDALONE_BUILD})
+else(${libmt32emu_SHARED} AND NOT ${munt_WITH_MT32EMU_QT})
   if(NOT ${libmt32emu_CPP_INTERFACE})
-    message(STATUS "Option libmt32emu_CPP_INTERFACE implied TRUE for static library builds and for non-stand-alone shared library builds")
+    message(STATUS "Option libmt32emu_CPP_INTERFACE implied TRUE for static library builds and when building for mt32emu_qt")
   endif(NOT ${libmt32emu_CPP_INTERFACE})
   set(libmt32emu_CPP_INTERFACE TRUE)
-endif(${libmt32emu_SHARED} AND ${libmt32emu_STANDALONE_BUILD})
+endif(${libmt32emu_SHARED} AND NOT ${munt_WITH_MT32EMU_QT})
 
 set(LIB_INSTALL_DIR lib CACHE PATH "Relative installation path to libraries")
 
@@ -69,6 +74,7 @@ set(libmt32emu_COMMON_HEADERS
   mt32emu.h
   globals.h
   Enumerations.h
+  Types.h
 )
 
 # Public headers used by C++ clients:
@@ -79,7 +85,6 @@ set(libmt32emu_CPP_HEADERS
   ROMInfo.h
   SampleRateConverter.h
   Synth.h
-  Types.h
 )
 
 # Public headers that support C-compatible and plugin-style API:
