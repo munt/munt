@@ -1,4 +1,6 @@
-2.2-current:
+2017-07-29:
+
+	2.2.0 released.
 
 	* Added emulation of a number of MT-32 GEN0 quirks that is enabled when loading e.g. Control ROM v1.07,
 	  so many patches specific for old MT-32 are now played correctly. Thanks go to NewRisingSun for providing

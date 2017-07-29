@@ -1,4 +1,6 @@
-1.6-current:
+2017-07-29:
+
+	1.6.0 released.
 
 	* Improved a bit the LCD emulation to better match behaviour of old MT-32 units.
 	* Improved synth profile handling. When a non-default synth profile is selected in the synth properties dialog,

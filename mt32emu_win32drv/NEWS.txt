@@ -1,4 +1,6 @@
-1.4-current
+2017-07-29:
+
+	1.4.0 released.
 
 	* Added support for the synth profile setting "niceAmpRamp".
 	* Implemented selection of output audio device using the setting "DefaultAudioDevice".
