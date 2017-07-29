@@ -31,6 +31,16 @@ endif(${libmt32emu_SHARED} AND ${libmt32emu_STANDALONE_BUILD})
 
 set(LIB_INSTALL_DIR lib CACHE PATH "Relative installation path to libraries")
 
+if(libmt32emu_SHARED)
+  set(libmt32emu_PACKAGE_TYPE Complete CACHE STRING "Selects output binary package type: Complete, Runtime or Devel")
+  mark_as_advanced(libmt32emu_PACKAGE_TYPE)
+  set_property(CACHE libmt32emu_PACKAGE_TYPE
+    PROPERTY STRINGS Complete Runtime Devel
+  )
+else()
+  set(libmt32emu_PACKAGE_TYPE Complete)
+endif()
+
 set(libmt32emu_SOURCES
   src/Analog.cpp
   src/BReverbModel.cpp
@@ -207,20 +217,35 @@ if(libmt32emu_SHARED AND CMAKE_SYSTEM_NAME STREQUAL Windows)
   )
 endif()
 
-install(TARGETS mt32emu
-  ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
-  LIBRARY DESTINATION ${LIB_INSTALL_DIR}
-  RUNTIME DESTINATION bin
-)
-install(DIRECTORY
-  "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu"
-  DESTINATION include
-)
+if(libmt32emu_PACKAGE_TYPE STREQUAL "Runtime")
+  install(TARGETS mt32emu
+    LIBRARY DESTINATION ${LIB_INSTALL_DIR} NAMELINK_SKIP
+    RUNTIME DESTINATION bin
+  )
+elseif(libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
+  install(TARGETS mt32emu ARCHIVE DESTINATION ${LIB_INSTALL_DIR})
+  install(TARGETS mt32emu LIBRARY DESTINATION ${LIB_INSTALL_DIR} NAMELINK_ONLY)
+else()
+  install(TARGETS mt32emu
+    ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+    LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+    RUNTIME DESTINATION bin
+  )
+endif()
 
-install(FILES
-  AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.txt TODO.txt
-  DESTINATION share/doc/munt/libmt32emu
-)
+if(NOT libmt32emu_PACKAGE_TYPE STREQUAL "Runtime" OR libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
+  install(DIRECTORY
+    "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu"
+    DESTINATION include
+  )
+endif()
+
+if(libmt32emu_PACKAGE_TYPE STREQUAL "Runtime" OR NOT libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
+  install(FILES
+    AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.txt TODO.txt
+    DESTINATION share/doc/munt/libmt32emu
+  )
+endif()
 
 # Locations are exported for the benefit of a higher-level CMakeLists.txt.
 # These lines are irrelevant if compiling stand-alone.
