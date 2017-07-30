@@ -148,7 +148,11 @@ if(libmt32emu_SHARED)
   set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 endif(libmt32emu_SHARED)
 
-file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu)
+if(NOT libmt32emu_CURRENT_EXPORTS_TYPE STREQUAL libmt32emu_EXPORTS_TYPE)
+  set(libmt32emu_CURRENT_EXPORTS_TYPE ${libmt32emu_EXPORTS_TYPE} CACHE INTERNAL "Stores current exports type")
+  file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu)
+endif()
+
 foreach(HEADER ${libmt32emu_HEADERS})
   configure_file("src/${HEADER}" "include/mt32emu/${HEADER}" COPYONLY)
 endforeach(HEADER)
