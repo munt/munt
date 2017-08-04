@@ -48,46 +48,40 @@ void MidiPlayerDialog::on_playList_activated(const QModelIndex &) {
 void MidiPlayerDialog::on_addButton_clicked() {
 	static QString currentDir = Master::getInstance()->getSettings()->value("Master/LastAddMidiFileDir").toString();
 	QStringList fileNames = QFileDialog::getOpenFileNames(this, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
-	if (!fileNames.isEmpty()) {
-		currentDir = QDir(fileNames.first()).absolutePath();
-		Master::getInstance()->getSettings()->setValue("Master/LastAddMidiFileDir", currentDir);
-		int row = ui->playList->currentRow();
-		ui->playList->insertItems(row + 1, fileNames);
-		ui->playList->setCurrentRow(row + fileNames.count());
-	}
+	if (fileNames.isEmpty()) return;
+	currentDir = QDir(fileNames.first()).absolutePath();
+	Master::getInstance()->getSettings()->setValue("Master/LastAddMidiFileDir", currentDir);
+	int row = ui->playList->currentRow();
+	ui->playList->insertItems(row + 1, fileNames);
+	ui->playList->setCurrentRow(row + fileNames.count());
 	updateCurrentItem();
 }
 
 void MidiPlayerDialog::on_addListButton_clicked() {
 	static QString currentDir = Master::getInstance()->getSettings()->value("Master/LastAddMidiFileListDir").toString();
 	QString fileName = QFileDialog::getOpenFileName(this, NULL, currentDir, "Play list files (*.*)");
-	if (!fileName.isEmpty()) {
-		currentDir = QDir(fileName).absolutePath();
-		Master::getInstance()->getSettings()->setValue("Master/LastAddMidiFileListDir", currentDir);
-		QFile listFile(fileName);
-		if (!listFile.open(QIODevice::ReadOnly)) return;
-		QTextStream listStream(&listFile);
-		int row = ui->playList->currentRow();
-		while (!listStream.atEnd()) {
-			QString s = listStream.readLine();
-			if (s.isEmpty()) continue;
-			ui->playList->insertItem(++row, s);
-		}
-		ui->playList->setCurrentRow(row);
+	if (fileName.isEmpty()) return;
+	currentDir = QDir(fileName).absolutePath();
+	Master::getInstance()->getSettings()->setValue("Master/LastAddMidiFileListDir", currentDir);
+	QFile listFile(fileName);
+	if (!listFile.open(QIODevice::ReadOnly)) return;
+	QTextStream listStream(&listFile);
+	int row = ui->playList->currentRow();
+	while (!listStream.atEnd()) {
+		QString s = listStream.readLine();
+		if (s.isEmpty()) continue;
+		ui->playList->insertItem(++row, s);
 	}
+	ui->playList->setCurrentRow(row);
 	updateCurrentItem();
 }
 
 void MidiPlayerDialog::on_removeButton_clicked() {
 	QListWidgetItem *item = ui->playList->takeItem(ui->playList->currentRow());
 	if (currentItem == item) {
+		// This ensures that playback will finish after the removed item.
 		currentItem = NULL;
 		updateCurrentItem();
-		if (!stopped) {
-			// This ensures that playback will finish after the removed item.
-			currentItem = NULL;
-			setWindowTitle(standardTitle);
-		}
 	}
 	delete item;
 }
@@ -182,6 +176,7 @@ void MidiPlayerDialog::on_fastFastForwardButton_released() {
 }
 
 void MidiPlayerDialog::on_tempoSpinBox_valueChanged(int newValue) {
+	if (stopped) return;
 	smfDriver.setBPM(newValue);
 }
 
@@ -196,7 +191,10 @@ void MidiPlayerDialog::on_positionSlider_sliderReleased() {
 
 void MidiPlayerDialog::handlePlaybackFinished() {
 	ui->tempoSpinBox->setValue(MidiParser::DEFAULT_BPM);
-	if (!stopped) {
+	if (stopped) {
+		stopped = false;
+		ui->playList->setCurrentRow(ui->playList->row(currentItem));
+	} else {
 		int rowPlaying = ui->playList->row(currentItem);
 		if (rowPlaying++ == -1 || ui->playList->count() <= rowPlaying) {
 			currentItem = NULL;
@@ -211,8 +209,6 @@ void MidiPlayerDialog::handlePlaybackFinished() {
 		currentItem = ui->playList->currentItem();
 		updateCurrentItem();
 	}
-	stopped = false;
-	ui->playList->setCurrentRow(ui->playList->row(currentItem));
 	smfDriver.start(currentItem->text());
 	if (Master::getInstance()->getSettings()->value("Master/showConnectionBalloons", "1").toBool()) {
 		emit playbackStarted("Playing MIDI file", QFileInfo(ui->playList->currentItem()->text()).fileName());
@@ -282,7 +278,7 @@ void MidiPlayerDialog::updateCurrentItem() {
 	if (ui->playList->currentRow() == -1 && ui->playList->count() > 0) {
 		ui->playList->setCurrentRow(0);
 	}
-	if (currentItem == NULL && ui->playList->count() > 0) {
+	if (stopped && currentItem == NULL && ui->playList->count() > 0) {
 		currentItem = ui->playList->item(0);
 	} else if (currentItem != NULL && ui->playList->count() == 0) {
 		currentItem = NULL;
