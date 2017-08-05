@@ -1,3 +1,9 @@
+HEAD:
+
+	* Improved emulation of partial allocator. It still handles individual partials as entities and not pairs,
+	  but now it keeps inactive partials on a stack rather than assigns the first free partial sorted by index.
+	  This behaviour better corresponds to how the real units allocate partials though.
+
 2017-07-29:
 
 	2.2.0 released.

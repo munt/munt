@@ -40,7 +40,7 @@ struct ControlROMPCMStruct;
 class Partial {
 private:
 	Synth *synth;
-	const int debugPartialNum; // Only used for debugging
+	const int partialIndex; // Index of this Partial in the global partial table
 	// Number of the sample currently being rendered by produceOutput(), or 0 if no run is in progress
 	// This is only kept available for debugging purposes.
 	Bit32u sampleNum;

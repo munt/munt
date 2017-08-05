@@ -21,6 +21,7 @@
 
 #include "Partial.h"
 #include "Part.h"
+#include "PartialManager.h"
 #include "Poly.h"
 #include "Synth.h"
 #include "Tables.h"
@@ -50,8 +51,8 @@ static Bit32s getPANFactor(Bit32s panSetting) {
 	return PAN_FACTORS[panSetting];
 }
 
-Partial::Partial(Synth *useSynth, int useDebugPartialNum) :
-	synth(useSynth), debugPartialNum(useDebugPartialNum), sampleNum(0),
+Partial::Partial(Synth *useSynth, int usePartialIndex) :
+	synth(useSynth), partialIndex(usePartialIndex), sampleNum(0),
 	floatMode(useSynth->getSelectedRendererType() == RendererType_FLOAT) {
 	// Initialisation of tva, tvp and tvf uses 'this' pointer
 	// and thus should not be in the initializer list to avoid a compiler warning
@@ -82,7 +83,7 @@ Partial::~Partial() {
 
 // Only used for debugging purposes
 int Partial::debugGetPartialNum() const {
-	return debugPartialNum;
+	return partialIndex;
 }
 
 // Only used for debugging purposes
@@ -112,6 +113,7 @@ void Partial::deactivate() {
 		return;
 	}
 	ownerPart = -1;
+	synth->partialManager->partialDeactivated(partialIndex);
 	if (poly != NULL) {
 		poly->partialDeactivated(this);
 	}
@@ -135,7 +137,7 @@ void Partial::deactivate() {
 
 void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *usePatchCache, const MemParams::RhythmTemp *rhythmTemp, Partial *pairPartial) {
 	if (usePoly == NULL || usePatchCache == NULL) {
-		synth->printDebug("[Partial %d] *** Error: Starting partial for owner %d, usePoly=%s, usePatchCache=%s", debugPartialNum, ownerPart, usePoly == NULL ? "*** NULL ***" : "OK", usePatchCache == NULL ? "*** NULL ***" : "OK");
+		synth->printDebug("[Partial %d] *** Error: Starting partial for owner %d, usePoly=%s, usePatchCache=%s", partialIndex, ownerPart, usePoly == NULL ? "*** NULL ***" : "OK", usePatchCache == NULL ? "*** NULL ***" : "OK");
 		return;
 	}
 	patchCache = usePatchCache;
@@ -174,7 +176,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	// Either partial pairs are added or subtracted, it depends on how the partial pairs are allocated.
 	// It seems that partials are grouped into quarters and if the partial pairs are allocated in different quarters the subtraction happens.
 	// Though, this matters little for the majority of timbres, it becomes crucial for timbres which contain several partials that sound very close.
-	// In this case that timbre can sound totally different depending of the way it is mixed up.
+	// In this case that timbre can sound totally different depending on the way it is mixed up.
 	// Most easily this effect can be displayed with the help of a special timbre consisting of several identical square wave partials (3 or 4).
 	// Say, it is 3-partial timbre. Just play any two notes simultaneously and the polys very probably are mixed differently.
 	// Moreover, the partial allocator retains the last partial assignment it did and all the subsequent notes will sound the same as the last released one.
@@ -182,8 +184,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	// whole-quarter assignment or after some partials got aborted, even 4-partial timbres can be found sounding differently.
 	// This behaviour is also confirmed with two more special timbres: one with identical sawtooth partials, and one with PCM wave 02.
 	// For my personal taste, this behaviour rather enriches the sounding and should be emulated.
-	// Also, the current partial allocator model probably needs to be refined.
-	if (debugPartialNum & 8) {
+	if (partialIndex & 4) {
 		leftPanValue = -leftPanValue;
 		rightPanValue = -rightPanValue;
 	}
@@ -307,7 +308,7 @@ bool Partial::canProduceOutput() {
 		return false;
 	}
 	if (poly == NULL) {
-		synth->printDebug("[Partial %d] *** ERROR: poly is NULL at Partial::produceOutput()!", debugPartialNum);
+		synth->printDebug("[Partial %d] *** ERROR: poly is NULL at Partial::produceOutput()!", partialIndex);
 		return false;
 	}
 	return true;
