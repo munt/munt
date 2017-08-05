@@ -35,7 +35,7 @@ extern "C" {
 /* === Interface handling === */
 
 /** Returns mt32emu_service_i interface. */
-MT32EMU_EXPORT mt32emu_service_i mt32emu_get_service_i();
+MT32EMU_EXPORT mt32emu_service_i mt32emu_get_service_i(void);
 
 #if MT32EMU_EXPORTS_TYPE == 2
 #undef MT32EMU_EXPORT
@@ -46,13 +46,13 @@ MT32EMU_EXPORT mt32emu_service_i mt32emu_get_service_i();
  * Returns the version ID of mt32emu_report_handler_i interface the library has been compiled with.
  * This allows a client to fall-back gracefully instead of silently not receiving expected event reports.
  */
-MT32EMU_EXPORT mt32emu_report_handler_version mt32emu_get_supported_report_handler_version();
+MT32EMU_EXPORT mt32emu_report_handler_version mt32emu_get_supported_report_handler_version(void);
 
 /**
  * Returns the version ID of mt32emu_midi_receiver_version_i interface the library has been compiled with.
  * This allows a client to fall-back gracefully instead of silently not receiving expected MIDI messages.
  */
-MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version();
+MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version(void);
 
 /**
  * Returns library version as an integer in format: 0x00MMmmpp, where:
@@ -60,12 +60,12 @@ MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver
  * mm - minor version number
  * pp - patch number
  */
-MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_library_version_int();
+MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_library_version_int(void);
 
 /**
  * Returns library version as a C-string in format: "MAJOR.MINOR.PATCH".
  */
-MT32EMU_EXPORT const char *mt32emu_get_library_version_string();
+MT32EMU_EXPORT const char *mt32emu_get_library_version_string(void);
 
 /**
  * Returns output sample rate used in emulation of stereo analog circuitry of hardware units for particular analog_output_mode.

@@ -216,11 +216,11 @@ typedef union mt32emu_service_i mt32emu_service_i;
 #define MT32EMU_SERVICE_I_V0 \
 	/** Returns the actual interface version ID */ \
 	mt32emu_service_version (*getVersionID)(mt32emu_service_i i); \
-	mt32emu_report_handler_version (*getSupportedReportHandlerVersionID)(); \
-	mt32emu_midi_receiver_version (*getSupportedMIDIReceiverVersionID)(); \
+	mt32emu_report_handler_version (*getSupportedReportHandlerVersionID)(void); \
+	mt32emu_midi_receiver_version (*getSupportedMIDIReceiverVersionID)(void); \
 \
-	mt32emu_bit32u (*getLibraryVersionInt)(); \
-	const char *(*getLibraryVersionString)(); \
+	mt32emu_bit32u (*getLibraryVersionInt)(void); \
+	const char *(*getLibraryVersionString)(void); \
 \
 	mt32emu_bit32u (*getStereoOutputSamplerate)(const mt32emu_analog_output_mode analog_output_mode); \
 \
