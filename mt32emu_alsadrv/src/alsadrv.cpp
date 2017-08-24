@@ -138,7 +138,7 @@ int flush_events = 0;
 
 
 /* template for reverb sysex events */
-char rvsysex[] = {
+unsigned char rvsysex[] = {
 	0xf0, 0x41, 0x10, 0x16, 0x12, 
 		0x10, 0x00, 0x01, /* system area address */
 		0x00,       /* data */
