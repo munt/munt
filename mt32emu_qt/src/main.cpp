@@ -27,7 +27,7 @@ int main(int argv, char **args) {
 		Master master;
 		QSystemTrayIcon *trayIcon = NULL;
 		if (QSystemTrayIcon::isSystemTrayAvailable()) {
-			trayIcon = new QSystemTrayIcon(QIcon(":/images/note.gif"));
+			trayIcon = new QSystemTrayIcon(QIcon(":/images/Icon.gif"));
 			trayIcon->setToolTip("Munt: MT-32 Emulator");
 			trayIcon->show();
 			master.setTrayIcon(trayIcon);

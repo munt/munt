@@ -21,7 +21,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="images.qrc">
-    <normaloff>:/images/note.gif</normaloff>:/images/note.gif</iconset>
+    <normaloff>:/images/Icon.gif</normaloff>:/images/Icon.gif</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
