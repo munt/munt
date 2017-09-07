@@ -281,7 +281,7 @@ void SynthPropertiesDialog::refreshProfileCombo(QString name) {
 
 QString SynthPropertiesDialog::getROMSetDescription() {
 	MT32Emu::FileStream file;
-	if (file.open(Master::getROMPathName(synthProfile.romDir, synthProfile.controlROMFileName).toUtf8())) {
+	if (file.open(Master::getROMPathName(synthProfile.romDir, synthProfile.controlROMFileName).toLocal8Bit())) {
 		const MT32Emu::ROMInfo *romInfo = MT32Emu::ROMInfo::getROMInfo(&file);
 		if (romInfo != NULL) {
 			QString des = romInfo->description;

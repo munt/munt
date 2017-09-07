@@ -19,6 +19,8 @@
 
 #include "FileStream.h"
 
+#include <locale>
+
 namespace MT32Emu {
 
 using std::ios_base;
@@ -71,6 +73,7 @@ const Bit8u *FileStream::getData() {
 
 bool FileStream::open(const char *filename) {
 	ifsp.clear();
+	ifsp.imbue(std::locale::locale(""));
 	ifsp.open(filename, ios_base::in | ios_base::binary);
 	return !ifsp.fail();
 }

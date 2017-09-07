@@ -34,7 +34,7 @@ using namespace MT32Emu;
 
 static const ROMImage *makeROMImage(const QDir &romDir, QString romFileName) {
 	FileStream *file = new FileStream;
-	if (file->open(Master::getROMPathName(romDir, romFileName).toUtf8())) {
+	if (file->open(Master::getROMPathName(romDir, romFileName).toLocal8Bit())) {
 		return ROMImage::makeROMImage(file);
 	}
 	return NULL;
