@@ -15,13 +15,25 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef MT32EMU_SHARED
+#include <locale>
+#endif
+
 #include "internals.h"
 
 #include "FileStream.h"
 
-#include <locale>
-
 namespace MT32Emu {
+
+static inline void configureSystemLocale() {
+#ifdef MT32EMU_SHARED
+	static bool configured = false;
+
+	if (configured) return;
+	configured = true;
+	std::locale::global(std::locale(""));
+#endif
+}
 
 using std::ios_base;
 
@@ -72,8 +84,8 @@ const Bit8u *FileStream::getData() {
 }
 
 bool FileStream::open(const char *filename) {
+	configureSystemLocale();
 	ifsp.clear();
-	ifsp.imbue(std::locale(""));
 	ifsp.open(filename, ios_base::in | ios_base::binary);
 	return !ifsp.fail();
 }
