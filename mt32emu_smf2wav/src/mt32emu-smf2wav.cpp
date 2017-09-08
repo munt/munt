@@ -20,6 +20,7 @@
 #include <cerrno>
 #include <cfloat>
 #include <climits>
+#include <clocale>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -782,6 +783,7 @@ static bool playFile(const gchar *inputFilename, const gchar *displayInputFilena
 int main(int argc, char *argv[]) {
 	Options options;
 	MT32Emu::Service service;
+	setlocale(LC_ALL, "");
 	printf("Munt MT32Emu MIDI to Wave Conversion Utility. Version %s\n", VERSION);
 	printf("  Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>\n");
 	printf("  Copyright (C) 2012-2017 Jerome Fisher, Sergey V. Mikayev\n");
@@ -813,27 +815,35 @@ int main(int argc, char *argv[]) {
 	gchar *baseDir = options.romDir;
 	if (baseDir == NULL)
 		baseDir = (gchar *)"";
-	gchar pathName[2048];
-	g_strlcpy(pathName, baseDir, 2048);
-	g_strlcat(pathName, "CM32L_CONTROL.ROM", 2048);
+	gchar pathNameUtf8[2048];
+	g_strlcpy(pathNameUtf8, baseDir, 2048);
+	g_strlcat(pathNameUtf8, "CM32L_CONTROL.ROM", 2048);
+	gchar *pathName = g_locale_from_utf8(pathNameUtf8, strlen(pathNameUtf8), NULL, NULL, NULL);
 	if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_CONTROL_ROM) {
-		g_strlcpy(pathName, baseDir, 2048);
-		g_strlcat(pathName, "MT32_CONTROL.ROM", 2048);
+		g_free(pathName);
+		g_strlcpy(pathNameUtf8, baseDir, 2048);
+		g_strlcat(pathNameUtf8, "MT32_CONTROL.ROM", 2048);
+		pathName = g_locale_from_utf8(pathNameUtf8, strlen(pathNameUtf8), NULL, NULL, NULL);
 		if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_CONTROL_ROM) {
 			fprintf(stderr, "Control ROM not found.\n");
 			return 1;
 		}
 	}
-	g_strlcpy(pathName, baseDir, 2048);
-	g_strlcat(pathName, "CM32L_PCM.ROM", 2048);
+	g_free(pathName);
+	g_strlcpy(pathNameUtf8, baseDir, 2048);
+	g_strlcat(pathNameUtf8, "CM32L_PCM.ROM", 2048);
+	pathName = g_locale_from_utf8(pathNameUtf8, strlen(pathNameUtf8), NULL, NULL, NULL);
 	if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_PCM_ROM) {
-		g_strlcpy(pathName, baseDir, 2048);
-		g_strlcat(pathName, "MT32_PCM.ROM", 2048);
+		g_free(pathName);
+		g_strlcpy(pathNameUtf8, baseDir, 2048);
+		g_strlcat(pathNameUtf8, "MT32_PCM.ROM", 2048);
+		pathName = g_locale_from_utf8(pathNameUtf8, strlen(pathNameUtf8), NULL, NULL, NULL);
 		if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_PCM_ROM) {
 			fprintf(stderr, "PCM ROM not found.\n");
 			return 1;
 		}
 	}
+	g_free(pathName);
 	service.setStereoOutputSampleRate(options.sampleRate);
 	service.setSamplerateConversionQuality(options.srcQuality);
 	service.setAnalogOutputMode(options.analogOutputMode);
