@@ -189,7 +189,6 @@ bool OSSAudioStream::start() {
 
 	// Setup initial MIDI latency
 	if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames + ((DEFAULT_MIDI_LATENCY * sampleRate) / MasterClock::MILLIS_PER_SECOND);
-	updateResetPeriod();
 
 	// Start playing to fill audio buffers
 	int initFrames = audioLatencyFrames;

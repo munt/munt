@@ -37,7 +37,6 @@ CoreAudioStream::CoreAudioStream(const AudioDriverSettings &useSettings, QSynth 
 
 	// Setup initial MIDI latency
 	if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames + ((DEFAULT_MIDI_LATENCY * sampleRate) / MasterClock::MILLIS_PER_SECOND);
-	updateResetPeriod();
 	qDebug() << "CoreAudio: total MIDI latency:" << midiLatencyFrames << "frames";
 }
 
@@ -110,13 +109,6 @@ bool CoreAudioStream::start() {
 		audioQueue = NULL;
 		return false;
 	}
-
-	// Reset timeInfo after priming the buffer
-	timeInfoIx = 0;
-	timeInfo[0].lastPlayedFramesCount = 0;
-	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
-	timeInfo[0].actualSampleRate = sampleRate;
-	timeInfo[1] = timeInfo[0];
 
 	return true;
 }

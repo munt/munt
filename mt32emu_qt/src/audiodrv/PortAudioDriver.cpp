@@ -110,12 +110,6 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 	// Setup initial MIDI latency
 	if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames;
 	qDebug() << "PortAudio: MIDI latency (s):" << (double)midiLatencyFrames / sampleRate;
-	updateResetPeriod();
-
-	timeInfo[0].lastPlayedFramesCount -= audioLatencyFrames;
-	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
-	timeInfo[0].actualSampleRate = Pa_GetStreamInfo(stream)->sampleRate;
-	timeInfo[1] = timeInfo[0];
 
 	err = Pa_StartStream(stream);
 	if(err != paNoError) {

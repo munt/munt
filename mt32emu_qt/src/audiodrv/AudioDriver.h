@@ -13,7 +13,6 @@
 
 class AudioDriver;
 class QSynth;
-class ClockSync;
 struct AudioDriverSettings;
 
 class AudioStream {
@@ -25,7 +24,8 @@ protected:
 	quint32 midiLatencyFrames;
 
 	quint64 renderedFramesCount;
-	ClockSync *clockSync;
+	quint64 lastEstimatedPlayedFramesCount;
+	bool resetScheduled;
 
 	struct {
 		MasterClockNanos lastPlayedNanos;
@@ -36,11 +36,10 @@ protected:
 
 	void updateTimeInfo(const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer);
 	bool isAutoLatencyMode() const;
-	void updateResetPeriod() const;
 
 public:
 	AudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
-	virtual ~AudioStream();
+	virtual ~AudioStream() {}
 	virtual quint64 estimateMIDITimestamp(const MasterClockNanos refNanos = 0);
 };
 
@@ -68,7 +67,7 @@ struct AudioDriverSettings {
 	// The number of milliseconds by which to delay MIDI events to ensure accurate relative timing
 	unsigned int midiLatency;
 	// true - use advanced timing functions provided by audio API
-	// false - instead, compute average actual sample rate using clockSync
+	// false - instead, rely on count of rendered samples to compute average actual sample rate
 	bool advancedTiming;
 };
 

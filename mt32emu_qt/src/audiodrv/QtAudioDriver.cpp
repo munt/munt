@@ -24,7 +24,6 @@
 
 #include <mt32emu/mt32emu.h>
 
-#include "../ClockSync.h"
 #include "../Master.h"
 #include "../QSynth.h"
 
@@ -40,8 +39,8 @@ public:
 	}
 
 	qint64 readData(char *data, qint64 len) {
-		if ((len == (stream.audioLatencyFrames << 2)) && (stream.clockSync != NULL)) {
-			// Fill empty buffer in clocksync mode to keep correct timing at startup / x-run recovery
+		if (len == (stream.audioLatencyFrames << 2)) {
+			// Fill empty buffer to keep correct timing at startup / x-run recovery
 			memset(data, 0, len);
 			return len;
 		}
@@ -117,10 +116,6 @@ void QtAudioStream::start() {
 	// Setup initial MIDI latency
 	if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames;
 	qDebug() << "QAudioDriver: MIDI latency set to:" << (double)midiLatencyFrames / sampleRate << "sec";
-	updateResetPeriod();
-
-	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
-	renderedFramesCount = 0;
 }
 
 void QtAudioStream::close() {

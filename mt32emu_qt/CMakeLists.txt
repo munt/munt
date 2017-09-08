@@ -39,7 +39,6 @@ set(mt32emu_qt_SOURCES
   src/main.cpp
 
   src/AudioFileWriter.cpp
-  src/ClockSync.cpp
   src/MainWindow.cpp
   src/Master.cpp
   src/MasterClock.cpp

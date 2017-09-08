@@ -8,7 +8,6 @@
 #include <mt32emu/mt32emu.h>
 
 #include "AudioDriver.h"
-#include "../ClockSync.h"
 
 class QSynth;
 class Master;

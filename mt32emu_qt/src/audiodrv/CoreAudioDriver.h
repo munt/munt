@@ -4,7 +4,6 @@
 #include <AudioToolbox/AudioQueue.h>
 
 #include "AudioDriver.h"
-#include "../ClockSync.h"
 
 class QSynth;
 class Master;

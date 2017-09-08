@@ -167,7 +167,6 @@ bool WinMMAudioStream::start(int deviceIndex) {
 	if (buffer == NULL) return false;
 
 	memset(buffer, 0, FRAME_SIZE * audioLatencyFrames);
-	timeInfo[timeInfoIx].lastPlayedFramesCount -= audioLatencyFrames;
 
 	if (hWaveOut != NULL) {
 		close();
@@ -230,7 +229,6 @@ bool WinMMAudioStream::start(int deviceIndex) {
 			return false;
 		}
 	}
-	timeInfo[timeInfoIx].lastPlayedNanos = MasterClock::getClockNanos();
 
 	processor.start(QThread::TimeCriticalPriority);
 	return true;
