@@ -89,7 +89,7 @@ bool MidiParser::parseTrack(QMidiEventList &midiEventList) {
 					// It's a SysEx event
 					runningStatus = 0; // SysEx clears running status
 					sysexBuffer.clear();
-					sysexBuffer += status;
+					sysexBuffer.append(status);
 					quint32 sysexLength = parseVarLenInt(++data);
 					if (sysexLength < 1) {
 						// No SysEx data, keep the time in sync

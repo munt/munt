@@ -390,6 +390,7 @@ bool Master::handleROMSLoadFailed(QString usedSynthProfileName) {
 }
 
 QString Master::getDefaultROMSearchPath() {
+#if QT_VERSION >= QT_VERSION_CHECK(4, 6, 0)
 	QString defaultPath;
 	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 	if (env.contains("USERPROFILE")) {
@@ -400,6 +401,9 @@ QString Master::getDefaultROMSearchPath() {
 		defaultPath = ".";
 	}
 	return defaultPath + "/roms/";
+#else
+	return "./roms/";
+#endif
 }
 
 void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
@@ -419,8 +423,13 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	synthProfile.reverbMode = settings->value("reverbMode", 0).toInt();
 	synthProfile.reverbTime = settings->value("reverbTime", 5).toInt();
 	synthProfile.reverbLevel = settings->value("reverbLevel", 3).toInt();
-	synthProfile.outputGain = settings->value("outputGain", 1.0f).toFloat();
-	synthProfile.reverbOutputGain = settings->value("reverbOutputGain", 1.0f).toFloat();
+#if QT_VERSION >= QT_VERSION_CHECK(4, 6, 0)
+	synthProfile.outputGain = settings->value("outputGain", 1.0).toFloat();
+	synthProfile.reverbOutputGain = settings->value("reverbOutputGain", 1.0).toFloat();
+#else
+	synthProfile.outputGain = (float)settings->value("outputGain", 1.0).toDouble();
+	synthProfile.reverbOutputGain = (float)settings->value("reverbOutputGain", 1.0).toDouble();
+#endif
 	synthProfile.reversedStereoEnabled = settings->value("reversedStereoEnabled", false).toBool();
 	synthProfile.engageChannel1OnOpen = settings->value("engageChannel1OnOpen", false).toBool();
 	synthProfile.niceAmpRamp = settings->value("niceAmpRamp", true).toBool();
