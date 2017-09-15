@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>425</width>
-    <height>281</height>
+    <width>508</width>
+    <height>282</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,9 +28,6 @@
          </property>
          <property name="dragDropMode">
           <enum>QAbstractItemView::DragDrop</enum>
-         </property>
-         <property name="defaultDropAction">
-          <enum>Qt::MoveAction</enum>
          </property>
         </widget>
        </item>
