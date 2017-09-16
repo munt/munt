@@ -35,7 +35,7 @@ MidiConverterDialog::MidiConverterDialog(Master *master, QWidget *parent) : QDia
 	connect(&converter, SIGNAL(midiEventProcessed(int, int)), SLOT(updateConversionProgress(int, int)));
 	connect(this, SIGNAL(conversionFinished(const QString &, const QString &)), master, SLOT(showBalloon(const QString &, const QString &)));
 #if (QT_VERSION >= QT_VERSION_CHECK(4, 6, 0))
-	ui->midiList->setDefaultDropAction(Qt::DropAction::MoveAction);
+	ui->midiList->setDefaultDropAction(Qt::MoveAction);
 #endif // (QT_VERSION >= QT_VERSION_CHECK(4, 6, 0))
 	setAcceptDrops(true);
 }

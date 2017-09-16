@@ -28,7 +28,7 @@ MidiPlayerDialog::MidiPlayerDialog(Master *master, QWidget *parent) : QDialog(pa
 	connect(&smfDriver, SIGNAL(tempoUpdated(quint32)), SLOT(handleTempoSet(quint32)));
 	connect(this, SIGNAL(playbackStarted(const QString &, const QString &)), master, SLOT(showBalloon(const QString &, const QString &)));
 #if (QT_VERSION >= QT_VERSION_CHECK(4, 6, 0))
-	ui->playList->setDefaultDropAction(Qt::DropAction::MoveAction);
+	ui->playList->setDefaultDropAction(Qt::MoveAction);
 #endif // (QT_VERSION >= QT_VERSION_CHECK(4, 6, 0))
 	setAcceptDrops(true);
 }

@@ -18,15 +18,12 @@
 #include <QMessageBox>
 
 #ifdef WITH_WINCONSOLE
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500
-#endif
 #if _WIN32_WINNT < 0x0500
 #undef WITH_WINCONSOLE
-#else
+#else // _WIN32_WINNT < 0x0500
 #include <windows.h>
-#endif
-#endif
+#endif // _WIN32_WINNT < 0x0500
+#endif // defined(WITH_WINCONSOLE)
 
 #ifndef BUILD_DATE
 #ifdef __DATE__
