@@ -126,70 +126,23 @@ STDAPI_(LONG) DriverProc(DWORD dwDriverID, HDRVR hdrvr, WORD wMessage, DWORD dwP
 
 
 HRESULT modGetCaps(PVOID capsPtr, DWORD capsSize) {
-	MIDIOUTCAPSA * myCapsA;
-	MIDIOUTCAPSW * myCapsW;
-	MIDIOUTCAPS2A * myCaps2A;
-	MIDIOUTCAPS2W * myCaps2W;
+	static const TCHAR synthName[] = L"MT-32 Synth Emulator";
+	static MIDIOUTCAPS myCaps = {0};
 
-	CHAR synthName[] = "MT-32 Synth Emulator\0";
-	WCHAR synthNameW[] = L"MT-32 Synth Emulator\0";
-
-	switch (capsSize) {
-	case (sizeof(MIDIOUTCAPSA)):
-		myCapsA = (MIDIOUTCAPSA *)capsPtr;
-		myCapsA->wMid = MM_UNMAPPED;
-		myCapsA->wPid = MM_MPU401_MIDIOUT;
-		memcpy(myCapsA->szPname, synthName, sizeof(synthName));
-		myCapsA->wTechnology = MOD_MIDIPORT;
-		myCapsA->vDriverVersion = 0x0090;
-		myCapsA->wVoices = 0;
-		myCapsA->wNotes = 0;
-		myCapsA->wChannelMask = 0xffff;
-		myCapsA->dwSupport = 0;
-		return MMSYSERR_NOERROR;
-
-	case (sizeof(MIDIOUTCAPSW)):
-		myCapsW = (MIDIOUTCAPSW *)capsPtr;
-		myCapsW->wMid = MM_UNMAPPED;
-		myCapsW->wPid = MM_MPU401_MIDIOUT;
-		memcpy(myCapsW->szPname, synthNameW, sizeof(synthNameW));
-		myCapsW->wTechnology = MOD_MIDIPORT;
-		myCapsW->vDriverVersion = 0x0090;
-		myCapsW->wVoices = 0;
-		myCapsW->wNotes = 0;
-		myCapsW->wChannelMask = 0xffff;
-		myCapsW->dwSupport = 0;
-		return MMSYSERR_NOERROR;
-
-	case (sizeof(MIDIOUTCAPS2A)):
-		myCaps2A = (MIDIOUTCAPS2A *)capsPtr;
-		myCaps2A->wMid = MM_UNMAPPED;
-		myCaps2A->wPid = MM_MPU401_MIDIOUT;
-		memcpy(myCaps2A->szPname, synthName, sizeof(synthName));
-		myCaps2A->wTechnology = MOD_MIDIPORT;
-		myCaps2A->vDriverVersion = 0x0090;
-		myCaps2A->wVoices = 0;
-		myCaps2A->wNotes = 0;
-		myCaps2A->wChannelMask = 0xffff;
-		myCaps2A->dwSupport = 0;
-		return MMSYSERR_NOERROR;
-
-	case (sizeof(MIDIOUTCAPS2W)):
-		myCaps2W = (MIDIOUTCAPS2W *)capsPtr;
-		myCaps2W->wMid = MM_UNMAPPED;
-		myCaps2W->wPid = MM_MPU401_MIDIOUT;
-		memcpy(myCaps2W->szPname, synthNameW, sizeof(synthNameW));
-		myCaps2W->wTechnology = MOD_MIDIPORT;
-		myCaps2W->vDriverVersion = 0x0090;
-		myCaps2W->wVoices = 0;
-		myCaps2W->wNotes = 0;
-		myCaps2W->wChannelMask = 0xffff;
-		myCaps2W->dwSupport = 0;
-		return MMSYSERR_NOERROR;
-
-	default:
-		return MMSYSERR_ERROR;
+	if (!myCaps.wMid) {
+		myCaps.wMid = MM_UNMAPPED;
+		myCaps.wPid = MM_MPU401_MIDIOUT;
+		myCaps.vDriverVersion = 0x0090;
+		memcpy(&myCaps.szPname, synthName, sizeof(synthName));
+		myCaps.wTechnology = MOD_MIDIPORT;
+		myCaps.wVoices = 0;
+		myCaps.wNotes = 0;
+		myCaps.wChannelMask = 0xffff;
+		myCaps.dwSupport = 0;
 	}
+
+	memcpy(capsPtr, &myCaps, min(sizeof(myCaps), capsSize));
+	return MMSYSERR_NOERROR;
 }
 
 void DoCallback(int driverNum, DWORD_PTR clientNum, DWORD msg, DWORD_PTR param1, DWORD_PTR param2) {
