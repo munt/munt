@@ -21,7 +21,11 @@
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0500
 #endif
+#if _WIN32_WINNT < 0x0500
+#undef WITH_WINCONSOLE
+#else
 #include <windows.h>
+#endif
 #endif
 
 #ifndef BUILD_DATE
