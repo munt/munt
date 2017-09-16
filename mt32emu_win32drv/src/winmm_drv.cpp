@@ -246,7 +246,7 @@ protected:
 			midiSynth.PlayMIDI(message);
 		} else {
 			updateNanoCounter();
-			DWORD msg[] = { 0, 0, nanoCounter.LowPart, nanoCounter.HighPart, message }; // 0, short MIDI message indicator, timestamp, data
+			DWORD msg[] = { 0, 0, nanoCounter.LowPart, (DWORD)nanoCounter.HighPart, message }; // 0, short MIDI message indicator, timestamp, data
 			COPYDATASTRUCT cds = { client.synth_instance, sizeof(msg), msg };
 			LRESULT res = SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
 			if (res != 1) {
@@ -312,7 +312,7 @@ STDAPI_(DWORD) modMessage(DWORD uDeviceID, DWORD uMsg, DWORD_PTR dwUser, DWORD_P
 				synthOpened = false;
 			}
 			updateNanoCounter();
-			DWORD msg[70] = {0, -1, 1, nanoCounter.LowPart, nanoCounter.HighPart}; // 0, handshake indicator, version, timestamp, .exe filename of calling application
+			DWORD msg[70] = {0, (DWORD)-1, 1, nanoCounter.LowPart, (DWORD)nanoCounter.HighPart}; // 0, handshake indicator, version, timestamp, .exe filename of calling application
 			GetModuleFileNameA(GetModuleHandle(NULL), (char *)&msg[5], 255);
 			COPYDATASTRUCT cds = {0, sizeof(msg), msg};
 			instance = (DWORD)SendMessage(hwnd, WM_COPYDATA, NULL, (LPARAM)&cds);
