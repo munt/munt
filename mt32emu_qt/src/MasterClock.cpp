@@ -31,7 +31,6 @@
 
 #include "MasterClock.h"
 
-
 #if defined WITH_POSIX_CLOCK_NANOSLEEP
 
 static qint64 timespecToNanos(const timespec &ts) {
@@ -47,7 +46,7 @@ void MasterClock::sleepForNanos(MasterClockNanos nanos) {
 	timespec ts;
 	nanosToTimespec(ts, nanos);
 	if (clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL) != 0) {
-		qDebug() << errno;
+		qDebug() << "MasterClock: clock_nanosleep failed:" << errno;
 	}
 }
 
@@ -55,7 +54,7 @@ void MasterClock::sleepUntilClockNanos(MasterClockNanos clockNanos) {
 	timespec ts;
 	nanosToTimespec(ts, clockNanos);
 	if (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL) != 0) {
-		qDebug() << errno;
+		qDebug() << "MasterClock: clock_nanosleep failed:" << errno;
 	}
 }
 
@@ -65,7 +64,7 @@ MasterClockNanos MasterClock::getClockNanos() {
 	ts.tv_nsec = 0;
 	// NOTE: I would use CLOCK_MONOTONIC_RAW, but several things (e.g. clock_getres()) are broken with that clock on my system.
 	if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
-		qDebug() << "Monotonic clock is broken, returning 0";
+		qDebug() << "MasterClock: Monotonic clock is broken, returning 0";
 		return 0;
 	}
 	return timespecToNanos(ts);
@@ -74,10 +73,10 @@ MasterClockNanos MasterClock::getClockNanos() {
 void MasterClock::init() {
 	timespec ts;
 	if (clock_getres(CLOCK_MONOTONIC, &ts) != 0) {
-		qDebug() << "Monotonic clock is broken:" << errno;
+		qDebug() << "MasterClock: Monotonic clock is broken:" << errno;
 		return;
 	}
-	qDebug() << "Using POSIX monotonic clock. Found clock resolution:" << timespecToNanos(ts) << "nanos.";
+	qDebug() << "MasterClock: Using POSIX monotonic clock. Found clock resolution:" << timespecToNanos(ts) << "nanos.";
 }
 
 void MasterClock::cleanup() {}
@@ -121,41 +120,40 @@ MasterClockNanos MasterClock::getClockNanos() {
 void MasterClock::init() {
 	TIMECAPS tc;
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR) {
-		qDebug() << "Unable to get multimedia timer capabilities.";
-		qDebug() << "Trying to set 1 ms multimedia timer resolution.";
+		qDebug() << "MasterClock: Unable to get multimedia timer capabilities.";
+		qDebug() << "MasterClock: Trying to set 1 ms multimedia timer resolution.";
 		mmTimerResolution = 1;
 	} else {
-		qDebug() << "Found minimum supported multimedia timer resolution:" << tc.wPeriodMin << "ms.";
-		qDebug() << "Setting multimedia timer resolution to" << tc.wPeriodMin << "ms.";
+		qDebug() << "MasterClock: Found minimum supported multimedia timer resolution:" << tc.wPeriodMin << "ms.";
+		qDebug() << "MasterClock: Setting multimedia timer resolution to" << tc.wPeriodMin << "ms.";
 		mmTimerResolution = tc.wPeriodMin;
 	}
 	if (timeBeginPeriod(mmTimerResolution) != TIMERR_NOERROR) {
-		qDebug() << "Unable to set multimedia timer resolution. Using defaults.";;
+		qDebug() << "MasterClock: Unable to set multimedia timer resolution. Using defaults.";;
 		mmTimerResolution = 0;
 	}
 	if (QueryPerformanceFrequency(&freq)) {
 		hrTimerAvailable = true;
-		qDebug() << "High resolution timer initialized. Frequency:" << freq.QuadPart * 1e-6 << "MHz";
+		qDebug() << "MasterClock: High resolution timer initialized. Frequency:" << freq.QuadPart * 1e-6 << "MHz";
 		mult = (double)NANOS_PER_SECOND / freq.QuadPart;
 		QueryPerformanceCounter(&startTime);
 	} else {
 		hrTimerAvailable = false;
-		qDebug() << "High resolution timer unavailable on the system. Falling back to multimedia timer.";
+		qDebug() << "MasterClock: High resolution timer unavailable on the system. Falling back to multimedia timer.";
 		startTime.QuadPart = timeGetTime();
 	}
 }
 
 void MasterClock::cleanup() {
 	if (mmTimerResolution != 0) {
-		qDebug() << "Restoring default multimedia timer resolution";
+		qDebug() << "MasterClock: Restoring default multimedia timer resolution";
 		timeEndPeriod(mmTimerResolution);
 	}
 }
 
-#else
+#else // defined WITH_POSIX_CLOCK_NANOSLEEP || defined WITH_WINMMTIMER
 
 #include <QThread>
-#include <QElapsedTimer>
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
 
@@ -175,7 +173,7 @@ void MasterClock::sleepForNanos(MasterClockNanos nanos) {
 	QtSucks::usleep(nanos / NANOS_PER_MICROSECOND);
 }
 
-#else
+#else // (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
 
 void MasterClock::sleepForNanos(MasterClockNanos nanos) {
 	if (nanos <= 0) {
@@ -184,27 +182,58 @@ void MasterClock::sleepForNanos(MasterClockNanos nanos) {
 	QThread::usleep(nanos / NANOS_PER_MICROSECOND);
 }
 
-#endif
+#endif // (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
 
 void MasterClock::sleepUntilClockNanos(MasterClockNanos clockNanos) {
 	sleepForNanos(clockNanos - getClockNanos());
 }
 
+#if (QT_VERSION < QT_VERSION_CHECK(4, 7, 0))
+
+#include <QDateTime>
+
+static QDateTime startTime;
+
+MasterClockNanos MasterClock::getClockNanos() {
+	static MasterClockNanos MSECS_PER_DAY = 86400000LL;
+
+	QDateTime systemTime = QDateTime::currentDateTime().toUTC();
+	MasterClockNanos elapsedMillis = startTime.daysTo(systemTime) * MSECS_PER_DAY + startTime.time().msecsTo(systemTime.time());
+	return MasterClockNanos(elapsedMillis * NANOS_PER_MILLISECOND);
+}
+
+void MasterClock::init() {
+	startTime = QDateTime::currentDateTime().toUTC();
+	qDebug() << "MasterClock: Using system time source";
+}
+
+void MasterClock::cleanup() {}
+
+#else // (QT_VERSION < QT_VERSION_CHECK(4, 7, 0))
+
+#include <QElapsedTimer>
+
 static QElapsedTimer elapsedTimer;
 
 MasterClockNanos MasterClock::getClockNanos() {
+#if (QT_VERSION < QT_VERSION_CHECK(4, 8, 0))
+	return (MasterClockNanos)elapsedTimer.elapsed() * NANOS_PER_MILLISECOND;
+#else
 	return (MasterClockNanos)elapsedTimer.nsecsElapsed();
+#endif
 }
 
 void MasterClock::init() {
 	elapsedTimer.start();
 	static const char *clockTypes[] = { "SystemTime", "MonotonicClock", "TickCounter", "MachAbsoluteTime", "PerformanceCounter" };
-	qDebug() << "Initialised QElapsedTimer, clockType:" << clockTypes[elapsedTimer.clockType()];
+	qDebug() << "MasterClock: Initialised QElapsedTimer, clockType:" << clockTypes[elapsedTimer.clockType()];
 }
 
 void MasterClock::cleanup() {
-	qDebug() << "Invalidating QElapsedTimer";
+	qDebug() << "MasterClock: Invalidating QElapsedTimer";
 	elapsedTimer.invalidate();
 }
 
-#endif
+#endif // (QT_VERSION < QT_VERSION_CHECK(4, 7, 0))
+
+#endif // defined WITH_POSIX_CLOCK_NANOSLEEP || defined WITH_WINMMTIMER
