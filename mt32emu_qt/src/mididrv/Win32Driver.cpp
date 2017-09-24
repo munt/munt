@@ -61,7 +61,7 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 				}
 				do
 					midiSessionID = (quint32)qrand();
-				while (driver->midiSessionIDs.indexOf(midiSessionID) >= 0);
+				while (midiSessionID == 0 || driver->midiSessionIDs.indexOf(midiSessionID) >= 0);
 				driver->midiSessionIDs.append(midiSessionID);
 				driver->showBalloon("Connected application:", appName);
 				qDebug() << "Win32MidiDriver: Connected application" << appName;
