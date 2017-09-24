@@ -23,11 +23,24 @@
 
 #include "../MidiPropertiesDialog.h"
 
+#if _WIN32_WINNT < 0x0500
+
+// Private message posted by the MME MIDI driver to initiate safe MIDI data transfer.
+#define WM_APP_DRV_HAS_DATA WM_APP + 1
+
+// Private message sent to the MME MIDI driver to retrieve the MIDI data available.
+#define DRVM_USER_WANTS_DATA 0x4000
+
+static HDRVR hdrv = NULL;
+
+#endif // _WIN32_WINNT < 0x0500
+
 static Win32MidiDriver *driver;
 static HWND hwnd = NULL;
 static MasterClockNanos startMasterClock; // FIXME: Should actually be per-session but doesn't seem to be a real win
 
 LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+//	qDebug() << "Win32MidiDriver: Got:" << "0x" + QString::number(uMsg, 16) << "0x" + QString::number(wParam, 16) << "0x" + QString::number(lParam, 16);
 	switch (uMsg) {
 	case WM_APP: {
 		// Closing session
@@ -42,6 +55,14 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 		driver->deleteMidiSession(midiSession);
 		return 1;
 	}
+
+#if _WIN32_WINNT < 0x0500
+	case WM_APP_DRV_HAS_DATA: {
+		if (hdrv != NULL) {
+			return SendDriverMessage(hdrv, DRVM_USER_WANTS_DATA, (LPARAM)hwnd, 0L);
+		}
+	}
+#endif // _WIN32_WINNT < 0x0500
 
 	case WM_COPYDATA: {
 		COPYDATASTRUCT *cds = (COPYDATASTRUCT *)lParam;
@@ -102,6 +123,7 @@ MidiSession *Win32MidiDriver::findMidiSession(quint32 midiSessionID) {
 }
 
 void Win32MidiInProcessor::run() {
+	qDebug() << "Win32MidiDriver: Win32MidiInProcessor started";
 	HINSTANCE hInstance = GetModuleHandle(NULL);
 	LPCTSTR mt32emuClassName = "mt32emu_class";
 	WNDCLASS wc;
@@ -116,7 +138,7 @@ void Win32MidiInProcessor::run() {
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = mt32emuClassName;
 	if (!RegisterClass(&wc)) {
-		qDebug() << "Error registering message class";
+		qDebug() << "Win32MidiDriver: Error registering message class";
 	}
 
 #ifndef HWND_MESSAGE
@@ -126,11 +148,42 @@ void Win32MidiInProcessor::run() {
 	hwnd = CreateWindow(mt32emuClassName, "mt32emu_message_window", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
 	if (hwnd == NULL) {
 		DWORD err = GetLastError();
-		qDebug() << "Error creating message window " << err << "\n";
+		qDebug() << "Win32MidiDriver: Error creating message window" << err;
 	}
+
+#if _WIN32_WINNT < 0x0500
+	hdrv = OpenDriver((LPCWSTR)"mt32emu.drv", NULL, 0L);
+	if (hdrv != NULL) {
+		qDebug() << "Win32MidiDriver: MME Driver instance opened";
+		SendDriverMessage(hdrv, DRVM_USER_WANTS_DATA, (LPARAM)hwnd, 0L);
+	} else {
+		qDebug() << "Win32MidiDriver: MME Driver instance failed to open";
+	}
+
+	for (;;) {
+		MSG msg;
+		int res = GetMessage(&msg, hwnd, WM_QUIT, WM_APP + 0x3FFF);
+		if (res <= 0) {
+			if (res < 0) {
+				DWORD err = GetLastError();
+				qDebug() << "Win32MidiDriver: Error in GetMessage()" << err;
+			}
+			break;
+		}
+		DispatchMessage(&msg);
+	}
+
+	if (hdrv != NULL) {
+		CloseDriver(hdrv, 0L, 0L);
+		qDebug() << "Win32MidiDriver: MME Driver instance closed";
+		hdrv = NULL;
+	}
+#else // _WIN32_WINNT < 0x0500
 	MSG msg;
 	GetMessage(&msg, hwnd, WM_QUIT, WM_QUIT);
+#endif // _WIN32_WINNT < 0x0500
 	hwnd = NULL;
+	qDebug() << "Win32MidiDriver: Win32MidiInProcessor stopped";
 }
 
 Win32MidiDriver::Win32MidiDriver(Master *useMaster) : MidiDriver(useMaster) {
