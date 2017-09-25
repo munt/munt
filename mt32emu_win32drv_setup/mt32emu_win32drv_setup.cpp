@@ -1,4 +1,4 @@
-/* Copyright (C) 2011, 2012 Sergey V. Mikayev
+/* Copyright (C) 2011-2017 Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -22,13 +22,17 @@ const char SYSTEM_DIR_NAME[] = "SYSTEM32";
 const char SYSTEM_ROOT_ENV_NAME[] = "SYSTEMROOT";
 const char INSTALL_COMMAND[] = "install";
 const char UNINSTALL_COMMAND[] = "uninstall";
+const char REPAIR_COMMAND[] = "repair";
 const char DRIVERS_REGISTRY_KEY[] = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Drivers32";
 const char PATH_SEPARATOR[] = "\\";
 
 const char SUCCESSFULLY_INSTALLED_MSG[] = "MT32Emu MIDI Driver successfully installed";
 const char SUCCESSFULLY_UPDATED_MSG[] = "MT32Emu MIDI Driver successfully updated";
 const char SUCCESSFULLY_UNINSTALLED_MSG[] = "MT32Emu MIDI Driver successfully uninstalled";
-const char USAGE_MSG[] = "Usage:\n  drvsetup install - install driver\n  drvsetup uninstall - uninstall driver";
+const char USAGE_MSG[] = "Usage:\n\n"
+	"  drvsetup install - install or update driver\n"
+	"  drvsetup uninstall - uninstall driver\n"
+	"  drvsetup repair - repair registry entry for installed driver";
 
 const char CANNOT_OPEN_REGISTRY_ERR[] = "Cannot open registry key";
 const char CANNOT_INSTALL_NO_PORTS_ERR[] = "Cannot install MT32Emu MIDI driver:\n There is no MIDI ports available";
@@ -43,7 +47,15 @@ const char ERROR_TITLE[] = "Error";
 const char REGISTRY_ERROR_TITLE[] = "Registry error";
 const char FILE_ERROR_TITLE[] = "File error";
 
-bool registerDriver(bool &installMode) {
+enum OperationMode {
+	UNKNOWN_MODE,
+	INSTALL_MODE,
+	UNINSTALL_MODE,
+	UPDATE_MODE,
+	REPAIR_MODE
+};
+
+bool registerDriver(OperationMode &mode) {
 	HKEY hReg;
 	if (RegOpenKeyA(HKEY_LOCAL_MACHINE, DRIVERS_REGISTRY_KEY, &hReg)) {
 		MessageBoxA(NULL, CANNOT_OPEN_REGISTRY_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
@@ -70,7 +82,7 @@ bool registerDriver(bool &installMode) {
 		}
 		if (!_stricmp(str, MT32EMU_DRIVER_NAME)) {
 			RegCloseKey(hReg);
-			installMode = false;
+			mode = UPDATE_MODE;
 			return true;
 		}
 		if (freeEntry != -1) continue;
@@ -177,43 +189,60 @@ void deleteFileReliably(char *pathName) {
 }
 
 int main(int argc, char *argv[]) {
-	if (argc != 2 || _stricmp(INSTALL_COMMAND, argv[1]) != 0 && _stricmp(UNINSTALL_COMMAND, argv[1]) != 0) {
-		MessageBoxA(NULL, USAGE_MSG, INFORMATION_TITLE, MB_OK | MB_ICONINFORMATION);
-		return 1;
+	OperationMode mode = UNKNOWN_MODE;
+	if (argc == 2) {
+		if (_stricmp(INSTALL_COMMAND, argv[1]) == 0) {
+			mode = INSTALL_MODE;
+		} else if (_stricmp(UNINSTALL_COMMAND, argv[1]) == 0) {
+			mode = UNINSTALL_MODE;
+		} else if (_stricmp(REPAIR_COMMAND, argv[1]) == 0) {
+			mode = REPAIR_MODE;
+		}
 	}
-	if (_stricmp(UNINSTALL_COMMAND, argv[1]) == 0) {
-		char pathName[MAX_PATH + 1];
-		constructDriverPathName(pathName);
-		deleteFileReliably(pathName);
-		unregisterDriver();
-		return 0;
+	switch (mode) {
+		case INSTALL_MODE: {
+			const char *pathDelimPosition = strrchr(argv[0], PATH_SEPARATOR[0]);
+			int setupPathLen = int(pathDelimPosition - argv[0]);
+			if (pathDelimPosition != NULL && setupPathLen > MAX_PATH - sizeof(MT32EMU_DRIVER_NAME) - 2) {
+				MessageBoxA(NULL, CANNOT_INSTALL_PATH_TOO_LONG_ERR, ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+				return 2;
+			}
+			if (!registerDriver(mode)) {
+				return 3;
+			}
+			char driverPathName[MAX_PATH + 1];
+			constructDriverPathName(driverPathName);
+			deleteFileReliably(driverPathName);
+			char setupPathName[MAX_PATH + 1];
+			if (pathDelimPosition == NULL) {
+				GetCurrentDirectoryA(sizeof(setupPathName), setupPathName);
+			} else {
+				strncpy(setupPathName, argv[0], setupPathLen);
+				setupPathName[setupPathLen] = 0;
+			}
+			strncat(setupPathName, PATH_SEPARATOR, MAX_PATH - strlen(setupPathName));
+			strncat(setupPathName, MT32EMU_DRIVER_NAME, MAX_PATH - strlen(setupPathName));
+			if (!CopyFileA(setupPathName, driverPathName, FALSE)) {
+				MessageBoxA(NULL, CANNOT_INSTALL_FILE_COPY_ERR, FILE_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+				return 4;
+			}
+			MessageBoxA(NULL, mode == INSTALL_MODE ? SUCCESSFULLY_INSTALLED_MSG : SUCCESSFULLY_UPDATED_MSG, INFORMATION_TITLE, MB_OK | MB_ICONINFORMATION);
+			return 0;
+		}
+
+		case REPAIR_MODE:
+			return registerDriver(mode) ? 0 : 3;
+
+		case UNINSTALL_MODE: {
+			char pathName[MAX_PATH + 1];
+			constructDriverPathName(pathName);
+			deleteFileReliably(pathName);
+			unregisterDriver();
+			return 0;
+		}
+
+		default:
+			MessageBoxA(NULL, USAGE_MSG, INFORMATION_TITLE, MB_OK | MB_ICONINFORMATION);
+			return 1;
 	}
-	const char *pathDelimPosition = strrchr(argv[0], '\\');
-	int setupPathLen = pathDelimPosition - argv[0];
-	if (pathDelimPosition != NULL && setupPathLen > MAX_PATH - sizeof(MT32EMU_DRIVER_NAME) - 2) {
-		MessageBoxA(NULL, CANNOT_INSTALL_PATH_TOO_LONG_ERR, ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
-		return 2;
-	}
-	bool installMode = true;
-	if (!registerDriver(installMode)) {
-		return 3;
-	}
-	char driverPathName[MAX_PATH + 1];
-	constructDriverPathName(driverPathName);
-	deleteFileReliably(driverPathName);
-	char setupPathName[MAX_PATH + 1];
-	if (pathDelimPosition == NULL) {
-		GetCurrentDirectoryA(sizeof(setupPathName), setupPathName);
-	} else {
-		strncpy(setupPathName, argv[0], setupPathLen);
-		setupPathName[setupPathLen] = 0;
-	}
-	strncat(setupPathName, PATH_SEPARATOR, MAX_PATH - strlen(setupPathName));
-	strncat(setupPathName, MT32EMU_DRIVER_NAME, MAX_PATH - strlen(setupPathName));
-	if (!CopyFileA(setupPathName, driverPathName, FALSE)) {
-		MessageBoxA(NULL, CANNOT_INSTALL_FILE_COPY_ERR, FILE_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
-		return 4;
-	}
-	MessageBoxA(NULL, installMode ? SUCCESSFULLY_INSTALLED_MSG : SUCCESSFULLY_UPDATED_MSG, INFORMATION_TITLE, MB_OK | MB_ICONINFORMATION);
-	return 0;
 }
