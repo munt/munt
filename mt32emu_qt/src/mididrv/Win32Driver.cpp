@@ -25,13 +25,26 @@
 
 #if _WIN32_WINNT < 0x0500
 
-// Private message posted by the MME MIDI driver to initiate safe MIDI data transfer.
+// Private message posted by the MME MIDI driver to inform when MIDI data becomes available.
 #define WM_APP_DRV_HAS_DATA WM_APP + 1
 
-// Private message sent to the MME MIDI driver to retrieve the MIDI data available.
-#define DRVM_USER_WANTS_DATA 0x4000
+#define RING_BUFFER_SIZE 0x8000
 
-static HDRVR hdrv = NULL;
+#define BUFFER_END_MARKER 0
+#define BUFFER_WRAP_MARKER 1
+#define SHORT_MESSAGE_MARKER 2
+#define MT32EMU_MAGIC 0x3264
+
+/* The data block format is as follows:
+ * WORD - block length
+ * WORD - synth instance ID
+ * DWORD - millisecond timestamp
+ * data payload:
+ * - either DWORD for short message
+ * - raw data bytes for long message
+ */
+#define DATA_HEADER_LENGTH 8
+#define SHORT_MESSAGE_LENGTH 4
 
 #endif // _WIN32_WINNT < 0x0500
 
@@ -58,9 +71,75 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 
 #if _WIN32_WINNT < 0x0500
 	case WM_APP_DRV_HAS_DATA: {
-		if (hdrv != NULL) {
-			return SendDriverMessage(hdrv, DRVM_USER_WANTS_DATA, (LPARAM)hwnd, 0L);
+		const PBYTE ringBuffer = (PBYTE)lParam;
+		if (*((PWORD)&ringBuffer[RING_BUFFER_SIZE] + 2) != MT32EMU_MAGIC) {
+			qDebug() << "Win32MidiDriver: Magic not matched:" << "0x" + QString::number(*((PWORD)&ringBuffer[RING_BUFFER_SIZE] + 2), 16);
+			return 0;
 		}
+		const PWORD ringBufferStart = (PWORD)&ringBuffer[RING_BUFFER_SIZE];
+//		qDebug() << "Win32MidiDriver: ringBufferStart:" << *ringBufferStart;
+//		qDebug() << "Win32MidiDriver: ringBufferEnd:" << *((PWORD)&ringBuffer[RING_BUFFER_SIZE] + 1);
+		for (;;) {
+			union {
+				PBYTE b;
+				PWORD w;
+				PDWORD d;
+			} p;
+			p.b = &ringBuffer[*ringBufferStart];
+			DWORD dataBlockLength = *p.w++;
+			DWORD longDataLength = 0;
+
+			switch (dataBlockLength) {
+			case BUFFER_END_MARKER:
+//				qDebug() << "Win32MidiDriver: BUFFER_END_MARKER";
+				return 1;
+
+			case BUFFER_WRAP_MARKER:
+				*ringBufferStart = 0;
+//				qDebug() << "Win32MidiDriver: BUFFER_WRAP_MARKER";
+				continue;
+
+			case SHORT_MESSAGE_MARKER:
+				dataBlockLength = DATA_HEADER_LENGTH + SHORT_MESSAGE_LENGTH;
+				break;
+
+			default:
+				if (dataBlockLength <= DATA_HEADER_LENGTH || RING_BUFFER_SIZE < dataBlockLength) {
+					qDebug() << "Win32MidiDriver: Invalid long data block length:" << dataBlockLength;
+					return 0;
+				}
+				longDataLength = dataBlockLength - DATA_HEADER_LENGTH;
+				break;
+			}
+#if 0
+			QString data;
+			for (uint i = 0; i < dataBlockLength - 2; i++) {
+				data += QString::number(p.b[i], 16);
+				data += " ";
+			}
+			qDebug() << "Win32MidiDriver: DATA:" << data;
+#endif
+			const DWORD midiSessionID = *p.w++;
+			MidiSession * const midiSession = driver->findMidiSession(midiSessionID);
+			if (!midiSession) {
+				qDebug() << "Win32MidiDriver: Invalid midiSession ID supplied:" << "0x" + QString::number(midiSessionID, 16);
+				*ringBufferStart += dataBlockLength;
+				continue;
+			}
+			const MasterClockNanos timestamp = *p.d++ * MasterClock::NANOS_PER_MILLISECOND;
+			// Use QMidiStreamParser to extract well-formed MIDI messages from buffer
+			QMidiStreamParser &qMidiStreamParser = *midiSession->getQMidiStreamParser();
+			qMidiStreamParser.setTimestamp(timestamp - startMasterClock);
+			if (longDataLength) {
+//				qDebug() << "Win32MidiDriver: LONG_DATA length:" << longDataLength;
+				qMidiStreamParser.parseStream(p.b, longDataLength);
+			} else {
+//				qDebug() << "Win32MidiDriver: SHORT_MESSAGE:" << "0x" + QString::number(*p.d, 16);
+				qMidiStreamParser.processShortMessage(*p.d);
+			}
+			*ringBufferStart += dataBlockLength;
+		}
+		return 1;
 	}
 #endif // _WIN32_WINNT < 0x0500
 
@@ -152,14 +231,6 @@ void Win32MidiInProcessor::run() {
 	}
 
 #if _WIN32_WINNT < 0x0500
-	hdrv = OpenDriver((LPCWSTR)"mt32emu.drv", NULL, 0L);
-	if (hdrv != NULL) {
-		qDebug() << "Win32MidiDriver: MME Driver instance opened";
-		SendDriverMessage(hdrv, DRVM_USER_WANTS_DATA, (LPARAM)hwnd, 0L);
-	} else {
-		qDebug() << "Win32MidiDriver: MME Driver instance failed to open";
-	}
-
 	for (;;) {
 		MSG msg;
 		int res = GetMessage(&msg, hwnd, WM_QUIT, WM_APP + 0x3FFF);
@@ -171,12 +242,6 @@ void Win32MidiInProcessor::run() {
 			break;
 		}
 		DispatchMessage(&msg);
-	}
-
-	if (hdrv != NULL) {
-		CloseDriver(hdrv, 0L, 0L);
-		qDebug() << "Win32MidiDriver: MME Driver instance closed";
-		hdrv = NULL;
 	}
 #else // _WIN32_WINNT < 0x0500
 	MSG msg;
