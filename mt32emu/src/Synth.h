@@ -153,7 +153,7 @@ private:
 	const char (*soundGroupNames)[9]; // Array
 
 	Bit32u partialCount;
-	Bit8u chantable[16]; // NOTE: value above 8 means that the channel is not assigned
+	Bit8u nukeme[16]; // FIXME: Nuke it. For binary compatibility only.
 
 	MidiEventQueue *midiQueue;
 	volatile Bit32u lastReceivedMIDIEventTimestamp;
@@ -198,6 +198,7 @@ private:
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
 	bool isAbortingPoly() const { return abortingPoly != NULL; }
 
+	void writeSysexGlobal(Bit32u addr, const Bit8u *sysex, Bit32u len);
 	void readSysex(Bit8u channel, const Bit8u *sysex, Bit32u len) const;
 	void initMemoryRegions();
 	void deleteMemoryRegions();

@@ -195,6 +195,13 @@ public:
 	RendererType selectedRendererType;
 	Bit32s masterTunePitchDelta;
 	bool niceAmpRamp;
+
+	// Here we keep the reverse mapping of assigned parts per MIDI channel.
+	// NOTE: value above 8 means that the channel is not assigned
+	Bit8u chantable[16][9];
+
+	// This stores the index of Part in chantable that failed to play and required partial abortion.
+	Bit32u abortingPartIx;
 };
 
 Bit32u Synth::getLibraryVersionInt() {
@@ -594,6 +601,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 	}
 	partialCount = usePartialCount;
 	abortingPoly = NULL;
+	extensions.abortingPartIx = 0;
 
 	// This is to help detect bugs
 	memset(&mt32ram, '?', sizeof(mt32ram));
@@ -955,14 +963,24 @@ void Synth::playMsgNow(Bit32u msg) {
 
 	//printDebug("Playing chan %d, code 0x%01x note: 0x%02x", chan, code, note);
 
-	Bit8u part = chantable[chan];
-	if (part > 8) {
+	Bit8u *chanParts = extensions.chantable[chan];
+	if (*chanParts > 8) {
 #if MT32EMU_MONITOR_MIDI > 0
 		printDebug("Play msg on unreg chan %d (%d): code=0x%01x, vel=%d", chan, part, code, velocity);
 #endif
 		return;
 	}
-	playMsgOnPart(part, code, note, velocity);
+	for (Bit32u i = extensions.abortingPartIx; i <= 8; i++) {
+		const Bit32u partNum = chanParts[i];
+		if (partNum > 8) break;
+		playMsgOnPart(partNum, code, note, velocity);
+		if (isAbortingPoly()) {
+			extensions.abortingPartIx = i;
+			break;
+		} else if (extensions.abortingPartIx) {
+			extensions.abortingPartIx = 0;
+		}
+	}
 }
 
 void Synth::playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) {
@@ -1193,45 +1211,59 @@ void Synth::writeSysex(Bit8u device, const Bit8u *sysex, Bit32u len) {
 		printDebug("WRITE-CHANNEL: Channel %d temp area 0x%06x", device, MT32EMU_SYSEXMEMADDR(addr));
 #endif
 		if (/*addr >= MT32EMU_MEMADDR(0x000000) && */addr < MT32EMU_MEMADDR(0x010000)) {
-			int offset;
-			if (chantable[device] > 8) {
+			addr += MT32EMU_MEMADDR(0x030000);
+			Bit8u *parts = extensions.chantable[device];
+			if (*parts > 8) {
 #if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Channel not mapped to a part... 0 offset)");
 #endif
-				offset = 0;
-			} else if (chantable[device] == 8) {
-#if MT32EMU_MONITOR_SYSEX > 0
-				printDebug(" (Channel mapped to rhythm... 0 offset)");
-#endif
-				offset = 0;
 			} else {
-				offset = chantable[device] * sizeof(MemParams::PatchTemp);
+				for (Bit32u partIx = 0; partIx <= 8; partIx++) {
+					if (parts[partIx] > 8) break;
+					int offset;
+					if (parts[partIx] == 8) {
 #if MT32EMU_MONITOR_SYSEX > 0
-				printDebug(" (Setting extra offset to %d)", offset);
+						printDebug(" (Channel mapped to rhythm... 0 offset)");
 #endif
+						offset = 0;
+					} else {
+						offset = parts[partIx] * sizeof(MemParams::PatchTemp);
+#if MT32EMU_MONITOR_SYSEX > 0
+						printDebug(" (Setting extra offset to %d)", offset);
+#endif
+					}
+					writeSysexGlobal(addr + offset, sysex, len);
+				}
+				return;
 			}
-			addr += MT32EMU_MEMADDR(0x030000) + offset;
 		} else if (/*addr >= MT32EMU_MEMADDR(0x010000) && */ addr < MT32EMU_MEMADDR(0x020000)) {
 			addr += MT32EMU_MEMADDR(0x030110) - MT32EMU_MEMADDR(0x010000);
 		} else if (/*addr >= MT32EMU_MEMADDR(0x020000) && */ addr < MT32EMU_MEMADDR(0x030000)) {
-			int offset;
-			if (chantable[device] > 8) {
+			addr += MT32EMU_MEMADDR(0x040000) - MT32EMU_MEMADDR(0x020000);
+			Bit8u *parts = extensions.chantable[device];
+			if (*parts > 8) {
 #if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Channel not mapped to a part... 0 offset)");
 #endif
-				offset = 0;
-			} else if (chantable[device] == 8) {
-#if MT32EMU_MONITOR_SYSEX > 0
-				printDebug(" (Channel mapped to rhythm... 0 offset)");
-#endif
-				offset = 0;
 			} else {
-				offset = chantable[device] * sizeof(TimbreParam);
+				for (Bit32u partIx = 0; partIx <= 8; partIx++) {
+					if (parts[partIx] > 8) break;
+					int offset;
+					if (parts[partIx] == 8) {
 #if MT32EMU_MONITOR_SYSEX > 0
-				printDebug(" (Setting extra offset to %d)", offset);
+						printDebug(" (Channel mapped to rhythm... 0 offset)");
 #endif
+						offset = 0;
+					} else {
+						offset = parts[partIx] * sizeof(TimbreParam);
+#if MT32EMU_MONITOR_SYSEX > 0
+						printDebug(" (Setting extra offset to %d)", offset);
+#endif
+					}
+					writeSysexGlobal(addr + offset, sysex, len);
+				}
+				return;
 			}
-			addr += MT32EMU_MEMADDR(0x040000) - MT32EMU_MEMADDR(0x020000) + offset;
 		} else {
 #if MT32EMU_MONITOR_SYSEX > 0
 			printDebug(" Invalid channel");
@@ -1239,8 +1271,11 @@ void Synth::writeSysex(Bit8u device, const Bit8u *sysex, Bit32u len) {
 			return;
 		}
 	}
+	writeSysexGlobal(addr, sysex, len);
+}
 
-	// Process device-global sysex (possibly converted from channel-specific sysex above)
+// Process device-global sysex (possibly converted from channel-specific sysex above)
+void Synth::writeSysexGlobal(Bit32u addr, const Bit8u *sysex, Bit32u len) {
 	for (;;) {
 		// Find the appropriate memory region
 		const MemoryRegion *region = findMemoryRegion(addr);
@@ -1641,9 +1676,10 @@ void Synth::refreshSystemReserveSettings() {
 }
 
 void Synth::refreshSystemChanAssign(Bit8u firstPart, Bit8u lastPart) {
-	memset(chantable, 0xFF, sizeof(chantable));
+	memset(extensions.chantable, 0xFF, sizeof(extensions.chantable));
 
-	// CONFIRMED: In the case of assigning a channel to multiple parts, the lower part wins.
+	// CONFIRMED: In the case of assigning a MIDI channel to multiple parts,
+	//            the messages received on that MIDI channel are handled by all the parts.
 	for (Bit32u i = 0; i <= 8; i++) {
 		if (parts[i] != NULL && i >= firstPart && i <= lastPart) {
 			// CONFIRMED: Decay is started for all polys, and all controllers are reset, for every part whose assignment was touched by the sysex write.
@@ -1651,8 +1687,13 @@ void Synth::refreshSystemChanAssign(Bit8u firstPart, Bit8u lastPart) {
 			parts[i]->resetAllControllers();
 		}
 		Bit8u chan = mt32ram.system.chanAssign[i];
-		if (chan < 16 && chantable[chan] > 8) {
-			chantable[chan] = Bit8u(i);
+		if (chan > 15) continue;
+		Bit8u *parts = extensions.chantable[chan];
+		for (Bit32u j = 0; j <= 8; j++) {
+			if (parts[j] > 8) {
+				parts[j] = Bit8u(i);
+				break;
+			}
 		}
 	}
 
