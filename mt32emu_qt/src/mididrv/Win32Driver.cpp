@@ -220,11 +220,16 @@ void Win32MidiInProcessor::run() {
 		qDebug() << "Win32MidiDriver: Error registering message class";
 	}
 
-#ifndef HWND_MESSAGE
-#define HWND_MESSAGE ((HWND)-3)
+#if _WIN32_WINNT < 0x0500
+#define HWND_MESSAGE NULL
 #endif
 
 	hwnd = CreateWindow(mt32emuClassName, "mt32emu_message_window", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
+
+#if _WIN32_WINNT < 0x0500
+#undef HWND_MESSAGE
+#endif
+
 	if (hwnd == NULL) {
 		DWORD err = GetLastError();
 		qDebug() << "Win32MidiDriver: Error creating message window" << err;
