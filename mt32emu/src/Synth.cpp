@@ -1212,22 +1212,22 @@ void Synth::writeSysex(Bit8u device, const Bit8u *sysex, Bit32u len) {
 #endif
 		if (/*addr >= MT32EMU_MEMADDR(0x000000) && */addr < MT32EMU_MEMADDR(0x010000)) {
 			addr += MT32EMU_MEMADDR(0x030000);
-			Bit8u *parts = extensions.chantable[device];
-			if (*parts > 8) {
+			Bit8u *chanParts = extensions.chantable[device];
+			if (*chanParts > 8) {
 #if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Channel not mapped to a part... 0 offset)");
 #endif
 			} else {
 				for (Bit32u partIx = 0; partIx <= 8; partIx++) {
-					if (parts[partIx] > 8) break;
+					if (chanParts[partIx] > 8) break;
 					int offset;
-					if (parts[partIx] == 8) {
+					if (chanParts[partIx] == 8) {
 #if MT32EMU_MONITOR_SYSEX > 0
 						printDebug(" (Channel mapped to rhythm... 0 offset)");
 #endif
 						offset = 0;
 					} else {
-						offset = parts[partIx] * sizeof(MemParams::PatchTemp);
+						offset = chanParts[partIx] * sizeof(MemParams::PatchTemp);
 #if MT32EMU_MONITOR_SYSEX > 0
 						printDebug(" (Setting extra offset to %d)", offset);
 #endif
@@ -1240,22 +1240,22 @@ void Synth::writeSysex(Bit8u device, const Bit8u *sysex, Bit32u len) {
 			addr += MT32EMU_MEMADDR(0x030110) - MT32EMU_MEMADDR(0x010000);
 		} else if (/*addr >= MT32EMU_MEMADDR(0x020000) && */ addr < MT32EMU_MEMADDR(0x030000)) {
 			addr += MT32EMU_MEMADDR(0x040000) - MT32EMU_MEMADDR(0x020000);
-			Bit8u *parts = extensions.chantable[device];
-			if (*parts > 8) {
+			Bit8u *chanParts = extensions.chantable[device];
+			if (*chanParts > 8) {
 #if MT32EMU_MONITOR_SYSEX > 0
 				printDebug(" (Channel not mapped to a part... 0 offset)");
 #endif
 			} else {
 				for (Bit32u partIx = 0; partIx <= 8; partIx++) {
-					if (parts[partIx] > 8) break;
+					if (chanParts[partIx] > 8) break;
 					int offset;
-					if (parts[partIx] == 8) {
+					if (chanParts[partIx] == 8) {
 #if MT32EMU_MONITOR_SYSEX > 0
 						printDebug(" (Channel mapped to rhythm... 0 offset)");
 #endif
 						offset = 0;
 					} else {
-						offset = parts[partIx] * sizeof(TimbreParam);
+						offset = chanParts[partIx] * sizeof(TimbreParam);
 #if MT32EMU_MONITOR_SYSEX > 0
 						printDebug(" (Setting extra offset to %d)", offset);
 #endif
@@ -1688,10 +1688,10 @@ void Synth::refreshSystemChanAssign(Bit8u firstPart, Bit8u lastPart) {
 		}
 		Bit8u chan = mt32ram.system.chanAssign[i];
 		if (chan > 15) continue;
-		Bit8u *parts = extensions.chantable[chan];
+		Bit8u *chanParts = extensions.chantable[chan];
 		for (Bit32u j = 0; j <= 8; j++) {
-			if (parts[j] > 8) {
-				parts[j] = Bit8u(i);
+			if (chanParts[j] > 8) {
+				chanParts[j] = Bit8u(i);
 				break;
 			}
 		}
