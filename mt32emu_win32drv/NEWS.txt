@@ -1,3 +1,10 @@
+HEAD:
+
+	* Fixed inappropriate implementation of MODM_GETDEVCAPS message that sometimes resulted in returning unreadable
+	  driver name to the consumer MIDI application.
+	* In Windows MIDI driver setup tool, implemented "repair" command. This command allows to restore the registry entry
+	  used by driver which may be overwritten by Windows or some other application.
+
 2017-07-29:
 
 	1.4.0 released.

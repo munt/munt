@@ -1,3 +1,11 @@
+HEAD:
+
+	* Replaced application icon for mt32emu-qt with a new nicer one.
+	* Fixed a few minor bugs in MIDI player dialog.
+	* Fixed various issues with accessing files with localised pathnames.
+	* Improved timing accuracy of realtime rendering.
+	* Added experimental support for Windows 9x platform. As a side effect, Qt version 4.5.3 is now supported.
+
 2017-07-29:
 
 	1.6.0 released.
