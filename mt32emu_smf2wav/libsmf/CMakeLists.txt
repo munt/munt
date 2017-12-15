@@ -3,6 +3,25 @@ project(libsmf C)
 set(libsmf_VERSION_MAJOR 1)
 set(libsmf_VERSION_MINOR 2)
 
+# We prefer to link embedded libsmf statically into higher-level projects to avoid version conflicts.
+# This option enforces shared library build.
+option(libsmf_SHARED "Build shared library" OFF)
+mark_as_advanced(libsmf_SHARED)
+
+if(libsmf_SHARED)
+  if(MSVC)
+    message(FATAL_ERROR "DLL build is unsupported with MSVC")
+  endif()
+  set(libsmf_BUILD_TYPE SHARED)
+else()
+  set(libsmf_BUILD_TYPE STATIC)
+endif()
+
+set(libsmf_EXT_LIBS ${GLIB2_LIBRARIES})
+if(NOT MSVC)
+  list(APPEND libsmf_EXT_LIBS m)
+endif()
+
 find_package(GLIB2 REQUIRED)
 include_directories(${GLIB2_INCLUDE_DIRS})
 
@@ -18,7 +37,7 @@ if(MSVC)
   add_definitions(-D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1 -D_CRT_SECURE_NO_WARNINGS=1)
 endif()
 
-add_library(smf
+add_library(smf ${libsmf_BUILD_TYPE}
   src/smf.c
   src/smf_decode.c
   src/smf_load.c
@@ -26,4 +45,4 @@ add_library(smf
   src/smf_tempo.c
 )
 
-target_link_libraries(smf ${GLIB2_LIBRARIES})
+target_link_libraries(smf ${libsmf_EXT_LIBS})
