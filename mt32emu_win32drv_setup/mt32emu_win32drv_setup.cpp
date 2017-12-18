@@ -17,8 +17,13 @@
 #include "stdafx.h"
 
 const char MT32EMU_DRIVER_NAME[] = "mt32emu.dll";
+const char MT32EMU_DRIVER_NAME_X64[] = "mt32emu_x64.dll";
+const char MIDI_REGISTRY_ENTRY_TEMPLATE[] = "midi?";
+const int MIDI_REGISTRY_ENTRY_TEMPLATE_VAR_INDEX = sizeof(MIDI_REGISTRY_ENTRY_TEMPLATE) - 2;
 const char WDM_DRIVER_NAME[] = "wdmaud.drv";
 const char SYSTEM_DIR_NAME[] = "SYSTEM32";
+const char SYSTEM_WOW64_DIR_NAME[] = "SysWOW64";
+const char SYSTEM_X64_DIR_NAME[] = "Sysnative";
 const char SYSTEM_ROOT_ENV_NAME[] = "SYSTEMROOT";
 const char INSTALL_COMMAND[] = "install";
 const char UNINSTALL_COMMAND[] = "uninstall";
@@ -35,139 +40,235 @@ const char USAGE_MSG[] = "Usage:\n\n"
 	"  drvsetup repair - repair registry entry for installed driver";
 
 const char CANNOT_OPEN_REGISTRY_ERR[] = "Cannot open registry key";
+const char CANNOT_OPEN_REGISTRY_32_ERR[] = "Cannot open 32-bit registry key";
 const char CANNOT_INSTALL_NO_PORTS_ERR[] = "Cannot install MT32Emu MIDI driver:\n There is no MIDI ports available";
 const char CANNOT_REGISTER_ERR[] = "Cannot register driver";
+const char CANNOT_REGISTER_32_ERR[] = "Cannot register 32-bit driver";
 const char CANNOT_UNINSTALL_ERR[] = "Cannot uninstall MT32Emu MIDI driver";
+const char CANNOT_UNINSTALL_32_ERR[] = "Cannot uninstall 32-bit MT32Emu MIDI driver";
 const char CANNOT_UNINSTALL_NOT_FOUND_ERR[] = "Cannot uninstall MT32Emu MIDI driver:\n There is no driver registry entry found";
 const char CANNOT_INSTALL_PATH_TOO_LONG_ERR[] = "MT32Emu MIDI Driver cannot be installed:\n Installation path is too long";
 const char CANNOT_INSTALL_FILE_COPY_ERR[] = "MT32Emu MIDI Driver failed to install:\n File copying error";
+const char CANNOT_INSTALL_32_FILE_COPY_ERR[] = "32-bit MT32Emu MIDI Driver failed to install:\n File copying error";
 
 const char INFORMATION_TITLE[] = "Information";
 const char ERROR_TITLE[] = "Error";
 const char REGISTRY_ERROR_TITLE[] = "Registry error";
 const char FILE_ERROR_TITLE[] = "File error";
 
-enum OperationMode {
-	UNKNOWN_MODE,
-	INSTALL_MODE,
-	UNINSTALL_MODE,
-	UPDATE_MODE,
-	REPAIR_MODE
+enum ProcessReturnCode {
+	ProcessReturnCode_OK = 0,
+	ProcessReturnCode_ERR_UNRECOGNISED_OPERATION_MODE = 1,
+	ProcessReturnCode_ERR_PATH_TOO_LONG = 2,
+	ProcessReturnCode_ERR_REGISTERING_DRIVER = 3,
+	ProcessReturnCode_ERR_COPYING_FILE = 4
 };
 
-bool registerDriver(OperationMode &mode) {
-	HKEY hReg;
-	if (RegOpenKeyA(HKEY_LOCAL_MACHINE, DRIVERS_REGISTRY_KEY, &hReg)) {
-		MessageBoxA(NULL, CANNOT_OPEN_REGISTRY_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+enum OperationMode {
+	OperationMode_UNKNOWN,
+	OperationMode_INSTALL,
+	OperationMode_UNINSTALL,
+	OperationMode_REPAIR
+};
+
+enum RegisterDriverResult {
+	RegisterDriverResult_OK,
+	RegisterDriverResult_FAILED,
+	RegisterDriverResult_ALREADY_EXISTS
+};
+
+class MidiRegistryEntryName {
+public:
+	MidiRegistryEntryName() {
+		strncpy(entryName, MIDI_REGISTRY_ENTRY_TEMPLATE, sizeof(MIDI_REGISTRY_ENTRY_TEMPLATE));
+	}
+
+	MidiRegistryEntryName *withIndex(int index) {
+		entryName[MIDI_REGISTRY_ENTRY_TEMPLATE_VAR_INDEX] = 0 < index && index < 10 ? '0' + index : 0;
+		return this;
+	}
+
+	const char *toCString() {
+		return entryName;
+	}
+
+private:
+	char entryName[sizeof(MIDI_REGISTRY_ENTRY_TEMPLATE)];
+};
+
+typedef WINBASEAPI BOOL(WINAPI *IsWow64Process)(_In_ HANDLE hProcess, _Out_ PBOOL wow64Process);
+
+// Function IsWow64Process() is only available since _WIN32_WINNT 0x0501, so it is linked lazily.
+static bool isWow64Process() {
+	const IsWow64Process fnIsWow64Process = (IsWow64Process)GetProcAddress(GetModuleHandle(TEXT("kernel32")), "IsWow64Process");
+	// If IsWow64Process is undefined, this is a 32-bit system.
+	if (NULL == fnIsWow64Process) {
 		return false;
 	}
+	BOOL wow64Process;
+	// If this call fails, just assume a 32-bit system.
+	if (!fnIsWow64Process(GetCurrentProcess(), &wow64Process)) {
+		return false;
+	}
+	return wow64Process != FALSE;
+}
+
+// Ideally, there should be a free entry to use but WDM entries can also be used when they fill up all available entries.
+// Although, the first entry shouldn't be modified. Besides, this is not 100% safe since the WDM entry may be removed
+// by the system when the mapped WDM driver is deinstalled. But this is better than nothing in this case.
+static bool findFreeMidiRegEntry(int &entryIx, HKEY hReg, MidiRegistryEntryName &entryName) {
+	int freeEntryIx = -1;
+	int wdmEntryIx = -1;
 	char str[255];
-	char drvName[] = "midi0";
-	DWORD len, res;
-	bool wdmEntryFound = false;
-	int freeEntry = -1;
 	for (int i = 0; i < 10; i++) {
-		len = 255;
-		if (i) {
-			drvName[4] = '0' + i;
-		} else {
-			drvName[4] = 0;
-		}
-		res = RegQueryValueExA(hReg, drvName, NULL, NULL, (LPBYTE)str, &len);
+		DWORD len = 255;
+		LSTATUS res = RegQueryValueExA(hReg, entryName.withIndex(i)->toCString(), NULL, NULL, (LPBYTE)str, &len);
 		if (res != ERROR_SUCCESS) {
-			if ((freeEntry == -1) && (res == ERROR_FILE_NOT_FOUND)) {
-				freeEntry = i;
+			if (res == ERROR_FILE_NOT_FOUND && freeEntryIx == -1) {
+				freeEntryIx = i;
 			}
 			continue;
 		}
-		if (!_stricmp(str, MT32EMU_DRIVER_NAME)) {
-			RegCloseKey(hReg);
-			mode = UPDATE_MODE;
-			return true;
+		if (_stricmp(str, MT32EMU_DRIVER_NAME) == 0) {
+			entryIx = i;
+			return false;
 		}
-		if (freeEntry != -1) continue;
-		if (strlen(str) == 0) {
-			freeEntry = i;
-		} else if (!_stricmp(str, WDM_DRIVER_NAME)) {
-			// Considering multiple WDM entries are just garbage, though one entry shouldn't be modified
-			if (wdmEntryFound) {
-				freeEntry = i;
-			} else {
-				wdmEntryFound = true;
+		if (freeEntryIx == -1) {
+			if (strlen(str) == 0) {
+				freeEntryIx = i;
+				continue;
+			}
+			if (i > 0 && wdmEntryIx == -1 && _stricmp(str, WDM_DRIVER_NAME) == 0) {
+				wdmEntryIx = i;
 			}
 		}
 	}
-	if (freeEntry == -1) {
-		MessageBoxA(NULL, CANNOT_INSTALL_NO_PORTS_ERR, ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
-		RegCloseKey(hReg);
+	// Fall back to using a WDM entry if there is no free one.
+	entryIx = freeEntryIx != -1 ? freeEntryIx : wdmEntryIx;
+	return entryIx != -1;
+}
+
+static int findMt32emuRegEntry(HKEY hReg, MidiRegistryEntryName &entryName) {
+	char str[255];
+	for (int i = 0; i < 10; i++) {
+		DWORD len = 255;
+		LSTATUS res = RegQueryValueExA(hReg, entryName.withIndex(i)->toCString(), NULL, NULL, (LPBYTE)str, &len);
+		if (res == ERROR_SUCCESS && _stricmp(str, MT32EMU_DRIVER_NAME) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static bool registerDriverInWow(const char *mt32emuEntryName) {
+	HKEY hReg;
+	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, DRIVERS_REGISTRY_KEY, 0L, KEY_ALL_ACCESS | KEY_WOW64_32KEY, &hReg)) {
+		MessageBoxA(NULL, CANNOT_OPEN_REGISTRY_32_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		return false;
 	}
-	if (freeEntry) {
-		drvName[4] = '0' + freeEntry;
-	} else {
-		drvName[4] = 0;
-	}
-	res = RegSetValueExA(hReg, drvName, NULL, REG_SZ, (LPBYTE)MT32EMU_DRIVER_NAME, sizeof(MT32EMU_DRIVER_NAME));
-	if (res != ERROR_SUCCESS) {
-		MessageBoxA(NULL, CANNOT_REGISTER_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
-		RegCloseKey(hReg);
-		return false;
-	}
+	LSTATUS res = RegSetValueExA(hReg, mt32emuEntryName, NULL, REG_SZ, (LPBYTE)MT32EMU_DRIVER_NAME, sizeof(MT32EMU_DRIVER_NAME));
 	RegCloseKey(hReg);
+	if (res != ERROR_SUCCESS) {
+		MessageBoxA(NULL, CANNOT_REGISTER_32_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return false;
+	}
 	return true;
 }
 
-void unregisterDriver() {
+static RegisterDriverResult registerDriver(const bool wow64Process) {
 	HKEY hReg;
-	if (RegOpenKeyA(HKEY_LOCAL_MACHINE, DRIVERS_REGISTRY_KEY, &hReg)) {
+	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, DRIVERS_REGISTRY_KEY, 0L, (wow64Process ? (KEY_ALL_ACCESS | KEY_WOW64_64KEY) : KEY_ALL_ACCESS), &hReg)) {
 		MessageBoxA(NULL, CANNOT_OPEN_REGISTRY_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return RegisterDriverResult_FAILED;
+	}
+	MidiRegistryEntryName entryName;
+	int entryIx;
+	if (!findFreeMidiRegEntry(entryIx, hReg, entryName)) {
+		RegCloseKey(hReg);
+		if (entryIx == -1) {
+			MessageBoxA(NULL, CANNOT_INSTALL_NO_PORTS_ERR, ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+			return RegisterDriverResult_FAILED;
+		}
+		const char *mt32emuEntryName = entryName.withIndex(entryIx)->toCString();
+		if (wow64Process && !registerDriverInWow(mt32emuEntryName)) {
+			return RegisterDriverResult_FAILED;
+		}
+		return RegisterDriverResult_ALREADY_EXISTS;
+	}
+	const char *freeEntryName = entryName.withIndex(entryIx)->toCString();
+	LSTATUS res = RegSetValueExA(hReg, freeEntryName, NULL, REG_SZ, (LPBYTE)MT32EMU_DRIVER_NAME, sizeof(MT32EMU_DRIVER_NAME));
+	RegCloseKey(hReg);
+	if (res != ERROR_SUCCESS) {
+		MessageBoxA(NULL, CANNOT_REGISTER_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return RegisterDriverResult_FAILED;
+	}
+	if (wow64Process && !registerDriverInWow(freeEntryName)) {
+		return RegisterDriverResult_FAILED;
+	}
+	return RegisterDriverResult_OK;
+}
+
+static void unregisterDriverInWow(const char *mt32emuEntryName) {
+	HKEY hReg;
+	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, DRIVERS_REGISTRY_KEY, 0L, KEY_ALL_ACCESS | KEY_WOW64_32KEY, &hReg)) {
+		MessageBoxA(NULL, CANNOT_OPEN_REGISTRY_32_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		return;
 	}
 	char str[255];
-	char drvName[] = "midi0";
-	DWORD len, res;
-	for (int i = 0; i < 10; i++) {
-		len = 255;
-		if (i) {
-			drvName[4] = '0' + i;
-		} else {
-			drvName[4] = 0;
-		}
-		res = RegQueryValueExA(hReg, drvName, NULL, NULL, (LPBYTE)str, &len);
-		if (res != ERROR_SUCCESS) {
-			continue;
-		}
-		if (!_stricmp(str, MT32EMU_DRIVER_NAME)) {
-			res = RegDeleteValueA(hReg, drvName);
-			if (res != ERROR_SUCCESS) {
-				MessageBoxA(NULL, CANNOT_UNINSTALL_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
-				RegCloseKey(hReg);
-				return;
-			}
-			MessageBoxA(NULL, SUCCESSFULLY_UNINSTALLED_MSG, INFORMATION_TITLE, MB_OK | MB_ICONINFORMATION);
-			RegCloseKey(hReg);
-			return;
-		}
+	DWORD len = 255;
+	LSTATUS res = RegQueryValueExA(hReg, mt32emuEntryName, NULL, NULL, (LPBYTE)str, &len);
+	if (res != ERROR_SUCCESS || _stricmp(str, MT32EMU_DRIVER_NAME)) {
+		MessageBoxA(NULL, CANNOT_UNINSTALL_32_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		RegCloseKey(hReg);
+		return;
 	}
-	MessageBoxA(NULL, CANNOT_UNINSTALL_NOT_FOUND_ERR, ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+	res = RegDeleteValueA(hReg, mt32emuEntryName);
 	RegCloseKey(hReg);
+	if (res != ERROR_SUCCESS) {
+		MessageBoxA(NULL, CANNOT_UNINSTALL_32_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+	}
 }
 
-void constructSystemDirName(char *pathName) {
+static void unregisterDriver(const bool wow64Process) {
+	HKEY hReg;
+	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, DRIVERS_REGISTRY_KEY, 0L, (wow64Process ? (KEY_ALL_ACCESS | KEY_WOW64_64KEY) : KEY_ALL_ACCESS), &hReg)) {
+		MessageBoxA(NULL, CANNOT_OPEN_REGISTRY_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return;
+	}
+	MidiRegistryEntryName entryName;
+	const int entryIx = findMt32emuRegEntry(hReg, entryName);
+	if (entryIx == -1) {
+		MessageBoxA(NULL, CANNOT_UNINSTALL_NOT_FOUND_ERR, ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		RegCloseKey(hReg);
+		return;
+	}
+	const char *mt32emuEntryName = entryName.withIndex(entryIx)->toCString();
+	LSTATUS res = RegDeleteValueA(hReg, mt32emuEntryName);
+	RegCloseKey(hReg);
+	if (wow64Process) {
+		unregisterDriverInWow(mt32emuEntryName);
+	}
+	if (res != ERROR_SUCCESS) {
+		MessageBoxA(NULL, CANNOT_UNINSTALL_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+	}
+	MessageBoxA(NULL, SUCCESSFULLY_UNINSTALLED_MSG, INFORMATION_TITLE, MB_OK | MB_ICONINFORMATION);
+}
+
+static void constructFullSystemDirName(char *pathName, const char *systemDirName) {
 	char sysRoot[MAX_PATH + 1];
 	GetEnvironmentVariableA(SYSTEM_ROOT_ENV_NAME, sysRoot, MAX_PATH);
 	strncpy(pathName, sysRoot, MAX_PATH);
 	strncat(pathName, PATH_SEPARATOR, MAX_PATH - strlen(pathName));
-	strncat(pathName, SYSTEM_DIR_NAME, MAX_PATH - strlen(pathName));
+	strncat(pathName, systemDirName, MAX_PATH - strlen(pathName));
 	strncat(pathName, PATH_SEPARATOR, MAX_PATH - strlen(pathName));
 }
 
-void constructDriverPathName(char *pathName) {
-	constructSystemDirName(pathName);
+static void constructDriverPathName(char *pathName, const char *systemDirName) {
+	constructFullSystemDirName(pathName, systemDirName);
 	strncat(pathName, MT32EMU_DRIVER_NAME, MAX_PATH - strlen(pathName));
 }
 
-void deleteFileReliably(char *pathName) {
+static void deleteFileReliably(char *pathName, const char *systemDirName) {
 	if (DeleteFileA(pathName)) {
 		return;
 	}
@@ -180,7 +281,7 @@ void deleteFileReliably(char *pathName) {
 	strncpy(tmpFilePrefix, MT32EMU_DRIVER_NAME, sizeof(MT32EMU_DRIVER_NAME));
 	strncat(tmpFilePrefix, ".", 1);
 	char tmpDirName[MAX_PATH + 1];
-	constructSystemDirName(tmpDirName);
+	constructFullSystemDirName(tmpDirName, systemDirName);
 	char tmpPathName[MAX_PATH + 1];
 	GetTempFileNameA(tmpDirName, tmpFilePrefix, 0, tmpPathName);
 	DeleteFileA(tmpPathName);
@@ -188,61 +289,89 @@ void deleteFileReliably(char *pathName) {
 	MoveFileExA(tmpPathName, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
 }
 
+static void deleteDriverFile(char *driverPathName, const char *systemDirName) {
+	constructDriverPathName(driverPathName, systemDirName);
+	deleteFileReliably(driverPathName, systemDirName);
+}
+
+static bool installDriverFile(const char *setupPath, const char *driverFileName, const char *systemDirName) {
+	char driverPathName[MAX_PATH + 1];
+	deleteDriverFile(driverPathName, systemDirName);
+	char setupPathName[MAX_PATH + 1];
+	strncpy(setupPathName, setupPath, MAX_PATH);
+	strncat(setupPathName, PATH_SEPARATOR, MAX_PATH - strlen(setupPathName));
+	strncat(setupPathName, driverFileName, MAX_PATH - strlen(setupPathName));
+	return CopyFileA(setupPathName, driverPathName, FALSE) != FALSE;
+}
+
 int main(int argc, char *argv[]) {
-	OperationMode mode = UNKNOWN_MODE;
+	bool wow64Process = isWow64Process();
+
+	OperationMode mode = OperationMode_UNKNOWN;
 	if (argc == 2) {
 		if (_stricmp(INSTALL_COMMAND, argv[1]) == 0) {
-			mode = INSTALL_MODE;
+			mode = OperationMode_INSTALL;
 		} else if (_stricmp(UNINSTALL_COMMAND, argv[1]) == 0) {
-			mode = UNINSTALL_MODE;
+			mode = OperationMode_UNINSTALL;
 		} else if (_stricmp(REPAIR_COMMAND, argv[1]) == 0) {
-			mode = REPAIR_MODE;
+			mode = OperationMode_REPAIR;
 		}
 	}
+
 	switch (mode) {
-		case INSTALL_MODE: {
+		case OperationMode_INSTALL: {
 			const char *pathDelimPosition = strrchr(argv[0], PATH_SEPARATOR[0]);
 			int setupPathLen = int(pathDelimPosition - argv[0]);
 			if (pathDelimPosition != NULL && setupPathLen > MAX_PATH - sizeof(MT32EMU_DRIVER_NAME) - 2) {
 				MessageBoxA(NULL, CANNOT_INSTALL_PATH_TOO_LONG_ERR, ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
-				return 2;
+				return ProcessReturnCode_ERR_PATH_TOO_LONG;
 			}
-			if (!registerDriver(mode)) {
-				return 3;
+			const RegisterDriverResult registerDriverResult = registerDriver(wow64Process);
+			if (registerDriverResult == RegisterDriverResult_FAILED) {
+				return ProcessReturnCode_ERR_REGISTERING_DRIVER;
 			}
-			char driverPathName[MAX_PATH + 1];
-			constructDriverPathName(driverPathName);
-			deleteFileReliably(driverPathName);
-			char setupPathName[MAX_PATH + 1];
+			char setupPath[MAX_PATH + 1];
 			if (pathDelimPosition == NULL) {
-				GetCurrentDirectoryA(sizeof(setupPathName), setupPathName);
+				GetCurrentDirectoryA(sizeof(setupPath), setupPath);
 			} else {
-				strncpy(setupPathName, argv[0], setupPathLen);
-				setupPathName[setupPathLen] = 0;
+				strncpy(setupPath, argv[0], setupPathLen);
+				setupPath[setupPathLen] = 0;
 			}
-			strncat(setupPathName, PATH_SEPARATOR, MAX_PATH - strlen(setupPathName));
-			strncat(setupPathName, MT32EMU_DRIVER_NAME, MAX_PATH - strlen(setupPathName));
-			if (!CopyFileA(setupPathName, driverPathName, FALSE)) {
+			if (wow64Process) {
+				if (!installDriverFile(setupPath, MT32EMU_DRIVER_NAME_X64, SYSTEM_X64_DIR_NAME)) {
+					MessageBoxA(NULL, CANNOT_INSTALL_FILE_COPY_ERR, FILE_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+					return ProcessReturnCode_ERR_COPYING_FILE;
+				}
+				if (!installDriverFile(setupPath, MT32EMU_DRIVER_NAME, SYSTEM_WOW64_DIR_NAME)) {
+					MessageBoxA(NULL, CANNOT_INSTALL_32_FILE_COPY_ERR, FILE_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+					return ProcessReturnCode_ERR_COPYING_FILE;
+				}
+			} else if (!installDriverFile(setupPath, MT32EMU_DRIVER_NAME, SYSTEM_DIR_NAME)) {
 				MessageBoxA(NULL, CANNOT_INSTALL_FILE_COPY_ERR, FILE_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
-				return 4;
+				return ProcessReturnCode_ERR_COPYING_FILE;
 			}
-			MessageBoxA(NULL, mode == INSTALL_MODE ? SUCCESSFULLY_INSTALLED_MSG : SUCCESSFULLY_UPDATED_MSG, INFORMATION_TITLE, MB_OK | MB_ICONINFORMATION);
-			return 0;
+			const char *successMessage = registerDriverResult == RegisterDriverResult_OK ? SUCCESSFULLY_INSTALLED_MSG : SUCCESSFULLY_UPDATED_MSG;
+			MessageBoxA(NULL, successMessage, INFORMATION_TITLE, MB_OK | MB_ICONINFORMATION);
+			return ProcessReturnCode_OK;
 		}
 
-		case REPAIR_MODE:
-			return registerDriver(mode) ? 0 : 3;
+		case OperationMode_REPAIR:
+			return registerDriver(wow64Process) == RegisterDriverResult_FAILED ? ProcessReturnCode_ERR_REGISTERING_DRIVER : ProcessReturnCode_OK;
 
-		case UNINSTALL_MODE: {
+		case OperationMode_UNINSTALL: {
 			char pathName[MAX_PATH + 1];
-			constructDriverPathName(pathName);
-			deleteFileReliably(pathName);
-			unregisterDriver();
-			return 0;
+			if (wow64Process) {
+				deleteDriverFile(pathName, SYSTEM_X64_DIR_NAME);
+				deleteDriverFile(pathName, SYSTEM_WOW64_DIR_NAME);
+			} else {
+				deleteDriverFile(pathName, SYSTEM_DIR_NAME);
+			}
+			unregisterDriver(wow64Process);
+			return ProcessReturnCode_OK;
 		}
 
 		default:
 			MessageBoxA(NULL, USAGE_MSG, INFORMATION_TITLE, MB_OK | MB_ICONINFORMATION);
-			return 1;
+			return ProcessReturnCode_ERR_UNRECOGNISED_OPERATION_MODE;
 	}
 }

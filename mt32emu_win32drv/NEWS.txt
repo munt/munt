@@ -4,6 +4,10 @@ HEAD:
 	  driver name to the consumer MIDI application.
 	* In Windows MIDI driver setup tool, implemented "repair" command. This command allows to restore the registry entry
 	  used by driver which may be overwritten by Windows or some other application.
+	* Reimplemented Windows MIDI driver setup tool for x64 platform. It no longer allows to install 32-bit and 64-bit
+	  drivers separately since this way doesn't seem to be supported by Windows. Instead, the setup tool now detects
+	  the platform it runs on and installs the drivers as appropriate. This should improve stability of the 32-bit driver
+	  on 64-bit systems.
 
 2017-07-29:
 
