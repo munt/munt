@@ -16,8 +16,8 @@
 
 #include "InternalResampler.h"
 
-#include <SincResampler.h>
-#include <ResamplerModel.h>
+#include "srctools/include/SincResampler.h"
+#include "srctools/include/ResamplerModel.h"
 
 #include "../Synth.h"
 

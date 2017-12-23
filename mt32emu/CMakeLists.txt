@@ -190,7 +190,6 @@ if(NOT ${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
 endif(NOT ${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
 
 if(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
-  include_directories(src/srchelper/srctools/include)
   set(${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SOURCES}
     src/srchelper/srctools/src/FIRResampler.cpp
     src/srchelper/srctools/src/SincResampler.cpp

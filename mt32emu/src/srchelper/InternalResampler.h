@@ -19,7 +19,7 @@
 
 #include "../Enumerations.h"
 
-#include "FloatSampleProvider.h"
+#include "srctools/include/FloatSampleProvider.h"
 
 namespace MT32Emu {
 

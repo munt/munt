@@ -20,7 +20,7 @@
 #include <iostream>
 #endif
 
-#include "SincResampler.h"
+#include "../include/SincResampler.h"
 
 #ifndef M_PI
 static const double M_PI = 3.1415926535897932;

@@ -16,7 +16,7 @@
 
 #include <cstddef>
 
-#include "IIR2xResampler.h"
+#include "../include/IIR2xResampler.h"
 
 namespace SRCTools {
 
