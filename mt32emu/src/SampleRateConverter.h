@@ -37,6 +37,10 @@ public:
 	// at the sample rate specified by the targetSampleRate argument.
 	static AnalogOutputMode getBestAnalogOutputMode(double targetSampleRate);
 
+	// Returns the sample rate supported by the sample rate conversion implementation currently in effect
+	// that is closest to the one specified by the desiredSampleRate argument.
+	static double getSupportedOutputSampleRate(double desiredSampleRate);
+
 	// Creates a SampleRateConverter instance that converts output signal from the synth to the given sample rate
 	// with the specified conversion quality.
 	SampleRateConverter(Synth &synth, double targetSampleRate, SamplerateConversionQuality quality);

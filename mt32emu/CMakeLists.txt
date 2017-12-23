@@ -160,7 +160,17 @@ endforeach(HEADER)
 configure_file("src/config.h.in" "include/mt32emu/config.h")
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu)
 
-if(NOT ${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
+if(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
+  add_definitions(-DMT32EMU_WITH_INTERNAL_RESAMPLER)
+  set(${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SOURCES}
+    src/srchelper/srctools/src/FIRResampler.cpp
+    src/srchelper/srctools/src/SincResampler.cpp
+    src/srchelper/srctools/src/IIR2xResampler.cpp
+    src/srchelper/srctools/src/LinearResampler.cpp
+    src/srchelper/srctools/src/ResamplerModel.cpp
+    src/srchelper/InternalResampler.cpp
+  )
+else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
   # Prefer using SOXR if it is available
   find_package(LibSoxr)
   if(LIBSOXR_FOUND)
@@ -184,20 +194,8 @@ if(NOT ${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
       )
     else(LIBSAMPLERATE_FOUND)
       message(STATUS "Could NOT find libsamplerate")
-      set(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER "TRUE")
     endif(LIBSAMPLERATE_FOUND)
   endif(LIBSOXR_FOUND)
-endif(NOT ${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
-
-if(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
-  set(${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SOURCES}
-    src/srchelper/srctools/src/FIRResampler.cpp
-    src/srchelper/srctools/src/SincResampler.cpp
-    src/srchelper/srctools/src/IIR2xResampler.cpp
-    src/srchelper/srctools/src/LinearResampler.cpp
-    src/srchelper/srctools/src/ResamplerModel.cpp
-    src/srchelper/InternalResampler.cpp
-  )
 endif(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
 
 add_library(mt32emu ${libmt32emu_BUILD_TYPE} ${libmt32emu_SOURCES})

@@ -450,9 +450,7 @@ void mt32emu_set_analog_output_mode(mt32emu_context context, const mt32emu_analo
 }
 
 void mt32emu_set_stereo_output_samplerate(mt32emu_context context, const double samplerate) {
-	if (0.0 <= samplerate) {
-		context->srcState->outputSampleRate = samplerate;
-	}
+	context->srcState->outputSampleRate = SampleRateConverter::getSupportedOutputSampleRate(samplerate);
 }
 
 void mt32emu_set_samplerate_conversion_quality(mt32emu_context context, const mt32emu_samplerate_conversion_quality quality) {
