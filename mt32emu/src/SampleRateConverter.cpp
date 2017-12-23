@@ -56,6 +56,7 @@ double SampleRateConverter::getSupportedOutputSampleRate(double desiredSampleRat
 #if MT32EMU_WITH_LIBSOXR_RESAMPLER || MT32EMU_WITH_LIBSAMPLERATE_RESAMPLER || MT32EMU_WITH_INTERNAL_RESAMPLER
 	return desiredSampleRate > 0 ? desiredSampleRate : 0;
 #else
+	(void)desiredSampleRate;
 	return 0;
 #endif
 }
