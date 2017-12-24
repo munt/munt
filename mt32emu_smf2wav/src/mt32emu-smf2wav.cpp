@@ -100,6 +100,7 @@ struct Options {
 	MT32Emu::AnalogOutputMode analogOutputMode;
 	MT32Emu::RendererType rendererType;
 	MT32Emu::SamplerateConversionQuality srcQuality;
+	int partialCount;
 	int rawChannelMap[8];
 	int rawChannelCount;
 
@@ -140,6 +141,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	gint analogOutputModeIx = 0;
 	gint rendererTypeIx = 0;
 	gint srcQualityIx = 2;
+	gint partialCount = MT32Emu::DEFAULT_MAX_PARTIALS;
 	gint outputSampleFormat = OUTPUT_SAMPLE_FORMAT_SINT16;
 	gint bufferFrameCount = DEFAULT_BUFFER_SIZE;
 	gint renderMinFrames = 0;
@@ -186,6 +188,9 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		 "                 1: FAST\n"
 		 "                 2: GOOD\n"
 		 "                 3: BEST", "<src_quality>"},
+
+		{"max-partials", 'x', 0, G_OPTION_ARG_INT, &partialCount, "The maximum number of partials playing simultaneously.\n"
+		 "                (minimum: 8, default: 32)\n", "<max-partials>"},
 
 		{"analog-output-mode", 'a', 0, G_OPTION_ARG_INT, &analogOutputModeIx, "Analogue low-pass filter emulation mode (default: 0)\n"
 		 "                Ignored if -w is used (in which case 0/DISABLED is always used)\n"
@@ -268,6 +273,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	} else {
 		options->bufferFrameCount = bufferFrameCount;
 	}
+	options->partialCount = partialCount < 8 ? 8 : partialCount;
 	options->renderMaxFrames = renderMaxFrames < 0 ? INT_MAX : renderMaxFrames;
 	options->renderMinFrames = renderMinFrames < 0 ? 0 : renderMinFrames;
 	if (options->renderMinFrames > options->renderMaxFrames) {
@@ -846,6 +852,7 @@ int main(int argc, char *argv[]) {
 	g_free(pathName);
 	service.setStereoOutputSampleRate(options.sampleRate);
 	service.setSamplerateConversionQuality(options.srcQuality);
+	service.setPartialCount(options.partialCount);
 	service.setAnalogOutputMode(options.analogOutputMode);
 	service.selectRendererType(options.rendererType);
 	if (service.openSynth() == MT32EMU_RC_OK) {
