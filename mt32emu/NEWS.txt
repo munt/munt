@@ -1,4 +1,6 @@
-HEAD:
+2017-12-24:
+
+	2.3.0 released.
 
 	* Improved emulation of partial allocator. It still handles individual partials as entities and not pairs,
 	  but now it keeps inactive partials on a stack rather than assigns the first free partial sorted by index.
@@ -6,6 +8,10 @@ HEAD:
 	* Fixed various issues with accessing ROM files with localised pathnames.
 	* Fixed old thinko about MIDI channel mapping when a MIDI channel is assigned to multiple parts.
 	  In this case, the messages received on that MIDI channel are now handled by all the parts.
+	* Changed semantic of the build option libmt32emu_WITH_INTERNAL_RESAMPLER. When disabled, the built-in
+	  resampler support is no longer included in the build implicitly. In case no external resampler library is
+	  found, a simple stub is used instead, that either outputs at the internal synth sample rate or is muted.
+	  This is mainly intended to reduce the library size when the sample rate conversion is handled externally.
 
 2017-07-29:
 

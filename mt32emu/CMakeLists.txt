@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake
 
 project(libmt32emu CXX)
 set(libmt32emu_VERSION_MAJOR 2)
-set(libmt32emu_VERSION_MINOR 2)
+set(libmt32emu_VERSION_MINOR 3)
 set(libmt32emu_VERSION_PATCH 0)
 set(libmt32emu_VERSION "${libmt32emu_VERSION_MAJOR}.${libmt32emu_VERSION_MINOR}.${libmt32emu_VERSION_PATCH}")
 
