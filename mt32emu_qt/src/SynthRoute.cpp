@@ -290,6 +290,10 @@ void SynthRoute::setRendererType(RendererType rendererType) {
 	qSynth.setRendererType(rendererType);
 }
 
+void SynthRoute::setPartialCount(int partialCount) {
+	qSynth.setPartialCount(partialCount);
+}
+
 void SynthRoute::getSynthProfile(SynthProfile &synthProfile) const {
 	qSynth.getSynthProfile(synthProfile);
 }

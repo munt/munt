@@ -37,6 +37,7 @@ private slots:
 	void on_changeROMSetButton_clicked();
 	void on_midiDelayEmuComboBox_currentIndexChanged(int);
 	void on_dacEmuComboBox_currentIndexChanged(int);
+	void on_maxPartialsSpinBox_valueChanged(int);
 	void on_analogComboBox_currentIndexChanged(int);
 	void on_rendererTypeComboBox_currentIndexChanged(int);
 	void on_reverbCompatibilityComboBox_currentIndexChanged(int);

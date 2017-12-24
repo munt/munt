@@ -236,13 +236,37 @@ Select reverb model tunings to accurately emulate reverb chip of older units (li
       </widget>
      </item>
      <item row="7" column="0">
+      <widget class="QLabel" name="label_10">
+       <property name="text">
+        <string>Max Partials</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QSpinBox" name="maxPartialsSpinBox">
+       <property name="toolTip">
+        <string>The maximum number of partials playing simultaneously.
+Takes effect after reopening the Synth.</string>
+       </property>
+       <property name="minimum">
+        <number>8</number>
+       </property>
+       <property name="maximum">
+        <number>256</number>
+       </property>
+       <property name="value">
+        <number>32</number>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0">
       <widget class="QLabel" name="label_8">
        <property name="text">
         <string>Analogue Output</string>
        </property>
       </widget>
      </item>
-     <item row="7" column="1">
+     <item row="8" column="1">
       <widget class="QComboBox" name="analogComboBox">
        <property name="toolTip">
         <string>Methods for emulating the effects of analogue circuits of real hardware units on the output signal.
@@ -266,14 +290,14 @@ Takes effect after reopening the Synth.</string>
        </item>
       </widget>
      </item>
-     <item row="8" column="0">
+     <item row="9" column="0">
       <widget class="QLabel" name="label_9">
        <property name="text">
         <string>Renderer Type</string>
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
+     <item row="9" column="1">
       <widget class="QComboBox" name="rendererTypeComboBox">
        <property name="toolTip">
         <string>Allows selecting between the available types of the wave generator
@@ -303,14 +327,14 @@ Takes effect after reopening the Synth.</string>
        </item>
       </widget>
      </item>
-     <item row="9" column="0">
+     <item row="10" column="0">
       <widget class="QLabel" name="label_5">
        <property name="text">
         <string>Output Gain</string>
        </property>
       </widget>
      </item>
-     <item row="9" column="1">
+     <item row="10" column="1">
       <widget class="QSlider" name="outputGainSlider">
        <property name="maximum">
         <number>400</number>
@@ -326,14 +350,14 @@ Takes effect after reopening the Synth.</string>
        </property>
       </widget>
      </item>
-     <item row="10" column="0">
+     <item row="11" column="0">
       <widget class="QLabel" name="label_6">
        <property name="text">
         <string>Reverb Output Gain</string>
        </property>
       </widget>
      </item>
-     <item row="10" column="1">
+     <item row="11" column="1">
       <widget class="QSlider" name="reverbOutputGainSlider">
        <property name="maximum">
         <number>400</number>
@@ -349,7 +373,7 @@ Takes effect after reopening the Synth.</string>
        </property>
       </widget>
      </item>
-     <item row="11" column="0">
+     <item row="12" column="0">
       <widget class="QCheckBox" name="reverseStereoCheckBox">
        <property name="text">
         <string>Reverse Stereo</string>
@@ -359,7 +383,7 @@ Takes effect after reopening the Synth.</string>
        </property>
       </widget>
      </item>
-     <item row="11" column="1">
+     <item row="12" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
         <widget class="QPushButton" name="assignChannels2_10Button">
@@ -383,7 +407,7 @@ Takes effect after reopening the Synth.</string>
        </item>
       </layout>
      </item>
-     <item row="12" column="0">
+     <item row="13" column="0">
       <widget class="QCheckBox" name="niceAmpRampCheckBox">
        <property name="toolTip">
         <string>Toggles improved emulation of amplitude ramp in sustain phase.
@@ -398,7 +422,7 @@ to trade-off the quality improvement over the emulation accuracy.</string>
        </property>
       </widget>
      </item>
-     <item row="12" column="1">
+     <item row="13" column="1">
       <widget class="QCheckBox" name="engageChannel1CheckBox">
        <property name="text">
         <string>Use alternative channel assignment on synth start</string>
@@ -468,6 +492,7 @@ to trade-off the quality improvement over the emulation accuracy.</string>
   <tabstop>reverbModeComboBox</tabstop>
   <tabstop>reverbTimeSlider</tabstop>
   <tabstop>reverbLevelSlider</tabstop>
+  <tabstop>maxPartialsSpinBox</tabstop>
   <tabstop>analogComboBox</tabstop>
   <tabstop>rendererTypeComboBox</tabstop>
   <tabstop>outputGainSlider</tabstop>

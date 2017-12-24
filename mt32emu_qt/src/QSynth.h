@@ -26,6 +26,7 @@ struct SynthProfile {
 	MT32Emu::MIDIDelayMode midiDelayMode;
 	MT32Emu::AnalogOutputMode analogOutputMode;
 	MT32Emu::RendererType rendererType;
+	int partialCount;
 	ReverbCompatibilityMode reverbCompatibilityMode;
 	float outputGain;
 	float reverbOutputGain;
@@ -88,6 +89,7 @@ private:
 	int reverbMode;
 	int reverbTime;
 	int reverbLevel;
+	int partialCount;
 	MT32Emu::AnalogOutputMode analogOutputMode;
 	ReverbCompatibilityMode reverbCompatibilityMode;
 	bool engageChannel1OnOpen;
@@ -140,6 +142,7 @@ public:
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 	void setAnalogOutputMode(MT32Emu::AnalogOutputMode analogOutputMode);
 	void setRendererType(MT32Emu::RendererType useRendererType);
+	void setPartialCount(int partialCount);
 	const QString getPatchName(int partNum) const;
 	void getPartStates(bool *partStates) const;
 	void getPartialStates(MT32Emu::PartialState *partialStates) const;

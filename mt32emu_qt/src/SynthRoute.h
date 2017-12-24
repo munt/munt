@@ -71,6 +71,7 @@ public:
 	void setDACInputMode(MT32Emu::DACInputMode emuDACInputMode);
 	void setAnalogOutputMode(MT32Emu::AnalogOutputMode analogOutputMode);
 	void setRendererType(MT32Emu::RendererType rendererType);
+	void setPartialCount(int partialCount);
 
 	void startRecordingAudio(const QString &fileName);
 	void stopRecordingAudio();

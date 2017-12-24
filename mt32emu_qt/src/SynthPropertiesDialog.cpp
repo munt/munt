@@ -72,6 +72,10 @@ void SynthPropertiesDialog::on_dacEmuComboBox_currentIndexChanged(int index) {
 	}
 }
 
+void SynthPropertiesDialog::on_maxPartialsSpinBox_valueChanged(int value) {
+	synthRoute->setPartialCount(value);
+}
+
 void SynthPropertiesDialog::on_analogComboBox_currentIndexChanged(int index) {
 	synthRoute->setAnalogOutputMode(MT32Emu::AnalogOutputMode(2 - index));
 }
@@ -207,6 +211,7 @@ void SynthPropertiesDialog::resetSynth() {
 void SynthPropertiesDialog::restoreDefaults() {
 	ui->midiDelayEmuComboBox->setCurrentIndex(1);
 	ui->dacEmuComboBox->setCurrentIndex(0);
+	ui->maxPartialsSpinBox->setValue(MT32Emu::DEFAULT_MAX_PARTIALS);
 	ui->analogComboBox->setCurrentIndex(0);
 	ui->rendererTypeComboBox->setCurrentIndex(0);
 	ui->reverbCheckBox->setCheckState(Qt::Checked);
@@ -228,6 +233,7 @@ void SynthPropertiesDialog::loadSynthProfile(bool reloadFromSynthRoute) {
 	rsd.loadROMInfos();
 	ui->midiDelayEmuComboBox->setCurrentIndex(synthProfile.midiDelayMode);
 	ui->dacEmuComboBox->setCurrentIndex(synthProfile.emuDACInputMode == MT32Emu::DACInputMode_NICE ? MT32Emu::DACInputMode_NICE : synthProfile.emuDACInputMode - 1);
+	ui->maxPartialsSpinBox->setValue(synthProfile.partialCount);
 	ui->analogComboBox->setCurrentIndex(2 - synthProfile.analogOutputMode);
 	ui->rendererTypeComboBox->setCurrentIndex(synthProfile.rendererType);
 	ui->reverbCompatibilityComboBox->setCurrentIndex(synthProfile.reverbCompatibilityMode);

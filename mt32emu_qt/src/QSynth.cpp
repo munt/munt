@@ -32,6 +32,9 @@
 
 using namespace MT32Emu;
 
+const int MIN_PARTIAL_COUNT = 8;
+const int MAX_PARTIAL_COUNT = 256;
+
 static const ROMImage *makeROMImage(const QDir &romDir, QString romFileName) {
 	FileStream *file = new FileStream;
 	if (file->open(Master::getROMPathName(romDir, romFileName).toLocal8Bit())) {
@@ -223,10 +226,11 @@ bool QSynth::open(uint &targetSampleRate, SamplerateConversionQuality srcQuality
 	static const char *ANALOG_OUTPUT_MODES[] = {"Digital only", "Coarse", "Accurate", "Oversampled2x"};
 	qDebug() << "Using Analogue output mode:" << ANALOG_OUTPUT_MODES[actualAnalogOutputMode];
 	qDebug() << "Using Renderer Type:" << (synthProfile.rendererType ? "Float 32-bit" : "Integer 16-bit");
+	qDebug() << "Using Max Partials:" << synthProfile.partialCount;
 
 	targetSampleRate = SampleRateConverter::getSupportedOutputSampleRate(targetSampleRate);
 
-	if (synth->open(*controlROMImage, *pcmROMImage, actualAnalogOutputMode)) {
+	if (synth->open(*controlROMImage, *pcmROMImage, Bit32u(synthProfile.partialCount), actualAnalogOutputMode)) {
 		setState(SynthState_OPEN);
 		reportHandler.onDeviceReconfig();
 		setSynthProfile(synthProfile, synthProfileName);
@@ -390,6 +394,10 @@ void QSynth::setRendererType(MT32Emu::RendererType useRendererType) {
 	synth->selectRendererType(useRendererType);
 }
 
+void QSynth::setPartialCount(int newPartialCount) {
+	partialCount = qBound(MIN_PARTIAL_COUNT, newPartialCount, MAX_PARTIAL_COUNT);
+}
+
 const QString QSynth::getPatchName(int partNum) const {
 	synthMutex->lock();
 	QString name = isOpen() ? QString().fromLocal8Bit(synth->getPatchName(partNum)) : QString("Channel %1").arg(partNum + 1);
@@ -490,6 +498,7 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.midiDelayMode = synth->getMIDIDelayMode();
 	synthProfile.analogOutputMode = analogOutputMode;
 	synthProfile.rendererType = synth->getSelectedRendererType();
+	synthProfile.partialCount = partialCount;
 	synthProfile.reverbCompatibilityMode = reverbCompatibilityMode;
 	synthProfile.outputGain = synth->getOutputGain();
 	synthProfile.reverbOutputGain = synth->getReverbOutputGain();
@@ -513,6 +522,7 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	pcmROMFileName = synthProfile.pcmROMFileName;
 	setAnalogOutputMode(synthProfile.analogOutputMode);
 	setRendererType(synthProfile.rendererType);
+	setPartialCount(synthProfile.partialCount);
 
 	// Settings below take effect immediately.
 	setReverbCompatibilityMode(synthProfile.reverbCompatibilityMode);
