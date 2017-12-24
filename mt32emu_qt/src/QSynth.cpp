@@ -196,7 +196,7 @@ void QSynth::render(Bit16s *buffer, uint length) {
 	emit audioBlockRendered();
 }
 
-bool QSynth::open(uint targetSampleRate, SamplerateConversionQuality srcQuality, const QString useSynthProfileName) {
+bool QSynth::open(uint &targetSampleRate, SamplerateConversionQuality srcQuality, const QString useSynthProfileName) {
 	if (isOpen()) return true;
 
 	if (!useSynthProfileName.isEmpty()) synthProfileName = useSynthProfileName;
@@ -223,6 +223,8 @@ bool QSynth::open(uint targetSampleRate, SamplerateConversionQuality srcQuality,
 	static const char *ANALOG_OUTPUT_MODES[] = {"Digital only", "Coarse", "Accurate", "Oversampled2x"};
 	qDebug() << "Using Analogue output mode:" << ANALOG_OUTPUT_MODES[actualAnalogOutputMode];
 	qDebug() << "Using Renderer Type:" << (synthProfile.rendererType ? "Float 32-bit" : "Integer 16-bit");
+
+	targetSampleRate = SampleRateConverter::getSupportedOutputSampleRate(targetSampleRate);
 
 	if (synth->open(*controlROMImage, *pcmROMImage, actualAnalogOutputMode)) {
 		setState(SynthState_OPEN);

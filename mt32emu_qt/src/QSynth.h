@@ -107,7 +107,7 @@ public:
 	QSynth(QObject *parent = NULL);
 	~QSynth();
 	bool isOpen() const;
-	bool open(uint targetSampleRate = 0, MT32Emu::SamplerateConversionQuality srcQuality = MT32Emu::SamplerateConversionQuality_GOOD, const QString useSynthProfileName = "");
+	bool open(uint &targetSampleRate, MT32Emu::SamplerateConversionQuality srcQuality = MT32Emu::SamplerateConversionQuality_GOOD, const QString useSynthProfileName = "");
 	void close();
 	bool reset();
 

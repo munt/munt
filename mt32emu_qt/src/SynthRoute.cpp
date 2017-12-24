@@ -71,7 +71,6 @@ bool SynthRoute::open() {
 	if (audioDevice != NULL) {
 		uint sampleRate = audioDevice->driver.getAudioSettings().sampleRate;
 		if (qSynth.open(sampleRate, audioDevice->driver.getAudioSettings().srcQuality)) {
-			if (sampleRate <= 0) sampleRate = qSynth.getSynthSampleRate();
 			double debugDeltaMean = sampleRate * (8.0 / MasterClock::MILLIS_PER_SECOND);
 			double debugDeltaLimit = debugDeltaMean * 0.01;
 			debugDeltaLowerLimit = qint64(floor(debugDeltaMean - debugDeltaLimit));

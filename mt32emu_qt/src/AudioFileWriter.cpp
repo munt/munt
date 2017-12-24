@@ -158,7 +158,8 @@ bool AudioFileRenderer::convertMIDIFiles(QString useOutFileName, QStringList mid
 		delete synth;
 	}
 	synth = new QSynth(this);
-	if (!synth->open(0, MT32Emu::SamplerateConversionQuality_BEST, synthProfileName)) {
+	sampleRate = 0;
+	if (!synth->open(sampleRate, MT32Emu::SamplerateConversionQuality_BEST, synthProfileName)) {
 		synth->close();
 		delete synth;
 		synth = NULL;
@@ -169,7 +170,6 @@ bool AudioFileRenderer::convertMIDIFiles(QString useOutFileName, QStringList mid
 		return false;
 	}
 	Master::getInstance()->setAudioFileWriterSynth(synth);
-	sampleRate = synth->getSynthSampleRate();
 	bufferSize = useBufferSize;
 	outFileName = useOutFileName;
 	realtimeMode = false;
