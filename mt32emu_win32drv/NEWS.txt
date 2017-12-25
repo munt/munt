@@ -1,4 +1,6 @@
-HEAD:
+2017-12-25:
+
+	1.5.0 released.
 
 	* Fixed inappropriate implementation of MODM_GETDEVCAPS message that sometimes resulted in returning unreadable
 	  driver name to the consumer MIDI application.
@@ -8,6 +10,8 @@ HEAD:
 	  drivers separately since this way doesn't seem to be supported by Windows. Instead, the setup tool now detects
 	  the platform it runs on and installs the drivers as appropriate. This should improve stability of the 32-bit driver
 	  on 64-bit systems.
+	* Added support for new synth profile option "Max Partials". It allows setting the maximum number of partials
+	  playing simultaneously.
 
 2017-07-29:
 
