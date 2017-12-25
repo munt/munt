@@ -36,6 +36,7 @@ private:
 	MIDIDelayMode midiDelayMode;
 	AnalogOutputMode analogOutputMode;
 	RendererType rendererType;
+	Bit32u partialCount;
 	float outputGain;
 	float reverbOutputGain;
 	bool reverbEnabled;
