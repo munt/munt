@@ -101,7 +101,6 @@ private:
 	QLabel *patchNameLabel[9];
 	PartStateWidget *partStateWidget[9];
 
-	bool *partStates;
 	MT32Emu::PartialState *partialStates;
 	MT32Emu::Bit8u *keysOfPlayingNotes;
 	MT32Emu::Bit8u *velocitiesOfPlayingNotes;
@@ -110,6 +109,9 @@ private:
 	MasterClockNanos previousUpdateNanos;
 	bool enabled;
 	uint partialCount;
+
+	void allocatePartialsData();
+	void freePartialsData();
 
 private slots:
 	void handleUpdate();
