@@ -6,11 +6,11 @@
 #
 
 PORTNAME=	libmt32emu
-PORTVERSION=	2.2.0
+PORTVERSION=	2.3.0
 CATEGORIES=	audio
 MASTER_SITES=	https://github.com/munt/munt/archive/
 FETCH_ARGS=	-a
-DISTFILES=	libmt32emu_2_2_0.tar.gz
+DISTFILES=	libmt32emu_2_3_0.tar.gz
 
 MAINTAINER=	sergm@muntemu.org
 COMMENT=	C/C++ library to emulate (approximately) the Roland MT-32, CM-32L and LAPC-I synthesiser modules
@@ -19,7 +19,7 @@ USES=		cmake
 
 PLIST_FILES=	lib/libmt32emu.so \
 		lib/libmt32emu.so.2 \
-		lib/libmt32emu.so.2.2.0 \
+		lib/libmt32emu.so.2.3.0 \
 		include/mt32emu/mt32emu.h \
 		include/mt32emu/config.h \
 		include/mt32emu/globals.h \
@@ -51,6 +51,6 @@ post-extract:
 
 do-configure:
 		cd $(WRKSRC); \
-		cmake $(CMAKE_ARGS) $(WRKDIR)/munt-libmt32emu_2_2_0/mt32emu
+		cmake $(CMAKE_ARGS) $(WRKDIR)/munt-libmt32emu_2_3_0/mt32emu
 
 .include <bsd.port.mk>

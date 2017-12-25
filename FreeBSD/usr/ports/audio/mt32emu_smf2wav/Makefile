@@ -6,11 +6,11 @@
 #
 
 PORTNAME=	mt32emu-smf2wav
-PORTVERSION=	1.4.0
+PORTVERSION=	1.5.0
 CATEGORIES=	audio
 MASTER_SITES=	https://github.com/munt/munt/archive/
 FETCH_ARGS=	-a
-DISTFILES=	mt32emu_smf2wav_1_4_0.tar.gz
+DISTFILES=	mt32emu_smf2wav_1_5_0.tar.gz
 
 MAINTAINER=	sergm@muntemu.org
 COMMENT=	Experimental program for converting SMF (Standard MIDI File) to WAVE via libmt32emu
@@ -33,6 +33,6 @@ post-extract:
 
 do-configure:
 		cd $(WRKSRC); \
-		cmake $(CMAKE_ARGS) $(WRKDIR)/munt-mt32emu_smf2wav_1_4_0/mt32emu_smf2wav
+		cmake $(CMAKE_ARGS) $(WRKDIR)/munt-mt32emu_smf2wav_1_5_0/mt32emu_smf2wav
 
 .include <bsd.port.mk>

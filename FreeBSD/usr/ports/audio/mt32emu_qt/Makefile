@@ -6,11 +6,11 @@
 #
 
 PORTNAME=	mt32emu-qt
-PORTVERSION=	1.6.0
+PORTVERSION=	1.7.1
 CATEGORIES=	audio
 MASTER_SITES=	https://github.com/munt/munt/archive/
 FETCH_ARGS=	-a
-DISTFILES=	mt32emu_qt_1_6_0.tar.gz
+DISTFILES=	mt32emu_qt_1_7_1.tar.gz
 
 MAINTAINER=	sergm@muntemu.org
 COMMENT=	Main MT-32 emulation application using libmt32emu
@@ -36,6 +36,6 @@ post-extract:
 
 do-configure:
 		cd $(WRKSRC); \
-		cmake $(CMAKE_ARGS) $(WRKDIR)/munt-mt32emu_qt_1_6_0/mt32emu_qt
+		cmake $(CMAKE_ARGS) $(WRKDIR)/munt-mt32emu_qt_1_7_1/mt32emu_qt
 
 .include <bsd.port.mk>
