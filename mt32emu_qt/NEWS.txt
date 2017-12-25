@@ -1,4 +1,6 @@
-HEAD:
+2017-12-25:
+
+	1.7.0 released.
 
 	* Replaced application icon for mt32emu-qt with a new nicer one.
 	* Fixed a few minor bugs in MIDI player dialog.
