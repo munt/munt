@@ -50,11 +50,19 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 	ui->midiMessageLayout->addWidget(&midiMessageLED, 0, Qt::AlignHCenter);
 
 	partialStateLED = new LEDWidget*[partialCount];
+	unsigned int partialColumnWidth;
+	if (partialCount < 64) {
+		partialColumnWidth = 4;
+	} else if (partialCount < 128) {
+		partialColumnWidth = 8;
+	} else {
+		partialColumnWidth = 16;
+	}
 	for (unsigned int i = 0; i < partialCount; i++) {
 		partialStateLED[i] = new LEDWidget(&COLOR_GRAY, ui->partialStateGrid->widget());
 		partialStateLED[i]->setMinimumSize(16, 16);
 		partialStateLED[i]->setMaximumSize(16, 16);
-		ui->partialStateGrid->addWidget(partialStateLED[i], i >> 2, i & 3);
+		ui->partialStateGrid->addWidget(partialStateLED[i], i / partialColumnWidth, i % partialColumnWidth);
 	}
 
 	for (int i = 0; i < 9; i++) {
