@@ -1,5 +1,13 @@
 2017-12-25:
 
+	1.7.1 released.
+
+	* Improved layout of partial state LEDs when maximum number of partials is set bigger than 63.
+	* Fixed partial state LED widgets being not updated upon a change of Max Partials option.
+	  This may also have resulted in crashes.
+
+2017-12-25:
+
 	1.7.0 released.
 
 	* Replaced application icon for mt32emu-qt with a new nicer one.
