@@ -184,7 +184,7 @@ void MidiConverterDialog::on_moveDownButton_clicked() {
 void MidiConverterDialog::on_startButton_clicked() {
 	if (ui->pcmList->count() == 0) {
 		if (batchMode) {
-			((QWidget *)parent())->close();
+			emit batchConversionFinished();
 			return;
 		}
 		enableControls(true);

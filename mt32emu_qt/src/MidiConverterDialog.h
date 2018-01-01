@@ -55,6 +55,7 @@ private slots:
 
 signals:
 	void conversionFinished(const QString &, const QString &);
+	void batchConversionFinished();
 };
 
 #endif // MIDI_CONVERTER_DIALOG_H

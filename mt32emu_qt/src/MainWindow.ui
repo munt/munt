@@ -40,7 +40,7 @@
      <x>0</x>
      <y>0</y>
      <width>300</width>
-     <height>20</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMunt_mt32emu_qt">
@@ -58,12 +58,15 @@
     <addaction name="separator"/>
     <addaction name="actionPlay_MIDI_file"/>
     <addaction name="actionConvert_MIDI_to_Wave"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuOptions">
     <property name="title">
      <string>Options</string>
     </property>
     <addaction name="actionStart_iconized"/>
+    <addaction name="actionHide_to_tray_on_close"/>
     <addaction name="actionShow_LCD_balloons"/>
     <addaction name="actionShow_connection_balloons"/>
     <addaction name="separator"/>
@@ -137,6 +140,19 @@
   <action name="actionConvert_MIDI_to_Wave">
    <property name="text">
     <string>Convert MIDI to Wave...</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionHide_to_tray_on_close">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Hide to tray on close</string>
    </property>
   </action>
  </widget>

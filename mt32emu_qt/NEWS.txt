@@ -1,3 +1,8 @@
+HEAD:
+
+	* Added mode "Hide to tray on close". When enabled, the application does not exit when the user closes the main window.
+	  To exit the application, the corresponding menu items can be used in menu "Tools" and the tray icon menu.
+
 2017-12-25:
 
 	1.7.1 released.
