@@ -317,16 +317,23 @@ expected_message_length(unsigned char status, const unsigned char *second_byte, 
 
 	/* Is this a metamessage? */
 	if (status == 0xFF) {
+		int msg_len, len;
+
 		if (buffer_length < 2) {
 			g_critical("SMF error: end of buffer in expected_message_length().");
 			return (-1);
 		}
 
 		/*
-		 * Format of this kind of messages is like this: 0xFF 0xwhatever 0xlength and then "length" bytes.
+		 * Format of this kind of messages is like this: 0xFF 0xwhatever vlq-length and then "length" bytes.
 		 * Second byte points to this:                        ^^^^^^^^^^
 		 */
-		return (*(second_byte + 1) + 3);
+		if (extract_vlq(second_byte + 1, buffer_length - 1, &msg_len, &len)) {
+			g_critical("SMF error: end of buffer in expected_message_length().");
+			return (-1);
+		}
+
+		return (msg_len + len + 2);
 	}
 
 	if ((status & 0xF0) == 0xF0) {
@@ -631,6 +638,7 @@ smf_event_is_textual(const smf_event_t *event)
 	if (event->midi_buffer_length < 4)
 		return (0);
 
+	// FIXME: This won't work. Ever. BTW, what's the point?
 	if (event->midi_buffer[3] < 1 && event->midi_buffer[3] > 9)
 		return (0);
 
