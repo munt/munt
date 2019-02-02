@@ -1,7 +1,7 @@
 /* Copyright (C) 2003 Tristan
  * Copyright (C) 2004, 2005 Tristan, Jerome Fisher
  * Copyright (C) 2008, 2011 Tristan, Jerome Fisher, Jörg Walter
- * Copyright (C) 2013-2017 Tristan, Jerome Fisher, Jörg Walter, Sergey V. Mikayev
+ * Copyright (C) 2013-2019 Tristan, Jerome Fisher, Jörg Walter, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -131,7 +131,7 @@ snd_pcm_hw_params_t *pcm_hwparams;
 // char *pcm_name = "plughw:0,0";
 char *pcm_name = "default";
 
-double gain_multiplier = 1.0d;
+double gain_multiplier = 1.0;
 
 /* midi queue control variables */
 int flush_events = 0;
