@@ -195,6 +195,8 @@ public:
 	RendererType selectedRendererType;
 	Bit32s masterTunePitchDelta;
 	bool niceAmpRamp;
+	bool nicePanning;
+	bool nicePartialMixing;
 
 	// Here we keep the reverse mapping of assigned parts per MIDI channel.
 	// NOTE: value above 8 means that the channel is not assigned
@@ -257,6 +259,8 @@ Synth::Synth(ReportHandler *useReportHandler) :
 	setReverbOutputGain(1.0f);
 	setReversedStereoEnabled(false);
 	setNiceAmpRampEnabled(true);
+	setNicePanningEnabled(false);
+	setNicePartialMixingEnabled(false);
 	selectRendererType(RendererType_BIT16S);
 
 	patchTempMemoryRegion = NULL;
@@ -428,6 +432,22 @@ void Synth::setNiceAmpRampEnabled(bool enabled) {
 
 bool Synth::isNiceAmpRampEnabled() const {
 	return extensions.niceAmpRamp;
+}
+
+void Synth::setNicePanningEnabled(bool enabled) {
+	extensions.nicePanning = enabled;
+}
+
+bool Synth::isNicePanningEnabled() const {
+	return extensions.nicePanning;
+}
+
+void Synth::setNicePartialMixingEnabled(bool enabled) {
+	extensions.nicePartialMixing = enabled;
+}
+
+bool Synth::isNicePartialMixingEnabled() const {
+	return extensions.nicePartialMixing;
 }
 
 bool Synth::loadControlROM(const ROMImage &controlROMImage) {

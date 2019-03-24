@@ -41,7 +41,7 @@ static mt32emu_service_version getSynthVersionID(mt32emu_service_i) {
 	return MT32EMU_SERVICE_VERSION_CURRENT;
 }
 
-static const mt32emu_service_i_v2 SERVICE_VTABLE = {
+static const mt32emu_service_i_v3 SERVICE_VTABLE = {
 	getSynthVersionID,
 	mt32emu_get_supported_report_handler_version,
 	mt32emu_get_supported_midi_receiver_version,
@@ -112,7 +112,11 @@ static const mt32emu_service_i_v2 SERVICE_VTABLE = {
 	mt32emu_convert_synth_to_output_timestamp,
 	mt32emu_get_internal_rendered_sample_count,
 	mt32emu_set_nice_amp_ramp_enabled,
-	mt32emu_is_nice_amp_ramp_enabled
+	mt32emu_is_nice_amp_ramp_enabled,
+	mt32emu_set_nice_panning_enabled,
+	mt32emu_is_nice_panning_enabled,
+	mt32emu_set_nice_partial_mixing_enabled,
+	mt32emu_is_nice_partial_mixing_enabled
 };
 
 } // namespace MT32Emu
@@ -323,7 +327,7 @@ extern "C" {
 
 mt32emu_service_i mt32emu_get_service_i() {
 	mt32emu_service_i i;
-	i.v2 = &SERVICE_VTABLE;
+	i.v3 = &SERVICE_VTABLE;
 	return i;
 }
 
@@ -656,6 +660,22 @@ void mt32emu_set_nice_amp_ramp_enabled(mt32emu_const_context context, const mt32
 
 mt32emu_boolean mt32emu_is_nice_amp_ramp_enabled(mt32emu_const_context context) {
 	return context->synth->isNiceAmpRampEnabled() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
+}
+
+MT32EMU_EXPORT void mt32emu_set_nice_panning_enabled(mt32emu_const_context context, mt32emu_boolean enabled) {
+	context->synth->setNicePanningEnabled(enabled != MT32EMU_BOOL_FALSE);
+}
+
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_nice_panning_enabled(mt32emu_const_context context) {
+	return context->synth->isNicePanningEnabled() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
+}
+
+MT32EMU_EXPORT void mt32emu_set_nice_partial_mixing_enabled(mt32emu_const_context context, mt32emu_boolean enabled) {
+	context->synth->setNicePartialMixingEnabled(enabled != MT32EMU_BOOL_FALSE);
+}
+
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_nice_partial_mixing_enabled(mt32emu_const_context context) {
+	return context->synth->isNicePartialMixingEnabled() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
 void mt32emu_render_bit16s(mt32emu_const_context context, mt32emu_bit16s *stream, mt32emu_bit32u len) {

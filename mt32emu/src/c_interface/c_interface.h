@@ -367,6 +367,33 @@ MT32EMU_EXPORT void mt32emu_set_nice_amp_ramp_enabled(mt32emu_const_context cont
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_nice_amp_ramp_enabled(mt32emu_const_context context);
 
 /**
+ * Allows to toggle the NicePanning mode.
+ * Despite the Roland's manual specifies allowed panpot values in range 0-14,
+ * the LA-32 only receives 3-bit pan setting in fact. In particular, this
+ * makes it impossible to set the "middle" panning for a single partial.
+ * In the NicePanning mode, we enlarge the pan setting accuracy to 4 bits
+ * making it smoother thus sacrificing the emulation accuracy.
+ * This mode is disabled by default.
+ */
+MT32EMU_EXPORT void mt32emu_set_nice_panning_enabled(mt32emu_const_context context, mt32emu_boolean enabled);
+/** Returns whether NicePanning mode is enabled. */
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_nice_panning_enabled(mt32emu_const_context context);
+
+/**
+ * Allows to toggle the NicePartialMixing mode.
+ * LA-32 is known to mix partials either in-phase (so that they are added)
+ * or in counter-phase (so that they are subtracted instead).
+ * In some cases, this quirk isn't highly desired because a pair of closely
+ * sounding partials may occasionally cancel out.
+ * In the NicePartialMixing mode, the mixing is always performed in-phase,
+ * thus making the behaviour more predictable.
+ * This mode is disabled by default.
+ */
+MT32EMU_EXPORT void mt32emu_set_nice_partial_mixing_enabled(mt32emu_const_context context, mt32emu_boolean enabled);
+/** Returns whether NicePartialMixing mode is enabled. */
+MT32EMU_EXPORT mt32emu_boolean mt32emu_is_nice_partial_mixing_enabled(mt32emu_const_context context);
+
+/**
  * Renders samples to the specified output stream as if they were sampled at the analog stereo output at the desired sample rate.
  * If the output sample rate is not specified explicitly, the default output sample rate is used which depends on the current
  * mode of analog circuitry emulation. See mt32emu_analog_output_mode.

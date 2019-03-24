@@ -93,6 +93,10 @@ mt32emu_service_i mt32emu_get_service_i();
 #define mt32emu_is_reversed_stereo_enabled i.v0->isReversedStereoEnabled
 #define mt32emu_set_nice_amp_ramp_enabled iV2()->setNiceAmpRampEnabled
 #define mt32emu_is_nice_amp_ramp_enabled iV2()->isNiceAmpRampEnabled
+#define mt32emu_set_nice_panning_enabled iV3()->setNicePanningEnabled
+#define mt32emu_is_nice_panning_enabled iV3()->isNicePanningEnabled
+#define mt32emu_set_nice_partial_mixing_enabled iV3()->setNicePartialMixingEnabled
+#define mt32emu_is_nice_partial_mixing_enabled iV3()->isNicePartialMixingEnabled
 #define mt32emu_render_bit16s i.v0->renderBit16s
 #define mt32emu_render_float i.v0->renderFloat
 #define mt32emu_render_bit16s_streams i.v0->renderBit16sStreams
@@ -256,6 +260,12 @@ public:
 	void setNiceAmpRampEnabled(const bool enabled) { mt32emu_set_nice_amp_ramp_enabled(c, enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
 	bool isNiceAmpRampEnabled() { return mt32emu_is_nice_amp_ramp_enabled(c) != MT32EMU_BOOL_FALSE; }
 
+	void setNicePanningEnabled(const bool enabled) { mt32emu_set_nice_panning_enabled(c, enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
+	bool isNicePanningEnabled() { return mt32emu_is_nice_panning_enabled(c) != MT32EMU_BOOL_FALSE; }
+
+	void setNicePartialMixingEnabled(const bool enabled) { mt32emu_set_nice_partial_mixing_enabled(c, enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
+	bool isNicePartialMixingEnabled() { return mt32emu_is_nice_partial_mixing_enabled(c) != MT32EMU_BOOL_FALSE; }
+
 	void renderBit16s(Bit16s *stream, Bit32u len) { mt32emu_render_bit16s(c, stream, len); }
 	void renderFloat(float *stream, Bit32u len) { mt32emu_render_float(c, stream, len); }
 	void renderBit16sStreams(const mt32emu_dac_output_bit16s_streams *streams, Bit32u len) { mt32emu_render_bit16s_streams(c, streams, len); }
@@ -279,6 +289,7 @@ private:
 #if MT32EMU_API_TYPE == 2
 	const mt32emu_service_i_v1 *iV1() { return (getVersionID() < MT32EMU_SERVICE_VERSION_1) ? NULL : i.v1; }
 	const mt32emu_service_i_v2 *iV2() { return (getVersionID() < MT32EMU_SERVICE_VERSION_2) ? NULL : i.v2; }
+	const mt32emu_service_i_v3 *iV3() { return (getVersionID() < MT32EMU_SERVICE_VERSION_3) ? NULL : i.v3; }
 #endif
 };
 
@@ -461,6 +472,10 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_is_reversed_stereo_enabled
 #undef mt32emu_set_nice_amp_ramp_enabled
 #undef mt32emu_is_nice_amp_ramp_enabled
+#undef mt32emu_set_nice_panning_enabled
+#undef mt32emu_is_nice_panning_enabled
+#undef mt32emu_set_nice_partial_mixing_enabled
+#undef mt32emu_is_nice_partial_mixing_enabled
 #undef mt32emu_render_bit16s
 #undef mt32emu_render_float
 #undef mt32emu_render_bit16s_streams
