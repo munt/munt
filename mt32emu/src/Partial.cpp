@@ -118,7 +118,7 @@ void Partial::deactivate() {
 		poly->partialDeactivated(this);
 	}
 #if MT32EMU_MONITOR_PARTIALS > 2
-	synth->printDebug("[+%lu] [Partial %d] Deactivated", sampleNum, debugPartialNum);
+	synth->printDebug("[+%lu] [Partial %d] Deactivated", sampleNum, partialIndex);
 	synth->printPartialUsage(sampleNum);
 #endif
 	if (isRingModulatingSlave()) {
