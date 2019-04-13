@@ -986,7 +986,7 @@ void Synth::playMsgNow(Bit32u msg) {
 	Bit8u *chanParts = extensions.chantable[chan];
 	if (*chanParts > 8) {
 #if MT32EMU_MONITOR_MIDI > 0
-		printDebug("Play msg on unreg chan %d (%d): code=0x%01x, vel=%d", chan, part, code, velocity);
+		printDebug("Play msg on unreg chan %d (%d): code=0x%01x, vel=%d", chan, *chanParts, code, velocity);
 #endif
 		return;
 	}

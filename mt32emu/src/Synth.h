@@ -115,6 +115,7 @@ public:
 
 class Synth {
 friend class DefaultMidiStreamParser;
+friend class MemoryRegion;
 friend class Part;
 friend class Partial;
 friend class PartialManager;
