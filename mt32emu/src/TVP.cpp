@@ -104,12 +104,12 @@ static Bit32u calcBasePitch(const Partial *partial, const TimbreParam::PartialPa
 
 	// MT-32 GEN0 does 16-bit calculations here, allowing an integer overflow.
 	// This quirk is observable playing the patch defined for timbre "HIT BOTTOM" in Larry 3.
+	// Note, the upper bound isn't checked either.
 	if (controlROMFeatures->quirkBasePitchOverflow) {
 		basePitch = basePitch & 0xffff;
 	} else if (basePitch < 0) {
 		basePitch = 0;
-	}
-	if (basePitch > 59392) {
+	} else if (basePitch > 59392) {
 		basePitch = 59392;
 	}
 	return Bit32u(basePitch);
@@ -194,6 +194,7 @@ void TVP::updatePitch() {
 	} else if (newPitch < 0) {
 		newPitch = 0;
 	}
+	// This check is present in every unit.
 	if (newPitch > 59392) {
 		newPitch = 59392;
 	}
