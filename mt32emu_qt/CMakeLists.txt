@@ -241,19 +241,26 @@ if(${PROJECT_NAME}_PRECOMPILED_HEADER)
   if(MSVC)
     set(${PROJECT_NAME}_PRECOMPILED_HEADER_PCH ${CMAKE_CURRENT_BINARY_DIR}/pch.pch)
 
-    add_compile_options(-Yu${${PROJECT_NAME}_PRECOMPILED_HEADER} -FI${${PROJECT_NAME}_PRECOMPILED_HEADER} -Fp${${PROJECT_NAME}_PRECOMPILED_HEADER_PCH})
+    if(MSVC_IDE)
+      add_compile_options(-Yu${${PROJECT_NAME}_PRECOMPILED_HEADER})
+    endif()
+
+    add_compile_options(-FI${${PROJECT_NAME}_PRECOMPILED_HEADER} -Fp${${PROJECT_NAME}_PRECOMPILED_HEADER_PCH})
     set_source_files_properties(pch.cpp
       PROPERTIES
         COMPILE_FLAGS -Yc"${${PROJECT_NAME}_PRECOMPILED_HEADER}"
         OBJECT_DEPENDS ${${PROJECT_NAME}_PRECOMPILED_HEADER}
+        OBJECT_OUTPUTS ${${PROJECT_NAME}_PRECOMPILED_HEADER_PCH}
         SKIP_AUTOMOC TRUE
     )
 
-    # This is only necessary for NMake generator
-    set_source_files_properties(${mt32emu_qt_SOURCES}
-      PROPERTIES
-        OBJECT_DEPENDS ${${PROJECT_NAME}_PRECOMPILED_HEADER}
-    )
+    if(NOT MSVC_IDE)
+      set_source_files_properties(${mt32emu_qt_SOURCES}
+        PROPERTIES
+          COMPILE_FLAGS -Yu${${PROJECT_NAME}_PRECOMPILED_HEADER}
+          OBJECT_DEPENDS ${${PROJECT_NAME}_PRECOMPILED_HEADER_PCH}
+      )
+    endif()
   elseif(NOT XCODE)
     add_compile_options(-Winvalid-pch)
 
