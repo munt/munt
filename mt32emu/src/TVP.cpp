@@ -151,6 +151,7 @@ void TVP::reset(const Part *usePart, const TimbreParam::PartialParam *usePartial
 
 	// FIXME: We're using a per-TVP timer instead of a system-wide one for convenience.
 	timeElapsed = 0;
+	processTimerIncrement = 0;
 
 	basePitch = calcBasePitch(partial, partialParam, patchTemp, key, partial->getSynth()->controlROMFeatures);
 	currentPitchOffset = calcTargetPitchOffsetWithoutLFO(partialParam, 0, velocity);
