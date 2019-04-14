@@ -16,6 +16,7 @@ MAINTAINER=	sergm@muntemu.org
 COMMENT=	C/C++ library to emulate (approximately) the Roland MT-32, CM-32L and LAPC-I synthesiser modules
 
 USES=		cmake
+CMAKE_SOURCE_PATH= $(WRKDIR)/munt-libmt32emu_2_3_0/mt32emu
 
 PLIST_FILES=	lib/libmt32emu.so \
 		lib/libmt32emu.so.2 \
@@ -45,12 +46,5 @@ PLIST_DIRS=	include/mt32emu/c_interface \
 		include/mt32emu \
 		share/doc/munt/libmt32emu \
 		share/doc/munt
-
-post-extract:
-		mkdir $(WRKSRC)
-
-do-configure:
-		cd $(WRKSRC); \
-		cmake $(CMAKE_ARGS) $(WRKDIR)/munt-libmt32emu_2_3_0/mt32emu
 
 .include <bsd.port.mk>
