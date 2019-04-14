@@ -724,9 +724,9 @@ static void playSMF(smf_t *smf, const Options &options, State &state) {
 	}
 	flushSilence(MIDI_ENDED, options, state);
 	if (options.sendAllNotesOff) {
-		for (unsigned char part = 0; part < 9; part++) {
-			state.service.playMsg(0x0040B0 & part); // Release sustain pedal
-			state.service.playMsg(0x007BB0 & part); // All notes off
+		for (unsigned char channel = 0; channel < 16; channel++) {
+			state.service.playMsg(0x0040B0 | channel); // Release sustain pedal
+			state.service.playMsg(0x007BB0 | channel); // All notes off
 		}
 	}
 	if (state.lastInputFile && options.renderMinFrames > state.renderedFrames) {
