@@ -1484,7 +1484,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			char instrumentName[11];
 			memcpy(instrumentName, mt32ram.timbres[patchAbsTimbreNum].timbre.common.name, 10);
 			instrumentName[10] = 0;
-			Bit8u *n = (Bit8u *)patch;
+			Bit8u *n = reinterpret_cast<Bit8u *>(patch);
 			printDebug("WRITE-PATCH (%d-%d@%d..%d): %d; timbre=%d (%s) %02X%02X%02X%02X%02X%02X%02X%02X", first, last, off, off + len, i, patchAbsTimbreNum, instrumentName, n[0], n[1], n[2], n[3], n[4], n[5], n[6], n[7]);
 		}
 #endif
