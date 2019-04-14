@@ -324,15 +324,26 @@ void Synth::newTimbreSet(Bit8u partNum, Bit8u timbreGroup, Bit8u timbreNumber, c
 	reportHandler->onProgramChanged(partNum, soundGroupName, patchName);
 }
 
-void Synth::printDebug(const char *fmt, ...) {
-	va_list ap;
-	va_start(ap, fmt);
-#if MT32EMU_DEBUG_SAMPLESTAMPS > 0
-	reportHandler->printDebug("[%u]", (va_list)&renderedSampleCount);
-#endif
-	reportHandler->printDebug(fmt, ap);
+#define MT32EMU_PRINT_DEBUG \
+	va_list ap; \
+	va_start(ap, fmt); \
+	reportHandler->printDebug(fmt, ap); \
 	va_end(ap);
+
+#if MT32EMU_DEBUG_SAMPLESTAMPS > 0
+static inline void printSamplestamp(ReportHandler *reportHandler, const char *fmt, ...) {
+	MT32EMU_PRINT_DEBUG
 }
+#endif
+
+void Synth::printDebug(const char *fmt, ...) {
+#if MT32EMU_DEBUG_SAMPLESTAMPS > 0
+	printSamplestamp(reportHandler, "[%u]", renderedSampleCount);
+#endif
+	MT32EMU_PRINT_DEBUG
+}
+
+#undef MT32EMU_PRINT_DEBUG
 
 void Synth::setReverbEnabled(bool newReverbEnabled) {
 	if (!opened) return;
