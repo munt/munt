@@ -1,3 +1,21 @@
+HEAD:
+
+	* In addition to already existing options intended to improve
+	  audio output quality in contrast to somewhat degrading emulation
+	  accuracy, the two more quirks of LA-32 are now configurable.
+	  NicePanning enlarges the allowed value range for the pan setting,
+	  providing for smoother panning.
+	  NicePartialMixing disables occasional counter-phase mixing of partials
+	  making the timbres that contain closely sounding partials be
+	  mixed in a more predictable way.
+	* Improved emulation of the pitch overflow quirks of the MT-32 GEN0
+	  by disabling the upper-bound check that is only applied during the base
+	  pitch calculations by modern units. Specifically, this fixes the "starfall"
+	  timbre playing at wrong pitch in the WILLY BEAMISH intro when using
+	  ROMs of the MT-32 GEN0 (discovered by eddieduff at Sourceforge).
+	* Fixed compilation errors when setting various preprocessor definitions
+	  intended for debugging.
+
 2017-12-24:
 
 	2.3.0 released.
