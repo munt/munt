@@ -144,8 +144,10 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 
 void PortAudioStream::close() {
 	if (stream == NULL) return;
+	qDebug() << "PortAudio: Stopping output stream";
 	Pa_StopStream(stream);
 	Pa_CloseStream(stream);
+	qDebug() << "PortAudio: Output stream closed";
 	stream = NULL;
 }
 

@@ -77,7 +77,6 @@ void *AlsaAudioStream::processingThread(void *userData) {
 		}
 		audioStream.renderedFramesCount += audioStream.bufferSize;
 	}
-	qDebug() << "ALSA audio: Processing thread stopped";
 	if (isErrorOccured) {
 		snd_pcm_close(audioStream.stream);
 		audioStream.stream = NULL;
@@ -164,6 +163,7 @@ void AlsaAudioStream::close() {
 			pthread_join(processingThreadID, NULL);
 			stopProcessing = false;
 			processingThreadID = 0;
+			qDebug() << "ALSA audio: Processing thread stopped";
 		}
 		error = snd_pcm_close(stream);
 		stream = NULL;

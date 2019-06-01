@@ -89,8 +89,10 @@ QtAudioStream::QtAudioStream(const AudioDriverSettings &useSettings, QSynth &use
 }
 
 QtAudioStream::~QtAudioStream() {
+	qDebug() << "QAudioDriver: Stopping processing thread";
 	processingThread->exit();
 	processingThread->wait();
+	qDebug() << "QAudioDriver: Processing thread stopped";
 	delete processingThread;
 }
 

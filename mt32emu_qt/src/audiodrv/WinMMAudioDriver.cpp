@@ -237,6 +237,7 @@ bool WinMMAudioStream::start(int deviceIndex) {
 void WinMMAudioStream::close() {
 	if (hWaveOut != NULL) {
 		if (stopProcessing == false) {
+			qDebug() << "WinMMAudioDriver: Stopping processing thread";
 			stopProcessing = true;
 			processor.wait();
 		}

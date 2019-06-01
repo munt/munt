@@ -78,7 +78,6 @@ void *OSSAudioStream::processingThread(void *userData) {
 		}
 		audioStream.renderedFramesCount += audioStream.bufferSize;
 	}
-	qDebug() << "OSS audio: Processing thread stopped";
 	if (isErrorOccured) {
 		close(audioStream.stream);
 		audioStream.stream = 0;
@@ -224,6 +223,7 @@ void OSSAudioStream::stop() {
 		pthread_join(processingThreadID, NULL);
 		processingThreadID = 0;
 		stopProcessing = false;
+		qDebug() << "OSS audio: Processing thread stopped";
 		close(stream);
 		stream = 0;
 	}
