@@ -81,12 +81,6 @@
 
 // Configuration
 
-// If non-zero, deletes reverb buffers that are not in use to save memory.
-// If zero, keeps reverb buffers for all modes around all the time to avoid allocating/freeing in the critical path.
-#ifndef MT32EMU_REDUCE_REVERB_MEMORY
-#define MT32EMU_REDUCE_REVERB_MEMORY 1
-#endif
-
 // 0: Maximum speed at the cost of a bit lower emulation accuracy.
 // 1: Maximum achievable emulation accuracy.
 #ifndef MT32EMU_BOSS_REVERB_PRECISE_MODE

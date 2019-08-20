@@ -15,6 +15,9 @@ HEAD:
 	  ROMs of the MT-32 GEN0 (discovered by eddieduff at Sourceforge).
 	* Fixed compilation errors when setting various preprocessor definitions
 	  intended for debugging.
+	* Converted compiler definition MT32EMU_REDUCE_REVERB_MEMORY to a runtime
+	  configuration option. This allows the client to ensure that reverb mode
+	  changes are safe for rendering in a realtime thread.
 
 2017-12-24:
 

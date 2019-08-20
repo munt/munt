@@ -204,6 +204,8 @@ public:
 
 	// This stores the index of Part in chantable that failed to play and required partial abortion.
 	Bit32u abortingPartIx;
+
+	bool preallocatedReverbMemory;
 };
 
 Bit32u Synth::getLibraryVersionInt() {
@@ -247,7 +249,8 @@ Synth::Synth(ReportHandler *useReportHandler) :
 		isDefaultReportHandler = false;
 	}
 
-	for (int i = 0; i < 4; i++) {
+	extensions.preallocatedReverbMemory = false;
+	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
 		reverbModels[i] = NULL;
 	}
 	reverbModel = NULL;
@@ -354,9 +357,9 @@ void Synth::setReverbEnabled(bool newReverbEnabled) {
 		refreshSystemReverbParameters();
 		reverbOverridden = oldReverbOverridden;
 	} else {
-#if MT32EMU_REDUCE_REVERB_MEMORY
-		reverbModel->close();
-#endif
+		if (!extensions.preallocatedReverbMemory) {
+			reverbModel->close();
+		}
 		reverbModel = NULL;
 	}
 }
@@ -391,6 +394,18 @@ bool Synth::isMT32ReverbCompatibilityMode() const {
 
 bool Synth::isDefaultReverbMT32Compatible() const {
 	return opened && controlROMFeatures->defaultReverbMT32Compatible;
+}
+
+void Synth::preallocateReverbMemory(bool enabled) {
+	if (!opened || extensions.preallocatedReverbMemory == enabled) return;
+	extensions.preallocatedReverbMemory = enabled;
+	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
+		if (enabled) {
+			reverbModels[i]->open();
+		} else if (reverbModel != reverbModels[i]) {
+			reverbModels[i]->close();
+		}
+	}
 }
 
 void Synth::setDACInputMode(DACInputMode mode) {
@@ -603,15 +618,13 @@ bool Synth::initTimbres(Bit16u mapAddress, Bit16u offset, Bit16u count, Bit16u s
 }
 
 void Synth::initReverbModels(bool mt32CompatibleMode) {
-	reverbModels[REVERB_MODE_ROOM] = BReverbModel::createBReverbModel(REVERB_MODE_ROOM, mt32CompatibleMode, getSelectedRendererType());
-	reverbModels[REVERB_MODE_HALL] = BReverbModel::createBReverbModel(REVERB_MODE_HALL, mt32CompatibleMode, getSelectedRendererType());
-	reverbModels[REVERB_MODE_PLATE] = BReverbModel::createBReverbModel(REVERB_MODE_PLATE, mt32CompatibleMode, getSelectedRendererType());
-	reverbModels[REVERB_MODE_TAP_DELAY] = BReverbModel::createBReverbModel(REVERB_MODE_TAP_DELAY, mt32CompatibleMode, getSelectedRendererType());
-#if !MT32EMU_REDUCE_REVERB_MEMORY
-	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
-		reverbModels[i]->open();
+	for (int mode = REVERB_MODE_ROOM; mode <= REVERB_MODE_TAP_DELAY; mode++) {
+		reverbModels[mode] = BReverbModel::createBReverbModel(ReverbMode(mode), mt32CompatibleMode, getSelectedRendererType());
+
+		if (extensions.preallocatedReverbMemory) {
+			reverbModels[mode]->open();
+		}
 	}
-#endif
 }
 
 void Synth::initSoundGroups(char newSoundGroupNames[][9]) {
@@ -1680,18 +1693,18 @@ void Synth::refreshSystemReverbParameters() {
 		reverbModel = reverbModels[mt32ram.system.reverbMode];
 	}
 	if (reverbModel != oldReverbModel) {
-#if MT32EMU_REDUCE_REVERB_MEMORY
-		if (oldReverbModel != NULL) {
-			oldReverbModel->close();
+		if (extensions.preallocatedReverbMemory) {
+			if (isReverbEnabled()) {
+				reverbModel->mute();
+			}
+		} else {
+			if (oldReverbModel != NULL) {
+				oldReverbModel->close();
+			}
+			if (isReverbEnabled()) {
+				reverbModel->open();
+			}
 		}
-		if (isReverbEnabled()) {
-			reverbModel->open();
-		}
-#else
-		if (isReverbEnabled()) {
-			reverbModel->mute();
-		}
-#endif
 	}
 	if (isReverbEnabled()) {
 		reverbModel->setParameters(mt32ram.system.reverbTime, mt32ram.system.reverbLevel);

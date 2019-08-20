@@ -380,6 +380,10 @@ public:
 	MT32EMU_EXPORT bool isMT32ReverbCompatibilityMode() const;
 	// Returns whether default reverb compatibility mode is the old MT-32 compatibility mode.
 	MT32EMU_EXPORT bool isDefaultReverbMT32Compatible() const;
+	// If enabled, reverb buffers for all modes are keept around allocated all the time to avoid memory
+	// allocating/freeing in the rendering thread, which may be required for realtime operation.
+	// Otherwise, reverb buffers that are not in use are deleted to save memory (the default behaviour).
+	MT32EMU_EXPORT void preallocateReverbMemory(bool enabled);
 	// Sets new DAC input mode. See DACInputMode for details.
 	MT32EMU_EXPORT void setDACInputMode(DACInputMode mode);
 	// Returns current DAC input mode. See DACInputMode for details.
