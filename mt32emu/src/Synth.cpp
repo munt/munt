@@ -380,7 +380,7 @@ void Synth::setReverbCompatibilityMode(bool mt32CompatibleMode) {
 	if (!opened || (isMT32ReverbCompatibilityMode() == mt32CompatibleMode)) return;
 	bool oldReverbEnabled = isReverbEnabled();
 	setReverbEnabled(false);
-	for (int i = 0; i < 4; i++) {
+	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
 		delete reverbModels[i];
 	}
 	initReverbModels(mt32CompatibleMode);
@@ -872,7 +872,7 @@ void Synth::dispose() {
 
 	deleteMemoryRegions();
 
-	for (int i = 0; i < 4; i++) {
+	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
 		delete reverbModels[i];
 		reverbModels[i] = NULL;
 	}
