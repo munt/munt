@@ -24,20 +24,6 @@
 namespace MT32Emu {
 
 /**
- * Used to safely store timestamped MIDI events in a local queue.
- */
-struct MidiEvent {
-	Bit32u shortMessageData;
-	const Bit8u *sysexData;
-	Bit32u sysexLength;
-	Bit32u timestamp;
-
-	~MidiEvent();
-	void setShortMessage(Bit32u shortMessageData, Bit32u timestamp);
-	void setSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
-};
-
-/**
  * Simple queue implementation using a ring buffer to store incoming MIDI event before the synth actually processes it.
  * It is intended to:
  * - get rid of prerenderer while retaining graceful partial abortion
@@ -48,22 +34,38 @@ struct MidiEvent {
  * and one performs only writing. More complicated usage requires external synchronisation.
  */
 class MidiEventQueue {
-private:
-	MidiEvent * const ringBuffer;
-	const Bit32u ringBufferMask;
-	volatile Bit32u startPosition;
-	volatile Bit32u endPosition;
-
 public:
-	MidiEventQueue(Bit32u ringBufferSize = DEFAULT_MIDI_EVENT_QUEUE_SIZE); // Must be a power of 2
+	class SysexDataStorage;
+
+	struct MidiEvent {
+		const Bit8u *sysexData;
+		union {
+			Bit32u sysexLength;
+			Bit32u shortMessageData;
+		};
+		Bit32u timestamp;
+	};
+
+	explicit MidiEventQueue(
+		// Must be a power of 2
+		Bit32u ringBufferSize = DEFAULT_MIDI_EVENT_QUEUE_SIZE,
+		Bit32u storageBufferSize = 0
+	);
 	~MidiEventQueue();
 	void reset();
 	bool pushShortMessage(Bit32u shortMessageData, Bit32u timestamp);
 	bool pushSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
-	const MidiEvent *peekMidiEvent();
+	const volatile MidiEvent *peekMidiEvent();
 	void dropMidiEvent();
-	bool isFull() const;
-	bool inline isEmpty() const;
+	bool isEmpty() const;
+
+private:
+	SysexDataStorage &sysexDataStorage;
+
+	MidiEvent * const ringBuffer;
+	const Bit32u ringBufferMask;
+	volatile Bit32u startPosition;
+	volatile Bit32u endPosition;
 };
 
 } // namespace MT32Emu

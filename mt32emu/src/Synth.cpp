@@ -894,7 +894,7 @@ bool Synth::isOpen() const {
 void Synth::flushMIDIQueue() {
 	if (midiQueue != NULL) {
 		for (;;) {
-			const MidiEvent *midiEvent = midiQueue->peekMidiEvent();
+			const volatile MidiEventQueue::MidiEvent *midiEvent = midiQueue->peekMidiEvent();
 			if (midiEvent == NULL) break;
 			if (midiEvent->sysexData == NULL) {
 				playMsgNow(midiEvent->shortMessageData);
@@ -1797,40 +1797,117 @@ Bit32s Synth::getMasterTunePitchDelta() const {
 	return extensions.masterTunePitchDelta;
 }
 
-MidiEvent::~MidiEvent() {
-	if (sysexData != NULL) {
+/** Defines an interface of a class that maintains storage of variable-sized data of SysEx messages. */
+class MidiEventQueue::SysexDataStorage {
+public:
+	static MidiEventQueue::SysexDataStorage &create(Bit32u storageBufferSize);
+
+	virtual ~SysexDataStorage() {}
+	virtual Bit8u *allocate(Bit32u sysexLength) = 0;
+	virtual void reclaimUnused(const Bit8u *sysexData, Bit32u sysexLength) = 0;
+	virtual void dispose(const Bit8u *sysexData, Bit32u sysexLength) = 0;
+};
+
+/** Storage space for SysEx data is allocated dynamically on demand and is disposed lazily. */
+class DynamicSysexDataStorage : public MidiEventQueue::SysexDataStorage {
+public:
+	Bit8u *allocate(Bit32u sysexLength) {
+		return new Bit8u[sysexLength];
+	}
+
+	void reclaimUnused(const Bit8u *, Bit32u) {}
+
+	void dispose(const Bit8u *sysexData, Bit32u) {
 		delete[] sysexData;
+	}
+};
+
+/**
+ * SysEx data is stored in a preallocated buffer, that makes this kind of storage safe
+ * for use in a realtime thread. Additionally, the space retained by a SysEx event,
+ * that has been processed and thus is no longer necessary, is disposed instantly.
+ */
+class BufferedSysexDataStorage : public MidiEventQueue::SysexDataStorage {
+public:
+	explicit BufferedSysexDataStorage(Bit32u useStorageBufferSize) :
+		storageBuffer(new Bit8u[useStorageBufferSize]),
+		storageBufferSize(useStorageBufferSize),
+		startPosition(),
+		endPosition()
+	{}
+
+	~BufferedSysexDataStorage() {
+		delete[] storageBuffer;
+	}
+
+	Bit8u *allocate(Bit32u sysexLength) {
+		Bit32u myStartPosition = startPosition;
+		Bit32u myEndPosition = endPosition;
+
+		// When the free space isn't contiguous, the data is allocated either right after the end position
+		// or at the buffer beginning, wherever it fits.
+		if (myStartPosition > myEndPosition) {
+			if (myStartPosition - myEndPosition <= sysexLength) return NULL;
+		} else if (storageBufferSize - myEndPosition < sysexLength) {
+			// There's not enough free space at the end to place the data block.
+			if (myStartPosition == myEndPosition) {
+				// The buffer is empty -> reset positions to the buffer beginning.
+				if (storageBufferSize <= sysexLength) return NULL;
+				if (myStartPosition != 0) {
+					myStartPosition = 0;
+					startPosition = myStartPosition;
+				}
+			} else if (myStartPosition <= sysexLength) return NULL;
+			myEndPosition = 0;
+		}
+		endPosition = myEndPosition + sysexLength;
+		return storageBuffer + myEndPosition;
+	}
+
+	void reclaimUnused(const Bit8u *sysexData, Bit32u sysexLength) {
+		if (sysexData == NULL) return;
+		Bit32u allocatedPosition = startPosition;
+		if (storageBuffer + allocatedPosition == sysexData) {
+			startPosition = allocatedPosition + sysexLength;
+		} else if (storageBuffer == sysexData) {
+			// Buffer wrapped around.
+			startPosition = sysexLength;
+		}
+	}
+
+	void dispose(const Bit8u *, Bit32u) {}
+
+private:
+	Bit8u * const storageBuffer;
+	const Bit32u storageBufferSize;
+
+	volatile Bit32u startPosition;
+	volatile Bit32u endPosition;
+};
+
+MidiEventQueue::SysexDataStorage &MidiEventQueue::SysexDataStorage::create(Bit32u storageBufferSize) {
+	if (storageBufferSize > 0) {
+		return *new BufferedSysexDataStorage(storageBufferSize);
+	} else {
+		return *new DynamicSysexDataStorage;
 	}
 }
 
-void MidiEvent::setShortMessage(Bit32u useShortMessageData, Bit32u useTimestamp) {
-	if (sysexData != NULL) {
-		delete[] sysexData;
+MidiEventQueue::MidiEventQueue(Bit32u useRingBufferSize, Bit32u storageBufferSize) :
+	sysexDataStorage(SysexDataStorage::create(storageBufferSize)),
+	ringBuffer(new MidiEvent[useRingBufferSize]), ringBufferMask(useRingBufferSize - 1)
+{
+	for (Bit32u i = 0; i <= ringBufferMask; i++) {
+		ringBuffer[i].sysexData = NULL;
 	}
-	shortMessageData = useShortMessageData;
-	timestamp = useTimestamp;
-	sysexData = NULL;
-	sysexLength = 0;
-}
-
-void MidiEvent::setSysex(const Bit8u *useSysexData, Bit32u useSysexLength, Bit32u useTimestamp) {
-	if (sysexData != NULL) {
-		delete[] sysexData;
-	}
-	shortMessageData = 0;
-	timestamp = useTimestamp;
-	sysexLength = useSysexLength;
-	Bit8u *dstSysexData = new Bit8u[sysexLength];
-	sysexData = dstSysexData;
-	memcpy(dstSysexData, useSysexData, sysexLength);
-}
-
-MidiEventQueue::MidiEventQueue(Bit32u useRingBufferSize) : ringBuffer(new MidiEvent[useRingBufferSize]), ringBufferMask(useRingBufferSize - 1) {
-	memset(ringBuffer, 0, useRingBufferSize * sizeof(MidiEvent));
 	reset();
 }
 
 MidiEventQueue::~MidiEventQueue() {
+	for (Bit32u i = 0; i <= ringBufferMask; i++) {
+		volatile MidiEvent &currentEvent = ringBuffer[endPosition];
+		sysexDataStorage.dispose(currentEvent.sysexData, currentEvent.sysexLength);
+	}
 	delete[] ringBuffer;
 }
 
@@ -1841,35 +1918,42 @@ void MidiEventQueue::reset() {
 
 bool MidiEventQueue::pushShortMessage(Bit32u shortMessageData, Bit32u timestamp) {
 	Bit32u newEndPosition = (endPosition + 1) & ringBufferMask;
-	// Is ring buffer full?
+	// If ring buffer is full, bail out.
 	if (startPosition == newEndPosition) return false;
-	ringBuffer[endPosition].setShortMessage(shortMessageData, timestamp);
+	volatile MidiEvent &newEvent = ringBuffer[endPosition];
+	sysexDataStorage.dispose(newEvent.sysexData, newEvent.sysexLength);
+	newEvent.sysexData = NULL;
+	newEvent.shortMessageData = shortMessageData;
+	newEvent.timestamp = timestamp;
 	endPosition = newEndPosition;
 	return true;
 }
 
 bool MidiEventQueue::pushSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp) {
 	Bit32u newEndPosition = (endPosition + 1) & ringBufferMask;
-	// Is ring buffer full?
+	// If ring buffer is full, bail out.
 	if (startPosition == newEndPosition) return false;
-	ringBuffer[endPosition].setSysex(sysexData, sysexLength, timestamp);
+	volatile MidiEvent &newEvent = ringBuffer[endPosition];
+	sysexDataStorage.dispose(newEvent.sysexData, newEvent.sysexLength);
+	Bit8u *dstSysexData = sysexDataStorage.allocate(sysexLength);
+	if (dstSysexData == NULL) return false;
+	memcpy(dstSysexData, sysexData, sysexLength);
+	newEvent.sysexData = dstSysexData;
+	newEvent.sysexLength = sysexLength;
+	newEvent.timestamp = timestamp;
 	endPosition = newEndPosition;
 	return true;
 }
 
-const MidiEvent *MidiEventQueue::peekMidiEvent() {
+const volatile MidiEventQueue::MidiEvent *MidiEventQueue::peekMidiEvent() {
 	return isEmpty() ? NULL : &ringBuffer[startPosition];
 }
 
 void MidiEventQueue::dropMidiEvent() {
-	// Is ring buffer empty?
-	if (startPosition != endPosition) {
-		startPosition = (startPosition + 1) & ringBufferMask;
-	}
-}
-
-bool MidiEventQueue::isFull() const {
-	return startPosition == ((endPosition + 1) & ringBufferMask);
+	if (isEmpty()) return;
+	volatile MidiEvent &unusedEvent = ringBuffer[startPosition];
+	sysexDataStorage.reclaimUnused(unusedEvent.sysexData, unusedEvent.sysexLength);
+	startPosition = (startPosition + 1) & ringBufferMask;
 }
 
 bool MidiEventQueue::isEmpty() const {
@@ -2008,7 +2092,7 @@ void RendererImpl<Sample>::doRenderStreams(const DACOutputStreams<Sample> &strea
 		// We need to ensure zero-duration notes will play so add minimum 1-sample delay.
 		Bit32u thisLen = 1;
 		if (!isAbortingPoly()) {
-			const MidiEvent *nextEvent = getMidiQueue().peekMidiEvent();
+			const volatile MidiEventQueue::MidiEvent *nextEvent = getMidiQueue().peekMidiEvent();
 			Bit32s samplesToNextEvent = (nextEvent != NULL) ? Bit32s(nextEvent->timestamp - getRenderedSampleCount()) : MAX_SAMPLES_PER_RUN;
 			if (samplesToNextEvent > 0) {
 				thisLen = len > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : len;
