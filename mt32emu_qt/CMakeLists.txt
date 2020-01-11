@@ -204,6 +204,16 @@ if(PULSEAUDIO_FOUND)
   )
 endif()
 
+find_package(JACK)
+if(JACK_FOUND)
+  add_definitions(-DWITH_JACK_AUDIO_DRIVER)
+  set(EXT_LIBS ${EXT_LIBS} ${JACK_LIBRARIES})
+  include_directories(${JACK_INCLUDE_DIRS})
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/audiodrv/JackAudioDriver.cpp
+  )
+endif()
+
 check_include_files(sys/soundcard.h SYS_SOUNDCARD_FOUND)
 if(SYS_SOUNDCARD_FOUND)
   add_definitions(-DWITH_OSS_AUDIO_DRIVER)

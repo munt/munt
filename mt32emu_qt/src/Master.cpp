@@ -43,6 +43,9 @@
 #ifdef WITH_QT_AUDIO_DRIVER
 #include "audiodrv/QtAudioDriver.h"
 #endif
+#ifdef WITH_JACK_AUDIO_DRIVER
+#include "audiodrv/JackAudioDriver.h"
+#endif
 
 #include "audiodrv/AudioFileWriterDriver.h"
 
@@ -167,6 +170,9 @@ void Master::initAudioDrivers() {
 #endif
 #ifdef WITH_QT_AUDIO_DRIVER
 	audioDrivers.append(new QtAudioDriver(this));
+#endif
+#ifdef WITH_JACK_AUDIO_DRIVER
+	audioDrivers.append(new JackAudioDriver(this));
 #endif
 	audioDrivers.append(new AudioFileWriterDriver(this));
 }
