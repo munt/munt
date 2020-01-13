@@ -119,6 +119,7 @@ public:
 	bool playMIDIShortMessage(MT32Emu::Bit32u msg, quint64 timestamp);
 	bool playMIDISysex(const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, quint64 timestamp);
 	void render(MT32Emu::Bit16s *buffer, uint length);
+	void render(float *buffer, uint length);
 
 	const QReportHandler *getReportHandler() const;
 

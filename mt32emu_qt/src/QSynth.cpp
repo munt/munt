@@ -203,6 +203,24 @@ void QSynth::render(Bit16s *buffer, uint length) {
 	emit audioBlockRendered();
 }
 
+void QSynth::render(float *buffer, uint length) {
+	synthMutex->lock();
+	if (!isOpen()) {
+		synthMutex->unlock();
+
+		// Synth is closed, simply erase buffer content
+		float *p = buffer;
+		float *e = &buffer[2 * length];
+		while (p < e) *(p++) = 0.0f;
+		emit audioBlockRendered();
+		return;
+	}
+	sampleRateConverter->getOutputSamples(buffer, length);
+	// TODO: Add support for recording to float WAVs
+	synthMutex->unlock();
+	emit audioBlockRendered();
+}
+
 bool QSynth::open(uint &targetSampleRate, SamplerateConversionQuality srcQuality, const QString useSynthProfileName) {
 	if (isOpen()) return true;
 
