@@ -212,6 +212,18 @@ if(SYS_SOUNDCARD_FOUND)
   )
 endif()
 
+find_package(JACK)
+if(JACK_FOUND)
+  add_definitions(-DWITH_JACK_MIDI_DRIVER -DWITH_JACK_AUDIO_DRIVER)
+  set(EXT_LIBS ${EXT_LIBS} ${JACK_LIBRARIES})
+  include_directories(${JACK_INCLUDE_DIRS})
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/JACKClient.cpp
+    src/mididrv/JACKMidiDriver.cpp
+    src/audiodrv/JACKAudioDriver.cpp
+  )
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   add_compile_options(-Wall -Wextra -Wnon-virtual-dtor)
   if(mt32emu-qt_REQUIRED_CPP11)

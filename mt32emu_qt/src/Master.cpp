@@ -37,6 +37,9 @@
 #ifdef WITH_PULSE_AUDIO_DRIVER
 #include "audiodrv/PulseAudioDriver.h"
 #endif
+#ifdef WITH_JACK_AUDIO_DRIVER
+#include "audiodrv/JACKAudioDriver.h"
+#endif
 #ifdef WITH_PORT_AUDIO_DRIVER
 #include "audiodrv/PortAudioDriver.h"
 #endif
@@ -161,6 +164,9 @@ void Master::initAudioDrivers() {
 #endif
 #ifdef WITH_PULSE_AUDIO_DRIVER
 	audioDrivers.append(new PulseAudioDriver(this));
+#endif
+#ifdef WITH_JACK_AUDIO_DRIVER
+	audioDrivers.append(new JACKAudioDriver(this));
 #endif
 #ifdef WITH_PORT_AUDIO_DRIVER
 	audioDrivers.append(new PortAudioDriver(this));
