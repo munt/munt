@@ -1,7 +1,6 @@
 #ifndef AUDIO_DRIVER_H
 #define AUDIO_DRIVER_H
 
-#include <QObject>
 #include <QtGlobal>
 #include <QList>
 #include <QString>
