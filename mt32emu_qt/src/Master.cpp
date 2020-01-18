@@ -531,7 +531,7 @@ void Master::createMidiSession(MidiSession **returnVal, MidiDriver *midiDriver, 
 void Master::deleteMidiSession(MidiSession *midiSession) {
 	if ((maxSessions > 0) && (--maxSessions == 0)) {
 		qDebug() << "Exitting due to maximum number of sessions finished";
-		maxSessionsFinished();
+		emit maxSessionsFinished();
 	}
 	SynthRoute *synthRoute = midiSession->getSynthRoute();
 	synthRoute->removeMidiSession(midiSession);
