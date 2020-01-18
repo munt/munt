@@ -20,6 +20,7 @@ public:
 	void stop();
 	void onJACKShutdown();
 	void renderStreams(const quint32 frameCount, JACKAudioSample *leftOutBuffer, JACKAudioSample *rightOutBuffer);
+	quint64 computeMIDITimestamp(const quint32 jackBufferFrameTime) const;
 
 private:
 	QSharedPointer<JACKClient> jackClient;

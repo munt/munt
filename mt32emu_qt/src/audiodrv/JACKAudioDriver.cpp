@@ -87,6 +87,10 @@ void JACKAudioStream::renderStreams(const quint32 totalFrameCount, JACKAudioSamp
 	renderedFramesCount += totalFrameCount;
 }
 
+quint64 JACKAudioStream::computeMIDITimestamp(const quint32 jackBufferFrameTime) const {
+	return renderedFramesCount + jackBufferFrameTime;
+}
+
 JACKAudioDefaultDevice::JACKAudioDefaultDevice(JACKAudioDriver &useDriver) :
 	AudioDevice(useDriver, "Default")
 {}

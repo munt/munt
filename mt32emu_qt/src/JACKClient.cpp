@@ -139,10 +139,16 @@ void JACKClient::process(jack_nframes_t nframes) {
 			jack_midi_event_t eventData;
 			bool eventRetrieved = jack_midi_event_get(&eventData, midiInBuffer, eventIx) == 0;
 			if (!eventRetrieved) break;
-			quint32 eventFrameTime = cycleStartFrameTime + eventData.time;
-			quint64 eventJackTime = jack_frames_to_time(client, eventFrameTime);
-			MasterClockNanos eventNanoTime = JACKMidiDriver::jackFrameTimeToMasterClockNanos(nanosNow, eventJackTime, jackTimeNow);
-			bool eventConsumed = JACKMidiDriver::pushMIDIMessage(midiSession, eventNanoTime, eventData.size, eventData.buffer);
+			bool eventConsumed;
+			if (audioStream != NULL) {
+				quint64 eventTimestamp = audioStream->computeMIDITimestamp(eventData.time);
+				eventConsumed = JACKMidiDriver::playMIDIMessage(midiSession, eventTimestamp, eventData.size, eventData.buffer);
+			} else {
+				quint32 eventFrameTime = cycleStartFrameTime + eventData.time;
+				quint64 eventJackTime = jack_frames_to_time(client, eventFrameTime);
+				MasterClockNanos eventNanoTime = JACKMidiDriver::jackFrameTimeToMasterClockNanos(nanosNow, eventJackTime, jackTimeNow);
+				eventConsumed = JACKMidiDriver::pushMIDIMessage(midiSession, eventNanoTime, eventData.size, eventData.buffer);
+			}
 			if (!eventConsumed) break;
 		}
 	}
