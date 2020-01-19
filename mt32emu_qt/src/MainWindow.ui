@@ -40,12 +40,12 @@
      <x>0</x>
      <y>0</y>
      <width>300</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMunt_mt32emu_qt">
     <property name="title">
-     <string>Help</string>
+     <string>He&amp;lp</string>
     </property>
     <addaction name="actionAbout"/>
    </widget>
@@ -54,6 +54,8 @@
      <string>Tools</string>
     </property>
     <addaction name="actionNew_MIDI_port"/>
+    <addaction name="actionNew_JACK_MIDI_port"/>
+    <addaction name="actionNew_exclusive_JACK_MIDI_port"/>
     <addaction name="actionTest_MIDI_Driver"/>
     <addaction name="separator"/>
     <addaction name="actionPlay_MIDI_file"/>
@@ -63,7 +65,7 @@
    </widget>
    <widget class="QMenu" name="menuOptions">
     <property name="title">
-     <string>Options</string>
+     <string>Optio&amp;ns</string>
     </property>
     <addaction name="actionStart_iconized"/>
     <addaction name="actionHide_to_tray_on_close"/>
@@ -79,7 +81,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionAbout">
    <property name="text">
-    <string>About</string>
+    <string>&amp;About</string>
    </property>
   </action>
   <action name="actionOptions">
@@ -92,7 +94,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Play MIDI file...</string>
+    <string>&amp;Play MIDI file...</string>
    </property>
   </action>
   <action name="actionTest_MIDI_Driver">
@@ -100,12 +102,12 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Test MIDI Driver</string>
+    <string>&amp;Test MIDI Driver</string>
    </property>
   </action>
   <action name="actionNew_MIDI_port">
    <property name="text">
-    <string>New MIDI port...</string>
+    <string>&amp;New MIDI port...</string>
    </property>
   </action>
   <action name="actionStart_iconized">
@@ -113,7 +115,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Start iconized</string>
+    <string>&amp;Start iconized</string>
    </property>
   </action>
   <action name="actionShow_LCD_balloons">
@@ -121,7 +123,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show LCD balloons</string>
+    <string>Show &amp;LCD balloons</string>
    </property>
   </action>
   <action name="actionShow_connection_balloons">
@@ -129,22 +131,22 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show connection balloons</string>
+    <string>Show &amp;connection balloons</string>
    </property>
   </action>
   <action name="actionROM_Configuration">
    <property name="text">
-    <string>ROM Configuration...</string>
+    <string>&amp;ROM Configuration...</string>
    </property>
   </action>
   <action name="actionConvert_MIDI_to_Wave">
    <property name="text">
-    <string>Convert MIDI to Wave...</string>
+    <string>&amp;Convert MIDI to Wave...</string>
    </property>
   </action>
   <action name="actionExit">
    <property name="text">
-    <string>Exit</string>
+    <string>&amp;Exit</string>
    </property>
   </action>
   <action name="actionHide_to_tray_on_close">
@@ -152,7 +154,23 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Hide to tray on close</string>
+    <string>&amp;Hide to tray on close</string>
+   </property>
+  </action>
+  <action name="actionNew_JACK_MIDI_port">
+   <property name="text">
+    <string>&amp;New JACK MIDI port</string>
+   </property>
+   <property name="toolTip">
+    <string>New JACK MIDI port</string>
+   </property>
+  </action>
+  <action name="actionNew_exclusive_JACK_MIDI_port">
+   <property name="text">
+    <string>New exclusive JACK MIDI port</string>
+   </property>
+   <property name="toolTip">
+    <string>New exclusive JACK MIDI port</string>
    </property>
   </action>
  </widget>

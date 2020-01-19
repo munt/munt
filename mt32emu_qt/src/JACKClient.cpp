@@ -33,9 +33,13 @@ int JACKClient::onSampleRateChange(jack_nframes_t newSystemSampleRate, void *) {
 void JACKClient::onJACKShutdown(void *instance) {
 	JACKClient *jackClient = static_cast<JACKClient *>(instance);
 	jackClient->state = JACKClientState_CLOSING;
-	if (jackClient->audioStream != NULL) jackClient->audioStream->onJACKShutdown();
-	jackClient->client = NULL;
-	jackClient->state = JACKClientState_CLOSED;
+	if (jackClient->audioStream != NULL) {
+		jackClient->audioStream->onJACKShutdown();
+		jackClient->close();
+	} else if (jackClient->midiSession != NULL) {
+		// This eventually deletes jackClient
+		Master::getInstance()->deleteJACKMidiPort(jackClient->midiSession);
+	}
 }
 
 JACKClient::JACKClient() :
@@ -65,6 +69,8 @@ JACKClientState JACKClient::open(MidiSession *useMidiSession, JACKAudioStream *u
 			return state;
 		}
 		midiSession = useMidiSession;
+		char *actualClientName = jack_get_client_name(client);
+		midiSession->getSynthRoute()->setMidiSessionName(midiSession, midiSession->getName() + " for " + actualClientName);
 	}
 	if (useAudioStream != NULL) {
 		leftAudioOutPort = jack_port_register(client, "left_audio_out", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
@@ -93,9 +99,10 @@ JACKClientState JACKClient::open(MidiSession *useMidiSession, JACKAudioStream *u
 
 JACKClientState JACKClient::close() {
 	if (state == JACKClientState_CLOSED) return state;
-	jack_client_close(client);
+	if (state == JACKClientState_OPEN) {
+		jack_client_close(client);
+	}
 	client = NULL;
-
 	state = JACKClientState_CLOSED;
 	return state;
 }

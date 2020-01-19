@@ -52,7 +52,7 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	midiConverterDialog(NULL)
 {
 	ui->setupUi(this);
-	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *)));
+	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *, bool)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *, bool)));
 	connect(master, SIGNAL(synthRouteRemoved(SynthRoute *)), SLOT(handleSynthRouteRemoved(SynthRoute *)));
 	connect(master, SIGNAL(synthRoutePinned()), SLOT(refreshTabNames()));
 	connect(master, SIGNAL(romsLoadFailed(bool &)), SLOT(handleROMSLoadFailed(bool &)), Qt::DirectConnection);
@@ -148,8 +148,8 @@ void MainWindow::refreshTabNames()
 	}
 }
 
-void MainWindow::handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice) {
-	SynthWidget *synthWidget = new SynthWidget(master, synthRoute, audioDevice, this);
+void MainWindow::handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice, bool pinnable) {
+	SynthWidget *synthWidget = new SynthWidget(master, synthRoute, pinnable, audioDevice, this);
 	int newTabIx = ui->synthTabs->count();
 	ui->synthTabs->addTab(synthWidget, QString("Synth &%1").arg(ui->synthTabs->count() + 1));
 	ui->synthTabs->setCurrentIndex(newTabIx);
@@ -329,3 +329,15 @@ void MainWindow::dropEvent(QDropEvent *e) {
 		midiPlayerDialog->dropEvent(e);
 	}
 }
+
+#ifdef WITH_JACK_MIDI_DRIVER
+void MainWindow::on_actionNew_JACK_MIDI_port_triggered() {
+	if (master->createJACKMidiPort(false)) return;
+	QMessageBox::warning(this, "Error", "Failed to create JACK MIDI port");
+}
+
+void MainWindow::on_actionNew_exclusive_JACK_MIDI_port_triggered() {
+	if (master->createJACKMidiPort(true)) return;
+	QMessageBox::warning(this, "Error", "Failed to create JACK MIDI port");
+}
+#endif

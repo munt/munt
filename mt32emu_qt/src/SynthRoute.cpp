@@ -33,6 +33,7 @@ SynthRoute::SynthRoute(QObject *parent) :
 	QObject(parent),
 	state(SynthRouteState_CLOSED),
 	qSynth(this),
+	exclusiveMidiMode(),
 	audioDevice(NULL),
 	audioStream(NULL),
 	debugLastEventTimestamp(0)
@@ -57,7 +58,7 @@ void SynthRoute::setState(SynthRouteState newState) {
 	emit stateChanged(newState);
 }
 
-bool SynthRoute::open() {
+bool SynthRoute::open(AudioStreamFactory audioStreamFactory) {
 	switch (state) {
 	case SynthRouteState_OPENING:
 	case SynthRouteState_OPEN:
@@ -77,7 +78,11 @@ bool SynthRoute::open() {
 			debugDeltaUpperLimit = qint64(ceil(debugDeltaMean + debugDeltaLimit));
 			qDebug() << "Using sample rate:" << sampleRate;
 
-			audioStream = audioDevice->startAudioStream(qSynth, sampleRate);
+			if (exclusiveMidiMode && audioStreamFactory != NULL) {
+				audioStream = audioStreamFactory(audioDevice, qSynth, sampleRate, midiSessions.first());
+			} else {
+				audioStream = audioDevice->startAudioStream(qSynth, sampleRate);
+			}
 			if (audioStream != NULL) {
 				setState(SynthRouteState_OPEN);
 				return true;
@@ -109,6 +114,7 @@ bool SynthRoute::close() {
 	delete audioStream;
 	audioStream = NULL;
 	qSynth.close();
+	exclusiveMidiMode = false;
 	return true;
 }
 
@@ -123,11 +129,23 @@ bool SynthRoute::reset() {
 	return false;
 }
 
+bool SynthRoute::enableExclusiveMidiMode(MidiSession *midiSession) {
+	if (exclusiveMidiMode || hasMIDISessions()) return false;
+	addMidiSession(midiSession);
+	exclusiveMidiMode = true;
+	return true;
+}
+
+bool SynthRoute::isExclusiveMidiModeEnabled() {
+	return exclusiveMidiMode;
+}
+
 SynthRouteState SynthRoute::getState() const {
 	return state;
 }
 
 void SynthRoute::addMidiSession(MidiSession *midiSession) {
+	if (exclusiveMidiMode) return;
 	midiSessions.append(midiSession);
 	emit midiSessionAdded(midiSession);
 }

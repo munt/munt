@@ -20,9 +20,16 @@ public:
 	~JACKMidiDriver();
 	void start();
 	void stop();
+	bool canDeletePort(MidiSession *midiSession);
+	void deletePort(MidiSession *midiSession);
+	bool createPort(bool exclusive);
 
 private:
 	QList<JACKClient *> jackClients;
+	QList<MidiSession *> exclusiveSessions;
+
+private slots:
+	void onJACKMidiPortDeleted(MidiSession *midiSession);
 };
 
 #endif

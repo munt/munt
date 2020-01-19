@@ -44,11 +44,11 @@ private:
 private slots:
 	void on_actionExit_triggered();
 	void on_actionAbout_triggered();
-	void handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice);
+	void handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice, bool pinnable);
 	void handleSynthRouteRemoved(SynthRoute *synthRoute);
 	void handleROMSLoadFailed(bool &recoveryAttempted);
 	void on_menuMIDI_aboutToShow();
-	void on_actionNew_MIDI_port_triggered();
+	void on_actionNew_exclusive_JACK_MIDI_port_triggered();
 	void on_actionTest_MIDI_Driver_toggled(bool checked);
 	void on_actionPlay_MIDI_file_triggered();
 	void on_actionConvert_MIDI_to_Wave_triggered();
@@ -64,6 +64,12 @@ private slots:
 	void toggleShowConsole();
 	void handlePlayMidiFiles(const QStringList &fileList);
 	void handleConvertMidiFiles(const QStringList &fileList);
+
+#ifdef WITH_JACK_MIDI_DRIVER
+private slots:
+	void on_actionNew_MIDI_port_triggered();
+	void on_actionNew_JACK_MIDI_port_triggered();
+#endif
 };
 
 #endif // MAINWINDOW_H

@@ -22,7 +22,7 @@ class SynthWidget : public QWidget
 	Q_OBJECT
 
 public:
-	explicit SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioDevice *audioDevice, QWidget *parent = 0);
+	explicit SynthWidget(Master *master, SynthRoute *useSynthRoute, bool pinnable, const AudioDevice *audioDevice, QWidget *parent = 0);
 	~SynthWidget();
 	SynthRoute *getSynthRoute();
 

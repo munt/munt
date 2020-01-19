@@ -59,20 +59,64 @@ JACKMidiDriver::JACKMidiDriver(Master *master) : MidiDriver(master) {
 	name = "JACK MIDI Driver";
 	disconnect(SIGNAL(midiSessionInitiated(MidiSession **, MidiDriver *, QString)));
 	connect(this, SIGNAL(midiSessionInitiated(MidiSession **, MidiDriver *, QString)), master, SLOT(createMidiSession(MidiSession **, MidiDriver *, QString)), Qt::DirectConnection);
+	connect(master, SIGNAL(jackMidiPortDeleted(MidiSession *)), SLOT(onJACKMidiPortDeleted(MidiSession *)));
 }
 
 JACKMidiDriver::~JACKMidiDriver() {
 	stop();
+	qDebug() << "JACK MIDI Driver stopped";
 }
 
 void JACKMidiDriver::start() {
-	JACKClient *jackClient = new JACKClient;
-	MidiSession *midiSession = NULL;
-	emit midiSessionInitiated(&midiSession, this, "JACK MIDI In");
-	jackClient->open(midiSession, NULL);
 	qDebug() << "JACK MIDI Driver started";
 }
 
 void JACKMidiDriver::stop() {
-	qDebug() << "JACK MIDI Driver stopped";
+	while (!exclusiveSessions.isEmpty()) {
+		emit midiSessionDeleted(exclusiveSessions.takeFirst());
+	}
+	while (!jackClients.isEmpty()) {
+		delete jackClients.takeFirst();
+	}
+}
+
+bool JACKMidiDriver::canDeletePort(MidiSession *midiSession) {
+	return exclusiveSessions.contains(midiSession) || midiSessions.contains(midiSession);
+}
+
+void JACKMidiDriver::deletePort(MidiSession *midiSession) {
+	if (exclusiveSessions.removeOne(midiSession)) return;
+
+	int midiSessionIx = midiSessions.indexOf(midiSession);
+	if (midiSessionIx < 0 || jackClients.size() <= midiSessionIx) return;
+	JACKClient *jackClient = jackClients.at(midiSessionIx);
+	delete jackClient;
+	jackClients.removeAt(midiSessionIx);
+	midiSessions.removeAt(midiSessionIx);
+}
+
+bool JACKMidiDriver::createPort(bool exclusive) {
+	QString portName = QString("JACK MIDI In");
+	if (exclusive) {
+		MidiSession *midiSession = master->createExclusiveJACKMidiPort(portName);
+		if (midiSession != NULL) {
+			exclusiveSessions.append(midiSession);
+			return true;
+		}
+	}
+	MidiSession *midiSession = createMidiSession(portName);
+	JACKClient *jackClient = new JACKClient;
+	JACKClientState state = jackClient->open(midiSession, NULL);
+	if (JACKClientState_OPEN == state) {
+		jackClients.append(jackClient);
+		return true;
+	}
+	delete jackClient;
+	deleteMidiSession(midiSession);
+	return false;
+}
+
+void JACKMidiDriver::onJACKMidiPortDeleted(MidiSession *midiSession) {
+	deletePort(midiSession);
+	emit midiSessionDeleted(midiSession);
 }

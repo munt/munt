@@ -23,10 +23,13 @@ enum SynthRouteState {
 class SynthRoute : public QObject {
 	Q_OBJECT
 private:
+	typedef AudioStream *(*AudioStreamFactory)(const AudioDevice *, QSynth &, const uint, MidiSession *midiSession);
+
 	SynthRouteState state;
 	QSynth qSynth;
 	QList<MidiSession *> midiSessions;
 	MidiRecorder recorder;
+	bool exclusiveMidiMode;
 
 	const AudioDevice *audioDevice;
 	AudioStream *audioStream; // NULL until a stream is created
@@ -39,9 +42,11 @@ private:
 public:
 	SynthRoute(QObject *parent = NULL);
 	~SynthRoute();
-	bool open();
+	bool open(AudioStreamFactory audioStreamFactory = NULL);
 	bool close();
 	bool reset();
+	bool enableExclusiveMidiMode(MidiSession *midiSession);
+	bool isExclusiveMidiModeEnabled();
 
 	const QString getPatchName(int partNum) const;
 	void getPartStates(bool *partStates) const;

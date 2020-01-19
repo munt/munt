@@ -23,7 +23,7 @@
 #include "MidiSession.h"
 #include "SynthStateMonitor.h"
 
-SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioDevice *useAudioDevice, QWidget *parent) :
+SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, bool pinnable, const AudioDevice *useAudioDevice, QWidget *parent) :
 	QWidget(parent),
 	synthRoute(useSynthRoute),
 	ui(new Ui::SynthWidget),
@@ -43,6 +43,7 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, const AudioD
 
 	refreshAudioDeviceList(master, useAudioDevice);
 	ui->pinCheckBox->setChecked(master->isPinned(synthRoute));
+	ui->pinCheckBox->setEnabled(pinnable);
 
 	ui->midiAdd->setEnabled(master->canCreateMidiPort());
 

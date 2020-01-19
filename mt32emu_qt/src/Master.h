@@ -85,14 +85,27 @@ private slots:
 	void updateMainWindowTitleContribution(const QString &titleContribution);
 
 signals:
-	void synthRouteAdded(SynthRoute *route, const AudioDevice *audioDevice);
+	void synthRouteAdded(SynthRoute *route, const AudioDevice *audioDevice, bool pinnable);
 	void synthRouteRemoved(SynthRoute *route);
 	void synthRoutePinned();
+	void synthRoutePinnable();
 	void romsLoadFailed(bool &recoveryAttempted);
 	void playMidiFiles(const QStringList &);
 	void convertMidiFiles(const QStringList &);
 	void mainWindowTitleUpdated(const QString &);
 	void maxSessionsFinished();
+
+#ifdef WITH_JACK_MIDI_DRIVER
+private:
+	MidiDriver *jackMidiDriver;
+public:
+	bool createJACKMidiPort(bool exclusive);
+	void deleteJACKMidiPort(MidiSession *midiSession);
+	MidiSession *createExclusiveJACKMidiPort(QString portName);
+
+signals:
+	void jackMidiPortDeleted(MidiSession *midiSession);
+#endif
 };
 
 #endif

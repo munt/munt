@@ -11,25 +11,28 @@ class Master;
 class QSynth;
 class JACKClient;
 class JACKAudioDriver;
+class MidiSession;
 
 class JACKAudioStream : public AudioStream {
 public:
-	JACKAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate, QSharedPointer<JACKClient> &jackClient);
+	JACKAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate, JACKClient *jackClient);
 	~JACKAudioStream();
-	bool start();
+	bool start(MidiSession *midiSession);
 	void stop();
 	void onJACKShutdown();
 	void renderStreams(const quint32 frameCount, JACKAudioSample *leftOutBuffer, JACKAudioSample *rightOutBuffer);
 	quint64 computeMIDITimestamp(const quint32 jackBufferFrameTime) const;
 
 private:
-	QSharedPointer<JACKClient> jackClient;
+	JACKClient *jackClient;
 	float *buffer;
 };
 
 class JACKAudioDefaultDevice : public AudioDevice {
 	friend class JACKAudioDriver;
 public:
+	static AudioStream *startAudioStream(const AudioDevice *audioDevice, QSynth &synth, const uint sampleRate, MidiSession *midiSession);
+
 	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
 
 private:
