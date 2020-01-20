@@ -33,12 +33,12 @@ int JACKClient::onSampleRateChange(jack_nframes_t newSystemSampleRate, void *) {
 void JACKClient::onJACKShutdown(void *instance) {
 	JACKClient *jackClient = static_cast<JACKClient *>(instance);
 	jackClient->state = JACKClientState_CLOSING;
-	if (jackClient->audioStream != NULL) {
-		jackClient->audioStream->onJACKShutdown();
-		jackClient->close();
-	} else if (jackClient->midiSession != NULL) {
+	if (jackClient->midiSession != NULL) {
 		// This eventually deletes jackClient
 		Master::getInstance()->deleteJACKMidiPort(jackClient->midiSession);
+	} else if (jackClient->audioStream != NULL) {
+		jackClient->audioStream->onJACKShutdown();
+		jackClient->close();
 	}
 }
 

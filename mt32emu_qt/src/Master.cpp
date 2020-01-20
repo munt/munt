@@ -689,6 +689,8 @@ MidiSession *Master::createExclusiveJACKMidiPort(QString portName) {
 			MidiSession *midiSession = new MidiSession(this, jackMidiDriver, portName, synthRoute);
 			synthRoute->enableExclusiveMidiMode(midiSession);
 			if (synthRoute->open(JACKAudioDefaultDevice::startAudioStream)) {
+				// This must be done asynchronously
+				connect(synthRoute, SIGNAL(exclusiveMidiSessionRemoved(MidiSession *)), jackMidiDriver, SLOT(onJACKMidiPortDeleted(MidiSession *)), Qt::QueuedConnection);
 				return midiSession;
 			}
 			deleteMidiSession(midiSession);

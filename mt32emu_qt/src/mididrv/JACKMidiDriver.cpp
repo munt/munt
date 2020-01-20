@@ -117,6 +117,8 @@ bool JACKMidiDriver::createPort(bool exclusive) {
 }
 
 void JACKMidiDriver::onJACKMidiPortDeleted(MidiSession *midiSession) {
-	deletePort(midiSession);
-	emit midiSessionDeleted(midiSession);
+	if (canDeletePort(midiSession)) {
+		deletePort(midiSession);
+		emit midiSessionDeleted(midiSession);
+	}
 }

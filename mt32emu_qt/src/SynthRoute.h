@@ -38,6 +38,7 @@ private:
 	qint64 debugDeltaLowerLimit, debugDeltaUpperLimit;
 
 	void setState(SynthRouteState newState);
+	void disableExclusiveMidiMode();
 
 public:
 	SynthRoute(QObject *parent = NULL);
@@ -103,6 +104,7 @@ signals:
 	void midiSessionAdded(MidiSession *midiSession);
 	void midiSessionRemoved(MidiSession *midiSession);
 	void midiSessionNameChanged(MidiSession *midiSession);
+	void exclusiveMidiSessionRemoved(MidiSession *midiSession);
 };
 
 #endif

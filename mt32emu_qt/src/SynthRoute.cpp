@@ -114,7 +114,7 @@ bool SynthRoute::close() {
 	delete audioStream;
 	audioStream = NULL;
 	qSynth.close();
-	exclusiveMidiMode = false;
+	disableExclusiveMidiMode();
 	return true;
 }
 
@@ -134,6 +134,15 @@ bool SynthRoute::enableExclusiveMidiMode(MidiSession *midiSession) {
 	addMidiSession(midiSession);
 	exclusiveMidiMode = true;
 	return true;
+}
+
+void SynthRoute::disableExclusiveMidiMode() {
+	if (exclusiveMidiMode && hasMIDISessions()) {
+		MidiSession *midiSession = midiSessions.first();
+		removeMidiSession(midiSession);
+		exclusiveMidiMode = false;
+		emit exclusiveMidiSessionRemoved(midiSession);
+	}
 }
 
 bool SynthRoute::isExclusiveMidiModeEnabled() {
@@ -184,6 +193,7 @@ void SynthRoute::handleQSynthState(SynthState synthState) {
 		delete audioStream;
 		audioStream = NULL;
 		setState(SynthRouteState_CLOSED);
+		disableExclusiveMidiMode();
 		break;
 	}
 }

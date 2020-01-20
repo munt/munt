@@ -98,6 +98,7 @@ signals:
 #ifdef WITH_JACK_MIDI_DRIVER
 private:
 	MidiDriver *jackMidiDriver;
+
 public:
 	bool createJACKMidiPort(bool exclusive);
 	void deleteJACKMidiPort(MidiSession *midiSession);
