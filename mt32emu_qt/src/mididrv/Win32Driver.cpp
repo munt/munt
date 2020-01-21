@@ -190,6 +190,7 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 			return 1;
 		}
 	}
+	// Fall-through
 
 	default:
 		return DefWindowProc(hwnd, uMsg, wParam, lParam);
