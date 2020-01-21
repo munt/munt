@@ -48,7 +48,7 @@ private slots:
 	void handleSynthRouteRemoved(SynthRoute *synthRoute);
 	void handleROMSLoadFailed(bool &recoveryAttempted);
 	void on_menuMIDI_aboutToShow();
-	void on_actionNew_exclusive_JACK_MIDI_port_triggered();
+	void on_actionNew_MIDI_port_triggered();
 	void on_actionTest_MIDI_Driver_toggled(bool checked);
 	void on_actionPlay_MIDI_file_triggered();
 	void on_actionConvert_MIDI_to_Wave_triggered();
@@ -67,8 +67,8 @@ private slots:
 
 #ifdef WITH_JACK_MIDI_DRIVER
 private slots:
-	void on_actionNew_MIDI_port_triggered();
 	void on_actionNew_JACK_MIDI_port_triggered();
+	void on_actionNew_exclusive_JACK_MIDI_port_triggered();
 #endif
 };
 
