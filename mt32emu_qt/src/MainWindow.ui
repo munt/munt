@@ -45,13 +45,13 @@
    </property>
    <widget class="QMenu" name="menuMunt_mt32emu_qt">
     <property name="title">
-     <string>He&amp;lp</string>
+     <string>&amp;Help</string>
     </property>
     <addaction name="actionAbout"/>
    </widget>
    <widget class="QMenu" name="menuMIDI">
     <property name="title">
-     <string>Tools</string>
+     <string>&amp;Tools</string>
     </property>
     <addaction name="actionNew_MIDI_port"/>
     <addaction name="actionNew_JACK_MIDI_port"/>
@@ -65,7 +65,7 @@
    </widget>
    <widget class="QMenu" name="menuOptions">
     <property name="title">
-     <string>Optio&amp;ns</string>
+     <string>&amp;Options</string>
     </property>
     <addaction name="actionStart_iconized"/>
     <addaction name="actionHide_to_tray_on_close"/>
@@ -115,7 +115,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>&amp;Start iconized</string>
+    <string>Start &amp;iconized</string>
    </property>
   </action>
   <action name="actionShow_LCD_balloons">
@@ -146,7 +146,7 @@
   </action>
   <action name="actionExit">
    <property name="text">
-    <string>&amp;Exit</string>
+    <string>E&amp;xit</string>
    </property>
   </action>
   <action name="actionHide_to_tray_on_close">
@@ -159,18 +159,24 @@
   </action>
   <action name="actionNew_JACK_MIDI_port">
    <property name="text">
-    <string>&amp;New JACK MIDI port</string>
+    <string>New &amp;JACK MIDI port</string>
    </property>
    <property name="toolTip">
     <string>New JACK MIDI port</string>
    </property>
+   <property name="visible">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionNew_exclusive_JACK_MIDI_port">
    <property name="text">
-    <string>New exclusive JACK MIDI port</string>
+    <string>New &amp;exclusive JACK MIDI port</string>
    </property>
    <property name="toolTip">
     <string>New exclusive JACK MIDI port</string>
+   </property>
+   <property name="visible">
+    <bool>false</bool>
    </property>
   </action>
  </widget>

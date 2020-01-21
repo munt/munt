@@ -78,6 +78,11 @@ MainWindow::MainWindow(Master *master, QWidget *parent) :
 	if (!master->getSettings()->value("Master/showConsole", false).toBool())
 		ShowWindow(GetConsoleWindow(), SW_HIDE);
 #endif
+
+#ifdef WITH_JACK_MIDI_DRIVER
+	ui->actionNew_JACK_MIDI_port->setVisible(true);
+	ui->actionNew_exclusive_JACK_MIDI_port->setVisible(true);
+#endif
 }
 
 MainWindow::~MainWindow()
