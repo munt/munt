@@ -23,6 +23,10 @@
 #include "MidiSession.h"
 #include "SynthStateMonitor.h"
 
+static void updateMidiAddActionEnabled(Ui::SynthWidget *ui) {
+	ui->midiAdd->setEnabled(ui->pinCheckBox->isEnabled() && Master::getInstance()->canCreateMidiPort());
+}
+
 SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, bool pinnable, const AudioDevice *useAudioDevice, QWidget *parent) :
 	QWidget(parent),
 	synthRoute(useSynthRoute),
@@ -45,7 +49,7 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, bool pinnabl
 	ui->pinCheckBox->setChecked(master->isPinned(synthRoute));
 	ui->pinCheckBox->setEnabled(pinnable);
 
-	ui->midiAdd->setEnabled(master->canCreateMidiPort());
+	updateMidiAddActionEnabled(ui);
 
 	connect(synthRoute, SIGNAL(stateChanged(SynthRouteState)), SLOT(handleSynthRouteState(SynthRouteState)));
 	connect(synthRoute, SIGNAL(midiSessionAdded(MidiSession *)), SLOT(handleMIDISessionAdded(MidiSession *)));
@@ -187,12 +191,12 @@ void SynthWidget::handleMIDISessionAdded(MidiSession *midiSession) {
 	QListWidgetItem *item = new QListWidgetItem(midiSession->getName(), ui->midiList);
 	item->setData(Qt::UserRole, QVariant::fromValue((QObject *)midiSession));
 	ui->midiList->addItem(item);
-	ui->midiAdd->setEnabled(Master::getInstance()->canCreateMidiPort());
+	updateMidiAddActionEnabled(ui);
 }
 
 void SynthWidget::handleMIDISessionRemoved(MidiSession *midiSession) {
 	delete ui->midiList->takeItem(findMIDISession(midiSession));
-	ui->midiAdd->setEnabled(Master::getInstance()->canCreateMidiPort());
+	updateMidiAddActionEnabled(ui);
 }
 
 void SynthWidget::handleMIDISessionNameChanged(MidiSession *midiSession) {
