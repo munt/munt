@@ -1,18 +1,18 @@
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 184469e..286638d 100644
+index a4029e8..3869353 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -17,4 +17,4 @@ dosbox_LDADD = cpu/libcpu.a debug/libdebug.a dos/libdos.a fpu/libfpu.a  hardware
+@@ -18,4 +18,4 @@ dosbox_LDADD = cpu/libcpu.a debug/libdebug.a dos/libdos.a fpu/libfpu.a  hardware
  
  EXTRA_DIST = winres.rc dosbox.ico
  
 -
 +LIBS +=  -lmt32emu
 diff --git a/src/dosbox.cpp b/src/dosbox.cpp
-index 2f3b411..387927e 100644
+index 1e48915..4d50cc0 100644
 --- a/src/dosbox.cpp
 +++ b/src/dosbox.cpp
-@@ -491,7 +491,7 @@ void DOSBOX_Init(void) {
+@@ -553,7 +553,7 @@ void DOSBOX_Init(void) {
  
  	const char* mputypes[] = { "intelligent", "uart", "none",0};
  	// FIXME: add some way to offer the actually available choices.
@@ -21,9 +21,9 @@ index 2f3b411..387927e 100644
  	Pstring = secprop->Add_string("mpu401",Property::Changeable::WhenIdle,"intelligent");
  	Pstring->Set_values(mputypes);
  	Pstring->Set_help("Type of MPU-401 to emulate.");
-@@ -507,6 +507,8 @@ void DOSBOX_Init(void) {
- 	                  "  In that case, add 'delaysysex', for example: midiconfig=2 delaysysex\n"
- 	                  "  See the README/Manual for more details.");
+@@ -569,6 +569,8 @@ void DOSBOX_Init(void) {
+ 	                  "In that case, add 'delaysysex', for example: midiconfig=2 delaysysex\n"
+ 	                  "See the README/Manual for more details.");
  
 +#include "mt32options.h"
 +
@@ -42,10 +42,10 @@ index 3fed5e6..ca36a07 100644
 +	midi_coremidi.h midi_mt32.h midi_mt32.cpp sdl_gui.cpp dosbox_splash.h
  
 diff --git a/src/gui/midi.cpp b/src/gui/midi.cpp
-index f1d3e2f..17badd4 100644
+index 28b65f4..adcfe2d 100644
 --- a/src/gui/midi.cpp
 +++ b/src/gui/midi.cpp
-@@ -91,6 +91,9 @@ MidiHandler Midi_none;
+@@ -97,6 +97,9 @@ MidiHandler Midi_none;
  
  #endif
  
@@ -423,7 +423,7 @@ index 0000000..eb32729
 +#endif /* DOSBOX_MIDI_MT32_H */
 diff --git a/src/mt32options.h b/src/mt32options.h
 new file mode 100644
-index 00000000..6292f0b6
+index 0000000..6292f0b
 --- /dev/null
 +++ b/src/mt32options.h
 @@ -0,0 +1,109 @@
