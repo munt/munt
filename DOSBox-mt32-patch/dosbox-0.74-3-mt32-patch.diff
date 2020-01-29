@@ -1,18 +1,18 @@
 diff --git a/src/Makefile.am b/src/Makefile.am
-index 184469e..286638d 100644
+index a4029e8..3869353 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -17,4 +17,4 @@ dosbox_LDADD = cpu/libcpu.a debug/libdebug.a dos/libdos.a fpu/libfpu.a  hardware
+@@ -18,4 +18,4 @@ dosbox_LDADD = cpu/libcpu.a debug/libdebug.a dos/libdos.a fpu/libfpu.a  hardware
  
  EXTRA_DIST = winres.rc dosbox.ico
  
 -
 +LIBS +=  -lmt32emu
 diff --git a/src/dosbox.cpp b/src/dosbox.cpp
-index a4bf564..ad65fe6 100644
+index edee31a..917b3c0 100644
 --- a/src/dosbox.cpp
 +++ b/src/dosbox.cpp
-@@ -467,7 +467,7 @@ void DOSBOX_Init(void) {
+@@ -543,7 +543,7 @@ void DOSBOX_Init(void) {
  	
  	const char* mputypes[] = { "intelligent", "uart", "none",0};
  	// FIXME: add some way to offer the actually available choices.
@@ -21,8 +21,8 @@ index a4bf564..ad65fe6 100644
  	Pstring = secprop->Add_string("mpu401",Property::Changeable::WhenIdle,"intelligent");
  	Pstring->Set_values(mputypes);
  	Pstring->Set_help("Type of MPU-401 to emulate.");
-@@ -480,6 +480,8 @@ void DOSBOX_Init(void) {
- 	Pstring->Set_help("Special configuration options for the device driver. This is usually the id of the device you want to use.\n"
+@@ -558,6 +558,8 @@ void DOSBOX_Init(void) {
+ 	                  "  Or in the case of coreaudio, you can specify a soundfont here.\n"
  	                  "  See the README/Manual for more details.");
  
 +#include "mt32options.h"
@@ -425,10 +425,10 @@ index 0000000..eb32729
 +#endif /* DOSBOX_MIDI_MT32_H */
 diff --git a/src/mt32options.h b/src/mt32options.h
 new file mode 100644
-index 0000000..c1efa29
+index 0000000..6292f0b
 --- /dev/null
 +++ b/src/mt32options.h
-@@ -0,0 +1,115 @@
+@@ -0,0 +1,109 @@
 +Pstring = secprop->Add_string("mt32.romdir",Property::Changeable::WhenIdle,"");
 +Pstring->Set_help("Name of the directory where MT-32 Control and PCM ROM files can be found. Emulation requires these files to work.\n"
 +	"  Accepted file names are as follows:\n"
@@ -444,28 +444,22 @@ index 0000000..c1efa29
 +Pbool = secprop->Add_bool("mt32.thread",Property::Changeable::WhenIdle,false);
 +Pbool->Set_help("MT-32 rendering in separate thread");
 +
-+const char *mt32chunk[] = {"2", "3", "16", "99", "100",0};
 +Pint = secprop->Add_int("mt32.chunk",Property::Changeable::WhenIdle,16);
-+Pint->Set_values(mt32chunk);
 +Pint->SetMinMax(2,100);
-+Pint->Set_help("Minimum milliseconds of data to render at once.\n"
++Pint->Set_help("Minimum milliseconds of data to render at once. (min 2, max 100)\n"
 +	"Increasing this value reduces rendering overhead which may improve performance but also increases audio lag.\n"
 +	"Valid for rendering in separate thread only.");
 +
-+const char *mt32prebuffer[] = {"3", "4", "32", "199", "200",0};
 +Pint = secprop->Add_int("mt32.prebuffer",Property::Changeable::WhenIdle,32);
-+Pint->Set_values(mt32prebuffer);
 +Pint->SetMinMax(3,200);
-+Pint->Set_help("How many milliseconds of data to render ahead.\n"
++Pint->Set_help("How many milliseconds of data to render ahead. (min 3, max 200)\n"
 +	"Increasing this value may help to avoid underruns but also increases audio lag.\n"
 +	"Cannot be set less than or equal to mt32.chunk value.\n"
 +	"Valid for rendering in separate thread only.");
 +
-+const char *mt32partials[] = {"8", "9", "32", "255", "256",0};
 +Pint = secprop->Add_int("mt32.partials",Property::Changeable::WhenIdle,32);
-+Pint->Set_values(mt32partials);
 +Pint->SetMinMax(8,256);
-+Pint->Set_help("The maximum number of partials playing simultaneously.");
++Pint->Set_help("The maximum number of partials playing simultaneously. (min 8, max 256");
 +
 +const char *mt32DACModes[] = {"0", "1", "2", "3",0};
 +Pint = secprop->Add_int("mt32.dac",Property::Changeable::WhenIdle,0);
