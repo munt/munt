@@ -1,7 +1,7 @@
 project(libsmf C)
 
 set(libsmf_VERSION_MAJOR 1)
-set(libsmf_VERSION_MINOR 2)
+set(libsmf_VERSION_MINOR 3)
 
 # We prefer to link embedded libsmf statically into higher-level projects to avoid version conflicts.
 # This option enforces shared library build.
