@@ -636,6 +636,7 @@ static void playSMF(smf_t *smf, const Options &options, State &state) {
 	int unterminatedSysexLen = 0;
 	unsigned char *unterminatedSysex = NULL;
 	unsigned long renderedFrames = 0;
+	smf_rewind(smf);
 	for (;;) {
 		smf_event_t *event = smf_get_next_event(smf);
 		unsigned long eventFrameIx;
