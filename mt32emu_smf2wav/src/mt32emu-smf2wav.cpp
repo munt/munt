@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2009, 2011 Jerome Fisher
- * Copyright (C) 2012-2019 Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2012-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -793,7 +793,7 @@ int main(int argc, char *argv[]) {
 	setlocale(LC_ALL, "");
 	printf("Munt MT32Emu MIDI to Wave Conversion Utility. Version %s\n", VERSION);
 	printf("  Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>\n");
-	printf("  Copyright (C) 2012-2019 Jerome Fisher, Sergey V. Mikayev\n");
+	printf("  Copyright (C) 2012-2020 Jerome Fisher, Sergey V. Mikayev\n");
 	printf("Using Munt MT32Emu Library Version %s, libsmf Version %s (with modifications)\n", service.getLibraryVersionString(), smf_get_version());
 	if (!parseOptions(argc, argv, &options)) {
 		return -1;
