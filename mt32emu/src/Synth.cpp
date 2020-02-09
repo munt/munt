@@ -1908,6 +1908,7 @@ MidiEventQueue::~MidiEventQueue() {
 		volatile MidiEvent &currentEvent = ringBuffer[endPosition];
 		sysexDataStorage.dispose(currentEvent.sysexData, currentEvent.sysexLength);
 	}
+	delete &sysexDataStorage;
 	delete[] ringBuffer;
 }
 
