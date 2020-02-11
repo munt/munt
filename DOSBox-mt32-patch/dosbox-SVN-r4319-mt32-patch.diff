@@ -1,5 +1,5 @@
 diff --git a/src/Makefile.am b/src/Makefile.am
-index a4029e8..3869353 100644
+index a4029e83..3869353a 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -18,4 +18,4 @@ dosbox_LDADD = cpu/libcpu.a debug/libdebug.a dos/libdos.a fpu/libfpu.a  hardware
@@ -9,10 +9,10 @@ index a4029e8..3869353 100644
 -
 +LIBS +=  -lmt32emu
 diff --git a/src/dosbox.cpp b/src/dosbox.cpp
-index 1e48915..4d50cc0 100644
+index 8ae1e4df..9864ae7e 100644
 --- a/src/dosbox.cpp
 +++ b/src/dosbox.cpp
-@@ -553,7 +553,7 @@ void DOSBOX_Init(void) {
+@@ -561,7 +561,7 @@ void DOSBOX_Init(void) {
  
  	const char* mputypes[] = { "intelligent", "uart", "none",0};
  	// FIXME: add some way to offer the actually available choices.
@@ -21,7 +21,7 @@ index 1e48915..4d50cc0 100644
  	Pstring = secprop->Add_string("mpu401",Property::Changeable::WhenIdle,"intelligent");
  	Pstring->Set_values(mputypes);
  	Pstring->Set_help("Type of MPU-401 to emulate.");
-@@ -569,6 +569,8 @@ void DOSBOX_Init(void) {
+@@ -577,6 +577,8 @@ void DOSBOX_Init(void) {
  	                  "In that case, add 'delaysysex', for example: midiconfig=2 delaysysex\n"
  	                  "See the README/Manual for more details.");
  
@@ -31,18 +31,18 @@ index 1e48915..4d50cc0 100644
  	secprop=control->AddSection_prop("debug",&DEBUG_Init);
  #endif
 diff --git a/src/gui/Makefile.am b/src/gui/Makefile.am
-index 3fed5e6..ca36a07 100644
+index 84b22b14..b8bc1b04 100644
 --- a/src/gui/Makefile.am
 +++ b/src/gui/Makefile.am
 @@ -7,5 +7,5 @@ libgui_a_SOURCES = sdlmain.cpp sdl_mapper.cpp dosbox_logo.h \
  	render_templates_sai.h render_templates_hq.h \
  	render_templates_hq2x.h render_templates_hq3x.h \
  	midi.cpp midi_win32.h midi_oss.h midi_coreaudio.h midi_alsa.h \
--	midi_coremidi.h sdl_gui.cpp dosbox_splash.h
-+	midi_coremidi.h midi_mt32.h midi_mt32.cpp sdl_gui.cpp dosbox_splash.h
+-	midi_coremidi.h sdl_gui.cpp dosbox_splash.h render_glsl.h
++	midi_coremidi.h midi_mt32.h midi_mt32.cpp sdl_gui.cpp dosbox_splash.h render_glsl.h
  
 diff --git a/src/gui/midi.cpp b/src/gui/midi.cpp
-index 28b65f4..adcfe2d 100644
+index 28b65f46..adcfe2d5 100644
 --- a/src/gui/midi.cpp
 +++ b/src/gui/midi.cpp
 @@ -97,6 +97,9 @@ MidiHandler Midi_none;
@@ -57,7 +57,7 @@ index 28b65f4..adcfe2d 100644
  void MIDI_RawOutByte(Bit8u data) {
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 0000000..b036547
+index 00000000..b036547a
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
 @@ -0,0 +1,299 @@
@@ -362,7 +362,7 @@ index 0000000..b036547
 +}
 diff --git a/src/gui/midi_mt32.h b/src/gui/midi_mt32.h
 new file mode 100644
-index 0000000..eb32729
+index 00000000..eb32729f
 --- /dev/null
 +++ b/src/gui/midi_mt32.h
 @@ -0,0 +1,55 @@
@@ -423,7 +423,7 @@ index 0000000..eb32729
 +#endif /* DOSBOX_MIDI_MT32_H */
 diff --git a/src/mt32options.h b/src/mt32options.h
 new file mode 100644
-index 0000000..6292f0b
+index 00000000..6292f0b6
 --- /dev/null
 +++ b/src/mt32options.h
 @@ -0,0 +1,109 @@
