@@ -1924,7 +1924,7 @@ MidiEventQueue::MidiEventQueue(Bit32u useRingBufferSize, Bit32u storageBufferSiz
 
 MidiEventQueue::~MidiEventQueue() {
 	for (Bit32u i = 0; i <= ringBufferMask; i++) {
-		volatile MidiEvent &currentEvent = ringBuffer[endPosition];
+		volatile MidiEvent &currentEvent = ringBuffer[i];
 		sysexDataStorage.dispose(currentEvent.sysexData, currentEvent.sysexLength);
 	}
 	delete &sysexDataStorage;
