@@ -321,7 +321,11 @@ void LCDWidget::setProgramChangeLCDText(int partNum, QString soundGroupName, QSt
 	if ((lcdState != DISPLAYING_MESSAGE) || (nanosNow - lcdStateStartNanos > LCD_MESSAGE_DISPLAYING_NANOS)) {
 		lcdState = DISPLAYING_TIMBRE_NAME;
 		lcdStateStartNanos = nanosNow;
+#if (QT_VERSION < QT_VERSION_CHECK(4, 6, 0))
+		lcdText = (QString::number(partNum) + '|' + soundGroupName + timbreName).toLocal8Bit();
+#else
 		lcdText = QString(QString::number(partNum) % '|' % soundGroupName % timbreName).toLocal8Bit();
+#endif
 		update();
 	}
 }
