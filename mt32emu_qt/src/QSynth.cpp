@@ -48,7 +48,11 @@ QReportHandler::QReportHandler(QObject *parent) : QObject(parent) {
 }
 
 void QReportHandler::printDebug(const char *fmt, va_list list) {
+#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))
 	qDebug() << "MT32:" << QString().vsprintf(fmt, list);
+#else
+	qDebug() << "MT32:" << QString().vasprintf(fmt, list);
+#endif
 }
 
 void QReportHandler::showLCDMessage(const char *message) {

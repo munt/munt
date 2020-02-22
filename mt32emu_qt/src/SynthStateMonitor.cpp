@@ -313,7 +313,7 @@ void LCDWidget::handleMasterVolumeChanged(int volume) {
 
 void LCDWidget::setPartStateLCDText() {
 	lcdState = DISPLAYING_PART_STATE;
-	lcdText = QString().sprintf("1 2 3 4 5 R |vol:%3d", masterVolume).toLocal8Bit();
+	lcdText = QString("1 2 3 4 5 R |vol:%1").arg(masterVolume, 3).toLocal8Bit();
 }
 
 void LCDWidget::setProgramChangeLCDText(int partNum, QString soundGroupName, QString timbreName) {
@@ -321,7 +321,7 @@ void LCDWidget::setProgramChangeLCDText(int partNum, QString soundGroupName, QSt
 	if ((lcdState != DISPLAYING_MESSAGE) || (nanosNow - lcdStateStartNanos > LCD_MESSAGE_DISPLAYING_NANOS)) {
 		lcdState = DISPLAYING_TIMBRE_NAME;
 		lcdStateStartNanos = nanosNow;
-		lcdText = (QString().sprintf("%1i|", partNum) + soundGroupName + timbreName).toLocal8Bit();
+		lcdText = QString(QString::number(partNum) % '|' % soundGroupName % timbreName).toLocal8Bit();
 		update();
 	}
 }

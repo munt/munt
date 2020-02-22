@@ -74,7 +74,7 @@ void SynthWidget::refreshAudioDeviceList(Master *master, const AudioDevice *useA
 	QListIterator<const AudioDevice *> audioDeviceIt(master->getAudioDevices());
 	while(audioDeviceIt.hasNext()) {
 		const AudioDevice *audioDevice = audioDeviceIt.next();
-		ui->audioDeviceComboBox->addItem(audioDevice->driver.name + ": " + audioDevice->name, qVariantFromValue(audioDevice));
+		ui->audioDeviceComboBox->addItem(audioDevice->driver.name + ": " + audioDevice->name, QVariant::fromValue(audioDevice));
 		if (useAudioDevice != NULL && useAudioDevice->driver.id == audioDevice->driver.id
 				&& useAudioDevice->name == audioDevice->name) ui->audioDeviceComboBox->setCurrentIndex(audioDeviceIndex);
 		audioDeviceIndex++;

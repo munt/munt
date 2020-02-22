@@ -139,11 +139,10 @@ void MainWindow::on_actionAbout_triggered()
 void MainWindow::refreshTabNames()
 {
 	QWidget *widget;
-	QString tabName;
 	for(int i = 0;; i++) {
 		widget = ui->synthTabs->widget(i);
 		if (widget == NULL) return;
-		tabName.sprintf("Synth &%i", i + 1);
+		QString tabName = QString("Synth &%1").arg(i + 1);
 		if (master->isPinned(((SynthWidget *)widget)->getSynthRoute())) tabName = tabName + " *";
 		ui->synthTabs->setTabText(i, tabName);
 	}
@@ -152,7 +151,7 @@ void MainWindow::refreshTabNames()
 void MainWindow::handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice) {
 	SynthWidget *synthWidget = new SynthWidget(master, synthRoute, audioDevice, this);
 	int newTabIx = ui->synthTabs->count();
-	ui->synthTabs->addTab(synthWidget, QString().sprintf("Synth &%i", ui->synthTabs->count() + 1));
+	ui->synthTabs->addTab(synthWidget, QString("Synth &%1").arg(ui->synthTabs->count() + 1));
 	ui->synthTabs->setCurrentIndex(newTabIx);
 }
 
