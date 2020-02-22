@@ -60,6 +60,7 @@ mt32emu_service_i mt32emu_get_service_i();
 #define mt32emu_convert_synth_to_output_timestamp iV1()->convertSynthToOutputTimestamp
 #define mt32emu_flush_midi_queue i.v0->flushMIDIQueue
 #define mt32emu_set_midi_event_queue_size i.v0->setMIDIEventQueueSize
+#define mt32emu_configure_midi_event_queue_sysex_storage iV3()->configureMIDIEventQueueSysexStorage
 #define mt32emu_set_midi_receiver i.v0->setMIDIReceiver
 #define mt32emu_get_internal_rendered_sample_count iV2()->getInternalRenderedSampleCount
 #define mt32emu_parse_stream i.v0->parseStream
@@ -81,6 +82,7 @@ mt32emu_service_i mt32emu_get_service_i();
 #define mt32emu_set_reverb_compatibility_mode i.v0->setReverbCompatibilityMode
 #define mt32emu_is_mt32_reverb_compatibility_mode i.v0->isMT32ReverbCompatibilityMode
 #define mt32emu_is_default_reverb_mt32_compatible i.v0->isDefaultReverbMT32Compatible
+#define mt32emu_preallocate_reverb_memory iV3()->preallocateReverbMemory
 #define mt32emu_set_dac_input_mode i.v0->setDACInputMode
 #define mt32emu_get_dac_input_mode i.v0->getDACInputMode
 #define mt32emu_set_midi_delay_mode i.v0->setMIDIDelayMode
@@ -217,6 +219,7 @@ public:
 	Bit32u convertSynthToOutputTimestamp(Bit32u synth_timestamp) { return mt32emu_convert_synth_to_output_timestamp(c, synth_timestamp); }
 	void flushMIDIQueue() { mt32emu_flush_midi_queue(c); }
 	Bit32u setMIDIEventQueueSize(const Bit32u queue_size) { return mt32emu_set_midi_event_queue_size(c, queue_size); }
+	void configureMIDIEventQueueSysexStorage(const Bit32u storage_buffer_size) { mt32emu_configure_midi_event_queue_sysex_storage(c, storage_buffer_size); }
 	void setMIDIReceiver(mt32emu_midi_receiver_i midi_receiver, void *instance_data) { mt32emu_set_midi_receiver(c, midi_receiver, instance_data); }
 	void setMIDIReceiver(IMidiReceiver &midi_receiver) { setMIDIReceiver(CppInterfaceImpl::getMidiReceiverThunk(), &midi_receiver); }
 
@@ -242,6 +245,7 @@ public:
 	void setReverbCompatibilityMode(const bool mt32_compatible_mode) { mt32emu_set_reverb_compatibility_mode(c, mt32_compatible_mode ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
 	bool isMT32ReverbCompatibilityMode() { return mt32emu_is_mt32_reverb_compatibility_mode(c) != MT32EMU_BOOL_FALSE; }
 	bool isDefaultReverbMT32Compatible() { return mt32emu_is_default_reverb_mt32_compatible(c) != MT32EMU_BOOL_FALSE; }
+	void preallocateReverbMemory(const bool enabled) { mt32emu_preallocate_reverb_memory(c, enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
 
 	void setDACInputMode(const DACInputMode mode) { mt32emu_set_dac_input_mode(c, static_cast<mt32emu_dac_input_mode>(mode)); }
 	DACInputMode getDACInputMode() { return static_cast<DACInputMode>(mt32emu_get_dac_input_mode(c)); }
@@ -439,6 +443,7 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_convert_synth_to_output_timestamp
 #undef mt32emu_flush_midi_queue
 #undef mt32emu_set_midi_event_queue_size
+#undef mt32emu_configure_midi_event_queue_sysex_storage
 #undef mt32emu_set_midi_receiver
 #undef mt32emu_get_internal_rendered_sample_count
 #undef mt32emu_parse_stream
@@ -460,6 +465,7 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_set_reverb_compatibility_mode
 #undef mt32emu_is_mt32_reverb_compatibility_mode
 #undef mt32emu_is_default_reverb_mt32_compatible
+#undef mt32emu_preallocate_reverb_memory
 #undef mt32emu_set_dac_input_mode
 #undef mt32emu_get_dac_input_mode
 #undef mt32emu_set_midi_delay_mode

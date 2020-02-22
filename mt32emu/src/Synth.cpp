@@ -206,6 +206,9 @@ public:
 	Bit32u abortingPartIx;
 
 	bool preallocatedReverbMemory;
+
+	Bit32u midiEventQueueSize;
+	Bit32u midiEventQueueSysexStorageBufferSize;
 };
 
 Bit32u Synth::getLibraryVersionInt() {
@@ -281,6 +284,8 @@ Synth::Synth(ReportHandler *useReportHandler) :
 	pcmROMData = NULL;
 	soundGroupNames = NULL;
 	midiQueue = NULL;
+	extensions.midiEventQueueSize = DEFAULT_MIDI_EVENT_QUEUE_SIZE;
+	extensions.midiEventQueueSysexStorageBufferSize = 0;
 	lastReceivedMIDIEventTimestamp = 0;
 	memset(parts, 0, sizeof(parts));
 	renderedSampleCount = 0;
@@ -397,8 +402,9 @@ bool Synth::isDefaultReverbMT32Compatible() const {
 }
 
 void Synth::preallocateReverbMemory(bool enabled) {
-	if (!opened || extensions.preallocatedReverbMemory == enabled) return;
+	if (extensions.preallocatedReverbMemory == enabled) return;
 	extensions.preallocatedReverbMemory = enabled;
+	if (!opened) return;
 	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
 		if (enabled) {
 			reverbModels[i]->open();
@@ -803,7 +809,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 	// For resetting mt32 mid-execution
 	mt32default = mt32ram;
 
-	midiQueue = new MidiEventQueue();
+	midiQueue = new MidiEventQueue(extensions.midiEventQueueSize, extensions.midiEventQueueSysexStorageBufferSize);
 
 	analog = Analog::createAnalog(analogOutputMode, controlROMFeatures->oldMT32AnalogLPF, getSelectedRendererType());
 #if MT32EMU_MONITOR_INIT
@@ -892,26 +898,24 @@ bool Synth::isOpen() const {
 }
 
 void Synth::flushMIDIQueue() {
-	if (midiQueue != NULL) {
-		for (;;) {
-			const volatile MidiEventQueue::MidiEvent *midiEvent = midiQueue->peekMidiEvent();
-			if (midiEvent == NULL) break;
-			if (midiEvent->sysexData == NULL) {
-				playMsgNow(midiEvent->shortMessageData);
-			} else {
-				playSysexNow(midiEvent->sysexData, midiEvent->sysexLength);
-			}
-			midiQueue->dropMidiEvent();
+	if (midiQueue == NULL) return;
+	for (;;) {
+		const volatile MidiEventQueue::MidiEvent *midiEvent = midiQueue->peekMidiEvent();
+		if (midiEvent == NULL) break;
+		if (midiEvent->sysexData == NULL) {
+			playMsgNow(midiEvent->shortMessageData);
+		} else {
+			playSysexNow(midiEvent->sysexData, midiEvent->sysexLength);
 		}
-		lastReceivedMIDIEventTimestamp = renderedSampleCount;
+		midiQueue->dropMidiEvent();
 	}
+	lastReceivedMIDIEventTimestamp = renderedSampleCount;
 }
 
 Bit32u Synth::setMIDIEventQueueSize(Bit32u useSize) {
 	static const Bit32u MAX_QUEUE_SIZE = (1 << 24); // This results in about 256 Mb - much greater than any reasonable value
 
-	if (midiQueue == NULL) return 0;
-	flushMIDIQueue();
+	if (extensions.midiEventQueueSize == useSize) return useSize;
 
 	// Find a power of 2 that is >= useSize
 	Bit32u binarySize = 1;
@@ -921,9 +925,24 @@ Bit32u Synth::setMIDIEventQueueSize(Bit32u useSize) {
 	} else {
 		binarySize = MAX_QUEUE_SIZE;
 	}
-	delete midiQueue;
-	midiQueue = new MidiEventQueue(binarySize);
+	extensions.midiEventQueueSize = binarySize;
+	if (midiQueue != NULL) {
+		flushMIDIQueue();
+		delete midiQueue;
+		midiQueue = new MidiEventQueue(binarySize, extensions.midiEventQueueSysexStorageBufferSize);
+	}
 	return binarySize;
+}
+
+void Synth::configureMIDIEventQueueSysexStorage(Bit32u storageBufferSize) {
+	if (extensions.midiEventQueueSysexStorageBufferSize == storageBufferSize) return;
+
+	extensions.midiEventQueueSysexStorageBufferSize = storageBufferSize;
+	if (midiQueue != NULL) {
+		flushMIDIQueue();
+		delete midiQueue;
+		midiQueue = new MidiEventQueue(extensions.midiEventQueueSize, storageBufferSize);
+	}
 }
 
 Bit32u Synth::getShortMessageLength(Bit32u msg) {
@@ -1800,7 +1819,7 @@ Bit32s Synth::getMasterTunePitchDelta() const {
 /** Defines an interface of a class that maintains storage of variable-sized data of SysEx messages. */
 class MidiEventQueue::SysexDataStorage {
 public:
-	static MidiEventQueue::SysexDataStorage &create(Bit32u storageBufferSize);
+	static MidiEventQueue::SysexDataStorage *create(Bit32u storageBufferSize);
 
 	virtual ~SysexDataStorage() {}
 	virtual Bit8u *allocate(Bit32u sysexLength) = 0;
@@ -1885,16 +1904,16 @@ private:
 	volatile Bit32u endPosition;
 };
 
-MidiEventQueue::SysexDataStorage &MidiEventQueue::SysexDataStorage::create(Bit32u storageBufferSize) {
+MidiEventQueue::SysexDataStorage *MidiEventQueue::SysexDataStorage::create(Bit32u storageBufferSize) {
 	if (storageBufferSize > 0) {
-		return *new BufferedSysexDataStorage(storageBufferSize);
+		return new BufferedSysexDataStorage(storageBufferSize);
 	} else {
-		return *new DynamicSysexDataStorage;
+		return new DynamicSysexDataStorage;
 	}
 }
 
 MidiEventQueue::MidiEventQueue(Bit32u useRingBufferSize, Bit32u storageBufferSize) :
-	sysexDataStorage(SysexDataStorage::create(storageBufferSize)),
+	sysexDataStorage(*SysexDataStorage::create(storageBufferSize)),
 	ringBuffer(new MidiEvent[useRingBufferSize]), ringBufferMask(useRingBufferSize - 1)
 {
 	for (Bit32u i = 0; i <= ringBufferMask; i++) {

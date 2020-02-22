@@ -308,7 +308,9 @@ typedef union mt32emu_service_i mt32emu_service_i;
 	void (*setNicePanningEnabled)(mt32emu_const_context context, const mt32emu_boolean enabled); \
 	mt32emu_boolean (*isNicePanningEnabled)(mt32emu_const_context context); \
 	void (*setNicePartialMixingEnabled)(mt32emu_const_context context, const mt32emu_boolean enabled); \
-	mt32emu_boolean (*isNicePartialMixingEnabled)(mt32emu_const_context context);
+	mt32emu_boolean (*isNicePartialMixingEnabled)(mt32emu_const_context context); \
+	void (*preallocateReverbMemory)(mt32emu_const_context context, const mt32emu_boolean enabled); \
+	void (*configureMIDIEventQueueSysexStorage)(mt32emu_const_context context, const mt32emu_bit32u storage_buffer_size);
 
 typedef struct {
 	MT32EMU_SERVICE_I_V0

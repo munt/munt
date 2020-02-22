@@ -48,8 +48,8 @@ public:
 
 	explicit MidiEventQueue(
 		// Must be a power of 2
-		Bit32u ringBufferSize = DEFAULT_MIDI_EVENT_QUEUE_SIZE,
-		Bit32u storageBufferSize = 0
+		Bit32u ringBufferSize,
+		Bit32u storageBufferSize
 	);
 	~MidiEventQueue();
 	void reset();
@@ -57,7 +57,7 @@ public:
 	bool pushSysex(const Bit8u *sysexData, Bit32u sysexLength, Bit32u timestamp);
 	const volatile MidiEvent *peekMidiEvent();
 	void dropMidiEvent();
-	bool isEmpty() const;
+	inline bool isEmpty() const;
 
 private:
 	SysexDataStorage &sysexDataStorage;

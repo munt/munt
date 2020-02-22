@@ -312,7 +312,18 @@ public:
 	// Sets size of the internal MIDI event queue. The queue size is set to the minimum power of 2 that is greater or equal to the size specified.
 	// The queue is flushed before reallocation.
 	// Returns the actual queue size being used.
-	MT32EMU_EXPORT Bit32u setMIDIEventQueueSize(Bit32u);
+	MT32EMU_EXPORT Bit32u setMIDIEventQueueSize(Bit32u requestedSize);
+
+	// Configures the SysEx storage of the internal MIDI event queue.
+	// Supplying 0 in the storageBufferSize argument makes the SysEx data stored
+	// in multiple dynamically allocated buffers per MIDI event. These buffers are only disposed
+	// when a new MIDI event replaces the SysEx event in the queue, thus never on the rendering thread.
+	// This is the default behaviour.
+	// In contrast, when a positive value is specified, SysEx data will be stored in a single preallocated buffer,
+	// which makes this kind of storage safe for use in a realtime thread. Additionally, the space retained
+	// by a SysEx event, that has been processed and thus is no longer necessary, is disposed instantly.
+	// Note, the queue is flushed and recreated in the process so that its size remains intact.
+	MT32EMU_EXPORT void configureMIDIEventQueueSysexStorage(Bit32u storageBufferSize);
 
 	// Returns current value of the global counter of samples rendered since the synth was created (at the native sample rate 32000 Hz).
 	// This method helps to compute accurate timestamp of a MIDI message to use with the methods below.
