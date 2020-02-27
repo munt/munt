@@ -329,9 +329,11 @@ MT32EMU_EXPORT mt32emu_boolean mt32emu_is_mt32_reverb_compatibility_mode(mt32emu
 /** Returns whether default reverb compatibility mode is the old MT-32 compatibility mode. */
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_default_reverb_mt32_compatible(mt32emu_const_context context);
 
-// If enabled, reverb buffers for all modes are keept around allocated all the time to avoid memory
-// allocating/freeing in the rendering thread, which may be required for realtime operation.
-// Otherwise, reverb buffers that are not in use are deleted to save memory (the default behaviour).
+/**
+ * If enabled, reverb buffers for all modes are keept around allocated all the time to avoid memory
+ * allocating/freeing in the rendering thread, which may be required for realtime operation.
+ * Otherwise, reverb buffers that are not in use are deleted to save memory (the default behaviour).
+ */
 MT32EMU_EXPORT void mt32emu_preallocate_reverb_memory(mt32emu_const_context context, const mt32emu_boolean enabled);
 
 /** Sets new DAC input mode. See mt32emu_dac_input_mode for details. */
