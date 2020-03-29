@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2019 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2020 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -1874,6 +1874,8 @@ public:
 				if (storageBufferSize <= sysexLength) return NULL;
 				if (myStartPosition != 0) {
 					myStartPosition = 0;
+					// It's OK to write startPosition here non-atomically. We don't expect any
+					// concurrent reads, as there must be no SysEx messages in the queue.
 					startPosition = myStartPosition;
 				}
 			} else if (myStartPosition <= sysexLength) return NULL;

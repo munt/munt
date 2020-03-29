@@ -4,3 +4,26 @@ dosbox-0.74-3-mt32-patch.diff - diff file to be applied to official DOSBox relea
 
 dosbox-SVN-r4319-mt32-patch.diff - diff file to be applied to official DOSBox sources SVN r4319 (and up, hopefully).
                                    It uses a bit different and clear approach introduced since SVN r3836.
+
+How to build a patched version of DOSBox
+========================================
+This describes the steps necessary to produce a DOSBox binary with built-in MT-32 emulation using the GNU toolchain.
+Note, builds with Microsoft Visual Studio or Xcode are not covered here. On Windows, MSYS can be used.
+
+1. Ensure that the mt32emu library is built and installed in the system. Typically, the library headers should appear
+   under the /usr/local/include directory and the library binary itself should be in /usr/local/lib. Usual steps
+
+     cd <munt source directory>
+     cmake .
+     make
+     [sudo] make install
+
+   should do the job.
+
+2. Apply the patch file that corresponds to the DOSBox version being compiled, like this:
+
+     cd <DOSBox source directory>
+     patch -p1 < <munt source directory>/DOSBox-mt32-patch/dosbox-0.74-3-mt32-patch.diff
+
+3. Proceed with autogen and configure, as is normally done to build DOSBox from sources.
+4. Adjust DOSBox configuration to pick up the ROM files, etc.
