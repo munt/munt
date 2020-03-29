@@ -1,4 +1,6 @@
-HEAD:
+2020-03-29:
+
+	2.4.0 released.
 
 	* In addition to already existing options intended to improve
 	  audio output quality in contrast to somewhat degrading emulation
@@ -18,7 +20,7 @@ HEAD:
 	* Converted compiler definition MT32EMU_REDUCE_REVERB_MEMORY to a runtime
 	  configuration option. This allows the client to ensure that reverb mode
 	  changes are safe for rendering in a realtime thread.
-	* Improved the implementation of the internal MIDI event queue. Notabliy,
+	* Improved the implementation of the internal MIDI event queue. Notably,
 	  added a new storage mechanism for the payload of SysEx events that
 	  does not require memory allocations while pushing events to the queue.
 
