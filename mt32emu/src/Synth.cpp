@@ -1874,6 +1874,8 @@ public:
 				if (storageBufferSize <= sysexLength) return NULL;
 				if (myStartPosition != 0) {
 					myStartPosition = 0;
+					// It's OK to write startPosition here non-atomically. We don't expect any
+					// concurrent reads, as there must be no SysEx messages in the queue.
 					startPosition = myStartPosition;
 				}
 			} else if (myStartPosition <= sysexLength) return NULL;
