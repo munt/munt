@@ -5,6 +5,8 @@
 #include <mt32emu/mt32emu.h>
 
 class AudioFileWriter;
+class RealtimeHelper;
+class QSynth;
 
 enum SynthState {
 	SynthState_CLOSED,
@@ -44,7 +46,7 @@ class QReportHandler : public QObject, public MT32Emu::ReportHandler {
 	Q_OBJECT
 
 public:
-	QReportHandler(QObject *parent = NULL);
+	QReportHandler(QSynth *qsynth);
 	void printDebug(const char *fmt, va_list list);
 	void showLCDMessage(const char *message);
 	void onErrorControlROM();
@@ -57,6 +59,10 @@ public:
 	void onNewReverbLevel(MT32Emu::Bit8u level);
 	void onPolyStateChanged(MT32Emu::Bit8u partNum);
 	void onProgramChanged(MT32Emu::Bit8u partNum, const char soundGroupName[], const char patchName[]);
+	void doShowLCDMessage(const char *message);
+
+private:
+	QSynth *qSynth() { return (QSynth *)parent(); }
 
 signals:
 	void balloonMessageAppeared(const QString &title, const QString &text);
@@ -70,16 +76,23 @@ signals:
 	void programChanged(int, QString, QString);
 };
 
+/**
+ * This is a wrapper for MT32Emu::Synth that provides a binding between the MT32Emu and Qt APIs
+ * as well as adds certain thread-safety measures, namely support for MIDI messages to be safely
+ * pushed from any number of threads, rendering of output audio samples in a separate thread
+ * with concurrent changes of synth parameters from the main (GUI) thread, etc.
+ */
 class QSynth : public QObject {
 	Q_OBJECT
 
 friend class QReportHandler;
+friend class RealtimeHelper;
 
 private:
 	volatile SynthState state;
 
-	QMutex midiMutex;
-	QMutex *synthMutex;
+	QMutex * const midiMutex;
+	QMutex * const synthMutex;
 
 	QDir romDir;
 	QString controlROMFileName;
@@ -101,23 +114,27 @@ private:
 	MT32Emu::SampleRateConverter *sampleRateConverter;
 	AudioFileWriter *audioRecorder;
 
+	RealtimeHelper *realtimeHelper;
+
 	void setState(SynthState newState);
 	void freeROMImages();
-	MT32Emu::Bit32u convertOutputToSynthTimestamp(quint64 timestamp);
+	MT32Emu::Bit32u convertOutputToSynthTimestamp(quint64 timestamp) const;
 
 public:
-	QSynth(QObject *parent = NULL);
+	explicit QSynth(QObject *parent = NULL);
 	~QSynth();
 	bool isOpen() const;
 	bool open(uint &targetSampleRate, MT32Emu::SamplerateConversionQuality srcQuality = MT32Emu::SamplerateConversionQuality_GOOD, const QString useSynthProfileName = "");
 	void close();
-	bool reset();
+	void reset() const;
+	bool isRealtime() const;
+	void setRealtime();
 
-	void flushMIDIQueue();
-	void playMIDIShortMessageNow(MT32Emu::Bit32u msg);
-	void playMIDISysexNow(const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen);
-	bool playMIDIShortMessage(MT32Emu::Bit32u msg, quint64 timestamp);
-	bool playMIDISysex(const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, quint64 timestamp);
+	void flushMIDIQueue() const;
+	void playMIDIShortMessageNow(MT32Emu::Bit32u msg) const;
+	void playMIDISysexNow(const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen) const;
+	bool playMIDIShortMessage(MT32Emu::Bit32u msg, quint64 timestamp) const;
+	bool playMIDISysex(const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, quint64 timestamp) const;
 	void render(MT32Emu::Bit16s *buffer, uint length);
 	void render(float *buffer, uint length);
 
@@ -147,9 +164,9 @@ public:
 	const QString getPatchName(int partNum) const;
 	void getPartStates(bool *partStates) const;
 	void getPartialStates(MT32Emu::PartialState *partialStates) const;
-	unsigned int getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const;
-	unsigned int getPartialCount() const;
-	unsigned int getSynthSampleRate() const;
+	uint getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const;
+	uint getPartialCount() const;
+	uint getSynthSampleRate() const;
 	bool isActive() const;
 
 	void startRecordingAudio(const QString &fileName);
@@ -158,7 +175,7 @@ public:
 
 signals:
 	void stateChanged(SynthState state);
-	void audioBlockRendered();
+	void audioBlockRendered() const;
 };
 
 #endif

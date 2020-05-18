@@ -139,7 +139,7 @@ void JACKClient::process(jack_nframes_t nframes) {
 	if (midiSession != NULL) {
 		quint32 cycleStartFrameTime = jack_last_frame_time(client);
 		jack_time_t jackTimeNow = jack_get_time();
-		MasterClockNanos nanosNow = MasterClock::getClockNanos();
+		MasterClockNanos nanosNow = audioStream == NULL ? MasterClock::getClockNanos() : 0;
 		void *midiInBuffer = jack_port_get_buffer(midiInPort, nframes);
 		uint eventCount = uint(jack_midi_get_event_count(midiInBuffer));
 		for (uint eventIx = 0; eventIx < eventCount; eventIx++) {

@@ -45,15 +45,15 @@ public:
 	~SynthRoute();
 	bool open(AudioStreamFactory audioStreamFactory = NULL);
 	bool close();
-	bool reset();
+	void reset();
 	bool enableExclusiveMidiMode(MidiSession *midiSession);
 	bool isExclusiveMidiModeEnabled();
 
 	const QString getPatchName(int partNum) const;
 	void getPartStates(bool *partStates) const;
 	void getPartialStates(MT32Emu::PartialState *partialStates) const;
-	unsigned int getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const;
-	unsigned int getPartialCount() const;
+	uint getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const;
+	uint getPartialCount() const;
 
 	void flushMIDIQueue();
 	void playMIDIShortMessageNow(MT32Emu::Bit32u msg);

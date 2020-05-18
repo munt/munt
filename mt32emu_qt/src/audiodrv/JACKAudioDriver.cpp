@@ -55,6 +55,7 @@ bool JACKAudioStream::start(MidiSession *midiSession) {
 		// MIDI processing is synchronous, zero latency introduced
 		midiLatencyFrames = 0;
 		qDebug() << "JACKAudioDriver: Configured synchronous MIDI processing";
+		synth.setRealtime();
 	}
 
 	return true;

@@ -118,15 +118,8 @@ bool SynthRoute::close() {
 	return true;
 }
 
-bool SynthRoute::reset() {
-	if (state == SynthRouteState_CLOSED)
-		return true;
-	setState(SynthRouteState_CLOSING);
-	if (qSynth.reset()) {
-		setState(SynthRouteState_OPEN);
-		return true;
-	}
-	return false;
+void SynthRoute::reset() {
+	qSynth.reset();
 }
 
 bool SynthRoute::enableExclusiveMidiMode(MidiSession *midiSession) {
@@ -334,7 +327,7 @@ void SynthRoute::getROMImages(const MT32Emu::ROMImage *&controlROMImage, const M
 	qSynth.getROMImages(controlROMImage, pcmROMImage);
 }
 
-unsigned int SynthRoute::getPartialCount() const {
+uint SynthRoute::getPartialCount() const {
 	return qSynth.getPartialCount();
 }
 
@@ -350,7 +343,7 @@ void SynthRoute::getPartialStates(PartialState *partialStates) const {
 	qSynth.getPartialStates(partialStates);
 }
 
-unsigned int SynthRoute::getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const {
+uint SynthRoute::getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const {
 	return qSynth.getPlayingNotes(partNumber, keys, velocities);
 }
 
