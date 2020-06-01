@@ -8,3 +8,6 @@
 
 #include <windows.h>
 #include <iostream>
+#include <Setupapi.h>
+#include <Devguid.h>
+#include <RegStr.h>

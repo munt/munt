@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -31,6 +31,19 @@ const char REPAIR_COMMAND[] = "repair";
 const char DRIVERS_REGISTRY_KEY[] = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Drivers32";
 const char PATH_SEPARATOR[] = "\\";
 
+const char DEVICE_NAME_MEDIA[] = "MEDIA";
+const char DEVICE_DESCRIPTION[] = "MT-32 Synth Emulator";
+const char DRIVER_PROVIDER_NAME[] = "muntemu.org";
+const char DRIVER_CLASS_PROP_DRIVER_DESC[] = "DriverDesc";
+const char DRIVER_CLASS_PROP_PROVIDER_NAME[] = "ProviderName";
+const char DRIVER_CLASS_SUBKEY_DRIVERS[] = "Drivers";
+const char DRIVER_CLASS_PROP_SUBCLASSES[] = "SubClasses";
+const char DRIVER_CLASS_SUBCLASSES[] = "MIDI";
+const char DRIVER_SUBCLASS_SUBKEYS[] = "MIDI\\mt32emu.dll";
+const char DRIVER_SUBCLASS_PROP_DRIVER[] = "Driver";
+const char DRIVER_SUBCLASS_PROP_DESCRIPTION[] = "Description";
+const char DRIVER_SUBCLASS_PROP_ALIAS[] = "Alias";
+
 const char SUCCESSFULLY_INSTALLED_MSG[] = "MT32Emu MIDI Driver successfully installed";
 const char SUCCESSFULLY_UPDATED_MSG[] = "MT32Emu MIDI Driver successfully updated";
 const char SUCCESSFULLY_UNINSTALLED_MSG[] = "MT32Emu MIDI Driver successfully uninstalled";
@@ -44,6 +57,8 @@ const char CANNOT_OPEN_REGISTRY_32_ERR[] = "Cannot open 32-bit registry key";
 const char CANNOT_INSTALL_NO_PORTS_ERR[] = "Cannot install MT32Emu MIDI driver:\n There is no MIDI ports available";
 const char CANNOT_REGISTER_ERR[] = "Cannot register driver";
 const char CANNOT_REGISTER_32_ERR[] = "Cannot register 32-bit driver";
+const char CANNOT_REGISTER_CLASS_ERR[] = "Cannot register driver class";
+const char CANNOT_REGISTER_DEVICE_ERR[] = "Cannot register device";
 const char CANNOT_UNINSTALL_ERR[] = "Cannot uninstall MT32Emu MIDI driver";
 const char CANNOT_UNINSTALL_32_ERR[] = "Cannot uninstall 32-bit MT32Emu MIDI driver";
 const char CANNOT_UNINSTALL_NOT_FOUND_ERR[] = "Cannot uninstall MT32Emu MIDI driver:\n There is no driver registry entry found";
@@ -61,7 +76,9 @@ enum ProcessReturnCode {
 	ProcessReturnCode_ERR_UNRECOGNISED_OPERATION_MODE = 1,
 	ProcessReturnCode_ERR_PATH_TOO_LONG = 2,
 	ProcessReturnCode_ERR_REGISTERING_DRIVER = 3,
-	ProcessReturnCode_ERR_COPYING_FILE = 4
+	ProcessReturnCode_ERR_COPYING_FILE = 4,
+	ProcessReturnCode_ERR_REGISTERING_DRIVER_CLASS = 5,
+	ProcessReturnCode_ERR_REGISTERING_DEVICE = 6
 };
 
 enum OperationMode {
@@ -175,14 +192,13 @@ static bool registerDriverInWow(const char *mt32emuEntryName) {
 	return true;
 }
 
-static RegisterDriverResult registerDriver(const bool wow64Process) {
+static RegisterDriverResult registerDriver(const bool wow64Process, int &entryIx) {
 	HKEY hReg;
 	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, DRIVERS_REGISTRY_KEY, 0L, (wow64Process ? (KEY_ALL_ACCESS | KEY_WOW64_64KEY) : KEY_ALL_ACCESS), &hReg)) {
 		MessageBoxA(NULL, CANNOT_OPEN_REGISTRY_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		return RegisterDriverResult_FAILED;
 	}
 	MidiRegistryEntryName entryName;
-	int entryIx;
 	if (!findFreeMidiRegEntry(entryIx, hReg, entryName)) {
 		RegCloseKey(hReg);
 		if (entryIx == -1) {
@@ -304,6 +320,87 @@ static bool installDriverFile(const char *setupPath, const char *driverFileName,
 	return CopyFileA(setupPathName, driverPathName, FALSE) != FALSE;
 }
 
+static bool registerDriverClass(HKEY devRegKey, int legacyMidiEntryIx) {
+	if (ERROR_SUCCESS != RegSetValueExA(devRegKey, DRIVER_CLASS_PROP_DRIVER_DESC, NULL, REG_SZ, (LPBYTE)DEVICE_DESCRIPTION, sizeof(DEVICE_DESCRIPTION))) return false;
+	if (ERROR_SUCCESS != RegSetValueExA(devRegKey, DRIVER_CLASS_PROP_PROVIDER_NAME, NULL, REG_SZ, (LPBYTE)DRIVER_PROVIDER_NAME, sizeof(DRIVER_PROVIDER_NAME))) return false;
+	HKEY driversSubkey;
+	if (ERROR_SUCCESS != RegCreateKeyExA(devRegKey, DRIVER_CLASS_SUBKEY_DRIVERS, NULL, NULL, 0, KEY_ALL_ACCESS, NULL, &driversSubkey, NULL)) return false;
+	if (ERROR_SUCCESS != RegSetValueExA(driversSubkey, DRIVER_CLASS_PROP_SUBCLASSES, NULL, REG_SZ, (LPBYTE)DRIVER_CLASS_SUBCLASSES, sizeof(DRIVER_CLASS_SUBCLASSES))) {
+		RegCloseKey(driversSubkey);
+		return false;
+	}
+	HKEY driverSubkey;
+	if (ERROR_SUCCESS != RegCreateKeyExA(driversSubkey, DRIVER_SUBCLASS_SUBKEYS, NULL, NULL, 0, KEY_ALL_ACCESS, NULL, &driverSubkey, NULL)) {
+		RegCloseKey(driversSubkey);
+		return false;
+	}
+	RegCloseKey(driversSubkey);
+	if (ERROR_SUCCESS != RegSetValueExA(driverSubkey, DRIVER_SUBCLASS_PROP_DRIVER, NULL, REG_SZ, (LPBYTE)MT32EMU_DRIVER_NAME, sizeof(MT32EMU_DRIVER_NAME))) {
+		RegCloseKey(driverSubkey);
+		return false;
+	}
+	if (ERROR_SUCCESS != RegSetValueExA(driverSubkey, DRIVER_SUBCLASS_PROP_DESCRIPTION, NULL, REG_SZ, (LPBYTE)DEVICE_DESCRIPTION, sizeof(DEVICE_DESCRIPTION))) {
+		RegCloseKey(driverSubkey);
+		return false;
+	}
+	MidiRegistryEntryName entryName;
+	const char *mt32emuEntryName = entryName.withIndex(legacyMidiEntryIx)->toCString();
+	if (ERROR_SUCCESS != RegSetValueExA(driverSubkey, DRIVER_SUBCLASS_PROP_ALIAS, NULL, REG_SZ, (LPBYTE)mt32emuEntryName, sizeof(MIDI_REGISTRY_ENTRY_TEMPLATE))) {
+		RegCloseKey(driverSubkey);
+		return false;
+	}
+	return true;
+}
+
+static ProcessReturnCode registerDeviceAndDriverClass(int legacyMidiEntryIx) {
+	HDEVINFO hDevInfo = SetupDiGetClassDevsA(&GUID_DEVCLASS_MEDIA, NULL, NULL, 0);
+	if (INVALID_HANDLE_VALUE == hDevInfo) {
+		MessageBoxA(NULL, CANNOT_REGISTER_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return ProcessReturnCode_ERR_REGISTERING_DEVICE;
+	}
+
+	SP_DEVINFO_DATA deviceInfoData;
+	deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
+	if (!SetupDiCreateDeviceInfoA(hDevInfo, DEVICE_NAME_MEDIA, &GUID_DEVCLASS_MEDIA, DEVICE_DESCRIPTION, NULL, DICD_GENERATE_ID, &deviceInfoData)) {
+		SetupDiDestroyDeviceInfoList(hDevInfo);
+		MessageBoxA(NULL, CANNOT_REGISTER_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return ProcessReturnCode_ERR_REGISTERING_DEVICE;
+	}
+	if (!SetupDiRegisterDeviceInfo(hDevInfo, &deviceInfoData, 0, NULL, NULL, NULL)) {
+		SetupDiDestroyDeviceInfoList(hDevInfo);
+		MessageBoxA(NULL, CANNOT_REGISTER_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return ProcessReturnCode_ERR_REGISTERING_DEVICE;
+	}
+
+	DWORD configClass = CONFIGFLAG_MANUAL_INSTALL | CONFIGFLAG_NEEDS_FORCED_CONFIG;
+	if (!SetupDiSetDeviceRegistryPropertyA(hDevInfo, &deviceInfoData, SPDRP_CONFIGFLAGS, (BYTE *)&configClass, sizeof(configClass))) {
+		SetupDiDestroyDeviceInfoList(hDevInfo);
+		MessageBoxA(NULL, CANNOT_REGISTER_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return ProcessReturnCode_ERR_REGISTERING_DEVICE;
+	}
+	if (!SetupDiSetDeviceRegistryPropertyA(hDevInfo, &deviceInfoData, SPDRP_MFG, (BYTE *)&DRIVER_PROVIDER_NAME, sizeof(DRIVER_PROVIDER_NAME))) {
+		SetupDiDestroyDeviceInfoList(hDevInfo);
+		MessageBoxA(NULL, CANNOT_REGISTER_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return ProcessReturnCode_ERR_REGISTERING_DEVICE;
+	}
+
+	HKEY devRegKey = SetupDiCreateDevRegKeyA(hDevInfo, &deviceInfoData, DICS_FLAG_GLOBAL, 0, DIREG_DRV, NULL, NULL);
+	SetupDiDestroyDeviceInfoList(hDevInfo);
+	if (INVALID_HANDLE_VALUE == devRegKey) {
+		MessageBoxA(NULL, CANNOT_REGISTER_CLASS_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return ProcessReturnCode_ERR_REGISTERING_DRIVER_CLASS;
+	}
+	if (!registerDriverClass(devRegKey, legacyMidiEntryIx)) {
+		RegCloseKey(devRegKey);
+		MessageBoxA(NULL, CANNOT_REGISTER_CLASS_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return ProcessReturnCode_ERR_REGISTERING_DRIVER_CLASS;
+	}
+	RegCloseKey(devRegKey);
+
+	return ProcessReturnCode_OK;
+}
+
 int main(int argc, char *argv[]) {
 	bool wow64Process = isWow64Process();
 
@@ -326,9 +423,14 @@ int main(int argc, char *argv[]) {
 				MessageBoxA(NULL, CANNOT_INSTALL_PATH_TOO_LONG_ERR, ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
 				return ProcessReturnCode_ERR_PATH_TOO_LONG;
 			}
-			const RegisterDriverResult registerDriverResult = registerDriver(wow64Process);
+			int legacyMidiEntryIx;
+			const RegisterDriverResult registerDriverResult = registerDriver(wow64Process, legacyMidiEntryIx);
 			if (registerDriverResult == RegisterDriverResult_FAILED) {
 				return ProcessReturnCode_ERR_REGISTERING_DRIVER;
+			}
+			ProcessReturnCode returnCode = registerDeviceAndDriverClass(legacyMidiEntryIx);
+			if (ProcessReturnCode_OK != returnCode) {
+				return returnCode;
 			}
 			char setupPath[MAX_PATH + 1];
 			if (pathDelimPosition == NULL) {
@@ -355,8 +457,10 @@ int main(int argc, char *argv[]) {
 			return ProcessReturnCode_OK;
 		}
 
-		case OperationMode_REPAIR:
-			return registerDriver(wow64Process) == RegisterDriverResult_FAILED ? ProcessReturnCode_ERR_REGISTERING_DRIVER : ProcessReturnCode_OK;
+		case OperationMode_REPAIR: {
+			int legacyMidiEntryIx;
+			return registerDriver(wow64Process, legacyMidiEntryIx) == RegisterDriverResult_FAILED ? ProcessReturnCode_ERR_REGISTERING_DRIVER : ProcessReturnCode_OK;
+		}
 
 		case OperationMode_UNINSTALL: {
 			char pathName[MAX_PATH + 1];
