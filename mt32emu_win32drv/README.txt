@@ -4,38 +4,44 @@ MT32Emu WinMM Driver
 First-time Installation
 -----------------------
 
-Run "drvsetup.exe install" to perform installation. This will copy mt32emu.dll into
-C:\WINDOWS\SYSTEM32 (C:\WINDOWS\SYSWOW64 for x64 systems) directory.
+Run "drvsetup.exe install" to perform installation. This will copy mt32emu.dll
+into C:\WINDOWS\SYSTEM32 (and C:\WINDOWS\SYSWOW64 on x64 systems) directory
+and register the virtual synth MIDI device in the Plug-n-Play manager.
 Use the main UI-enabled application to configure driver settings.
 
 --------------------------------------------------------------------------------
 
 You can also use the fail-safe approach "Add Hardware wizard" if you like.
-The information file mt32emu.inf is provided. However, this way works
-on x86 Windows only.
+The information file mt32emu.inf is provided. However, this way may appear
+significantly longer.
 
- 1) Unpack mt32emu.inf and mt32emu.dll. Remember the location of this directory.
- 2) Open Control Panel.
- 3) Double-click on "Add Hardware".
- 4) Click "Next" until you come to a message asking you whether you have
-    already installed the hardware.
- 5) Select the "Yes" option and click "Next".
- 6) A list of installed hardware will appear. Scroll to the bottom of the list
-    and select the last entry, which should be something like "New Hardware".
-    Click "Next".
- 7) Select "Choose hardware manually from a list" and click "Next".
- 8) Select "Sound, Video and Game Controllers" and click "Next".
- 9) Click "Have Disk...".
-10) In the window that pops up, click "Browse..." and choose the directory to
+ 1) Disable the Windows driver signing requirement which is enforced in Vista
+    and above. There are various ways to accomplish it, the simplest seems
+    to be as follows.
+    - Reboot the system into the recovery mode. For this, on Windows 10, right-
+      click the Start Menu button (or press Windows-X) and Shift-click
+      the Restart menu item.
+    - Go to Troubleshoot / Advanced Options / Startup Settings and click
+      the Restart button.
+    - When prompted, press F7 key (or numeric 7 key) to boot into
+      the "unsafe" mode.
+ 2) Unpack the distribution archive. Remember the location of this directory.
+ 3) On Windows XP, open the Control Panel and start the "Add Hardware" wizard.
+    On later Windows versions, manually start "hdwwiz.exe" or "hdwwiz.cpl" from
+    the Run dialog or from the command line.
+ 4) If prompted, tell the wizard that the device is connected but it shouldn't
+    try to search the driver via the Windows Update for it.
+ 5) Proceed to the selection of the hardware type. Select "Sound, video and
+    game controllers".
+ 6) When a list of available drivers appears, click "Have Disk...".
+ 7) In the window that pops up, click "Browse..." and choose the directory to
     which you unpacked the mt32emu.inf and mt32emu.dll files. Click "OK".
-11) If a window pops up complaining about the lack of Windows Logo testing,
-    click "Install Anyway" or similar.
-12) "MT-32 Synth Emulator" should have appeared selected in a list.
+ 8) "MT-32 Synth Emulator" should have appeared selected in a list.
     Click "Next" twice.
-13) The driver *still* isn't Windows Logo tested, so click "Install Anyway" if
-    necessary.
-14) The driver should now have been installed; click "Finish".
-15) A dialog box will recommend that you reboot. Go ahead if you enjoy that
+ 9) If a window pops up complaining about the lack of Windows Logo testing
+    and/or digital signature, click "Install Anyway..." or similar.
+10) The driver should now have been installed; click "Finish".
+11) If a dialog box recommends that you reboot, go ahead if you enjoy that
     sort of thing, but it shouldn't be necessary for a fresh installation.
 
 --------------------------------------------------------------------------------
@@ -92,7 +98,7 @@ License
 -------
 
 Copyright (C) 2003, 2004, 2005, 2011 Dean Beeler, Jerome Fisher
-Copyright (C) 2011-2019 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011-2020 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
