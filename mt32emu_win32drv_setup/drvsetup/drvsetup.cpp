@@ -34,6 +34,8 @@ const char PATH_SEPARATOR[] = "\\";
 const char DEVICE_NAME_MEDIA[] = "MEDIA";
 const char DEVICE_DESCRIPTION[] = "MT-32 Synth Emulator";
 const char DRIVER_PROVIDER_NAME[] = "muntemu.org";
+const char DEVICE_HARDWARE_IDS[] = "ROOT\\mt32emu\0";
+
 const char DRIVER_CLASS_PROP_DRIVER_DESC[] = "DriverDesc";
 const char DRIVER_CLASS_PROP_PROVIDER_NAME[] = "ProviderName";
 const char DRIVER_CLASS_SUBKEY_DRIVERS[] = "Drivers";
@@ -59,6 +61,7 @@ const char CANNOT_REGISTER_ERR[] = "Cannot register driver";
 const char CANNOT_REGISTER_32_ERR[] = "Cannot register 32-bit driver";
 const char CANNOT_REGISTER_CLASS_ERR[] = "Cannot register driver class";
 const char CANNOT_REGISTER_DEVICE_ERR[] = "Cannot register device";
+const char CANNOT_REMOVE_DEVICE_ERR[] = "Cannot remove device";
 const char CANNOT_UNINSTALL_ERR[] = "Cannot uninstall MT32Emu MIDI driver";
 const char CANNOT_UNINSTALL_32_ERR[] = "Cannot uninstall 32-bit MT32Emu MIDI driver";
 const char CANNOT_UNINSTALL_NOT_FOUND_ERR[] = "Cannot uninstall MT32Emu MIDI driver:\n There is no driver registry entry found";
@@ -78,7 +81,8 @@ enum ProcessReturnCode {
 	ProcessReturnCode_ERR_REGISTERING_DRIVER = 3,
 	ProcessReturnCode_ERR_COPYING_FILE = 4,
 	ProcessReturnCode_ERR_REGISTERING_DRIVER_CLASS = 5,
-	ProcessReturnCode_ERR_REGISTERING_DEVICE = 6
+	ProcessReturnCode_ERR_REGISTERING_DEVICE = 6,
+	ProcessReturnCode_ERR_REMOVING_DEVICE = 7
 };
 
 enum OperationMode {
@@ -92,6 +96,12 @@ enum RegisterDriverResult {
 	RegisterDriverResult_OK,
 	RegisterDriverResult_FAILED,
 	RegisterDriverResult_ALREADY_EXISTS
+};
+
+enum FindDeviceResult {
+	FindDeviceResult_FOUND,
+	FindDeviceResult_NOT_FOUND,
+	FindDeviceResult_FAILED
 };
 
 class MidiRegistryEntryName {
@@ -245,18 +255,18 @@ static void unregisterDriverInWow(const char *mt32emuEntryName) {
 	}
 }
 
-static void unregisterDriver(const bool wow64Process) {
+static bool unregisterDriver(const bool wow64Process) {
 	HKEY hReg;
 	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, DRIVERS_REGISTRY_KEY, 0L, (wow64Process ? (KEY_ALL_ACCESS | KEY_WOW64_64KEY) : KEY_ALL_ACCESS), &hReg)) {
 		MessageBoxA(NULL, CANNOT_OPEN_REGISTRY_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
-		return;
+		return false;
 	}
 	MidiRegistryEntryName entryName;
 	const int entryIx = findMt32emuRegEntry(hReg, entryName);
 	if (entryIx == -1) {
 		MessageBoxA(NULL, CANNOT_UNINSTALL_NOT_FOUND_ERR, ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		RegCloseKey(hReg);
-		return;
+		return false;
 	}
 	const char *mt32emuEntryName = entryName.withIndex(entryIx)->toCString();
 	LSTATUS res = RegDeleteValueA(hReg, mt32emuEntryName);
@@ -266,8 +276,9 @@ static void unregisterDriver(const bool wow64Process) {
 	}
 	if (res != ERROR_SUCCESS) {
 		MessageBoxA(NULL, CANNOT_UNINSTALL_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return false;
 	}
-	MessageBoxA(NULL, SUCCESSFULLY_UNINSTALLED_MSG, INFORMATION_TITLE, MB_OK | MB_ICONINFORMATION);
+	return true;
 }
 
 static void constructFullSystemDirName(char *pathName, const char *systemDirName) {
@@ -352,26 +363,59 @@ static bool registerDriverClass(HKEY devRegKey, int legacyMidiEntryIx) {
 	return true;
 }
 
-static ProcessReturnCode registerDeviceAndDriverClass(int legacyMidiEntryIx) {
-	HDEVINFO hDevInfo = SetupDiGetClassDevsA(&GUID_DEVCLASS_MEDIA, NULL, NULL, 0);
+static FindDeviceResult findMt32emuDevice(HDEVINFO &hDevInfo, SP_DEVINFO_DATA &deviceInfoData) {
+	char hardwareId[1024];
+	for (int deviceIx = 0; SetupDiEnumDeviceInfo(hDevInfo, deviceIx, &deviceInfoData); ++deviceIx) {
+		if (!SetupDiGetDeviceRegistryPropertyA(hDevInfo, &deviceInfoData, SPDRP_HARDWAREID, NULL, (BYTE *)hardwareId, sizeof(hardwareId), NULL)) continue;
+		if (!strncmp(hardwareId, DEVICE_HARDWARE_IDS, sizeof(DEVICE_HARDWARE_IDS) + 1)) return FindDeviceResult_FOUND;
+	}
+	return ERROR_NO_MORE_ITEMS == GetLastError() ? FindDeviceResult_NOT_FOUND : FindDeviceResult_FAILED;
+}
+
+static ProcessReturnCode registerDevice(HDEVINFO &hDevInfo, SP_DEVINFO_DATA &deviceInfoData, bool wow64Process) {
+	hDevInfo = SetupDiGetClassDevsA(&GUID_DEVCLASS_MEDIA, NULL, NULL, 0);
 	if (INVALID_HANDLE_VALUE == hDevInfo) {
 		MessageBoxA(NULL, CANNOT_REGISTER_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		return ProcessReturnCode_ERR_REGISTERING_DEVICE;
 	}
 
-	SP_DEVINFO_DATA deviceInfoData;
-	deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+	FindDeviceResult findDeviceResult = findMt32emuDevice(hDevInfo, deviceInfoData);
+	if (FindDeviceResult_FAILED == findDeviceResult) return ProcessReturnCode_ERR_REGISTERING_DEVICE;
+	if (FindDeviceResult_FOUND == findDeviceResult) return ProcessReturnCode_OK;
 
 	if (!SetupDiCreateDeviceInfoA(hDevInfo, DEVICE_NAME_MEDIA, &GUID_DEVCLASS_MEDIA, DEVICE_DESCRIPTION, NULL, DICD_GENERATE_ID, &deviceInfoData)) {
 		SetupDiDestroyDeviceInfoList(hDevInfo);
 		MessageBoxA(NULL, CANNOT_REGISTER_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		return ProcessReturnCode_ERR_REGISTERING_DEVICE;
 	}
-	if (!SetupDiRegisterDeviceInfo(hDevInfo, &deviceInfoData, 0, NULL, NULL, NULL)) {
+	if (!SetupDiSetDeviceRegistryPropertyA(hDevInfo, &deviceInfoData, SPDRP_HARDWAREID, (BYTE *)DEVICE_HARDWARE_IDS, sizeof(DEVICE_HARDWARE_IDS))) {
 		SetupDiDestroyDeviceInfoList(hDevInfo);
 		MessageBoxA(NULL, CANNOT_REGISTER_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		return ProcessReturnCode_ERR_REGISTERING_DEVICE;
 	}
+
+	// The proper way to register device in PnP manager is to call SetupDiCallClassInstaller but that doesn't work in WOW.
+	BOOL deviceRegistrationResult;
+	if (wow64Process) {
+		deviceRegistrationResult = SetupDiRegisterDeviceInfo(hDevInfo, &deviceInfoData, 0, NULL, NULL, NULL);
+	} else {
+		deviceRegistrationResult = SetupDiCallClassInstaller(DIF_REGISTERDEVICE, hDevInfo, &deviceInfoData);
+	}
+	if (!deviceRegistrationResult) {
+		SetupDiDestroyDeviceInfoList(hDevInfo);
+		MessageBoxA(NULL, CANNOT_REGISTER_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return ProcessReturnCode_ERR_REGISTERING_DEVICE;
+	}
+	return ProcessReturnCode_OK;
+}
+
+static ProcessReturnCode registerDeviceAndDriverClass(bool wow64Process, int legacyMidiEntryIx) {
+	HDEVINFO hDevInfo;
+	SP_DEVINFO_DATA deviceInfoData;
+	deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
+	ProcessReturnCode returnCode = registerDevice(hDevInfo, deviceInfoData, wow64Process);
+	if (ProcessReturnCode_OK != returnCode) return returnCode;
 
 	DWORD configClass = CONFIGFLAG_MANUAL_INSTALL | CONFIGFLAG_NEEDS_FORCED_CONFIG;
 	if (!SetupDiSetDeviceRegistryPropertyA(hDevInfo, &deviceInfoData, SPDRP_CONFIGFLAGS, (BYTE *)&configClass, sizeof(configClass))) {
@@ -379,7 +423,7 @@ static ProcessReturnCode registerDeviceAndDriverClass(int legacyMidiEntryIx) {
 		MessageBoxA(NULL, CANNOT_REGISTER_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		return ProcessReturnCode_ERR_REGISTERING_DEVICE;
 	}
-	if (!SetupDiSetDeviceRegistryPropertyA(hDevInfo, &deviceInfoData, SPDRP_MFG, (BYTE *)&DRIVER_PROVIDER_NAME, sizeof(DRIVER_PROVIDER_NAME))) {
+	if (!SetupDiSetDeviceRegistryPropertyA(hDevInfo, &deviceInfoData, SPDRP_MFG, (BYTE *)DRIVER_PROVIDER_NAME, sizeof(DRIVER_PROVIDER_NAME))) {
 		SetupDiDestroyDeviceInfoList(hDevInfo);
 		MessageBoxA(NULL, CANNOT_REGISTER_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
 		return ProcessReturnCode_ERR_REGISTERING_DEVICE;
@@ -398,6 +442,43 @@ static ProcessReturnCode registerDeviceAndDriverClass(int legacyMidiEntryIx) {
 	}
 	RegCloseKey(devRegKey);
 
+	return ProcessReturnCode_OK;
+}
+
+static ProcessReturnCode removeDevice(bool wow64Process) {
+	HDEVINFO hDevInfo;
+	SP_DEVINFO_DATA deviceInfoData;
+	deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
+	hDevInfo = SetupDiGetClassDevsA(&GUID_DEVCLASS_MEDIA, NULL, NULL, 0);
+	if (INVALID_HANDLE_VALUE == hDevInfo) {
+		MessageBoxA(NULL, CANNOT_REMOVE_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return ProcessReturnCode_ERR_REMOVING_DEVICE;
+	}
+
+	FindDeviceResult findDeviceResult = findMt32emuDevice(hDevInfo, deviceInfoData);
+	if (FindDeviceResult_FAILED == findDeviceResult) {
+		SetupDiDestroyDeviceInfoList(hDevInfo);
+		MessageBoxA(NULL, CANNOT_REMOVE_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return ProcessReturnCode_ERR_REMOVING_DEVICE;
+	}
+	if (FindDeviceResult_NOT_FOUND == findDeviceResult) {
+		SetupDiDestroyDeviceInfoList(hDevInfo);
+		MessageBoxA(NULL, CANNOT_REMOVE_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+		return ProcessReturnCode_OK;
+	}
+
+	// The proper way to remove device in PnP manager is to call SetupDiCallClassInstaller but that doesn't work in WOW.
+	BOOL deviceRemovalResult;
+	if (wow64Process) {
+		deviceRemovalResult = SetupDiRemoveDevice(hDevInfo, &deviceInfoData);
+	} else {
+		deviceRemovalResult = SetupDiCallClassInstaller(DIF_REMOVE, hDevInfo, &deviceInfoData);
+	}
+	SetupDiDestroyDeviceInfoList(hDevInfo);
+	if (!deviceRemovalResult) {
+		MessageBoxA(NULL, CANNOT_REMOVE_DEVICE_ERR, REGISTRY_ERROR_TITLE, MB_OK | MB_ICONEXCLAMATION);
+	}
 	return ProcessReturnCode_OK;
 }
 
@@ -425,13 +506,9 @@ int main(int argc, char *argv[]) {
 			}
 			int legacyMidiEntryIx;
 			const RegisterDriverResult registerDriverResult = registerDriver(wow64Process, legacyMidiEntryIx);
-			if (registerDriverResult == RegisterDriverResult_FAILED) {
-				return ProcessReturnCode_ERR_REGISTERING_DRIVER;
-			}
-			ProcessReturnCode returnCode = registerDeviceAndDriverClass(legacyMidiEntryIx);
-			if (ProcessReturnCode_OK != returnCode) {
-				return returnCode;
-			}
+			if (registerDriverResult == RegisterDriverResult_FAILED) return ProcessReturnCode_ERR_REGISTERING_DRIVER;
+			ProcessReturnCode returnCode = registerDeviceAndDriverClass(wow64Process, legacyMidiEntryIx);
+			if (ProcessReturnCode_OK != returnCode) return returnCode;
 			char setupPath[MAX_PATH + 1];
 			if (pathDelimPosition == NULL) {
 				GetCurrentDirectoryA(sizeof(setupPath), setupPath);
@@ -470,7 +547,10 @@ int main(int argc, char *argv[]) {
 			} else {
 				deleteDriverFile(pathName, SYSTEM_DIR_NAME);
 			}
-			unregisterDriver(wow64Process);
+			if (!unregisterDriver(wow64Process)) return ProcessReturnCode_OK;
+			ProcessReturnCode returnCode = removeDevice(wow64Process);
+			if (ProcessReturnCode_OK != returnCode) return returnCode;
+			MessageBoxA(NULL, SUCCESSFULLY_UNINSTALLED_MSG, INFORMATION_TITLE, MB_OK | MB_ICONINFORMATION);
 			return ProcessReturnCode_OK;
 		}
 
