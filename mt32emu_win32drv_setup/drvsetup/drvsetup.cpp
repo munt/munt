@@ -544,7 +544,9 @@ int main(int argc, char *argv[]) {
 
 		case OperationMode_REPAIR: {
 			int legacyMidiEntryIx;
-			return registerDriver(wow64Process, legacyMidiEntryIx) == RegisterDriverResult_FAILED ? ProcessReturnCode_ERR_REGISTERING_DRIVER : ProcessReturnCode_OK;
+			const RegisterDriverResult registerDriverResult = registerDriver(wow64Process, legacyMidiEntryIx);
+			if (registerDriverResult == RegisterDriverResult_FAILED) return ProcessReturnCode_ERR_REGISTERING_DRIVER;
+			return registerDeviceAndDriverClass(wow64Process, legacyMidiEntryIx);
 		}
 
 		case OperationMode_UNINSTALL: {
