@@ -99,10 +99,18 @@ static bool createFullInfPath(char *fullInfPath, const char *appLaunchPath) {
 }
 
 static FindDeviceResult findMt32emuDevice(HDEVINFO &hDevInfo, SP_DEVINFO_DATA &deviceInfoData) {
-	char hardwareId[1024];
+	char property[1024];
 	for (int deviceIx = 0; SetupDiEnumDeviceInfo(hDevInfo, deviceIx, &deviceInfoData); ++deviceIx) {
-		if (!SetupDiGetDeviceRegistryPropertyA(hDevInfo, &deviceInfoData, SPDRP_HARDWAREID, NULL, (BYTE *)hardwareId, sizeof(hardwareId), NULL)) continue;
-		if (!strncmp(hardwareId, DEVICE_HARDWARE_IDS, sizeof(DEVICE_HARDWARE_IDS) + 1)) return FindDeviceResult_FOUND;
+		if (SetupDiGetDeviceRegistryPropertyA(hDevInfo, &deviceInfoData, SPDRP_HARDWAREID, NULL, (BYTE *)property, sizeof(property), NULL)) {
+			if (!_strnicmp(property, DEVICE_HARDWARE_IDS, sizeof(DEVICE_HARDWARE_IDS) + 1)) return FindDeviceResult_FOUND;
+			continue;
+		}
+		if (ERROR_INVALID_DATA != GetLastError()) continue;
+		if (SetupDiGetDeviceRegistryPropertyA(hDevInfo, &deviceInfoData, SPDRP_DEVICEDESC, NULL, (BYTE *)property, sizeof(property), NULL)) {
+			if (_strnicmp(property, DEVICE_DESCRIPTION, sizeof(DEVICE_DESCRIPTION))) continue;
+			SetupDiSetDeviceRegistryPropertyA(hDevInfo, &deviceInfoData, SPDRP_HARDWAREID, (BYTE *)DEVICE_HARDWARE_IDS, sizeof(DEVICE_HARDWARE_IDS));
+			return FindDeviceResult_FOUND;
+		}
 	}
 	return ERROR_NO_MORE_ITEMS == GetLastError() ? FindDeviceResult_NOT_FOUND : FindDeviceResult_FAILED;
 }
