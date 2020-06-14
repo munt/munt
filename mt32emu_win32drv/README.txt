@@ -13,7 +13,8 @@ Use the main UI-enabled application to configure driver settings.
 
 You can also use the fail-safe approach "Add Hardware wizard" if you like.
 The information file mt32emu.inf is provided. However, this way may appear
-significantly longer.
+significantly longer. To make it easier, there is a helper tool infinstall,
+that performs the steps 3-10 described below in a single run.
 
  1) Disable the Windows driver signing requirement which is enforced in Vista
     and above. There are various ways to accomplish it, the simplest seems
@@ -43,6 +44,10 @@ significantly longer.
 10) The driver should now have been installed; click "Finish".
 11) If a dialog box recommends that you reboot, go ahead if you enjoy that
     sort of thing, but it shouldn't be necessary for a fresh installation.
+
+Alternatively, after the step #2, simply run "infinstall.exe install"
+(on 32-bit systems) or "infinstall_x64.exe install" (on 64-bit systems)
+and confirm the installation when asked.
 
 --------------------------------------------------------------------------------
 
@@ -85,6 +90,26 @@ the main UI-enabled application will apply to the internal synth engine as well.
 12) If a dialog pops up asking for the ROM files, navigate *again* to the directory to show it where the ROMs are and click OK.
 13) If asked about change in languages, confirm that you want the file replaced.
 14) You almost certainly *will* need to reboot the computer for the change to take effect.
+
+The "infinstall.exe install" command can also be used to update the driver as a shortcut
+instead of going through the above steps.
+
+
+Troubleshooting
+---------------
+
+Unfortunately, Windows MIDI applications keep relying on the old WinMME API,
+which isn't flexible enough for the today's demand. For instance, a total of 10
+MIDI drivers can be recognised by a WinMME MIDI application. As a result, MIDI
+drivers installed in the system (and the Windows itself) may "fight" with each
+other for the available legacy MIDI slots where a driver can be registered.
+
+Sometimes, it happens that Windows assigns all the available slots to kernel
+mode drivers, for example due to attaching a USB MIDI cable, etc, so that
+user-mode drivers like mt32emu appear out of luck. In this case, the driver
+is no longer recognised by MIDI applications, although remains in the system.
+To recover from that, the driver can be re-installed, or in a quicker way,
+command "drvsetup.exe repair" can be executed.
 
 
 Uninstalling
