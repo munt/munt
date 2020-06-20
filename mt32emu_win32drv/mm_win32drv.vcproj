@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="mm_win32drv"
 	ProjectGUID="{A2520089-575E-43BD-A242-EF61D3044B71}"
 	RootNamespace="mm_win32drv"
@@ -21,7 +21,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)Output/$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
@@ -45,12 +45,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../munt/mt32emu/src"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS"
+				AdditionalIncludeDirectories="../../include/mt32emu"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS;ENABLE_DEBUG_OUTPUT"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -96,7 +96,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)Output/$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="1"
@@ -121,13 +121,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="../../munt/mt32emu/src"
+				AdditionalIncludeDirectories="../../include/mt32emu"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MM_WIN32DRV_EXPORTS"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderThrough=""
+				FloatingPointModel="2"
+				UsePrecompiledHeader="2"
 				WarningLevel="3"
-				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -143,7 +143,6 @@
 				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)\mt32emu.dll"
 				Version="1.5"
-				LinkIncremental="1"
 				ModuleDefinitionFile="../../munt/mt32emu_win32drv/src/winmm_drv.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -364,6 +363,37 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\StdAfx.cpp"
+			>
+			<FileConfiguration
+				Name="Debug|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories="..\..\munt\mt32emu_win32drv\src"
+					UsePrecompiledHeader="1"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories="..\..\munt\mt32emu_win32drv\src"
+					UsePrecompiledHeader="1"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|x64"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories="..\..\munt\mt32emu_win32drv\src"
+					UsePrecompiledHeader="1"
+				/>
+			</FileConfiguration>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
