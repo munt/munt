@@ -17,9 +17,18 @@
     <ClCompile Include="..\..\..\munt\mt32emu_win32drv_setup\infinstall\stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libwdi\libwdi\pki.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\munt\mt32emu_win32drv_setup\infinstall\pki_helper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\munt\mt32emu_win32drv_setup\infinstall\stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\munt\mt32emu_win32drv_setup\infinstall\pki_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
