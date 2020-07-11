@@ -11,11 +11,12 @@ class Master;
 class QSynth;
 class JACKClient;
 class JACKAudioDriver;
+class JACKAudioProcessor;
 class MidiSession;
 
 class JACKAudioStream : public AudioStream {
 public:
-	JACKAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate, JACKClient *jackClient);
+	JACKAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate);
 	~JACKAudioStream();
 	bool start(MidiSession *midiSession);
 	void stop();
@@ -24,8 +25,9 @@ public:
 	quint64 computeMIDITimestamp(const quint32 jackBufferFrameTime) const;
 
 private:
-	JACKClient *jackClient;
+	JACKClient * const jackClient;
 	float *buffer;
+	JACKAudioProcessor *processor;
 };
 
 class JACKAudioDefaultDevice : public AudioDevice {

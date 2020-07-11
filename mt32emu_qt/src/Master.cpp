@@ -670,7 +670,7 @@ QStringList Master::parseMidiListFromPathName(const QString pathName) {
 
 #ifdef WITH_JACK_MIDI_DRIVER
 bool Master::createJACKMidiPort(bool exclusive) {
-	return static_cast<JACKMidiDriver *>(jackMidiDriver)->createPort(exclusive);
+	return static_cast<JACKMidiDriver *>(jackMidiDriver)->createJACKPort(exclusive);
 }
 
 void Master::deleteJACKMidiPort(MidiSession *midiSession) {

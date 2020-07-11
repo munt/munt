@@ -109,7 +109,7 @@ private:
 	};
 
 	QSynth *qsynth;
-	volatile bool stopProcessing;
+	bool stopProcessing;
 
 	QQueue<SynthControlEvent> synthControlEvents;
 
@@ -271,7 +271,7 @@ private:
 	void run() {
 		QMutexLocker stateSnapshotLocker(&stateSnapshotMutex);
 		QReportHandler &reportHandler = qsynth->reportHandler;
-		while (!stopProcessing && renderCompleteCondition.wait(&stateSnapshotMutex)) {
+		while (renderCompleteCondition.wait(&stateSnapshotMutex) && !stopProcessing) {
 			if (stateSnapshot.lcdMessage[0]) {
 				reportHandler.doShowLCDMessage(stateSnapshot.lcdMessage);
 				stateSnapshot.lcdMessage[0] = 0;
@@ -320,8 +320,10 @@ private:
 
 public:
 	~RealtimeHelper() {
+		QMutexLocker stateSnapshotLocker(&stateSnapshotMutex);
 		stopProcessing = true;
 		renderCompleteCondition.wakeOne();
+		stateSnapshotLocker.unlock();
 		wait();
 	}
 
@@ -959,7 +961,7 @@ void QSynth::setRealtime() {
 	synth->preallocateReverbMemory(true);
 	synth->configureMIDIEventQueueSysexStorage(MAX_STREAM_BUFFER_SIZE);
 	if (isRealtime()) return;
-	realtimeHelper = new RealtimeHelper();
+	realtimeHelper = new RealtimeHelper;
 	realtimeHelper->init(this);
 	qDebug() << "QSynth: Realtime rendering initialised";
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,19 +19,97 @@
 #include "../Master.h"
 #include "../QSynth.h"
 #include "../JACKClient.h"
+#include "../JACKRingBuffer.h"
 
 static const uint CHANNEL_COUNT = 2;
 static const uint MINIMUM_JACK_BUFFER_COUNT = 2;
+static const uint FRAME_BYTE_SIZE = sizeof(float[CHANNEL_COUNT]);
 
-JACKAudioStream::JACKAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate, JACKClient *useJACKClient) :
-	AudioStream(useSettings, useSynth, useSampleRate),
-	jackClient(useJACKClient),
-	buffer(new float[CHANNEL_COUNT * MT32Emu::MAX_SAMPLES_PER_RUN])
+class JACKAudioProcessor : QThread {
+	QSynth &qsynth;
+	JACKRingBuffer * const buffer;
+	bool stopProcessing;
+
+	/** Used in conjunction with bufferSpaceAvailableCondition. */
+	QMutex prerendererMutex;
+	/** Used to block this thread until there is some available space in the buffer. */
+	QWaitCondition bufferSpaceAvailableCondition;
+
+	void run() {
+		QMutexLocker prerendererLocker(&prerendererMutex);
+		while (!stopProcessing) {
+			size_t bytesAvailable;
+			float *writePointer = static_cast<float *>(buffer->writePointer(bytesAvailable));
+			quint32 framesToRender = quint32(bytesAvailable / FRAME_BYTE_SIZE);
+			if (framesToRender == 0) {
+				bufferSpaceAvailableCondition.wait(&prerendererMutex);
+				continue;
+			}
+			prerendererLocker.unlock();
+			qsynth.render(writePointer, framesToRender);
+			buffer->advanceWritePointer(framesToRender * FRAME_BYTE_SIZE);
+			prerendererLocker.relock();
+		}
+	}
+
+public:
+	JACKAudioProcessor(QSynth &useQSynth, quint32 bufferSizeFrames) :
+		qsynth(useQSynth),
+		// JACKRingBuffer needs a bit of spare space to accommodate the entire requested size.
+		// Adding 1 FRAME_BYTE_SIZE does the trick yet ensures proper alignment of pointers.
+		buffer(new JACKRingBuffer((bufferSizeFrames + 1) * FRAME_BYTE_SIZE)),
+		stopProcessing()
+	{}
+
+	~JACKAudioProcessor() {
+		delete buffer;
+	}
+
+	void start() {
+		QThread::start(QThread::TimeCriticalPriority);
+	}
+
+	void stop() {
+		QMutexLocker prerendererLocker(&prerendererMutex);
+		stopProcessing = true;
+		bufferSpaceAvailableCondition.wakeOne();
+		prerendererLocker.unlock();
+		wait();
+	}
+
+	float *getAvailableChunk(quint32 &chunkSizeFrames) const {
+		size_t bytesAvailable;
+		float *readPointer = static_cast<float *>(buffer->readPointer(bytesAvailable));
+		quint32 framesAvailable = quint32(bytesAvailable / FRAME_BYTE_SIZE);
+		chunkSizeFrames = qMin(chunkSizeFrames, framesAvailable);
+		return readPointer;
+	}
+
+	void markChunkProcessed(quint32 chunkSizeFrames) {
+		// We should lock prerendererMutex at this point, but we can't wait in the realtime thread.
+		// As long as the prerenderer keeps up, it must be sleeping now, so this seems to be alright.
+		// In the worst case, an underrun will likely happen anyway, and it doesn't look to be
+		// a big problem if the prerenderer wakes up on the next iteration.
+		buffer->advanceReadPointer(chunkSizeFrames * FRAME_BYTE_SIZE);
+		bufferSpaceAvailableCondition.wakeOne();
+	}
+
+	void handleUnderrun() {
+		// Due to a lack of synchronisation with the realtime thread, the prerenderer
+		// may theoretically fall asleep while the buffer is empty, so wake it now for good.
+		bufferSpaceAvailableCondition.wakeOne();
+	}
+};
+
+JACKAudioStream::JACKAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
+	AudioStream(useSettings, useSynth, useSampleRate), jackClient(new JACKClient), buffer(), processor()
 {}
 
 JACKAudioStream::~JACKAudioStream() {
 	stop();
+	delete jackClient;
 	delete[] buffer;
+	delete processor;
 }
 
 bool JACKAudioStream::start(MidiSession *midiSession) {
@@ -42,20 +120,30 @@ bool JACKAudioStream::start(MidiSession *midiSession) {
 	}
 	jackClient->connectToPhysicalPorts();
 
-	// Rendering is synchronous, zero additional latency introduced
-	audioLatencyFrames = 0;
 	quint32 jackBufferSize = jackClient->getBufferSize();
 	qDebug() << "JACKAudioDriver: JACK reported initial audio buffer size (s):" << double(jackBufferSize) / sampleRate;
+	if (midiSession == NULL && jackClient->isRealtimeProcessing()) {
+		// Use prerendering to prevent the realtime thread from locking, yet to retain complete functionality.
+		// Additional latency of at least the JACK buffer length is introduced.
+		if (audioLatencyFrames < jackBufferSize) audioLatencyFrames = jackBufferSize;
+		processor = new JACKAudioProcessor(synth, audioLatencyFrames);
+		processor->start();
+		qDebug() << "JACKAudioDriver: Configured prerendering audio buffer size (s):" << double(audioLatencyFrames) / sampleRate;
+	} else {
+		// Rendering is synchronous, zero additional latency introduced.
+		audioLatencyFrames = 0;
+		buffer = new float[CHANNEL_COUNT * MT32Emu::MAX_SAMPLES_PER_RUN];
+	}
 
 	if (midiSession == NULL) {
 		// Setup initial MIDI latency
-		if (isAutoLatencyMode()) midiLatencyFrames = MINIMUM_JACK_BUFFER_COUNT * jackBufferSize;
+		if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames + MINIMUM_JACK_BUFFER_COUNT * jackBufferSize;
 		qDebug() << "JACKAudioDriver: Configured MIDI latency (s):" << double(midiLatencyFrames) / sampleRate;
 	} else {
 		// MIDI processing is synchronous, zero latency introduced
 		midiLatencyFrames = 0;
 		qDebug() << "JACKAudioDriver: Configured synchronous MIDI processing";
-		synth.setRealtime();
+		if (jackClient->isRealtimeProcessing()) synth.setRealtime();
 	}
 
 	return true;
@@ -65,6 +153,9 @@ void JACKAudioStream::stop() {
 	qDebug() << "JACKAudioDriver: Stopping JACK client";
 	jackClient->close();
 	qDebug() << "JACKAudioDriver: JACK client stopped";
+	if (processor != NULL) {
+		processor->stop();
+	}
 }
 
 void JACKAudioStream::onJACKShutdown() {
@@ -83,16 +174,31 @@ void JACKAudioStream::renderStreams(const quint32 totalFrameCount, JACKAudioSamp
 		}
 		updateTimeInfo(MasterClock::getClockNanos(), framesInAudioBuffer);
 	}
-	for (quint32 frameCount = totalFrameCount; frameCount > 0;) {
-		const uint framesToRender = qMin(frameCount, MT32Emu::MAX_SAMPLES_PER_RUN);
-		synth.render(buffer, framesToRender);
-		float *bufferPtr = buffer;
-		float *bufferEnd = bufferPtr + CHANNEL_COUNT * framesToRender;
-		while (bufferPtr < bufferEnd) {
+	for (quint32 framesLeft = totalFrameCount; framesLeft > 0;) {
+		float *bufferPtr;
+		uint framesToRender;
+		if (processor != NULL) {
+			framesToRender = framesLeft;
+			bufferPtr = processor->getAvailableChunk(framesToRender);
+			if (framesToRender == 0) {
+				for (JACKAudioSample *leftOutBufferEnd = leftOutBuffer + framesLeft; leftOutBuffer < leftOutBufferEnd;) {
+					*(leftOutBuffer++) = 0;
+					*(rightOutBuffer++) = 0;
+				}
+				processor->handleUnderrun();
+				return;
+			}
+		} else {
+			bufferPtr = buffer;
+			framesToRender = qMin(framesLeft, MT32Emu::MAX_SAMPLES_PER_RUN);
+			synth.render(buffer, framesToRender);
+		}
+		for (JACKAudioSample *leftOutBufferEnd = leftOutBuffer + framesToRender; leftOutBuffer < leftOutBufferEnd;) {
 			*(leftOutBuffer++) = JACKAudioSample(*(bufferPtr++));
 			*(rightOutBuffer++) = JACKAudioSample(*(bufferPtr++));
 		}
-		frameCount -= framesToRender;
+		if (processor != NULL) processor->markChunkProcessed(framesToRender);
+		framesLeft -= framesToRender;
 	}
 	renderedFramesCount += totalFrameCount;
 }
@@ -110,8 +216,7 @@ AudioStream *JACKAudioDefaultDevice::startAudioStream(QSynth &synth, const uint 
 }
 
 AudioStream *JACKAudioDefaultDevice::startAudioStream(const AudioDevice *audioDevice, QSynth &synth, const uint sampleRate, MidiSession *midiSession) {
-	JACKClient *jackClient = new JACKClient;
-	JACKAudioStream *stream = new JACKAudioStream(audioDevice->driver.getAudioSettings(), synth, sampleRate, jackClient);
+	JACKAudioStream *stream = new JACKAudioStream(audioDevice->driver.getAudioSettings(), synth, sampleRate);
 	if (stream->start(midiSession)) return stream;
 	delete stream;
 	return NULL;
@@ -131,5 +236,4 @@ const QList<const AudioDevice *> JACKAudioDriver::createDeviceList() {
 
 void JACKAudioDriver::validateAudioSettings(AudioDriverSettings &newSettings) const {
 	newSettings.chunkLen = 0;
-	newSettings.audioLatency = 0;
 }

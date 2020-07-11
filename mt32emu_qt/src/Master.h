@@ -105,7 +105,7 @@ public:
 	MidiSession *createExclusiveJACKMidiPort(QString portName);
 
 signals:
-	void jackMidiPortDeleted(MidiSession *midiSession);
+	void jackMidiPortDeleted(MidiSession *);
 #endif
 };
 

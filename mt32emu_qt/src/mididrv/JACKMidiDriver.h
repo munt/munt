@@ -22,7 +22,7 @@ public:
 	void stop();
 	bool canDeletePort(MidiSession *midiSession);
 	void deletePort(MidiSession *midiSession);
-	bool createPort(bool exclusive);
+	bool createJACKPort(bool exclusive);
 
 private:
 	QList<JACKClient *> jackClients;

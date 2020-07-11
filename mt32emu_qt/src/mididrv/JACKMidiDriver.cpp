@@ -40,7 +40,7 @@ MasterClockNanos JACKMidiDriver::jackFrameTimeToMasterClockNanos(MasterClockNano
 bool JACKMidiDriver::pushMIDIMessage(MidiSession *midiSession, MasterClockNanos eventTimestamp, size_t midiBufferSize, uchar *midiBuffer) {
 	SynthRoute *synthRoute = midiSession->getSynthRoute();
 	if (*midiBuffer == 0xF0) {
-		return synthRoute->pushMIDISysex(midiBuffer, midiBufferSize, eventTimestamp);
+		return synthRoute->pushMIDISysex(midiBuffer, uint(midiBufferSize), eventTimestamp);
 	}
 	quint32 message = midiBufferToShortMessage(midiBufferSize, midiBuffer);
 	return synthRoute->pushMIDIShortMessage(message, eventTimestamp);
@@ -49,7 +49,7 @@ bool JACKMidiDriver::pushMIDIMessage(MidiSession *midiSession, MasterClockNanos 
 bool JACKMidiDriver::playMIDIMessage(MidiSession *midiSession, quint64 eventTimestamp, size_t midiBufferSize, uchar *midiBuffer) {
 	SynthRoute *synthRoute = midiSession->getSynthRoute();
 	if (*midiBuffer == 0xF0) {
-		return synthRoute->playMIDISysex(midiBuffer, midiBufferSize, eventTimestamp);
+		return synthRoute->playMIDISysex(midiBuffer, quint32(midiBufferSize), eventTimestamp);
 	}
 	quint32 message = midiBufferToShortMessage(midiBufferSize, midiBuffer);
 	return synthRoute->playMIDIShortMessage(message, eventTimestamp);
@@ -95,7 +95,7 @@ void JACKMidiDriver::deletePort(MidiSession *midiSession) {
 	midiSessions.removeAt(midiSessionIx);
 }
 
-bool JACKMidiDriver::createPort(bool exclusive) {
+bool JACKMidiDriver::createJACKPort(bool exclusive) {
 	QString portName = QString("JACK MIDI In");
 	if (exclusive) {
 		MidiSession *midiSession = master->createExclusiveJACKMidiPort(portName);

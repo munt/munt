@@ -45,6 +45,9 @@ struct SynthProfile {
 class QReportHandler : public QObject, public MT32Emu::ReportHandler {
 	Q_OBJECT
 
+// For the sake of Qt4 compatibility.
+friend class RealtimeHelper;
+
 public:
 	QReportHandler(QSynth *qsynth);
 	void printDebug(const char *fmt, va_list list);
