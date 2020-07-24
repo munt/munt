@@ -99,10 +99,9 @@ bool JACKMidiDriver::createJACKPort(bool exclusive) {
 	QString portName = QString("JACK MIDI In");
 	if (exclusive) {
 		MidiSession *midiSession = master->createExclusiveJACKMidiPort(portName);
-		if (midiSession != NULL) {
-			exclusiveSessions.append(midiSession);
-			return true;
-		}
+		if (midiSession == NULL) return false;
+		exclusiveSessions.append(midiSession);
+		return true;
 	}
 	MidiSession *midiSession = createMidiSession(portName);
 	JACKClient *jackClient = new JACKClient;
