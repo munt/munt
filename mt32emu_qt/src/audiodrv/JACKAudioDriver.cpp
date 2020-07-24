@@ -28,27 +28,29 @@ static const uint FRAME_BYTE_SIZE = sizeof(float[CHANNEL_COUNT]);
 class JACKAudioProcessor : QThread {
 	QSynth &qsynth;
 	JACKRingBuffer * const buffer;
-	bool stopProcessing;
+	volatile bool stopProcessing;
 
-	/** Used in conjunction with bufferSpaceAvailableCondition. */
-	QMutex prerendererMutex;
-	/** Used to block this thread until there is some available space in the buffer. */
-	QWaitCondition bufferSpaceAvailableCondition;
+	// Used to block this thread until there is some available space in the buffer.
+	// Each time the JACK thread retrieves some data from the buffer, it releases one semaphore resource.
+	// When the buffer appears full, this thread drains all the resources available to the semaphore
+	// yet acquire one more to ensure blocking.
+	QSemaphore bufferDataRetrievals;
 
 	void run() {
-		QMutexLocker prerendererLocker(&prerendererMutex);
-		while (!stopProcessing) {
+		forever {
+			// Catch the available resources early to avoid blocking should the JACK thread
+			// free some buffer space in the meantime.
+			int currentRetrievals = bufferDataRetrievals.available();
+			if (stopProcessing) return;
 			size_t bytesAvailable;
 			float *writePointer = static_cast<float *>(buffer->writePointer(bytesAvailable));
 			quint32 framesToRender = quint32(bytesAvailable / FRAME_BYTE_SIZE);
 			if (framesToRender == 0) {
-				bufferSpaceAvailableCondition.wait(&prerendererMutex);
-				continue;
+				bufferDataRetrievals.acquire(currentRetrievals + 1);
+			} else {
+				qsynth.render(writePointer, framesToRender);
+				buffer->advanceWritePointer(framesToRender * FRAME_BYTE_SIZE);
 			}
-			prerendererLocker.unlock();
-			qsynth.render(writePointer, framesToRender);
-			buffer->advanceWritePointer(framesToRender * FRAME_BYTE_SIZE);
-			prerendererLocker.relock();
 		}
 	}
 
@@ -70,10 +72,8 @@ public:
 	}
 
 	void stop() {
-		QMutexLocker prerendererLocker(&prerendererMutex);
 		stopProcessing = true;
-		bufferSpaceAvailableCondition.wakeOne();
-		prerendererLocker.unlock();
+		bufferDataRetrievals.release();
 		wait();
 	}
 
@@ -86,18 +86,8 @@ public:
 	}
 
 	void markChunkProcessed(quint32 chunkSizeFrames) {
-		// We should lock prerendererMutex at this point, but we can't wait in the realtime thread.
-		// As long as the prerenderer keeps up, it must be sleeping now, so this seems to be alright.
-		// In the worst case, an underrun will likely happen anyway, and it doesn't look to be
-		// a big problem if the prerenderer wakes up on the next iteration.
 		buffer->advanceReadPointer(chunkSizeFrames * FRAME_BYTE_SIZE);
-		bufferSpaceAvailableCondition.wakeOne();
-	}
-
-	void handleUnderrun() {
-		// Due to a lack of synchronisation with the realtime thread, the prerenderer
-		// may theoretically fall asleep while the buffer is empty, so wake it now for good.
-		bufferSpaceAvailableCondition.wakeOne();
+		bufferDataRetrievals.release();
 	}
 };
 
@@ -185,7 +175,6 @@ void JACKAudioStream::renderStreams(const quint32 totalFrameCount, JACKAudioSamp
 					*(leftOutBuffer++) = 0;
 					*(rightOutBuffer++) = 0;
 				}
-				processor->handleUnderrun();
 				return;
 			}
 		} else {
