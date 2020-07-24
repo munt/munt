@@ -5,7 +5,7 @@
 
 class JACKRingBuffer {
 public:
-	JACKRingBuffer(size_t byteSize);
+	explicit JACKRingBuffer(size_t byteSize);
 	~JACKRingBuffer();
 
 	void *readPointer(size_t &bytesAvailable) const;
