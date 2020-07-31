@@ -23,8 +23,8 @@ static const uint DEFAULT_CHUNK_MS = 20;
 static const uint DEFAULT_AUDIO_LATENCY = 60;
 static const uint DEFAULT_MIDI_LATENCY = 30;
 
-CoreAudioStream::CoreAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, quint32 useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), audioQueue(NULL)
+CoreAudioStream::CoreAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, quint32 useSampleRate, const QString deviceUid) :
+	AudioStream(useSettings, useSynth, useSampleRate), audioQueue(NULL), deviceUid(deviceUid)
 {
 	const uint bufferSize = (settings.chunkLen * sampleRate) / MasterClock::MILLIS_PER_SECOND;
 	bufferByteSize = bufferSize << 2;
@@ -86,6 +86,20 @@ bool CoreAudioStream::start() {
 		qDebug() << "CoreAudio: AudioQueueNewOutput() failed with error code:" << res;
 		return false;
 	}
+    
+    // Set audio output device
+    if (!deviceUid.isEmpty()) {
+        CFStringRef deviceUidRef = deviceUid.toCFString();
+        res = AudioQueueSetProperty(audioQueue, kAudioQueueProperty_CurrentDevice, &deviceUidRef, sizeof(CFStringRef));
+        if (res) {
+            qDebug() << "CoreAudio: AudioQueueSetProperty() failed with error code" << res;
+            res = AudioQueueDispose(audioQueue, true);
+            if (res) qDebug() << "CoreAudio: AudioQueueDispose() failed with error code" << res;
+            audioQueue = NULL;
+            return false;
+        }
+        CFRelease(deviceUidRef);
+    }
 
 	for (uint i = 0; i < numberOfBuffers; i++) {
 		res = AudioQueueAllocateBuffer(audioQueue, bufferByteSize, buffers + i);
@@ -120,11 +134,11 @@ void CoreAudioStream::close() {
 	audioQueue = NULL;
 }
 
-CoreAudioDevice::CoreAudioDevice(CoreAudioDriver &driver) :
-	AudioDevice(driver, "Default output device") {}
+CoreAudioDevice::CoreAudioDevice(CoreAudioDriver &driver, const QString uid, const QString name) :
+	AudioDevice(driver, name), uid(uid) {}
 
 AudioStream *CoreAudioDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
-	CoreAudioStream *stream = new CoreAudioStream(driver.getAudioSettings(), synth, sampleRate);
+	CoreAudioStream *stream = new CoreAudioStream(driver.getAudioSettings(), synth, sampleRate, uid);
 	if (stream->start()) {
 		return (AudioStream *)stream;
 	}
@@ -143,7 +157,59 @@ CoreAudioDriver::~CoreAudioDriver() {
 
 const QList<const AudioDevice *> CoreAudioDriver::createDeviceList() {
 	QList<const AudioDevice *> deviceList;
-	deviceList.append(new CoreAudioDevice(*this));
+	deviceList.append(new CoreAudioDevice(*this)); // default device
+    
+    // Get system output devices
+    UInt32 propertySize = 0;
+    int numDevices = 0;
+    QVector<AudioDeviceID> deviceIDs;
+    AudioObjectPropertyAddress propertyAddress;
+    propertyAddress.mSelector = kAudioHardwarePropertyDevices;
+    propertyAddress.mScope = kAudioObjectPropertyScopeGlobal;
+    propertyAddress.mElement = kAudioObjectPropertyElementMaster;
+    
+    if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &propertyAddress, 0, 0, &propertySize) == noErr) {
+        numDevices = propertySize / sizeof(AudioDeviceID);
+        deviceIDs.resize(numDevices);
+        
+        if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &propertyAddress, 0, NULL, &propertySize, deviceIDs.data()) == noErr) {
+            foreach (const AudioDeviceID &id, deviceIDs) {
+                AudioObjectPropertyAddress deviceAddress;
+                propertySize = 0;
+                deviceAddress.mSelector = kAudioDevicePropertyStreams;
+                deviceAddress.mScope = kAudioObjectPropertyScopeOutput;
+                deviceAddress.mElement = kAudioObjectPropertyElementMaster;
+                
+                if (AudioObjectGetPropertyDataSize(id, &deviceAddress, 0, NULL, &propertySize) == noErr) {
+                    if (propertySize > 0) {
+                        CFStringRef devUidRef;
+                        propertySize = sizeof(CFStringRef);
+                        deviceAddress.mSelector = kAudioDevicePropertyDeviceUID;
+                        deviceAddress.mScope = kAudioObjectPropertyScopeGlobal;
+                        deviceAddress.mElement = kAudioObjectPropertyElementMaster;
+                        
+                        if (AudioObjectGetPropertyData(id, &deviceAddress, 0, NULL, &propertySize, &devUidRef) == noErr) {
+                            CFStringRef devNameRef;
+                            propertySize = sizeof(CFStringRef);
+                            deviceAddress.mSelector = kAudioDevicePropertyDeviceNameCFString;
+                            deviceAddress.mScope = kAudioObjectPropertyScopeGlobal;
+                            deviceAddress.mElement = kAudioObjectPropertyElementMaster;
+                            
+                            if (AudioObjectGetPropertyData(id, &deviceAddress, 0, NULL, &propertySize, &devNameRef) == noErr) {
+                                QString uid, name;
+                                uid = QString::fromCFString(devUidRef);
+                                name = QString::fromCFString(devNameRef);
+                                deviceList.append(new CoreAudioDevice(*this, uid, name));
+                            }
+                            CFRelease(devNameRef);
+                        }
+                        CFRelease(devUidRef);
+                    }
+                }
+            }
+        }
+    }
+    
 	return deviceList;
 }
 
