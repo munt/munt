@@ -43,8 +43,8 @@ static QString convertCFStringToQString(CFStringRef string)
     return ret;
 }
 
-CoreAudioStream::CoreAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, quint32 useSampleRate, const QString deviceUid) :
-	AudioStream(useSettings, useSynth, useSampleRate), audioQueue(NULL), deviceUid(deviceUid)
+CoreAudioStream::CoreAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, quint32 useSampleRate) :
+	AudioStream(useSettings, useSynth, useSampleRate), audioQueue(NULL)
 {
 	const uint bufferSize = (settings.chunkLen * sampleRate) / MasterClock::MILLIS_PER_SECOND;
 	bufferByteSize = bufferSize << 2;
@@ -93,7 +93,7 @@ void CoreAudioStream::renderOutputBuffer(void *userData, AudioQueueRef queue, Au
 	if (res) qDebug() << "CoreAudio: AudioQueueEnqueueBuffer() failed with error code:" << res;
 }
 
-bool CoreAudioStream::start() {
+bool CoreAudioStream::start(const QString deviceUid) {
 	if (audioQueue != NULL) {
 		return true;
 	}
@@ -158,8 +158,8 @@ CoreAudioDevice::CoreAudioDevice(CoreAudioDriver &driver, const QString uid, con
 	AudioDevice(driver, name), uid(uid) {}
 
 AudioStream *CoreAudioDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
-	CoreAudioStream *stream = new CoreAudioStream(driver.getAudioSettings(), synth, sampleRate, uid);
-	if (stream->start()) {
+	CoreAudioStream *stream = new CoreAudioStream(driver.getAudioSettings(), synth, sampleRate);
+	if (stream->start(uid)) {
 		return (AudioStream *)stream;
 	}
 	delete stream;
