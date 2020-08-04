@@ -16,22 +16,21 @@ private:
 	AudioQueueBufferRef *buffers;
 	uint numberOfBuffers;
 	uint bufferByteSize;
-    const QString deviceUid;
 
 	static void renderOutputBuffer(void *userData, AudioQueueRef queue, AudioQueueBufferRef buffer);
 
 public:
-	CoreAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate, const QString deviceUid = NULL);
+	CoreAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
 	~CoreAudioStream();
-	bool start();
+	bool start(const QString deviceUid);
 	void close();
 };
 
 class CoreAudioDevice : public AudioDevice {
 friend class CoreAudioDriver;
 private:
-    const QString uid;
-    
+	const QString uid;
+
 	CoreAudioDevice(CoreAudioDriver &driver, const QString uid = NULL, const QString name = "Default output device");
 
 public:

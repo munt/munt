@@ -96,7 +96,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     src/mididrv/CoreMidiDriver.cpp
     src/audiodrv/CoreAudioDriver.cpp
   )
-  set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework AudioToolbox -framework CoreMIDI")
+  set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework AudioToolbox -framework CoreAudio -framework CoreMIDI")
   set(CMAKE_MACOSX_BUNDLE True)
 else()
   list(APPEND mt32emu_qt_SOURCES src/mididrv/OSSMidiPortDriver.cpp)
