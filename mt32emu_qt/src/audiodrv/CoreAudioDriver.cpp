@@ -98,7 +98,11 @@ bool CoreAudioStream::start(const QString deviceUid) {
 		return true;
 	}
 
-	qDebug() << "CoreAudio: using default audio output device";
+    if (deviceUid.isEmpty()) {
+        qDebug() << "CoreAudio: using default audio output device";
+    } else {
+        qDebug() << "CoreAudio: using audio output device with device UID" << deviceUid;
+    }
 
 	AudioStreamBasicDescription dataFormat = {(Float64)sampleRate, kAudioFormatLinearPCM, kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsSignedInteger, 4, 1, 4, 2, 16, 0};
 	OSStatus res = AudioQueueNewOutput(&dataFormat, renderOutputBuffer, this, NULL, NULL, 0, &audioQueue);
