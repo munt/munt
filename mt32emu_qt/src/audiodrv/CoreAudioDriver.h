@@ -21,9 +21,9 @@ private:
 	static void renderOutputBuffer(void *userData, AudioQueueRef queue, AudioQueueBufferRef buffer);
 
 public:
-	CoreAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate, const QString deviceUid = NULL);
+	CoreAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
 	~CoreAudioStream();
-	bool start();
+	bool start(const QString deviceUid = NULL);
 	void close();
 };
 
