@@ -23,6 +23,26 @@ static const uint DEFAULT_CHUNK_MS = 20;
 static const uint DEFAULT_AUDIO_LATENCY = 60;
 static const uint DEFAULT_MIDI_LATENCY = 30;
 
+// For Qt versions < 5.2
+// Taken from Qt 5.2 source code
+// File: qtbase/src/corelib/tools/qstring_mac.mm
+static QString convertCFStringToQString(CFStringRef string)
+{
+    if (!string)
+        return QString();
+    CFIndex length = CFStringGetLength(string);
+    
+    // Fast path: CFStringGetCharactersPtr does not copy but may
+    // return null for any and no reason.
+    const UniChar *chars = CFStringGetCharactersPtr(string);
+    if (chars)
+        return QString(reinterpret_cast<const QChar *>(chars), length);
+    
+    QString ret(length, Qt::Uninitialized);
+    CFStringGetCharacters(string, CFRangeMake(0, length), reinterpret_cast<UniChar *>(ret.data()));
+    return ret;
+}
+
 CoreAudioStream::CoreAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, quint32 useSampleRate) :
 	AudioStream(useSettings, useSynth, useSampleRate), audioQueue(NULL)
 {
@@ -73,7 +93,7 @@ void CoreAudioStream::renderOutputBuffer(void *userData, AudioQueueRef queue, Au
 	if (res) qDebug() << "CoreAudio: AudioQueueEnqueueBuffer() failed with error code:" << res;
 }
 
-bool CoreAudioStream::start() {
+bool CoreAudioStream::start(const QString deviceUid) {
 	if (audioQueue != NULL) {
 		return true;
 	}
@@ -86,6 +106,20 @@ bool CoreAudioStream::start() {
 		qDebug() << "CoreAudio: AudioQueueNewOutput() failed with error code:" << res;
 		return false;
 	}
+    
+    // Set audio output device
+    if (!deviceUid.isEmpty()) {
+        CFStringRef deviceUidRef = deviceUid.toCFString();
+        res = AudioQueueSetProperty(audioQueue, kAudioQueueProperty_CurrentDevice, &deviceUidRef, sizeof(CFStringRef));
+        if (res) {
+            qDebug() << "CoreAudio: AudioQueueSetProperty() failed with error code" << res;
+            res = AudioQueueDispose(audioQueue, true);
+            if (res) qDebug() << "CoreAudio: AudioQueueDispose() failed with error code" << res;
+            audioQueue = NULL;
+            return false;
+        }
+        CFRelease(deviceUidRef);
+    }
 
 	for (uint i = 0; i < numberOfBuffers; i++) {
 		res = AudioQueueAllocateBuffer(audioQueue, bufferByteSize, buffers + i);
@@ -120,12 +154,12 @@ void CoreAudioStream::close() {
 	audioQueue = NULL;
 }
 
-CoreAudioDevice::CoreAudioDevice(CoreAudioDriver &driver) :
-	AudioDevice(driver, "Default output device") {}
+CoreAudioDevice::CoreAudioDevice(CoreAudioDriver &driver, const QString uid, const QString name) :
+	AudioDevice(driver, name), uid(uid) {}
 
 AudioStream *CoreAudioDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
 	CoreAudioStream *stream = new CoreAudioStream(driver.getAudioSettings(), synth, sampleRate);
-	if (stream->start()) {
+	if (stream->start(uid)) {
 		return (AudioStream *)stream;
 	}
 	delete stream;
@@ -143,7 +177,64 @@ CoreAudioDriver::~CoreAudioDriver() {
 
 const QList<const AudioDevice *> CoreAudioDriver::createDeviceList() {
 	QList<const AudioDevice *> deviceList;
-	deviceList.append(new CoreAudioDevice(*this));
+	deviceList.append(new CoreAudioDevice(*this)); // default device
+    
+    // Get system output devices
+    UInt32 propertySize = 0;
+    int numDevices = 0;
+    QVector<AudioDeviceID> deviceIDs;
+    AudioObjectPropertyAddress propertyAddress;
+    propertyAddress.mSelector = kAudioHardwarePropertyDevices;
+    propertyAddress.mScope = kAudioObjectPropertyScopeGlobal;
+    propertyAddress.mElement = kAudioObjectPropertyElementMaster;
+    
+    if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &propertyAddress, 0, 0, &propertySize) == noErr) {
+        numDevices = propertySize / sizeof(AudioDeviceID);
+        deviceIDs.resize(numDevices);
+        
+        if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &propertyAddress, 0, NULL, &propertySize, deviceIDs.data()) == noErr) {
+            foreach (const AudioDeviceID &id, deviceIDs) {
+                AudioObjectPropertyAddress deviceAddress;
+                propertySize = 0;
+                deviceAddress.mSelector = kAudioDevicePropertyStreams;
+                deviceAddress.mScope = kAudioObjectPropertyScopeOutput;
+                deviceAddress.mElement = kAudioObjectPropertyElementMaster;
+                
+                if (AudioObjectGetPropertyDataSize(id, &deviceAddress, 0, NULL, &propertySize) == noErr) {
+                    if (propertySize > 0) {
+                        CFStringRef devUidRef;
+                        propertySize = sizeof(CFStringRef);
+                        deviceAddress.mSelector = kAudioDevicePropertyDeviceUID;
+                        deviceAddress.mScope = kAudioObjectPropertyScopeGlobal;
+                        deviceAddress.mElement = kAudioObjectPropertyElementMaster;
+                        
+                        if (AudioObjectGetPropertyData(id, &deviceAddress, 0, NULL, &propertySize, &devUidRef) == noErr) {
+                            CFStringRef devNameRef;
+                            propertySize = sizeof(CFStringRef);
+                            deviceAddress.mSelector = kAudioDevicePropertyDeviceNameCFString;
+                            deviceAddress.mScope = kAudioObjectPropertyScopeGlobal;
+                            deviceAddress.mElement = kAudioObjectPropertyElementMaster;
+                            
+                            if (AudioObjectGetPropertyData(id, &deviceAddress, 0, NULL, &propertySize, &devNameRef) == noErr) {
+                                QString uid, name;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 2, 0)
+                                uid = QString::fromCFString(devUidRef);
+                                name = QString::fromCFString(devNameRef);
+#else
+                                uid = convertCFStringToQString(devUidRef);
+                                name = convertCFStringToQString(devNameRef);
+#endif
+                                deviceList.append(new CoreAudioDevice(*this, uid, name));
+                            }
+                            CFRelease(devNameRef);
+                        }
+                        CFRelease(devUidRef);
+                    }
+                }
+            }
+        }
+    }
+    
 	return deviceList;
 }
 
