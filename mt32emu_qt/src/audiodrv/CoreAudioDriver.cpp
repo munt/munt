@@ -23,7 +23,7 @@ static const uint DEFAULT_CHUNK_MS = 20;
 static const uint DEFAULT_AUDIO_LATENCY = 60;
 static const uint DEFAULT_MIDI_LATENCY = 30;
 
-CFStringRef qStringToCFString(QString qString) {
+static CFStringRef qStringToCFString(QString qString) {
 #if QT_VERSION < QT_VERSION_CHECK(5, 2, 0)
 	return CFStringCreateWithCharacters(0, reinterpret_cast<const UniChar *>(qString.unicode()), qString.length());
 #else
@@ -32,7 +32,7 @@ CFStringRef qStringToCFString(QString qString) {
 }
 
 static QString cfStringToQString(CFStringRef string) {
-#if QT_VERSION < QT_VERSION_CHECK(5, 20, 0)
+#if QT_VERSION < QT_VERSION_CHECK(5, 2, 0)
 	// Taken from Qt 5.2 source code
 	// File: qtbase/src/corelib/tools/qstring_mac.mm
 	if (!string)
