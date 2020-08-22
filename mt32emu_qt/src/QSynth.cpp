@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -319,19 +319,20 @@ private:
 	}
 
 public:
-	RealtimeHelper(QSynth &useQSynth) : qsynth(useQSynth), stopProcessing() {
-		Synth *synth = qsynth.synth;
-		outputGain = synth->getOutputGain();
-		reverbOutputGain = synth->getReverbOutputGain();
-		reverbOverridden = synth->isReverbOverridden();
-		reverbEnabled = !reverbOverridden || synth->isReverbEnabled();
-		reversedStereoEnabled = synth->isReversedStereoEnabled();
-		niceAmpRampEnabled = synth->isNiceAmpRampEnabled();
-		emuDACInputMode = synth->getDACInputMode();
-		midiDelayMode = synth->getMIDIDelayMode();
-
-		stateSnapshot = {};
-		tempState = {};
+	RealtimeHelper(QSynth &useQSynth) :
+		qsynth(useQSynth),
+		stopProcessing(),
+		outputGain(qsynth.synth->getOutputGain()),
+		reverbOutputGain(qsynth.synth->getReverbOutputGain()),
+		reverbEnabled(!qsynth.synth->isReverbOverridden() || qsynth.synth->isReverbEnabled()),
+		reverbOverridden(qsynth.synth->isReverbOverridden()),
+		reversedStereoEnabled(qsynth.synth->isReversedStereoEnabled()),
+		niceAmpRampEnabled(qsynth.synth->isNiceAmpRampEnabled()),
+		emuDACInputMode(qsynth.synth->getDACInputMode()),
+		midiDelayMode(qsynth.synth->getMIDIDelayMode()),
+		tempState(),
+		stateSnapshot()
+	{
 		tempState.masterVolumeUpdate = NO_UPDATE_VALUE;
 		tempState.reverbMode = NO_UPDATE_VALUE;
 		tempState.reverbTime = NO_UPDATE_VALUE;
