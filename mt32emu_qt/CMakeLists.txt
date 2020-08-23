@@ -46,6 +46,8 @@ set(mt32emu_qt_SOURCES
   src/MidiRecorder.cpp
   src/MidiSession.cpp
   src/QMidiEvent.cpp
+  src/QRingBuffer.cpp
+  src/QMidiBuffer.cpp
   src/QSynth.cpp
   src/SynthRoute.cpp
   src/SynthPropertiesDialog.cpp

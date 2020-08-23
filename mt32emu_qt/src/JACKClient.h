@@ -38,6 +38,7 @@ private:
 	jack_port_t *rightAudioOutPort;
 
 	static int onJACKProcess(jack_nframes_t nframes, void *instance);
+	static int onBufferSizeChange(jack_nframes_t newFrameSize, void *instance);
 	static int onSampleRateChange(jack_nframes_t newSystemSampleRate, void *instance);
 	static void onJACKShutdown(void *instance);
 

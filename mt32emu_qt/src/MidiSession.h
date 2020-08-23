@@ -7,6 +7,7 @@
 
 class MidiDriver;
 class QMidiStreamParser;
+class QMidiBuffer;
 
 class MidiSession : public QObject {
 	Q_OBJECT
@@ -16,6 +17,7 @@ private:
 	QString name;
 	SynthRoute *synthRoute;
 	QMidiStreamParser *qMidiStreamParser;
+	QMidiBuffer *qMidiBuffer;
 
 	MidiSession(QObject *parent, MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute);
 	~MidiSession();
@@ -25,6 +27,7 @@ public:
 	void setName(const QString &newName);
 	SynthRoute *getSynthRoute();
 	QMidiStreamParser *getQMidiStreamParser();
+	QMidiBuffer *getQMidiBuffer();
 };
 
 class QMidiStreamParser : public MT32Emu::MidiStreamParser {

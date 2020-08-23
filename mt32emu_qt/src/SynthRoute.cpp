@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,8 +19,9 @@
  * - Managing the audio output
  *  - Initial setup
  *  - Sample rate changes
- *  - Pausing/unpausing when the QSynth becomes unavailable.
+ *  - Pausing/unpausing when the QSynth becomes unavailable (NYI)
  * - Maintaining a list of MIDI sessions for the synth
+ * - Merging MIDI streams coming from several MIDI sessions
  */
 
 #include "SynthRoute.h"
@@ -118,10 +119,6 @@ bool SynthRoute::close() {
 	return true;
 }
 
-void SynthRoute::reset() {
-	qSynth.reset();
-}
-
 bool SynthRoute::enableExclusiveMidiMode(MidiSession *midiSession) {
 	if (exclusiveMidiMode || hasMIDISessions()) return false;
 	addMidiSession(midiSession);
@@ -203,8 +200,6 @@ bool SynthRoute::connectReportHandler(const char *signal, const QObject *receive
 	return QObject::connect(qSynth.getReportHandler(), signal, receiver, slot);
 }
 
-// QSynth delegation
-
 bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
 	recorder.recordShortMessage(msg, refNanos);
 	AudioStream *stream = audioStream;
@@ -231,6 +226,8 @@ bool SynthRoute::pushMIDISysex(const Bit8u *sysexData, unsigned int sysexLen, Ma
 	return qSynth.playMIDISysex(sysexData, sysexLen, timestamp);
 }
 
+// QSynth delegation
+
 void SynthRoute::flushMIDIQueue() {
 	qSynth.flushMIDIQueue();
 }
@@ -249,6 +246,10 @@ bool SynthRoute::playMIDIShortMessage(Bit32u msg, quint64 timestamp) {
 
 bool SynthRoute::playMIDISysex(const Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) {
 	return qSynth.playMIDISysex(sysex, sysexLen, timestamp);
+}
+
+void SynthRoute::reset() {
+	qSynth.reset();
 }
 
 void SynthRoute::setMasterVolume(int masterVolume) {

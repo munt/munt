@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
  */
 
 #include "MidiSession.h"
+#include "QMidiBuffer.h"
 
 using namespace MT32Emu;
 
@@ -31,6 +32,13 @@ QMidiStreamParser *MidiSession::getQMidiStreamParser() {
 		qMidiStreamParser = new QMidiStreamParser(*synthRoute);
 	}
 	return qMidiStreamParser;
+}
+
+QMidiBuffer *MidiSession::getQMidiBuffer() {
+	if (qMidiBuffer == NULL) {
+		qMidiBuffer = new QMidiBuffer;
+	}
+	return qMidiBuffer;
 }
 
 SynthRoute *MidiSession::getSynthRoute() {
