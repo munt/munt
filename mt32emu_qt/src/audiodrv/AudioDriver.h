@@ -11,12 +11,12 @@
 #include "../MasterClock.h"
 
 class AudioDriver;
-class QSynth;
+class SynthRoute;
 struct AudioDriverSettings;
 
 class AudioStream {
 protected:
-	QSynth &synth;
+	SynthRoute &synthRoute;
 	const quint32 sampleRate;
 	const AudioDriverSettings &settings;
 	quint32 audioLatencyFrames;
@@ -37,9 +37,10 @@ protected:
 	bool isAutoLatencyMode() const;
 
 public:
-	AudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
+	AudioStream(const AudioDriverSettings &settings, SynthRoute &synthRoute, const quint32 sampleRate);
 	virtual ~AudioStream() {}
 	virtual quint64 estimateMIDITimestamp(const MasterClockNanos refNanos = 0);
+	quint64 computeMIDITimestamp(uint relativeFrameTime) const;
 };
 
 class AudioDevice {
@@ -49,7 +50,7 @@ public:
 
 	AudioDevice(AudioDriver &driver, const QString name);
 	virtual ~AudioDevice() {}
-	virtual AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const = 0;
+	virtual AudioStream *startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const = 0;
 };
 
 Q_DECLARE_METATYPE(const AudioDevice *)

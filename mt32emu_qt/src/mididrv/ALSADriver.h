@@ -31,7 +31,7 @@ private:
 	static void *processingThread(void *userData);
 	int alsa_setup_midi();
 	void processSeqEvents();
-	bool processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synthRoute);
+	bool processSeqEvent(snd_seq_event_t *seq_event, MidiSession *midiSession);
 	unsigned int getSourceAddr(snd_seq_event_t *seq_event);
 	QString getClientName(unsigned int clientAddr);
 	MidiSession *findMidiSessionForClient(unsigned int clientAddr);

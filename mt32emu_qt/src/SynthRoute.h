@@ -23,13 +23,15 @@ enum SynthRouteState {
 class SynthRoute : public QObject {
 	Q_OBJECT
 private:
-	typedef AudioStream *(*AudioStreamFactory)(const AudioDevice *, QSynth &, const uint, MidiSession *midiSession);
+	typedef AudioStream *(*AudioStreamFactory)(const AudioDevice *, SynthRoute &, const uint, MidiSession *midiSession);
 
 	SynthRouteState state;
 	QSynth qSynth;
 	QList<MidiSession *> midiSessions;
+	QMutex midiSessionsMutex;
 	MidiRecorder recorder;
 	bool exclusiveMidiMode;
+	volatile bool multiMidiMode;
 
 	const AudioDevice *audioDevice;
 	AudioStream *audioStream; // NULL until a stream is created
@@ -48,6 +50,7 @@ public:
 	void reset();
 	bool enableExclusiveMidiMode(MidiSession *midiSession);
 	bool isExclusiveMidiModeEnabled();
+	void enableMultiMidiMode();
 
 	const QString getPatchName(int partNum) const;
 	void getPartStates(bool *partStates) const;
@@ -58,10 +61,16 @@ public:
 	void flushMIDIQueue();
 	void playMIDIShortMessageNow(MT32Emu::Bit32u msg);
 	void playMIDISysexNow(const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen);
-	bool playMIDIShortMessage(MT32Emu::Bit32u msg, quint64 timestamp);
-	bool playMIDISysex(const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, quint64 timestamp);
-	bool pushMIDIShortMessage(MT32Emu::Bit32u msg, MasterClockNanos midiNanos);
-	bool pushMIDISysex(const MT32Emu::Bit8u *sysex, unsigned int sysexLen, MasterClockNanos midiNanos);
+	bool playMIDIShortMessage(MidiSession &midiSession, MT32Emu::Bit32u msg, quint64 timestamp);
+	bool playMIDISysex(MidiSession &midiSession, const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, quint64 timestamp);
+	bool pushMIDIShortMessage(MidiSession &midiSession, MT32Emu::Bit32u msg, MasterClockNanos midiNanos);
+	bool pushMIDISysex(MidiSession &midiSession, const MT32Emu::Bit8u *sysex, unsigned int sysexLen, MasterClockNanos midiNanos);
+	void mergeMidiStreams(uint renderingPassFrameLength);
+	void render(MT32Emu::Bit16s *buffer, uint length);
+	void render(float *buffer, uint length);
+	void audioStreamFailed();
+
+	void enableRealtimeMode();
 	void setMasterVolume(int masterVolume);
 	void setOutputGain(float outputGain);
 	void setReverbOutputGain(float reverbOutputGain);

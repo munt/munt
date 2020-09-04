@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 #include "PortAudioDriver.h"
 
 #include "../Master.h"
-#include "../QSynth.h"
 
 using namespace MT32Emu;
 
@@ -58,8 +57,8 @@ static void dumpPortAudioDevices() {
 	}
 }
 
-PortAudioStream::PortAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, quint32 useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), stream(NULL) {}
+PortAudioStream::PortAudioStream(const AudioDriverSettings &useSettings, SynthRoute &useSynthRoute, quint32 useSampleRate) :
+  AudioStream(useSettings, useSynthRoute, useSampleRate), stream(NULL) {}
 
 PortAudioStream::~PortAudioStream() {
 	close();
@@ -137,7 +136,7 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	}
 	stream->updateTimeInfo(nanosNow, framesInAudioBuffer);
 
-	stream->synth.render((Bit16s *)outputBuffer, frameCount);
+	stream->synthRoute.render((Bit16s *)outputBuffer, frameCount);
 	stream->renderedFramesCount += frameCount;
 	return paContinue;
 }
@@ -152,10 +151,10 @@ void PortAudioStream::close() {
 }
 
 PortAudioDevice::PortAudioDevice(PortAudioDriver &driver, int useDeviceIndex, QString useDeviceName) :
-	AudioDevice(driver, useDeviceName), deviceIndex(useDeviceIndex) {}
+  AudioDevice(driver, useDeviceName), deviceIndex(useDeviceIndex) {}
 
-AudioStream *PortAudioDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
-	PortAudioStream *stream = new PortAudioStream(driver.getAudioSettings(), synth, sampleRate);
+AudioStream *PortAudioDevice::startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const {
+	PortAudioStream *stream = new PortAudioStream(driver.getAudioSettings(), synthRoute, sampleRate);
 	if (stream->start(deviceIndex)) {
 		return stream;
 	}

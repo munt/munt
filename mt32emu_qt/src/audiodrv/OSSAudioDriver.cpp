@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,8 +34,8 @@ static const unsigned int DEFAULT_AUDIO_LATENCY = 32;
 static const unsigned int DEFAULT_MIDI_LATENCY = 16;
 static const char deviceName[] = "/dev/dsp";
 
-OSSAudioStream::OSSAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), buffer(NULL), stream(0), processingThreadID(0), stopProcessing(false)
+OSSAudioStream::OSSAudioStream(const AudioDriverSettings &useSettings, SynthRoute &useSynthRoute, const quint32 useSampleRate) :
+	AudioStream(useSettings, useSynthRoute, useSampleRate), buffer(NULL), stream(0), processingThreadID(0), stopProcessing(false)
 {
 	bufferSize = settings.chunkLen * sampleRate / MasterClock::MILLIS_PER_SECOND;
 }
@@ -81,7 +81,7 @@ void *OSSAudioStream::processingThread(void *userData) {
 	if (isErrorOccured) {
 		close(audioStream.stream);
 		audioStream.stream = 0;
-		audioStream.synth.close();
+		audioStream.synthRoute.audioStreamFailed();
 	} else {
 		audioStream.stopProcessing = false;
 	}
@@ -232,8 +232,8 @@ void OSSAudioStream::stop() {
 
 OSSAudioDefaultDevice::OSSAudioDefaultDevice(OSSAudioDriver &driver) : AudioDevice(driver, "Default") {}
 
-AudioStream *OSSAudioDefaultDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
-	OSSAudioStream *stream = new OSSAudioStream(driver.getAudioSettings(), synth, sampleRate);
+AudioStream *OSSAudioDefaultDevice::startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const {
+	OSSAudioStream *stream = new OSSAudioStream(driver.getAudioSettings(), synthRoute, sampleRate);
 	if (stream->start()) return stream;
 	delete stream;
 	return NULL;

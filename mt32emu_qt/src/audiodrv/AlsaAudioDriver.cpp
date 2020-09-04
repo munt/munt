@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ static const unsigned int DEFAULT_AUDIO_LATENCY = 64;
 static const unsigned int DEFAULT_MIDI_LATENCY = 32;
 
 AlsaAudioStream::AlsaAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), stream(NULL), processingThreadID(0), stopProcessing(false)
+  AudioStream(useSettings, useSynth, useSampleRate), stream(NULL), processingThreadID(0), stopProcessing(false)
 {
 	bufferSize = settings.chunkLen * sampleRate / MasterClock::MILLIS_PER_SECOND;
 	buffer = new Bit16s[/* channels */ 2 * bufferSize];
@@ -80,7 +80,7 @@ void *AlsaAudioStream::processingThread(void *userData) {
 	if (isErrorOccured) {
 		snd_pcm_close(audioStream.stream);
 		audioStream.stream = NULL;
-		audioStream.synth.close();
+		audioStream.synthRoute.audioStreamFailed();
 	} else {
 		audioStream.stopProcessing = false;
 	}
@@ -106,7 +106,7 @@ bool AlsaAudioStream::start(const char *deviceID) {
 
 	// Set Sample format to use
 	error = snd_pcm_set_params(stream, SND_PCM_FORMAT_S16, SND_PCM_ACCESS_RW_INTERLEAVED, /* channels */ 2,
-		sampleRate, /* allow resampling */ 1, settings.audioLatency * MasterClock::MICROS_PER_MILLISECOND);
+	  sampleRate, /* allow resampling */ 1, settings.audioLatency * MasterClock::MICROS_PER_MILLISECOND);
 	if (error < 0) {
 		qDebug() << "snd_pcm_set_params failed:" << snd_strerror(error);
 		snd_pcm_close(stream);

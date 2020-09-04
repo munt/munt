@@ -9,7 +9,7 @@
 
 class Master;
 class WaveGenerator;
-class QSynth;
+class SynthRoute;
 class QAudioOutput;
 class QtAudioDriver;
 
@@ -21,7 +21,7 @@ private:
 	WaveGenerator *waveGenerator;
 
 public:
-	QtAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate);
+	QtAudioStream(const AudioDriverSettings &useSettings, SynthRoute &useSynthRoute, const quint32 useSampleRate);
 	~QtAudioStream();
 	void start();
 	void close();
@@ -32,7 +32,7 @@ class QtAudioDefaultDevice : public AudioDevice {
 private:
 	QtAudioDefaultDevice(QtAudioDriver &driver);
 public:
-	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
+	AudioStream *startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const;
 };
 
 class QtAudioDriver : public AudioDriver {

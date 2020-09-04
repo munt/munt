@@ -10,7 +10,7 @@
 #include "AudioDriver.h"
 
 class Master;
-class QSynth;
+class SynthRoute;
 class PulseAudioDriver;
 
 class PulseAudioStream : public AudioStream {
@@ -24,7 +24,7 @@ private:
 	static void *processingThread(void *);
 
 public:
-	PulseAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
+	PulseAudioStream(const AudioDriverSettings &settings, SynthRoute &synthRoute, const quint32 sampleRate);
 	~PulseAudioStream();
 	bool start();
 	void close();
@@ -34,7 +34,7 @@ class PulseAudioDefaultDevice : public AudioDevice {
 friend class PulseAudioDriver;
 	PulseAudioDefaultDevice(PulseAudioDriver &driver);
 public:
-	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
+	AudioStream *startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const;
 };
 
 class PulseAudioDriver : public AudioDriver {

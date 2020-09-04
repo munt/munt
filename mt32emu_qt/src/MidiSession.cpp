@@ -20,16 +20,18 @@
 using namespace MT32Emu;
 
 MidiSession::MidiSession(QObject *parent, MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute) :
-	QObject(parent), midiDriver(useMidiDriver), name(useName), synthRoute(useSynthRoute), qMidiStreamParser(NULL)
+	QObject(parent), midiDriver(useMidiDriver), name(useName), synthRoute(useSynthRoute),
+	qMidiStreamParser(), qMidiBuffer()
 {}
 
 MidiSession::~MidiSession() {
-	if (qMidiStreamParser != NULL) delete qMidiStreamParser;
+	delete qMidiStreamParser;
+	delete qMidiBuffer;
 }
 
 QMidiStreamParser *MidiSession::getQMidiStreamParser() {
 	if (qMidiStreamParser == NULL) {
-		qMidiStreamParser = new QMidiStreamParser(*synthRoute);
+		qMidiStreamParser = new QMidiStreamParser(*this);
 	}
 	return qMidiStreamParser;
 }
@@ -41,7 +43,7 @@ QMidiBuffer *MidiSession::getQMidiBuffer() {
 	return qMidiBuffer;
 }
 
-SynthRoute *MidiSession::getSynthRoute() {
+SynthRoute *MidiSession::getSynthRoute() const {
 	return synthRoute;
 }
 
@@ -53,18 +55,18 @@ void MidiSession::setName(const QString &newName) {
 	name = newName;
 }
 
-QMidiStreamParser::QMidiStreamParser(SynthRoute &useSynthRoute) : synthRoute(useSynthRoute) {}
+QMidiStreamParser::QMidiStreamParser(MidiSession &useMidiSession) : midiSession(useMidiSession) {}
 
 void QMidiStreamParser::setTimestamp(MasterClockNanos newTimestamp) {
 	timestamp = newTimestamp;
 }
 
 void QMidiStreamParser::handleShortMessage(const Bit32u message) {
-	synthRoute.pushMIDIShortMessage(message, timestamp);
+	midiSession.getSynthRoute()->pushMIDIShortMessage(midiSession, message, timestamp);
 }
 
 void QMidiStreamParser::handleSysex(const Bit8u stream[], const Bit32u length) {
-	synthRoute.pushMIDISysex(stream, length, timestamp);
+	midiSession.getSynthRoute()->pushMIDISysex(midiSession, stream, length, timestamp);
 }
 
 void QMidiStreamParser::handleSystemRealtimeMessage(const Bit8u realtime) {

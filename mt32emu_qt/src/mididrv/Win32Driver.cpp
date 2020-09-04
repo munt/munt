@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -176,7 +176,7 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 				}
 				LARGE_INTEGER t = { { data[2], (LONG)data[3] } };
 //				qDebug() << "D" << 1e-6 * ((t.QuadPart - startMasterClock) - MasterClock::getClockNanos());
-				midiSession->getSynthRoute()->pushMIDIShortMessage(data[4], t.QuadPart - startMasterClock);
+				midiSession->getSynthRoute()->pushMIDIShortMessage(*midiSession, data[4], t.QuadPart - startMasterClock);
 				return 1;
 			}
 		} else {
@@ -186,7 +186,7 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 				qDebug() << "Win32MidiDriver: Invalid midiSession ID supplied:" << "0x" + QString::number(midiSessionID, 16);
 				return 0;
 			}
-			midiSession->getSynthRoute()->pushMIDISysex((MT32Emu::Bit8u *)cds->lpData, cds->cbData, MasterClock::getClockNanos());
+			midiSession->getSynthRoute()->pushMIDISysex(*midiSession, (MT32Emu::Bit8u *)cds->lpData, cds->cbData, MasterClock::getClockNanos());
 			return 1;
 		}
 	}
@@ -392,7 +392,7 @@ void CALLBACK Win32MidiIn::midiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwIn
 	if (wMsg == MIM_DATA) {
 		// No need to use QMidiStreamParser for short messages: they are guaranteed to have explicit status byte
 		// if ((dwParam1 & 0xF8) == 0xF8) // No support for System Realtime yet
-		midiSession->getSynthRoute()->pushMIDIShortMessage(dwParam1, MasterClock::getClockNanos());
+		midiSession->getSynthRoute()->pushMIDIShortMessage(*midiSession, dwParam1, MasterClock::getClockNanos());
 	}
 }
 

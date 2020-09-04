@@ -131,7 +131,7 @@ public:
 	void close();
 	void reset() const;
 	bool isRealtime() const;
-	void setRealtime();
+	void enableRealtime();
 
 	void flushMIDIQueue() const;
 	void playMIDIShortMessageNow(MT32Emu::Bit32u msg) const;

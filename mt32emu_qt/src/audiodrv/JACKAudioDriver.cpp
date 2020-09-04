@@ -26,7 +26,7 @@ static const uint MINIMUM_JACK_BUFFER_COUNT = 2;
 static const uint FRAME_BYTE_SIZE = sizeof(float[CHANNEL_COUNT]);
 
 class JACKAudioProcessor : QThread {
-	QSynth &qsynth;
+	SynthRoute &synthRoute;
 	JACKRingBuffer * const buffer;
 	volatile bool stopProcessing;
 
@@ -48,15 +48,15 @@ class JACKAudioProcessor : QThread {
 			if (framesToRender == 0) {
 				bufferDataRetrievals.acquire(currentRetrievals + 1);
 			} else {
-				qsynth.render(writePointer, framesToRender);
+				synthRoute.render(writePointer, framesToRender);
 				buffer->advanceWritePointer(framesToRender * FRAME_BYTE_SIZE);
 			}
 		}
 	}
 
 public:
-	JACKAudioProcessor(QSynth &useQSynth, quint32 bufferSizeFrames) :
-		qsynth(useQSynth),
+	JACKAudioProcessor(SynthRoute &useSynthRoute, quint32 bufferSizeFrames) :
+		synthRoute(useSynthRoute),
 		// JACKRingBuffer needs a bit of spare space to accommodate the entire requested size.
 		// Adding 1 FRAME_BYTE_SIZE does the trick yet ensures proper alignment of pointers.
 		buffer(new JACKRingBuffer((bufferSizeFrames + 1) * FRAME_BYTE_SIZE)),
@@ -91,8 +91,8 @@ public:
 	}
 };
 
-JACKAudioStream::JACKAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), jackClient(new JACKClient), buffer(), processor()
+JACKAudioStream::JACKAudioStream(const AudioDriverSettings &useSettings, SynthRoute &useSynthRoute, const quint32 useSampleRate) :
+	AudioStream(useSettings, useSynthRoute, useSampleRate), jackClient(new JACKClient), buffer(), processor()
 {}
 
 JACKAudioStream::~JACKAudioStream() {
@@ -116,7 +116,7 @@ bool JACKAudioStream::start(MidiSession *midiSession) {
 		// Use prerendering to prevent the realtime thread from locking, yet to retain complete functionality.
 		// Additional latency of at least the JACK buffer length is introduced.
 		if (audioLatencyFrames < jackBufferSize) audioLatencyFrames = jackBufferSize;
-		processor = new JACKAudioProcessor(synth, audioLatencyFrames);
+		processor = new JACKAudioProcessor(synthRoute, audioLatencyFrames);
 		processor->start();
 		qDebug() << "JACKAudioDriver: Configured prerendering audio buffer size (s):" << double(audioLatencyFrames) / sampleRate;
 	} else {
@@ -133,7 +133,7 @@ bool JACKAudioStream::start(MidiSession *midiSession) {
 		// MIDI processing is synchronous, zero latency introduced
 		midiLatencyFrames = 0;
 		qDebug() << "JACKAudioDriver: Configured synchronous MIDI processing";
-		if (jackClient->isRealtimeProcessing()) synth.setRealtime();
+		if (jackClient->isRealtimeProcessing()) synthRoute.enableRealtimeMode();
 	}
 
 	return true;
@@ -150,7 +150,7 @@ void JACKAudioStream::stop() {
 
 void JACKAudioStream::onJACKShutdown() {
 	qDebug() << "JACKAudioDriver: JACK server is shutting down, closing synth";
-	synth.close();
+	synthRoute.audioStreamFailed();
 }
 
 void JACKAudioStream::renderStreams(const quint32 totalFrameCount, JACKAudioSample *leftOutBuffer, JACKAudioSample *rightOutBuffer) {
@@ -180,7 +180,7 @@ void JACKAudioStream::renderStreams(const quint32 totalFrameCount, JACKAudioSamp
 		} else {
 			bufferPtr = buffer;
 			framesToRender = qMin(framesLeft, MT32Emu::MAX_SAMPLES_PER_RUN);
-			synth.render(buffer, framesToRender);
+			synthRoute.render(buffer, framesToRender);
 		}
 		for (JACKAudioSample *leftOutBufferEnd = leftOutBuffer + framesToRender; leftOutBuffer < leftOutBufferEnd;) {
 			*(leftOutBuffer++) = JACKAudioSample(*(bufferPtr++));
@@ -192,20 +192,16 @@ void JACKAudioStream::renderStreams(const quint32 totalFrameCount, JACKAudioSamp
 	renderedFramesCount += totalFrameCount;
 }
 
-quint64 JACKAudioStream::computeMIDITimestamp(const quint32 jackBufferFrameTime) const {
-	return renderedFramesCount + jackBufferFrameTime;
-}
-
 JACKAudioDefaultDevice::JACKAudioDefaultDevice(JACKAudioDriver &useDriver) :
 	AudioDevice(useDriver, "Default")
 {}
 
-AudioStream *JACKAudioDefaultDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
-	return startAudioStream(this, synth, sampleRate, NULL);
+AudioStream *JACKAudioDefaultDevice::startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const {
+	return startAudioStream(this, synthRoute, sampleRate, NULL);
 }
 
-AudioStream *JACKAudioDefaultDevice::startAudioStream(const AudioDevice *audioDevice, QSynth &synth, const uint sampleRate, MidiSession *midiSession) {
-	JACKAudioStream *stream = new JACKAudioStream(audioDevice->driver.getAudioSettings(), synth, sampleRate);
+AudioStream *JACKAudioDefaultDevice::startAudioStream(const AudioDevice *audioDevice, SynthRoute &synthRoute, const uint sampleRate, MidiSession *midiSession) {
+	JACKAudioStream *stream = new JACKAudioStream(audioDevice->driver.getAudioSettings(), synthRoute, sampleRate);
 	if (stream->start(midiSession)) return stream;
 	delete stream;
 	return NULL;

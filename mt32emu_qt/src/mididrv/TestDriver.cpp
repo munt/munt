@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,10 +42,10 @@ void TestProcessor::run() {
 	qDebug() << currentNanos;
 	bool alt = false;
 	while (!stopProcessing) {
-		session1->getSynthRoute()->pushMIDIShortMessage(0, currentNanos);
+		session1->getSynthRoute()->pushMIDIShortMessage(*session1, 0, currentNanos);
 		// Test 2 sends an event at the same time as every second Test 1 event
 		if(alt && session2 != NULL)
-			session2->getSynthRoute()->pushMIDIShortMessage(0, currentNanos);
+			session2->getSynthRoute()->pushMIDIShortMessage(*session2, 0, currentNanos);
 		alt = !alt;
 		currentNanos += TEST1_EVENT_INTERVAL_NANOS;
 		MasterClock::sleepUntilClockNanos(currentNanos);

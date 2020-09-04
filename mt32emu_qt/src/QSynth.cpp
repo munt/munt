@@ -955,7 +955,7 @@ bool QSynth::isRealtime() const {
 	return realtimeHelper != NULL;
 }
 
-void QSynth::setRealtime() {
+void QSynth::enableRealtime() {
 	QMutexLocker synthLocker(synthMutex);
 	synth->preallocateReverbMemory(true);
 	synth->configureMIDIEventQueueSysexStorage(MAX_STREAM_BUFFER_SIZE);

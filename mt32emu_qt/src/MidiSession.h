@@ -25,14 +25,14 @@ private:
 public:
 	QString getName();
 	void setName(const QString &newName);
-	SynthRoute *getSynthRoute();
+	SynthRoute *getSynthRoute() const;
 	QMidiStreamParser *getQMidiStreamParser();
 	QMidiBuffer *getQMidiBuffer();
 };
 
 class QMidiStreamParser : public MT32Emu::MidiStreamParser {
 public:
-	QMidiStreamParser(SynthRoute &useSynthRoute);
+	QMidiStreamParser(MidiSession &midiSession);
 	void setTimestamp(MasterClockNanos newTimestamp);
 
 protected:
@@ -42,7 +42,7 @@ protected:
 	void printDebug(const char *debugMessage);
 
 private:
-	SynthRoute &synthRoute;
+	MidiSession &midiSession;
 	MasterClockNanos timestamp;
 };
 

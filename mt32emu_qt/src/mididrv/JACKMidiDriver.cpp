@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,19 +40,19 @@ MasterClockNanos JACKMidiDriver::jackFrameTimeToMasterClockNanos(MasterClockNano
 bool JACKMidiDriver::pushMIDIMessage(MidiSession *midiSession, MasterClockNanos eventTimestamp, size_t midiBufferSize, uchar *midiBuffer) {
 	SynthRoute *synthRoute = midiSession->getSynthRoute();
 	if (*midiBuffer == 0xF0) {
-		return synthRoute->pushMIDISysex(midiBuffer, uint(midiBufferSize), eventTimestamp);
+		return synthRoute->pushMIDISysex(*midiSession, midiBuffer, uint(midiBufferSize), eventTimestamp);
 	}
 	quint32 message = midiBufferToShortMessage(midiBufferSize, midiBuffer);
-	return synthRoute->pushMIDIShortMessage(message, eventTimestamp);
+	return synthRoute->pushMIDIShortMessage(*midiSession, message, eventTimestamp);
 }
 
 bool JACKMidiDriver::playMIDIMessage(MidiSession *midiSession, quint64 eventTimestamp, size_t midiBufferSize, uchar *midiBuffer) {
 	SynthRoute *synthRoute = midiSession->getSynthRoute();
 	if (*midiBuffer == 0xF0) {
-		return synthRoute->playMIDISysex(midiBuffer, quint32(midiBufferSize), eventTimestamp);
+		return synthRoute->playMIDISysex(*midiSession, midiBuffer, quint32(midiBufferSize), eventTimestamp);
 	}
 	quint32 message = midiBufferToShortMessage(midiBufferSize, midiBuffer);
-	return synthRoute->playMIDIShortMessage(message, eventTimestamp);
+	return synthRoute->playMIDIShortMessage(*midiSession, message, eventTimestamp);
 }
 
 JACKMidiDriver::JACKMidiDriver(Master *master) : MidiDriver(master) {

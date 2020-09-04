@@ -8,7 +8,7 @@
 #include "AudioDriver.h"
 
 class Master;
-class QSynth;
+class SynthRoute;
 class OSSAudioDriver;
 
 class OSSAudioStream : public AudioStream {
@@ -22,7 +22,7 @@ private:
 	static void *processingThread(void *);
 
 public:
-	OSSAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
+	OSSAudioStream(const AudioDriverSettings &settings, SynthRoute &synthRoute, const quint32 sampleRate);
 	~OSSAudioStream();
 	bool start();
 	void stop();
@@ -32,7 +32,7 @@ class OSSAudioDefaultDevice : public AudioDevice {
 friend class OSSAudioDriver;
 	OSSAudioDefaultDevice(OSSAudioDriver &driver);
 public:
-	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
+	AudioStream *startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const;
 };
 
 class OSSAudioDriver : public AudioDriver {

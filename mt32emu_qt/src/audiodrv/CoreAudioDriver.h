@@ -5,7 +5,7 @@
 
 #include "AudioDriver.h"
 
-class QSynth;
+class SynthRoute;
 class Master;
 class CoreAudioDriver;
 
@@ -19,7 +19,7 @@ private:
 	static void renderOutputBuffer(void *userData, AudioQueueRef queue, AudioQueueBufferRef buffer);
 
 public:
-	CoreAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
+	CoreAudioStream(const AudioDriverSettings &settings, SynthRoute &synthRoute, const quint32 sampleRate);
 	~CoreAudioStream();
 	bool start();
 	void close();
@@ -31,7 +31,7 @@ private:
 	CoreAudioDevice(CoreAudioDriver &driver);
 
 public:
-	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
+	AudioStream *startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const;
 };
 
 class CoreAudioDriver : public AudioDriver {
