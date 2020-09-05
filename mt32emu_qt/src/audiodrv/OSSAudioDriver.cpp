@@ -23,7 +23,7 @@
 
 #include "OSSAudioDriver.h"
 
-#include "../QSynth.h"
+#include "../SynthRoute.h"
 
 using namespace MT32Emu;
 
@@ -65,7 +65,7 @@ void *OSSAudioStream::processingThread(void *userData) {
 			framesInAudioBuffer = 0;
 		}
 		audioStream.updateTimeInfo(nanosNow, framesInAudioBuffer);
-		audioStream.synth.render(audioStream.buffer, audioStream.bufferSize);
+		audioStream.synthRoute.render(audioStream.buffer, audioStream.bufferSize);
 		error = write(audioStream.stream, audioStream.buffer, FRAME_SIZE * audioStream.bufferSize);
 		if (error != int(FRAME_SIZE * audioStream.bufferSize)) {
 			if (error == -1) {

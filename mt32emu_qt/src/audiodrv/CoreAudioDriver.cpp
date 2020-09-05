@@ -17,7 +17,7 @@
 #include "CoreAudioDriver.h"
 
 #include "../Master.h"
-#include "../QSynth.h"
+#include "../SynthRoute.h"
 
 static const uint DEFAULT_CHUNK_MS = 20;
 static const uint DEFAULT_AUDIO_LATENCY = 60;
@@ -124,7 +124,7 @@ CoreAudioDevice::CoreAudioDevice(CoreAudioDriver &driver) :
 	AudioDevice(driver, "Default output device") {}
 
 AudioStream *CoreAudioDevice::startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const {
-	CoreAudioStream *stream = new CoreAudioStream(driver.getAudioSettings(), synth, sampleRate);
+	CoreAudioStream *stream = new CoreAudioStream(driver.getAudioSettings(), synthRoute, sampleRate);
 	if (stream->start()) {
 		return (AudioStream *)stream;
 	}

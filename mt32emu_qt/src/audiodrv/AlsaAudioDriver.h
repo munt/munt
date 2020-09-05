@@ -10,7 +10,7 @@
 #include "AudioDriver.h"
 
 class Master;
-class QSynth;
+class SynthRoute;
 class AlsaAudioDriver;
 
 class AlsaAudioStream : public AudioStream {
@@ -24,7 +24,7 @@ private:
 	static void *processingThread(void *);
 
 public:
-	AlsaAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
+	AlsaAudioStream(const AudioDriverSettings &settings, SynthRoute &synthRoute, const quint32 sampleRate);
 	~AlsaAudioStream();
 	bool start(const char *deviceID);
 	void close();
@@ -38,7 +38,7 @@ private:
 	AlsaAudioDevice(AlsaAudioDriver &driver, const char *useDeviceID, const QString name);
 
 public:
-	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
+	AudioStream *startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const;
 };
 
 class AlsaAudioDriver : public AudioDriver {

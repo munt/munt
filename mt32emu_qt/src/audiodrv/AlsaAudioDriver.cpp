@@ -19,7 +19,7 @@
 #include "AlsaAudioDriver.h"
 
 #include "../MasterClock.h"
-#include "../QSynth.h"
+#include "../SynthRoute.h"
 
 using namespace MT32Emu;
 
@@ -28,8 +28,8 @@ static const unsigned int DEFAULT_CHUNK_MS = 16;
 static const unsigned int DEFAULT_AUDIO_LATENCY = 64;
 static const unsigned int DEFAULT_MIDI_LATENCY = 32;
 
-AlsaAudioStream::AlsaAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
-  AudioStream(useSettings, useSynth, useSampleRate), stream(NULL), processingThreadID(0), stopProcessing(false)
+AlsaAudioStream::AlsaAudioStream(const AudioDriverSettings &useSettings, SynthRoute &useSynthRoute, const quint32 useSampleRate) :
+  AudioStream(useSettings, useSynthRoute, useSampleRate), stream(NULL), processingThreadID(0), stopProcessing(false)
 {
 	bufferSize = settings.chunkLen * sampleRate / MasterClock::MILLIS_PER_SECOND;
 	buffer = new Bit16s[/* channels */ 2 * bufferSize];
@@ -60,7 +60,7 @@ void *AlsaAudioStream::processingThread(void *userData) {
 			}
 		}
 		audioStream.updateTimeInfo(nanosNow, framesInAudioBuffer);
-		audioStream.synth.render(audioStream.buffer, audioStream.bufferSize);
+		audioStream.synthRoute.render(audioStream.buffer, audioStream.bufferSize);
 		error = snd_pcm_writei(audioStream.stream, audioStream.buffer, audioStream.bufferSize);
 		if (error < 0) {
 			qDebug() << "snd_pcm_writei failed:" << snd_strerror(error) << "-> recovering...";
@@ -176,8 +176,8 @@ void AlsaAudioStream::close() {
 
 AlsaAudioDevice::AlsaAudioDevice(AlsaAudioDriver &driver, const char *useDeviceID, const QString name) : AudioDevice(driver, name), deviceID(useDeviceID) {}
 
-AudioStream *AlsaAudioDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
-	AlsaAudioStream *stream = new AlsaAudioStream(driver.getAudioSettings(), synth, sampleRate);
+AudioStream *AlsaAudioDevice::startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const {
+	AlsaAudioStream *stream = new AlsaAudioStream(driver.getAudioSettings(), synthRoute, sampleRate);
 	if (stream->start(deviceID)) return stream;
 	delete stream;
 	return NULL;
