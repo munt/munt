@@ -108,5 +108,5 @@ void QRingBuffer::advanceReadPointer(quint32 bytesRead) {
 	if (bufferSize <= myReadPosition) {
 		myReadPosition -= bufferSize;
 	}
-	readPosition.storeRelease(myReadPosition);
+	storeRelease(readPosition, myReadPosition);
 }
