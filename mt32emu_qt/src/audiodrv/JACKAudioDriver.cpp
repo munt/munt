@@ -19,7 +19,7 @@
 #include "../Master.h"
 #include "../QSynth.h"
 #include "../JACKClient.h"
-#include "../JACKRingBuffer.h"
+#include "../QRingBuffer.h"
 
 static const uint CHANNEL_COUNT = 2;
 static const uint MINIMUM_JACK_BUFFER_COUNT = 2;
@@ -27,7 +27,7 @@ static const uint FRAME_BYTE_SIZE = sizeof(float[CHANNEL_COUNT]);
 
 class JACKAudioProcessor : QThread {
 	SynthRoute &synthRoute;
-	JACKRingBuffer * const buffer;
+	Utility::QRingBuffer * const buffer;
 	volatile bool stopProcessing;
 
 	// Used to block this thread until there is some available space in the buffer.
@@ -42,8 +42,9 @@ class JACKAudioProcessor : QThread {
 			// free some buffer space in the meantime.
 			int currentRetrievals = bufferDataRetrievals.available();
 			if (stopProcessing) return;
-			size_t bytesAvailable;
-			float *writePointer = static_cast<float *>(buffer->writePointer(bytesAvailable));
+			quint32 bytesAvailable;
+			bool freeSpaceContiguous;
+			float *writePointer = static_cast<float *>(buffer->writePointer(bytesAvailable, freeSpaceContiguous));
 			quint32 framesToRender = quint32(bytesAvailable / FRAME_BYTE_SIZE);
 			if (framesToRender == 0) {
 				bufferDataRetrievals.acquire(currentRetrievals + 1);
@@ -59,7 +60,7 @@ public:
 		synthRoute(useSynthRoute),
 		// JACKRingBuffer needs a bit of spare space to accommodate the entire requested size.
 		// Adding 1 FRAME_BYTE_SIZE does the trick yet ensures proper alignment of pointers.
-		buffer(new JACKRingBuffer((bufferSizeFrames + 1) * FRAME_BYTE_SIZE)),
+		buffer(new Utility::QRingBuffer((bufferSizeFrames + 1) * FRAME_BYTE_SIZE)),
 		stopProcessing()
 	{}
 
@@ -78,7 +79,7 @@ public:
 	}
 
 	float *getAvailableChunk(quint32 &chunkSizeFrames) const {
-		size_t bytesAvailable;
+		quint32 bytesAvailable;
 		float *readPointer = static_cast<float *>(buffer->readPointer(bytesAvailable));
 		quint32 framesAvailable = quint32(bytesAvailable / FRAME_BYTE_SIZE);
 		chunkSizeFrames = qMin(chunkSizeFrames, framesAvailable);

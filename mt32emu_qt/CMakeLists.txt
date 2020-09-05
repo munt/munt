@@ -221,7 +221,6 @@ if(JACK_FOUND)
   include_directories(${JACK_INCLUDE_DIRS})
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/JACKClient.cpp
-    src/JACKRingBuffer.cpp
     src/mididrv/JACKMidiDriver.cpp
     src/audiodrv/JACKAudioDriver.cpp
   )
