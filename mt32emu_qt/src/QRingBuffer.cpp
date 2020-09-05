@@ -85,10 +85,14 @@ void QRingBuffer::advanceWritePointer(quint32 bytesWritten) {
 	if (bufferSize <= myWritePosition) {
 		myWritePosition -= bufferSize;
 	}
+	// Release barrier ensures that data is fully written prior to updating the index.
 	storeRelease(writePosition, myWritePosition);
 }
 
 void *QRingBuffer::readPointer(quint32 &bytesReady) const {
+	// Aquire barrier ensures that data is never read ahead of the indices.
+	// In practice, this should never be the case due to the implicit dependency,
+	// but shouldn't hurt anyway.
 	quint32 myReadPosition = loadRelaxed(readPosition);
 	quint32 myWritePosition = loadAcquire(writePosition);
 	bytesReady = (myWritePosition < myReadPosition ? bufferSize : myWritePosition) - myReadPosition;
@@ -96,10 +100,13 @@ void *QRingBuffer::readPointer(quint32 &bytesReady) const {
 }
 
 void QRingBuffer::advanceReadPointer(quint32 bytesRead) {
-	quint32 myReadPosition = loadRelaxed(readPosition);
+	// Full barrier here prevents late data reads from possible overlapping with early writes.
+	// Using a combination of loadAcquire and storeRelease here to simulate it,
+	// since Qt API lacks operations for simple atomic load or store with the ordered semantic.
+	quint32 myReadPosition = loadAcquire(readPosition);
 	myReadPosition += bytesRead;
 	if (bufferSize <= myReadPosition) {
 		myReadPosition -= bufferSize;
 	}
-	storeRelaxed(readPosition, myReadPosition);
+	readPosition.storeRelease(myReadPosition);
 }
