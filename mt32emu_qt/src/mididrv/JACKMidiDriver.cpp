@@ -108,6 +108,10 @@ bool JACKMidiDriver::createJACKPort(bool exclusive) {
 	JACKClientState state = jackClient->open(midiSession, NULL);
 	if (JACKClientState_OPEN == state) {
 		jackClients.append(jackClient);
+		if (jackClient->isRealtimeProcessing()) {
+			// This leads to pushing MIDI messages to a lockless buffer.
+			midiSession->getSynthRoute()->enableMultiMidiMode();
+		}
 		return true;
 	}
 	delete jackClient;
