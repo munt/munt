@@ -42,16 +42,6 @@ static inline quint32 loadAcquire(const QAtomicInt &atomicInt) {
 #endif
 }
 
-static inline void storeRelaxed(QAtomicInt &atomicInt, quint32 value) {
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-	atomicInt = value;
-#elif QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
-	atomicInt.store(value);
-#else
-	atomicInt.storeRelaxed(value);
-#endif
-}
-
 static inline void storeRelease(QAtomicInt &atomicInt, quint32 value) {
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 	atomicInt.fetchAndStoreRelease(value);
