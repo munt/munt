@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -132,10 +132,10 @@ void SMFProcessor::run() {
 		if (stopProcessing || synthRoute->getState() != SynthRouteState_OPEN) break;
 		switch (e.getType()) {
 			case SHORT_MESSAGE:
-				synthRoute->pushMIDIShortMessage(e.getShortMessage(), currentNanos);
+				synthRoute->pushMIDIShortMessage(*session, e.getShortMessage(), currentNanos);
 				break;
 			case SYSEX:
-				synthRoute->pushMIDISysex(e.getSysexData(), e.getSysexLen(), currentNanos);
+				synthRoute->pushMIDISysex(*session, e.getSysexData(), e.getSysexLen(), currentNanos);
 				break;
 			case SET_TEMPO: {
 				uint tempo = e.getShortMessage();

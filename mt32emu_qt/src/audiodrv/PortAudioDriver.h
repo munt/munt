@@ -9,7 +9,7 @@
 
 #include "AudioDriver.h"
 
-class QSynth;
+class SynthRoute;
 class Master;
 class PortAudioDriver;
 class PortAudioDevice;
@@ -21,7 +21,7 @@ private:
 	static int paCallback(const void *inputBuffer, void *outputBuffer, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData);
 
 public:
-	PortAudioStream(const AudioDriverSettings &settings, QSynth &synth, const quint32 sampleRate);
+	PortAudioStream(const AudioDriverSettings &settings, SynthRoute &synthRoute, const quint32 sampleRate);
 	~PortAudioStream();
 	bool start(PaDeviceIndex deviceIndex);
 	void close();
@@ -34,7 +34,7 @@ private:
 	PortAudioDevice(PortAudioDriver &driver, int useDeviceIndex, QString useDeviceName);
 
 public:
-	AudioStream *startAudioStream(QSynth &synth, const uint sampleRate) const;
+	AudioStream *startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const;
 };
 
 class PortAudioDriver : public AudioDriver {

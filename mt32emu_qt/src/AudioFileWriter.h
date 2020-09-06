@@ -24,6 +24,7 @@ private:
 
 class MidiParser;
 class QSynth;
+class SynthRoute;
 
 class AudioFileRenderer : public QThread {
 	Q_OBJECT
@@ -33,14 +34,14 @@ public:
 	~AudioFileRenderer();
 
 	bool convertMIDIFiles(QString useOutFileName, QStringList useMIDIFileNameList, QString synthProfileName, quint32 bufferSize = 65536);
-	void startRealtimeProcessing(QSynth *useSynth, quint32 useSampleRate, QString useOutFileName, quint32 bufferSize);
+	void startRealtimeProcessing(SynthRoute *synthRoute, quint32 useSampleRate, QString useOutFileName, quint32 bufferSize);
 	void stop();
 
-protected:
-	void run();
-
 private:
-	QSynth *synth;
+	union {
+		QSynth *synth;
+		SynthRoute *synthRoute;
+	} audioRenderer;
 	uint sampleRate;
 	QString outFileName;
 	unsigned int bufferSize;
@@ -49,6 +50,10 @@ private:
 	uint parsersCount;
 	bool realtimeMode;
 	volatile bool stopProcessing;
+
+	inline void closeAudioRenderer();
+	inline void render(qint16 *buffer, uint length);
+	void run();
 
 signals:
 	void parsingFailed(const QString &, const QString &);

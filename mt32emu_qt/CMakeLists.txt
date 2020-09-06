@@ -46,6 +46,8 @@ set(mt32emu_qt_SOURCES
   src/MidiRecorder.cpp
   src/MidiSession.cpp
   src/QMidiEvent.cpp
+  src/QRingBuffer.cpp
+  src/QMidiBuffer.cpp
   src/QSynth.cpp
   src/SynthRoute.cpp
   src/SynthPropertiesDialog.cpp
@@ -209,6 +211,18 @@ if(SYS_SOUNDCARD_FOUND)
   add_definitions(-DWITH_OSS_AUDIO_DRIVER)
   set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
     src/audiodrv/OSSAudioDriver.cpp
+  )
+endif()
+
+find_package(JACK)
+if(JACK_FOUND)
+  add_definitions(-DWITH_JACK_MIDI_DRIVER -DWITH_JACK_AUDIO_DRIVER)
+  set(EXT_LIBS ${EXT_LIBS} ${JACK_LIBRARIES})
+  include_directories(${JACK_INCLUDE_DIRS})
+  set(mt32emu_qt_SOURCES ${mt32emu_qt_SOURCES}
+    src/JACKClient.cpp
+    src/mididrv/JACKMidiDriver.cpp
+    src/audiodrv/JACKAudioDriver.cpp
   )
 endif()
 

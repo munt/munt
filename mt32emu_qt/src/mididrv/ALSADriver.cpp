@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -92,7 +92,7 @@ void ALSAMidiDriver::processSeqEvents() {
 				showBalloon("Connected application:", appName);
 				qDebug() << "ALSAMidiDriver: Connected application" << appName;
 			}
-			if (processSeqEvent(seq_event, midiSession->getSynthRoute())) {
+			if (processSeqEvent(seq_event, midiSession)) {
 				break;
 			}
 		} while (!stopProcessing && snd_seq_event_input_pending(snd_seq, 1));
@@ -134,7 +134,8 @@ MidiSession *ALSAMidiDriver::findMidiSessionForClient(unsigned int clientAddr) {
 	return midiSessions.at(i);
 }
 
-bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *synthRoute) {
+bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, MidiSession *midiSession) {
+	SynthRoute *synthRoute = midiSession->getSynthRoute();
 	MT32Emu::Bit32u msg = 0;
 	switch(seq_event->type) {
 	case SND_SEQ_EVENT_NOTEON:
@@ -142,7 +143,7 @@ bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *syn
 		msg |= seq_event->data.note.channel;
 		msg |= seq_event->data.note.note << 8;
 		msg |= seq_event->data.note.velocity << 16;
-		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		synthRoute->pushMIDIShortMessage(*midiSession, msg, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_NOTEOFF:
@@ -150,7 +151,7 @@ bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *syn
 		msg |= seq_event->data.note.channel;
 		msg |= seq_event->data.note.note << 8;
 		msg |= seq_event->data.note.velocity << 16;
-		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		synthRoute->pushMIDIShortMessage(*midiSession, msg, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_CONTROLLER:
@@ -158,7 +159,7 @@ bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *syn
 		msg |= seq_event->data.control.channel;
 		msg |= seq_event->data.control.param << 8;
 		msg |= seq_event->data.control.value << 16;
-		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		synthRoute->pushMIDIShortMessage(*midiSession, msg, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_CONTROL14:
@@ -169,7 +170,7 @@ bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *syn
 		msg |= seq_event->data.control.channel;
 		msg |= seq_event->data.control.param << 8;
 		msg |= (seq_event->data.control.value >> 7) << 16;
-		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		synthRoute->pushMIDIShortMessage(*midiSession, msg, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_NONREGPARAM:
@@ -181,23 +182,23 @@ bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *syn
 		if (seq_event->data.control.param != 0) break;
 		msg = 0x64B0;
 		msg |= seq_event->data.control.channel;
-		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		synthRoute->pushMIDIShortMessage(*midiSession, msg, MasterClock::getClockNanos());
 
 		msg &= 0xFF;
 		msg |= 0x6500;
-		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		synthRoute->pushMIDIShortMessage(*midiSession, msg, MasterClock::getClockNanos());
 
 		msg &= 0xFF;
 		msg |= 0x0600;
 		msg |= ((seq_event->data.control.value >> 7) & 0x7F) << 16;
-		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		synthRoute->pushMIDIShortMessage(*midiSession, msg, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_PGMCHANGE:
 		msg = 0xC0;
 		msg |= seq_event->data.control.channel;
 		msg |= seq_event->data.control.value << 8;
-		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		synthRoute->pushMIDIShortMessage(*midiSession, msg, MasterClock::getClockNanos());
 		break;
 
 	case SND_SEQ_EVENT_PITCHBEND:
@@ -207,11 +208,10 @@ bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *syn
 		bend = seq_event->data.control.value + 8192;
 		msg |= (bend & 0x7F) << 8;
 		msg |= ((bend >> 7) & 0x7F) << 16;
-		synthRoute->pushMIDIShortMessage(msg, MasterClock::getClockNanos());
+		synthRoute->pushMIDIShortMessage(*midiSession, msg, MasterClock::getClockNanos());
 		break;
 
-	case SND_SEQ_EVENT_SYSEX:
-	{
+	case SND_SEQ_EVENT_SYSEX: {
 		MT32Emu::Bit8u *sysexData = (MT32Emu::Bit8u *)seq_event->data.ext.ptr;
 		uint sysexLength = seq_event->data.ext.len;
 
@@ -222,13 +222,13 @@ bool ALSAMidiDriver::processSeqEvent(snd_seq_event_t *seq_event, SynthRoute *syn
 		bool hasSysexStart = sysexData[0] == MIDI_CMD_COMMON_SYSEX;
 		bool hasSysexEnd = sysexData[sysexLength - 1] == MIDI_CMD_COMMON_SYSEX_END;
 		if (hasSysexStart && hasSysexEnd) {
-			synthRoute->pushMIDISysex(sysexData, sysexLength, MasterClock::getClockNanos());
+			synthRoute->pushMIDISysex(*midiSession, sysexData, sysexLength, MasterClock::getClockNanos());
 			break;
 		}
 		// OK, accumulate SysEx data received so far and commit when ready.
 		sysexBuffer.append(sysexData, sysexLength);
 		if (hasSysexEnd) {
-			synthRoute->pushMIDISysex(sysexBuffer.constData(), sysexBuffer.size(), MasterClock::getClockNanos());
+			synthRoute->pushMIDISysex(*midiSession, sysexBuffer.constData(), sysexBuffer.size(), MasterClock::getClockNanos());
 			sysexBuffer.clear();
 		}
 		break;
@@ -276,12 +276,15 @@ int ALSAMidiDriver::alsa_setup_midi() {
 	}
 
 	snd_seq_set_client_name(snd_seq, "Munt MT-32");
-	seqPort = snd_seq_create_simple_port(snd_seq, "Standard",
-						SND_SEQ_PORT_CAP_SUBS_WRITE |
-						SND_SEQ_PORT_CAP_WRITE,
-						SND_SEQ_PORT_TYPE_MIDI_GENERIC |
-						SND_SEQ_PORT_TYPE_MIDI_MT32 |
-						SND_SEQ_PORT_TYPE_SYNTHESIZER);
+	seqPort = snd_seq_create_simple_port(
+		snd_seq,
+		"Standard",
+		SND_SEQ_PORT_CAP_SUBS_WRITE |
+		SND_SEQ_PORT_CAP_WRITE,
+		SND_SEQ_PORT_TYPE_MIDI_GENERIC |
+		SND_SEQ_PORT_TYPE_MIDI_MT32 |
+		SND_SEQ_PORT_TYPE_SYNTHESIZER
+	);
 	if (seqPort < 0) {
 		qDebug() << "ALSAMidiDriver: Error creating sequencer port";
 		return -1;

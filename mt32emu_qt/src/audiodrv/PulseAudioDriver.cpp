@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 
 #include "../Master.h"
 #include "../MasterClock.h"
-#include "../QSynth.h"
+#include "../SynthRoute.h"
 
 using namespace MT32Emu;
 
@@ -127,8 +127,8 @@ static bool loadLibrary(bool loadNeeded) {
 	return true;
 }
 
-PulseAudioStream::PulseAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), stream(NULL), processingThreadID(0), stopProcessing(false)
+PulseAudioStream::PulseAudioStream(const AudioDriverSettings &useSettings, SynthRoute &useSynthRoute, const quint32 useSampleRate) :
+	AudioStream(useSettings, useSynthRoute, useSampleRate), stream(NULL), processingThreadID(0), stopProcessing(false)
 {
 	bufferSize = settings.chunkLen * sampleRate / MasterClock::MILLIS_PER_SECOND;
 	buffer = new Bit16s[/* channels */ 2 * bufferSize];
@@ -152,13 +152,13 @@ void *PulseAudioStream::processingThread(void *userData) {
 			framesInAudioBuffer = 0;
 		}
 		audioStream.updateTimeInfo(nanosNow, framesInAudioBuffer);
-		audioStream.synth.render(audioStream.buffer, audioStream.bufferSize);
+		audioStream.synthRoute.render(audioStream.buffer, audioStream.bufferSize);
 		if (_pa_simple_write(audioStream.stream, audioStream.buffer, audioStream.bufferSize * FRAME_SIZE, &error) < 0) {
 			qDebug() << "pa_simple_write() failed:" << _pa_strerror(error);
 			_pa_simple_free(audioStream.stream);
 			audioStream.stream = NULL;
 			qDebug() << "PulseAudio: Processing thread stopped";
-			audioStream.synth.close();
+			audioStream.synthRoute.audioStreamFailed();
 			audioStream.processingThreadID = 0;
 			return NULL;
 		}
@@ -248,8 +248,8 @@ void PulseAudioStream::close() {
 
 PulseAudioDefaultDevice::PulseAudioDefaultDevice(PulseAudioDriver &driver) : AudioDevice(driver, "Default") {}
 
-AudioStream *PulseAudioDefaultDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
-	PulseAudioStream *stream = new PulseAudioStream(driver.getAudioSettings(), synth, sampleRate);
+AudioStream *PulseAudioDefaultDevice::startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const {
+	PulseAudioStream *stream = new PulseAudioStream(driver.getAudioSettings(), synthRoute, sampleRate);
 	if (stream->start()) return stream;
 	delete stream;
 	return NULL;

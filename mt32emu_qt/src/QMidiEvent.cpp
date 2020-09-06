@@ -20,31 +20,28 @@
 
 using namespace MT32Emu;
 
-QMidiEvent::QMidiEvent() {
-	type = SHORT_MESSAGE;
-	msg = 0;
-	sysexLen = 0;
-	sysexData = NULL;
-}
+QMidiEvent::QMidiEvent() :
+	type(SHORT_MESSAGE),
+	msg(),
+	sysexData()
+{}
 
-QMidiEvent::QMidiEvent(const QMidiEvent &copyOf) {
-	timestamp = copyOf.timestamp;
-	type = copyOf.type;
-	msg = copyOf.msg;
+QMidiEvent::QMidiEvent(const QMidiEvent &copyOf) :
+	timestamp(copyOf.timestamp),
+	type(copyOf.type)
+{
 	if (type == SYSEX && copyOf.sysexData != NULL) {
 		sysexLen = copyOf.sysexLen;
 		sysexData = new uchar[sysexLen];
 		memcpy(sysexData, copyOf.sysexData, sysexLen);
 	} else {
-		sysexLen = 0;
+		msg = copyOf.msg;
 		sysexData = NULL;
 	}
 }
 
 QMidiEvent::~QMidiEvent() {
-	if (sysexData != 0) {
-		delete[] sysexData;
-	}
+	delete[] sysexData;
 }
 
 SynthTimestamp QMidiEvent::getTimestamp() const {
@@ -55,7 +52,7 @@ MidiEventType QMidiEvent::getType() const {
 	return type;
 }
 
-unsigned char *QMidiEvent::getSysexData() const {
+uchar *QMidiEvent::getSysexData() const {
 	return sysexData;
 }
 
@@ -75,18 +72,16 @@ void QMidiEvent::assignShortMessage(SynthTimestamp newTimestamp, Bit32u newMsg) 
 	timestamp = newTimestamp;
 	type = SHORT_MESSAGE;
 	msg = newMsg;
-	sysexLen = 0;
 	delete[] sysexData;
 	sysexData = NULL;
 }
 
-void QMidiEvent::assignSysex(SynthTimestamp newTimestamp, unsigned char const * const newSysexData, Bit32u newSysexLen) {
+void QMidiEvent::assignSysex(SynthTimestamp newTimestamp, uchar const * const newSysexData, Bit32u newSysexLen) {
 	timestamp = newTimestamp;
 	type = SYSEX;
-	msg = 0;
 	sysexLen = newSysexLen;
 	delete[] sysexData;
-	Bit8u *copy = new Bit8u[newSysexLen];
+	uchar *copy = new uchar[newSysexLen];
 	memcpy(copy, newSysexData, newSysexLen);
 	sysexData = copy;
 }
@@ -95,7 +90,6 @@ void QMidiEvent::assignSetTempoMessage(SynthTimestamp newTimestamp, MT32Emu::Bit
 	timestamp = newTimestamp;
 	type = SET_TEMPO;
 	msg = newTempo;
-	sysexLen = 0;
 	delete[] sysexData;
 	sysexData = NULL;
 }
@@ -104,7 +98,6 @@ void QMidiEvent::assignSyncMessage(SynthTimestamp newTimestamp) {
 	timestamp = newTimestamp;
 	type = SYNC;
 	msg = 0;
-	sysexLen = 0;
 	delete[] sysexData;
 	sysexData = NULL;
 }

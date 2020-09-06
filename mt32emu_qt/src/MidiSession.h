@@ -7,6 +7,7 @@
 
 class MidiDriver;
 class QMidiStreamParser;
+class QMidiBuffer;
 
 class MidiSession : public QObject {
 	Q_OBJECT
@@ -16,6 +17,7 @@ private:
 	QString name;
 	SynthRoute *synthRoute;
 	QMidiStreamParser *qMidiStreamParser;
+	QMidiBuffer *qMidiBuffer;
 
 	MidiSession(QObject *parent, MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute);
 	~MidiSession();
@@ -23,13 +25,14 @@ private:
 public:
 	QString getName();
 	void setName(const QString &newName);
-	SynthRoute *getSynthRoute();
+	SynthRoute *getSynthRoute() const;
 	QMidiStreamParser *getQMidiStreamParser();
+	QMidiBuffer *getQMidiBuffer();
 };
 
 class QMidiStreamParser : public MT32Emu::MidiStreamParser {
 public:
-	QMidiStreamParser(SynthRoute &useSynthRoute);
+	QMidiStreamParser(MidiSession &midiSession);
 	void setTimestamp(MasterClockNanos newTimestamp);
 
 protected:
@@ -39,7 +42,7 @@ protected:
 	void printDebug(const char *debugMessage);
 
 private:
-	SynthRoute &synthRoute;
+	MidiSession &midiSession;
 	MasterClockNanos timestamp;
 };
 

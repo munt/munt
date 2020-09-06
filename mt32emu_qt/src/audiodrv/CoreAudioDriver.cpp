@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 #include "CoreAudioDriver.h"
 
 #include "../Master.h"
-#include "../QSynth.h"
+#include "../SynthRoute.h"
 
 static const uint DEFAULT_CHUNK_MS = 20;
 static const uint DEFAULT_AUDIO_LATENCY = 60;
@@ -53,8 +53,8 @@ static QString cfStringToQString(CFStringRef string) {
 #endif
 }
 
-CoreAudioStream::CoreAudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, quint32 useSampleRate) :
-	AudioStream(useSettings, useSynth, useSampleRate), audioQueue(NULL)
+CoreAudioStream::CoreAudioStream(const AudioDriverSettings &useSettings, SynthRoute &useSynthRoute, quint32 useSampleRate) :
+	AudioStream(useSettings, useSynthRoute, useSampleRate), audioQueue(NULL)
 {
 	const uint bufferSize = (settings.chunkLen * sampleRate) / MasterClock::MILLIS_PER_SECOND;
 	bufferByteSize = bufferSize << 2;
@@ -96,7 +96,7 @@ void CoreAudioStream::renderOutputBuffer(void *userData, AudioQueueRef queue, Au
 	stream->updateTimeInfo(nanosNow, framesInAudioBuffer);
 
 	uint frameCount = buffer->mAudioDataByteSize >> 2;
-	stream->synth.render((MT32Emu::Bit16s *)buffer->mAudioData, frameCount);
+	stream->synthRoute.render((MT32Emu::Bit16s *)buffer->mAudioData, frameCount);
 	stream->renderedFramesCount += frameCount;
 
 	OSStatus res = AudioQueueEnqueueBuffer(queue, buffer, 0, NULL);
@@ -168,8 +168,8 @@ void CoreAudioStream::close() {
 CoreAudioDevice::CoreAudioDevice(CoreAudioDriver &driver, const QString uid, const QString name) :
 	AudioDevice(driver, name), uid(uid) {}
 
-AudioStream *CoreAudioDevice::startAudioStream(QSynth &synth, const uint sampleRate) const {
-	CoreAudioStream *stream = new CoreAudioStream(driver.getAudioSettings(), synth, sampleRate);
+AudioStream *CoreAudioDevice::startAudioStream(SynthRoute &synthRoute, const uint sampleRate) const {
+	CoreAudioStream *stream = new CoreAudioStream(driver.getAudioSettings(), synthRoute, sampleRate);
 	if (stream->start(uid)) {
 		return (AudioStream *)stream;
 	}

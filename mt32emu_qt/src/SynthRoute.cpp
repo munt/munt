@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,12 +19,14 @@
  * - Managing the audio output
  *  - Initial setup
  *  - Sample rate changes
- *  - Pausing/unpausing when the QSynth becomes unavailable.
+ *  - Pausing/unpausing when the QSynth becomes unavailable (NYI)
  * - Maintaining a list of MIDI sessions for the synth
+ * - Merging MIDI streams coming from several MIDI sessions
  */
 
 #include "SynthRoute.h"
 #include "MidiSession.h"
+#include "QMidiBuffer.h"
 #include "audiodrv/AudioDriver.h"
 
 using namespace MT32Emu;
@@ -33,6 +35,8 @@ SynthRoute::SynthRoute(QObject *parent) :
 	QObject(parent),
 	state(SynthRouteState_CLOSED),
 	qSynth(this),
+	exclusiveMidiMode(),
+	multiMidiMode(),
 	audioDevice(NULL),
 	audioStream(NULL),
 	debugLastEventTimestamp(0)
@@ -57,7 +61,7 @@ void SynthRoute::setState(SynthRouteState newState) {
 	emit stateChanged(newState);
 }
 
-bool SynthRoute::open() {
+bool SynthRoute::open(AudioStreamFactory audioStreamFactory) {
 	switch (state) {
 	case SynthRouteState_OPENING:
 	case SynthRouteState_OPEN:
@@ -77,7 +81,11 @@ bool SynthRoute::open() {
 			debugDeltaUpperLimit = qint64(ceil(debugDeltaMean + debugDeltaLimit));
 			qDebug() << "Using sample rate:" << sampleRate;
 
-			audioStream = audioDevice->startAudioStream(qSynth, sampleRate);
+			if (exclusiveMidiMode && audioStreamFactory != NULL) {
+				audioStream = audioStreamFactory(audioDevice, *this, sampleRate, midiSessions.first());
+			} else {
+				audioStream = audioDevice->startAudioStream(*this, sampleRate);
+			}
 			if (audioStream != NULL) {
 				setState(SynthRouteState_OPEN);
 				return true;
@@ -109,18 +117,36 @@ bool SynthRoute::close() {
 	delete audioStream;
 	audioStream = NULL;
 	qSynth.close();
+	disableExclusiveMidiMode();
 	return true;
 }
 
-bool SynthRoute::reset() {
-	if (state == SynthRouteState_CLOSED)
-		return true;
-	setState(SynthRouteState_CLOSING);
-	if (qSynth.reset()) {
-		setState(SynthRouteState_OPEN);
-		return true;
+bool SynthRoute::enableExclusiveMidiMode(MidiSession *midiSession) {
+	if (exclusiveMidiMode || hasMIDISessions()) return false;
+	addMidiSession(midiSession);
+	exclusiveMidiMode = true;
+	qDebug() << "SynthRoute: exclusiveMidiMode enabled";
+	return true;
+}
+
+void SynthRoute::disableExclusiveMidiMode() {
+	if (exclusiveMidiMode && hasMIDISessions()) {
+		MidiSession *midiSession = midiSessions.first();
+		removeMidiSession(midiSession);
+		exclusiveMidiMode = false;
+		qDebug() << "SynthRoute: exclusiveMidiMode disabled";
+		emit exclusiveMidiSessionRemoved(midiSession);
 	}
-	return false;
+}
+
+bool SynthRoute::isExclusiveMidiModeEnabled() {
+	return exclusiveMidiMode;
+}
+
+void SynthRoute::enableMultiMidiMode() {
+	if (exclusiveMidiMode || multiMidiMode) return;
+	multiMidiMode = true;
+	qDebug() << "SynthRoute: started merging MIDI stream buffers";
 }
 
 SynthRouteState SynthRoute::getState() const {
@@ -128,13 +154,21 @@ SynthRouteState SynthRoute::getState() const {
 }
 
 void SynthRoute::addMidiSession(MidiSession *midiSession) {
+	if (exclusiveMidiMode) return;
+	if (hasMIDISessions() && !multiMidiMode) enableMultiMidiMode();
+	QMutexLocker midiSessionsLocker(&midiSessionsMutex);
 	midiSessions.append(midiSession);
 	emit midiSessionAdded(midiSession);
 }
 
 void SynthRoute::removeMidiSession(MidiSession *midiSession) {
+	QMutexLocker midiSessionsLocker(&midiSessionsMutex);
 	midiSessions.removeOne(midiSession);
 	emit midiSessionRemoved(midiSession);
+	if (!hasMIDISessions() && multiMidiMode) {
+		multiMidiMode = false;
+		qDebug() << "SynthRoute: stopped merging MIDI stream buffers";
+	}
 }
 
 void SynthRoute::setMidiSessionName(MidiSession *midiSession, QString name) {
@@ -166,6 +200,7 @@ void SynthRoute::handleQSynthState(SynthState synthState) {
 		delete audioStream;
 		audioStream = NULL;
 		setState(SynthRouteState_CLOSED);
+		disableExclusiveMidiMode();
 		break;
 	}
 }
@@ -182,9 +217,7 @@ bool SynthRoute::connectReportHandler(const char *signal, const QObject *receive
 	return QObject::connect(qSynth.getReportHandler(), signal, receiver, slot);
 }
 
-// QSynth delegation
-
-bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
+bool SynthRoute::pushMIDIShortMessage(MidiSession &midiSession, Bit32u msg, MasterClockNanos refNanos) {
 	recorder.recordShortMessage(msg, refNanos);
 	AudioStream *stream = audioStream;
 	if (stream == NULL) return false;
@@ -199,15 +232,101 @@ bool SynthRoute::pushMIDIShortMessage(Bit32u msg, MasterClockNanos refNanos) {
 		debugLastEventTimestamp = timestamp;
 		return false;
 	}
-	return qSynth.playMIDIShortMessage(msg, timestamp);
+	return playMIDIShortMessage(midiSession, msg, timestamp);
 }
 
-bool SynthRoute::pushMIDISysex(const Bit8u *sysexData, unsigned int sysexLen, MasterClockNanos refNanos) {
+bool SynthRoute::pushMIDISysex(MidiSession &midiSession, const Bit8u *sysexData, unsigned int sysexLen, MasterClockNanos refNanos) {
 	recorder.recordSysex(sysexData, sysexLen, refNanos);
 	AudioStream *stream = audioStream;
 	if (stream == NULL) return false;
 	quint64 timestamp = stream->estimateMIDITimestamp(refNanos);
-	return qSynth.playMIDISysex(sysexData, sysexLen, timestamp);
+	return playMIDISysex(midiSession, sysexData, sysexLen, timestamp);
+}
+
+bool SynthRoute::playMIDIShortMessage(MidiSession &midiSession, Bit32u msg, quint64 timestamp) {
+	if (multiMidiMode) {
+		QMidiBuffer *qMidiBuffer = midiSession.getQMidiBuffer();
+		if (qMidiBuffer->pushShortMessage(timestamp, msg)) {
+			qMidiBuffer->flush();
+			return true;
+		}
+		return false;
+	} else {
+		return qSynth.playMIDIShortMessage(msg, timestamp);
+	}
+}
+
+bool SynthRoute::playMIDISysex(MidiSession &midiSession, const Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) {
+	if (multiMidiMode) {
+		QMidiBuffer *qMidiBuffer = midiSession.getQMidiBuffer();
+		if (qMidiBuffer->pushSysexMessage(timestamp, sysexLen, sysex)) {
+			qMidiBuffer->flush();
+			return true;
+		}
+		return false;
+	} else {
+		return qSynth.playMIDISysex(sysex, sysexLen, timestamp);
+	}
+}
+
+void SynthRoute::mergeMidiStreams(uint renderingPassFrameLength) {
+	if (audioStream == NULL) return; // May happen during startup, occasionally.
+	QMutexLocker midiSessionsLocker(&midiSessionsMutex);
+	QVarLengthArray<QMidiBuffer *, 16> streamBuffers;
+	const quint64 renderingPassEndTimestamp = audioStream->computeMIDITimestamp(renderingPassFrameLength);
+
+	for (int i = 0; i < midiSessions.size(); i++) {
+		QMidiBuffer *midiBuffer = midiSessions.at(i)->getQMidiBuffer();
+		if (midiBuffer->retieveEvents() && midiBuffer->getEventTimestamp() < renderingPassEndTimestamp) {
+			streamBuffers.append(midiBuffer);
+		}
+	}
+
+	while (!streamBuffers.isEmpty()) {
+		int nextEventBufferIx = 0;
+		quint64 nextEventTimestamp = streamBuffers.at(nextEventBufferIx)->getEventTimestamp();
+		for (int i = 1; i < streamBuffers.size(); i++) {
+			quint64 eventTimestamp = streamBuffers.at(i)->getEventTimestamp();
+			if (eventTimestamp < nextEventTimestamp) {
+				nextEventBufferIx = i;
+				nextEventTimestamp = eventTimestamp;
+			}
+		}
+		QMidiBuffer *midiBuffer = streamBuffers.at(nextEventBufferIx);
+		do {
+			const uchar *sysexData;
+			quint32 eventData = midiBuffer->getEventData(sysexData);
+			if (sysexData == NULL) {
+				qSynth.playMIDIShortMessage(eventData, nextEventTimestamp);
+			} else {
+				qSynth.playMIDISysex(sysexData, eventData, nextEventTimestamp);
+			}
+			if (!(midiBuffer->nextEvent() && midiBuffer->getEventTimestamp() < renderingPassEndTimestamp)) {
+				streamBuffers.remove(nextEventBufferIx);
+				break;
+			}
+		} while (midiBuffer->getEventTimestamp() == nextEventTimestamp);
+	}
+}
+
+void SynthRoute::render(MT32Emu::Bit16s *buffer, uint length) {
+	if (multiMidiMode) mergeMidiStreams(length);
+	qSynth.render(buffer, length);
+}
+
+void SynthRoute::render(float *buffer, uint length) {
+	if (multiMidiMode) mergeMidiStreams(length);
+	qSynth.render(buffer, length);
+}
+
+void SynthRoute::audioStreamFailed() {
+	qSynth.close();
+}
+
+// QSynth delegation
+
+void SynthRoute::enableRealtimeMode() {
+	qSynth.enableRealtime();
 }
 
 void SynthRoute::flushMIDIQueue() {
@@ -222,12 +341,8 @@ void SynthRoute::playMIDISysexNow(const Bit8u *sysex, Bit32u sysexLen) {
 	qSynth.playMIDISysexNow(sysex, sysexLen);
 }
 
-bool SynthRoute::playMIDIShortMessage(Bit32u msg, quint64 timestamp) {
-	return qSynth.playMIDIShortMessage(msg, timestamp);
-}
-
-bool SynthRoute::playMIDISysex(const Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) {
-	return qSynth.playMIDISysex(sysex, sysexLen, timestamp);
+void SynthRoute::reset() {
+	qSynth.reset();
 }
 
 void SynthRoute::setMasterVolume(int masterVolume) {
@@ -306,7 +421,7 @@ void SynthRoute::getROMImages(const MT32Emu::ROMImage *&controlROMImage, const M
 	qSynth.getROMImages(controlROMImage, pcmROMImage);
 }
 
-unsigned int SynthRoute::getPartialCount() const {
+uint SynthRoute::getPartialCount() const {
 	return qSynth.getPartialCount();
 }
 
@@ -322,7 +437,7 @@ void SynthRoute::getPartialStates(PartialState *partialStates) const {
 	qSynth.getPartialStates(partialStates);
 }
 
-unsigned int SynthRoute::getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const {
+uint SynthRoute::getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const {
 	return qSynth.getPlayingNotes(partNumber, keys, velocities);
 }
 

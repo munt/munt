@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
 #include <QSettings>
 #include "../Master.h"
 
-AudioStream::AudioStream(const AudioDriverSettings &useSettings, QSynth &useSynth, const quint32 useSampleRate) :
-	synth(useSynth), sampleRate(useSampleRate), settings(useSettings), renderedFramesCount(0), lastEstimatedPlayedFramesCount(0), resetScheduled(true)
+AudioStream::AudioStream(const AudioDriverSettings &useSettings, SynthRoute &useSynthRoute, const quint32 useSampleRate) :
+	synthRoute(useSynthRoute), sampleRate(useSampleRate), settings(useSettings), renderedFramesCount(0), lastEstimatedPlayedFramesCount(0), resetScheduled(true)
 {
 	audioLatencyFrames = settings.audioLatency * sampleRate / MasterClock::MILLIS_PER_SECOND;
 	midiLatencyFrames = settings.midiLatency * sampleRate / MasterClock::MILLIS_PER_SECOND;
@@ -49,6 +49,10 @@ quint64 AudioStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
 		qDebug() << "L" << renderedFramesCount << timestamp << delay << midiLatencyFrames;
 	}
 	return timestamp;
+}
+
+quint64 AudioStream::computeMIDITimestamp(uint relativeFrameTime) const {
+	return renderedFramesCount + relativeFrameTime;
 }
 
 void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer) {

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,14 +14,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * This is a wrapper for MT32Emu::Synth that adds thread-safe queueing of MIDI messages.
- *
- * Thread safety:
- * pushMIDIShortMessage() and pushMIDISysex() can be called by any number of threads safely.
- * All other functions may only be called by a single thread.
- */
-
+#include <cstring>
 #include <QtGlobal>
 #include <QMessageBox>
 
@@ -32,8 +25,14 @@
 
 using namespace MT32Emu;
 
+const int INITIAL_MASTER_VOLUME = 100;
+const int LCD_MESSAGE_LENGTH = 21; // 0-terminated
 const int MIN_PARTIAL_COUNT = 8;
 const int MAX_PARTIAL_COUNT = 256;
+const int PART_COUNT = 9;
+const int SOUND_GROUP_NAME_LENGTH = 9; // 0-terminated
+const int TIMBRE_NAME_LENGTH = 11; // 0-terminated
+const int NO_UPDATE_VALUE = -1;
 
 static const ROMImage *makeROMImage(const QDir &romDir, QString romFileName) {
 	FileStream *file = new FileStream;
@@ -43,11 +42,485 @@ static const ROMImage *makeROMImage(const QDir &romDir, QString romFileName) {
 	return NULL;
 }
 
-QReportHandler::QReportHandler(QObject *parent) : QObject(parent) {
+static void writeMasterVolumeSysex(Synth *synth, int masterVolume) {
+	Bit8u sysex[] = {0x10, 0x00, 0x16, (Bit8u)masterVolume};
+	synth->writeSysex(16, sysex, 4);
+}
+
+static void overrideReverbSettings(Synth *synth, int reverbMode, int reverbTime, int reverbLevel) {
+	Bit8u sysex[] = {0x10, 0x00, 0x01, (Bit8u)reverbMode, (Bit8u)reverbTime, (Bit8u)reverbLevel};
+	synth->setReverbOverridden(false);
+	synth->writeSysex(16, sysex, 6);
+	synth->setReverbOverridden(true);
+}
+
+static void writeMIDIChannelsAssignmentResetSysex(Synth *synth, bool engageChannel1) {
+	static const Bit8u sysexStandardChannelAssignment[] = {0x10, 0x00, 0x0d, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+	static const Bit8u sysexChannel1EngagedAssignment[] = {0x10, 0x00, 0x0d, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x09};
+
+	synth->writeSysex(16, engageChannel1 ? sysexChannel1EngagedAssignment : sysexStandardChannelAssignment, sizeof(sysexStandardChannelAssignment));
+}
+
+static void writeSystemResetSysex(Synth *synth) {
+	static const Bit8u sysex[] = {0x7f, 0, 0};
+	synth->writeSysex(16, sysex, 3);
+}
+
+static int readMasterVolume(Synth *synth) {
+	Bit8u masterVolume = 0;
+	synth->readMemory(0x40016, 1, &masterVolume);
+	return masterVolume;
+}
+
+class RealtimeLocker {
+private:
+	QMutex &mutex;
+	bool locked;
+
+public:
+	explicit RealtimeLocker(QMutex &useMutex) : mutex(useMutex) {
+		locked = mutex.tryLock();
+	}
+
+	~RealtimeLocker() {
+		if (locked) mutex.unlock();
+	}
+
+	bool isLocked() {
+		return locked;
+	}
+};
+
+class RealtimeHelper : public QThread {
+private:
+	enum SynthControlEvent {
+		SYNTH_RESET,
+		MASTER_VOLUME_CHANGED,
+		OUTPUT_GAIN_CHANGED,
+		REVERB_OUTPUT_GAIN_CHANGED,
+		REVERB_ENABLED_CHANGED,
+		REVERB_OVERRIDDEN_CHANGED,
+		REVERB_SETTINGS_CHANGED,
+		REVERSED_STEREO_ENABLED_CHANGED,
+		NICE_AMP_RAMP_ENABLED_CHANGED,
+		EMU_DAC_INPUT_MODE_CHANGED,
+		MIDI_DELAY_MODE_CHANGED,
+		MIDI_CHANNELS_ASSIGNMENT_RESET
+	};
+
+	QSynth &qsynth;
+	bool stopProcessing;
+
+	QQueue<SynthControlEvent> synthControlEvents;
+
+	// Synth settings, guarded by settingsMutex.
+	int masterVolume;
+	float outputGain;
+	float reverbOutputGain;
+	bool reverbEnabled;
+	bool reverbOverridden;
+	bool reversedStereoEnabled;
+	bool niceAmpRampEnabled;
+	DACInputMode emuDACInputMode;
+	MIDIDelayMode midiDelayMode;
+	bool midiChannelsAssignmentChannel1Engaged;
+
+	// Temp synth state collected while rendering, only accessed from the rendering thread.
+	// On backpressure, the latest values are kept.
+	struct {
+		char lcdMessage[LCD_MESSAGE_LENGTH];
+		bool midiMessagePlayed;
+		int masterVolumeUpdate;
+		int reverbMode;
+		int reverbTime;
+		int reverbLevel;
+		struct {
+			bool polyStateChanged;
+			bool programChanged;
+			char soundGroupName[SOUND_GROUP_NAME_LENGTH];
+			char timbreName[TIMBRE_NAME_LENGTH];
+		} partStates[PART_COUNT];
+	} tempState;
+
+	// Synth state snapshot, guarded by stateSnapshotMutex.
+	struct {
+		char lcdMessage[LCD_MESSAGE_LENGTH];
+		bool midiMessagePlayed;
+		int masterVolumeUpdate;
+		int reverbMode;
+		int reverbTime;
+		int reverbLevel;
+		struct {
+			bool polyStateChanged;
+			bool programChanged;
+			char soundGroupName[SOUND_GROUP_NAME_LENGTH];
+			char timbreName[TIMBRE_NAME_LENGTH];
+			bool active;
+			Bit32u playingNotesCount;
+			Bit8u keysOfPlayingNotes[MAX_PARTIAL_COUNT];
+			Bit8u velocitiesOfPlayingNotes[MAX_PARTIAL_COUNT];
+		} partStates[PART_COUNT];
+		PartialState partialStates[MAX_PARTIAL_COUNT];
+	} stateSnapshot;
+
+
+	/** Ensures atomicity of collecting changes to be applied to the synth settings. */
+	QMutex settingsMutex;
+	/** Ensures atomicity of handling the output signals of the synth and capturing its internal state. */
+	QMutex stateSnapshotMutex;
+	/** Used to block this thread until each rendering pass completes. */
+	QWaitCondition renderCompleteCondition;
+
+	void applyChangesRealtime() {
+		RealtimeLocker settingsLocker(settingsMutex);
+		if (!settingsLocker.isLocked()) return;
+		Synth *synth = qsynth.synth;
+		while (!synthControlEvents.isEmpty()) {
+			switch (synthControlEvents.dequeue()) {
+			case SYNTH_RESET:
+				writeSystemResetSysex(synth);
+				break;
+			case MASTER_VOLUME_CHANGED:
+				writeMasterVolumeSysex(synth, masterVolume);
+				break;
+			case OUTPUT_GAIN_CHANGED:
+				synth->setOutputGain(outputGain);
+				break;
+			case REVERB_OUTPUT_GAIN_CHANGED:
+				synth->setReverbOutputGain(reverbOutputGain);
+				break;
+			case REVERB_ENABLED_CHANGED:
+				synth->setReverbEnabled(reverbEnabled);
+				break;
+			case REVERB_OVERRIDDEN_CHANGED:
+				synth->setReverbOverridden(reverbOverridden);
+				break;
+			case REVERB_SETTINGS_CHANGED:
+				overrideReverbSettings(synth, qsynth.reverbMode, qsynth.reverbTime, qsynth.reverbLevel);
+				break;
+			case REVERSED_STEREO_ENABLED_CHANGED:
+				synth->setReversedStereoEnabled(reversedStereoEnabled);
+				break;
+			case NICE_AMP_RAMP_ENABLED_CHANGED:
+				synth->setNiceAmpRampEnabled(niceAmpRampEnabled);
+				break;
+			case EMU_DAC_INPUT_MODE_CHANGED:
+				synth->setDACInputMode(emuDACInputMode);
+				break;
+			case MIDI_DELAY_MODE_CHANGED:
+				synth->setMIDIDelayMode(midiDelayMode);
+				break;
+			case MIDI_CHANNELS_ASSIGNMENT_RESET:
+				writeMIDIChannelsAssignmentResetSysex(synth, midiChannelsAssignmentChannel1Engaged);
+				break;
+			}
+		}
+	}
+
+	void saveStateRealtime() {
+		RealtimeLocker stateSnapshotLocker(stateSnapshotMutex);
+		if (!stateSnapshotLocker.isLocked()) return;
+
+		memcpy(stateSnapshot.lcdMessage, tempState.lcdMessage, LCD_MESSAGE_LENGTH - 1);
+		tempState.lcdMessage[0] = 0;
+
+		stateSnapshot.midiMessagePlayed = tempState.midiMessagePlayed;
+		tempState.midiMessagePlayed = false;
+
+		stateSnapshot.masterVolumeUpdate = tempState.masterVolumeUpdate;
+		tempState.masterVolumeUpdate = NO_UPDATE_VALUE;
+
+		stateSnapshot.reverbMode = tempState.reverbMode;
+		tempState.reverbMode = NO_UPDATE_VALUE;
+
+		stateSnapshot.reverbTime = tempState.reverbTime;
+		tempState.reverbTime = NO_UPDATE_VALUE;
+
+		stateSnapshot.reverbLevel = tempState.reverbLevel;
+		tempState.reverbLevel = NO_UPDATE_VALUE;
+
+		Synth *synth = qsynth.synth;
+		bool partStates[PART_COUNT];
+		synth->getPartStates(partStates);
+
+		for (int partIx = 0; partIx < PART_COUNT; partIx++) {
+			stateSnapshot.partStates[partIx].programChanged = tempState.partStates[partIx].programChanged;
+			if (tempState.partStates[partIx].programChanged) {
+				tempState.partStates[partIx].programChanged = false;
+				memcpy(stateSnapshot.partStates[partIx].soundGroupName, tempState.partStates[partIx].soundGroupName, SOUND_GROUP_NAME_LENGTH - 1);
+				memcpy(stateSnapshot.partStates[partIx].timbreName, tempState.partStates[partIx].timbreName, TIMBRE_NAME_LENGTH - 1);
+			}
+
+			stateSnapshot.partStates[partIx].active = partStates[partIx];
+
+			stateSnapshot.partStates[partIx].polyStateChanged = tempState.partStates[partIx].polyStateChanged;
+			if (tempState.partStates[partIx].polyStateChanged) {
+				tempState.partStates[partIx].polyStateChanged = false;
+				stateSnapshot.partStates[partIx].playingNotesCount = synth->getPlayingNotes(partIx, stateSnapshot.partStates[partIx].keysOfPlayingNotes, stateSnapshot.partStates[partIx].velocitiesOfPlayingNotes);
+			}
+		}
+
+		synth->getPartialStates(stateSnapshot.partialStates);
+	}
+
+	void enqueueSynthControlEvent(SynthControlEvent value) {
+		synthControlEvents.removeOne(value);
+		synthControlEvents.enqueue(value);
+	}
+
+	void run() {
+		QMutexLocker stateSnapshotLocker(&stateSnapshotMutex);
+		QReportHandler &reportHandler = qsynth.reportHandler;
+		while (renderCompleteCondition.wait(&stateSnapshotMutex) && !stopProcessing) {
+			if (stateSnapshot.lcdMessage[0]) {
+				reportHandler.doShowLCDMessage(stateSnapshot.lcdMessage);
+				stateSnapshot.lcdMessage[0] = 0;
+			}
+
+			if (stateSnapshot.midiMessagePlayed) {
+				emit reportHandler.midiMessagePlayed();
+				stateSnapshot.midiMessagePlayed = false;
+			}
+
+			if (stateSnapshot.masterVolumeUpdate > NO_UPDATE_VALUE) {
+				emit reportHandler.masterVolumeChanged(stateSnapshot.masterVolumeUpdate);
+				stateSnapshot.masterVolumeUpdate = NO_UPDATE_VALUE;
+			}
+
+			if (stateSnapshot.reverbMode > NO_UPDATE_VALUE) {
+				emit reportHandler.reverbModeChanged(stateSnapshot.reverbMode);
+				stateSnapshot.reverbMode = NO_UPDATE_VALUE;
+			}
+
+			if (stateSnapshot.reverbTime > NO_UPDATE_VALUE) {
+				emit reportHandler.reverbTimeChanged(stateSnapshot.reverbTime);
+				stateSnapshot.reverbTime = NO_UPDATE_VALUE;
+			}
+
+			if (stateSnapshot.reverbLevel > NO_UPDATE_VALUE) {
+				emit reportHandler.reverbLevelChanged(stateSnapshot.reverbLevel);
+				stateSnapshot.reverbLevel = NO_UPDATE_VALUE;
+			}
+
+			for (int partIx = 0; partIx < PART_COUNT; partIx++) {
+				if (stateSnapshot.partStates[partIx].polyStateChanged) {
+					emit reportHandler.polyStateChanged(partIx);
+					stateSnapshot.partStates[partIx].polyStateChanged = false;
+				}
+
+				if (stateSnapshot.partStates[partIx].programChanged) {
+					emit reportHandler.programChanged(partIx, stateSnapshot.partStates[partIx].soundGroupName, stateSnapshot.partStates[partIx].timbreName);
+					stateSnapshot.partStates[partIx].programChanged = false;
+				}
+			}
+
+			emit qsynth.audioBlockRendered();
+		}
+	}
+
+public:
+	RealtimeHelper(QSynth &useQSynth) :
+		qsynth(useQSynth),
+		stopProcessing(),
+		outputGain(qsynth.synth->getOutputGain()),
+		reverbOutputGain(qsynth.synth->getReverbOutputGain()),
+		reverbEnabled(!qsynth.synth->isReverbOverridden() || qsynth.synth->isReverbEnabled()),
+		reverbOverridden(qsynth.synth->isReverbOverridden()),
+		reversedStereoEnabled(qsynth.synth->isReversedStereoEnabled()),
+		niceAmpRampEnabled(qsynth.synth->isNiceAmpRampEnabled()),
+		emuDACInputMode(qsynth.synth->getDACInputMode()),
+		midiDelayMode(qsynth.synth->getMIDIDelayMode()),
+		tempState(),
+		stateSnapshot()
+	{
+		tempState.masterVolumeUpdate = NO_UPDATE_VALUE;
+		tempState.reverbMode = NO_UPDATE_VALUE;
+		tempState.reverbTime = NO_UPDATE_VALUE;
+		tempState.reverbLevel = NO_UPDATE_VALUE;
+	}
+
+	~RealtimeHelper() {
+		QMutexLocker stateSnapshotLocker(&stateSnapshotMutex);
+		stopProcessing = true;
+		renderCompleteCondition.wakeOne();
+		stateSnapshotLocker.unlock();
+		wait();
+	}
+
+	void getSynthSettings(SynthProfile &synthProfile) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		synthProfile.outputGain = outputGain;
+		synthProfile.reverbOutputGain = reverbOutputGain;
+		synthProfile.reverbOverridden = reverbOverridden;
+		synthProfile.reverbEnabled = reverbEnabled;
+		synthProfile.reverbMode = qsynth.reverbMode;
+		synthProfile.reverbTime = qsynth.reverbTime;
+		synthProfile.reverbLevel = qsynth.reverbLevel;
+		synthProfile.reversedStereoEnabled = reversedStereoEnabled;
+		synthProfile.niceAmpRamp = niceAmpRampEnabled;
+		synthProfile.emuDACInputMode = emuDACInputMode;
+		synthProfile.midiDelayMode = midiDelayMode;
+	}
+
+	void setMasterVolume(int useMasterVolume) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		masterVolume = useMasterVolume;
+		enqueueSynthControlEvent(MASTER_VOLUME_CHANGED);
+	}
+
+	void setOutputGain(float useOutputGain) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		outputGain = useOutputGain;
+		enqueueSynthControlEvent(OUTPUT_GAIN_CHANGED);
+	}
+
+	void setReverbOutputGain(float useReverbOutputGain) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		reverbOutputGain = useReverbOutputGain;
+		enqueueSynthControlEvent(REVERB_OUTPUT_GAIN_CHANGED);
+	}
+
+	void setReverbEnabled(bool useReverbEnabled) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		reverbEnabled = useReverbEnabled;
+		enqueueSynthControlEvent(REVERB_ENABLED_CHANGED);
+	}
+
+	void setReverbOverridden(bool useReverbOverridden) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		reverbOverridden = useReverbOverridden;
+		enqueueSynthControlEvent(REVERB_OVERRIDDEN_CHANGED);
+	}
+
+	void setReverbSettings(int useReverbMode, int useReverbTime, int useReverbLevel) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		qsynth.reverbMode = useReverbMode;
+		qsynth.reverbTime = useReverbTime;
+		qsynth.reverbLevel = useReverbLevel;
+		enqueueSynthControlEvent(REVERB_SETTINGS_CHANGED);
+	}
+
+	void setReversedStereoEnabled(bool useReversedStereoEnabled) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		reversedStereoEnabled = useReversedStereoEnabled;
+		enqueueSynthControlEvent(REVERSED_STEREO_ENABLED_CHANGED);
+	}
+
+	void setNiceAmpRampEnabled(bool useNiceAmpRampEnabled) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		niceAmpRampEnabled = useNiceAmpRampEnabled;
+		enqueueSynthControlEvent(NICE_AMP_RAMP_ENABLED_CHANGED);
+	}
+
+	void setDACInputMode(DACInputMode useEmuDACInputMode) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		emuDACInputMode = useEmuDACInputMode;
+		enqueueSynthControlEvent(EMU_DAC_INPUT_MODE_CHANGED);
+	}
+
+	void setMIDIDelayMode(MIDIDelayMode useMIDIDelayMode) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		midiDelayMode = useMIDIDelayMode;
+		enqueueSynthControlEvent(MIDI_DELAY_MODE_CHANGED);
+	}
+
+	void resetMidiChannelsAssignment(bool useMidiChannelsAssignmentChannel1Engaged) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		midiChannelsAssignmentChannel1Engaged = useMidiChannelsAssignmentChannel1Engaged;
+		enqueueSynthControlEvent(MIDI_CHANNELS_ASSIGNMENT_RESET);
+	}
+
+	void resetSynth() {
+		QMutexLocker settingsLocker(&settingsMutex);
+		enqueueSynthControlEvent(SYNTH_RESET);
+	}
+
+	bool playMIDIShortMessageRealtime(Bit32u msg, quint64 timestamp) const {
+		RealtimeLocker midiLocker(*qsynth.midiMutex);
+		return midiLocker.isLocked() && qsynth.isOpen() && qsynth.synth->playMsg(msg, qsynth.convertOutputToSynthTimestamp(timestamp));
+	}
+
+	bool playMIDISysexRealtime(const Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) const {
+		RealtimeLocker midiLocker(*qsynth.midiMutex);
+		return midiLocker.isLocked() && qsynth.isOpen() && qsynth.synth->playSysex(sysex, sysexLen, qsynth.convertOutputToSynthTimestamp(timestamp));
+	}
+
+	void renderRealtime(float *buffer, uint length) {
+		RealtimeLocker synthLocker(*qsynth.synthMutex);
+		if (synthLocker.isLocked() && qsynth.isOpen()) {
+			applyChangesRealtime();
+			qsynth.sampleRateConverter->getOutputSamples(buffer, length);
+			saveStateRealtime();
+			renderCompleteCondition.wakeOne();
+		} else {
+			Synth::muteSampleBuffer(buffer, length);
+		}
+	}
+
+	void getPartStates(bool *partStates) {
+		QMutexLocker stateSnapshotLocker(&stateSnapshotMutex);
+		if (!qsynth.isOpen()) return;
+		for (int partIx = 0; partIx < PART_COUNT; partIx++) {
+			partStates[partIx] = stateSnapshot.partStates[partIx].active;
+		}
+	}
+
+	void getPartialStates(PartialState *partialStates) {
+		QMutexLocker stateSnapshotLocker(&stateSnapshotMutex);
+		if (!qsynth.isOpen()) return;
+		memcpy(partialStates, stateSnapshot.partialStates, qsynth.synth->getPartialCount() * sizeof(PartialState));
+	}
+
+	uint getPlayingNotes(uint partNumber, Bit8u *keys, Bit8u *velocities) {
+		QMutexLocker stateSnapshotLocker(&stateSnapshotMutex);
+		if (!qsynth.isOpen()) return 0;
+		Bit32u playingNotesCount = stateSnapshot.partStates[partNumber].playingNotesCount;
+		memcpy(keys, stateSnapshot.partStates[partNumber].keysOfPlayingNotes, playingNotesCount * sizeof(Bit8u));
+		memcpy(velocities, stateSnapshot.partStates[partNumber].velocitiesOfPlayingNotes, playingNotesCount * sizeof(Bit8u));
+		return playingNotesCount;
+	}
+
+	void onLCDMessage(const char *message) {
+		memcpy(tempState.lcdMessage, message, LCD_MESSAGE_LENGTH - 1);
+	}
+
+	void onMIDIMessagePlayed() {
+		tempState.midiMessagePlayed = true;
+	}
+
+	void onMasterVolumeChanged(Bit8u masterVolume) {
+		tempState.masterVolumeUpdate = masterVolume;
+	}
+
+	void onReverbModeUpdated(Bit8u mode) {
+		tempState.reverbMode = mode;
+	}
+
+	void onReverbTimeUpdated(Bit8u time) {
+		tempState.reverbTime = time;
+	}
+
+	void onReverbLevelUpdated(Bit8u level) {
+		tempState.reverbLevel = level;
+	}
+
+	void onPolyStateChanged(Bit8u partNum) {
+		tempState.partStates[partNum].polyStateChanged = true;
+	}
+
+	void onProgramChanged(Bit8u partNum, const char soundGroupName[], const char patchName[]) {
+		tempState.partStates[partNum].programChanged = true;
+		memcpy(tempState.partStates[partNum].soundGroupName, soundGroupName, SOUND_GROUP_NAME_LENGTH - 1);
+		memcpy(tempState.partStates[partNum].timbreName, patchName, TIMBRE_NAME_LENGTH - 1);
+	}
+};
+
+QReportHandler::QReportHandler(QSynth *qsynth) : QObject(qsynth) {
 	connect(this, SIGNAL(balloonMessageAppeared(const QString &, const QString &)), Master::getInstance(), SLOT(showBalloon(const QString &, const QString &)));
 }
 
 void QReportHandler::printDebug(const char *fmt, va_list list) {
+	if (qSynth()->isRealtime()) return;
 #if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))
 	qDebug() << "MT32:" << QString().vsprintf(fmt, list);
 #else
@@ -56,11 +529,11 @@ void QReportHandler::printDebug(const char *fmt, va_list list) {
 }
 
 void QReportHandler::showLCDMessage(const char *message) {
-	qDebug() << "LCD-Message:" << message;
-	if (Master::getInstance()->getSettings()->value("Master/showLCDBalloons", true).toBool()) {
-		emit balloonMessageAppeared("LCD-Message:", message);
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onLCDMessage(message);
+	} else {
+		doShowLCDMessage(message);
 	}
-	emit lcdMessageDisplayed(message);
 }
 
 void QReportHandler::onErrorControlROM() {
@@ -72,126 +545,148 @@ void QReportHandler::onErrorPCMROM() {
 }
 
 void QReportHandler::onMIDIMessagePlayed() {
-	emit midiMessagePlayed();
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onMIDIMessagePlayed();
+	} else {
+		emit midiMessagePlayed();
+	}
 }
 
 void QReportHandler::onDeviceReconfig() {
-	QSynth *qsynth = (QSynth *)parent();
-	Bit8u currentMasterVolume = 0;
-	qsynth->synth->readMemory(0x40016, 1, &currentMasterVolume);
-	int masterVolume = currentMasterVolume;
-	emit masterVolumeChanged(masterVolume);
+	int masterVolume = readMasterVolume(qSynth()->synth);
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onMasterVolumeChanged(masterVolume);
+	} else {
+		emit masterVolumeChanged(masterVolume);
+	}
 }
 
 void QReportHandler::onDeviceReset() {
-	emit masterVolumeChanged(100);
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onMasterVolumeChanged(INITIAL_MASTER_VOLUME);
+	} else {
+		emit masterVolumeChanged(INITIAL_MASTER_VOLUME);
+	}
 }
 
 void QReportHandler::onNewReverbMode(Bit8u mode) {
-	((QSynth *)parent())->reverbMode = mode;
-	emit reverbModeChanged(mode);
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onReverbModeUpdated(mode);
+	} else {
+		qSynth()->reverbMode = mode;
+		emit reverbModeChanged(mode);
+	}
 }
 
 void QReportHandler::onNewReverbTime(Bit8u time) {
-	((QSynth *)parent())->reverbTime = time;
-	emit reverbTimeChanged(time);
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onReverbTimeUpdated(time);
+	} else {
+		qSynth()->reverbTime = time;
+		emit reverbTimeChanged(time);
+	}
 }
 
 void QReportHandler::onNewReverbLevel(Bit8u level) {
-	((QSynth *)parent())->reverbLevel = level;
-	emit reverbLevelChanged(level);
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onReverbLevelUpdated(level);
+	} else {
+		qSynth()->reverbLevel = level;
+		emit reverbLevelChanged(level);
+	}
 }
 
 void QReportHandler::onPolyStateChanged(Bit8u partNum) {
-	emit polyStateChanged(partNum);
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onPolyStateChanged(partNum);
+	} else {
+		emit polyStateChanged(partNum);
+	}
 }
 
 void QReportHandler::onProgramChanged(Bit8u partNum, const char soundGroupName[], const char patchName[]) {
-	emit programChanged(partNum, QString().fromLocal8Bit(soundGroupName), QString().fromLocal8Bit(patchName));
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onProgramChanged(partNum, soundGroupName, patchName);
+	} else {
+		emit programChanged(partNum, QString().fromLocal8Bit(soundGroupName), QString().fromLocal8Bit(patchName));
+	}
+}
+
+void QReportHandler::doShowLCDMessage(const char *message) {
+	qDebug() << "LCD-Message:" << message;
+	if (Master::getInstance()->getSettings()->value("Master/showLCDBalloons", true).toBool()) {
+		emit balloonMessageAppeared("LCD-Message:", message);
+	}
+	emit lcdMessageDisplayed(message);
 }
 
 QSynth::QSynth(QObject *parent) :
-	QObject(parent), state(SynthState_CLOSED), midiMutex(QMutex::Recursive),
-	controlROMImage(NULL), pcmROMImage(NULL), reportHandler(this), sampleRateConverter(NULL), audioRecorder(NULL)
+	QObject(parent), state(SynthState_CLOSED), midiMutex(new QMutex), synthMutex(new QMutex),
+	controlROMImage(), pcmROMImage(), reportHandler(this), sampleRateConverter(),
+	audioRecorder(), realtimeHelper()
 {
-	synthMutex = new QMutex(QMutex::Recursive);
 	synth = new Synth(&reportHandler);
 }
 
 QSynth::~QSynth() {
 	freeROMImages();
+	delete realtimeHelper;
 	delete audioRecorder;
 	delete sampleRateConverter;
 	delete synth;
 	delete synthMutex;
+	delete midiMutex;
 }
 
 bool QSynth::isOpen() const {
 	return state == SynthState_OPEN;
 }
 
-void QSynth::flushMIDIQueue() {
-	midiMutex.lock();
-	synthMutex->lock();
-	// Drain synth's queue first
+void QSynth::flushMIDIQueue() const {
+	QMutexLocker midiLocker(midiMutex);
+	QMutexLocker synthLocker(synthMutex);
 	synth->flushMIDIQueue();
-	synthMutex->unlock();
-	midiMutex.unlock();
 }
 
-void QSynth::playMIDIShortMessageNow(Bit32u msg) {
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+void QSynth::playMIDIShortMessageNow(Bit32u msg) const {
+	QMutexLocker synthLocker(synthMutex);
+	if (isOpen()) synth->playMsgNow(msg);
+}
+
+void QSynth::playMIDISysexNow(const Bit8u *sysex, Bit32u sysexLen) const {
+	QMutexLocker synthLocker(synthMutex);
+	if (isOpen()) synth->playSysexNow(sysex, sysexLen);
+}
+
+bool QSynth::playMIDIShortMessage(Bit32u msg, quint64 timestamp) const {
+	if (isRealtime()) {
+		return realtimeHelper->playMIDIShortMessageRealtime(msg, timestamp);
+	} else {
+		QMutexLocker midiLocker(midiMutex);
+		return isOpen() && synth->playMsg(msg, convertOutputToSynthTimestamp(timestamp));
 	}
-	synth->playMsgNow(msg);
-	synthMutex->unlock();
 }
 
-void QSynth::playMIDISysexNow(const Bit8u *sysex, Bit32u sysexLen) {
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+bool QSynth::playMIDISysex(const Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) const {
+	if (isRealtime()) {
+		return realtimeHelper->playMIDISysexRealtime(sysex, sysexLen, timestamp);
+	} else {
+		QMutexLocker midiLocker(midiMutex);
+		return isOpen() && synth->playSysex(sysex, sysexLen, convertOutputToSynthTimestamp(timestamp));
 	}
-	synth->playSysexNow(sysex, sysexLen);
-	synthMutex->unlock();
 }
 
-bool QSynth::playMIDIShortMessage(Bit32u msg, quint64 timestamp) {
-	midiMutex.lock();
-	if (!isOpen()) {
-		midiMutex.unlock();
-		return false;
-	}
-	bool eventPushed = synth->playMsg(msg, convertOutputToSynthTimestamp(timestamp));
-	midiMutex.unlock();
-	return eventPushed;
-}
-
-bool QSynth::playMIDISysex(const Bit8u *sysex, Bit32u sysexLen, quint64 timestamp) {
-	midiMutex.lock();
-	if (!isOpen()) {
-		midiMutex.unlock();
-		return false;
-	}
-	bool eventPushed = synth->playSysex(sysex, sysexLen, convertOutputToSynthTimestamp(timestamp));
-	midiMutex.unlock();
-	return eventPushed;
-}
-
-Bit32u QSynth::convertOutputToSynthTimestamp(quint64 timestamp) {
+Bit32u QSynth::convertOutputToSynthTimestamp(quint64 timestamp) const {
 	return Bit32u(sampleRateConverter->convertOutputToSynthTimestamp(timestamp));
 }
 
 void QSynth::render(Bit16s *buffer, uint length) {
-	synthMutex->lock();
+	QMutexLocker synthLocker(synthMutex);
 	if (!isOpen()) {
-		synthMutex->unlock();
+		synthLocker.unlock();
 
 		// Synth is closed, simply erase buffer content
-		memset(buffer, 0, length << 2);
+		Synth::muteSampleBuffer(buffer, 2 * length);
 		emit audioBlockRendered();
 		return;
 	}
@@ -199,7 +694,27 @@ void QSynth::render(Bit16s *buffer, uint length) {
 	if (isRecordingAudio()) {
 		if (!audioRecorder->write(buffer, length)) stopRecordingAudio();
 	}
-	synthMutex->unlock();
+	synthLocker.unlock();
+	emit audioBlockRendered();
+}
+
+void QSynth::render(float *buffer, uint length) {
+	if (isRealtime()) {
+		realtimeHelper->renderRealtime(buffer, length);
+		return;
+	}
+	QMutexLocker synthLocker(synthMutex);
+	if (!isOpen()) {
+		synthLocker.unlock();
+
+		// Synth is closed, simply erase buffer content
+		Synth::muteSampleBuffer(buffer, 2 * length);
+		emit audioBlockRendered();
+		return;
+	}
+	sampleRateConverter->getOutputSamples(buffer, length);
+	synthLocker.unlock();
+	// TODO: Add support for recording to float WAVs
 	emit audioBlockRendered();
 }
 
@@ -220,7 +735,7 @@ bool QSynth::open(uint &targetSampleRate, SamplerateConversionQuality srcQuality
 		if (!Master::getInstance()->handleROMSLoadFailed(synthProfileName)) return false;
 	}
 
-	MT32Emu::AnalogOutputMode actualAnalogOutputMode = synthProfile.analogOutputMode;
+	AnalogOutputMode actualAnalogOutputMode = synthProfile.analogOutputMode;
 	const AnalogOutputMode bestAnalogOutputMode = SampleRateConverter::getBestAnalogOutputMode(targetSampleRate);
 	if (actualAnalogOutputMode == AnalogOutputMode_ACCURATE && bestAnalogOutputMode == AnalogOutputMode_OVERSAMPLED) {
 		actualAnalogOutputMode = bestAnalogOutputMode;
@@ -249,104 +764,87 @@ bool QSynth::open(uint &targetSampleRate, SamplerateConversionQuality srcQuality
 }
 
 void QSynth::setMasterVolume(int masterVolume) {
-	Bit8u sysex[] = {0x10, 0x00, 0x16, (Bit8u)masterVolume};
-
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+	if (isRealtime()) {
+		realtimeHelper->setMasterVolume(masterVolume);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) writeMasterVolumeSysex(synth, masterVolume);
 	}
-	synth->writeSysex(16, sysex, 4);
-	synthMutex->unlock();
 }
 
 void QSynth::setOutputGain(float outputGain) {
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+	if (isRealtime()) {
+		realtimeHelper->setOutputGain(outputGain);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) synth->setOutputGain(outputGain);
 	}
-	synth->setOutputGain(outputGain);
-	synthMutex->unlock();
 }
 
 void QSynth::setReverbOutputGain(float reverbOutputGain) {
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+	if (isRealtime()) {
+		realtimeHelper->setReverbOutputGain(reverbOutputGain);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) synth->setReverbOutputGain(reverbOutputGain);
 	}
-	synth->setReverbOutputGain(reverbOutputGain);
-	synthMutex->unlock();
 }
 
 void QSynth::setReverbEnabled(bool reverbEnabled) {
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+	if (isRealtime()) {
+		realtimeHelper->setReverbEnabled(reverbEnabled);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) synth->setReverbEnabled(reverbEnabled);
 	}
-	synth->setReverbEnabled(reverbEnabled);
-	synthMutex->unlock();
 }
 
 void QSynth::setReverbOverridden(bool reverbOverridden) {
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+	if (isRealtime()) {
+		realtimeHelper->setReverbOverridden(reverbOverridden);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) synth->setReverbOverridden(reverbOverridden);
 	}
-	synth->setReverbOverridden(reverbOverridden);
-	synthMutex->unlock();
 }
 
-void QSynth::setReverbSettings(int reverbMode, int reverbTime, int reverbLevel) {
-	this->reverbMode = reverbMode;
-	this->reverbTime = reverbTime;
-	this->reverbLevel = reverbLevel;
-	Bit8u sysex[] = {0x10, 0x00, 0x01, (Bit8u)reverbMode, (Bit8u)reverbTime, (Bit8u)reverbLevel};
-
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+void QSynth::setReverbSettings(int useReverbMode, int useReverbTime, int useReverbLevel) {
+	if (isRealtime()) {
+		realtimeHelper->setReverbSettings(useReverbMode, useReverbTime, useReverbLevel);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		reverbMode = useReverbMode;
+		reverbTime = useReverbTime;
+		reverbLevel = useReverbLevel;
+		if (isOpen()) overrideReverbSettings(synth, useReverbMode, useReverbTime, useReverbLevel);
 	}
-	synth->setReverbOverridden(false);
-	synth->writeSysex(16, sysex, 6);
-	synth->setReverbOverridden(true);
-	synthMutex->unlock();
 }
 
 void QSynth::setReversedStereoEnabled(bool enabled) {
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+	if (isRealtime()) {
+		realtimeHelper->setReversedStereoEnabled(enabled);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) synth->setReversedStereoEnabled(enabled);
 	}
-	synth->setReversedStereoEnabled(enabled);
-	synthMutex->unlock();
 }
 
 void QSynth::setNiceAmpRampEnabled(bool enabled) {
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+	if (isRealtime()) {
+		realtimeHelper->setNiceAmpRampEnabled(enabled);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) synth->setNiceAmpRampEnabled(enabled);
 	}
-	synth->setNiceAmpRampEnabled(enabled);
-	synthMutex->unlock();
 }
 
 void QSynth::resetMIDIChannelsAssignment(bool engageChannel1) {
-	static const Bit8u sysexStandardChannelAssignment[] = {0x10, 0x00, 0x0d, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
-	static const Bit8u sysexChannel1EngagedAssignment[] = {0x10, 0x00, 0x0d, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x09};
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+	if (isRealtime()) {
+		realtimeHelper->resetMidiChannelsAssignment(engageChannel1);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) writeMIDIChannelsAssignmentResetSysex(synth, engageChannel1);
 	}
-	synth->writeSysex(16, engageChannel1 ? sysexChannel1EngagedAssignment : sysexStandardChannelAssignment, sizeof(sysexStandardChannelAssignment));
-	synthMutex->unlock();
 }
 
 void QSynth::setInitialMIDIChannelsAssignment(bool engageChannel1) {
@@ -355,11 +853,8 @@ void QSynth::setInitialMIDIChannelsAssignment(bool engageChannel1) {
 
 void QSynth::setReverbCompatibilityMode(ReverbCompatibilityMode useReverbCompatibilityMode) {
 	reverbCompatibilityMode = useReverbCompatibilityMode;
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
-	}
+	QMutexLocker synthLocker(synthMutex);
+	if (!isOpen()) return;
 	bool mt32CompatibleReverb;
 	if (useReverbCompatibilityMode == ReverbCompatibilityMode_DEFAULT) {
 		mt32CompatibleReverb = synth->isDefaultReverbMT32Compatible();
@@ -367,34 +862,31 @@ void QSynth::setReverbCompatibilityMode(ReverbCompatibilityMode useReverbCompati
 		mt32CompatibleReverb = useReverbCompatibilityMode == ReverbCompatibilityMode_MT32;
 	}
 	synth->setReverbCompatibilityMode(mt32CompatibleReverb);
-	synthMutex->unlock();
 }
 
 void QSynth::setMIDIDelayMode(MIDIDelayMode midiDelayMode) {
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+	if (isRealtime()) {
+		realtimeHelper->setMIDIDelayMode(midiDelayMode);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) synth->setMIDIDelayMode(midiDelayMode);
 	}
-	synth->setMIDIDelayMode(midiDelayMode);
-	synthMutex->unlock();
 }
 
 void QSynth::setDACInputMode(DACInputMode emuDACInputMode) {
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return;
+	if (isRealtime()) {
+		realtimeHelper->setDACInputMode(emuDACInputMode);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) synth->setDACInputMode(emuDACInputMode);
 	}
-	synth->setDACInputMode(emuDACInputMode);
-	synthMutex->unlock();
 }
 
-void QSynth::setAnalogOutputMode(MT32Emu::AnalogOutputMode useAnalogOutputMode) {
+void QSynth::setAnalogOutputMode(AnalogOutputMode useAnalogOutputMode) {
 	analogOutputMode = useAnalogOutputMode;
 }
 
-void QSynth::setRendererType(MT32Emu::RendererType useRendererType) {
+void QSynth::setRendererType(RendererType useRendererType) {
 	synth->selectRendererType(useRendererType);
 }
 
@@ -403,71 +895,74 @@ void QSynth::setPartialCount(int newPartialCount) {
 }
 
 const QString QSynth::getPatchName(int partNum) const {
-	synthMutex->lock();
+	QMutexLocker synthLocker(synthMutex);
 	QString name = isOpen() ? QString().fromLocal8Bit(synth->getPatchName(partNum)) : QString("Channel %1").arg(partNum + 1);
-	synthMutex->unlock();
 	return name;
 }
 
 void QSynth::getPartStates(bool *partStates) const {
-	synthMutex->lock();
-	if (isOpen()) {
+	if (isRealtime()) {
+		realtimeHelper->getPartStates(partStates);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (!isOpen()) return;
 		synth->getPartStates(partStates);
 	}
-	synthMutex->unlock();
 }
 
-void QSynth::getPartialStates(MT32Emu::PartialState *partialStates) const {
-	synthMutex->lock();
-	if (isOpen()) {
+void QSynth::getPartialStates(PartialState *partialStates) const {
+	if (isRealtime()) {
+		realtimeHelper->getPartialStates(partialStates);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (!isOpen()) return;
 		synth->getPartialStates(partialStates);
 	}
-	synthMutex->unlock();
 }
 
-unsigned int QSynth::getPlayingNotes(unsigned int partNumber, Bit8u *keys, Bit8u *velocities) const {
-	unsigned int playingNotes = 0;
-	synthMutex->lock();
-	playingNotes = synth->getPlayingNotes(partNumber, keys, velocities);
-	synthMutex->unlock();
-	return playingNotes;
+uint QSynth::getPlayingNotes(uint partNumber, Bit8u *keys, Bit8u *velocities) const {
+	if (isRealtime()) {
+		return realtimeHelper->getPlayingNotes(partNumber, keys, velocities);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		return synth->getPlayingNotes(partNumber, keys, velocities);
+	}
 }
 
-unsigned int QSynth::getPartialCount() const {
-	synthMutex->lock();
-	unsigned int partialCount = synth->getPartialCount();
-	synthMutex->unlock();
-	return partialCount;
+uint QSynth::getPartialCount() const {
+	return synth->getPartialCount();
 }
 
-unsigned int QSynth::getSynthSampleRate() const {
+uint QSynth::getSynthSampleRate() const {
 	return synth->getStereoOutputSampleRate();
 }
 
 bool QSynth::isActive() const {
-	synthMutex->lock();
-	if (!isOpen()) {
-		synthMutex->unlock();
-		return false;
-	}
-	bool result = synth->isActive();
-	synthMutex->unlock();
-	return result;
+	QMutexLocker synthLocker(synthMutex);
+	return isOpen() && synth->isActive();
 }
 
-bool QSynth::reset() {
-	static Bit8u sysex[] = { 0x7f, 0, 0 };
-
-	midiMutex.lock();
-	synthMutex->lock();
-	if (isOpen()) {
-		setState(SynthState_CLOSING);
-		synth->writeSysex(16, sysex, 3);
-		setState(SynthState_OPEN);
+void QSynth::reset() const {
+	if (isRealtime()) {
+		realtimeHelper->resetSynth();
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) writeSystemResetSysex(synth);
 	}
-	synthMutex->unlock();
-	midiMutex.unlock();
-	return true;
+}
+
+bool QSynth::isRealtime() const {
+	return realtimeHelper != NULL;
+}
+
+void QSynth::enableRealtime() {
+	QMutexLocker synthLocker(synthMutex);
+	synth->preallocateReverbMemory(true);
+	synth->configureMIDIEventQueueSysexStorage(MAX_STREAM_BUFFER_SIZE);
+	if (isRealtime()) return;
+	realtimeHelper = new RealtimeHelper(*this);
+	realtimeHelper->start();
+	qDebug() << "QSynth: Realtime rendering initialised";
 }
 
 void QSynth::setState(SynthState newState) {
@@ -479,42 +974,46 @@ void QSynth::setState(SynthState newState) {
 void QSynth::close() {
 	if (!isOpen()) return;
 	setState(SynthState_CLOSING);
-	midiMutex.lock();
-	synthMutex->lock();
-	synth->close();
-	// This effectively resets rendered frame counter, audioStream is also going down
-	delete synth;
-	synth = new Synth(&reportHandler);
-	delete sampleRateConverter;
-	sampleRateConverter = NULL;
-	synthMutex->unlock();
-	midiMutex.unlock();
+	{
+		QMutexLocker midiLocker(midiMutex);
+		QMutexLocker synthLocker(synthMutex);
+		synth->close();
+		// This effectively resets rendered frame counter, audioStream is also going down
+		delete synth;
+		synth = new Synth(&reportHandler);
+		delete sampleRateConverter;
+		sampleRateConverter = NULL;
+	}
 	setState(SynthState_CLOSED);
 	freeROMImages();
 }
 
 void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
-	synthMutex->lock();
 	synthProfile.romDir = romDir;
 	synthProfile.controlROMFileName = controlROMFileName;
 	synthProfile.pcmROMFileName = pcmROMFileName;
-	synthProfile.emuDACInputMode = synth->getDACInputMode();
-	synthProfile.midiDelayMode = synth->getMIDIDelayMode();
 	synthProfile.analogOutputMode = analogOutputMode;
 	synthProfile.rendererType = synth->getSelectedRendererType();
 	synthProfile.partialCount = partialCount;
-	synthProfile.reverbCompatibilityMode = reverbCompatibilityMode;
-	synthProfile.outputGain = synth->getOutputGain();
-	synthProfile.reverbOutputGain = synth->getReverbOutputGain();
-	synthProfile.reverbOverridden = synth->isReverbOverridden();
-	synthProfile.reverbEnabled = synth->isReverbEnabled() || !synthProfile.reverbOverridden;
-	synthProfile.reverbMode = reverbMode;
-	synthProfile.reverbTime = reverbTime;
-	synthProfile.reverbLevel = reverbLevel;
-	synthProfile.reversedStereoEnabled = synth->isReversedStereoEnabled();
-	synthProfile.niceAmpRamp = synth->isNiceAmpRampEnabled();
 	synthProfile.engageChannel1OnOpen = engageChannel1OnOpen;
-	synthMutex->unlock();
+	synthProfile.reverbCompatibilityMode = reverbCompatibilityMode;
+
+	if (isRealtime()) {
+		realtimeHelper->getSynthSettings(synthProfile);
+	} else {
+		QMutexLocker locker(synthMutex);
+		synthProfile.emuDACInputMode = synth->getDACInputMode();
+		synthProfile.midiDelayMode = synth->getMIDIDelayMode();
+		synthProfile.outputGain = synth->getOutputGain();
+		synthProfile.reverbOutputGain = synth->getReverbOutputGain();
+		synthProfile.reverbOverridden = synth->isReverbOverridden();
+		synthProfile.reverbEnabled = !synthProfile.reverbOverridden || synth->isReverbEnabled();
+		synthProfile.reverbMode = reverbMode;
+		synthProfile.reverbTime = reverbTime;
+		synthProfile.reverbLevel = reverbLevel;
+		synthProfile.reversedStereoEnabled = synth->isReversedStereoEnabled();
+		synthProfile.niceAmpRamp = synth->isNiceAmpRampEnabled();
+	}
 }
 
 void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName) {
@@ -544,7 +1043,7 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	setInitialMIDIChannelsAssignment(synthProfile.engageChannel1OnOpen);
 }
 
-void QSynth::getROMImages(const MT32Emu::ROMImage *&cri, const MT32Emu::ROMImage *&pri) const {
+void QSynth::getROMImages(const ROMImage *&cri, const ROMImage *&pri) const {
 	cri = controlROMImage;
 	pri = pcmROMImage;
 }
@@ -563,23 +1062,18 @@ const QReportHandler *QSynth::getReportHandler() const {
 }
 
 void QSynth::startRecordingAudio(const QString &fileName) {
-	synthMutex->lock();
-	stopRecordingAudio();
+	QMutexLocker synthLocker(synthMutex);
+	if (isRecordingAudio()) delete audioRecorder;
 	audioRecorder = new AudioFileWriter(sampleRateConverter->convertSynthToOutputTimestamp(SAMPLE_RATE), fileName);
 	audioRecorder->open();
-	synthMutex->unlock();
 }
 
 void QSynth::stopRecordingAudio() {
-	synthMutex->lock();
-	if (!isRecordingAudio()) {
-		synthMutex->unlock();
-		return;
-	}
+	QMutexLocker synthLocker(synthMutex);
+	if (!isRecordingAudio()) return;
 	audioRecorder->close();
 	delete audioRecorder;
 	audioRecorder = NULL;
-	synthMutex->unlock();
 }
 
 bool QSynth::isRecordingAudio() const {

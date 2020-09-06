@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,25 +15,35 @@
  */
 
 #include "MidiSession.h"
+#include "QMidiBuffer.h"
 
 using namespace MT32Emu;
 
 MidiSession::MidiSession(QObject *parent, MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute) :
-	QObject(parent), midiDriver(useMidiDriver), name(useName), synthRoute(useSynthRoute), qMidiStreamParser(NULL)
+	QObject(parent), midiDriver(useMidiDriver), name(useName), synthRoute(useSynthRoute),
+	qMidiStreamParser(), qMidiBuffer()
 {}
 
 MidiSession::~MidiSession() {
-	if (qMidiStreamParser != NULL) delete qMidiStreamParser;
+	delete qMidiStreamParser;
+	delete qMidiBuffer;
 }
 
 QMidiStreamParser *MidiSession::getQMidiStreamParser() {
 	if (qMidiStreamParser == NULL) {
-		qMidiStreamParser = new QMidiStreamParser(*synthRoute);
+		qMidiStreamParser = new QMidiStreamParser(*this);
 	}
 	return qMidiStreamParser;
 }
 
-SynthRoute *MidiSession::getSynthRoute() {
+QMidiBuffer *MidiSession::getQMidiBuffer() {
+	if (qMidiBuffer == NULL) {
+		qMidiBuffer = new QMidiBuffer;
+	}
+	return qMidiBuffer;
+}
+
+SynthRoute *MidiSession::getSynthRoute() const {
 	return synthRoute;
 }
 
@@ -45,18 +55,18 @@ void MidiSession::setName(const QString &newName) {
 	name = newName;
 }
 
-QMidiStreamParser::QMidiStreamParser(SynthRoute &useSynthRoute) : synthRoute(useSynthRoute) {}
+QMidiStreamParser::QMidiStreamParser(MidiSession &useMidiSession) : midiSession(useMidiSession) {}
 
 void QMidiStreamParser::setTimestamp(MasterClockNanos newTimestamp) {
 	timestamp = newTimestamp;
 }
 
 void QMidiStreamParser::handleShortMessage(const Bit32u message) {
-	synthRoute.pushMIDIShortMessage(message, timestamp);
+	midiSession.getSynthRoute()->pushMIDIShortMessage(midiSession, message, timestamp);
 }
 
 void QMidiStreamParser::handleSysex(const Bit8u stream[], const Bit32u length) {
-	synthRoute.pushMIDISysex(stream, length, timestamp);
+	midiSession.getSynthRoute()->pushMIDISysex(midiSession, stream, length, timestamp);
 }
 
 void QMidiStreamParser::handleSystemRealtimeMessage(const Bit8u realtime) {

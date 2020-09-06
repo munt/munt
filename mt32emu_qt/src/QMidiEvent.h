@@ -21,9 +21,11 @@ class QMidiEvent {
 private:
 	SynthTimestamp timestamp;
 	MidiEventType type;
-	MT32Emu::Bit32u msg;
-	MT32Emu::Bit32u sysexLen;
-	unsigned char *sysexData;
+	union {
+		MT32Emu::Bit32u msg;
+		MT32Emu::Bit32u sysexLen;
+	};
+	uchar *sysexData;
 
 public:
 	QMidiEvent();
@@ -34,11 +36,11 @@ public:
 	MidiEventType getType() const;
 	MT32Emu::Bit32u getShortMessage() const;
 	MT32Emu::Bit32u getSysexLen() const;
-	unsigned char *getSysexData() const;
+	uchar *getSysexData() const;
 
 	void setTimestamp(SynthTimestamp newTimestamp);
 	void assignShortMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newMsg);
-	void assignSysex(SynthTimestamp newTimestamp, unsigned char const * const newSysexData, MT32Emu::Bit32u newSysexLen);
+	void assignSysex(SynthTimestamp newTimestamp, uchar const * const newSysexData, MT32Emu::Bit32u newSysexLen);
 	void assignSetTempoMessage(SynthTimestamp newTimestamp, MT32Emu::Bit32u newTempo);
 	void assignSyncMessage(SynthTimestamp newTimestamp);
 };
