@@ -276,7 +276,7 @@ void SynthRoute::mergeMidiStreams(uint renderingPassFrameLength) {
 	const quint64 renderingPassEndTimestamp = audioStream->computeMIDITimestamp(renderingPassFrameLength);
 
 	for (int i = 0; i < midiSessions.size(); i++) {
-		QMidiBuffer *midiBuffer = midiSessions.at(i)->getQMidiBuffer();
+		QMidiBuffer *midiBuffer = midiSessions[i]->getQMidiBuffer();
 		if (midiBuffer->retieveEvents() && midiBuffer->getEventTimestamp() < renderingPassEndTimestamp) {
 			streamBuffers.append(midiBuffer);
 		}
@@ -284,15 +284,15 @@ void SynthRoute::mergeMidiStreams(uint renderingPassFrameLength) {
 
 	while (!streamBuffers.isEmpty()) {
 		int nextEventBufferIx = 0;
-		quint64 nextEventTimestamp = streamBuffers.at(nextEventBufferIx)->getEventTimestamp();
+		quint64 nextEventTimestamp = streamBuffers[nextEventBufferIx]->getEventTimestamp();
 		for (int i = 1; i < streamBuffers.size(); i++) {
-			quint64 eventTimestamp = streamBuffers.at(i)->getEventTimestamp();
+			quint64 eventTimestamp = streamBuffers[i]->getEventTimestamp();
 			if (eventTimestamp < nextEventTimestamp) {
 				nextEventBufferIx = i;
 				nextEventTimestamp = eventTimestamp;
 			}
 		}
-		QMidiBuffer *midiBuffer = streamBuffers.at(nextEventBufferIx);
+		QMidiBuffer * const midiBuffer = streamBuffers[nextEventBufferIx];
 		do {
 			const uchar *sysexData;
 			quint32 eventData = midiBuffer->getEventData(sysexData);
@@ -302,7 +302,14 @@ void SynthRoute::mergeMidiStreams(uint renderingPassFrameLength) {
 				qSynth.playMIDISysex(sysexData, eventData, nextEventTimestamp);
 			}
 			if (!(midiBuffer->nextEvent() && midiBuffer->getEventTimestamp() < renderingPassEndTimestamp)) {
+#if QT_VERSION < QT_VERSION_CHECK(4, 7, 0)
+				if (nextEventBufferIx < streamBuffers.count() - 1) {
+					streamBuffers[nextEventBufferIx] = streamBuffers[streamBuffers.count() - 1];
+				}
+				streamBuffers.removeLast();
+#else
 				streamBuffers.remove(nextEventBufferIx);
+#endif
 				break;
 			}
 		} while (midiBuffer->getEventTimestamp() == nextEventTimestamp);
