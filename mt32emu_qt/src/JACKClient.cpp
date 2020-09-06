@@ -72,6 +72,12 @@ JACKClientState JACKClient::open(MidiSession *useMidiSession, JACKAudioStream *u
 	client = jack_client_open("mt32emu-qt", JackNullOption, NULL);
 	if (client == NULL) return state;
 
+	if (useAudioStream != NULL && !useAudioStream->checkSampleRate(getSampleRate())) {
+		jack_client_close(client);
+		client = NULL;
+		return state;
+	}
+
 	if (useMidiSession != NULL) {
 		midiInPort = jack_port_register(client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
 		if (midiInPort == NULL) {

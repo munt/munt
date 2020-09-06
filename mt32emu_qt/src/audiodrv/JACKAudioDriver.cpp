@@ -14,6 +14,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QMessageBox>
+
 #include "JACKAudioDriver.h"
 
 #include "../Master.h"
@@ -151,7 +153,7 @@ bool JACKAudioStream::start(MidiSession *midiSession) {
 
 	const quint32 jackBufferSizeFrames = jackClient->getBufferSize();
 	qDebug() << "JACKAudioDriver: JACK reported initial audio buffer size (frames / s):"
-		<< jackBufferSizeFrames << " / " << double(jackBufferSizeFrames) / sampleRate;
+		<< jackBufferSizeFrames << "/" << double(jackBufferSizeFrames) / sampleRate;
 	if (midiSession == NULL && jackClient->isRealtimeProcessing()) {
 		// Use prerendering to prevent the realtime thread from locking, yet to retain complete functionality.
 		// Additional latency of at least the JACK buffer length is introduced.
@@ -160,7 +162,7 @@ bool JACKAudioStream::start(MidiSession *midiSession) {
 		processor->reallocateBuffer(audioLatencyFrames);
 		processor->start();
 		qDebug() << "JACKAudioDriver: Configured prerendering audio buffer size (frames / s):"
-			<< audioLatencyFrames << " / " << double(audioLatencyFrames) / sampleRate;
+			<< audioLatencyFrames << "/" << double(audioLatencyFrames) / sampleRate;
 	} else {
 		// Rendering is synchronous, zero additional latency introduced.
 		audioLatencyFrames = 0;
@@ -171,7 +173,7 @@ bool JACKAudioStream::start(MidiSession *midiSession) {
 		// Setup initial MIDI latency
 		if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames + MINIMUM_JACK_BUFFER_COUNT * jackBufferSizeFrames;
 		qDebug() << "JACKAudioDriver: Configured MIDI latency (frames / s):" << midiLatencyFrames
-			<< " / " << double(midiLatencyFrames) / sampleRate;
+			<< "/" << double(midiLatencyFrames) / sampleRate;
 	} else {
 		// MIDI processing is synchronous, zero latency introduced
 		midiLatencyFrames = 0;
@@ -191,6 +193,14 @@ void JACKAudioStream::stop() {
 	}
 }
 
+bool JACKAudioStream::checkSampleRate(quint32 jackSampleRate) const {
+	if (jackSampleRate == sampleRate) return true;
+	qDebug() << "JACKAudioDriver: Sample rate mismatch: configured rate / JACK system rate:" << sampleRate
+		<< "/" << jackSampleRate;
+	QMessageBox::warning(NULL, "Error", "Sample rate configured for the synth doesn't match the JACK system sample rate");
+	return false;
+}
+
 void JACKAudioStream::onJACKBufferSizeChange(const quint32 newBufferSize) {
 	bool reallocationNeeded = processor != NULL;
 	qDebug() << "JACKAudioDriver: JACK reported new buffer size" << newBufferSize
@@ -199,7 +209,7 @@ void JACKAudioStream::onJACKBufferSizeChange(const quint32 newBufferSize) {
 	audioLatencyFrames = qMax(newBufferSize, configuredAudioLatencyFrames);
 	processor->setBufferSize(audioLatencyFrames);
 	qDebug() << "JACKAudioDriver: Reconfigured prerendering audio buffer size (frames / s):"
-		<< audioLatencyFrames << " / " << double(audioLatencyFrames) / sampleRate;
+		<< audioLatencyFrames << "/" << double(audioLatencyFrames) / sampleRate;
 }
 
 void JACKAudioStream::onJACKShutdown() {
