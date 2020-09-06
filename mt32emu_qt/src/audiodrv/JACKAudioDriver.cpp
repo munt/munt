@@ -38,10 +38,10 @@ class JACKAudioProcessor : QThread {
 	// yet acquire one more to ensure blocking.
 	QSemaphore bufferDataRetrievals;
 
-	// Used to pause this thread while the buffer is reallocating in the JACK buffer size callback thread.
-	// Also used to block the JACK thread while rendering is in progress. Yet additionally, one available
-	// resource indicates that no buffer size updates are pending, which is set from start.
+	// Used to pause the JACK buffer size callback thread while this thread is reallocating the buffer.
 	QSemaphore bufferSizeUpdateLatch;
+	// Indicates whether an update is pending, if non-zero.
+	volatile quint32 pendingUpdateBufferSize;
 
 	void run() {
 		forever {
@@ -49,11 +49,12 @@ class JACKAudioProcessor : QThread {
 			// free some buffer space in the meantime.
 			int currentRetrievals = bufferDataRetrievals.available();
 			if (stopProcessing) return;
-			if (bufferSizeUpdateLatch.available() == 0) {
-				// Getting here means an update is pending. The following sequence releases
-				// the waiting JACK thread and awaits for the reallocation to complete.
+			if (pendingUpdateBufferSize > 0) {
+				// Getting here means an update is pending, reallocate the buffer.
+				reallocateBuffer(pendingUpdateBufferSize);
+				pendingUpdateBufferSize = 0;
+				// Now, release the waiting JACK thread.
 				bufferSizeUpdateLatch.release();
-				bufferSizeUpdateLatch.acquire();
 			}
 			quint32 bytesAvailable;
 			bool freeSpaceContiguous;
@@ -73,7 +74,7 @@ public:
 		synthRoute(useSynthRoute),
 		buffer(),
 		stopProcessing(),
-		bufferSizeUpdateLatch(1)
+		pendingUpdateBufferSize()
 	{}
 
 	~JACKAudioProcessor() {
@@ -108,16 +109,11 @@ public:
 
 	void setBufferSize(quint32 bufferSizeFrames) {
 		// First, notify the processor thread that an update is pending.
-		bufferSizeUpdateLatch.acquire();
+		pendingUpdateBufferSize = bufferSizeFrames;
 		// Ensure that the processor thread awakes if awating for free space.
 		bufferDataRetrievals.release();
-		// Now, await for the processor thread to pause making safe the reallocation below.
+		// Now, await for the processor thread to complete the buffer reallocation.
 		bufferSizeUpdateLatch.acquire();
-
-		reallocateBuffer(bufferSizeFrames);
-
-		// This releases the waiting processor thread and notifies that no updates are pending.
-		bufferSizeUpdateLatch.release(2);
 	}
 
 	void reallocateBuffer(quint32 bufferSizeFrames) {
