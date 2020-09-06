@@ -69,7 +69,10 @@ QRingBuffer::~QRingBuffer() {
 }
 
 void *QRingBuffer::writePointer(quint32 &bytesFree, bool &freeSpaceContiguous) const {
-	quint32 myReadPosition = loadRelaxed(readPosition);
+	// Aquire barrier ensures that data is never written ahead of the indices, when the buffer
+	// space might still be in use. In practice however, this is barely possible, because all
+	// subsequent data writes depend on values of the indices, but shouldn't hurt anyway.
+	quint32 myReadPosition = loadAcquire(readPosition);
 	quint32 myWritePosition = loadRelaxed(writePosition);
 	bool wrapped = myWritePosition < myReadPosition;
 	bytesFree = (wrapped ? myReadPosition : bufferSize) - myWritePosition;
@@ -90,9 +93,9 @@ void QRingBuffer::advanceWritePointer(quint32 bytesWritten) {
 }
 
 void *QRingBuffer::readPointer(quint32 &bytesReady) const {
-	// Aquire barrier ensures that data is never read ahead of the indices.
-	// In practice, this should never be the case due to the implicit dependency,
-	// but shouldn't hurt anyway.
+	// Aquire barrier ensures that data is never read ahead of the indices, when the buffer
+	// space might not contain valid data yet. In practice however, this is barely possible,
+	// because all subsequent data reads depend on values of the indices, but shouldn't hurt anyway.
 	quint32 myReadPosition = loadRelaxed(readPosition);
 	quint32 myWritePosition = loadAcquire(writePosition);
 	bytesReady = (myWritePosition < myReadPosition ? bufferSize : myWritePosition) - myReadPosition;
@@ -100,13 +103,11 @@ void *QRingBuffer::readPointer(quint32 &bytesReady) const {
 }
 
 void QRingBuffer::advanceReadPointer(quint32 bytesRead) {
-	// Full barrier here prevents late data reads from possible overlapping with early writes.
-	// Using a combination of loadAcquire and storeRelease here to simulate it,
-	// since Qt API lacks operations for simple atomic load or store with the ordered semantic.
-	quint32 myReadPosition = loadAcquire(readPosition);
+	quint32 myReadPosition = loadRelaxed(readPosition);
 	myReadPosition += bytesRead;
 	if (bufferSize <= myReadPosition) {
 		myReadPosition -= bufferSize;
 	}
+	// Release barrier ensures that data is completely read prior to updating the index.
 	storeRelease(readPosition, myReadPosition);
 }
