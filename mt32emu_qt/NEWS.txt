@@ -2,6 +2,14 @@ HEAD:
 
 	* Added mode "Hide to tray on close". When enabled, the application does not exit when the user closes the main window.
 	  To exit the application, the corresponding menu items can be used in menu "Tools" and the tray icon menu.
+	* Added possibility to select output device on macOS with the CoreAudio driver.
+	* Reworked internal MIDI message routing and buffering in case multiple MIDI streams are attached to a single (pinned)
+	  synth, so that the resulting stream supplied to the synth contains MIDI messages ordered by their timestamp frame-wise.
+	  This improves the timing accuracy to the best possible extent.
+	* Added support for integration with the JACK audio kit. Now the application may serve as one or more JACK clients
+	  providing either a single MIDI input port, a pair of output audio ports, or a combined synth client with the input
+	  and output ports. In the latter case, MIDI processing and audio rendering are performed synchronously without any
+	  explicit additional latency.
 
 2017-12-25:
 
