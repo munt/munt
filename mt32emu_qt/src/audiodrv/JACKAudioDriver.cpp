@@ -27,7 +27,7 @@ static const uint FRAME_BYTE_SIZE = sizeof(float[CHANNEL_COUNT]);
 
 class JACKAudioProcessor : QThread {
 	SynthRoute &synthRoute;
-	Utility::QRingBuffer * const buffer;
+	Utility::QRingBuffer *buffer;
 	volatile bool stopProcessing;
 
 	// Used to block this thread until there is some available space in the buffer.
@@ -36,12 +36,23 @@ class JACKAudioProcessor : QThread {
 	// yet acquire one more to ensure blocking.
 	QSemaphore bufferDataRetrievals;
 
+	// Used to pause this thread while the buffer is reallocating in the JACK buffer size callback thread.
+	// Also used to block the JACK thread while rendering is in progress. Yet additionally, one available
+	// resource indicates that no buffer size updates are pending, which is set from start.
+	QSemaphore bufferSizeUpdateLatch;
+
 	void run() {
 		forever {
 			// Catch the available resources early to avoid blocking should the JACK thread
 			// free some buffer space in the meantime.
 			int currentRetrievals = bufferDataRetrievals.available();
 			if (stopProcessing) return;
+			if (bufferSizeUpdateLatch.available() == 0) {
+				// Getting here means an update is pending. The following sequence releases
+				// the waiting JACK thread and awaits for the reallocation to complete.
+				bufferSizeUpdateLatch.release();
+				bufferSizeUpdateLatch.acquire();
+			}
 			quint32 bytesAvailable;
 			bool freeSpaceContiguous;
 			float *writePointer = static_cast<float *>(buffer->writePointer(bytesAvailable, freeSpaceContiguous));
@@ -56,12 +67,11 @@ class JACKAudioProcessor : QThread {
 	}
 
 public:
-	JACKAudioProcessor(SynthRoute &useSynthRoute, quint32 bufferSizeFrames) :
+	JACKAudioProcessor(SynthRoute &useSynthRoute) :
 		synthRoute(useSynthRoute),
-		// JACKRingBuffer needs a bit of spare space to accommodate the entire requested size.
-		// Adding 1 FRAME_BYTE_SIZE does the trick yet ensures proper alignment of pointers.
-		buffer(new Utility::QRingBuffer((bufferSizeFrames + 1) * FRAME_BYTE_SIZE)),
-		stopProcessing()
+		buffer(),
+		stopProcessing(),
+		bufferSizeUpdateLatch(1)
 	{}
 
 	~JACKAudioProcessor() {
@@ -88,12 +98,40 @@ public:
 
 	void markChunkProcessed(quint32 chunkSizeFrames) {
 		buffer->advanceReadPointer(chunkSizeFrames * FRAME_BYTE_SIZE);
+		// The release operation may be lock-free that depends on the implementation,
+		// but this seems to imply the least possible locking in the worst case
+		// for the thread synchronisation to work correctly.
 		bufferDataRetrievals.release();
+	}
+
+	void setBufferSize(quint32 bufferSizeFrames) {
+		// First, notify the processor thread that an update is pending.
+		bufferSizeUpdateLatch.acquire();
+		// Ensure that the processor thread awakes if awating for free space.
+		bufferDataRetrievals.release();
+		// Now, await for the processor thread to pause making safe the reallocation below.
+		bufferSizeUpdateLatch.acquire();
+
+		reallocateBuffer(bufferSizeFrames);
+
+		// This releases the waiting processor thread and notifies that no updates are pending.
+		bufferSizeUpdateLatch.release(2);
+	}
+
+	void reallocateBuffer(quint32 bufferSizeFrames) {
+		delete buffer;
+		// QRingBuffer needs a bit of spare space to accommodate the entire requested size.
+		// Adding 1 FRAME_BYTE_SIZE does the trick yet ensures proper alignment of pointers.
+		buffer = new Utility::QRingBuffer((bufferSizeFrames + 1) * FRAME_BYTE_SIZE);
 	}
 };
 
 JACKAudioStream::JACKAudioStream(const AudioDriverSettings &useSettings, SynthRoute &useSynthRoute, const quint32 useSampleRate) :
-	AudioStream(useSettings, useSynthRoute, useSampleRate), jackClient(new JACKClient), buffer(), processor()
+	AudioStream(useSettings, useSynthRoute, useSampleRate),
+	jackClient(new JACKClient),
+	buffer(),
+	processor(),
+	configuredAudioLatencyFrames(audioLatencyFrames)
 {}
 
 JACKAudioStream::~JACKAudioStream() {
@@ -111,15 +149,18 @@ bool JACKAudioStream::start(MidiSession *midiSession) {
 	}
 	jackClient->connectToPhysicalPorts();
 
-	quint32 jackBufferSize = jackClient->getBufferSize();
-	qDebug() << "JACKAudioDriver: JACK reported initial audio buffer size (s):" << double(jackBufferSize) / sampleRate;
+	const quint32 jackBufferSizeFrames = jackClient->getBufferSize();
+	qDebug() << "JACKAudioDriver: JACK reported initial audio buffer size (frames / s):"
+		<< jackBufferSizeFrames << " / " << double(jackBufferSizeFrames) / sampleRate;
 	if (midiSession == NULL && jackClient->isRealtimeProcessing()) {
 		// Use prerendering to prevent the realtime thread from locking, yet to retain complete functionality.
 		// Additional latency of at least the JACK buffer length is introduced.
-		if (audioLatencyFrames < jackBufferSize) audioLatencyFrames = jackBufferSize;
-		processor = new JACKAudioProcessor(synthRoute, audioLatencyFrames);
+		if (audioLatencyFrames < jackBufferSizeFrames) audioLatencyFrames = jackBufferSizeFrames;
+		processor = new JACKAudioProcessor(synthRoute);
+		processor->reallocateBuffer(audioLatencyFrames);
 		processor->start();
-		qDebug() << "JACKAudioDriver: Configured prerendering audio buffer size (s):" << double(audioLatencyFrames) / sampleRate;
+		qDebug() << "JACKAudioDriver: Configured prerendering audio buffer size (frames / s):"
+			<< audioLatencyFrames << " / " << double(audioLatencyFrames) / sampleRate;
 	} else {
 		// Rendering is synchronous, zero additional latency introduced.
 		audioLatencyFrames = 0;
@@ -128,8 +169,9 @@ bool JACKAudioStream::start(MidiSession *midiSession) {
 
 	if (midiSession == NULL) {
 		// Setup initial MIDI latency
-		if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames + MINIMUM_JACK_BUFFER_COUNT * jackBufferSize;
-		qDebug() << "JACKAudioDriver: Configured MIDI latency (s):" << double(midiLatencyFrames) / sampleRate;
+		if (isAutoLatencyMode()) midiLatencyFrames = audioLatencyFrames + MINIMUM_JACK_BUFFER_COUNT * jackBufferSizeFrames;
+		qDebug() << "JACKAudioDriver: Configured MIDI latency (frames / s):" << midiLatencyFrames
+			<< " / " << double(midiLatencyFrames) / sampleRate;
 	} else {
 		// MIDI processing is synchronous, zero latency introduced
 		midiLatencyFrames = 0;
@@ -147,6 +189,17 @@ void JACKAudioStream::stop() {
 	if (processor != NULL) {
 		processor->stop();
 	}
+}
+
+void JACKAudioStream::onJACKBufferSizeChange(const quint32 newBufferSize) {
+	bool reallocationNeeded = processor != NULL;
+	qDebug() << "JACKAudioDriver: JACK reported new buffer size" << newBufferSize
+		<< (reallocationNeeded ? "reallocating buffer..." : "ignored");
+	if (!reallocationNeeded) return;
+	audioLatencyFrames = qMax(newBufferSize, configuredAudioLatencyFrames);
+	processor->setBufferSize(audioLatencyFrames);
+	qDebug() << "JACKAudioDriver: Reconfigured prerendering audio buffer size (frames / s):"
+		<< audioLatencyFrames << " / " << double(audioLatencyFrames) / sampleRate;
 }
 
 void JACKAudioStream::onJACKShutdown() {

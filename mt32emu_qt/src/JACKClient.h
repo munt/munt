@@ -25,8 +25,10 @@ public:
 	void connectToPhysicalPorts();
 	bool isRealtimeProcessing() const;
 	quint32 getSampleRate() const;
-	quint32 getBufferSize() const;
 	quint32 getFramesSinceCycleStart() const;
+	quint32 getBufferSize() const {
+		return bufferSize;
+	}
 
 private:
 	JACKClientState state;
@@ -36,6 +38,7 @@ private:
 	jack_port_t *midiInPort;
 	jack_port_t *leftAudioOutPort;
 	jack_port_t *rightAudioOutPort;
+	quint32 bufferSize;
 
 	static int onJACKProcess(jack_nframes_t nframes, void *instance);
 	static int onBufferSizeChange(jack_nframes_t newFrameSize, void *instance);

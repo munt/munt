@@ -20,6 +20,7 @@ public:
 	~JACKAudioStream();
 	bool start(MidiSession *midiSession);
 	void stop();
+	void onJACKBufferSizeChange(const quint32 bufferSize);
 	void onJACKShutdown();
 	void renderStreams(const quint32 frameCount, JACKAudioSample *leftOutBuffer, JACKAudioSample *rightOutBuffer);
 
@@ -27,6 +28,7 @@ private:
 	JACKClient * const jackClient;
 	float *buffer;
 	JACKAudioProcessor *processor;
+	const quint32 configuredAudioLatencyFrames;
 };
 
 class JACKAudioDefaultDevice : public AudioDevice {

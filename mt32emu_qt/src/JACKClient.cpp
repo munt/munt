@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,8 +25,14 @@ int JACKClient::onJACKProcess(jack_nframes_t nframes, void *instance) {
 	return 0;
 }
 
-int JACKClient::onBufferSizeChange(jack_nframes_t newFrameSize, void *) {
-	qDebug() << "JACKClient: Got buffer size change:" << newFrameSize;
+int JACKClient::onBufferSizeChange(jack_nframes_t newFrameSize, void *instance) {
+	JACKClient *jackClient = static_cast<JACKClient *>(instance);
+	if (jackClient->audioStream != NULL && jackClient->bufferSize != newFrameSize) {
+		jackClient->bufferSize = newFrameSize;
+		jackClient->audioStream->onJACKBufferSizeChange(newFrameSize);
+	} else {
+		qDebug() << "JACKClient: Got buffer size change:" << newFrameSize;
+	}
 	return 0;
 }
 
@@ -88,6 +94,8 @@ JACKClientState JACKClient::open(MidiSession *useMidiSession, JACKAudioStream *u
 		audioStream = useAudioStream;
 	}
 
+	bufferSize = jack_get_buffer_size(client);
+
 	jack_on_shutdown(client, onJACKShutdown, this);
 	jack_set_buffer_size_callback(client, onBufferSizeChange, this);
 	jack_set_sample_rate_callback(client, onSampleRateChange, this);
@@ -131,10 +139,6 @@ bool JACKClient::isRealtimeProcessing() const {
 
 quint32 JACKClient::getSampleRate() const {
 	return jack_get_sample_rate(client);
-}
-
-quint32 JACKClient::getBufferSize() const {
-	return jack_get_buffer_size(client);
 }
 
 quint32 JACKClient::getFramesSinceCycleStart() const {
