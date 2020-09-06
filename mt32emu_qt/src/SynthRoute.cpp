@@ -270,6 +270,7 @@ bool SynthRoute::playMIDISysex(MidiSession &midiSession, const Bit8u *sysex, Bit
 }
 
 void SynthRoute::mergeMidiStreams(uint renderingPassFrameLength) {
+	if (audioStream == NULL) return; // May happen during startup, occasionally.
 	QMutexLocker midiSessionsLocker(&midiSessionsMutex);
 	QVarLengthArray<QMidiBuffer *, 16> streamBuffers;
 	const quint64 renderingPassEndTimestamp = audioStream->computeMIDITimestamp(renderingPassFrameLength);
