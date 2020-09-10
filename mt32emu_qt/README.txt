@@ -6,7 +6,7 @@ mt32emu-qt makes use of libmt32emu and Qt to provide for:
 1) Multiple simultaneous synths, GUI to configure synths, manage ROMs and connections
 2) Funny LCD
 3) Easy usage in different operating system environments:
-   Windows multimedia, PulseAudio, ALSA, OSS and CoreMIDI supported
+   Windows multimedia, PulseAudio, JACK, ALSA, OSS and CoreMIDI supported
 4) Play and record Standard MIDI files
 5) Perform batch conversion of Standard MIDI files directly to .wav / .raw audio files
 
@@ -15,13 +15,17 @@ MIDI Support
 ============
 
 mt32emu-qt can communicate with other MIDI applications using virtual MIDI ports which depends on the operating system.
-Currently, supported MIDI systems are: Windows Multimedia, CoreMIDI, ALSA MIDI sequencer, and ALSA & OSS4 raw MIDI ports.
-In order to use this feature, the client MIDI applications need to setup correctly, as well as some more steps may be
+Currently, supported MIDI systems are: Windows Multimedia, CoreMIDI, ALSA MIDI sequencer, ALSA & OSS4 raw MIDI ports and JACK MIDI.
+In order to use this feature, the client MIDI applications need to be set up correctly, as well as some more steps may be
 necessary on particular systems.
 
-Because CoreMIDI, ALSA MIDI sequencer support virtual MIDI ports natively, these systems seem simplest to use.
+Because CoreMIDI and ALSA MIDI sequencer support virtual MIDI ports natively, these systems seem simplest to use.
 As mt32emu-qt starts, it creates a virtual MIDI port and listens for incoming connections. Contrary to that, Windows Multimedia
 requires the dedicated MIDI driver to be setup in the system and mt32emu-qt instead communicates with the driver as a proxy.
+With JACK MIDI, MIDI ports can also be created on the fly, albeit the user does this explicitly via the corresponding commands
+in "Tools" menu. Moreover, a whole synth instance can be wrapped into a single JACK client with one MIDI input port and
+a couple of output audio ports, so that MIDI and audio processing is performed without explicitly added latency.
+
 Some brief notes follow below related to each MIDI system.
 
 1) Windows Multimedia
@@ -29,7 +33,7 @@ Some brief notes follow below related to each MIDI system.
    supports this configuration and should be able to open any MIDI-in port in the system by using '+' button of "MIDI Input" panel
    or "New MIDI port..." item in "Tools" menu.
    When there is no MIDI-in port available, the dedicated MIDI driver can be used to forward MIDI messages to mt32emu-qt
-   for playback. This is done automatically by the driver when it detects a running instanse of mt32emu-qt.
+   for playback. This is done automatically by the driver when it detects a running instance of mt32emu-qt.
 
 2) CoreMIDI
    Upon startup, mt32emu-qt creates destination "Mt32EmuPort" and listens for connections. The user can create
@@ -51,10 +55,23 @@ Some brief notes follow below related to each MIDI system.
      mkfifo /var/tmp/sequencer
      sudo ln -s /var/tmp/sequencer /dev/sequencer
 
+   Linux kernel also supplies a special kernel module that creates several virtual raw MIDI ports in the system. Command:
+
+     sudo modprobe snd_virmidi
+
+   creates by default 4 virtual raw MIDI ports bound with 4 ALSA MIDI sequencer ports, so both subsystems can interact easily.
+
+5) JACK MIDI ports and realtime synchronous MIDI-to-audio processing
+   Being cross-platform, JACK MIDI stands out of other platform-specific MIDI systems, yet it may be available along with another.
+   Hence, mt3emu-qt does not create JACK MIDI ports (clients) automatically, the user has to create as many clients as necessary.
+   In addition, menu option "New exclusive JACK MIDI port" can be used to create a single JACK client that is able to work as
+   a complete synth with a MIDI input and a couple of audio outputs. However, this synth working in the exclusive mode cannot be
+   "pinned", thus no additional MIDI sessions can be routed in.
+
 
 Building
 ========
-Cmake is required to building. The minimum set of dependencies is:
+Cmake is required for building. The minimum set of dependencies is:
 
 1) Cmake - cross platform make utility
    @ http://www.cmake.org/
@@ -68,10 +85,13 @@ Additional dependencies maybe needed (depending on the platform):
    @ http://www.portaudio.com/
 
 2) DirectX SDK - for building PortAudio with DirectSound and WDMKS support
-   @ http://www.microsoft.com/en-us/download/details.aspx?id=6812
+   @ https://www.microsoft.com/en-us/download/details.aspx?id=6812
 
 3) PulseAudio - sound system for POSIX OSes - provides for accurate audio rendering
-   @ http://www.pulseaudio.org/ or http://www.freedesktop.org/wiki/Software/PulseAudio
+   @ https://www.freedesktop.org/wiki/Software/PulseAudio/
+
+4) JACK Audio Connection Kit - a low-latency synchronous callback-based media server
+   @ https://jackaudio.org/
 
 The build script recognises the following configuration options to control the build:
 
@@ -98,7 +118,7 @@ may come in handy.
 License
 =======
 
-Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
