@@ -16,23 +16,14 @@ class SMFProcessor : public QThread {
 public:
 	SMFProcessor(SMFDriver *useSMFDriver);
 	void start(QString fileName);
-	void stop();
-	void pause(bool paused);
-	void setBPM(quint32 newBPM);
-
-protected:
-	void run();
 
 private:
 	MidiParser parser;
 	SMFDriver *driver;
-	volatile bool stopProcessing;
-	volatile bool pauseProcessing;
-	volatile MasterClockNanos midiTick;
-	volatile bool bpmUpdated;
+	MasterClockNanos midiTick;
 	QString fileName;
 
-	static void sendAllSoundOff(SynthRoute *synthRoute, bool resetAllControllers);
+	void run();
 	quint32 estimateRemainingTime(const QMidiEventList &midiEvents, int currentEventIx);
 	void seek(SynthRoute *synthRoute, const QMidiEventList &midiEvents, int &currentEventIx, MasterClockNanos &currentEventNanos, const MasterClockNanos seekNanos);
 };
@@ -54,8 +45,11 @@ public:
 
 private:
 	SMFProcessor processor;
+	volatile bool stopProcessing;
+	volatile bool pauseProcessing;
+	QAtomicInt bpmUpdate;
 	volatile uint fastForwardingFactor;
-	volatile int seekPosition;
+	QAtomicInt seekPosition;
 
 signals:
 	void playbackFinished();
