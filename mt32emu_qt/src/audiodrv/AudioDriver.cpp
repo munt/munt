@@ -17,29 +17,56 @@
 #include "AudioDriver.h"
 #include <QSettings>
 #include "../Master.h"
+#include "../QAtomicHelper.h"
+
+template<class T>
+static inline void takeSnapshot(T &snapshot, const T snapshots[], const QAtomicInt &changeCount) {
+	quint32 myChangeCount;
+	do {
+		myChangeCount = QAtomicHelper::loadAcquire(changeCount);
+		snapshot = snapshots[myChangeCount & 1];
+	} while (myChangeCount != QAtomicHelper::loadRelaxed(changeCount));
+}
+
+static inline quint32 getSnapshotReadIx(const QAtomicInt &changeCount) {
+	return QAtomicHelper::loadRelaxed(changeCount) & 1;
+}
+
+static inline quint32 getSnapshotWriteIx(const QAtomicInt &changeCount) {
+	return (QAtomicHelper::loadRelaxed(changeCount) + 1) & 1;
+}
+
+static inline void publishSnapshot(QAtomicInt &changeCount) {
+	// Since QAtomicInt involves signed arithmetic, we do increment explicitly to avoid UB.
+	// This is safe being performed in the rendering thread only.
+	quint32 myChangeCount = QAtomicHelper::loadRelaxed(changeCount);
+	QAtomicHelper::storeRelease(changeCount, (myChangeCount + 1U) & 0x7fffffffU);
+}
 
 AudioStream::AudioStream(const AudioDriverSettings &useSettings, SynthRoute &useSynthRoute, const quint32 useSampleRate) :
-	synthRoute(useSynthRoute), sampleRate(useSampleRate), settings(useSettings), renderedFramesCount(0), lastEstimatedPlayedFramesCount(0), resetScheduled(true)
+	synthRoute(useSynthRoute), sampleRate(useSampleRate), settings(useSettings), lastEstimatedPlayedFramesCount(0),
+	resetScheduled(true)
 {
 	audioLatencyFrames = settings.audioLatency * sampleRate / MasterClock::MILLIS_PER_SECOND;
 	midiLatencyFrames = settings.midiLatency * sampleRate / MasterClock::MILLIS_PER_SECOND;
-	timeInfoIx = 0;
-	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
-	timeInfo[0].lastPlayedFramesCount = renderedFramesCount;
-	timeInfo[0].actualSampleRate = sampleRate;
-	timeInfo[1] = timeInfo[0];
+	renderedFramesCounts[0] = 0;
+	renderedFramesCounts[1] = 0;
+	timeInfos[0].lastPlayedNanos = MasterClock::getClockNanos();
+	timeInfos[0].lastPlayedFramesCount = 0;
+	timeInfos[0].actualSampleRate = sampleRate;
+	timeInfos[1] = timeInfos[0];
 }
 
-// Intended to be called from MIDI receiving thread
+// Intended to be called from MIDI receiving threads.
 quint64 AudioStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
 	MasterClockNanos midiNanos = (refNanos == 0) ? MasterClock::getClockNanos() : refNanos;
-	uint i = timeInfoIx;
-	if (midiNanos < timeInfo[i].lastPlayedNanos) {
-		// Cross-boundary case, use previous time info for late events
-		i = 1 - i;
-	}
-	quint64 refFrameOffset = quint64(((midiNanos - timeInfo[i].lastPlayedNanos) * timeInfo[i].actualSampleRate) / MasterClock::NANOS_PER_SECOND);
-	quint64 timestamp = timeInfo[i].lastPlayedFramesCount + refFrameOffset + midiLatencyFrames;
+	TimeInfo timeInfo;
+	takeSnapshot(timeInfo, timeInfos, timeInfoChangeCount);
+	quint64 renderedFramesCount;
+	takeSnapshot(renderedFramesCount, renderedFramesCounts, renderedFramesChangeCount);
+
+	quint64 refFrameOffset = quint64(((midiNanos - timeInfo.lastPlayedNanos) * timeInfo.actualSampleRate) / MasterClock::NANOS_PER_SECOND);
+	quint64 timestamp = timeInfo.lastPlayedFramesCount + refFrameOffset + midiLatencyFrames;
 	qint64 delay = qint64(timestamp - renderedFramesCount);
 	if (delay < 0) {
 		// Negative delay means our timing is broken. We want to absort all the jitter while keeping the latency at the minimum.
@@ -51,17 +78,23 @@ quint64 AudioStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
 	return timestamp;
 }
 
+// Only called from the rendering thread.
 quint64 AudioStream::computeMIDITimestamp(uint relativeFrameTime) const {
-	return renderedFramesCount + relativeFrameTime;
+	return getRenderedFramesCount() + relativeFrameTime;
 }
 
+// Only called from the rendering thread.
 void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer) {
+	const TimeInfo &timeInfo = timeInfos[getSnapshotReadIx(timeInfoChangeCount)];
+	TimeInfo &nextTimeInfo = timeInfos[getSnapshotWriteIx(timeInfoChangeCount)];
+	quint64 renderedFramesCount = renderedFramesCounts[getSnapshotReadIx(renderedFramesChangeCount)];
+
 #if 0
-	qDebug() << "R" << renderedFramesCount - timeInfo[timeInfoIx].lastPlayedFramesCount
-					<< (measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) * 1e-6;
+	qDebug() << "R" << renderedFramesCount - timeInfo.lastPlayedFramesCount
+	<< (measuredNanos - timeInfo.lastPlayedNanos) * 1e-6;
 #endif
 
-	if (((measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) * sampleRate) < (midiLatencyFrames * MasterClock::NANOS_PER_SECOND)) {
+	if (((measuredNanos - timeInfo.lastPlayedNanos) * sampleRate) < (midiLatencyFrames * MasterClock::NANOS_PER_SECOND)) {
 		// If callbacks are coming too quickly, we cannot benefit from that, it just makes our timing estimation worse.
 		// This is because some audio systems may pull more data than the our specified audio latency in no time.
 		// Moreover, we should be able to adjust lastPlayedFramesCount increasing speed as it counts in samples.
@@ -69,14 +102,13 @@ void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const qui
 		// which is meant to absort all the jitter.
 		return;
 	}
-	uint nextTimeInfoIx = 1 - timeInfoIx;
 
 	// Number of played frames (assuming no x-runs happend)
 	quint64 estimatedNewPlayedFramesCount = settings.advancedTiming ? quint64(renderedFramesCount - framesInAudioBuffer) : renderedFramesCount;
-	double secondsElapsed = double(measuredNanos - timeInfo[timeInfoIx].lastPlayedNanos) / MasterClock::NANOS_PER_SECOND;
+	double secondsElapsed = double(measuredNanos - timeInfo.lastPlayedNanos) / MasterClock::NANOS_PER_SECOND;
 
 	// Ensure lastPlayedFramesCount is monotonically increasing and has no jumps
-	quint64 newPlayedFramesCount = timeInfo[timeInfoIx].lastPlayedFramesCount + quint64(timeInfo[timeInfoIx].actualSampleRate * secondsElapsed + 0.5);
+	quint64 newPlayedFramesCount = timeInfo.lastPlayedFramesCount + quint64(timeInfo.actualSampleRate * secondsElapsed + 0.5);
 
 	qint64 absError = qint64(estimatedNewPlayedFramesCount - newPlayedFramesCount);
 
@@ -88,15 +120,15 @@ void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const qui
 			qDebug() << "AudioStream: Estimated play position is way off:" << absError << "-> resetting...";
 		}
 		lastEstimatedPlayedFramesCount = estimatedNewPlayedFramesCount;
-		timeInfo[nextTimeInfoIx].lastPlayedNanos = measuredNanos;
-		timeInfo[nextTimeInfoIx].lastPlayedFramesCount = estimatedNewPlayedFramesCount;
-		timeInfo[nextTimeInfoIx].actualSampleRate = sampleRate;
-		timeInfoIx = nextTimeInfoIx;
+		nextTimeInfo.lastPlayedNanos = measuredNanos;
+		nextTimeInfo.lastPlayedFramesCount = estimatedNewPlayedFramesCount;
+		nextTimeInfo.actualSampleRate = sampleRate;
+		publishSnapshot(timeInfoChangeCount);
 		return;
 	}
 
 	const double estimatedNewActualSampleRate = (estimatedNewPlayedFramesCount - lastEstimatedPlayedFramesCount + absError) / secondsElapsed;
-	const double prevActualSampleRate = timeInfo[timeInfoIx].actualSampleRate;
+	const double prevActualSampleRate = timeInfo.actualSampleRate;
 	const double filteredNewActualSampleRate = prevActualSampleRate + (estimatedNewActualSampleRate - prevActualSampleRate) * 0.1;
 
 	// Now fixup sample rate estimation. It shouldn't go too far from expected.
@@ -114,14 +146,26 @@ void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const qui
 #endif
 
 	lastEstimatedPlayedFramesCount = estimatedNewPlayedFramesCount;
-	timeInfo[nextTimeInfoIx].lastPlayedNanos = measuredNanos;
-	timeInfo[nextTimeInfoIx].lastPlayedFramesCount = newPlayedFramesCount;
-	timeInfo[nextTimeInfoIx].actualSampleRate = newActualSampleRate;
-	timeInfoIx = nextTimeInfoIx;
+	nextTimeInfo.lastPlayedNanos = measuredNanos;
+	nextTimeInfo.lastPlayedFramesCount = newPlayedFramesCount;
+	nextTimeInfo.actualSampleRate = newActualSampleRate;
+	publishSnapshot(timeInfoChangeCount);
 }
 
 bool AudioStream::isAutoLatencyMode() const {
 	return settings.midiLatency == 0;
+}
+
+// Only called from the rendering thread.
+void AudioStream::framesRendered(quint32 frameCount) {
+	quint64 &renderedFramesCount = renderedFramesCounts[getSnapshotReadIx(renderedFramesChangeCount)];
+	renderedFramesCounts[getSnapshotWriteIx(renderedFramesChangeCount)] = renderedFramesCount + frameCount;
+	publishSnapshot(renderedFramesChangeCount);
+}
+
+// Only called from the rendering thread.
+quint64 AudioStream::getRenderedFramesCount() const {
+	return renderedFramesCounts[getSnapshotReadIx(renderedFramesChangeCount)];
 }
 
 AudioDevice::AudioDevice(AudioDriver &useDriver, QString useName) : driver(useDriver), name(useName) {}

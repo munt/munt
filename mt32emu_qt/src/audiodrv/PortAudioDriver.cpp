@@ -137,7 +137,7 @@ int PortAudioStream::paCallback(const void *inputBuffer, void *outputBuffer, uns
 	stream->updateTimeInfo(nanosNow, framesInAudioBuffer);
 
 	stream->synthRoute.render((Bit16s *)outputBuffer, frameCount);
-	stream->renderedFramesCount += frameCount;
+	stream->framesRendered(quint32(frameCount));
 	return paContinue;
 }
 

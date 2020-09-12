@@ -75,7 +75,7 @@ void *AlsaAudioStream::processingThread(void *userData) {
 //			isErrorOccured = true;
 //			break;
 		}
-		audioStream.renderedFramesCount += audioStream.bufferSize;
+		audioStream.framesRendered(audioStream.bufferSize);
 	}
 	if (isErrorOccured) {
 		snd_pcm_close(audioStream.stream);

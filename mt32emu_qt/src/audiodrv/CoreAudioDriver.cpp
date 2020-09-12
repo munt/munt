@@ -88,7 +88,7 @@ void CoreAudioStream::renderOutputBuffer(void *userData, AudioQueueRef queue, Au
 		if (res) {
 			qDebug() << "CoreAudio: AudioQueueGetCurrentTime() failed with error code:" << res;
 		} else if (audioTimeStamp.mFlags & kAudioTimeStampSampleTimeValid) {
-			framesInAudioBuffer = quint32(stream->renderedFramesCount - audioTimeStamp.mSampleTime);
+			framesInAudioBuffer = quint32(stream->getRenderedFramesCount() - audioTimeStamp.mSampleTime);
 		} else {
 			qDebug() << "CoreAudio: AudioQueueGetCurrentTime() returns invalid sample time";
 		}
@@ -97,7 +97,7 @@ void CoreAudioStream::renderOutputBuffer(void *userData, AudioQueueRef queue, Au
 
 	uint frameCount = buffer->mAudioDataByteSize >> 2;
 	stream->synthRoute.render((MT32Emu::Bit16s *)buffer->mAudioData, frameCount);
-	stream->renderedFramesCount += frameCount;
+	stream->framesRendered(frameCount);
 
 	OSStatus res = AudioQueueEnqueueBuffer(queue, buffer, 0, NULL);
 	if (res) qDebug() << "CoreAudio: AudioQueueEnqueueBuffer() failed with error code:" << res;

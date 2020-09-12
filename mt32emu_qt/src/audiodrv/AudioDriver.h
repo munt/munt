@@ -22,19 +22,28 @@ protected:
 	quint32 audioLatencyFrames;
 	quint32 midiLatencyFrames;
 
-	quint64 renderedFramesCount;
 	quint64 lastEstimatedPlayedFramesCount;
 	bool resetScheduled;
 
-	struct {
+	// Note, renderedFramesCount and timeInfo are read from several MIDI receiving threads,
+	// so they need a thread-safe publication tech. The two snapshots are written in turn,
+	// so that while the change count stays intact, it is safe to read the snapshot
+	// with the index equal to the last bit of the change count.
+
+	quint64 renderedFramesCounts[2];
+	QAtomicInt renderedFramesChangeCount;
+
+	struct TimeInfo {
 		MasterClockNanos lastPlayedNanos;
 		quint64 lastPlayedFramesCount;
 		double actualSampleRate;
-	} timeInfo[2];
-	volatile uint timeInfoIx;
+	} timeInfos[2];
+	QAtomicInt timeInfoChangeCount;
 
 	void updateTimeInfo(const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer);
 	bool isAutoLatencyMode() const;
+	void framesRendered(quint32 frameCount);
+	quint64 getRenderedFramesCount() const;
 
 public:
 	AudioStream(const AudioDriverSettings &settings, SynthRoute &synthRoute, const quint32 sampleRate);

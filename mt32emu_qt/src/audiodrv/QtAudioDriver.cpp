@@ -54,7 +54,7 @@ public:
 		stream.updateTimeInfo(nanosNow, framesInAudioBuffer);
 		uint framesToRender = uint(len >> 2);
 		stream.synthRoute.render((Bit16s *)data, framesToRender);
-		stream.renderedFramesCount += framesToRender;
+		stream.framesRendered(framesToRender);
 		return len;
 	}
 

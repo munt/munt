@@ -76,7 +76,7 @@ void *OSSAudioStream::processingThread(void *userData) {
 			isErrorOccured = true;
 			break;
 		}
-		audioStream.renderedFramesCount += audioStream.bufferSize;
+		audioStream.framesRendered(audioStream.bufferSize);
 	}
 	if (isErrorOccured) {
 		close(audioStream.stream);

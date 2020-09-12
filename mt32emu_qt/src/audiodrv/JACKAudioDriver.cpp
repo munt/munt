@@ -249,7 +249,7 @@ void JACKAudioStream::renderStreams(const quint32 totalFrameCount, JACKAudioSamp
 		if (processor != NULL) processor->markChunkProcessed(framesToRender);
 		framesLeft -= framesToRender;
 	}
-	renderedFramesCount += totalFrameCount;
+	framesRendered(totalFrameCount);
 }
 
 JACKAudioDefaultDevice::JACKAudioDefaultDevice(JACKAudioDriver &useDriver) :

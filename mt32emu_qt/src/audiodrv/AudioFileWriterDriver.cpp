@@ -31,7 +31,7 @@ bool AudioFileWriterStream::start() {
 	QString fileName = QFileDialog::getSaveFileName(NULL, NULL, currentDir, "*.wav *.raw;;*.wav;;*.raw;;*.*");
 	if (fileName.isEmpty()) return false;
 	currentDir = QDir(fileName).absolutePath();
-	timeInfo[0].lastPlayedNanos = MasterClock::getClockNanos();
+	timeInfos[0].lastPlayedNanos = MasterClock::getClockNanos();
 	writer.startRealtimeProcessing(&synthRoute, sampleRate, fileName, audioLatencyFrames);
 	return true;
 }
@@ -42,7 +42,7 @@ void AudioFileWriterStream::close() {
 
 quint64 AudioFileWriterStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
 	MasterClockNanos midiNanos = (refNanos == 0) ? MasterClock::getClockNanos() : refNanos;
-	return quint64(((midiNanos - timeInfo[0].lastPlayedNanos) * sampleRate) / MasterClock::NANOS_PER_SECOND) + midiLatencyFrames;
+	return quint64(((midiNanos - timeInfos[0].lastPlayedNanos) * sampleRate) / MasterClock::NANOS_PER_SECOND) + midiLatencyFrames;
 }
 
 AudioFileWriterDevice::AudioFileWriterDevice(AudioFileWriterDriver &driver, QString useDeviceName) :

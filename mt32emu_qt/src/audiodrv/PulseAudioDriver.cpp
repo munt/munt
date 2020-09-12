@@ -162,7 +162,7 @@ void *PulseAudioStream::processingThread(void *userData) {
 			audioStream.processingThreadID = 0;
 			return NULL;
 		}
-		audioStream.renderedFramesCount += audioStream.bufferSize;
+		audioStream.framesRendered(audioStream.bufferSize);
 	}
 	audioStream.stopProcessing = false;
 	audioStream.processingThreadID = 0;
