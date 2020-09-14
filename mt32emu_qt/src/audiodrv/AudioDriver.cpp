@@ -65,9 +65,9 @@ quint64 AudioStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
 	quint64 renderedFramesCount;
 	takeSnapshot(renderedFramesCount, renderedFramesCounts, renderedFramesChangeCount);
 
-	quint64 refFrameOffset = quint64(((midiNanos - timeInfo.lastPlayedNanos) * timeInfo.actualSampleRate) / MasterClock::NANOS_PER_SECOND);
-	quint64 timestamp = timeInfo.lastPlayedFramesCount + refFrameOffset + midiLatencyFrames;
-	qint64 delay = qint64(timestamp - renderedFramesCount);
+	qint64 refFrameOffset = qint64(((midiNanos - timeInfo.lastPlayedNanos) * timeInfo.actualSampleRate) / MasterClock::NANOS_PER_SECOND);
+	qint64 timestamp = qint64(timeInfo.lastPlayedFramesCount) + refFrameOffset + qint64(midiLatencyFrames);
+	qint64 delay = timestamp - qint64(renderedFramesCount);
 	if (delay < 0) {
 		// Negative delay means our timing is broken. We want to absort all the jitter while keeping the latency at the minimum.
 		if (isAutoLatencyMode()) {
@@ -75,7 +75,7 @@ quint64 AudioStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
 		}
 		qDebug() << "L" << renderedFramesCount << timestamp << delay << midiLatencyFrames;
 	}
-	return timestamp;
+	return timestamp < 0 ? 0 : quint64(timestamp);
 }
 
 // Only called from the rendering thread.
