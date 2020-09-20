@@ -312,7 +312,7 @@ void SynthRoute::mergeMidiStreams(uint renderingPassFrameLength) {
 #endif
 				break;
 			}
-		} while (midiBuffer->getEventTimestamp() == nextEventTimestamp);
+		} while (midiBuffer->getEventTimestamp() <= nextEventTimestamp);
 	}
 }
 
