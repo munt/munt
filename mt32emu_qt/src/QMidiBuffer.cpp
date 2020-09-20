@@ -163,7 +163,13 @@ bool QMidiBuffer::nextEvent() {
 	return retieveEvents();
 }
 
+void QMidiBuffer::discardEvents() {
+	bytesRead += bytesToRead;
+	popEvents();
+}
+
 void QMidiBuffer::popEvents() {
+	if (readPointer == NULL) return;
 	ringBuffer.advanceReadPointer(bytesRead);
 	readPointer = NULL;
 	bytesRead = 0;

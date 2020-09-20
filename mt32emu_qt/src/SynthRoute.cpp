@@ -24,6 +24,8 @@
  * - Merging MIDI streams coming from several MIDI sessions
  */
 
+#include <climits>
+
 #include "SynthRoute.h"
 #include "MidiSession.h"
 #include "QMidiBuffer.h"
@@ -118,6 +120,7 @@ bool SynthRoute::close() {
 	audioStream = NULL;
 	qSynth.close();
 	disableExclusiveMidiMode();
+	discardMidiBuffers();
 	return true;
 }
 
@@ -269,11 +272,33 @@ bool SynthRoute::playMIDISysex(MidiSession &midiSession, const Bit8u *sysex, Bit
 	}
 }
 
-void SynthRoute::mergeMidiStreams(uint renderingPassFrameLength) {
-	if (audioStream == NULL) return; // May happen during startup, occasionally.
+void SynthRoute::discardMidiBuffers() {
+	if (!multiMidiMode) return;
 	QMutexLocker midiSessionsLocker(&midiSessionsMutex);
 	QVarLengthArray<QMidiBuffer *, 16> streamBuffers;
-	const quint64 renderingPassEndTimestamp = audioStream->computeMIDITimestamp(renderingPassFrameLength);
+
+	for (int i = 0; i < midiSessions.size(); i++) {
+		QMidiBuffer *midiBuffer = midiSessions[i]->getQMidiBuffer();
+		while (midiBuffer->retieveEvents()) {
+			midiBuffer->discardEvents();
+		}
+	}
+
+	qSynth.flushMIDIQueue();
+}
+
+void SynthRoute::flushMIDIQueue() {
+	if (multiMidiMode) mergeMidiStreams(0);
+	qSynth.flushMIDIQueue();
+}
+
+// When renderingPassFrameLength == 0, all pending messages are merged.
+void SynthRoute::mergeMidiStreams(uint renderingPassFrameLength) {
+	QMutexLocker midiSessionsLocker(&midiSessionsMutex);
+	QVarLengthArray<QMidiBuffer *, 16> streamBuffers;
+	const quint64 renderingPassEndTimestamp = renderingPassFrameLength == 0
+		? std::numeric_limits<quint64>::max()
+		: audioStream->computeMIDITimestamp(renderingPassFrameLength);
 
 	for (int i = 0; i < midiSessions.size(); i++) {
 		QMidiBuffer *midiBuffer = midiSessions[i]->getQMidiBuffer();
@@ -317,12 +342,14 @@ void SynthRoute::mergeMidiStreams(uint renderingPassFrameLength) {
 }
 
 void SynthRoute::render(MT32Emu::Bit16s *buffer, uint length) {
-	if (multiMidiMode) mergeMidiStreams(length);
+	// Occasionally, audioStream may appear NULL during startup.
+	if (multiMidiMode && audioStream != NULL) mergeMidiStreams(length);
 	qSynth.render(buffer, length);
 }
 
 void SynthRoute::render(float *buffer, uint length) {
-	if (multiMidiMode) mergeMidiStreams(length);
+	// Occasionally, audioStream may appear NULL during startup.
+	if (multiMidiMode && audioStream != NULL) mergeMidiStreams(length);
 	qSynth.render(buffer, length);
 }
 
@@ -334,10 +361,6 @@ void SynthRoute::audioStreamFailed() {
 
 void SynthRoute::enableRealtimeMode() {
 	qSynth.enableRealtime();
-}
-
-void SynthRoute::flushMIDIQueue() {
-	qSynth.flushMIDIQueue();
 }
 
 void SynthRoute::playMIDIShortMessageNow(Bit32u msg) {

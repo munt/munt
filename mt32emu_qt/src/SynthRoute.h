@@ -41,6 +41,7 @@ private:
 
 	void setState(SynthRouteState newState);
 	void disableExclusiveMidiMode();
+	void mergeMidiStreams(uint renderingPassFrameLength);
 
 public:
 	SynthRoute(QObject *parent = NULL);
@@ -65,7 +66,7 @@ public:
 	bool playMIDISysex(MidiSession &midiSession, const MT32Emu::Bit8u *sysex, MT32Emu::Bit32u sysexLen, quint64 timestamp);
 	bool pushMIDIShortMessage(MidiSession &midiSession, MT32Emu::Bit32u msg, MasterClockNanos midiNanos);
 	bool pushMIDISysex(MidiSession &midiSession, const MT32Emu::Bit8u *sysex, unsigned int sysexLen, MasterClockNanos midiNanos);
-	void mergeMidiStreams(uint renderingPassFrameLength);
+	void discardMidiBuffers();
 	void render(MT32Emu::Bit16s *buffer, uint length);
 	void render(float *buffer, uint length);
 	void audioStreamFailed();

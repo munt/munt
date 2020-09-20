@@ -23,6 +23,7 @@ public:
 	quint64 getEventTimestamp() const;
 	quint32 getEventData(const uchar *&sysexData) const;
 	bool nextEvent();
+	void discardEvents();
 	void popEvents();
 
 private:
