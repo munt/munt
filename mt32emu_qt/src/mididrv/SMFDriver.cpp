@@ -90,16 +90,20 @@ void SMFProcessor::run() {
 			if (paused) paused = false;
 			int seekPosition = driver->seekPosition.fetchAndStoreRelaxed(-1);
 			if (seekPosition > -1) {
-				sendAllSoundOff(synthRoute, true);
 				MasterClockNanos seekNanosSinceStart = totalSeconds * seekPosition * MasterClock::NANOS_PER_MILLISECOND;
 				MasterClockNanos currentNanosSinceStart = currentNanos - startNanos;
 				MasterClockNanos lastEventNanosSinceStart = currentNanosSinceStart - midiEvents.at(currentEventIx).getTimestamp() * midiTick;
+				bool resetAllControllers;
 				if (seekNanosSinceStart < lastEventNanosSinceStart || seekNanosSinceStart == 0) {
 					midiTick = parser.getMidiTick();
 					emit driver->tempoUpdated(0);
 					currentEventIx = 0;
 					currentNanosSinceStart = midiEvents.at(currentEventIx).getTimestamp() * midiTick;
+					resetAllControllers = true;
+				} else {
+					resetAllControllers = false;
 				}
+				sendAllSoundOff(synthRoute, resetAllControllers);
 				seek(synthRoute, midiEvents, currentEventIx, currentNanosSinceStart, seekNanosSinceStart);
 				nanosNow = MasterClock::getClockNanos();
 				startNanos = nanosNow - seekNanosSinceStart;
