@@ -48,7 +48,7 @@ protected:
 public:
 	AudioStream(const AudioDriverSettings &settings, SynthRoute &synthRoute, const quint32 sampleRate);
 	virtual ~AudioStream() {}
-	virtual quint64 estimateMIDITimestamp(const MasterClockNanos refNanos = 0);
+	virtual quint64 estimateMIDITimestamp(const MasterClockNanos refNanos);
 	quint64 computeMIDITimestamp(uint relativeFrameTime) const;
 };
 

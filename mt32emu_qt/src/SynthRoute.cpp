@@ -224,8 +224,8 @@ bool SynthRoute::pushMIDIShortMessage(MidiSession &midiSession, Bit32u msg, Mast
 	quint64 timestamp = stream->estimateMIDITimestamp(refNanos);
 	if (msg == 0) {
 		// This is a special event sent by the test driver
-		qint64 delta = qint64(timestamp - debugLastEventTimestamp);
-		MasterClockNanos debugEventNanoOffset = (refNanos == 0) ? 0 : MasterClock::getClockNanos() - refNanos;
+		qint64 delta = qint64(timestamp) - qint64(debugLastEventTimestamp);
+		MasterClockNanos debugEventNanoOffset = MasterClock::getClockNanos() - refNanos;
 		if ((delta < debugDeltaLowerLimit) || (debugDeltaUpperLimit < delta) || ((15 * MasterClock::NANOS_PER_MILLISECOND) < debugEventNanoOffset)) {
 			qDebug() << "M" << delta << timestamp << 1e-6 * debugEventNanoOffset;
 		}

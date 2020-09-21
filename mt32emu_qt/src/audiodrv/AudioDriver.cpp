@@ -58,8 +58,7 @@ AudioStream::AudioStream(const AudioDriverSettings &useSettings, SynthRoute &use
 }
 
 // Intended to be called from MIDI receiving threads.
-quint64 AudioStream::estimateMIDITimestamp(const MasterClockNanos refNanos) {
-	MasterClockNanos midiNanos = (refNanos == 0) ? MasterClock::getClockNanos() : refNanos;
+quint64 AudioStream::estimateMIDITimestamp(const MasterClockNanos midiNanos) {
 	TimeInfo timeInfo;
 	takeSnapshot(timeInfo, timeInfos, timeInfoChangeCount);
 	quint64 renderedFramesCount;

@@ -17,7 +17,7 @@ private:
 
 public:
 	AudioFileWriterStream(const AudioDriverSettings &settings, SynthRoute &useSynthRoute, const quint32 useSampleRate);
-	quint64 estimateMIDITimestamp(const MasterClockNanos refNanos = 0);
+	quint64 estimateMIDITimestamp(const MasterClockNanos refNanos);
 	bool start();
 	void close();
 };
