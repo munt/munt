@@ -167,7 +167,7 @@ public:
 	const QString getPatchName(int partNum) const;
 	void getPartStates(bool *partStates) const;
 	void getPartialStates(MT32Emu::PartialState *partialStates) const;
-	uint getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const;
+	uint getPlayingNotes(uint partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const;
 	uint getPartialCount() const;
 	uint getSynthSampleRate() const;
 	bool isActive() const;

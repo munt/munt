@@ -214,6 +214,7 @@ inline void AudioFileRenderer::render(qint16 *buffer, uint length) {
 		audioRenderer.synth->render(buffer, length);
 	}
 }
+
 void AudioFileRenderer::run() {
 	AudioFileWriter writer(sampleRate, outFileName);
 	if (!writer.open(!realtimeMode)) {
