@@ -1,3 +1,10 @@
+2020-10-07:
+
+	2.4.1 released.
+
+	* Fixed a bug that caused loss of the least significant bit of PCM samples
+	  loaded from ROMs.
+
 2020-03-29:
 
 	2.4.0 released.
