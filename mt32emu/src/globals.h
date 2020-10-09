@@ -37,7 +37,11 @@
 #endif /* #ifdef mt32emu_EXPORTS */
 #endif /* #ifdef _MSC_VER */
 #else /* #if defined _WIN32 || defined __CYGWIN__ */
+#ifdef __OS2__
+#define MT32EMU_EXPORT_ATTRIBUTE __declspec(dllexport)
+#else /* #ifdef __OS2__ */
 #define MT32EMU_EXPORT_ATTRIBUTE __attribute__ ((visibility("default")))
+#endif /* #ifdef __OS2__ */
 #endif /* #if defined _WIN32 || defined __CYGWIN__ */
 #else /* #ifdef MT32EMU_SHARED */
 #define MT32EMU_EXPORT_ATTRIBUTE
