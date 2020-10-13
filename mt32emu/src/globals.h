@@ -22,29 +22,25 @@
 
 /* Support for compiling shared library. */
 #ifdef MT32EMU_SHARED
-#if defined _WIN32 || defined __CYGWIN__
-#ifdef _MSC_VER
-#ifdef mt32emu_EXPORTS
-#define MT32EMU_EXPORT_ATTRIBUTE _declspec(dllexport)
-#else /* #ifdef mt32emu_EXPORTS */
-#define MT32EMU_EXPORT_ATTRIBUTE _declspec(dllimport)
-#endif /* #ifdef mt32emu_EXPORTS */
-#else /* #ifdef _MSC_VER */
-#ifdef mt32emu_EXPORTS
-#define MT32EMU_EXPORT_ATTRIBUTE __attribute__ ((dllexport))
-#else /* #ifdef mt32emu_EXPORTS */
-#define MT32EMU_EXPORT_ATTRIBUTE __attribute__ ((dllimport))
-#endif /* #ifdef mt32emu_EXPORTS */
-#endif /* #ifdef _MSC_VER */
-#else /* #if defined _WIN32 || defined __CYGWIN__ */
-#ifdef __OS2__
-#define MT32EMU_EXPORT_ATTRIBUTE __declspec(dllexport)
-#else /* #ifdef __OS2__ */
-#define MT32EMU_EXPORT_ATTRIBUTE __attribute__ ((visibility("default")))
-#endif /* #ifdef __OS2__ */
-#endif /* #if defined _WIN32 || defined __CYGWIN__ */
+#  if defined _WIN32 || defined __CYGWIN__ || defined __OS2__
+#    ifdef _MSC_VER
+#      ifdef mt32emu_EXPORTS
+#        define MT32EMU_EXPORT_ATTRIBUTE _declspec(dllexport)
+#      else /* #ifdef mt32emu_EXPORTS */
+#        define MT32EMU_EXPORT_ATTRIBUTE _declspec(dllimport)
+#      endif /* #ifdef mt32emu_EXPORTS */
+#    else /* #ifdef _MSC_VER */
+#      ifdef mt32emu_EXPORTS
+#        define MT32EMU_EXPORT_ATTRIBUTE __attribute__ ((dllexport))
+#      else /* #ifdef mt32emu_EXPORTS */
+#        define MT32EMU_EXPORT_ATTRIBUTE __attribute__ ((dllimport))
+#      endif /* #ifdef mt32emu_EXPORTS */
+#    endif /* #ifdef _MSC_VER */
+#  else /* #if defined _WIN32 || defined __CYGWIN__ || defined __OS2__ */
+#    define MT32EMU_EXPORT_ATTRIBUTE __attribute__ ((visibility("default")))
+#  endif /* #if defined _WIN32 || defined __CYGWIN__ || defined __OS2__ */
 #else /* #ifdef MT32EMU_SHARED */
-#define MT32EMU_EXPORT_ATTRIBUTE
+#  define MT32EMU_EXPORT_ATTRIBUTE
 #endif /* #ifdef MT32EMU_SHARED */
 
 #if MT32EMU_EXPORTS_TYPE == 1 || MT32EMU_EXPORTS_TYPE == 2
