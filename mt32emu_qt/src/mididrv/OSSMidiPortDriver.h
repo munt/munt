@@ -1,6 +1,8 @@
 #ifndef OSSMIDIPORT_DRIVER_H
 #define OSSMIDIPORT_DRIVER_H
 
+#include <pthread.h>
+
 #include "../MidiSession.h"
 #include "MidiDriver.h"
 

@@ -16,7 +16,6 @@
 
 #include <QtGlobal>
 #include <unistd.h>
-#include <pthread.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <errno.h>
