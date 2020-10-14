@@ -31,7 +31,11 @@ static inline void configureSystemLocale() {
 
 	if (configured) return;
 	configured = true;
+#  if defined __CYGWIN__ || defined __OS2__
+	setlocale(LC_ALL, "");
+#  else
 	std::locale::global(std::locale(""));
+#  endif
 #endif
 }
 

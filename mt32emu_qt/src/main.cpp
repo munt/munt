@@ -25,7 +25,11 @@ int main(int argv, char **args) {
 	app.setApplicationName("Munt mt32emu-qt");
 	app.setQuitOnLastWindowClosed(false);
 	{
+#if defined __CYGWIN__ || defined __OS2__
+		setlocale(LC_ALL, "");
+#else
 		std::locale::global(std::locale(""));
+#endif
 		Master master;
 		QSystemTrayIcon *trayIcon = NULL;
 		if (QSystemTrayIcon::isSystemTrayAvailable()) {
