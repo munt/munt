@@ -24,7 +24,7 @@
  * - Merging MIDI streams coming from several MIDI sessions
  */
 
-#include <climits>
+#include <limits>
 
 #include "SynthRoute.h"
 #include "MidiSession.h"
