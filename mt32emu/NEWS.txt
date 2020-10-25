@@ -1,3 +1,13 @@
+HEAD:
+
+	* Reworked the support for accessing ROM files with localised pathnames introduced in 2.3.0.
+	  Since it is not really necessary in majority of cases but may nevertheless update global
+	  C and C++ locale settings, it must now be explicitly enabled with the new Cmake option
+	  libmt32emu_INSTALL_DEFAULT_LOCALE. Also, it no longer touches the global C++ locale
+	  even if enabled, since that appears to have no positive effect. So far, it has been found
+	  useful for building shared library with some old versions of MS VC when linking C runtime
+	  statically.
+
 2020-10-07:
 
 	2.4.1 released.

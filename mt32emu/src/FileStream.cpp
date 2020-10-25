@@ -25,17 +25,18 @@
 
 namespace MT32Emu {
 
+// This initialises C locale with the user-preferred system locale once facilitating access
+// to ROM files with localised pathnames. This is only necessary in rare cases e.g. when building
+// shared library statically linked with C runtime with old MS VC versions, so that the C locale
+// set by the client application does not have effect, and thus such ROM files cannot be opened.
 static inline void configureSystemLocale() {
-#ifdef MT32EMU_SHARED
+#if defined MT32EMU_SHARED && defined MT32EMU_INSTALL_DEFAULT_LOCALE
 	static bool configured = false;
 
 	if (configured) return;
 	configured = true;
-#  if defined __CYGWIN__ || defined __OS2__
+
 	setlocale(LC_ALL, "");
-#  else
-	std::locale::global(std::locale(""));
-#  endif
 #endif
 }
 

@@ -42,6 +42,11 @@ if(libmt32emu_SHARED)
   set_property(CACHE libmt32emu_PACKAGE_TYPE
     PROPERTY STRINGS Complete Runtime Devel
   )
+  option(libmt32emu_INSTALL_DEFAULT_LOCALE "Install user-preferred system locale as C locale when initialising shared library.\
+ This is generally not necessary, although may be required in some cases\
+ (for instance, when builing shared library with old versions of MS VC with the C runtime statically linked)\
+ to open ROM files with localised pathnames successfully." FALSE)
+  mark_as_advanced(libmt32emu_INSTALL_DEFAULT_LOCALE)
 else()
   set(libmt32emu_PACKAGE_TYPE Complete)
 endif()
@@ -147,6 +152,9 @@ if(libmt32emu_SHARED)
   set(libmt32emu_BUILD_TYPE SHARED)
   if(NOT OS2)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+  endif()
+  if(libmt32emu_INSTALL_DEFAULT_LOCALE)
+    add_definitions(-DMT32EMU_INSTALL_DEFAULT_LOCALE)
   endif()
 endif(libmt32emu_SHARED)
 
