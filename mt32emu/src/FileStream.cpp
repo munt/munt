@@ -15,8 +15,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef MT32EMU_SHARED
-#include <locale>
+#ifdef MT32EMU_SHARED && defined MT32EMU_INSTALL_DEFAULT_LOCALE
+#include <clocale>
 #endif
 
 #include "internals.h"
