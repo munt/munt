@@ -22,6 +22,7 @@
 #include "AudioFileWriter.h"
 #include "Master.h"
 #include "MasterClock.h"
+#include "RealtimeLocker.h"
 
 using namespace MT32Emu;
 
@@ -71,25 +72,6 @@ static int readMasterVolume(Synth *synth) {
 	synth->readMemory(0x40016, 1, &masterVolume);
 	return masterVolume;
 }
-
-class RealtimeLocker {
-private:
-	QMutex &mutex;
-	bool locked;
-
-public:
-	explicit RealtimeLocker(QMutex &useMutex) : mutex(useMutex) {
-		locked = mutex.tryLock();
-	}
-
-	~RealtimeLocker() {
-		if (locked) mutex.unlock();
-	}
-
-	bool isLocked() {
-		return locked;
-	}
-};
 
 class RealtimeHelper : public QThread {
 private:
