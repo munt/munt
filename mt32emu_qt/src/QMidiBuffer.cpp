@@ -18,43 +18,15 @@
 
 #include "QMidiBuffer.h"
 
-enum MidiEventType {
-	MidiEventType_SHORT_MESSAGE,
-	MidiEventType_SYSEX_MESSAGE,
-	MidiEventType_PAD
-};
+#include "MidiEventLayout.h"
 
-struct PadHeader {
-	MidiEventType eventType;
-};
+using MidiEventLayout::MidiEventHeader;
 
-struct ShortMessageEntry {
-	MidiEventType eventType;
-	quint32 shortMessageData;
-	quint64 timestamp;
-};
-
-struct SysexMessageHeader {
-	MidiEventType eventType;
-	quint32 sysexDataLength;
-	quint64 timestamp;
-};
-
-union MidiEventPointer {
-	void *writePointer;
-	void *readPointer;
-	PadHeader *padHeader;
-	ShortMessageEntry *shortMessageEntry;
-	SysexMessageHeader *sysexMessageHeader;
-	uchar *sysexMessageData;
-};
+typedef MidiEventLayout::ShortMessageEntry<quint64> ShortMessageEntry;
+typedef MidiEventLayout::SysexMessageHeader<quint64> SysexMessageHeader;
 
 static const quint32 BUFFER_SIZE = 32768;
-
-// The allocated SysEx data length is rounded, so that the events are aligned to the quint32 boundary.
-static inline size_t alignSysexDataLength(quint32 dataLength) {
-	return ((dataLength + sizeof(quint32) - 1) / sizeof(quint32)) * sizeof(quint32);
-}
+static const quint32 MESSAGE_DATA_ALIGNMENT = quint32(sizeof(quint32));
 
 QMidiBuffer::QMidiBuffer() :
 	ringBuffer(BUFFER_SIZE),
@@ -69,31 +41,30 @@ QMidiBuffer::QMidiBuffer() :
 bool QMidiBuffer::pushShortMessage(quint64 timestamp, quint32 data) {
 	static const quint32 entrySize = sizeof(ShortMessageEntry);
 	if (!requestSpace(entrySize)) return false;
-	MidiEventPointer eventPointer;
-	eventPointer.writePointer = writePointer;
-	eventPointer.shortMessageEntry->eventType = MidiEventType_SHORT_MESSAGE;
-	eventPointer.shortMessageEntry->shortMessageData = data;
-	eventPointer.shortMessageEntry->timestamp = timestamp;
-	eventPointer.shortMessageEntry++;
-	writePointer = eventPointer.writePointer;
+	ShortMessageEntry *shortMessageEntry = static_cast<ShortMessageEntry *>(writePointer);
+	shortMessageEntry->eventType = MidiEventLayout::MidiEventType_SHORT_MESSAGE;
+	shortMessageEntry->shortMessageData = data;
+	shortMessageEntry->timestamp = timestamp;
+	shortMessageEntry++;
+	writePointer = shortMessageEntry;
 	bytesWritten += entrySize;
 	bytesToWrite -= entrySize;
 	return true;
 }
 
 bool QMidiBuffer::pushSysexMessage(quint64 timestamp, quint32 dataLength, const uchar *data) {
-	const size_t alignedDataLength = alignSysexDataLength(dataLength);
-	const quint32 entrySize = quint32(sizeof(SysexMessageHeader) + alignedDataLength);
+	const quint32 alignedDataLength = MidiEventLayout::alignSysexDataLength(dataLength, MESSAGE_DATA_ALIGNMENT);
+	const quint32 entrySize = quint32(sizeof(SysexMessageHeader)) + alignedDataLength;
 	if (!requestSpace(entrySize)) return false;
-	MidiEventPointer eventPointer;
-	eventPointer.writePointer = writePointer;
-	eventPointer.sysexMessageHeader->eventType = MidiEventType_SYSEX_MESSAGE;
-	eventPointer.sysexMessageHeader->sysexDataLength = dataLength;
-	eventPointer.sysexMessageHeader->timestamp = timestamp;
-	eventPointer.sysexMessageHeader++;
-	memcpy(eventPointer.sysexMessageData, data, dataLength);
-	eventPointer.sysexMessageData += alignedDataLength;
-	writePointer = eventPointer.writePointer;
+	SysexMessageHeader *sysexMessageHeader = static_cast<SysexMessageHeader *>(writePointer);
+	sysexMessageHeader->eventType = MidiEventLayout::MidiEventType_SYSEX_MESSAGE;
+	sysexMessageHeader->sysexDataLength = dataLength;
+	sysexMessageHeader->timestamp = timestamp;
+	sysexMessageHeader++;
+	uchar *sysexMessageData = reinterpret_cast<uchar *>(sysexMessageHeader);
+	memcpy(sysexMessageData, data, dataLength);
+	sysexMessageData += alignedDataLength;
+	writePointer = sysexMessageData;
 	bytesWritten += entrySize;
 	bytesToWrite -= entrySize;
 	return true;
@@ -111,53 +82,45 @@ bool QMidiBuffer::retieveEvents() {
 	popEvents();
 	readPointer = ringBuffer.readPointer(bytesToRead);
 	if (bytesToRead == 0) return false;
-	MidiEventPointer eventPointer;
-	eventPointer.readPointer = readPointer;
-	if (eventPointer.padHeader->eventType != MidiEventType_PAD) return true;
+	MidiEventHeader *eventHeader = static_cast<MidiEventHeader *>(readPointer);
+	if (eventHeader->eventType != MidiEventLayout::MidiEventType_PAD) return true;
 	bytesRead += bytesToRead;
 	return retieveEvents();
 }
 
 quint64 QMidiBuffer::getEventTimestamp() const {
-	MidiEventPointer eventPointer;
-	eventPointer.readPointer = readPointer;
-	if (eventPointer.sysexMessageHeader->eventType == MidiEventType_SYSEX_MESSAGE) {
-		return eventPointer.sysexMessageHeader->timestamp;
+	MidiEventHeader *eventHeader = static_cast<MidiEventHeader *>(readPointer);
+	if (eventHeader->eventType == MidiEventLayout::MidiEventType_SYSEX_MESSAGE) {
+		return static_cast<SysexMessageHeader *>(eventHeader)->timestamp;
 	}
-	return eventPointer.shortMessageEntry->timestamp;
+	return static_cast<ShortMessageEntry *>(eventHeader)->timestamp;
 }
 
 quint32 QMidiBuffer::getEventData(const uchar *&sysexData) const {
-	MidiEventPointer eventPointer;
-	eventPointer.readPointer = readPointer;
-	if (eventPointer.sysexMessageHeader->eventType == MidiEventType_SYSEX_MESSAGE) {
-		quint32 sysexDataLength = eventPointer.sysexMessageHeader->sysexDataLength;
-		eventPointer.sysexMessageHeader++;
-		sysexData = eventPointer.sysexMessageData;
+	MidiEventHeader *eventHeader = static_cast<MidiEventHeader *>(readPointer);
+	if (eventHeader->eventType == MidiEventLayout::MidiEventType_SYSEX_MESSAGE) {
+		SysexMessageHeader *sysexMessageHeader = static_cast<SysexMessageHeader *>(eventHeader);
+		quint32 sysexDataLength = sysexMessageHeader->sysexDataLength;
+		sysexMessageHeader++;
+		sysexData = reinterpret_cast<uchar *>(sysexMessageHeader);
 		return sysexDataLength;
 	}
 	sysexData = NULL;
-	return eventPointer.shortMessageEntry->shortMessageData;
+	return static_cast<ShortMessageEntry *>(eventHeader)->shortMessageData;
 }
 
 bool QMidiBuffer::nextEvent() {
-	MidiEventPointer eventPointer;
-	eventPointer.readPointer = readPointer;
-	quint32 entrySize;
-	if (eventPointer.sysexMessageHeader->eventType == MidiEventType_SYSEX_MESSAGE) {
-		size_t alignedDataLength = alignSysexDataLength(eventPointer.sysexMessageHeader->sysexDataLength);
-		eventPointer.sysexMessageHeader++;
-		eventPointer.sysexMessageData += alignedDataLength;
-		entrySize = quint32(sizeof(SysexMessageHeader) + alignedDataLength);
-	} else {
-		eventPointer.shortMessageEntry++;
-		entrySize = sizeof(ShortMessageEntry);
+	MidiEventHeader *eventHeader = static_cast<MidiEventHeader *>(readPointer);
+	quint32 entrySize = quint32(sizeof(ShortMessageEntry));
+	if (eventHeader->eventType == MidiEventLayout::MidiEventType_SYSEX_MESSAGE) {
+		SysexMessageHeader *sysexMessageHeader = static_cast<SysexMessageHeader *>(eventHeader);
+		entrySize += MidiEventLayout::alignSysexDataLength(sysexMessageHeader->sysexDataLength, MESSAGE_DATA_ALIGNMENT);
 	}
-	readPointer = eventPointer.readPointer;
+	readPointer = static_cast<uchar *>(readPointer) + entrySize;
 	bytesRead += entrySize;
 	bytesToRead -= entrySize;
 	if (bytesToRead > 0) {
-		if (eventPointer.padHeader->eventType != MidiEventType_PAD) return true;
+		if (eventHeader->eventType != MidiEventLayout::MidiEventType_PAD) return true;
 		bytesRead += bytesToRead;
 	}
 	return retieveEvents();
@@ -180,13 +143,12 @@ bool QMidiBuffer::requestSpace(quint32 eventLength) {
 	if (writePointer == NULL) {
 		writePointer = ringBuffer.writePointer(bytesToWrite, freeSpaceContiguous);
 	}
-	while (bytesToWrite < (eventLength + sizeof(PadHeader))) {
+	while (bytesToWrite < (eventLength + sizeof(MidiEventHeader))) {
 		if (freeSpaceContiguous) return eventLength <= bytesToWrite;
 		// When the free space isn't contiguous, pad the rest of the ring buffer
 		// and restart from the beginning.
-		MidiEventPointer eventPointer;
-		eventPointer.writePointer = writePointer;
-		eventPointer.padHeader->eventType = MidiEventType_PAD;
+		MidiEventHeader *padHeader = static_cast<MidiEventHeader *>(writePointer);
+		padHeader->eventType = MidiEventLayout::MidiEventType_PAD;
 		bytesWritten += bytesToWrite;
 		flush();
 		writePointer = ringBuffer.writePointer(bytesToWrite, freeSpaceContiguous);
