@@ -15,9 +15,10 @@
  */
 
 #ifndef QATOMIC_HELPER_H
-#define AUDIO_DRIVER_H
+#define QATOMIC_HELPER_H
 
 #include "QAtomicInt"
+#include "QAtomicPointer"
 
 // The Qt API for atomic access looks a bit unstable yet.
 // This helper wraps the atomic load or store operations that suddenly got
@@ -54,6 +55,30 @@ static inline void storeRelease(QAtomicInt &atomicInt, quint32 value) {
 	atomicInt.fetchAndStoreRelease(value);
 #else
 	atomicInt.storeRelease(value);
+#endif
+}
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+template <class T>
+static inline T *loadRelaxed(QAtomicPointer<T> &atomicPointer) {
+	return atomicPointer.fetchAndAddRelaxed(0);
+#else
+template <class T>
+static inline T *loadRelaxed(const QAtomicPointer<T> &atomicPointer) {
+#  if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+	return atomicPointer.load();
+#  else
+	return atomicPointer.loadRelaxed();
+#  endif
+#endif // QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+}
+
+template <class T>
+static inline void storeRelease(QAtomicPointer<T> &atomicPointer, T *value) {
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+	atomicPointer.fetchAndStoreRelease(value);
+#else
+	atomicPointer.storeRelease(value);
 #endif
 }
 
