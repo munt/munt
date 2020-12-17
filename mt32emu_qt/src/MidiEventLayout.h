@@ -47,6 +47,7 @@ struct SysexMessageHeader : MidiEventHeader {
 
 // The allocated SysEx data length may be rounded, so that events are laid out aligned.
 static inline quint32 alignSysexDataLength(quint32 dataLength, quint32 alignment) {
+	dataLength += alignment - 1;
 	return dataLength - (dataLength % alignment);
 }
 
