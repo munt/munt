@@ -2,6 +2,7 @@
 #define QRING_BUFFER_H
 
 #include <QtGlobal>
+#include <QAtomicInt>
 
 namespace Utility {
 
