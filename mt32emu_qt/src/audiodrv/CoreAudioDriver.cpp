@@ -93,11 +93,9 @@ void CoreAudioStream::renderOutputBuffer(void *userData, AudioQueueRef queue, Au
 			qDebug() << "CoreAudio: AudioQueueGetCurrentTime() returns invalid sample time";
 		}
 	}
-	stream->updateTimeInfo(nanosNow, framesInAudioBuffer);
 
 	uint frameCount = buffer->mAudioDataByteSize >> 2;
-	stream->synthRoute.render((MT32Emu::Bit16s *)buffer->mAudioData, frameCount);
-	stream->framesRendered(frameCount);
+	stream->renderAndUpdateState((MT32Emu::Bit16s *)buffer->mAudioData, frameCount, nanosNow, framesInAudioBuffer);
 
 	OSStatus res = AudioQueueEnqueueBuffer(queue, buffer, 0, NULL);
 	if (res) qDebug() << "CoreAudio: AudioQueueEnqueueBuffer() failed with error code:" << res;

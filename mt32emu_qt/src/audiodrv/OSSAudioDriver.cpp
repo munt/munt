@@ -64,8 +64,7 @@ void *OSSAudioStream::processingThread(void *userData) {
 		} else {
 			framesInAudioBuffer = 0;
 		}
-		audioStream.updateTimeInfo(nanosNow, framesInAudioBuffer);
-		audioStream.synthRoute.render(audioStream.buffer, audioStream.bufferSize);
+		audioStream.renderAndUpdateState(audioStream.buffer, audioStream.bufferSize, nanosNow, framesInAudioBuffer);
 		error = write(audioStream.stream, audioStream.buffer, FRAME_SIZE * audioStream.bufferSize);
 		if (error != int(FRAME_SIZE * audioStream.bufferSize)) {
 			if (error == -1) {
@@ -76,7 +75,6 @@ void *OSSAudioStream::processingThread(void *userData) {
 			isErrorOccured = true;
 			break;
 		}
-		audioStream.framesRendered(audioStream.bufferSize);
 	}
 	if (isErrorOccured) {
 		close(audioStream.stream);

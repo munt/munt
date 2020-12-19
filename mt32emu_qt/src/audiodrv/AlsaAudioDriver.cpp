@@ -59,8 +59,7 @@ void *AlsaAudioStream::processingThread(void *userData) {
 				framesInAudioBuffer = (quint32)delayp;
 			}
 		}
-		audioStream.updateTimeInfo(nanosNow, framesInAudioBuffer);
-		audioStream.synthRoute.render(audioStream.buffer, audioStream.bufferSize);
+		audioStream.renderAndUpdateState(audioStream.buffer, audioStream.bufferSize, nanosNow, framesInAudioBuffer);
 		error = snd_pcm_writei(audioStream.stream, audioStream.buffer, audioStream.bufferSize);
 		if (error < 0) {
 			qDebug() << "snd_pcm_writei failed:" << snd_strerror(error) << "-> recovering...";
@@ -75,7 +74,6 @@ void *AlsaAudioStream::processingThread(void *userData) {
 //			isErrorOccured = true;
 //			break;
 		}
-		audioStream.framesRendered(audioStream.bufferSize);
 	}
 	if (isErrorOccured) {
 		snd_pcm_close(audioStream.stream);

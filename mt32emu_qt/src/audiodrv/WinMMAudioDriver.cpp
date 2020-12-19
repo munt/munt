@@ -150,9 +150,7 @@ void WinMMAudioProcessor::run() {
 			}
 		}
 		DWORD framesInAudioBuffer = playCursor < renderPos ? renderPos - playCursor : (renderPos + stream.audioLatencyFrames) - playCursor;
-		stream.updateTimeInfo(nanosNow, framesInAudioBuffer);
-		stream.synthRoute.render(buf, frameCount);
-		stream.framesRendered(frameCount);
+		stream.renderAndUpdateState(buf, frameCount, nanosNow, framesInAudioBuffer);
 		if (!stream.ringBufferMode && waveOutWrite(stream.hWaveOut, waveHdr, sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
 			qDebug() << "WinMMAudioDriver: waveOutWrite failed, thread stopped";
 			stream.stopProcessing = true;

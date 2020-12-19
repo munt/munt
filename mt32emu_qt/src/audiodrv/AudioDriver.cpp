@@ -83,6 +83,13 @@ quint64 AudioStream::computeMIDITimestamp(uint relativeFrameTime) const {
 }
 
 // Only called from the rendering thread.
+void AudioStream::renderAndUpdateState(MT32Emu::Bit16s *buffer, const quint32 frameCount, const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer) {
+	updateTimeInfo(measuredNanos, framesInAudioBuffer);
+	synthRoute.render(buffer, frameCount);
+	framesRendered(frameCount);
+}
+
+// Only called from the rendering thread.
 void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer) {
 	const TimeInfo &timeInfo = timeInfos[getSnapshotReadIx(timeInfoChangeCount)];
 	TimeInfo &nextTimeInfo = timeInfos[getSnapshotWriteIx(timeInfoChangeCount)];

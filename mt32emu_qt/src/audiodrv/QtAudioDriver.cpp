@@ -51,10 +51,8 @@ public:
 		} else {
 			framesInAudioBuffer = 0;
 		}
-		stream.updateTimeInfo(nanosNow, framesInAudioBuffer);
 		uint framesToRender = uint(len >> 2);
-		stream.synthRoute.render((Bit16s *)data, framesToRender);
-		stream.framesRendered(framesToRender);
+		stream.renderAndUpdateState((Bit16s *)data, framesToRender, nanosNow, framesInAudioBuffer);
 		return len;
 	}
 

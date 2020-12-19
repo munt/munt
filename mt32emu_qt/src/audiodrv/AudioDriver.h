@@ -40,6 +40,7 @@ protected:
 	} timeInfos[2];
 	QAtomicInt timeInfoChangeCount;
 
+	void renderAndUpdateState(MT32Emu::Bit16s *buffer, const quint32 frameCount, const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer);
 	void updateTimeInfo(const MasterClockNanos measuredNanos, const quint32 framesInAudioBuffer);
 	bool isAutoLatencyMode() const;
 	void framesRendered(quint32 frameCount);
