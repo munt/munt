@@ -6,6 +6,7 @@
 #include "SynthRoute.h"
 
 class MidiDriver;
+class MidiTrackRecorder;
 class QMidiStreamParser;
 class QMidiBuffer;
 
@@ -18,6 +19,7 @@ private:
 	SynthRoute *synthRoute;
 	QMidiStreamParser *qMidiStreamParser;
 	QMidiBuffer *qMidiBuffer;
+	MidiTrackRecorder *midiTrackRecorder;
 
 	MidiSession(QObject *parent, MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute);
 	~MidiSession();
@@ -28,6 +30,8 @@ public:
 	SynthRoute *getSynthRoute() const;
 	QMidiStreamParser *getQMidiStreamParser();
 	QMidiBuffer *getQMidiBuffer();
+	MidiTrackRecorder *getMidiTrackRecorder();
+	MidiTrackRecorder *setMidiTrackRecorder(MidiTrackRecorder *midiTrackRecorder);
 };
 
 class QMidiStreamParser : public MT32Emu::MidiStreamParser {

@@ -21,7 +21,7 @@ using namespace MT32Emu;
 
 MidiSession::MidiSession(QObject *parent, MidiDriver *useMidiDriver, QString useName, SynthRoute *useSynthRoute) :
 	QObject(parent), midiDriver(useMidiDriver), name(useName), synthRoute(useSynthRoute),
-	qMidiStreamParser(), qMidiBuffer()
+	qMidiStreamParser(), qMidiBuffer(), midiTrackRecorder()
 {}
 
 MidiSession::~MidiSession() {
@@ -41,6 +41,16 @@ QMidiBuffer *MidiSession::getQMidiBuffer() {
 		qMidiBuffer = new QMidiBuffer;
 	}
 	return qMidiBuffer;
+}
+
+MidiTrackRecorder * MidiSession::getMidiTrackRecorder() {
+	return midiTrackRecorder;
+}
+
+MidiTrackRecorder *MidiSession::setMidiTrackRecorder(MidiTrackRecorder *useMidiTrackRecorder) {
+	MidiTrackRecorder *oldRecorder = midiTrackRecorder;
+	midiTrackRecorder = useMidiTrackRecorder;
+	return oldRecorder;
 }
 
 SynthRoute *MidiSession::getSynthRoute() const {

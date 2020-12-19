@@ -29,7 +29,7 @@ private:
 	QSynth qSynth;
 	QList<MidiSession *> midiSessions;
 	QMutex midiSessionsMutex;
-	MidiRecorder recorder;
+	MidiRecorder midiRecorder;
 	bool exclusiveMidiMode;
 	volatile bool multiMidiMode;
 
@@ -93,13 +93,17 @@ public:
 	void stopRecordingAudio();
 	bool isRecordingAudio() const;
 
+	void startRecordingMidi();
+	bool stopRecordingMidi();
+	bool isRecordingMidi() const;
+	void saveRecordedMidi(const QString &fileName, MasterClockNanos midiTick);
+
 	void addMidiSession(MidiSession *midiSession);
 	void removeMidiSession(MidiSession *midiSession);
 	void setMidiSessionName(MidiSession *midiSession, QString name);
 	bool hasMIDISessions() const;
 	SynthRouteState getState() const;
 	void setAudioDevice(const AudioDevice *newAudioDevice);
-	MidiRecorder *getMidiRecorder();
 	void getSynthProfile(SynthProfile &synthProfile) const;
 	void setSynthProfile(const SynthProfile &synthProfile, QString useSynthProfileName);
 	void getROMImages(const MT32Emu::ROMImage *&controlROMImage, const MT32Emu::ROMImage *&pcmROMImage) const;

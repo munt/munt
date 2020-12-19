@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -234,19 +234,18 @@ void SynthWidget::on_midiProperties_clicked() {
 }
 
 void SynthWidget::on_midiRecord_clicked() {
-	MidiRecorder &recorder = *synthRoute->getMidiRecorder();
-	if (recorder.isRecording()) {
+	if (synthRoute->isRecordingMidi()) {
+		bool isMidiDataRecorded = synthRoute->stopRecordingMidi();
 		ui->midiRecord->setText("Record");
-		recorder.stopRecording();
-		static QString currentDir = NULL;
-		QString fileName = QFileDialog::getSaveFileName(this, NULL, currentDir, "Standard MIDI files (*.mid)");
-		if (!fileName.isEmpty()) {
-			currentDir = QDir(fileName).absolutePath();
-			recorder.saveSMF(fileName, MasterClock::NANOS_PER_MILLISECOND);
+		if (isMidiDataRecorded) {
+			static QString currentDir = NULL;
+			QString fileName = QFileDialog::getSaveFileName(this, NULL, currentDir, "Standard MIDI files (*.mid)");
+			if (!fileName.isEmpty()) currentDir = QDir(fileName).absolutePath();
+			synthRoute->saveRecordedMidi(fileName, MasterClock::NANOS_PER_MILLISECOND);
 		}
 	} else {
 		ui->midiRecord->setText("Stop");
-		recorder.startRecording();
+		synthRoute->startRecordingMidi();
 	}
 }
 

@@ -161,6 +161,7 @@ void SynthRoute::addMidiSession(MidiSession *midiSession) {
 	if (hasMIDISessions() && !multiMidiMode) enableMultiMidiMode();
 	QMutexLocker midiSessionsLocker(&midiSessionsMutex);
 	midiSessions.append(midiSession);
+	if (midiRecorder.isRecording()) midiSession->setMidiTrackRecorder(midiRecorder.addTrack());
 	emit midiSessionAdded(midiSession);
 }
 
@@ -208,10 +209,6 @@ void SynthRoute::handleQSynthState(SynthState synthState) {
 	}
 }
 
-MidiRecorder *SynthRoute::getMidiRecorder() {
-	return &recorder;
-}
-
 bool SynthRoute::connectSynth(const char *signal, const QObject *receiver, const char *slot) const {
 	return QObject::connect(&qSynth, signal, receiver, slot);
 }
@@ -221,7 +218,7 @@ bool SynthRoute::connectReportHandler(const char *signal, const QObject *receive
 }
 
 bool SynthRoute::pushMIDIShortMessage(MidiSession &midiSession, Bit32u msg, MasterClockNanos refNanos) {
-	recorder.recordShortMessage(msg, refNanos);
+	if (midiRecorder.isRecording()) midiSession.getMidiTrackRecorder()->recordShortMessage(msg, refNanos);
 	AudioStream *stream = audioStream;
 	if (stream == NULL) return false;
 	quint64 timestamp = stream->estimateMIDITimestamp(refNanos);
@@ -239,7 +236,7 @@ bool SynthRoute::pushMIDIShortMessage(MidiSession &midiSession, Bit32u msg, Mast
 }
 
 bool SynthRoute::pushMIDISysex(MidiSession &midiSession, const Bit8u *sysexData, unsigned int sysexLen, MasterClockNanos refNanos) {
-	recorder.recordSysex(sysexData, sysexLen, refNanos);
+	if (midiRecorder.isRecording()) midiSession.getMidiTrackRecorder()->recordSysex(sysexData, sysexLen, refNanos);
 	AudioStream *stream = audioStream;
 	if (stream == NULL) return false;
 	quint64 timestamp = stream->estimateMIDITimestamp(refNanos);
@@ -481,4 +478,28 @@ void SynthRoute::stopRecordingAudio() {
 
 bool SynthRoute::isRecordingAudio() const {
 	return qSynth.isRecordingAudio();
+}
+
+void SynthRoute::startRecordingMidi() {
+	for (int i = 0; i < midiSessions.size(); i++) {
+		midiSessions.at(i)->setMidiTrackRecorder(midiRecorder.addTrack());
+	}
+	midiRecorder.startRecording();
+}
+
+bool SynthRoute::stopRecordingMidi() {
+	return midiRecorder.stopRecording();
+}
+
+void SynthRoute::saveRecordedMidi(const QString &fileName, MasterClockNanos midiTick) {
+	if (!midiRecorder.saveSMF(fileName, midiTick)) {
+		qWarning() << "SynthRoute: Failed to write recorded MIDI data to file" << fileName;
+	}
+	for (int i = 0; i < midiSessions.size(); i++) {
+		midiSessions.at(i)->setMidiTrackRecorder(NULL);
+	}
+}
+
+bool SynthRoute::isRecordingMidi() const {
+	return midiRecorder.isRecording();
 }

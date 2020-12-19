@@ -10,6 +10,12 @@ HEAD:
 	  providing either a single MIDI input port, a pair of output audio ports, or a combined synth client with the input
 	  and output ports. In the latter case, MIDI processing and audio rendering are performed synchronously without any
 	  explicit additional latency.
+	* Improved the MIDI recording function. It now allows recording from several MIDI sources simultaneously. When more
+	  than one MIDI session is attached to a Synth being recording MIDI, a standard MIDI file type 1 is created subsequently
+	  that contains recorded MIDI events of each session in a separate MIDI track, which may be helpful while editing
+	  the MIDI file further. Additionally, improved timing of the MIDI recorder wrt. memory allocations in the MIDI thread
+	  yet fixed a couple of bugs that may be revealed when a broken / unsupported MIDI event reaches the recorder,
+	  or in case MIDI events are received out of order (i.e. with decreasing timestamps).
 
 2017-12-25:
 
