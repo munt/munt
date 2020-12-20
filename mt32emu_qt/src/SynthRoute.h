@@ -33,7 +33,10 @@ private:
 	volatile bool multiMidiMode;
 
 	const AudioDevice *audioDevice;
-	AudioStream *audioStream; // NULL until a stream is created
+	// Points to the currently active AudioStream, NULL if there are none.
+	AudioStream *audioStream;
+	// Protects read accesses to audioStream against concurrent deletions.
+	QReadWriteLock audioStreamLock;
 
 	quint64 debugLastEventTimestamp;
 	qint64 debugDeltaLowerLimit, debugDeltaUpperLimit;
@@ -41,6 +44,7 @@ private:
 	void setState(SynthRouteState newState);
 	void disableExclusiveMidiMode();
 	void mergeMidiStreams(uint renderingPassFrameLength);
+	void deleteAudioStream();
 
 public:
 	SynthRoute(QObject *parent = NULL);
