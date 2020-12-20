@@ -1,7 +1,6 @@
 #ifndef SYNTH_ROUTE_H
 #define SYNTH_ROUTE_H
 
-#include <ctime>
 #include <QtCore>
 #include <mt32emu/mt32emu.h>
 
