@@ -27,6 +27,11 @@ static void updateMidiAddActionEnabled(Ui::SynthWidget *ui) {
 	ui->midiAdd->setEnabled(ui->pinCheckBox->isEnabled() && Master::getInstance()->canCreateMidiPort());
 }
 
+static bool isAudioRecordingSupported(Ui::SynthWidget *ui) {
+	const AudioDevice *currentAudioDevice = ui->audioDeviceComboBox->itemData(ui->audioDeviceComboBox->currentIndex()).value<const AudioDevice *>();
+	return currentAudioDevice != NULL && currentAudioDevice->driver.id != "jackaudio";
+}
+
 SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, bool pinnable, const AudioDevice *useAudioDevice, QWidget *parent) :
 	QWidget(parent),
 	synthRoute(useSynthRoute),
@@ -109,6 +114,7 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 		ui->audioDeviceComboBox->setEnabled(false);
 		ui->refreshButton->setEnabled(false);
 		ui->audioPropertiesButton->setEnabled(false);
+		ui->audioRecord->setEnabled(isAudioRecordingSupported(ui));
 		ui->statusLabel->setText("Open");
 		break;
 	case SynthRouteState_OPENING:
@@ -117,6 +123,8 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 		ui->audioDeviceComboBox->setEnabled(false);
 		ui->refreshButton->setEnabled(false);
 		ui->audioPropertiesButton->setEnabled(false);
+		ui->audioRecord->setEnabled(false);
+		ui->midiRecord->setDisabled(synthRoute->isExclusiveMidiModeEnabled());
 		ui->statusLabel->setText("Opening");
 		break;
 	case SynthRouteState_CLOSING:
@@ -125,6 +133,8 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 		ui->audioDeviceComboBox->setEnabled(false);
 		ui->refreshButton->setEnabled(false);
 		ui->audioPropertiesButton->setEnabled(false);
+		ui->audioRecord->setEnabled(false);
+		if (synthRoute->isRecordingAudio()) on_audioRecord_clicked();
 		ui->statusLabel->setText("Closing");
 		break;
 	case SynthRouteState_CLOSED:
@@ -133,6 +143,7 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 		ui->audioDeviceComboBox->setEnabled(true);
 		ui->refreshButton->setEnabled(true);
 		ui->audioPropertiesButton->setEnabled(true);
+		ui->audioRecord->setEnabled(false);
 		ui->statusLabel->setText("Closed");
 		break;
 	}
