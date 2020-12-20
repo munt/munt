@@ -17,10 +17,12 @@
 #include <QMessageBox>
 
 #include "AudioFileWriter.h"
+
 #include "MasterClock.h"
 #include "Master.h"
 #include "MidiParser.h"
 #include "QSynth.h"
+#include "audiodrv/AudioFileWriterDriver.h"
 
 static const unsigned int FRAME_SIZE = 4; // Stereo, 16-bit
 static const unsigned char WAVE_HEADER[] = {
@@ -135,7 +137,7 @@ AudioFileRenderer::~AudioFileRenderer() {
 	delete[] buffer;
 }
 
-bool AudioFileRenderer::convertMIDIFiles(QString useOutFileName, QStringList midiFileNameList, QString synthProfileName, unsigned int useBufferSize) {
+bool AudioFileRenderer::convertMIDIFiles(QString useOutFileName, QStringList midiFileNameList, QString synthProfileName, quint32 useBufferSize) {
 	if (useOutFileName.isEmpty() || midiFileNameList.isEmpty()) return false;
 	delete[] parsers;
 	parsersCount = midiFileNameList.size();
@@ -181,9 +183,9 @@ bool AudioFileRenderer::convertMIDIFiles(QString useOutFileName, QStringList mid
 	return true;
 }
 
-void AudioFileRenderer::startRealtimeProcessing(SynthRoute *useSynthRoute, unsigned int useSampleRate, QString useOutFileName, unsigned int useBufferSize) {
+void AudioFileRenderer::startRealtimeProcessing(AudioFileWriterStream *audioStream, quint32 useSampleRate, QString useOutFileName, quint32 useBufferSize) {
 	if (useOutFileName.isEmpty()) return;
-	audioRenderer.synthRoute = useSynthRoute;
+	audioRenderer.audioStream = audioStream;
 	sampleRate = useSampleRate;
 	bufferSize = useBufferSize;
 	outFileName = useOutFileName;
@@ -199,9 +201,9 @@ void AudioFileRenderer::stop() {
 	wait();
 }
 
-inline void AudioFileRenderer::closeAudioRenderer() {
+inline void AudioFileRenderer::audioFileWriteFailed() {
 	if (realtimeMode) {
-		audioRenderer.synthRoute->audioStreamFailed();
+		audioRenderer.audioStream->audioStreamFailed();
 	} else {
 		audioRenderer.synth->close();
 	}
@@ -209,7 +211,7 @@ inline void AudioFileRenderer::closeAudioRenderer() {
 
 inline void AudioFileRenderer::render(qint16 *buffer, uint length) {
 	if (realtimeMode) {
-		audioRenderer.synthRoute->render(buffer, length);
+		audioRenderer.audioStream->render(buffer, length);
 	} else {
 		audioRenderer.synth->render(buffer, length);
 	}
@@ -218,7 +220,7 @@ inline void AudioFileRenderer::render(qint16 *buffer, uint length) {
 void AudioFileRenderer::run() {
 	AudioFileWriter writer(sampleRate, outFileName);
 	if (!writer.open(!realtimeMode)) {
-		closeAudioRenderer();
+		audioFileWriteFailed();
 		if (!realtimeMode) Master::getInstance()->setAudioFileWriterSynth(NULL);
 		emit conversionFinished();
 		return;
@@ -296,7 +298,7 @@ void AudioFileRenderer::run() {
 			uint framesToRender = qMin(bufferSize, frameCount);
 			render(buffer, framesToRender);
 			if (!writer.write(buffer, framesToRender)) {
-				closeAudioRenderer();
+				audioFileWriteFailed();
 				if (!realtimeMode) Master::getInstance()->setAudioFileWriterSynth(NULL);
 				emit conversionFinished();
 				return;
@@ -307,9 +309,11 @@ void AudioFileRenderer::run() {
 		}
 	}
 	qDebug() << "AudioFileRenderer: Rendering finished";
-	if (!realtimeMode) qDebug() << "AudioFileRenderer: Elapsed seconds: " << 1e-9 * (MasterClock::getClockNanos() - startNanos);
+	if (!realtimeMode) {
+		qDebug() << "AudioFileRenderer: Elapsed seconds: " << 1e-9 * (MasterClock::getClockNanos() - startNanos);
+		audioRenderer.synth->close();
+		Master::getInstance()->setAudioFileWriterSynth(NULL);
+	}
 	writer.close();
-	closeAudioRenderer();
-	if (!realtimeMode) Master::getInstance()->setAudioFileWriterSynth(NULL);
 	if (!stopProcessing) emit conversionFinished();
 }

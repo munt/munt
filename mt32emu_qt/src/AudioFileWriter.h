@@ -22,9 +22,9 @@ private:
 	bool skipSilence;
 };
 
+class AudioFileWriterStream;
 class MidiParser;
 class QSynth;
-class SynthRoute;
 
 class AudioFileRenderer : public QThread {
 	Q_OBJECT
@@ -34,13 +34,13 @@ public:
 	~AudioFileRenderer();
 
 	bool convertMIDIFiles(QString useOutFileName, QStringList useMIDIFileNameList, QString synthProfileName, quint32 bufferSize = 65536);
-	void startRealtimeProcessing(SynthRoute *synthRoute, quint32 useSampleRate, QString useOutFileName, quint32 bufferSize);
+	void startRealtimeProcessing(AudioFileWriterStream *audioStream, quint32 useSampleRate, QString useOutFileName, quint32 bufferSize);
 	void stop();
 
 private:
 	union {
 		QSynth *synth;
-		SynthRoute *synthRoute;
+		AudioFileWriterStream *audioStream;
 	} audioRenderer;
 	uint sampleRate;
 	QString outFileName;
@@ -51,7 +51,7 @@ private:
 	bool realtimeMode;
 	volatile bool stopProcessing;
 
-	inline void closeAudioRenderer();
+	inline void audioFileWriteFailed();
 	inline void render(qint16 *buffer, uint length);
 	void run();
 
