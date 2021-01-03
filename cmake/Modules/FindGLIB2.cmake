@@ -4,8 +4,6 @@
 #  GLIB2_INCLUDE_DIRS - The GLib2 include directory
 #  GLIB2_LIBRARIES - Link these to use GLib2
 
-include(FindPkgConfig)
-
 find_package(PkgConfig)
 pkg_search_module(PC_GLIB2 QUIET glib-2.0)
 

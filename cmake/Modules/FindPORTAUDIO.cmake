@@ -9,8 +9,6 @@ if(DEFINED PORTAUDIO_INCLUDE_DIRS AND DEFINED PORTAUDIO_LIBRARIES)
   return()
 endif()
 
-include(FindPkgConfig)
-
 find_package(PkgConfig)
 pkg_search_module(PC_PORTAUDIO QUIET portaudio)
 

@@ -4,8 +4,6 @@
 #  JACK_INCLUDE_DIRS - The JACK include directory
 #  JACK_LIBRARIES - Link these to use JACK
 
-include(FindPkgConfig)
-
 find_package(PkgConfig)
 pkg_search_module(PC_JACK QUIET jack)
 
