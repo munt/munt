@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -85,6 +85,8 @@ private:
 		REVERB_SETTINGS_CHANGED,
 		REVERSED_STEREO_ENABLED_CHANGED,
 		NICE_AMP_RAMP_ENABLED_CHANGED,
+		NICE_PANNING_ENABLED_CHANGED,
+		NICE_PARTIAL_MIXING_ENABLED_CHANGED,
 		EMU_DAC_INPUT_MODE_CHANGED,
 		MIDI_DELAY_MODE_CHANGED,
 		MIDI_CHANNELS_ASSIGNMENT_RESET
@@ -103,6 +105,8 @@ private:
 	bool reverbOverridden;
 	bool reversedStereoEnabled;
 	bool niceAmpRampEnabled;
+	bool nicePanningEnabled;
+	bool nicePartialMixingEnabled;
 	DACInputMode emuDACInputMode;
 	MIDIDelayMode midiDelayMode;
 	bool midiChannelsAssignmentChannel1Engaged;
@@ -185,6 +189,12 @@ private:
 				break;
 			case NICE_AMP_RAMP_ENABLED_CHANGED:
 				synth->setNiceAmpRampEnabled(niceAmpRampEnabled);
+				break;
+			case NICE_PANNING_ENABLED_CHANGED:
+				synth->setNicePanningEnabled(nicePanningEnabled);
+				break;
+			case NICE_PARTIAL_MIXING_ENABLED_CHANGED:
+				synth->setNicePartialMixingEnabled(nicePartialMixingEnabled);
 				break;
 			case EMU_DAC_INPUT_MODE_CHANGED:
 				synth->setDACInputMode(emuDACInputMode);
@@ -310,6 +320,8 @@ public:
 		reverbOverridden(qsynth.synth->isReverbOverridden()),
 		reversedStereoEnabled(qsynth.synth->isReversedStereoEnabled()),
 		niceAmpRampEnabled(qsynth.synth->isNiceAmpRampEnabled()),
+		nicePanningEnabled(qsynth.synth->isNicePanningEnabled()),
+		nicePartialMixingEnabled(qsynth.synth->isNicePartialMixingEnabled()),
 		emuDACInputMode(qsynth.synth->getDACInputMode()),
 		midiDelayMode(qsynth.synth->getMIDIDelayMode()),
 		tempState(),
@@ -340,6 +352,8 @@ public:
 		synthProfile.reverbLevel = qsynth.reverbLevel;
 		synthProfile.reversedStereoEnabled = reversedStereoEnabled;
 		synthProfile.niceAmpRamp = niceAmpRampEnabled;
+		synthProfile.nicePanning = nicePanningEnabled;
+		synthProfile.nicePartialMixing = nicePartialMixingEnabled;
 		synthProfile.emuDACInputMode = emuDACInputMode;
 		synthProfile.midiDelayMode = midiDelayMode;
 	}
@@ -392,6 +406,18 @@ public:
 		QMutexLocker settingsLocker(&settingsMutex);
 		niceAmpRampEnabled = useNiceAmpRampEnabled;
 		enqueueSynthControlEvent(NICE_AMP_RAMP_ENABLED_CHANGED);
+	}
+
+	void setNicePanningEnabled(bool useNicePanningEnabled) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		nicePanningEnabled = useNicePanningEnabled;
+		enqueueSynthControlEvent(NICE_PANNING_ENABLED_CHANGED);
+	}
+
+	void setNicePartialMixingEnabled(bool useNicePartialMixingEnabled) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		nicePartialMixingEnabled = useNicePartialMixingEnabled;
+		enqueueSynthControlEvent(NICE_PARTIAL_MIXING_ENABLED_CHANGED);
 	}
 
 	void setDACInputMode(DACInputMode useEmuDACInputMode) {
@@ -820,6 +846,24 @@ void QSynth::setNiceAmpRampEnabled(bool enabled) {
 	}
 }
 
+void QSynth::setNicePanningEnabled(bool enabled) {
+	if (isRealtime()) {
+		realtimeHelper->setNicePanningEnabled(enabled);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) synth->setNicePanningEnabled(enabled);
+	}
+}
+
+void QSynth::setNicePartialMixingEnabled(bool enabled) {
+	if (isRealtime()) {
+		realtimeHelper->setNicePartialMixingEnabled(enabled);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		if (isOpen()) synth->setNicePartialMixingEnabled(enabled);
+	}
+}
+
 void QSynth::resetMIDIChannelsAssignment(bool engageChannel1) {
 	if (isRealtime()) {
 		realtimeHelper->resetMidiChannelsAssignment(engageChannel1);
@@ -995,6 +1039,8 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 		synthProfile.reverbLevel = reverbLevel;
 		synthProfile.reversedStereoEnabled = synth->isReversedStereoEnabled();
 		synthProfile.niceAmpRamp = synth->isNiceAmpRampEnabled();
+		synthProfile.nicePanning = synth->isNicePanningEnabled();
+		synthProfile.nicePartialMixing = synth->isNicePartialMixingEnabled();
 	}
 }
 
@@ -1022,6 +1068,8 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	}
 	setReversedStereoEnabled(synthProfile.reversedStereoEnabled);
 	setNiceAmpRampEnabled(synthProfile.niceAmpRamp);
+	setNicePanningEnabled(synthProfile.nicePanning);
+	setNicePartialMixingEnabled(synthProfile.nicePartialMixing);
 	setInitialMIDIChannelsAssignment(synthProfile.engageChannel1OnOpen);
 }
 

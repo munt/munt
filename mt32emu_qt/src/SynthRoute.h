@@ -83,6 +83,8 @@ public:
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
 	void setReversedStereoEnabled(bool enabled);
 	void setNiceAmpRampEnabled(bool enabled);
+	void setNicePanningEnabled(bool enabled);
+	void setNicePartialMixingEnabled(bool enabled);
 	void resetMIDIChannelsAssignment(bool engageChannel1);
 	void setInitialMIDIChannelsAssignment(bool engageChannel1);
 	void setReverbCompatibilityMode(ReverbCompatibilityMode reverbCompatibilityMode);

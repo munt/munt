@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -458,6 +458,8 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	synthProfile.reversedStereoEnabled = settings->value("reversedStereoEnabled", false).toBool();
 	synthProfile.engageChannel1OnOpen = settings->value("engageChannel1OnOpen", false).toBool();
 	synthProfile.niceAmpRamp = settings->value("niceAmpRamp", true).toBool();
+	synthProfile.nicePanning = settings->value("nicePanning", false).toBool();
+	synthProfile.nicePartialMixing = settings->value("nicePartialMixing", false).toBool();
 	settings->endGroup();
 }
 
@@ -483,6 +485,8 @@ void Master::storeSynthProfile(const SynthProfile &synthProfile, QString name) c
 	settings->setValue("reversedStereoEnabled", synthProfile.reversedStereoEnabled);
 	settings->setValue("engageChannel1OnOpen", synthProfile.engageChannel1OnOpen);
 	settings->setValue("niceAmpRamp", synthProfile.niceAmpRamp);
+	settings->setValue("nicePanning", synthProfile.nicePanning);
+	settings->setValue("nicePartialMixing", synthProfile.nicePartialMixing);
 	settings->endGroup();
 }
 

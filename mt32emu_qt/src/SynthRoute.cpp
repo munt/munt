@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2020 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -419,6 +419,14 @@ void SynthRoute::setReversedStereoEnabled(bool enabled) {
 
 void SynthRoute::setNiceAmpRampEnabled(bool enabled) {
 	qSynth.setNiceAmpRampEnabled(enabled);
+}
+
+void SynthRoute::setNicePanningEnabled(bool enabled) {
+	qSynth.setNicePanningEnabled(enabled);
+}
+
+void SynthRoute::setNicePartialMixingEnabled(bool enabled) {
+	qSynth.setNicePartialMixingEnabled(enabled);
 }
 
 void SynthRoute::resetMIDIChannelsAssignment(bool engageChannel1) {

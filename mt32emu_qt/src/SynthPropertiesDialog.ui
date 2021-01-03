@@ -432,6 +432,45 @@ to trade-off the quality improvement over the emulation accuracy.</string>
        </property>
       </widget>
      </item>
+     <item row="14" column="0">
+      <widget class="QCheckBox" name="nicePanningCheckBox">
+       <property name="toolTip">
+        <string>Enlarges the allowed value range for the pan-pot setting, providing for smoother panning.
+
+Despite MT-32 MIDI implementation indicates allowed PANPOT range 0-14,
+the LA32 chip actually recognises values 0-7 only. By enabling this option,
+we degrade emulation accuracy a bit, pretending that LA32 handled all values as distinct,
+e.g. making possible for a 1-partial timbre to sound at the perfect stereo centre.
+
+Note, this option has no effect on partial pairs within the stereo structures (8 and 9).</string>
+       </property>
+       <property name="text">
+        <string>Nice Panning</string>
+       </property>
+      </widget>
+     </item>
+     <item row="14" column="1">
+      <widget class="QCheckBox" name="nicePartialMixingCheckBox">
+       <property name="toolTip">
+        <string>Disables occasional counter-phase mixing of partials that the LA32 chip exhibits.
+
+This behaviour is usually hard to notice unless playing a timbre with two or more
+partials that sound very close. Such timbres sound very differently in case
+of counter-phase mixing since the partials in a pair cancel out each other (mostly).
+
+By enabling this option, we make sure that the timbres, that comprise of closely
+sounding partials, are mixed in a more predictable way, again at the expence
+of somewhat degraded emulation accuracy. Additionally, the output signal has better
+chances to overdrive, so the output quality may be affected (e.g. due to by clipping).</string>
+       </property>
+       <property name="text">
+        <string>Nice partial mixing (always mix in-phase)</string>
+       </property>
+       <property name="tristate">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
@@ -502,6 +541,8 @@ to trade-off the quality improvement over the emulation accuracy.</string>
   <tabstop>assignChannels1_8_10Button</tabstop>
   <tabstop>niceAmpRampCheckBox</tabstop>
   <tabstop>engageChannel1CheckBox</tabstop>
+  <tabstop>nicePanningCheckBox</tabstop>
+  <tabstop>nicePartialMixingCheckBox</tabstop>
   <tabstop>profileComboBox</tabstop>
   <tabstop>profileCheckBox</tabstop>
  </tabstops>

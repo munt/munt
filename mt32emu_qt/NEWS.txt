@@ -16,6 +16,7 @@ HEAD:
 	  the MIDI file further. Additionally, improved timing of the MIDI recorder wrt. memory allocations in the MIDI thread
 	  yet fixed a couple of bugs that may be revealed when a broken / unsupported MIDI event reaches the recorder,
 	  or in case MIDI events are received out of order (i.e. with decreasing timestamps).
+	* Added support for the two new synth properties NicePanning and NicePartialMixing introduced with mt32emu release 2.4.0.
 
 2017-12-25:
 
