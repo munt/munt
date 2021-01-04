@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2009, 2011 Jerome Fisher
- * Copyright (C) 2012-2020 Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2012-2021 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -113,6 +113,8 @@ struct Options {
 	gboolean waitForReverb;
 	gboolean sendAllNotesOff;
 	gboolean niceAmpRamp;
+	gboolean nicePanning;
+	gboolean nicePartialMixing;
 };
 
 struct State {
@@ -170,6 +172,8 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	options->waitForReverb = true;
 	options->sendAllNotesOff = true;
 	options->niceAmpRamp = true;
+	options->nicePanning = false;
+	options->nicePartialMixing = false;
 	// FIXME: Perhaps there's a nicer way to represent long argument descriptions...
 	GOptionEntry entries[] = {
 		{"output", 'o', 0, G_OPTION_ARG_FILENAME, &options->outputFilename, "Output file (default: last source file name with \".wav\" appended)", "<filename>"},
@@ -235,6 +239,11 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		 "                WARNING: Sound can theoretically continue forever if not limited by other options.", NULL},
 		{"no-nice-amp-ramp", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &options->niceAmpRamp, "Emulate amplitude ramp accurately.\n"
 		 "                Quick changes of volume or expression on a MIDI channel may result in amp jumps which are avoided by default.", NULL},
+		{"nice-panning", 0, 0, G_OPTION_ARG_NONE, &options->nicePanning, "Enlarges the pan setting accuracy to 4 bits providing for smoother panning.\n"
+		 "                By default, we accurately emulate the LA32 chip that only supports the pan setting accuracy of 3 bits.", NULL},
+		{"nice-partial-mixing", 0, 0, G_OPTION_ARG_NONE, &options->nicePartialMixing, "Disables occasional counter-phase mixing of partials that the LA32 chip exhibits.\n"
+		 "                Timbres with closely souding partials may sound quite differently, or even cancel out if mixed counter-phase.\n"
+		 "                Enabling this option makes the behaviour more predictable.", NULL},
 
 		{"s", 's', 0, G_OPTION_ARG_FILENAME, &deprecatedSysexFile, "[DEPRECATED] Play this SMF or sysex file before any other. DEPRECATED: Instead just specify the file first in the file list.", "<midi_file>"},
 		{G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &options->inputFilenames, NULL, "<midi_file> [midi_file...]"},
@@ -793,7 +802,7 @@ int main(int argc, char *argv[]) {
 	setlocale(LC_ALL, "");
 	printf("Munt MT32Emu MIDI to Wave Conversion Utility. Version %s\n", VERSION);
 	printf("  Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>\n");
-	printf("  Copyright (C) 2012-2020 Jerome Fisher, Sergey V. Mikayev\n");
+	printf("  Copyright (C) 2012-2021 Jerome Fisher, Sergey V. Mikayev\n");
 	printf("Using Munt MT32Emu Library Version %s, libsmf Version %s (with modifications)\n", service.getLibraryVersionString(), smf_get_version());
 	if (!parseOptions(argc, argv, &options)) {
 		return -1;
@@ -860,6 +869,12 @@ int main(int argc, char *argv[]) {
 		service.setDACInputMode(options.dacInputMode);
 		if (!options.niceAmpRamp) {
 			service.setNiceAmpRampEnabled(false);
+		}
+		if (options.nicePanning) {
+			service.setNicePanningEnabled(true);
+		}
+		if (options.nicePartialMixing) {
+			service.setNicePartialMixingEnabled(true);
 		}
 		options.sampleRate = service.getActualStereoOutputSamplerate();
 		printf("Using output sample rate %d Hz\n", options.sampleRate);

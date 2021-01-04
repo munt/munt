@@ -459,7 +459,7 @@ partials that sound very close. Such timbres sound very differently in case
 of counter-phase mixing since the partials in a pair cancel out each other (mostly).
 
 By enabling this option, we make sure that the timbres, that comprise of closely
-sounding partials, are mixed in a more predictable way, again at the expence
+sounding partials, are mixed in a more predictable way, again at the expense
 of somewhat degraded emulation accuracy. Additionally, the output signal has better
 chances to overdrive, so the output quality may be affected (e.g. due to by clipping).</string>
        </property>
