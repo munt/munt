@@ -1,3 +1,8 @@
+HEAD:
+
+	* Updated mt32emu library to version 2.4.1.
+	* Added support for the two new synth properties NicePanning and NicePartialMixing introduced with mt32emu release 2.4.0.
+
 2020-06-20:
 
 	1.5.1 released.

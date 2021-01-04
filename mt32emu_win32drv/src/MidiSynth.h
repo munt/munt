@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Sergey V. Mikayev
+/* Copyright (C) 2011-2021 Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -47,6 +47,8 @@ private:
 	unsigned int reverbCompatibilityMode;
 	bool reversedStereoEnabled;
 	bool niceAmpRamp;
+	bool nicePanning;
+	bool nicePartialMixing;
 	double sampleRateRatio;
 
 	Bit16s *buffer;

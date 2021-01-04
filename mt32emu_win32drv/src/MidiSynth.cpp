@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2019 Sergey V. Mikayev
+/* Copyright (C) 2011-2021 Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -488,6 +488,8 @@ void MidiSynth::ReloadSettings() {
 
 	reversedStereoEnabled = LoadBoolValue(hRegProfile, "reversedStereoEnabled", false);
 	niceAmpRamp = LoadBoolValue(hRegProfile, "niceAmpRamp", true);
+	nicePanning = LoadBoolValue(hRegProfile, "nicePanning", false);
+	nicePartialMixing = LoadBoolValue(hRegProfile, "nicePartialMixing", false);
 
 	reverbCompatibilityMode = (ReverbCompatibilityMode)LoadIntValue(hRegProfile, "reverbCompatibilityMode", ReverbCompatibilityMode_DEFAULT);
 	emuDACInputMode = (DACInputMode)LoadIntValue(hRegProfile, "emuDACInputMode", DACInputMode_NICE);
@@ -549,6 +551,8 @@ void MidiSynth::ApplySettings() {
 	}
 	synth->setReversedStereoEnabled(reversedStereoEnabled);
 	synth->setNiceAmpRampEnabled(niceAmpRamp);
+	synth->setNicePanningEnabled(nicePanning);
+	synth->setNicePartialMixingEnabled(nicePartialMixing);
 }
 
 int MidiSynth::Init() {
@@ -676,4 +680,4 @@ void MidiSynth::Close() {
 	synthEvent.Close();
 }
 
-}
+} // namespace MT32Emu
