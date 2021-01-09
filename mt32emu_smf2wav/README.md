@@ -1,12 +1,14 @@
 Munt mt32emu-smf2wav
 ====================
 
-mt32emu-smf2wav makes use of libmt32emu to produce a WAVE file from an SMF file.
-SMF stands for "Standard MIDI File", and files in this format commonly have the
-extension ".smf" or ".mid".
+_mt32emu-smf2wav_ is a part of the Munt project. It makes use of [the mt32emu
+library](https://github.com/munt/munt/tree/master/mt32emu) to produce a WAVE
+file from a [Standard MIDI
+file](https://www.midi.org/specifications-old/item/standard-midi-files-smf)
+(SMF). Files in this format commonly have the extension ".smf" or ".mid".
 
 This program is experimental and mainly intended as an aid to Munt developers
-and an example of embedding libmt32emu in a program.
+and an example of embedding _mt32emu_ library in a program.
 
 There is no documentation, program arguments are likely to change in future and
 there are undoubtedly bugs.
@@ -18,20 +20,23 @@ are likely to produce pleasing output. The MT-32 is *not* a General MIDI device.
 Building
 ========
 
-mt32emu-smf2wav requires CMake to build. See http://www.cmake.org/ for details.
-GLIB is a required dependency. Can be found at http://www.gtk.org/.
-For a simple in-tree build in a POSIX environment, you can probably just do:
+_mt32emu-smf2wav_ requires CMake to build. More info can be found at [the CMake
+homepage](http://www.cmake.org/). GLIB is a required dependency. Can be found at
+http://www.gtk.org/.
 
-cmake -DCMAKE_BUILD_TYPE:STRING=Release .
-make
-sudo make install
+For a simple in-tree build in a POSIX environment, you can probably just run the
+following commands from the source directory:
+
+    cmake -DCMAKE_BUILD_TYPE:STRING=Release .
+    make
+    sudo make install
 
 
 License
 =======
 
-Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>
-Copyright (C) 2012-2020 Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com><br>
+Copyright (C) 2012-2021 Jerome Fisher, Sergey V. Mikayev
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
