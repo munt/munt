@@ -261,7 +261,7 @@ endif()
 
 if(libmt32emu_PACKAGE_TYPE STREQUAL "Runtime" OR NOT libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
   install(FILES
-    AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.txt TODO.txt
+    AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.md TODO.txt
     DESTINATION share/doc/munt/libmt32emu
   )
 endif()
@@ -280,7 +280,7 @@ set(CPACK_PACKAGE_CONTACT "sergm@muntemu.org")
 set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../FreeBSD/usr/ports/audio/libmt32emu/pkg-descr")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "C/C++ library to emulate (approximately) the Roland MT-32, CM-32L and LAPC-I synthesiser modules")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER.txt")
-set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.txt")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 set(CPACK_SOURCE_GENERATOR TGZ)
 set(CPACK_SOURCE_STRIP_FILES TRUE)
 # The default source package file name has "-Source" at the end, which doesn't match our previous releases

@@ -25,7 +25,7 @@ LIB_DEPENDS=    libmt32emu.so.2:${PORTSDIR}/audio/libmt32emu
 PLIST_FILES=	bin/mt32emu-smf2wav \
 		share/doc/munt/smf2wav/AUTHORS.txt \
 		share/doc/munt/smf2wav/COPYING.txt \
-		share/doc/munt/smf2wav/README.txt
+		share/doc/munt/smf2wav/README.md
 
 PLIST_DIRS=	share/doc/munt/smf2wav \
 		share/doc/munt

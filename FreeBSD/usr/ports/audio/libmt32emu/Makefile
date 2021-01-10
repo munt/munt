@@ -39,7 +39,7 @@ PLIST_FILES=	lib/libmt32emu.so \
 		share/doc/munt/libmt32emu/COPYING.txt \
 		share/doc/munt/libmt32emu/COPYING.LESSER.txt \
 		share/doc/munt/libmt32emu/NEWS.txt \
-		share/doc/munt/libmt32emu/README.txt \
+		share/doc/munt/libmt32emu/README.md \
 		share/doc/munt/libmt32emu/TODO.txt
 
 PLIST_DIRS=	include/mt32emu/c_interface \

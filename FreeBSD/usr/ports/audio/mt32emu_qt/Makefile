@@ -27,7 +27,7 @@ PLIST_FILES=	bin/mt32emu-qt \
 		share/doc/munt/mt32emu-qt/AUTHORS.txt \
 		share/doc/munt/mt32emu-qt/COPYING.txt \
 		share/doc/munt/mt32emu-qt/NEWS.txt \
-		share/doc/munt/mt32emu-qt/README.txt \
+		share/doc/munt/mt32emu-qt/README.md \
 		share/doc/munt/mt32emu-qt/TODO.txt
 
 PLIST_DIRS=	share/doc/munt/mt32emu-qt \
