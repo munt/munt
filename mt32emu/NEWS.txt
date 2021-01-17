@@ -1,4 +1,6 @@
-HEAD:
+2021-01-17:
+
+	2.4.2 released.
 
 	* Reworked the support for accessing ROM files with localised pathnames introduced in 2.3.0.
 	  Since it is not really necessary in majority of cases but may nevertheless update global
