@@ -6,22 +6,24 @@
 #
 
 PORTNAME=	mt32emu-qt
-PORTVERSION=	1.7.1
+PORTVERSION=	1.8.0
 CATEGORIES=	audio
 MASTER_SITES=	https://github.com/munt/munt/archive/
 FETCH_ARGS=	-a
-DISTFILES=	mt32emu_qt_1_7_1.tar.gz
+DISTFILES=	mt32emu_qt_1_8_0.tar.gz
+WRKSRC=		$(WRKDIR)/munt-mt32emu_qt_1_8_0/mt32emu_qt
+LICENSE=        GPLv3+
+LICENSE_FILE=   ${WRKSRC}/COPYING.txt
 
 MAINTAINER=	sergm@muntemu.org
 COMMENT=	Main MT-32 emulation application using libmt32emu
 
-USES=		cmake
-CMAKE_SOURCE_PATH= $(WRKDIR)/munt-mt32emu_qt_1_7_1/mt32emu_qt
+USES=		cmake qt:5
+USE_QT=		widgets qmake_build buildtools_build
 
-#USE_QT4=	gui imageformats qmake_build moc_build rcc_build uic_build
-USE_QT5=	widgets qmake_build buildtools_build
-
-LIB_DEPENDS=	libportaudio.so.2:${PORTSDIR}/audio/portaudio libmt32emu.so.2:${PORTSDIR}/audio/libmt32emu
+LIB_DEPENDS=	libportaudio.so.2:audio/portaudio \
+		libjack.so.0:audio/jack \
+		libmt32emu.so.2:audio/libmt32emu
 
 PLIST_FILES=	bin/mt32emu-qt \
 		share/doc/munt/mt32emu-qt/AUTHORS.txt \
