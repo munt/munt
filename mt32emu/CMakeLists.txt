@@ -151,6 +151,7 @@ if(libmt32emu_SHARED)
   add_definitions(-DMT32EMU_SHARED)
   set(libmt32emu_BUILD_TYPE SHARED)
   if(NOT OS2)
+    # A workaround for the OS/2 port of GCC 9 that emits lots of warnings otherwise.
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
   endif()
   if(libmt32emu_INSTALL_DEFAULT_LOCALE)
