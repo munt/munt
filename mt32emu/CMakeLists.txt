@@ -36,19 +36,16 @@ endif(${libmt32emu_SHARED} AND NOT ${munt_WITH_MT32EMU_QT})
 
 set(LIB_INSTALL_DIR lib CACHE PATH "Relative installation path to libraries")
 
+set(libmt32emu_PACKAGE_TYPE Complete CACHE STRING "Selects output binary package type: Complete, Runtime or Devel")
+mark_as_advanced(libmt32emu_PACKAGE_TYPE)
+set_property(CACHE libmt32emu_PACKAGE_TYPE PROPERTY STRINGS Complete Runtime Devel)
+
 if(libmt32emu_SHARED)
-  set(libmt32emu_PACKAGE_TYPE Complete CACHE STRING "Selects output binary package type: Complete, Runtime or Devel")
-  mark_as_advanced(libmt32emu_PACKAGE_TYPE)
-  set_property(CACHE libmt32emu_PACKAGE_TYPE
-    PROPERTY STRINGS Complete Runtime Devel
-  )
   option(libmt32emu_INSTALL_DEFAULT_LOCALE "Install user-preferred system locale as C locale when initialising shared library.\
  This is generally not necessary, although may be required in some cases\
  (for instance, when builing shared library with old versions of MS VC with the C runtime statically linked)\
  to open ROM files with localised pathnames successfully." FALSE)
   mark_as_advanced(libmt32emu_INSTALL_DEFAULT_LOCALE)
-else()
-  set(libmt32emu_PACKAGE_TYPE Complete)
 endif()
 
 set(libmt32emu_SOURCES
@@ -235,10 +232,12 @@ if(libmt32emu_SHARED AND CMAKE_SYSTEM_NAME STREQUAL Windows)
 endif()
 
 if(libmt32emu_PACKAGE_TYPE STREQUAL "Runtime")
-  install(TARGETS mt32emu
-    LIBRARY DESTINATION ${LIB_INSTALL_DIR} NAMELINK_SKIP
-    RUNTIME DESTINATION bin
-  )
+  if(libmt32emu_SHARED)
+    install(TARGETS mt32emu
+      LIBRARY DESTINATION ${LIB_INSTALL_DIR} NAMELINK_SKIP
+      RUNTIME DESTINATION bin
+    )
+  endif()
 elseif(libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
   if(WIN32 OR CYGWIN)
     install(TARGETS mt32emu ARCHIVE DESTINATION ${LIB_INSTALL_DIR})
@@ -253,14 +252,14 @@ else()
   )
 endif()
 
-if(NOT libmt32emu_PACKAGE_TYPE STREQUAL "Runtime" OR libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
+if(NOT libmt32emu_PACKAGE_TYPE STREQUAL "Runtime")
   install(DIRECTORY
     "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu"
     DESTINATION include
   )
 endif()
 
-if(libmt32emu_PACKAGE_TYPE STREQUAL "Runtime" OR NOT libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
+if(NOT(libmt32emu_SHARED AND libmt32emu_PACKAGE_TYPE STREQUAL "Devel"))
   install(FILES
     AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.md TODO.txt
     DESTINATION share/doc/munt/libmt32emu
