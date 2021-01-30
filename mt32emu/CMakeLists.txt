@@ -281,10 +281,11 @@ set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../FreeBSD/usr/p
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "C/C++ library to emulate (approximately) the Roland MT-32, CM-32L and LAPC-I synthesiser modules")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+# The default package file name has "-${CPACK_SYSTEM_NAME}" at the end, which doesn't match our previous releases
+set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${libmt32emu_VERSION}")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}")
 set(CPACK_SOURCE_GENERATOR TGZ)
 set(CPACK_SOURCE_STRIP_FILES TRUE)
-# The default source package file name has "-Source" at the end, which doesn't match our previous releases
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(CPACK_RPM_PACKAGE_GROUP "Audio/Emulators")
 set(CPACK_RPM_PACKAGE_LICENSE "LGPLv2.1+")
 set(CPACK_RPM_PACKAGE_URL "http://munt.sourceforge.net/")
