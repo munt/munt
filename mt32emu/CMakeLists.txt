@@ -40,6 +40,9 @@ set(libmt32emu_PACKAGE_TYPE Complete CACHE STRING "Selects output binary package
 mark_as_advanced(libmt32emu_PACKAGE_TYPE)
 set_property(CACHE libmt32emu_PACKAGE_TYPE PROPERTY STRINGS Complete Runtime Devel)
 
+set(libmt32emu_PKGCONFIG_INSTALL_PREFIX lib CACHE PATH "Installation path prefix for pkgconfig files")
+mark_as_advanced(libmt32emu_PKGCONFIG_INSTALL_PREFIX)
+
 if(libmt32emu_SHARED)
   option(libmt32emu_INSTALL_DEFAULT_LOCALE "Install user-preferred system locale as C locale when initialising shared library.\
  This is generally not necessary, although may be required in some cases\
@@ -259,16 +262,16 @@ if(NOT libmt32emu_PACKAGE_TYPE STREQUAL "Runtime")
     "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu"
     DESTINATION include
   )
+  install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/mt32emu.pc
+    DESTINATION ${libmt32emu_PKGCONFIG_INSTALL_PREFIX}/pkgconfig
+  )
 endif()
 
 if(NOT(libmt32emu_SHARED AND libmt32emu_PACKAGE_TYPE STREQUAL "Devel"))
   install(FILES
     AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.md TODO.txt
     DESTINATION share/doc/munt/libmt32emu
-  )
-  install(FILES 
-    ${CMAKE_CURRENT_BINARY_DIR}/mt32emu.pc
-    DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
   )
 endif()
 
