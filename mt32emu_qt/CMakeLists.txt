@@ -349,6 +349,11 @@ install(TARGETS
   DESTINATION bin
 )
 
+if(UNIX AND NOT APPLE)
+  install(FILES res/mt32emu-qt.desktop DESTINATION share/applications)
+  install(FILES res/munt.png DESTINATION share/pixmaps)
+endif(UNIX AND NOT APPLE)
+
 install(FILES
   AUTHORS.txt COPYING.txt NEWS.txt README.md TODO.txt
   DESTINATION share/doc/munt/mt32emu-qt
@@ -375,6 +380,8 @@ set(CPACK_PACKAGE_EXECUTABLES mt32emu-qt;Munt\ MT-32\ Sound\ Module\ Emulator)
 set(CPACK_RPM_PACKAGE_GROUP "Audio/Emulators")
 set(CPACK_RPM_PACKAGE_LICENSE "GPLv3+")
 set(CPACK_RPM_PACKAGE_URL "http://munt.sourceforge.net/")
+# These two directories pre-exist on a freedesktop-conforming system and cause conflict if not excluded
+set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/share/applications /usr/share/pixmaps)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS "ON")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://munt.sourceforge.net/")
 set(CPACK_DEBIAN_PACKAGE_SECTION "sound")

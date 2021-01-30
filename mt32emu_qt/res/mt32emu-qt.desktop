@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=MT-32 Emulator
+Comment=Munt - MT-32 sound module emulator
+Exec=mt32emu-qt
+Icon=munt
+NoDisplay=false
+StartupNotify=true
+Terminal=false
+Type=Application
+Categories=AudioVideo;
