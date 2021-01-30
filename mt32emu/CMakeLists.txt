@@ -168,6 +168,8 @@ endforeach(HEADER)
 configure_file("src/config.h.in" "include/mt32emu/config.h")
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu)
 
+configure_file("src/mt32emu.pc.in" "mt32emu.pc" @ONLY)
+
 if(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
   add_definitions(-DMT32EMU_WITH_INTERNAL_RESAMPLER)
   set(${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SOURCES}
@@ -263,6 +265,10 @@ if(NOT(libmt32emu_SHARED AND libmt32emu_PACKAGE_TYPE STREQUAL "Devel"))
   install(FILES
     AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.md TODO.txt
     DESTINATION share/doc/munt/libmt32emu
+  )
+  install(FILES 
+    ${CMAKE_CURRENT_BINARY_DIR}/mt32emu.pc
+    DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
   )
 endif()
 
