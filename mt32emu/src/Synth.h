@@ -197,7 +197,7 @@ private:
 	// **************************** Implementation methods **************************
 
 	Bit32u addMIDIInterfaceDelay(Bit32u len, Bit32u timestamp);
-	bool isAbortingPoly() const { return abortingPoly != NULL; }
+	bool isAbortingPoly() const { return abortingPoly != nullptr; }
 
 	void writeSysexGlobal(Bit32u addr, const Bit8u *sysex, Bit32u len);
 	void readSysex(Bit8u channel, const Bit8u *sysex, Bit32u len) const;
@@ -256,7 +256,7 @@ public:
 	}
 
 	static inline void muteSampleBuffer(float *buffer, Bit32u len) {
-		if (buffer == NULL) return;
+		if (buffer == nullptr) return;
 		// FIXME: Use memset() where compatibility is guaranteed (if this turns out to be a win)
 		while (len--) {
 			*(buffer++) = 0.0f;
@@ -287,7 +287,7 @@ public:
 	MT32EMU_EXPORT static Bit32u getStereoOutputSampleRate(AnalogOutputMode analogOutputMode);
 
 	// Optionally sets callbacks for reporting various errors, information and debug messages
-	MT32EMU_EXPORT explicit Synth(ReportHandler *useReportHandler = NULL);
+	MT32EMU_EXPORT explicit Synth(ReportHandler *useReportHandler = nullptr);
 	MT32EMU_EXPORT ~Synth();
 
 	// Used to initialise the MT-32. Must be called before any other function.
