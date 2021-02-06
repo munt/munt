@@ -19,26 +19,42 @@
 
 #include "internals.h"
 
+#include "File.h"
 #include "ROMInfo.h"
 
 namespace MT32Emu {
 
-static const ROMInfo *getKnownROMInfoFromList(Bit32u index) {
-	// Known ROMs
-	static const ROMInfo CTRL_MT32_V1_04 = {65536, "5a5cb5a77d7d55ee69657c2f870416daed52dea7", ROMInfo::Control, "ctrl_mt32_1_04", "MT-32 Control v1.04", ROMInfo::Full, NULL};
-	static const ROMInfo CTRL_MT32_V1_05 = {65536, "e17a3a6d265bf1fa150312061134293d2b58288c", ROMInfo::Control, "ctrl_mt32_1_05", "MT-32 Control v1.05", ROMInfo::Full, NULL};
-	static const ROMInfo CTRL_MT32_V1_06 = {65536, "a553481f4e2794c10cfe597fef154eef0d8257de", ROMInfo::Control, "ctrl_mt32_1_06", "MT-32 Control v1.06", ROMInfo::Full, NULL};
-	static const ROMInfo CTRL_MT32_V1_07 = {65536, "b083518fffb7f66b03c23b7eb4f868e62dc5a987", ROMInfo::Control, "ctrl_mt32_1_07", "MT-32 Control v1.07", ROMInfo::Full, NULL};
-	static const ROMInfo CTRL_MT32_BLUER = {65536, "7b8c2a5ddb42fd0732e2f22b3340dcf5360edf92", ROMInfo::Control, "ctrl_mt32_bluer", "MT-32 Control BlueRidge", ROMInfo::Full, NULL};
+static const ROMInfo * const *getKnownROMInfoList() {
+	static ROMInfo CTRL_MT32_V1_04_A = {32768, "9cd4858014c4e8a9dff96053f784bfaac1092a2e", ROMInfo::Control, "ctrl_mt32_1_04", "MT-32 Control v1.04", ROMInfo::Mux0, NULL};
+	static ROMInfo CTRL_MT32_V1_04_B = {32768, "fe8db469b5bfeb37edb269fd47e3ce6d91014652", ROMInfo::Control, "ctrl_mt32_1_04", "MT-32 Control v1.04", ROMInfo::Mux1, &CTRL_MT32_V1_04_A};
+	static ROMInfo CTRL_MT32_V1_04 = {65536, "5a5cb5a77d7d55ee69657c2f870416daed52dea7", ROMInfo::Control, "ctrl_mt32_1_04", "MT-32 Control v1.04", ROMInfo::Full, NULL};
+	static ROMInfo CTRL_MT32_V1_05_A = {32768, "57a09d80d2f7ca5b9734edbe9645e6e700f83701", ROMInfo::Control, "ctrl_mt32_1_05", "MT-32 Control v1.05", ROMInfo::Mux0, NULL};
+	static ROMInfo CTRL_MT32_V1_05_B = {32768, "52e3c6666db9ef962591a8ee99be0cde17f3a6b6", ROMInfo::Control, "ctrl_mt32_1_05", "MT-32 Control v1.05", ROMInfo::Mux1, &CTRL_MT32_V1_05_A};
+	static ROMInfo CTRL_MT32_V1_05 = {65536, "e17a3a6d265bf1fa150312061134293d2b58288c", ROMInfo::Control, "ctrl_mt32_1_05", "MT-32 Control v1.05", ROMInfo::Full, NULL};
+	static ROMInfo CTRL_MT32_V1_06_A = {32768, "cc83bf23cee533097fb4c7e2c116e43b50ebacc8", ROMInfo::Control, "ctrl_mt32_1_06", "MT-32 Control v1.06", ROMInfo::Mux0, NULL};
+	static ROMInfo CTRL_MT32_V1_06_B = {32768, "bf4f15666bc46679579498386704893b630c1171", ROMInfo::Control, "ctrl_mt32_1_06", "MT-32 Control v1.06", ROMInfo::Mux1, &CTRL_MT32_V1_06_A};
+	static ROMInfo CTRL_MT32_V1_06 = {65536, "a553481f4e2794c10cfe597fef154eef0d8257de", ROMInfo::Control, "ctrl_mt32_1_06", "MT-32 Control v1.06", ROMInfo::Full, NULL};
+	static ROMInfo CTRL_MT32_V1_07_A = {32768, "13f06b38f0d9e0fc050b6503ab777bb938603260", ROMInfo::Control, "ctrl_mt32_1_07", "MT-32 Control v1.07", ROMInfo::Mux0, NULL};
+	static ROMInfo CTRL_MT32_V1_07_B = {32768, "c55e165487d71fa88bd8c5e9c083bc456c1a89aa", ROMInfo::Control, "ctrl_mt32_1_07", "MT-32 Control v1.07", ROMInfo::Mux1, &CTRL_MT32_V1_07_A};
+	static ROMInfo CTRL_MT32_V1_07 = {65536, "b083518fffb7f66b03c23b7eb4f868e62dc5a987", ROMInfo::Control, "ctrl_mt32_1_07", "MT-32 Control v1.07", ROMInfo::Full, NULL};
+	static ROMInfo CTRL_MT32_BLUER_A = {32768, "11a6ae5d8b6ee328b371af7f1e40b82125aa6b4d", ROMInfo::Control, "ctrl_mt32_bluer", "MT-32 Control BlueRidge", ROMInfo::Mux0, NULL};
+	static ROMInfo CTRL_MT32_BLUER_B = {32768, "e0934320d7cbb5edfaa29e0d01ae835ef620085b", ROMInfo::Control, "ctrl_mt32_bluer", "MT-32 Control BlueRidge", ROMInfo::Mux1, &CTRL_MT32_BLUER_A};
+	static ROMInfo CTRL_MT32_BLUER = {65536, "7b8c2a5ddb42fd0732e2f22b3340dcf5360edf92", ROMInfo::Control, "ctrl_mt32_bluer", "MT-32 Control BlueRidge", ROMInfo::Full, NULL};
 
 	static const ROMInfo CTRL_MT32_V2_04 = {131072, "2c16432b6c73dd2a3947cba950a0f4c19d6180eb", ROMInfo::Control, "ctrl_mt32_2_04", "MT-32 Control v2.04", ROMInfo::Full, NULL};
 	static const ROMInfo CTRL_CM32L_V1_00 = {65536, "73683d585cd6948cc19547942ca0e14a0319456d", ROMInfo::Control, "ctrl_cm32l_1_00", "CM-32L/LAPC-I Control v1.00", ROMInfo::Full, NULL};
 	static const ROMInfo CTRL_CM32L_V1_02 = {65536, "a439fbb390da38cada95a7cbb1d6ca199cd66ef8", ROMInfo::Control, "ctrl_cm32l_1_02", "CM-32L/LAPC-I Control v1.02", ROMInfo::Full, NULL};
 
-	static const ROMInfo PCM_MT32 = {524288, "f6b1eebc4b2d200ec6d3d21d51325d5b48c60252", ROMInfo::PCM, "pcm_mt32", "MT-32 PCM ROM", ROMInfo::Full, NULL};
-	static const ROMInfo PCM_CM32L = {1048576, "289cc298ad532b702461bfc738009d9ebe8025ea", ROMInfo::PCM, "pcm_cm32l", "CM-32L/CM-64/LAPC-I PCM ROM", ROMInfo::Full, NULL};
+	static ROMInfo PCM_MT32_L = {262144, "3a1e19b0cd4036623fd1d1d11f5f25995585962b", ROMInfo::PCM, "pcm_mt32", "MT-32 PCM ROM", ROMInfo::FirstHalf, NULL};
+	static ROMInfo PCM_MT32_H = {262144, "2cadb99d21a6a4a6f5b61b6218d16e9b43f61d01", ROMInfo::PCM, "pcm_mt32", "MT-32 PCM ROM", ROMInfo::SecondHalf, &PCM_MT32_L};
+	static ROMInfo PCM_MT32 = {524288, "f6b1eebc4b2d200ec6d3d21d51325d5b48c60252", ROMInfo::PCM, "pcm_mt32", "MT-32 PCM ROM", ROMInfo::Full, NULL};
+	// Alias of PCM_MT32 ROM, only useful for pairing with PCM_CM32L_H.
+	static ROMInfo PCM_CM32L_L = {524288, "f6b1eebc4b2d200ec6d3d21d51325d5b48c60252", ROMInfo::PCM, "pcm_cm32l", "CM-32L/CM-64/LAPC-I PCM ROM", ROMInfo::FirstHalf, NULL};
+	static ROMInfo PCM_CM32L_H = {524288, "3ad889fde5db5b6437cbc2eb6e305312fec3df93", ROMInfo::PCM, "pcm_cm32l", "CM-32L/CM-64/LAPC-I PCM ROM", ROMInfo::SecondHalf, &PCM_CM32L_L};
+	static ROMInfo PCM_CM32L = {1048576, "289cc298ad532b702461bfc738009d9ebe8025ea", ROMInfo::PCM, "pcm_cm32l", "CM-32L/CM-64/LAPC-I PCM ROM", ROMInfo::Full, NULL};
 
 	static const ROMInfo * const ROM_INFOS[] = {
+		// Complete images
 		&CTRL_MT32_V1_04,
 		&CTRL_MT32_V1_05,
 		&CTRL_MT32_V1_06,
@@ -49,15 +65,42 @@ static const ROMInfo *getKnownROMInfoFromList(Bit32u index) {
 		&CTRL_CM32L_V1_02,
 		&PCM_MT32,
 		&PCM_CM32L,
-		NULL};
+		// Halves
+		&CTRL_MT32_V1_04_A, &CTRL_MT32_V1_04_B,
+		&CTRL_MT32_V1_05_A, &CTRL_MT32_V1_05_B,
+		&CTRL_MT32_V1_06_A, &CTRL_MT32_V1_06_B,
+		&CTRL_MT32_V1_07_A, &CTRL_MT32_V1_07_B,
+		&CTRL_MT32_BLUER_A, &CTRL_MT32_BLUER_B,
+		&PCM_MT32_L, &PCM_MT32_H,
+		&PCM_CM32L_L, &PCM_CM32L_H,
+		NULL
+	};
 
-	return ROM_INFOS[index];
+	if (CTRL_MT32_V1_04_A.pairROMInfo == NULL) {
+		CTRL_MT32_V1_04_A.pairROMInfo = &CTRL_MT32_V1_04_B;
+		CTRL_MT32_V1_05_A.pairROMInfo = &CTRL_MT32_V1_05_B;
+		CTRL_MT32_V1_06_A.pairROMInfo = &CTRL_MT32_V1_06_B;
+		CTRL_MT32_V1_07_A.pairROMInfo = &CTRL_MT32_V1_07_B;
+		CTRL_MT32_BLUER_A.pairROMInfo = &CTRL_MT32_BLUER_B;
+		PCM_MT32_L.pairROMInfo = &PCM_MT32_H;
+		PCM_CM32L_L.pairROMInfo = &PCM_CM32L_H;
+	}
+
+	return ROM_INFOS;
 }
 
-const ROMInfo* ROMInfo::getROMInfo(File *file) {
+static const ROMInfo *getKnownROMInfoFromList(Bit32u index) {
+	return getKnownROMInfoList()[index];
+}
+
+const ROMInfo *ROMInfo::getROMInfo(File *file) {
+	return getROMInfo(file, getKnownROMInfoList());
+}
+
+const ROMInfo * ROMInfo::getROMInfo(File *file, const ROMInfo * const *romInfos) {
 	size_t fileSize = file->getSize();
-	for (Bit32u i = 0; getKnownROMInfoFromList(i) != NULL; i++) {
-		const ROMInfo *romInfo = getKnownROMInfoFromList(i);
+	for (Bit32u i = 0; romInfos[i] != NULL; i++) {
+		const ROMInfo *romInfo = romInfos[i];
 		if (fileSize == romInfo->fileSize && !strcmp(file->getSHA1(), romInfo->sha1Digest)) {
 			return romInfo;
 		}
@@ -76,7 +119,7 @@ static Bit32u getROMCount() {
 	return count;
 }
 
-const ROMInfo** ROMInfo::getROMInfoList(Bit32u types, Bit32u pairTypes) {
+const ROMInfo **ROMInfo::getROMInfoList(Bit32u types, Bit32u pairTypes) {
 	const ROMInfo **romInfoList = new const ROMInfo*[getROMCount() + 1];
 	const ROMInfo **currentROMInList = romInfoList;
 	for (Bit32u i = 0; getKnownROMInfoFromList(i) != NULL; i++) {
@@ -93,26 +136,108 @@ void ROMInfo::freeROMInfoList(const ROMInfo **romInfoList) {
 	delete[] romInfoList;
 }
 
-ROMImage::ROMImage(File *useFile) : file(useFile), romInfo(ROMInfo::getROMInfo(file))
+const ROMImage * ROMImage::makeFullROMImage(Bit8u * data, size_t dataSize) {
+	return new ROMImage(new ArrayFile(data, dataSize), true, getKnownROMInfoList());
+}
+
+const ROMImage *ROMImage::appendImages(const ROMImage *romImageLow, const ROMImage *romImageHigh) {
+	const Bit8u *romDataLow = romImageLow->getFile()->getData();
+	const Bit8u *romDataHigh = romImageHigh->getFile()->getData();
+	size_t partSize = romImageLow->getFile()->getSize();
+	Bit8u *data = new Bit8u[2 * partSize];
+	memcpy(data, romDataLow, partSize);
+	memcpy(data + partSize, romDataHigh, partSize);
+	const ROMImage *romImageFull = makeFullROMImage(data, 2 * partSize);
+	if (romImageFull->getROMInfo() == NULL) {
+		freeROMImage(romImageFull);
+		return NULL;
+	}
+	return romImageFull;
+}
+
+const ROMImage *ROMImage::interleaveImages(const ROMImage *romImageEven, const ROMImage *romImageOdd) {
+	const Bit8u *romDataEven = romImageEven->getFile()->getData();
+	const Bit8u *romDataOdd = romImageOdd->getFile()->getData();
+	size_t partSize = romImageEven->getFile()->getSize();
+	Bit8u *data = new Bit8u[2 * partSize];
+	Bit8u *writePtr = data;
+	for (size_t romDataIx = 0; romDataIx < partSize; romDataIx++) {
+		*(writePtr++) = romDataEven[romDataIx];
+		*(writePtr++) = romDataOdd[romDataIx];
+	}
+	const ROMImage *romImageFull = makeFullROMImage(data, 2 * partSize);
+	if (romImageFull->getROMInfo() == NULL) {
+		freeROMImage(romImageFull);
+		return NULL;
+	}
+	return romImageFull;
+}
+
+ROMImage::ROMImage(File *useFile, bool useOwnFile, const ROMInfo * const *romInfos) :
+	file(useFile), ownFile(useOwnFile), romInfo(ROMInfo::getROMInfo(file, romInfos))
 {}
 
 ROMImage::~ROMImage() {
 	ROMInfo::freeROMInfo(romInfo);
+	if (ownFile) {
+		const Bit8u *data = file->getData();
+		delete file;
+		delete data;
+	}
 }
 
-const ROMImage* ROMImage::makeROMImage(File *file) {
-	return new ROMImage(file);
+const ROMImage *ROMImage::makeROMImage(File *file) {
+	return new ROMImage(file, false, getKnownROMInfoList());
+}
+
+const ROMImage *ROMImage::makeROMImage(File *file, const ROMInfo * const *romInfos) {
+	return new ROMImage(file, false, romInfos);
+}
+
+const ROMImage *ROMImage::makeROMImage(File *file1, File *file2) {
+	static const ROMInfo * const *partialROMInfos = ROMInfo::getROMInfoList(
+		1 << ROMInfo::Control | 1 << ROMInfo::PCM | 1 << ROMInfo::Reverb,
+		1 << ROMInfo::FirstHalf | 1 << ROMInfo::SecondHalf| 1 << ROMInfo::Mux0 | 1 << ROMInfo::Mux1
+	);
+
+	const ROMImage *image1 = makeROMImage(file1, partialROMInfos);
+	const ROMImage *image2 = makeROMImage(file2, partialROMInfos);
+	if (image1->getROMInfo() == NULL || image2->getROMInfo() == NULL) {
+		freeROMImage(image1);
+		freeROMImage(image2);
+		return NULL;
+	}
+	return mergeROMImages(image1, image2);
 }
 
 void ROMImage::freeROMImage(const ROMImage *romImage) {
 	delete romImage;
 }
 
-File* ROMImage::getFile() const {
+const ROMImage *ROMImage::mergeROMImages(const ROMImage *romImage1, const ROMImage *romImage2) {
+	if (romImage1->romInfo->pairROMInfo != romImage2->romInfo) {
+		return NULL;
+	}
+	switch (romImage1->romInfo->pairType) {
+	case ROMInfo::FirstHalf:
+		return appendImages(romImage1, romImage2);
+	case ROMInfo::SecondHalf:
+		return appendImages(romImage2, romImage1);
+	case ROMInfo::Mux0:
+		return interleaveImages(romImage1, romImage2);
+	case ROMInfo::Mux1:
+		return interleaveImages(romImage2, romImage1);
+	default:
+		break;
+	}
+	return NULL;
+}
+
+File *ROMImage::getFile() const {
 	return file;
 }
 
-const ROMInfo* ROMImage::getROMInfo() const {
+const ROMInfo *ROMImage::getROMInfo() const {
 	return romInfo;
 }
 
