@@ -49,6 +49,12 @@
 #define MT32EMU_EXPORT MT32EMU_EXPORT_ATTRIBUTE
 #endif
 
+/* Facilitates easier tracking of the library version when an external symbol was introduced.
+ * Particularly useful for shared library builds on POSIX systems that support symbol versioning,
+ * so that the version map file can be generated automatically.
+ */
+#define MT32EMU_EXPORT_V(symbol_version_tag) MT32EMU_EXPORT
+
 /* Useful constants */
 
 /* Sample rate to use in mixing. With the progress of development, we've found way too many thing dependent.

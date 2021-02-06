@@ -24,7 +24,9 @@
 #include "c_types.h"
 
 #undef MT32EMU_EXPORT
+#undef MT32EMU_EXPORT_V
 #define MT32EMU_EXPORT MT32EMU_EXPORT_ATTRIBUTE
+#define MT32EMU_EXPORT_V(symbol_version_tag) MT32EMU_EXPORT
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,7 +41,9 @@ MT32EMU_EXPORT mt32emu_service_i mt32emu_get_service_i(void);
 
 #if MT32EMU_EXPORTS_TYPE == 2
 #undef MT32EMU_EXPORT
+#undef MT32EMU_EXPORT_V
 #define MT32EMU_EXPORT
+#define MT32EMU_EXPORT_V(symbol_version_tag) MT32EMU_EXPORT
 #endif
 
 /**
