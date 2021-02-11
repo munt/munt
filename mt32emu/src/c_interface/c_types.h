@@ -53,6 +53,7 @@ typedef enum {
 	MT32EMU_RC_MISSING_ROMS = -4,
 	MT32EMU_RC_NOT_OPENED = -5,
 	MT32EMU_RC_QUEUE_FULL = -6,
+	MT32EMU_RC_ROMS_NOT_PAIRABLE = -7,
 
 	/* Undefined error occurred. */
 	MT32EMU_RC_FAILED = -100
@@ -122,7 +123,8 @@ typedef enum {
 	MT32EMU_SERVICE_VERSION_1 = 1,
 	MT32EMU_SERVICE_VERSION_2 = 2,
 	MT32EMU_SERVICE_VERSION_3 = 3,
-	MT32EMU_SERVICE_VERSION_CURRENT = MT32EMU_SERVICE_VERSION_3
+	MT32EMU_SERVICE_VERSION_4 = 4,
+	MT32EMU_SERVICE_VERSION_CURRENT = MT32EMU_SERVICE_VERSION_4
 } mt32emu_service_version;
 
 /* === Report Handler Interface === */
@@ -312,6 +314,10 @@ typedef union mt32emu_service_i mt32emu_service_i;
 	void (*preallocateReverbMemory)(mt32emu_const_context context, const mt32emu_boolean enabled); \
 	void (*configureMIDIEventQueueSysexStorage)(mt32emu_const_context context, const mt32emu_bit32u storage_buffer_size);
 
+#define MT32EMU_SERVICE_I_V4 \
+	mt32emu_return_code (*mergeAndAddROMData)(mt32emu_context context, const mt32emu_bit8u *part1_data, size_t part1_data_size, const mt32emu_sha1_digest *part1_sha1_digest, const mt32emu_bit8u *part2_data, size_t part2_data_size, const mt32emu_sha1_digest *part2_sha1_digest); \
+	mt32emu_return_code (*mergeAndAddROMFiles)(mt32emu_context context, const char *part1_filename, const char *part2_filename);
+
 typedef struct {
 	MT32EMU_SERVICE_I_V0
 } mt32emu_service_i_v0;
@@ -334,6 +340,14 @@ typedef struct {
 	MT32EMU_SERVICE_I_V3
 } mt32emu_service_i_v3;
 
+typedef struct {
+	MT32EMU_SERVICE_I_V0
+	MT32EMU_SERVICE_I_V1
+	MT32EMU_SERVICE_I_V2
+	MT32EMU_SERVICE_I_V3
+	MT32EMU_SERVICE_I_V4
+} mt32emu_service_i_v4;
+
 /**
  * Extensible interface for all the library services.
  * Union intended to view an interface of any subsequent version as any parent interface not requiring a cast.
@@ -344,11 +358,13 @@ union mt32emu_service_i {
 	const mt32emu_service_i_v1 *v1;
 	const mt32emu_service_i_v2 *v2;
 	const mt32emu_service_i_v3 *v3;
+	const mt32emu_service_i_v4 *v4;
 };
 
 #undef MT32EMU_SERVICE_I_V0
 #undef MT32EMU_SERVICE_I_V1
 #undef MT32EMU_SERVICE_I_V2
 #undef MT32EMU_SERVICE_I_V3
+#undef MT32EMU_SERVICE_I_V4
 
 #endif /* #ifndef MT32EMU_C_TYPES_H */

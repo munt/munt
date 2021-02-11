@@ -41,7 +41,7 @@ static mt32emu_service_version getSynthVersionID(mt32emu_service_i) {
 	return MT32EMU_SERVICE_VERSION_CURRENT;
 }
 
-static const mt32emu_service_i_v3 SERVICE_VTABLE = {
+static const mt32emu_service_i_v4 SERVICE_VTABLE = {
 	getSynthVersionID,
 	mt32emu_get_supported_report_handler_version,
 	mt32emu_get_supported_midi_receiver_version,
@@ -118,7 +118,9 @@ static const mt32emu_service_i_v3 SERVICE_VTABLE = {
 	mt32emu_set_nice_partial_mixing_enabled,
 	mt32emu_is_nice_partial_mixing_enabled,
 	mt32emu_preallocate_reverb_memory,
-	mt32emu_configure_midi_event_queue_sysex_storage
+	mt32emu_configure_midi_event_queue_sysex_storage,
+	mt32emu_merge_and_add_rom_data,
+	mt32emu_merge_and_add_rom_files
 };
 
 } // namespace MT32Emu
@@ -295,30 +297,46 @@ private:
 	}
 };
 
-static mt32emu_return_code addROMFile(mt32emu_data *data, File *file) {
-	const ROMImage *image = ROMImage::makeROMImage(file);
-	const ROMInfo *info = image->getROMInfo();
+static mt32emu_return_code addROMFiles(mt32emu_data *data, File *file1, File *file2 = NULL) {
+	const ROMImage *fullImage = file2 == NULL ? ROMImage::makeROMImage(file1) : ROMImage::makeROMImage(file1, file2);
+	if (fullImage == NULL) return MT32EMU_RC_ROMS_NOT_PAIRABLE;
+	const ROMInfo *info = fullImage->getROMInfo();
 	if (info == NULL) {
-		ROMImage::freeROMImage(image);
+		ROMImage::freeROMImage(fullImage);
 		return MT32EMU_RC_ROM_NOT_IDENTIFIED;
 	}
 	if (info->type == ROMInfo::Control) {
 		if (data->controlROMImage != NULL) {
-			delete data->controlROMImage->getFile();
+			if (data->controlROMImage->isFileUserProvided()) delete data->controlROMImage->getFile();
 			ROMImage::freeROMImage(data->controlROMImage);
 		}
-		data->controlROMImage = image;
+		data->controlROMImage = fullImage;
 		return MT32EMU_RC_ADDED_CONTROL_ROM;
 	} else if (info->type == ROMInfo::PCM) {
 		if (data->pcmROMImage != NULL) {
-			delete data->pcmROMImage->getFile();
+			if (data->pcmROMImage->isFileUserProvided()) delete data->pcmROMImage->getFile();
 			ROMImage::freeROMImage(data->pcmROMImage);
 		}
-		data->pcmROMImage = image;
+		data->pcmROMImage = fullImage;
 		return MT32EMU_RC_ADDED_PCM_ROM;
 	}
-	ROMImage::freeROMImage(image);
+	ROMImage::freeROMImage(fullImage);
 	return MT32EMU_RC_OK; // No support for reverb ROM yet.
+}
+
+static mt32emu_return_code createFileStream(const char *filename, FileStream *&fileStream) {
+	mt32emu_return_code rc;
+	fileStream = new FileStream;
+	if (!fileStream->open(filename)) {
+		rc = MT32EMU_RC_FILE_NOT_FOUND;
+	} else if (fileStream->getData() == NULL) {
+		rc = MT32EMU_RC_FILE_NOT_LOADED;
+	} else {
+		return MT32EMU_RC_OK;
+	}
+	delete fileStream;
+	fileStream = NULL;
+	return rc;
 }
 
 } // namespace MT32Emu
@@ -329,7 +347,7 @@ extern "C" {
 
 mt32emu_service_i mt32emu_get_service_i() {
 	mt32emu_service_i i;
-	i.v3 = &SERVICE_VTABLE;
+	i.v4 = &SERVICE_VTABLE;
 	return i;
 }
 
@@ -384,12 +402,12 @@ void mt32emu_free_context(mt32emu_context data) {
 	data->srcState = NULL;
 
 	if (data->controlROMImage != NULL) {
-		delete data->controlROMImage->getFile();
+		if (data->controlROMImage->isFileUserProvided()) delete data->controlROMImage->getFile();
 		ROMImage::freeROMImage(data->controlROMImage);
 		data->controlROMImage = NULL;
 	}
 	if (data->pcmROMImage != NULL) {
-		delete data->pcmROMImage->getFile();
+		if (data->pcmROMImage->isFileUserProvided()) delete data->pcmROMImage->getFile();
 		ROMImage::freeROMImage(data->pcmROMImage);
 		data->pcmROMImage = NULL;
 	}
@@ -403,24 +421,39 @@ void mt32emu_free_context(mt32emu_context data) {
 }
 
 mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest) {
-	if (sha1_digest == NULL) return addROMFile(context, new ArrayFile(data, data_size));
-	return addROMFile(context, new ArrayFile(data, data_size, *sha1_digest));
+	if (sha1_digest == NULL) return addROMFiles(context, new ArrayFile(data, data_size));
+	return addROMFiles(context, new ArrayFile(data, data_size, *sha1_digest));
 }
 
 mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *filename) {
-	mt32emu_return_code rc = MT32EMU_RC_OK;
-	FileStream *fs = new FileStream;
-	if (fs->open(filename)) {
-		if (fs->getData() != NULL) {
-			rc = addROMFile(context, fs);
-			if (rc > 0) return rc;
-		} else {
-			rc = MT32EMU_RC_FILE_NOT_LOADED;
+	FileStream *fs;
+	mt32emu_return_code rc = createFileStream(filename, fs);
+	if (fs != NULL) rc = addROMFiles(context, fs);
+	if (rc <= MT32EMU_RC_OK) delete fs;
+	return rc;
+}
+
+mt32emu_return_code mt32emu_merge_and_add_rom_data(mt32emu_context context, const mt32emu_bit8u *part1_data, size_t part1_data_size, const mt32emu_sha1_digest *part1_sha1_digest, const mt32emu_bit8u *part2_data, size_t part2_data_size, const mt32emu_sha1_digest *part2_sha1_digest) {
+	ArrayFile *file1 = part1_sha1_digest == NULL ? new ArrayFile(part1_data, part1_data_size) : new ArrayFile(part1_data, part1_data_size, *part1_sha1_digest);
+	ArrayFile *file2 = part2_sha1_digest == NULL ? new ArrayFile(part2_data, part2_data_size) : new ArrayFile(part2_data, part2_data_size, *part2_sha1_digest);
+	mt32emu_return_code rc = addROMFiles(context, file1, file2);
+	delete file1;
+	delete file2;
+	return rc;
+}
+
+mt32emu_return_code mt32emu_merge_and_add_rom_files(mt32emu_context context, const char *part1_filename, const char *part2_filename) {
+	FileStream *fs1;
+	mt32emu_return_code rc = createFileStream(part1_filename, fs1);
+	if (fs1 != NULL) {
+		FileStream *fs2;
+		rc = createFileStream(part2_filename, fs2);
+		if (fs2 != NULL) {
+			rc = addROMFiles(context, fs1, fs2);
+			delete fs2;
 		}
-	} else {
-		rc = MT32EMU_RC_FILE_NOT_FOUND;
+		delete fs1;
 	}
-	delete fs;
 	return rc;
 }
 

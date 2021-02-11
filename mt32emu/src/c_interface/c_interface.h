@@ -93,20 +93,45 @@ MT32EMU_EXPORT mt32emu_context mt32emu_create_context(mt32emu_report_handler_i r
 MT32EMU_EXPORT void mt32emu_free_context(mt32emu_context context);
 
 /**
- * Adds new ROM identified by its SHA1 digest to the emulation context replacing previously added ROM of the same type if any.
- * Argument sha1_digest can be NULL, in this case the digest will be computed using the actual ROM data.
+ * Adds a new full ROM data image identified by its SHA1 digest to the emulation context replacing previously added ROM of the same
+ * type if any. Argument sha1_digest can be NULL, in this case the digest will be computed using the actual ROM data.
  * If sha1_digest is set to non-NULL, it is assumed being correct and will not be recomputed.
- * This function doesn't immediately change the state of already opened synth. Newly added ROM will take effect upon next call of mt32emu_open_synth().
+ * The provided data array is NOT copied and used directly for efficiency. The caller should not deallocate it while the emulation
+ * context is referring to the ROM data.
+ * This function doesn't immediately change the state of already opened synth. Newly added ROM will take effect upon next call of
+ * mt32emu_open_synth().
  * Returns positive value upon success.
  */
 MT32EMU_EXPORT mt32emu_return_code mt32emu_add_rom_data(mt32emu_context context, const mt32emu_bit8u *data, size_t data_size, const mt32emu_sha1_digest *sha1_digest);
 
 /**
- * Loads a ROM file, identify it by SHA1 digest, and adds it to the emulation context replacing previously added ROM of the same type if any.
- * This function doesn't immediately change the state of already opened synth. Newly added ROM will take effect upon next call of mt32emu_open_synth().
+ * Loads a ROM file that contains a full ROM data image, identifies it by the SHA1 digest, and adds it to the emulation context
+ * replacing previously added ROM of the same type if any.
+ * This function doesn't immediately change the state of already opened synth. Newly added ROM will take effect upon next call of
+ * mt32emu_open_synth().
  * Returns positive value upon success.
  */
 MT32EMU_EXPORT mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *filename);
+
+/**
+ * Merges a pair of compatible ROM data image parts into a full image and adds it to the emulation context replacing previously
+ * added ROM of the same type if any. Each partial image is identified by its SHA1 digest. Arguments partN_sha1_digest can be NULL,
+ * in this case the digest will be computed using the actual ROM data. If a non-NULL SHA1 value is provided, it is assumed being
+ * correct and will not be recomputed. The provided data arrays may be deallocated as soon as the function completes.
+ * This function doesn't immediately change the state of already opened synth. Newly added ROM will take effect upon next call of
+ * mt32emu_open_synth().
+ * Returns positive value upon success.
+ */
+MT32EMU_EXPORT_V(2.5) mt32emu_return_code mt32emu_merge_and_add_rom_data(mt32emu_context context, const mt32emu_bit8u *part1_data, size_t part1_data_size, const mt32emu_sha1_digest *part1_sha1_digest, const mt32emu_bit8u *part2_data, size_t part2_data_size, const mt32emu_sha1_digest *part2_sha1_digest);
+
+/**
+ * Loads a pair of files that contains compatible parts of a full ROM image, identifies them by the SHA1 digest, merges these
+ * parts into a full ROM image and adds it to the emulation context replacing previously added ROM of the same type if any.
+ * This function doesn't immediately change the state of already opened synth. Newly added ROM will take effect upon next call of
+ * mt32emu_open_synth().
+ * Returns positive value upon success.
+ */
+MT32EMU_EXPORT_V(2.5) mt32emu_return_code mt32emu_merge_and_add_rom_files(mt32emu_context context, const char *part1_filename, const char *part2_filename);
 
 /**
  * Fills in mt32emu_rom_info structure with identifiers and descriptions of control and PCM ROM files identified and added to the synth context.
