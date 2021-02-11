@@ -101,6 +101,10 @@ public:
 	MT32EMU_EXPORT_V(2.5) static const ROMImage *mergeROMImages(const ROMImage *romImage1, const ROMImage *romImage2);
 
 	MT32EMU_EXPORT File *getFile() const;
+
+	// Returns true in case this ROMImage is built with a user provided File that has to be deallocated separately.
+	// For a ROMImage created via merging two partial ROMImages, this method returns false.
+	MT32EMU_EXPORT_V(2.5) bool isFileUserProvided() const;
 	MT32EMU_EXPORT const ROMInfo *getROMInfo() const;
 
 private:

@@ -197,7 +197,7 @@ const ROMImage *ROMImage::makeROMImage(File *file, const ROMInfo * const *romInf
 const ROMImage *ROMImage::makeROMImage(File *file1, File *file2) {
 	static const ROMInfo * const *partialROMInfos = ROMInfo::getROMInfoList(
 		1 << ROMInfo::Control | 1 << ROMInfo::PCM | 1 << ROMInfo::Reverb,
-		1 << ROMInfo::FirstHalf | 1 << ROMInfo::SecondHalf| 1 << ROMInfo::Mux0 | 1 << ROMInfo::Mux1
+		1 << ROMInfo::FirstHalf | 1 << ROMInfo::SecondHalf | 1 << ROMInfo::Mux0 | 1 << ROMInfo::Mux1
 	);
 
 	const ROMImage *image1 = makeROMImage(file1, partialROMInfos);
@@ -235,6 +235,10 @@ const ROMImage *ROMImage::mergeROMImages(const ROMImage *romImage1, const ROMIma
 
 File *ROMImage::getFile() const {
 	return file;
+}
+
+bool ROMImage::isFileUserProvided() const {
+	return !ownFile;
 }
 
 const ROMInfo *ROMImage::getROMInfo() const {
