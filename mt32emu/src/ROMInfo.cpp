@@ -97,7 +97,7 @@ const ROMInfo *ROMInfo::getROMInfo(File *file) {
 	return getROMInfo(file, getKnownROMInfoList());
 }
 
-const ROMInfo * ROMInfo::getROMInfo(File *file, const ROMInfo * const *romInfos) {
+const ROMInfo *ROMInfo::getROMInfo(File *file, const ROMInfo * const *romInfos) {
 	size_t fileSize = file->getSize();
 	for (Bit32u i = 0; romInfos[i] != NULL; i++) {
 		const ROMInfo *romInfo = romInfos[i];
@@ -136,7 +136,7 @@ void ROMInfo::freeROMInfoList(const ROMInfo **romInfoList) {
 	delete[] romInfoList;
 }
 
-const ROMImage * ROMImage::makeFullROMImage(Bit8u * data, size_t dataSize) {
+const ROMImage *ROMImage::makeFullROMImage(Bit8u * data, size_t dataSize) {
 	return new ROMImage(new ArrayFile(data, dataSize), true, getKnownROMInfoList());
 }
 
@@ -202,12 +202,10 @@ const ROMImage *ROMImage::makeROMImage(File *file1, File *file2) {
 
 	const ROMImage *image1 = makeROMImage(file1, partialROMInfos);
 	const ROMImage *image2 = makeROMImage(file2, partialROMInfos);
-	if (image1->getROMInfo() == NULL || image2->getROMInfo() == NULL) {
-		freeROMImage(image1);
-		freeROMImage(image2);
-		return NULL;
-	}
-	return mergeROMImages(image1, image2);
+	const ROMImage *fullImage = image1->getROMInfo() == NULL || image2->getROMInfo() == NULL ? NULL : mergeROMImages(image1, image2);
+	freeROMImage(image1);
+	freeROMImage(image2);
+	return fullImage;
 }
 
 void ROMImage::freeROMImage(const ROMImage *romImage) {
