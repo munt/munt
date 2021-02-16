@@ -301,6 +301,9 @@ private:
 	const mt32emu_service_i_v3 *iV3() { return (getVersionID() < MT32EMU_SERVICE_VERSION_3) ? NULL : i.v3; }
 	const mt32emu_service_i_v4 *iV4() { return (getVersionID() < MT32EMU_SERVICE_VERSION_4) ? NULL : i.v4; }
 #endif
+
+	Service(const Service &);            // prevent copy-construction
+	Service& operator=(const Service &); // prevent assignment
 };
 
 namespace CppInterfaceImpl {
