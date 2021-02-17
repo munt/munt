@@ -69,7 +69,7 @@ public:
 	MT32EMU_EXPORT static void freeROMInfoList(const ROMInfo **romInfos);
 };
 
-// Synth::open() requires a full control ROMImage and a full PCM ROMImage to work
+// Synth::open() requires a full control ROMImage and a compatible full PCM ROMImage to work
 
 class ROMImage {
 public:
@@ -79,7 +79,7 @@ public:
 	// CAVEAT: This method always prefers full ROM images over partial ones.
 	// Because the lower half of CM-32L/CM-64/LAPC-I PCM ROM is essentially the full
 	// MT-32 PCM ROM, it is therefore aliased. In this case a partial image can only be
-	// created by the overridden method makeROMImage(File *, const ROMInfo **).
+	// created by the overridden method makeROMImage(File *, const ROMInfo * const *).
 	MT32EMU_EXPORT static const ROMImage *makeROMImage(File *file);
 
 	// Same as the method above but only permits creation of a ROMImage if the file content
@@ -118,6 +118,42 @@ private:
 
 	ROMImage(File *file, bool ownFile, const ROMInfo * const *romInfos);
 	~ROMImage();
+
+	// Make ROMIMage an identity class.
+	ROMImage(const ROMImage &);
+	ROMImage &operator=(const ROMImage &);
+};
+
+class MachineConfiguration {
+public:
+	// Returns an immutable NULL-terminated list of all supported machine configurations.
+	// For convenience, this method also can fill the number of non-NULL items present in the list
+	// if a non-NULL value is provided in optional argument itemCount.
+	MT32EMU_EXPORT_V(2.5) static const MachineConfiguration * const *getAllMachineConfigurations(Bit32u *itemCount = NULL);
+
+	// Returns a string indentifier of this MachineConfiguration.
+	MT32EMU_EXPORT_V(2.5) const char *getMachineID();
+
+	// Returns an immutable NULL-terminated list of ROMInfos that are compatible with this
+	// MachineConfiguration. That means the respective ROMImages can be successfully used together
+	// by the emulation engine. Calling ROMInfo::getROMInfo or ROMImage::makeROMImage with this list
+	// supplied enables identification of all files containing desired ROM images while filtering out
+	// any incompatible ones.
+	// For convenience, this method also can fill the number of non-NULL items present in the list
+	// if a non-NULL value is provided in optional argument itemCount.
+	MT32EMU_EXPORT_V(2.5) const ROMInfo * const *getCompatibleROMInfos(Bit32u *itemCount = NULL);
+
+private:
+	const char * const machineID;
+	const ROMInfo * const * const romInfos;
+	const Bit32u romInfosCount;
+
+	MachineConfiguration(const char *machineID, const ROMInfo * const *romInfos, Bit32u romInfosCount);
+
+	// Make MachineConfiguration an identity class.
+	MachineConfiguration(const MachineConfiguration &);
+	~MachineConfiguration() {}
+	MachineConfiguration &operator=(const MachineConfiguration &);
 };
 
 } // namespace MT32Emu
