@@ -168,6 +168,8 @@ foreach(HEADER ${libmt32emu_HEADERS})
   configure_file("src/${HEADER}" "include/mt32emu/${HEADER}" COPYONLY)
 endforeach(HEADER)
 
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu.h" "#include <mt32emu/mt32emu.h>")
+
 configure_file("src/config.h.in" "include/mt32emu/config.h")
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu)
 
@@ -260,6 +262,10 @@ endif()
 if(NOT libmt32emu_PACKAGE_TYPE STREQUAL "Runtime")
   install(DIRECTORY
     "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu"
+    DESTINATION include
+  )
+  install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu.h
     DESTINATION include
   )
   install(FILES
