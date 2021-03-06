@@ -67,6 +67,19 @@ public:
 
 	// Frees the list of ROMInfos given
 	MT32EMU_EXPORT static void freeROMInfoList(const ROMInfo **romInfos);
+
+	// Returns an immutable NULL-terminated list of all (full and partial) supported ROMInfos.
+	// For convenience, this method also can fill the number of non-NULL items present in the list
+	// if a non-NULL value is provided in optional argument itemCount.
+	MT32EMU_EXPORT_V(2.5) static const ROMInfo * const *getAllROMInfos(Bit32u *itemCount = NULL);
+	// Returns an immutable NULL-terminated list of all supported full ROMInfos.
+	// For convenience, this method also can fill the number of non-NULL items present in the list
+	// if a non-NULL value is provided in optional argument itemCount.
+	MT32EMU_EXPORT_V(2.5) static const ROMInfo * const *getFullROMInfos(Bit32u *itemCount = NULL);
+	// Returns an immutable NULL-terminated list of all supported partial ROMInfos.
+	// For convenience, this method also can fill the number of non-NULL items present in the list
+	// if a non-NULL value is provided in optional argument itemCount.
+	MT32EMU_EXPORT_V(2.5) static const ROMInfo * const *getPartialROMInfos(Bit32u *itemCount = NULL);
 };
 
 // Synth::open() requires a full control ROMImage and a compatible full PCM ROMImage to work

@@ -40,6 +40,8 @@ struct ROMInfoLists {
 	ROMInfoList mt32_2_04;
 	ROMInfoList cm32l_1_00;
 	ROMInfoList cm32l_1_02;
+	ROMInfoList fullROMInfos;
+	ROMInfoList partialROMInfos;
 	ROMInfoList allROMInfos;
 };
 
@@ -76,8 +78,7 @@ static const ROMInfoLists &getROMInfoLists() {
 	static ROMInfo PCM_CM32L_H = {524288, "3ad889fde5db5b6437cbc2eb6e305312fec3df93", ROMInfo::PCM, "pcm_cm32l_h", "CM-32L/CM-64/LAPC-I PCM ROM", ROMInfo::SecondHalf, &PCM_CM32L_L};
 	static ROMInfo PCM_CM32L = {1048576, "289cc298ad532b702461bfc738009d9ebe8025ea", ROMInfo::PCM, "pcm_cm32l", "CM-32L/CM-64/LAPC-I PCM ROM", ROMInfo::Full, NULL};
 
-	static const ROMInfo * const ALL_ROM_INFOS[] = {
-		// Complete images
+	static const ROMInfo * const FULL_ROM_INFOS[] = {
 		&CTRL_MT32_V1_04,
 		&CTRL_MT32_V1_05,
 		&CTRL_MT32_V1_06,
@@ -88,7 +89,9 @@ static const ROMInfoLists &getROMInfoLists() {
 		&CTRL_CM32L_V1_02,
 		&PCM_MT32,
 		&PCM_CM32L,
-		// Halves
+		NULL
+	};
+	static const ROMInfo * const PARTIAL_ROM_INFOS[] = {
 		&CTRL_MT32_V1_04_A, &CTRL_MT32_V1_04_B,
 		&CTRL_MT32_V1_05_A, &CTRL_MT32_V1_05_B,
 		&CTRL_MT32_V1_06_A, &CTRL_MT32_V1_06_B,
@@ -98,6 +101,7 @@ static const ROMInfoLists &getROMInfoLists() {
 		&PCM_CM32L_L, &PCM_CM32L_H,
 		NULL
 	};
+	static const ROMInfo *ALL_ROM_INFOS[_CALC_ARRAY_LENGTH(FULL_ROM_INFOS) + _CALC_ARRAY_LENGTH(PARTIAL_ROM_INFOS) + 1];
 
 	if (CTRL_MT32_V1_04_A.pairROMInfo == NULL) {
 		CTRL_MT32_V1_04_A.pairROMInfo = &CTRL_MT32_V1_04_B;
@@ -107,6 +111,9 @@ static const ROMInfoLists &getROMInfoLists() {
 		CTRL_MT32_BLUER_A.pairROMInfo = &CTRL_MT32_BLUER_B;
 		PCM_MT32_L.pairROMInfo = &PCM_MT32_H;
 		PCM_CM32L_L.pairROMInfo = &PCM_CM32L_H;
+
+		memcpy(&ALL_ROM_INFOS[0], FULL_ROM_INFOS, sizeof FULL_ROM_INFOS);
+		memcpy(&ALL_ROM_INFOS[_CALC_ARRAY_LENGTH(FULL_ROM_INFOS)], PARTIAL_ROM_INFOS, sizeof PARTIAL_ROM_INFOS); // Includes NULL terminator.
 	}
 
 	static const ROMInfo * const MT32_V1_04_ROMS[] = {&CTRL_MT32_V1_04, &PCM_MT32, &CTRL_MT32_V1_04_A, &CTRL_MT32_V1_04_B, &PCM_MT32_L, &PCM_MT32_H, NULL};
@@ -117,6 +124,7 @@ static const ROMInfoLists &getROMInfoLists() {
 	static const ROMInfo * const MT32_V2_04_ROMS[] = {&CTRL_MT32_V2_04, &PCM_MT32, &PCM_MT32_L, &PCM_MT32_H, NULL};
 	static const ROMInfo * const CM32L_V1_00_ROMS[] = {&CTRL_CM32L_V1_00, &PCM_CM32L, &PCM_CM32L_L, &PCM_CM32L_H, NULL};
 	static const ROMInfo * const CM32L_V1_02_ROMS[] = {&CTRL_CM32L_V1_02, &PCM_CM32L, &PCM_CM32L_L, &PCM_CM32L_H, NULL};
+
 	static const ROMInfoLists romInfoLists = {
 		{MT32_V1_04_ROMS, _CALC_ARRAY_LENGTH(MT32_V1_04_ROMS)},
 		{MT32_V1_05_ROMS, _CALC_ARRAY_LENGTH(MT32_V1_05_ROMS)},
@@ -126,6 +134,8 @@ static const ROMInfoLists &getROMInfoLists() {
 		{MT32_V2_04_ROMS, _CALC_ARRAY_LENGTH(MT32_V2_04_ROMS)},
 		{CM32L_V1_00_ROMS, _CALC_ARRAY_LENGTH(CM32L_V1_00_ROMS)},
 		{CM32L_V1_02_ROMS, _CALC_ARRAY_LENGTH(CM32L_V1_02_ROMS)},
+		{FULL_ROM_INFOS, _CALC_ARRAY_LENGTH(FULL_ROM_INFOS)},
+		{PARTIAL_ROM_INFOS, _CALC_ARRAY_LENGTH(PARTIAL_ROM_INFOS)},
 		{ALL_ROM_INFOS, _CALC_ARRAY_LENGTH(ALL_ROM_INFOS)}
 	};
 	return romInfoLists;
@@ -176,7 +186,22 @@ void ROMInfo::freeROMInfoList(const ROMInfo **romInfoList) {
 	delete[] romInfoList;
 }
 
-const ROMImage *ROMImage::makeFullROMImage(Bit8u * data, size_t dataSize) {
+const ROMInfo * const *ROMInfo::getAllROMInfos(Bit32u *itemCount) {
+	if (itemCount != NULL) *itemCount = getROMInfoLists().allROMInfos.itemCount;
+	return getROMInfoLists().allROMInfos.romInfos;
+}
+
+const ROMInfo * const *ROMInfo::getFullROMInfos(Bit32u *itemCount) {
+	if (itemCount != NULL) *itemCount = getROMInfoLists().fullROMInfos.itemCount;
+	return getROMInfoLists().fullROMInfos.romInfos;
+}
+
+const ROMInfo * const *ROMInfo::getPartialROMInfos(Bit32u *itemCount) {
+	if (itemCount != NULL) *itemCount = getROMInfoLists().partialROMInfos.itemCount;
+	return getROMInfoLists().partialROMInfos.romInfos;
+}
+
+const ROMImage *ROMImage::makeFullROMImage(Bit8u *data, size_t dataSize) {
 	return new ROMImage(new ArrayFile(data, dataSize), true, getKnownROMInfoList());
 }
 
@@ -235,11 +260,7 @@ const ROMImage *ROMImage::makeROMImage(File *file, const ROMInfo * const *romInf
 }
 
 const ROMImage *ROMImage::makeROMImage(File *file1, File *file2) {
-	static const ROMInfo * const *partialROMInfos = ROMInfo::getROMInfoList(
-		1 << ROMInfo::Control | 1 << ROMInfo::PCM | 1 << ROMInfo::Reverb,
-		1 << ROMInfo::FirstHalf | 1 << ROMInfo::SecondHalf | 1 << ROMInfo::Mux0 | 1 << ROMInfo::Mux1
-	);
-
+	const ROMInfo * const *partialROMInfos = getROMInfoLists().partialROMInfos.romInfos;
 	const ROMImage *image1 = makeROMImage(file1, partialROMInfos);
 	const ROMImage *image2 = makeROMImage(file2, partialROMInfos);
 	const ROMImage *fullImage = image1->getROMInfo() == NULL || image2->getROMInfo() == NULL ? NULL : mergeROMImages(image1, image2);
