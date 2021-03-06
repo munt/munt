@@ -132,7 +132,7 @@ public:
 	MT32EMU_EXPORT_V(2.5) static const MachineConfiguration * const *getAllMachineConfigurations(Bit32u *itemCount = NULL);
 
 	// Returns a string indentifier of this MachineConfiguration.
-	MT32EMU_EXPORT_V(2.5) const char *getMachineID();
+	MT32EMU_EXPORT_V(2.5) const char *getMachineID() const;
 
 	// Returns an immutable NULL-terminated list of ROMInfos that are compatible with this
 	// MachineConfiguration. That means the respective ROMImages can be successfully used together
@@ -141,7 +141,7 @@ public:
 	// any incompatible ones.
 	// For convenience, this method also can fill the number of non-NULL items present in the list
 	// if a non-NULL value is provided in optional argument itemCount.
-	MT32EMU_EXPORT_V(2.5) const ROMInfo * const *getCompatibleROMInfos(Bit32u *itemCount = NULL);
+	MT32EMU_EXPORT_V(2.5) const ROMInfo * const *getCompatibleROMInfos(Bit32u *itemCount = NULL) const;
 
 private:
 	const char * const machineID;

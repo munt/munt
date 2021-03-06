@@ -305,11 +305,11 @@ MachineConfiguration::MachineConfiguration(const char *useMachineID, const ROMIn
 	machineID(useMachineID), romInfos(useROMInfos), romInfosCount(useROMInfosCount)
 {}
 
-const char *MachineConfiguration::getMachineID() {
+const char *MachineConfiguration::getMachineID() const {
 	return machineID;
 }
 
-const ROMInfo * const *MachineConfiguration::getCompatibleROMInfos(Bit32u *itemCount) {
+const ROMInfo * const *MachineConfiguration::getCompatibleROMInfos(Bit32u *itemCount) const {
 	if (itemCount != NULL) *itemCount = romInfosCount;
 	return romInfos;
 }
