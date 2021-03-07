@@ -1,3 +1,15 @@
+HEAD:
+
+	* Added support for partial ROM images that may be dumped from several supported hardware
+	  models. Previously, those had to be either concatenated or interleaved for the emulation
+	  engine to accept. Added a few API extensions to better handle ROM images that can now be
+	  either full and / or partial, including iteration over several ROM files to find ones
+	  compatible with particular model of hardware units.
+	* Various improvements in build and packaging, in particular:
+	  * added generation of pkg-config file;
+	  * started symbol versioning for fine-grained documenting API changes yet to simplify
+	    looking up the minimum version of the library required by a caller application.
+
 2021-01-17:
 
 	2.4.2 released.
