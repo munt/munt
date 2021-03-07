@@ -58,6 +58,8 @@ MT32EMU_EXPORT mt32emu_report_handler_version mt32emu_get_supported_report_handl
  */
 MT32EMU_EXPORT mt32emu_midi_receiver_version mt32emu_get_supported_midi_receiver_version(void);
 
+/* === Utility === */
+
 /**
  * Returns library version as an integer in format: 0x00MMmmpp, where:
  * MM - major version number
@@ -83,6 +85,45 @@ MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu
  * See comment for mt32emu_analog_output_mode.
  */
 MT32EMU_EXPORT mt32emu_analog_output_mode mt32emu_get_best_analog_output_mode(const double target_samplerate);
+
+/* === ROM handling === */
+
+/**
+ * Retrieves a list of identifiers (as C-strings) of supported machines. Argument machine_ids points to the array of size
+ * machine_ids_size to be filled.
+ * Returns the number of identifiers available for retrieval. The size of the target array to be allocated can be found
+ * by passing NULL in argument machine_ids; argument machine_ids_size is ignored in this case.
+ */
+MT32EMU_EXPORT_V(2.5) size_t mt32emu_get_machine_ids(const char **machine_ids, size_t machine_ids_size);
+/**
+ * Retrieves a list of identifiers (as C-strings) of supported ROM images. Argument rom_ids points to the array of size
+ * rom_ids_size to be filled. Optional argument machine_id can be used to indicate a specific machine to retrieve ROM identifiers
+ * for; if NULL, identifiers of all the ROM images supported by the emulation engine are retrieved.
+ * Returns the number of ROM identifiers available for retrieval. The size of the target array to be allocated can be found
+ * by passing NULL in argument rom_ids; argument rom_ids_size is ignored in this case. If argument machine_id contains
+ * an unrecognised value, 0 is returned.
+ */
+MT32EMU_EXPORT_V(2.5) size_t mt32emu_get_rom_ids(const char **rom_ids, size_t rom_ids_size, const char *machine_id);
+
+/**
+ * Identifies a ROM image the provided data array contains by its SHA1 digest. Optional argument machine_id can be used to indicate
+ * a specific machine to identify the ROM image for; if NULL, the ROM image is identified for any supported machine.
+ * A mt32emu_rom_info structure supplied in argument rom_info is filled in accordance with the provided ROM image; unused fields
+ * are filled with NULLs. If the content of the ROM image is not identified successfully (e.g. when the ROM image is incompatible
+ * with the specified machine), all fields of rom_info are filled with NULLs.
+ * Returns MT32EMU_RC_OK upon success or a negative error code otherwise.
+ */
+MT32EMU_EXPORT_V(2.5) mt32emu_return_code mt32emu_identify_rom_data(mt32emu_rom_info *rom_info, const mt32emu_bit8u *data, size_t data_size, const char *machine_id);
+/**
+ * Loads the content of the file specified by argument filename and identifies a ROM image the file contains by its SHA1 digest.
+ * Optional argument machine_id can be used to indicate a specific machine to identify the ROM image for; if NULL, the ROM image
+ * is identified for any supported machine.
+ * A mt32emu_rom_info structure supplied in argument rom_info is filled in accordance with the provided ROM image; unused fields
+ * are filled with NULLs. If the content of the file is not identified successfully (e.g. when the ROM image is incompatible
+ * with the specified machine), all fields of rom_info are filled with NULLs.
+ * Returns MT32EMU_RC_OK upon success or a negative error code otherwise.
+ */
+MT32EMU_EXPORT_V(2.5) mt32emu_return_code mt32emu_identify_rom_file(mt32emu_rom_info *rom_info, const char *filename, const char *machine_id);
 
 /* == Context-dependent functions == */
 
@@ -132,6 +173,24 @@ MT32EMU_EXPORT_V(2.5) mt32emu_return_code mt32emu_merge_and_add_rom_data(mt32emu
  * Returns positive value upon success.
  */
 MT32EMU_EXPORT_V(2.5) mt32emu_return_code mt32emu_merge_and_add_rom_files(mt32emu_context context, const char *part1_filename, const char *part2_filename);
+
+/**
+ * Loads a file that contains a ROM image of a specific machine, identifies it by the SHA1 digest, and adds it to the emulation
+ * context. The ROM image can only be identified successfully if it is compatible with the specified machine.
+ * Full and partial ROM images are supported and handled according to the following rules:
+ * - a file with any compatible ROM image is added if none (of the same type) exists in the emulation context;
+ * - a file with any compatible ROM image replaces any image of the same type that is incompatible with the specified machine;
+ * - a file with a full ROM image replaces the previously added partial ROM of the same type;
+ * - a file with a partial ROM image is merged with the previously added ROM image if pairable;
+ * - otherwise, the file is ignored.
+ * The described behaviour allows the caller application to traverse a directory with ROM files attempting to add each one in turn.
+ * As soon as both the full control and the full PCM ROM images are added and / or merged, the iteration can be stopped.
+ * This function doesn't immediately change the state of already opened synth. Newly added ROMs will take effect upon next call of
+ * mt32emu_open_synth().
+ * Returns a positive value in case changes have been made, MT32EMU_RC_OK if the file has been ignored or a negative error code
+ * upon failure.
+ */
+MT32EMU_EXPORT_V(2.5) mt32emu_return_code mt32emu_add_machine_rom_file(mt32emu_context context, const char *machine_id, const char *filename);
 
 /**
  * Fills in mt32emu_rom_info structure with identifiers and descriptions of control and PCM ROM files identified and added to the synth context.

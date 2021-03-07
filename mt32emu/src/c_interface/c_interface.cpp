@@ -15,6 +15,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cstring>
+
 #include "../globals.h"
 #include "../Types.h"
 #include "../File.h"
@@ -119,8 +121,13 @@ static const mt32emu_service_i_v4 SERVICE_VTABLE = {
 	mt32emu_is_nice_partial_mixing_enabled,
 	mt32emu_preallocate_reverb_memory,
 	mt32emu_configure_midi_event_queue_sysex_storage,
+	mt32emu_get_machine_ids,
+	mt32emu_get_rom_ids,
+	mt32emu_identify_rom_data,
+	mt32emu_identify_rom_file,
 	mt32emu_merge_and_add_rom_data,
-	mt32emu_merge_and_add_rom_files
+	mt32emu_merge_and_add_rom_files,
+	mt32emu_add_machine_rom_file
 };
 
 } // namespace MT32Emu
@@ -297,31 +304,115 @@ private:
 	}
 };
 
-static mt32emu_return_code addROMFiles(mt32emu_data *data, File *file1, File *file2 = NULL) {
-	const ROMImage *fullImage = file2 == NULL ? ROMImage::makeROMImage(file1) : ROMImage::makeROMImage(file1, file2);
-	if (fullImage == NULL) return MT32EMU_RC_ROMS_NOT_PAIRABLE;
-	const ROMInfo *info = fullImage->getROMInfo();
-	if (info == NULL) {
-		ROMImage::freeROMImage(fullImage);
+static void fillROMInfo(mt32emu_rom_info *rom_info, const ROMInfo *controlROMInfo, const ROMInfo *pcmROMInfo) {
+	if (controlROMInfo != NULL) {
+		rom_info->control_rom_id = controlROMInfo->shortName;
+		rom_info->control_rom_description = controlROMInfo->description;
+		rom_info->control_rom_sha1_digest = controlROMInfo->sha1Digest;
+	} else {
+		rom_info->control_rom_id = NULL;
+		rom_info->control_rom_description = NULL;
+		rom_info->control_rom_sha1_digest = NULL;
+	}
+	if (pcmROMInfo != NULL) {
+		rom_info->pcm_rom_id = pcmROMInfo->shortName;
+		rom_info->pcm_rom_description = pcmROMInfo->description;
+		rom_info->pcm_rom_sha1_digest = pcmROMInfo->sha1Digest;
+	} else {
+		rom_info->pcm_rom_id = NULL;
+		rom_info->pcm_rom_description = NULL;
+		rom_info->pcm_rom_sha1_digest = NULL;
+	}
+}
+
+static const MachineConfiguration *findMachineConfiguration(const char *machine_id) {
+	Bit32u configurationCount;
+	const MachineConfiguration * const *configurations = MachineConfiguration::getAllMachineConfigurations(&configurationCount);
+	for (Bit32u i = 0; i < configurationCount; i++) {
+		if (!strcmp(configurations[i]->getMachineID(), machine_id)) return configurations[i];
+	}
+	return NULL;
+}
+
+static mt32emu_return_code identifyROM(mt32emu_rom_info *rom_info, File *romFile, const char *machineID) {
+	const ROMInfo *romInfo;
+	if (machineID == NULL) {
+		romInfo = ROMInfo::getROMInfo(romFile);
+	} else {
+		const MachineConfiguration *configuration = findMachineConfiguration(machineID);
+		if (configuration == NULL) {
+			fillROMInfo(rom_info, NULL, NULL);
+			return MT32EMU_RC_MACHINE_NOT_IDENTIFIED;
+		}
+		romInfo = ROMInfo::getROMInfo(romFile, configuration->getCompatibleROMInfos());
+	}
+	if (romInfo == NULL) {
+		fillROMInfo(rom_info, NULL, NULL);
 		return MT32EMU_RC_ROM_NOT_IDENTIFIED;
 	}
-	if (info->type == ROMInfo::Control) {
-		if (data->controlROMImage != NULL) {
-			if (data->controlROMImage->isFileUserProvided()) delete data->controlROMImage->getFile();
-			ROMImage::freeROMImage(data->controlROMImage);
-		}
-		data->controlROMImage = fullImage;
-		return MT32EMU_RC_ADDED_CONTROL_ROM;
-	} else if (info->type == ROMInfo::PCM) {
-		if (data->pcmROMImage != NULL) {
-			if (data->pcmROMImage->isFileUserProvided()) delete data->pcmROMImage->getFile();
-			ROMImage::freeROMImage(data->pcmROMImage);
-		}
-		data->pcmROMImage = fullImage;
-		return MT32EMU_RC_ADDED_PCM_ROM;
+	if (romInfo->type == ROMInfo::Control) fillROMInfo(rom_info, romInfo, NULL);
+	else if (romInfo->type == ROMInfo::PCM) fillROMInfo(rom_info, NULL, romInfo);
+	else fillROMInfo(rom_info, NULL, NULL);
+	return MT32EMU_RC_OK;
+}
+
+static bool isROMInfoCompatible(const MachineConfiguration *machineConfiguration, const ROMInfo *romInfo) {
+	Bit32u romCount;
+	const ROMInfo * const *compatibleROMInfos = machineConfiguration->getCompatibleROMInfos(&romCount);
+	for (Bit32u i = 0; i < romCount; i++) {
+		if (romInfo == compatibleROMInfos[i]) return true;
 	}
-	ROMImage::freeROMImage(fullImage);
-	return MT32EMU_RC_OK; // No support for reverb ROM yet.
+	return false;
+}
+
+static mt32emu_return_code replaceOrMergeROMImage(const ROMImage *&contextROMImage, const ROMImage *newROMImage, const MachineConfiguration *machineConfiguration, mt32emu_return_code addedFullROM, mt32emu_return_code addedPartialROM) {
+	if (contextROMImage != NULL) {
+		if (machineConfiguration != NULL) {
+			const ROMImage *mergedROMImage = ROMImage::mergeROMImages(contextROMImage, newROMImage);
+			if (mergedROMImage != NULL) {
+				if (newROMImage->isFileUserProvided()) delete newROMImage->getFile();
+				ROMImage::freeROMImage(newROMImage);
+				if (contextROMImage->isFileUserProvided()) delete contextROMImage->getFile();
+				ROMImage::freeROMImage(contextROMImage);
+				contextROMImage = mergedROMImage;
+				return addedFullROM;
+			}
+			if (newROMImage->getROMInfo() == contextROMImage->getROMInfo()
+				|| (newROMImage->getROMInfo()->pairType != ROMInfo::Full
+					&& isROMInfoCompatible(machineConfiguration, contextROMImage->getROMInfo()))) {
+				ROMImage::freeROMImage(newROMImage);
+				return MT32EMU_RC_OK;
+			}
+		}
+		if (contextROMImage->isFileUserProvided()) delete contextROMImage->getFile();
+		ROMImage::freeROMImage(contextROMImage);
+	}
+	contextROMImage = newROMImage;
+	return newROMImage->getROMInfo()->pairType == ROMInfo::Full ? addedFullROM: addedPartialROM;
+}
+
+static mt32emu_return_code addROMFiles(mt32emu_data *data, File *file1, File *file2 = NULL, const MachineConfiguration *machineConfiguration = NULL) {
+	const ROMImage *romImage;
+	if (machineConfiguration != NULL) {
+		romImage = ROMImage::makeROMImage(file1, machineConfiguration->getCompatibleROMInfos());
+	} else {
+		romImage = file2 == NULL ? ROMImage::makeROMImage(file1, ROMInfo::getFullROMInfos()) : ROMImage::makeROMImage(file1, file2);
+	}
+	if (romImage == NULL) return MT32EMU_RC_ROMS_NOT_PAIRABLE;
+	const ROMInfo *info = romImage->getROMInfo();
+	if (info == NULL) {
+		ROMImage::freeROMImage(romImage);
+		return MT32EMU_RC_ROM_NOT_IDENTIFIED;
+	}
+	switch (info->type) {
+	case ROMInfo::Control:
+		return replaceOrMergeROMImage(data->controlROMImage, romImage, machineConfiguration, MT32EMU_RC_ADDED_CONTROL_ROM, MT32EMU_RC_ADDED_PARTIAL_CONTROL_ROM);
+	case ROMInfo::PCM:
+		return replaceOrMergeROMImage(data->pcmROMImage, romImage, machineConfiguration, MT32EMU_RC_ADDED_PCM_ROM, MT32EMU_RC_ADDED_PARTIAL_PCM_ROM);
+	default:
+		ROMImage::freeROMImage(romImage);
+		return MT32EMU_RC_OK; // No support for reverb ROM yet.
+	}
 }
 
 static mt32emu_return_code createFileStream(const char *filename, FileStream *&fileStream) {
@@ -373,6 +464,53 @@ mt32emu_bit32u mt32emu_get_stereo_output_samplerate(const mt32emu_analog_output_
 
 mt32emu_analog_output_mode mt32emu_get_best_analog_output_mode(const double target_samplerate) {
 	return mt32emu_analog_output_mode(SampleRateConverter::getBestAnalogOutputMode(target_samplerate));
+}
+
+size_t mt32emu_get_machine_ids(const char **machine_ids, size_t machine_ids_size) {
+	Bit32u configurationCount;
+	const MachineConfiguration * const *configurations = MachineConfiguration::getAllMachineConfigurations(&configurationCount);
+	if (machine_ids != NULL) {
+		for (Bit32u i = 0; i < machine_ids_size; i++) {
+			machine_ids[i] = i < configurationCount ? configurations[i]->getMachineID() : NULL;
+		}
+	}
+	return configurationCount;
+}
+
+size_t mt32emu_get_rom_ids(const char **rom_ids, size_t rom_ids_size, const char *machine_id) {
+	const ROMInfo * const *romInfos;
+	Bit32u romCount;
+	if (machine_id != NULL) {
+		const MachineConfiguration *configuration = findMachineConfiguration(machine_id);
+		if (configuration != NULL) {
+			romInfos = configuration->getCompatibleROMInfos(&romCount);
+		} else {
+			romInfos = NULL;
+			romCount = 0U;
+		}
+	} else {
+		romInfos = ROMInfo::getAllROMInfos(&romCount);
+	}
+	if (rom_ids != NULL) {
+		for (size_t i = 0; i < rom_ids_size; i++) {
+			rom_ids[i] = i < romCount ? romInfos[i]->shortName : NULL;
+		}
+	}
+	return romCount;
+}
+
+mt32emu_return_code mt32emu_identify_rom_data(mt32emu_rom_info *rom_info, const mt32emu_bit8u *data, size_t data_size, const char *machine_id) {
+	ArrayFile romFile = ArrayFile(data, data_size);
+	return identifyROM(rom_info, &romFile, machine_id);
+}
+
+mt32emu_return_code mt32emu_identify_rom_file(mt32emu_rom_info *rom_info, const char *filename, const char *machine_id) {
+	FileStream *fs;
+	mt32emu_return_code rc = createFileStream(filename, fs);
+	if (fs == NULL) return rc;
+	rc = identifyROM(rom_info, fs, machine_id);
+	delete fs;
+	return rc;
 }
 
 mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instance_data) {
@@ -457,27 +595,22 @@ mt32emu_return_code mt32emu_merge_and_add_rom_files(mt32emu_context context, con
 	return rc;
 }
 
+mt32emu_return_code mt32emu_add_machine_rom_file(mt32emu_context context, const char *machine_id, const char *filename) {
+	const MachineConfiguration *machineConfiguration = findMachineConfiguration(machine_id);
+	if (machineConfiguration == NULL) return MT32EMU_RC_MACHINE_NOT_IDENTIFIED;
+
+	FileStream *fs;
+	mt32emu_return_code rc = createFileStream(filename, fs);
+	if (fs == NULL) return rc;
+	rc = addROMFiles(context, fs, NULL, machineConfiguration);
+	if (rc <= MT32EMU_RC_OK) delete fs;
+	return rc;
+}
+
 void mt32emu_get_rom_info(mt32emu_const_context context, mt32emu_rom_info *rom_info) {
-	const ROMInfo *romInfo = context->controlROMImage == NULL ? NULL : context->controlROMImage->getROMInfo();
-	if (romInfo != NULL) {
-		rom_info->control_rom_id = romInfo->shortName;
-		rom_info->control_rom_description = romInfo->description;
-		rom_info->control_rom_sha1_digest = romInfo->sha1Digest;
-	} else {
-		rom_info->control_rom_id = NULL;
-		rom_info->control_rom_description = NULL;
-		rom_info->control_rom_sha1_digest = NULL;
-	}
-	romInfo = context->pcmROMImage == NULL ? NULL : context->pcmROMImage->getROMInfo();
-	if (romInfo != NULL) {
-		rom_info->pcm_rom_id = romInfo->shortName;
-		rom_info->pcm_rom_description = romInfo->description;
-		rom_info->pcm_rom_sha1_digest = romInfo->sha1Digest;
-	} else {
-		rom_info->pcm_rom_id = NULL;
-		rom_info->pcm_rom_description = NULL;
-		rom_info->pcm_rom_sha1_digest = NULL;
-	}
+	const ROMInfo *controlROMInfo = context->controlROMImage == NULL ? NULL : context->controlROMImage->getROMInfo();
+	const ROMInfo *pcmROMInfo = context->pcmROMImage == NULL ? NULL : context->pcmROMImage->getROMInfo();
+	fillROMInfo(rom_info, controlROMInfo, pcmROMInfo);
 }
 
 void mt32emu_set_partial_count(mt32emu_context context, const mt32emu_bit32u partial_count) {
