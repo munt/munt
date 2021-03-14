@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/")
 
 project(libmt32emu CXX)
+set(libmt32emu_DESCRIPTION "C/C++ library to emulate (approximately) the Roland MT-32, CM-32L and LAPC-I synthesiser modules")
+set(libmt32emu_URL "http://munt.sourceforge.net/")
 set(libmt32emu_VERSION_MAJOR 2)
 set(libmt32emu_VERSION_MINOR 4)
 set(libmt32emu_VERSION_PATCH 2)
@@ -173,8 +175,6 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu.h" "#include <mt32emu/mt
 configure_file("src/config.h.in" "include/mt32emu/config.h")
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu)
 
-configure_file("src/mt32emu.pc.in" "mt32emu.pc" @ONLY)
-
 if(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
   add_definitions(-DMT32EMU_WITH_INTERNAL_RESAMPLER)
   set(${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SOURCES}
@@ -189,6 +189,7 @@ else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
   # Prefer using SOXR if it is available
   find_package(LibSoxr)
   if(LIBSOXR_FOUND)
+    set(libmt32emu_PC_REQUIRES_PRIVATE "soxr >= 0.1.2")
     add_definitions(-DMT32EMU_WITH_LIBSOXR_RESAMPLER)
     set(libmt32emu_EXT_LIBS ${libmt32emu_EXT_LIBS} ${LIBSOXR_LIBRARY})
     include_directories(${LIBSOXR_INCLUDE_DIR})
@@ -201,6 +202,7 @@ else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
     # Try Samplerate if SOXR is unavailable
     find_package(LibSamplerate)
     if(LIBSAMPLERATE_FOUND)
+      set(libmt32emu_PC_REQUIRES_PRIVATE "samplerate >= 0.1.8")
       add_definitions(-DMT32EMU_WITH_LIBSAMPLERATE_RESAMPLER)
       set(libmt32emu_EXT_LIBS ${libmt32emu_EXT_LIBS} ${LIBSAMPLERATE_LIBRARY})
       include_directories(${LIBSAMPLERATE_INCLUDE_DIR})
@@ -213,6 +215,8 @@ else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
   endif(LIBSOXR_FOUND)
 endif(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
 
+configure_file("src/mt32emu.pc.in" "mt32emu.pc" @ONLY)
+
 add_library(mt32emu ${libmt32emu_BUILD_TYPE} ${libmt32emu_SOURCES})
 
 if(libmt32emu_EXT_LIBS)
@@ -220,6 +224,7 @@ if(libmt32emu_EXT_LIBS)
     target_link_libraries(mt32emu
       ${libmt32emu_EXT_LIBS}
     )
+    unset(MT32EMU_EXT_LIBS CACHE)
   else(libmt32emu_SHARED)
     # Locations are exported for the benefit of a higher-level CMakeLists.txt.
     # This is irrelevant if compiling stand-alone.
@@ -293,7 +298,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "${libmt32emu_VERSION_PATCH}")
 set(CPACK_PACKAGE_VENDOR "muntemu.org")
 set(CPACK_PACKAGE_CONTACT "sergm@muntemu.org")
 set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../FreeBSD/usr/ports/audio/libmt32emu/pkg-descr")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "C/C++ library to emulate (approximately) the Roland MT-32, CM-32L and LAPC-I synthesiser modules")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${libmt32emu_DESCRIPTION})
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 # The default package file name has "-${CPACK_SYSTEM_NAME}" at the end, which doesn't match our previous releases
@@ -303,9 +308,9 @@ set(CPACK_SOURCE_GENERATOR TGZ)
 set(CPACK_SOURCE_STRIP_FILES TRUE)
 set(CPACK_RPM_PACKAGE_GROUP "Audio/Emulators")
 set(CPACK_RPM_PACKAGE_LICENSE "LGPLv2.1+")
-set(CPACK_RPM_PACKAGE_URL "http://munt.sourceforge.net/")
+set(CPACK_RPM_PACKAGE_URL ${libmt32emu_URL})
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS "ON")
-set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://munt.sourceforge.net/")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE ${libmt32emu_URL})
 set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
 if(libmt32emu_SHARED AND libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
   set(CPACK_RPM_PACKAGE_NAME "${CMAKE_PROJECT_NAME}-devel")
