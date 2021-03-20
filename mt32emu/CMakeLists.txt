@@ -309,6 +309,9 @@ set(CPACK_SOURCE_STRIP_FILES TRUE)
 set(CPACK_RPM_PACKAGE_GROUP "Audio/Emulators")
 set(CPACK_RPM_PACKAGE_LICENSE "LGPLv2.1+")
 set(CPACK_RPM_PACKAGE_URL ${libmt32emu_URL})
+# Normally, pkgconfig files are installed into the system directory that should pre-exist on the target system,
+# and hence cause conflict if not excluded
+set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/${libmt32emu_PKGCONFIG_INSTALL_PREFIX}/pkgconfig)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS "ON")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE ${libmt32emu_URL})
 set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
