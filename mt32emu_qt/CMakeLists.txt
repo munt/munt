@@ -27,10 +27,6 @@ endif()
 add_definitions(-DAPP_VERSION="${mt32emu_qt_VERSION}")
 add_definitions(-DBUILD_SYSTEM="${CMAKE_SYSTEM_NAME}")
 
-if(libmt32emu_SHARED)
-  add_definitions(-DMT32EMU_SHARED)
-endif()
-
 include(CheckIncludeFiles)
 include(CheckCXXSymbolExists)
 include(CheckLibraryExists)

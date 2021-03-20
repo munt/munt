@@ -16,11 +16,21 @@ else()
   set(libmt32emu_STANDALONE_BUILD TRUE)
 endif()
 
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
+  set(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG TRUE)
+else()
+  set(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG FALSE)
+endif()
+
 option(libmt32emu_SHARED "Build shared library" ${libmt32emu_STANDALONE_BUILD})
 option(libmt32emu_C_INTERFACE "Provide C-compatible API" TRUE)
 option(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER "Use built-in sample rate conversion" TRUE)
-option(libmt32emu_REQUIRE_ANSI "Require ANSI C++ compatibility when compiling with GNU C++ or Clang" TRUE)
-mark_as_advanced(libmt32emu_REQUIRE_ANSI)
+if(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG)
+  option(libmt32emu_REQUIRE_ANSI "Require ANSI C++ compatibility when compiling with GNU C++ or Clang" TRUE)
+  mark_as_advanced(libmt32emu_REQUIRE_ANSI)
+else()
+  unset(libmt32emu_REQUIRE_ANSI CACHE)
+endif()
 
 if(munt_WITH_MT32EMU_SMF2WAV AND NOT libmt32emu_C_INTERFACE)
   message(STATUS "Option libmt32emu_C_INTERFACE implied TRUE when building for mt32emu_smf2wav")
@@ -46,12 +56,22 @@ set(libmt32emu_PKGCONFIG_INSTALL_PREFIX lib CACHE PATH "Installation path prefix
 mark_as_advanced(libmt32emu_PKGCONFIG_INSTALL_PREFIX)
 
 if(libmt32emu_SHARED)
-  option(libmt32emu_INSTALL_DEFAULT_LOCALE "Install user-preferred system locale as C locale when initialising shared library.\
- This is generally not necessary, although may be required in some cases\
- (for instance, when builing shared library with old versions of MS VC with the C runtime statically linked)\
- to open ROM files with localised pathnames successfully." FALSE)
+  option(libmt32emu_WITH_VERSION_TAGGING "Tags shared object with library version and enables runtime version check")
+  if(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG)
+    option(libmt32emu_WITH_SYMBOL_VERSIONING "Adds versions of version tags and C-compatible API symbols on supported platforms")
+  else()
+    unset(libmt32emu_WITH_SYMBOL_VERSIONING CACHE)
+  endif()
+
+  option(libmt32emu_INSTALL_DEFAULT_LOCALE "Install user-preferred system locale as C locale when initialising shared library.
+ This is generally not necessary, although may be required in some cases (for instance, when building shared library with old
+ versions of MS VC with the C runtime statically linked) to open ROM files with localised pathnames successfully.")
   mark_as_advanced(libmt32emu_INSTALL_DEFAULT_LOCALE)
-endif()
+else(libmt32emu_SHARED)
+  unset(libmt32emu_WITH_VERSION_TAGGING CACHE)
+  unset(libmt32emu_WITH_SYMBOL_VERSIONING CACHE)
+  unset(libmt32emu_INSTALL_DEFAULT_LOCALE CACHE)
+endif(libmt32emu_SHARED)
 
 set(libmt32emu_SOURCES
   src/Analog.cpp
@@ -138,7 +158,20 @@ else(libmt32emu_CPP_INTERFACE AND NOT libmt32emu_C_INTERFACE)
   endif(libmt32emu_CPP_INTERFACE)
 endif(libmt32emu_CPP_INTERFACE AND NOT libmt32emu_C_INTERFACE)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
+if(libmt32emu_WITH_VERSION_TAGGING)
+  list(APPEND libmt32emu_SOURCES src/VersionTagging.cpp)
+  list(APPEND libmt32emu_HEADERS VersionTagging.h)
+  if(libmt32emu_WITH_SYMBOL_VERSIONING)
+    set(libmt32emu_RUNTIME_VERSION_CHECK 1)
+  else()
+    set(libmt32emu_RUNTIME_VERSION_CHECK 2)
+  endif()
+else(libmt32emu_WITH_VERSION_TAGGING)
+  file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu/VersionTagging.h)
+  set(libmt32emu_RUNTIME_VERSION_CHECK 0)
+endif(libmt32emu_WITH_VERSION_TAGGING)
+
+if(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG)
   add_compile_options(-Wall -Wextra -Wnon-virtual-dtor -Wshadow -Wold-style-cast)
   if(libmt32emu_REQUIRE_ANSI)
     add_compile_options(-ansi -pedantic)
@@ -150,7 +183,7 @@ if(MSVC)
 endif()
 
 if(libmt32emu_SHARED)
-  add_definitions(-DMT32EMU_SHARED)
+  set(libmt32emu_SHARED_DEFINITION "#define MT32EMU_SHARED")
   set(libmt32emu_BUILD_TYPE SHARED)
   if(NOT OS2)
     # A workaround for the OS/2 port of GCC 9 that emits lots of warnings otherwise.
@@ -159,6 +192,8 @@ if(libmt32emu_SHARED)
   if(libmt32emu_INSTALL_DEFAULT_LOCALE)
     add_definitions(-DMT32EMU_INSTALL_DEFAULT_LOCALE)
   endif()
+else(libmt32emu_SHARED)
+  set(libmt32emu_SHARED_DEFINITION "#undef MT32EMU_SHARED")
 endif(libmt32emu_SHARED)
 
 if(NOT libmt32emu_CURRENT_EXPORTS_TYPE STREQUAL libmt32emu_EXPORTS_TYPE)
@@ -230,6 +265,8 @@ if(libmt32emu_EXT_LIBS)
     # This is irrelevant if compiling stand-alone.
     set(MT32EMU_EXT_LIBS ${libmt32emu_EXT_LIBS} CACHE FILEPATH "")
   endif(libmt32emu_SHARED)
+else(libmt32emu_EXT_LIBS)
+  unset(MT32EMU_EXT_LIBS CACHE)
 endif(libmt32emu_EXT_LIBS)
 
 set_target_properties(mt32emu
@@ -240,6 +277,15 @@ set_target_properties(mt32emu
 if(libmt32emu_SHARED AND CMAKE_SYSTEM_NAME STREQUAL Windows)
   set_target_properties(mt32emu
     PROPERTIES RUNTIME_OUTPUT_NAME mt32emu-${libmt32emu_VERSION_MAJOR}
+  )
+endif()
+
+if(libmt32emu_WITH_SYMBOL_VERSIONING)
+  set(${PROJECT_NAME}_VERSION_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.map)
+  include(cmake/build_version_map.cmake)
+  build_version_map("src/c_interface/c_interface.h" ${${PROJECT_NAME}_VERSION_SCRIPT})
+  set_target_properties(mt32emu
+    PROPERTIES LINK_FLAGS "-Wl,--version-script=${${PROJECT_NAME}_VERSION_SCRIPT}"
   )
 endif()
 

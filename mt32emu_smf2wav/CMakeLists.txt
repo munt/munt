@@ -10,10 +10,6 @@ set(mt32emu_smf2wav_VERSION "${mt32emu_smf2wav_VERSION_MAJOR}.${mt32emu_smf2wav_
 
 add_definitions(-DVERSION="${mt32emu_smf2wav_VERSION}")
 
-if(libmt32emu_SHARED)
-  add_definitions(-DMT32EMU_SHARED)
-endif()
-
 find_package(GLIB2 REQUIRED)
 set(EXT_LIBS ${EXT_LIBS} ${GLIB2_LIBRARIES})
 include_directories(${GLIB2_INCLUDE_DIRS})
