@@ -92,12 +92,14 @@ void ROMSelectionDialog::refreshROMInfos() {
 	ui->romInfoTable->clearContents();
 	ui->romInfoTable->setRowCount(dirEntries.size());
 
+	const ROMInfo * const * const fullROMInfos = ROMInfo::getFullROMInfos();
+
 	int row = 0;
 	for (QStringListIterator it(dirEntries); it.hasNext();) {
 		QString fileName = it.next();
 		FileStream file;
 		if (!file.open(Master::getROMPathName(synthProfile.romDir, fileName).toLocal8Bit())) continue;
-		const ROMInfo *romInfoPtr = ROMInfo::getROMInfo(&file);
+		const ROMInfo *romInfoPtr = ROMInfo::getROMInfo(&file, fullROMInfos);
 		if (romInfoPtr == NULL) continue;
 		const ROMInfo &romInfo = *romInfoPtr;
 
