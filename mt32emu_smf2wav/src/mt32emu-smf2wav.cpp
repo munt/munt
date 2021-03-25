@@ -242,7 +242,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		{"nice-panning", 0, 0, G_OPTION_ARG_NONE, &options->nicePanning, "Enlarges the pan setting accuracy to 4 bits providing for smoother panning.\n"
 		 "                By default, we accurately emulate the LA32 chip that only supports the pan setting accuracy of 3 bits.", NULL},
 		{"nice-partial-mixing", 0, 0, G_OPTION_ARG_NONE, &options->nicePartialMixing, "Disables occasional counter-phase mixing of partials that the LA32 chip exhibits.\n"
-		 "                Timbres with closely souding partials may sound quite differently, or even cancel out if mixed counter-phase.\n"
+		 "                Timbres with closely sounding partials may sound quite differently, or even cancel out if mixed counter-phase.\n"
 		 "                Enabling this option makes the behaviour more predictable.", NULL},
 
 		{"s", 's', 0, G_OPTION_ARG_FILENAME, &deprecatedSysexFile, "[DEPRECATED] Play this SMF or sysex file before any other. DEPRECATED: Instead just specify the file first in the file list.", "<midi_file>"},

@@ -63,9 +63,10 @@ public:
 	// Allows retrieving a NULL-terminated list of ROMInfos for a range of types and pairTypes
 	// (specified by bitmasks)
 	// Useful for GUI/console app to output information on what ROMs it supports
+	// The caller must free the returned list with freeROMInfoList when finished.
 	MT32EMU_EXPORT static const ROMInfo **getROMInfoList(Bit32u types, Bit32u pairTypes);
 
-	// Frees the list of ROMInfos given
+	// Frees the list of ROMInfos given that has been created by getROMInfoList.
 	MT32EMU_EXPORT static void freeROMInfoList(const ROMInfo **romInfos);
 
 	// Returns an immutable NULL-terminated list of all (full and partial) supported ROMInfos.
@@ -144,7 +145,7 @@ public:
 	// if a non-NULL value is provided in optional argument itemCount.
 	MT32EMU_EXPORT_V(2.5) static const MachineConfiguration * const *getAllMachineConfigurations(Bit32u *itemCount = NULL);
 
-	// Returns a string indentifier of this MachineConfiguration.
+	// Returns a string identifier of this MachineConfiguration.
 	MT32EMU_EXPORT_V(2.5) const char *getMachineID() const;
 
 	// Returns an immutable NULL-terminated list of ROMInfos that are compatible with this

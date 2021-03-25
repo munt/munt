@@ -260,7 +260,7 @@ MT32EMU_EXPORT mt32emu_boolean mt32emu_is_open(mt32emu_const_context context);
  * Returns actual sample rate of the fully processed output stereo signal.
  * If samplerate conversion is used (i.e. when mt32emu_set_stereo_output_samplerate() has been invoked with a non-zero value),
  * the returned value is the desired output samplerate rounded down to the closest integer.
- * Otherwise, the output samplerate is choosen depending on the emulation mode of stereo analog circuitry of hardware units.
+ * Otherwise, the output samplerate is chosen depending on the emulation mode of stereo analog circuitry of hardware units.
  * See comment for mt32emu_analog_output_mode for more info.
  */
 MT32EMU_EXPORT mt32emu_bit32u mt32emu_get_actual_stereo_output_samplerate(mt32emu_const_context context);
@@ -418,7 +418,7 @@ MT32EMU_EXPORT mt32emu_boolean mt32emu_is_mt32_reverb_compatibility_mode(mt32emu
 MT32EMU_EXPORT mt32emu_boolean mt32emu_is_default_reverb_mt32_compatible(mt32emu_const_context context);
 
 /**
- * If enabled, reverb buffers for all modes are keept around allocated all the time to avoid memory
+ * If enabled, reverb buffers for all modes are kept around allocated all the time to avoid memory
  * allocating/freeing in the rendering thread, which may be required for realtime operation.
  * Otherwise, reverb buffers that are not in use are deleted to save memory (the default behaviour).
  */
