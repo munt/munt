@@ -92,6 +92,7 @@ struct Options {
 	gboolean quiet;
 
 	gchar *romDir;
+	gchar *machineID;
 	unsigned int bufferFrameCount;
 	gint sampleRate;
 	OUTPUT_SAMPLE_FORMAT outputSampleFormat;
@@ -134,6 +135,8 @@ static void freeOptions(Options *options) {
 	options->inputFilenames = NULL;
 	g_free(options->outputFilename);
 	options->outputFilename = NULL;
+	g_free(options->machineID);
+	options->machineID = NULL;
 	g_free(options->romDir);
 	options->romDir = NULL;
 }
@@ -156,6 +159,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 	options->quiet = false;
 
 	options->romDir = NULL;
+	options->machineID = NULL;
 
 	options->dacInputMode = DAC_INPUT_MODES[0];
 	options->analogOutputMode = ANALOG_OUTPUT_MODES[0];
@@ -180,7 +184,19 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		{"force", 'f', 0, G_OPTION_ARG_NONE, &options->force, "Overwrite the output file if it already exists", NULL},
 		{"quiet", 'q', 0, G_OPTION_ARG_NONE, &options->quiet, "Be quiet", NULL},
 
-		{"rom-dir", 'm', 0, G_OPTION_ARG_STRING, &options->romDir, "Directory in which ROMs are stored (including trailing path separator)", "<directory>"},
+		{"rom-dir", 'm', 0, G_OPTION_ARG_STRING, &options->romDir, "Directory in which ROMs are stored", "<directory>"},
+		{"machine-id", 'i', 0, G_OPTION_ARG_STRING, &options->machineID, "ID of machine configuration to search ROMs for (default: any)\n"
+		 "                 any:        try cm32l first, then mt32\n"
+		 "                 mt32:       any complete set of MT-32 ROMs, the highest control ROM version found wins\n"
+		 "                 cm32l:      any complete set of CM-32L / LAPC-I ROMs, the highest control ROM version found wins\n"
+		 "                 mt32_1_04:  MT-32 with control ROM version 1.04\n"
+		 "                 mt32_1_05:  MT-32 with control ROM version 1.05\n"
+		 "                 mt32_1_06:  MT-32 with control ROM version 1.06\n"
+		 "                 mt32_1_07:  MT-32 with control ROM version 1.07\n"
+		 "                 mt32_bluer: MT-32 Blue Ridge mod version X.XX\n"
+		 "                 mt32_2_04:  MT-32 with control ROM version 2.04\n"
+		 "                 cm32l_1_00: CM-32L / LAPC-I with control ROM version 1.00\n"
+		 "                 cm32l_1_02: CM-32L / LAPC-I with control ROM version 1.02", "<machine_id>"},
 		// buffer-size determines the maximum number of frames to be rendered by the emulator in one pass.
 		// This can have a big impact on performance (Generally more at a time=better).
 		{"buffer-size", 'b', 0, G_OPTION_ARG_INT, &bufferFrameCount, "Buffer size in frames (minimum: 1)", "<frame_count>"},  // FIXME: Show default
@@ -796,6 +812,121 @@ static bool playFile(const gchar *inputFilename, const gchar *displayInputFilena
 	return false;
 }
 
+static size_t matchMachineIDs(const char **&matchedMachineIDs, MT32Emu::Service &service, const char * const machineID) {
+	bool anyMachine = NULL == machineID || strcmp(machineID, "any") == 0;
+
+	if (!(anyMachine || strcmp(machineID, "mt32") == 0 || strcmp(machineID, "cm32l") == 0)) {
+		matchedMachineIDs = NULL;
+		return 1;
+	}
+
+	const size_t knownMachineCount = service.getMachineIDs(NULL, 0);
+	const char **knownMachineIDs = new const char *[knownMachineCount];
+	service.getMachineIDs(knownMachineIDs, knownMachineCount);
+	if (anyMachine) {
+		matchedMachineIDs = knownMachineIDs;
+		return knownMachineCount;
+	}
+	matchedMachineIDs = new const char *[knownMachineCount];
+	guint matchedMachineCount = 0;
+	for (guint i = 0; i < knownMachineCount; i++) {
+		if (strncmp(machineID, knownMachineIDs[i], 4) == 0) {
+			matchedMachineIDs[matchedMachineCount++] = knownMachineIDs[i];
+		}
+	}
+	delete[] knownMachineIDs;
+	return matchedMachineCount;
+}
+
+static bool loadMachineROMs(MT32Emu::Service &service, const char *romDirName, GDir *romDir, const char *machineID, bool logErrors) {
+	bool controlROMFound = false;
+	bool pcmROMFound = false;
+	for (;;) {
+		const char *fileName = g_dir_read_name(romDir);
+		if (NULL == fileName) break;
+		char *pathName = g_build_filename(romDirName, fileName, NULL);
+		mt32emu_return_code rc = service.addMachineROMFile(machineID, pathName);
+		g_free(pathName);
+		if (MT32EMU_RC_MACHINE_NOT_IDENTIFIED == rc) {
+			if (logErrors) fprintf(stderr, "Unrecognised machine configuration.\n");
+			return false;
+		}
+		controlROMFound = controlROMFound || MT32EMU_RC_ADDED_CONTROL_ROM == rc;
+		pcmROMFound = pcmROMFound || MT32EMU_RC_ADDED_PCM_ROM == rc;
+		if (controlROMFound && pcmROMFound) {
+			printf("Using ROMs for machine %s.\n", machineID);
+			return true;
+		}
+	}
+	if (logErrors) fprintf(stderr, "ROMs not found for machine configuration.\n");
+	return false;
+}
+
+static void identifyControlROMs(MT32Emu::Service &service, const char *romDirName, GDir *romDir, GHashTable *seenControlROMIDs) {
+	mt32emu_rom_info rom_info;
+	for (;;) {
+		const char *fileName = g_dir_read_name(romDir);
+		if (NULL == fileName) break;
+		char *pathName = g_build_filename(romDirName, fileName, NULL);
+		if (MT32EMU_RC_OK == service.identifyROMFile(&rom_info, pathName, NULL) && rom_info.control_rom_id != NULL) {
+			g_hash_table_add(seenControlROMIDs, gpointer(rom_info.control_rom_id));
+		}
+		g_free(pathName);
+	}
+}
+
+static bool loadROMs(MT32Emu::Service &service, const char *romDirName, GDir *romDir, const char * const *machineIDs, const size_t machineIDCount) {
+	GHashTable *seenControlROMIDs = g_hash_table_new(NULL, NULL);
+	identifyControlROMs(service, romDirName, romDir, seenControlROMIDs);
+	bool romsLoaded = false;
+	for (size_t machineIndex = machineIDCount; !romsLoaded && machineIndex-- > 0;) {
+		const char *machineID = machineIDs[machineIndex];
+		size_t machineROMCount = service.getROMIDs(NULL, 0, machineID);
+		const char **machineROMIDs = new const char *[machineROMCount];
+		service.getROMIDs(machineROMIDs, machineROMCount, machineID);
+		for (guint machineROMIndex = 0; !romsLoaded && machineROMIndex < machineROMCount; machineROMIndex++) {
+			if (g_hash_table_contains(seenControlROMIDs, machineROMIDs[machineROMIndex])) {
+				g_dir_rewind(romDir);
+				if (loadMachineROMs(service, romDirName, romDir, machineID, false)) {
+					romsLoaded = true;
+					printf("Using ROMs for machine %s.\n", machineID);
+					break;
+				}
+			}
+		}
+		delete[] machineROMIDs;
+	}
+	g_hash_table_destroy(seenControlROMIDs);
+	return romsLoaded;
+}
+
+static bool loadROMs(MT32Emu::Service &service, const Options &options) {
+	const char *romDirNameUtf8 = options.romDir;
+	if (romDirNameUtf8 == NULL) romDirNameUtf8 = ".";
+	char *romDirName = g_filename_from_utf8(romDirNameUtf8, strlen(romDirNameUtf8), NULL, NULL, NULL);
+	GDir *romDir = g_dir_open(romDirName, 0, NULL);
+	if (NULL == romDir) {
+		fprintf(stderr, "Error reading contents of ROM dir.\n");
+		g_free(romDirName);
+		return false;
+	}
+
+	bool res;
+	const char **machineIDs;
+	const size_t machineIDCount = matchMachineIDs(machineIDs, service, options.machineID);
+	if (NULL == machineIDs) {
+		res = loadMachineROMs(service, romDirName, romDir, options.machineID, true);
+	} else {
+		res = loadROMs(service, romDirName, romDir, machineIDs, machineIDCount);
+		if (!res) fprintf(stderr, "ROMs not found for machine configuration.\n");
+		delete[] machineIDs;
+	}
+
+	g_dir_close(romDir);
+	g_free(romDirName);
+	return res;
+}
+
 int main(int argc, char *argv[]) {
 	Options options;
 	MT32Emu::Service service;
@@ -814,7 +945,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		gchar *lastInputFilename = options.inputFilenames[g_strv_length(options.inputFilenames) - 1];
 		size_t allocLen = strlen(lastInputFilename) + 5;
-		outputFilename = (gchar *)malloc(allocLen);
+		outputFilename = new gchar[allocLen];
 		if(outputFilename == NULL) {
 			fprintf(stderr, "Error allocating %lu bytes for destination filename.\n", (unsigned long)allocLen);
 			return -1;
@@ -828,38 +959,16 @@ int main(int argc, char *argv[]) {
 	displayOutputFilename = g_filename_display_name(outputFilename);
 
 	service.createContext();
-	gchar *baseDir = options.romDir;
-	if (baseDir == NULL)
-		baseDir = (gchar *)"";
-	gchar pathNameUtf8[2048];
-	g_strlcpy(pathNameUtf8, baseDir, 2048);
-	g_strlcat(pathNameUtf8, "CM32L_CONTROL.ROM", 2048);
-	gchar *pathName = g_locale_from_utf8(pathNameUtf8, strlen(pathNameUtf8), NULL, NULL, NULL);
-	if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_CONTROL_ROM) {
-		g_free(pathName);
-		g_strlcpy(pathNameUtf8, baseDir, 2048);
-		g_strlcat(pathNameUtf8, "MT32_CONTROL.ROM", 2048);
-		pathName = g_locale_from_utf8(pathNameUtf8, strlen(pathNameUtf8), NULL, NULL, NULL);
-		if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_CONTROL_ROM) {
-			fprintf(stderr, "Control ROM not found.\n");
-			return 1;
+	if (!loadROMs(service, options)) {
+		service.freeContext();
+
+		if (options.outputFilename == NULL && outputFilename != NULL) {
+			delete[] outputFilename;
 		}
+		g_free(displayOutputFilename);
+		freeOptions(&options);
+		return 1;
 	}
-	g_free(pathName);
-	g_strlcpy(pathNameUtf8, baseDir, 2048);
-	g_strlcat(pathNameUtf8, "CM32L_PCM.ROM", 2048);
-	pathName = g_locale_from_utf8(pathNameUtf8, strlen(pathNameUtf8), NULL, NULL, NULL);
-	if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_PCM_ROM) {
-		g_free(pathName);
-		g_strlcpy(pathNameUtf8, baseDir, 2048);
-		g_strlcat(pathNameUtf8, "MT32_PCM.ROM", 2048);
-		pathName = g_locale_from_utf8(pathNameUtf8, strlen(pathNameUtf8), NULL, NULL, NULL);
-		if (service.addROMFile(pathName) != MT32EMU_RC_ADDED_PCM_ROM) {
-			fprintf(stderr, "PCM ROM not found.\n");
-			return 1;
-		}
-	}
-	g_free(pathName);
 	service.setStereoOutputSampleRate(options.sampleRate);
 	service.setSamplerateConversionQuality(options.srcQuality);
 	service.setPartialCount(options.partialCount);
@@ -893,7 +1002,11 @@ int main(int argc, char *argv[]) {
 			fprintf(stderr, "Destination file '%s' exists.\n", displayOutputFilename);
 			outputFile = NULL;
 		} else {
+#ifdef _MSC_VER
+			fopen_s(&outputFile, outputFilename, "wb");
+#else
 			outputFile = fopen(outputFilename, "wb");
+#endif
 		}
 
 		clock_t startTime = clock();
@@ -953,7 +1066,7 @@ int main(int argc, char *argv[]) {
 	service.freeContext();
 
 	if(options.outputFilename == NULL && outputFilename != NULL) {
-		free(outputFilename);
+		delete[] outputFilename;
 	}
 	g_free(displayOutputFilename);
 	freeOptions(&options);
