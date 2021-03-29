@@ -1039,11 +1039,13 @@ int main(int argc, char *argv[]) {
 				}
 				gchar **inputFilename = options.inputFilenames;
 				while (*inputFilename != NULL) {
-					gchar *displayInputFilename = g_filename_display_name(*inputFilename);
+					char *inputFilenameUtf8 = g_filename_to_utf8(*inputFilename, strlen(*inputFilename), NULL, NULL, NULL);
+					char *inputFilenameLocale = g_locale_from_utf8(inputFilenameUtf8, strlen(inputFilenameUtf8), NULL, NULL, NULL);
 					state.lastInputFile = *(inputFilename + 1) == NULL; // FIXME: This should actually be true if all subsequent files are sysex
-					playFile(*inputFilename, displayInputFilename, options, state);
+					playFile(*inputFilename, inputFilenameLocale, options, state);
 					inputFilename++;
-					g_free(displayInputFilename);
+					g_free(inputFilenameLocale);
+					g_free(inputFilenameUtf8);
 				}
 				if (options.outputSampleFormat == OUTPUT_SAMPLE_FORMAT_IEEE_FLOAT32) {
 					delete[] static_cast<float *>(state.stereoSampleBuffer);
