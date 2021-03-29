@@ -845,7 +845,11 @@ static bool loadMachineROMs(MT32Emu::Service &service, const char *romDirName, G
 		const char *fileName = g_dir_read_name(romDir);
 		if (NULL == fileName) break;
 		char *pathName = g_build_filename(romDirName, fileName, NULL);
-		mt32emu_return_code rc = service.addMachineROMFile(machineID, pathName);
+		char *pathNameUtf8 = g_filename_to_utf8(pathName, strlen(pathName), NULL, NULL, NULL);
+		char *pathNameLocale = g_locale_from_utf8(pathNameUtf8, strlen(pathNameUtf8), NULL, NULL, NULL);
+		mt32emu_return_code rc = service.addMachineROMFile(machineID, pathNameLocale);
+		g_free(pathNameLocale);
+		g_free(pathNameUtf8);
 		g_free(pathName);
 		if (MT32EMU_RC_MACHINE_NOT_IDENTIFIED == rc) {
 			if (logErrors) fprintf(stderr, "Unrecognised machine configuration.\n");
@@ -868,9 +872,13 @@ static void identifyControlROMs(MT32Emu::Service &service, const char *romDirNam
 		const char *fileName = g_dir_read_name(romDir);
 		if (NULL == fileName) break;
 		char *pathName = g_build_filename(romDirName, fileName, NULL);
-		if (MT32EMU_RC_OK == service.identifyROMFile(&rom_info, pathName, NULL) && rom_info.control_rom_id != NULL) {
+		char *pathNameUtf8 = g_filename_to_utf8(pathName, strlen(pathName), NULL, NULL, NULL);
+		char *pathNameLocale = g_locale_from_utf8(pathNameUtf8, strlen(pathNameUtf8), NULL, NULL, NULL);
+		if (MT32EMU_RC_OK == service.identifyROMFile(&rom_info, pathNameLocale, NULL) && rom_info.control_rom_id != NULL) {
 			g_hash_table_add(seenControlROMIDs, gpointer(rom_info.control_rom_id));
 		}
+		g_free(pathNameLocale);
+		g_free(pathNameUtf8);
 		g_free(pathName);
 	}
 }
@@ -889,7 +897,6 @@ static bool loadROMs(MT32Emu::Service &service, const char *romDirName, GDir *ro
 				g_dir_rewind(romDir);
 				if (loadMachineROMs(service, romDirName, romDir, machineID, false)) {
 					romsLoaded = true;
-					printf("Using ROMs for machine %s.\n", machineID);
 					break;
 				}
 			}
@@ -939,7 +946,6 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	gchar *outputFilename;
-	gchar *displayOutputFilename;
 	if (options.outputFilename != NULL) {
 		outputFilename = options.outputFilename;
 	} else {
@@ -956,7 +962,6 @@ int main(int argc, char *argv[]) {
 			sprintf(outputFilename, "%s.wav", lastInputFilename);
 		}
 	}
-	displayOutputFilename = g_filename_display_name(outputFilename);
 
 	service.createContext();
 	if (!loadROMs(service, options)) {
@@ -965,7 +970,6 @@ int main(int argc, char *argv[]) {
 		if (options.outputFilename == NULL && outputFilename != NULL) {
 			delete[] outputFilename;
 		}
-		g_free(displayOutputFilename);
 		freeOptions(&options);
 		return 1;
 	}
@@ -988,6 +992,9 @@ int main(int argc, char *argv[]) {
 		options.sampleRate = service.getActualStereoOutputSamplerate();
 		printf("Using output sample rate %d Hz\n", options.sampleRate);
 
+		char *outputFilenameUtf8 = g_filename_to_utf8(outputFilename, strlen(outputFilename), NULL, NULL, NULL);
+		char *outputFilenameLocale = g_locale_from_utf8(outputFilenameUtf8, strlen(outputFilenameUtf8), NULL, NULL, NULL);
+
 		FILE *outputFile;
 		bool outputFileExists = false;
 		if (!options.force) {
@@ -999,13 +1006,13 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		if (outputFileExists) {
-			fprintf(stderr, "Destination file '%s' exists.\n", displayOutputFilename);
+			fprintf(stderr, "Destination file '%s' exists.\n", outputFilenameLocale);
 			outputFile = NULL;
 		} else {
 #ifdef _MSC_VER
-			fopen_s(&outputFile, outputFilename, "wb");
+			fopen_s(&outputFile, outputFilenameLocale, "wb");
 #else
-			outputFile = fopen(outputFilename, "wb");
+			outputFile = fopen(outputFilenameLocale, "wb");
 #endif
 		}
 
@@ -1053,13 +1060,15 @@ int main(int argc, char *argv[]) {
 					fprintf(stderr, "Error writing final sizes to WAVE header\n");
 				}
 			} else {
-				fprintf(stderr, "Error writing WAVE header to '%s'\n", displayOutputFilename);
+				fprintf(stderr, "Error writing WAVE header to '%s'\n", outputFilenameLocale);
 			}
 			fclose(outputFile);
 			printf("Elapsed time: %f sec\n", float(clock() - startTime) / CLOCKS_PER_SEC);
 		} else {
-			fprintf(stderr, "Error opening file '%s' for writing.\n", displayOutputFilename);
+			fprintf(stderr, "Error opening file '%s' for writing.\n", outputFilenameLocale);
 		}
+		g_free(outputFilenameLocale);
+		g_free(outputFilenameUtf8);
 	} else {
 		fprintf(stderr, "Error opening MT32Emu synthesizer.\n");
 	}
@@ -1068,7 +1077,6 @@ int main(int argc, char *argv[]) {
 	if(options.outputFilename == NULL && outputFilename != NULL) {
 		delete[] outputFilename;
 	}
-	g_free(displayOutputFilename);
 	freeOptions(&options);
 	return 0;
 }
