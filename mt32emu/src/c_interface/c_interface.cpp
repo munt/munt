@@ -420,7 +420,7 @@ static mt32emu_return_code createFileStream(const char *filename, FileStream *&f
 	fileStream = new FileStream;
 	if (!fileStream->open(filename)) {
 		rc = MT32EMU_RC_FILE_NOT_FOUND;
-	} else if (fileStream->getData() == NULL) {
+	} else if (fileStream->getSize() == 0) {
 		rc = MT32EMU_RC_FILE_NOT_LOADED;
 	} else {
 		return MT32EMU_RC_OK;
