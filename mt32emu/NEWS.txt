@@ -1,4 +1,6 @@
-HEAD:
+2021-04-02:
+
+	2.5.0 released.
 
 	* Added support for partial ROM images that may be dumped from several supported hardware
 	  models. Previously, those had to be either concatenated or interleaved for the emulation
@@ -9,7 +11,13 @@ HEAD:
 	* Various improvements in build and packaging, in particular:
 	  * added generation of pkg-config file; (#43)
 	  * started symbol versioning for fine-grained documenting API changes yet to simplify
-	    looking up the minimum version of the library required by a caller application. (#46)
+	    looking up the minimum version of the library required by a caller application; (#46)
+	  * a new build option libmt32emu_WITH_VERSION_TAGGING enables tagging the shared object
+	    with the library version and facilitates an automatic runtime version check
+	    in the client application; (#46)
+	  * for the GNU and Clang compilers, a new build option libmt32emu_WITH_SYMBOL_VERSIONING
+	    is now available that adds versions of version tags and C-compatible API symbols
+	    on supported platforms (e.g. Linux, FreeBSD, Solaris). (#46)
 	* Fixed undefined behaviour that the TVP emulation code may exhibit. (#51)
 
 2021-01-17:

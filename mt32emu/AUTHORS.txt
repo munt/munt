@@ -40,3 +40,14 @@ Laust "Talus" Brock-Nannestad
 
 Also thanks go to Kaminari Redux, NewRisingSun, robertmo, ripsaw8080, Mau1wurf1977 and other inhabitants of VOGONS
 for their suggestions and help with debugging.
+
+Third-party code and code contributions
+---------------------------------------
+
+The library incorporates a fast C++ implementation of SHA1 algorithm with a small memory footprint
+(https://code.google.com/archive/p/smallsha1/). Copyright (c) 2011, Micael Hildenborg.
+Distributed under the BSD 3-clause license.
+
+We are grateful to many other contributors to the library code who submitted pull requests
+at GitHub with bug fixes, suggestions and improvements. See the main code repository
+(https://github.com/munt/munt/) to find detailed information.
