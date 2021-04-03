@@ -31,7 +31,11 @@
 #define MT32EMU_API_TYPE 3
 #include <mt32emu/mt32emu.h>
 
-#if MT32EMU_VERSION_MAJOR != 2 || MT32EMU_VERSION_MINOR < 2
+#if GLIB_MAJOR_VERSION != 2 || GLIB_MINOR_VERSION < 32
+#error Incompatible glib2 library version
+#endif
+
+#if MT32EMU_VERSION_MAJOR != 2 || MT32EMU_VERSION_MINOR < 5
 #error Incompatible mt32emu library version
 #endif
 

@@ -5,7 +5,14 @@
 #  GLIB2_LIBRARIES - Link these to use GLib2
 
 find_package(PkgConfig)
-pkg_search_module(PC_GLIB2 QUIET glib-2.0)
+if(GLIB2_FIND_VERSION)
+  pkg_search_module(PC_GLIB2 QUIET glib-2.0>=${GLIB2_FIND_VERSION})
+  if(PC_GLIB2_FOUND AND (PC_GLIB2_VERSION VERSION_LESS GLIB2_FIND_VERSION))
+    message(FATAL_ERROR "Found GLIB2 version ${PC_GLIB2_VERSION} but ${GLIB2_FIND_VERSION} is required")
+  endif()
+else(GLIB2_FIND_VERSION)
+  pkg_search_module(PC_GLIB2 QUIET glib-2.0)
+endif(GLIB2_FIND_VERSION)
 
 find_path(GLIB2_INCLUDE_DIR glib.h
   HINTS ${PC_GLIB2_INCLUDEDIR} ${PC_GLIB2_INCLUDE_DIRS}
