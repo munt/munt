@@ -14,7 +14,7 @@ find_package(GLIB2 2.32 REQUIRED)
 set(EXT_LIBS ${EXT_LIBS} ${GLIB2_LIBRARIES})
 include_directories(${GLIB2_INCLUDE_DIRS})
 
-find_package(MT32EMU REQUIRED)
+find_package(MT32EMU 2.5 REQUIRED)
 set(EXT_LIBS ${EXT_LIBS} ${MT32EMU_LIBRARIES})
 include_directories(${MT32EMU_INCLUDE_DIRS})
 
