@@ -23,6 +23,18 @@
 #define MT32EMU_VERSION_MINOR @libmt32emu_VERSION_MINOR@
 #define MT32EMU_VERSION_PATCH @libmt32emu_VERSION_PATCH@
 
+/* Turns the version into a comparable number: (2,5,1) -> (2501) */
+#define MT32EMU_VERSION_NUM(X, Y, Z) \
+    ((X)*1000 + (Y)*100 + (Z))
+
+/* Turn the current mt32emu version into a comparable number. */
+#define MT32EMU_COMPILED_VERSION \
+    MT32EMU_VERSION_NUM(MT32EMU_VERSION_MAJOR, MT32EMU_VERSION_MINOR, MT32EMU_VERSION_PATCH)
+
+/* Provide a fool-proof way to check if mt32emu is at least X.Y.Z. */
+#define MT32EMU_VERSION_ATLEAST(X, Y, Z) \
+    (MT32EMU_COMPILED_VERSION >= MT32EMU_VERSION_NUM(X, Y, Z))
+
 /* Library Exports Configuration
  *
  * This reflects the API types actually provided by the library build.
