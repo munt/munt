@@ -212,7 +212,7 @@ public:
 };
 
 Bit32u Synth::getLibraryVersionInt() {
-	return (MT32EMU_VERSION_MAJOR << 16) | (MT32EMU_VERSION_MINOR << 8) | (MT32EMU_VERSION_PATCH);
+	return MT32EMU_CURRENT_VERSION_INT;
 }
 
 const char *Synth::getLibraryVersionString() {
