@@ -160,7 +160,11 @@ LRESULT CALLBACK Win32MidiDriver::midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam
 					return 0;
 				}
 				do
+#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
+					midiSessionID = QRandomGenerator::global()->generate();
+#else
 					midiSessionID = (quint32)qrand();
+#endif
 				while (midiSessionID == 0 || driver->midiSessionIDs.indexOf(midiSessionID) >= 0);
 				driver->midiSessionIDs.append(midiSessionID);
 				driver->showBalloon("Connected application:", appName);

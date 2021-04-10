@@ -104,6 +104,9 @@ void MidiPlayerDialog::on_saveListButton_clicked() {
 		if (!listFile.open(QIODevice::WriteOnly)) return;
 		QTextStream listStream(&listFile);
 		for (int i = 0; i < ui->playList->count(); i++) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+			using Qt::endl;
+#endif
 			listStream << ui->playList->item(i)->text() << endl;
 		}
 	}
