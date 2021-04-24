@@ -63,9 +63,9 @@
  */
 #define MT32EMU_EXPORT_V(symbol_version_tag) MT32EMU_EXPORT
 
- /* Helpers for compile-time version checks */
+/* Helpers for compile-time version checks */
 
- /* Encodes the given version components to a single integer value to simplify further checks. */
+/* Encodes the given version components to a single integer value to simplify further checks. */
 #define MT32EMU_VERSION_INT(major, minor, patch) ((major << 16) | (minor << 8) | patch)
 
 /* The version of this library build, as an integer. */
