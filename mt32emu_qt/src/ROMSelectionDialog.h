@@ -22,21 +22,18 @@ public:
 
 private:
 	Ui::ROMSelectionDialog *ui;
-	QButtonGroup controlROMGroup;
-	QButtonGroup pcmROMGroup;
 
 	SynthProfile &synthProfile;
-	int controlROMRow;
-	int pcmROMRow;
+	bool romInfoTableCellChangedGuard;
 
-	const QString fileFilterToString(const QStringList fileFilter) const;
-	void clearButtonGroup(QButtonGroup &group);
 	void refreshROMInfos();
 
 private slots:
 	void on_romDirButton_clicked();
 	void on_refreshButton_clicked();
 	void on_fileFilterCombo_currentIndexChanged(int);
+	void on_machineCombo_currentIndexChanged(int);
+	void on_romInfoTable_cellChanged(int, int);
 	void accept();
 	void reject();
 };

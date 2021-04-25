@@ -2,6 +2,10 @@ HEAD:
 
 	* Fixed the ROM scanner function that didn't filter out partial ROMs which aren't yet
 	  supported. Related to (#44).
+	* Added support for partial bitwise ROM dumps (#56). Now, the synth can operate with
+	  a pair of control ROM files and a pair of PCM ROM files, which are merged when needed.
+	* Reworked ROMSelectionDialog to permit selection of multiple ROM files of each type
+	  and to support known machine configurations to simplify ROM selection.
 
 2021-01-17:
 

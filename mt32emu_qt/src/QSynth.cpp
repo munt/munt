@@ -35,12 +35,22 @@ const int SOUND_GROUP_NAME_LENGTH = 9; // 0-terminated
 const int TIMBRE_NAME_LENGTH = 11; // 0-terminated
 const int NO_UPDATE_VALUE = -1;
 
-static const ROMImage *makeROMImage(const QDir &romDir, QString romFileName) {
-	FileStream *file = new FileStream;
-	if (file->open(Master::getROMPathName(romDir, romFileName).toLocal8Bit())) {
-		return ROMImage::makeROMImage(file);
+static const ROMImage *makeROMImage(const QDir &romDir, QString romFileName, QString romFileName2) {
+	if (romFileName2.isEmpty()) {
+		FileStream *file = new FileStream;
+		if (file->open(Master::getROMPathNameLocal(romDir, romFileName))) {
+			const ROMImage *romImage = ROMImage::makeROMImage(file, ROMInfo::getFullROMInfos());
+			if (romImage->getROMInfo() != NULL) return romImage;
+			ROMImage::freeROMImage(romImage);
+		}
+		delete file;
+		return NULL;
 	}
-	return NULL;
+	FileStream file1;
+	FileStream file2;
+	if (!file1.open(Master::getROMPathNameLocal(romDir, romFileName))) return NULL;
+	if (!file2.open(Master::getROMPathNameLocal(romDir, romFileName2))) return NULL;
+	return ROMImage::makeROMImage(&file1, &file2);
 }
 
 static void writeMasterVolumeSysex(Synth *synth, int masterVolume) {
@@ -734,9 +744,15 @@ bool QSynth::open(uint &targetSampleRate, SamplerateConversionQuality srcQuality
 
 	forever {
 		Master::getInstance()->loadSynthProfile(synthProfile, synthProfileName);
-		if (controlROMImage == NULL || pcmROMImage == NULL) Master::getInstance()->findROMImages(synthProfile, controlROMImage, pcmROMImage);
-		if (controlROMImage == NULL) controlROMImage = makeROMImage(synthProfile.romDir, synthProfile.controlROMFileName);
-		if (controlROMImage != NULL && pcmROMImage == NULL) pcmROMImage = makeROMImage(synthProfile.romDir, synthProfile.pcmROMFileName);
+		if (controlROMImage == NULL || pcmROMImage == NULL) {
+			Master::getInstance()->findROMImages(synthProfile, controlROMImage, pcmROMImage);
+		}
+		if (controlROMImage == NULL) {
+			controlROMImage = makeROMImage(synthProfile.romDir, synthProfile.controlROMFileName, synthProfile.controlROMFileName2);
+		}
+		if (controlROMImage != NULL && pcmROMImage == NULL) {
+			pcmROMImage = makeROMImage(synthProfile.romDir, synthProfile.pcmROMFileName, synthProfile.pcmROMFileName2);
+		}
 		if (controlROMImage != NULL && pcmROMImage != NULL) break;
 		qDebug() << "Missing ROM files. Can't open synth :(";
 		freeROMImages();
@@ -768,6 +784,8 @@ bool QSynth::open(uint &targetSampleRate, SamplerateConversionQuality srcQuality
 	}
 	delete synth;
 	synth = new Synth(&reportHandler);
+	setState(SynthState_CLOSED);
+	freeROMImages();
 	return false;
 }
 
@@ -1017,7 +1035,9 @@ void QSynth::close() {
 void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.romDir = romDir;
 	synthProfile.controlROMFileName = controlROMFileName;
+	synthProfile.controlROMFileName2 = controlROMFileName2;
 	synthProfile.pcmROMFileName = pcmROMFileName;
+	synthProfile.pcmROMFileName2 = pcmROMFileName2;
 	synthProfile.analogOutputMode = analogOutputMode;
 	synthProfile.rendererType = synth->getSelectedRendererType();
 	synthProfile.partialCount = partialCount;
@@ -1050,7 +1070,9 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	// Settings below do not take effect before re-open.
 	romDir = synthProfile.romDir;
 	controlROMFileName = synthProfile.controlROMFileName;
+	controlROMFileName2 = synthProfile.controlROMFileName2;
 	pcmROMFileName = synthProfile.pcmROMFileName;
+	pcmROMFileName2 = synthProfile.pcmROMFileName2;
 	setAnalogOutputMode(synthProfile.analogOutputMode);
 	setRendererType(synthProfile.rendererType);
 	setPartialCount(synthProfile.partialCount);

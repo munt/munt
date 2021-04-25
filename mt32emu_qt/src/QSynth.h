@@ -23,7 +23,9 @@ enum ReverbCompatibilityMode {
 struct SynthProfile {
 	QDir romDir;
 	QString controlROMFileName;
+	QString controlROMFileName2;
 	QString pcmROMFileName;
+	QString pcmROMFileName2;
 	MT32Emu::DACInputMode emuDACInputMode;
 	MT32Emu::MIDIDelayMode midiDelayMode;
 	MT32Emu::AnalogOutputMode analogOutputMode;
@@ -101,7 +103,9 @@ private:
 
 	QDir romDir;
 	QString controlROMFileName;
+	QString controlROMFileName2;
 	QString pcmROMFileName;
+	QString pcmROMFileName2;
 	const MT32Emu::ROMImage *controlROMImage;
 	const MT32Emu::ROMImage *pcmROMImage;
 	int reverbMode;

@@ -270,7 +270,9 @@ void SynthPropertiesDialog::saveSynthProfile() {
 	synthRoute->getSynthProfile(newSynthProfile);
 	newSynthProfile.romDir = synthProfile.romDir;
 	newSynthProfile.controlROMFileName = synthProfile.controlROMFileName;
+	newSynthProfile.controlROMFileName2 = synthProfile.controlROMFileName2;
 	newSynthProfile.pcmROMFileName = synthProfile.pcmROMFileName;
+	newSynthProfile.pcmROMFileName2 = synthProfile.pcmROMFileName2;
 	Master &master = *Master::getInstance();
 	QString name = ui->profileComboBox->currentText();
 	master.storeSynthProfile(newSynthProfile, name);
@@ -299,7 +301,7 @@ void SynthPropertiesDialog::refreshProfileCombo(QString name) {
 
 QString SynthPropertiesDialog::getROMSetDescription() {
 	MT32Emu::FileStream file;
-	if (file.open(Master::getROMPathName(synthProfile.romDir, synthProfile.controlROMFileName).toLocal8Bit())) {
+	if (file.open(Master::getROMPathNameLocal(synthProfile.romDir, synthProfile.controlROMFileName))) {
 		const MT32Emu::ROMInfo *romInfo = MT32Emu::ROMInfo::getROMInfo(&file);
 		if (romInfo != NULL) {
 			QString des = romInfo->description;

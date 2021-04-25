@@ -48,7 +48,7 @@ public:
 	static void isSupportedDropEvent(QDropEvent *e);
 	static QStringList parseMidiListFromUrls(const QList<QUrl> urls);
 	static QStringList parseMidiListFromPathName(const QString pathName);
-	static const QString getROMPathName(const QDir &romDir, QString romFileName);
+	static const QByteArray getROMPathNameLocal(const QDir &romDir, const QString romFileName);
 
 	// May only be called from the application thread
 	const QList<const AudioDevice *> getAudioDevices();

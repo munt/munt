@@ -25,43 +25,218 @@
 
 using namespace MT32Emu;
 
+enum ROMSubType {
+	ROMSubType_UNSUPPORTED,
+	ROMSubType_CONTROL_FULL,
+	ROMSubType_CONTROL_MUX0,
+	ROMSubType_CONTROL_MUX1,
+	ROMSubType_PCM_FULL,
+	ROMSubType_PCM_FIRST_HALF,
+	ROMSubType_PCM_SECOND_HALF
+};
+
+static const char CONTROL_ROM_FULL[] = "Control Full";
+static const char CONTROL_ROM_MUX0[] = "Control Mux0";
+static const char CONTROL_ROM_MUX1[] = "Control Mux1";
+static const char PCM_ROM_FULL[] = "PCM Full";
+static const char PCM_ROM_FIRST_HALF[] = "PCM First Half";
+static const char PCM_ROM_SECOND_HALF[] = "PCM Second Half";
+
+static const int CHECKBOX_COLUMN = 0;
 static const int FILENAME_COLUMN = 1;
+static const int ROM_SUB_TYPE_COLUMN = 4;
+static const int ROM_SHA1_DIGEST_COLUMN = 5;
+
+static const int MACHINE_COMBO_IX_ANY = 0;
+static const int MACHINE_COMBO_IX_ANY_MT32 = 1;
+static const int MACHINE_COMBO_IX_ANY_CM32L = 2;
+static const int MACHINE_COMBO_IX_OFFSET = 3;
+
+static const char ALIASED_PCM_ROM_SHA1_DIGEST[] = "f6b1eebc4b2d200ec6d3d21d51325d5b48c60252";
+
+static void addCompatibleROMInfos(QVarLengthArray<const ROMInfo *> &tmpROMInfos, const char *machineSeries) {
+	for (const ROMInfo * const *romInfos = ROMInfo::getAllROMInfos(); *romInfos != NULL; romInfos++) {
+		if (QByteArray((*romInfos)->shortName).contains(machineSeries)) tmpROMInfos.append(*romInfos);
+	}
+	tmpROMInfos.append(NULL);
+}
+
+static const ROMInfo * const *getCompatibleROMInfos(const int machineComboIx, QVarLengthArray<const ROMInfo *> &tmpROMInfos) {
+	switch (machineComboIx) {
+	case MACHINE_COMBO_IX_ANY:
+		return ROMInfo::getAllROMInfos();
+	case MACHINE_COMBO_IX_ANY_MT32:
+		addCompatibleROMInfos(tmpROMInfos, "mt32");
+		return tmpROMInfos.constData();
+	case MACHINE_COMBO_IX_ANY_CM32L:
+		addCompatibleROMInfos(tmpROMInfos, "cm32l");
+		return tmpROMInfos.constData();
+	default:
+		break;
+	}
+	return MachineConfiguration::getAllMachineConfigurations()[machineComboIx - MACHINE_COMBO_IX_OFFSET]->getCompatibleROMInfos();
+}
+
+static ROMSubType getROMSubType(const ROMInfo &romInfo) {
+	switch (romInfo.type) {
+	case ROMInfo::Control:
+		switch (romInfo.pairType) {
+		case ROMInfo::Full:
+			return ROMSubType_CONTROL_FULL;
+			break;
+		case ROMInfo::Mux0:
+			return ROMSubType_CONTROL_MUX0;
+			break;
+		case ROMInfo::Mux1:
+			return ROMSubType_CONTROL_MUX1;
+		default:
+			break;
+		}
+		break;
+	case ROMInfo::PCM:
+		switch (romInfo.pairType) {
+		case ROMInfo::Full:
+			return ROMSubType_PCM_FULL;
+			break;
+		case ROMInfo::FirstHalf:
+			return ROMSubType_PCM_FIRST_HALF;
+			break;
+		case ROMInfo::SecondHalf:
+			return ROMSubType_PCM_SECOND_HALF;
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
+	}
+	return ROMSubType_UNSUPPORTED;
+}
+
+static const char *getROMSubTypeName(const ROMSubType romSubType) {
+	switch (romSubType) {
+	case ROMSubType_CONTROL_FULL:
+		return CONTROL_ROM_FULL;
+	case ROMSubType_CONTROL_MUX0:
+		return CONTROL_ROM_MUX0;
+	case ROMSubType_CONTROL_MUX1:
+		return CONTROL_ROM_MUX1;
+	case ROMSubType_PCM_FULL:
+		return PCM_ROM_FULL;
+	case ROMSubType_PCM_FIRST_HALF:
+		return PCM_ROM_FIRST_HALF;
+	case ROMSubType_PCM_SECOND_HALF:
+		return PCM_ROM_SECOND_HALF;
+	default:
+		break;
+	}
+	return NULL;
+}
+
+static bool isROMChecked(const QTableWidget *table, int row) {
+	return table->item(row, CHECKBOX_COLUMN)->checkState() == Qt::Checked;
+}
+
+static void setROMChecked(const QTableWidget *table, int row, bool checked) {
+	table->item(row, CHECKBOX_COLUMN)->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+}
+
+static const QString getFileName(const QTableWidget *table, int row) {
+	return table->item(row, FILENAME_COLUMN)->text();
+}
+
+static ROMSubType getROMSubType(const QTableWidget *table, int row) {
+	return (ROMSubType)table->item(row, ROM_SUB_TYPE_COLUMN)->data(Qt::UserRole).toUInt();
+}
+
+static bool isROMAliasedPCM(Ui::ROMSelectionDialog *ui, int row) {
+	if (ui->machineCombo->currentIndex() != MACHINE_COMBO_IX_ANY) return false;
+	return ui->romInfoTable->item(row, ROM_SHA1_DIGEST_COLUMN)->text() == ALIASED_PCM_ROM_SHA1_DIGEST;
+}
+
+static void resetCheckStates(Ui::ROMSelectionDialog *ui, const ROMSubType romSubType) {
+	const QTableWidget *table = ui->romInfoTable;
+	for (int row = 0; row < table->rowCount(); row++) {
+		ROMSubType rowROMSubType = getROMSubType(table, row);
+		if (romSubType != rowROMSubType) {
+			switch (romSubType) {
+			case ROMSubType_CONTROL_FULL:
+				if (rowROMSubType == ROMSubType_CONTROL_MUX0 || rowROMSubType == ROMSubType_CONTROL_MUX1) break;
+				continue;
+			case ROMSubType_CONTROL_MUX0:
+				if (rowROMSubType == ROMSubType_CONTROL_FULL) break;
+				continue;
+			case ROMSubType_CONTROL_MUX1:
+				if (rowROMSubType == ROMSubType_CONTROL_FULL) break;
+				continue;
+			case ROMSubType_PCM_FULL:
+				if (rowROMSubType == ROMSubType_PCM_FIRST_HALF || rowROMSubType == ROMSubType_PCM_SECOND_HALF) break;
+				continue;
+			case ROMSubType_PCM_FIRST_HALF:
+				if (rowROMSubType == ROMSubType_PCM_FULL) break;
+				continue;
+			case ROMSubType_PCM_SECOND_HALF:
+				if (rowROMSubType == ROMSubType_PCM_FULL && !isROMAliasedPCM(ui, row)) break;
+				continue;
+			default:
+				break;
+			}
+		}
+		setROMChecked(table, row, false);
+	}
+}
+
+static void validateCheckedROMs(Ui::ROMSelectionDialog *ui) {
+	uint controlROMSetChecked = 0;
+	uint pcmROMSetChecked = 0;
+	const QTableWidget *table = ui->romInfoTable;
+	for (int row = 0; row < table->rowCount(); row++) {
+		if (!isROMChecked(table, row)) continue;
+		switch (getROMSubType(table, row)) {
+		case ROMSubType_CONTROL_FULL:
+			controlROMSetChecked = 3;
+			break;
+		case ROMSubType_CONTROL_MUX0:
+			controlROMSetChecked |= 1;
+			break;
+		case ROMSubType_CONTROL_MUX1:
+			controlROMSetChecked |= 2;
+			break;
+		case ROMSubType_PCM_FULL:
+			pcmROMSetChecked = 3;
+			break;
+		case ROMSubType_PCM_FIRST_HALF:
+			pcmROMSetChecked |= 1;
+			break;
+		case ROMSubType_PCM_SECOND_HALF:
+			pcmROMSetChecked |= 2;
+			break;
+		default:
+			break;
+		}
+	}
+	QPushButton *okButton = ui->buttonBox->button(QDialogButtonBox::Ok);
+	okButton->setEnabled(controlROMSetChecked == 3 && pcmROMSetChecked == 3);
+}
 
 ROMSelectionDialog::ROMSelectionDialog(SynthProfile &useSynthProfile, QWidget *parent) :
-		QDialog(parent),
-		ui(new Ui::ROMSelectionDialog),
-		controlROMGroup(this),
-		pcmROMGroup(this),
-		synthProfile(useSynthProfile)
+	QDialog(parent),
+	ui(new Ui::ROMSelectionDialog),
+	synthProfile(useSynthProfile),
+	romInfoTableCellChangedGuard()
 {
 	ui->setupUi(this);
 
-	QStringList fileFilter;
+	ui->machineCombo->addItems(QStringList("any") << "any_mt32" << "any_cm32l");
+	const MachineConfiguration * const *knownMachines = MachineConfiguration::getAllMachineConfigurations();
+	while (*knownMachines != NULL) ui->machineCombo->addItem((*(knownMachines++))->getMachineID());
 
-	fileFilter.clear();
-	fileFilter.append("*.ROM");
-	fileFilter.append("*.BIN");
-	ui->fileFilterCombo->addItem(fileFilterToString(fileFilter), QVariant(fileFilter));
-	fileFilter.clear();
-	fileFilter.append("*.ROM");
-	ui->fileFilterCombo->addItem(fileFilterToString(fileFilter), QVariant(fileFilter));
-	fileFilter.clear();
-	fileFilter.append("*.BIN");
-	ui->fileFilterCombo->addItem(fileFilterToString(fileFilter), QVariant(fileFilter));
-	fileFilter.clear();
-	fileFilter.append("*.*");
-	ui->fileFilterCombo->addItem(fileFilterToString(fileFilter), QVariant(fileFilter));
+	ui->fileFilterCombo->addItems(QStringList("*.ROM;*.BIN") << "*.ROM" << "*.BIN" << "*.*");
 }
 
 ROMSelectionDialog::~ROMSelectionDialog() {
 	delete ui;
-}
-
-const QString ROMSelectionDialog::fileFilterToString(const QStringList fileFilter) const {
-	QString s;
-	for (QStringListIterator it(fileFilter); it.hasNext(); s.append(';')) s.append(it.next());
-	if (s.size() > 0) return s.left(s.size() - 1);
-	return NULL;
 }
 
 void ROMSelectionDialog::loadROMInfos() {
@@ -71,103 +246,72 @@ void ROMSelectionDialog::loadROMInfos() {
 	}
 }
 
-void ROMSelectionDialog::clearButtonGroup(QButtonGroup &group) {
-	QListIterator<QAbstractButton *> it = QListIterator<QAbstractButton *>(group.buttons());
-	for (;it.hasNext();) {
-		group.removeButton(it.next());
-	}
-}
-
 void ROMSelectionDialog::refreshROMInfos() {
-	QString controlROMFileName = synthProfile.controlROMFileName;
-	QString pcmROMFileName = synthProfile.pcmROMFileName;
+	const QString &controlROMFileName = synthProfile.controlROMFileName;
+	const QString &controlROMFileName2 = synthProfile.controlROMFileName2;
+	const QString &pcmROMFileName = synthProfile.pcmROMFileName;
+	const QString &pcmROMFileName2 = synthProfile.pcmROMFileName2;
 
-	clearButtonGroup(controlROMGroup);
-	clearButtonGroup(pcmROMGroup);
-	controlROMRow = -1;
-	pcmROMRow = -1;
-
-	QStringList fileFilter = ui->fileFilterCombo->itemData(ui->fileFilterCombo->currentIndex()).value<QStringList>();
+	QStringList fileFilter = ui->fileFilterCombo->currentText().split(';');
 	QStringList dirEntries = synthProfile.romDir.entryList(fileFilter);
 	ui->romInfoTable->clearContents();
 	ui->romInfoTable->setRowCount(dirEntries.size());
 
-	const ROMInfo * const * const fullROMInfos = ROMInfo::getFullROMInfos();
+	QVarLengthArray<const ROMInfo *> tmpROMInfos;
+	const ROMInfo * const * const romInfos = getCompatibleROMInfos(ui->machineCombo->currentIndex(), tmpROMInfos);
 
+	romInfoTableCellChangedGuard = true;
 	int row = 0;
-	for (QStringListIterator it(dirEntries); it.hasNext();) {
-		QString fileName = it.next();
+	for (int dirEntryIx = 0; dirEntryIx < dirEntries.size(); dirEntryIx++) {
+		const QString &fileName = dirEntries.at(dirEntryIx);
 		FileStream file;
-		if (!file.open(Master::getROMPathName(synthProfile.romDir, fileName).toLocal8Bit())) continue;
-		const ROMInfo *romInfoPtr = ROMInfo::getROMInfo(&file, fullROMInfos);
+		if (!file.open(Master::getROMPathNameLocal(synthProfile.romDir, fileName))) continue;
+		const ROMInfo *romInfoPtr = ROMInfo::getROMInfo(&file, romInfos);
 		if (romInfoPtr == NULL) continue;
 		const ROMInfo &romInfo = *romInfoPtr;
+		const ROMSubType romSubType = getROMSubType(romInfo);
 
-		QButtonGroup *romGroup;
-		QString romType;
-		switch (romInfo.type) {
-			case ROMInfo::PCM:
-				romType = QString("PCM");
-				romGroup = &pcmROMGroup;
-				if (pcmROMRow == -1) pcmROMRow = row;
-				break;
-			case ROMInfo::Control:
-				romType = QString("Control");
-				romGroup = &controlROMGroup;
-				if (controlROMRow == -1) controlROMRow = row;
-				break;
-			case ROMInfo::Reverb:
-				romType = QString("Reverb");
-				romGroup = NULL;
-				break;
-			default:
-				MT32Emu::ROMInfo::freeROMInfo(romInfoPtr);
-				continue;
+		if (romSubType == ROMSubType_UNSUPPORTED) {
+			MT32Emu::ROMInfo::freeROMInfo(romInfoPtr);
+			continue;
 		}
 
-		if (fileName == controlROMFileName) {
-			controlROMRow = row;
-		} else if (fileName == pcmROMFileName) {
-			pcmROMRow = row;
-		}
+		bool fileNameHit = fileName == controlROMFileName || fileName == controlROMFileName2
+			|| fileName == pcmROMFileName || fileName == pcmROMFileName2;
 
-		int column = 0;
-		QCheckBox *checkBox = new QCheckBox();
-		if (romInfo.type != ROMInfo::Reverb) {
-			romGroup->addButton(checkBox);
-			romGroup->setId(checkBox, row);
-		} else checkBox->setDisabled(true);
-		ui->romInfoTable->setCellWidget(row, column++, checkBox);
+		int column = CHECKBOX_COLUMN;
+		QTableWidgetItem *item = new QTableWidgetItem();
+		item->setCheckState(fileNameHit ? Qt::Checked : Qt::Unchecked);
+		ui->romInfoTable->setItem(row, column++, item);
 
-		if (controlROMRow == row || pcmROMRow == row) {
-			checkBox->setChecked(true);
-		}
-
-		QTableWidgetItem *item = new QTableWidgetItem(fileName);
+		item = new QTableWidgetItem(fileName);
 		item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 		ui->romInfoTable->setItem(row, column++, item);
 
-		item = new QTableWidgetItem(QString(romInfo.shortName));
+		item = new QTableWidgetItem(romInfo.shortName);
 		item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 		ui->romInfoTable->setItem(row, column++, item);
 
-		item = new QTableWidgetItem(QString(romInfo.description));
+		item = new QTableWidgetItem(romInfo.description);
 		item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 		ui->romInfoTable->setItem(row, column++, item);
 
-		item = new QTableWidgetItem(romType);
+		item = new QTableWidgetItem(getROMSubTypeName(romSubType));
 		item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+		item->setData(Qt::UserRole, uint(romSubType));
 		ui->romInfoTable->setItem(row, column++, item);
 
-		item = new QTableWidgetItem(QString(romInfo.sha1Digest));
+		item = new QTableWidgetItem(romInfo.sha1Digest);
 		item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 		ui->romInfoTable->setItem(row, column++, item);
 
 		MT32Emu::ROMInfo::freeROMInfo(romInfoPtr);
 		row++;
 	}
+	romInfoTableCellChangedGuard = false;
 	ui->romInfoTable->setRowCount(row);
 	ui->romInfoTable->resizeColumnsToContents();
+	validateCheckedROMs(ui);
 }
 
 void ROMSelectionDialog::on_romDirButton_clicked() {
@@ -184,22 +328,65 @@ void ROMSelectionDialog::on_refreshButton_clicked() {
 	refreshROMInfos();
 }
 
-void ROMSelectionDialog::on_fileFilterCombo_currentIndexChanged(int index) {
-Q_UNUSED(index);
-
+void ROMSelectionDialog::on_fileFilterCombo_currentIndexChanged(int) {
 	refreshROMInfos();
+}
+
+void ROMSelectionDialog::on_machineCombo_currentIndexChanged(int index) {
+	if (index >= 0) refreshROMInfos();
+}
+
+void ROMSelectionDialog::on_romInfoTable_cellChanged(int row, int) {
+	if (romInfoTableCellChangedGuard) return;
+	romInfoTableCellChangedGuard = true;
+	resetCheckStates(ui, getROMSubType(ui->romInfoTable, row));
+	setROMChecked(ui->romInfoTable, row, true);
+	romInfoTableCellChangedGuard = false;
+	validateCheckedROMs(ui);
 }
 
 void ROMSelectionDialog::accept() {
 	QDialog::accept();
-	controlROMRow = controlROMGroup.checkedId();
-	pcmROMRow = pcmROMGroup.checkedId();
-	if (controlROMRow > -1) synthProfile.controlROMFileName = ui->romInfoTable->item(controlROMRow, FILENAME_COLUMN)->text();
-	if (pcmROMRow > -1) synthProfile.pcmROMFileName = ui->romInfoTable->item(pcmROMRow, FILENAME_COLUMN)->text();
+	synthProfile.controlROMFileName2 = "";
+	synthProfile.pcmROMFileName2 = "";
+	const QTableWidget *table = ui->romInfoTable;
+	for (int row = 0; row < table->rowCount(); row++) {
+		if (!isROMChecked(table, row)) continue;
+		switch (getROMSubType(table, row)) {
+		case ROMSubType_CONTROL_FULL:
+		case ROMSubType_CONTROL_MUX0:
+			synthProfile.controlROMFileName = getFileName(table, row);
+			break;
+		case ROMSubType_CONTROL_MUX1:
+			synthProfile.controlROMFileName2 = getFileName(table, row);
+			break;
+		case ROMSubType_PCM_FULL:
+		case ROMSubType_PCM_FIRST_HALF:
+			synthProfile.pcmROMFileName = getFileName(table, row);
+			break;
+		case ROMSubType_PCM_SECOND_HALF:
+			synthProfile.pcmROMFileName2 = getFileName(table, row);
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 void ROMSelectionDialog::reject() {
 	QDialog::reject();
-	if (controlROMRow > -1) controlROMGroup.button(controlROMRow)->setChecked(true);
-	if (pcmROMRow > -1) pcmROMGroup.button(pcmROMRow)->setChecked(true);
+	const QString &controlROMFileName = synthProfile.controlROMFileName;
+	const QString &controlROMFileName2 = synthProfile.controlROMFileName2;
+	const QString &pcmROMFileName = synthProfile.pcmROMFileName;
+	const QString &pcmROMFileName2 = synthProfile.pcmROMFileName2;
+	const QTableWidget *table = ui->romInfoTable;
+	romInfoTableCellChangedGuard = true;
+	for (int row = 0; row < table->rowCount(); row++) {
+		QString fileName = getFileName(table, row);
+		bool fileNameHit = fileName == controlROMFileName || fileName == controlROMFileName2
+			|| fileName == pcmROMFileName || fileName == pcmROMFileName2;
+		setROMChecked(table, row, fileNameHit);
+	}
+	romInfoTableCellChangedGuard = false;
+	validateCheckedROMs(ui);
 }
