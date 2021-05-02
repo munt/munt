@@ -690,7 +690,7 @@ mt32emu_bit32u mt32emu_set_midi_event_queue_size(mt32emu_const_context context, 
 }
 
 void mt32emu_configure_midi_event_queue_sysex_storage(mt32emu_const_context context, const mt32emu_bit32u storage_buffer_size) {
-	return context->synth->configureMIDIEventQueueSysexStorage(storage_buffer_size);
+	context->synth->configureMIDIEventQueueSysexStorage(storage_buffer_size);
 }
 
 void mt32emu_set_midi_receiver(mt32emu_context context, mt32emu_midi_receiver_i midi_receiver, void *instance_data) {
@@ -787,7 +787,7 @@ mt32emu_boolean mt32emu_is_default_reverb_mt32_compatible(mt32emu_const_context 
 }
 
 void mt32emu_preallocate_reverb_memory(mt32emu_const_context context, const mt32emu_boolean enabled) {
-	return context->synth->preallocateReverbMemory(enabled != MT32EMU_BOOL_FALSE);
+	context->synth->preallocateReverbMemory(enabled != MT32EMU_BOOL_FALSE);
 }
 
 void mt32emu_set_dac_input_mode(mt32emu_const_context context, const mt32emu_dac_input_mode mode) {
@@ -838,19 +838,19 @@ mt32emu_boolean mt32emu_is_nice_amp_ramp_enabled(mt32emu_const_context context) 
 	return context->synth->isNiceAmpRampEnabled() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
-MT32EMU_EXPORT void mt32emu_set_nice_panning_enabled(mt32emu_const_context context, const mt32emu_boolean enabled) {
+void mt32emu_set_nice_panning_enabled(mt32emu_const_context context, const mt32emu_boolean enabled) {
 	context->synth->setNicePanningEnabled(enabled != MT32EMU_BOOL_FALSE);
 }
 
-MT32EMU_EXPORT mt32emu_boolean mt32emu_is_nice_panning_enabled(mt32emu_const_context context) {
+mt32emu_boolean mt32emu_is_nice_panning_enabled(mt32emu_const_context context) {
 	return context->synth->isNicePanningEnabled() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
-MT32EMU_EXPORT void mt32emu_set_nice_partial_mixing_enabled(mt32emu_const_context context, const mt32emu_boolean enabled) {
+void mt32emu_set_nice_partial_mixing_enabled(mt32emu_const_context context, const mt32emu_boolean enabled) {
 	context->synth->setNicePartialMixingEnabled(enabled != MT32EMU_BOOL_FALSE);
 }
 
-MT32EMU_EXPORT mt32emu_boolean mt32emu_is_nice_partial_mixing_enabled(mt32emu_const_context context) {
+mt32emu_boolean mt32emu_is_nice_partial_mixing_enabled(mt32emu_const_context context) {
 	return context->synth->isNicePartialMixingEnabled() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
