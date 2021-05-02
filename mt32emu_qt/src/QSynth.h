@@ -186,7 +186,7 @@ public:
 
 signals:
 	void stateChanged(SynthState state);
-	void audioBlockRendered() const;
+	void audioBlockRendered();
 };
 
 #endif

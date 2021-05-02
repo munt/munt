@@ -277,7 +277,6 @@ bool SynthRoute::playMIDISysex(MidiSession &midiSession, const Bit8u *sysex, Bit
 void SynthRoute::discardMidiBuffers() {
 	if (!multiMidiMode) return;
 	QMutexLocker midiSessionsLocker(&midiSessionsMutex);
-	QVarLengthArray<QMidiBuffer *, 16> streamBuffers;
 
 	for (int i = 0; i < midiSessions.size(); i++) {
 		QMidiBuffer *midiBuffer = midiSessions[i]->getQMidiBuffer();
