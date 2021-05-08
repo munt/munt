@@ -349,7 +349,9 @@ if(UNIX AND NOT APPLE)
   install(FILES res/mt32emu-qt.desktop DESTINATION share/applications)
   foreach(${PROJECT_NAME}_ICON_RESOLUTION 16x16;24x24;32x32;48x48;64x64;72x72;96x96;128x128;256x256)
     install(FILES res/icons/${${PROJECT_NAME}_ICON_RESOLUTION}/munt.png DESTINATION share/icons/hicolor/${${PROJECT_NAME}_ICON_RESOLUTION}/apps)
-    set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/share/icons/hicolor/${${PROJECT_NAME}_ICON_RESOLUTION}/apps)
+    # These directories pre-exist on a freedesktop-conforming system and cause conflict if not excluded
+    list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/share/icons/hicolor/${${PROJECT_NAME}_ICON_RESOLUTION})
+    list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/share/icons/hicolor/${${PROJECT_NAME}_ICON_RESOLUTION}/apps)
   endforeach(${PROJECT_NAME}_ICON_RESOLUTION)
 endif(UNIX AND NOT APPLE)
 
@@ -379,8 +381,8 @@ set(CPACK_PACKAGE_EXECUTABLES mt32emu-qt;Munt\ MT-32\ Sound\ Module\ Emulator)
 set(CPACK_RPM_PACKAGE_GROUP "Audio/Emulators")
 set(CPACK_RPM_PACKAGE_LICENSE "GPLv3+")
 set(CPACK_RPM_PACKAGE_URL "http://munt.sourceforge.net/")
-# These two directories pre-exist on a freedesktop-conforming system and cause conflict if not excluded
-set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/share/applications)
+# These directories pre-exist on a freedesktop-conforming system and cause conflict if not excluded
+list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/share/applications /usr/share/icons /usr/share/icons/hicolor)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS "ON")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://munt.sourceforge.net/")
 set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
