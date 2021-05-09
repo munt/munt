@@ -40,6 +40,7 @@ PLIST_FILES=	lib/libmt32emu.so \
 		include/mt32emu/SampleRateConverter.h \
 		include/mt32emu/Synth.h \
 		include/mt32emu/Types.h \
+		include/mt32emu/VersionTagging.h \
 		include/mt32emu/c_interface/c_interface.h \
 		include/mt32emu/c_interface/c_types.h \
 		include/mt32emu/c_interface/cpp_interface.h \
