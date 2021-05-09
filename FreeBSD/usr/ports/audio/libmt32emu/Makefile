@@ -6,12 +6,12 @@
 #
 
 PORTNAME=	libmt32emu
-PORTVERSION=	2.4.2
+PORTVERSION=	2.5.0
 CATEGORIES=	audio
 MASTER_SITES=	https://github.com/munt/munt/archive/
 FETCH_ARGS=	-a
-DISTFILES=	libmt32emu_2_4_2.tar.gz
-WRKSRC=		$(WRKDIR)/munt-libmt32emu_2_4_2/mt32emu
+DISTFILES=	libmt32emu_2_5_0.tar.gz
+WRKSRC=		$(WRKDIR)/munt-libmt32emu_2_5_0/mt32emu
 LICENSE=	LGPL21+
 LICENSE_FILE=	${WRKSRC}/COPYING.LESSER.txt
 
@@ -21,9 +21,14 @@ COMMENT=	C/C++ library to emulate (approximately) the Roland MT-32, CM-32L and L
 USE_LDCONFIG=	yes
 USES=		cmake
 
+CMAKE_ON=	libmt32emu_WITH_SYMBOL_VERSIONING libmt32emu_WITH_VERSION_TAGGING
+CMAKE_ARGS=	-Dlibmt32emu_PKGCONFIG_INSTALL_PREFIX:PATH=libdata
+
 PLIST_FILES=	lib/libmt32emu.so \
 		lib/libmt32emu.so.2 \
-		lib/libmt32emu.so.2.4.2 \
+		lib/libmt32emu.so.2.5.0 \
+		libdata/pkgconfig/mt32emu.pc \
+		include/mt32emu.h \
 		include/mt32emu/mt32emu.h \
 		include/mt32emu/config.h \
 		include/mt32emu/globals.h \
