@@ -357,7 +357,11 @@ set(CPACK_RPM_PACKAGE_LICENSE "LGPLv2.1+")
 set(CPACK_RPM_PACKAGE_URL ${libmt32emu_URL})
 # Normally, pkgconfig files are installed into the system directory that should pre-exist on the target system,
 # and hence cause conflict if not excluded
-set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/${libmt32emu_PKGCONFIG_INSTALL_PREFIX}/pkgconfig)
+list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/${libmt32emu_PKGCONFIG_INSTALL_PREFIX}/pkgconfig)
+if(munt_SOURCE_DIR)
+  # Also publish the list for the benefit of the parent CMakeLists.txt file.
+  set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION ${CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION} PARENT_SCOPE)
+endif()
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS "ON")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE ${libmt32emu_URL})
 set(CPACK_DEBIAN_PACKAGE_SECTION "sound")

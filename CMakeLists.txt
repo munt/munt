@@ -38,8 +38,6 @@ set(CPACK_SOURCE_STRIP_FILES TRUE)
 set(CPACK_RPM_PACKAGE_GROUP "Audio/Emulators")
 set(CPACK_RPM_PACKAGE_LICENSE "LGPLv2.1+, GPLv3+")
 set(CPACK_RPM_PACKAGE_URL "http://munt.sourceforge.net/")
-# These two directories pre-exist on a freedesktop-conforming system and cause conflict if not excluded
-set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/share/applications /usr/share/pixmaps)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS "ON")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://munt.sourceforge.net/")
 set(CPACK_DEBIAN_PACKAGE_SECTION "sound")

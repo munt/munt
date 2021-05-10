@@ -383,6 +383,10 @@ set(CPACK_RPM_PACKAGE_LICENSE "GPLv3+")
 set(CPACK_RPM_PACKAGE_URL "http://munt.sourceforge.net/")
 # These directories pre-exist on a freedesktop-conforming system and cause conflict if not excluded
 list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/share/applications /usr/share/icons /usr/share/icons/hicolor)
+if(munt_SOURCE_DIR)
+  # Also publish the list for the benefit of the parent CMakeLists.txt file.
+  set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION ${CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION} PARENT_SCOPE)
+endif()
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS "ON")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://munt.sourceforge.net/")
 set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
