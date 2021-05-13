@@ -436,6 +436,27 @@ void MidiSynth::LoadWaveOutSettings() {
 	if ((settingsVersion == 1) || (midiLatency == 0)) midiLatency += bufferSize;
 }
 
+static const ROMImage *loadROMImage(const char *romDir, const char *romFileName, const char *romFileName2) {
+	if (lstrlenA(romDir) + lstrlenA(romFileName) >= MAX_PATH || lstrlenA(romDir) + lstrlenA(romFileName2) >= MAX_PATH) return NULL;
+	char pathName[MAX_PATH];
+	lstrcpyA(pathName, romDir);
+	lstrcatA(pathName, romFileName);
+	if (*romFileName2 == 0) {
+		FileStream *romFile = new FileStream;
+		romFile->open(pathName);
+		return ROMImage::makeROMImage(romFile, ROMInfo::getFullROMInfos());
+	}
+	char pathName2[MAX_PATH];
+	lstrcpyA(pathName2, romDir);
+	lstrcatA(pathName2, romFileName2);
+	FileStream romFile;
+	FileStream romFile2;
+	romFile.open(pathName);
+	romFile2.open(pathName2);
+	const ROMImage *romImage = ROMImage::makeROMImage(&romFile, &romFile2);
+	return romImage;
+}
+
 void MidiSynth::ReloadSettings() {
 	HKEY hReg;
 	if (RegOpenKeyA(HKEY_CURRENT_USER, MT32EMU_REGISTRY_PATH, &hReg)) {
@@ -502,29 +523,33 @@ void MidiSynth::ReloadSettings() {
 	partialCount = (Bit32u)LoadIntValue(hRegProfile, "partialCount", DEFAULT_MAX_PARTIALS);
 
 	if (!resetEnabled && synth != NULL) return;
-	char romDir[256];
-	char controlROMFileName[256];
-	char pcmROMFileName[256];
-	DWORD s = LoadStringValue(hRegProfile, "romDir", "C:/WINDOWS/SYSTEM32/", romDir, 254);
+	char romDir[MAX_PATH];
+	char controlROMFileName[MAX_PATH];
+	char controlROMFileName2[MAX_PATH];
+	char pcmROMFileName[MAX_PATH];
+	char pcmROMFileName2[MAX_PATH];
+	DWORD s = LoadStringValue(hRegProfile, "romDir", "", romDir, MAX_PATH - 1);
+	if (s == 0) {
+		s = GetEnvironmentVariableA("USERPROFILE", romDir, MAX_PATH);
+		if (0 < s && s < MAX_PATH - 7) {
+			lstrcatA(romDir, "/roms");
+		} else {
+			lstrcpyA(romDir, ".");
+		}
+		s = lstrlenA(romDir);
+	}
 	romDir[s] = '/';
 	romDir[s + 1] = 0;
-	LoadStringValue(hRegProfile, "controlROM", "MT32_CONTROL.ROM", controlROMFileName, 255);
-	LoadStringValue(hRegProfile, "pcmROM", "MT32_PCM.ROM", pcmROMFileName, 255);
+	LoadStringValue(hRegProfile, "controlROM", "MT32_CONTROL.ROM", controlROMFileName, MAX_PATH);
+	LoadStringValue(hRegProfile, "controlROM2", "", controlROMFileName2, MAX_PATH);
+	LoadStringValue(hRegProfile, "pcmROM", "MT32_PCM.ROM", pcmROMFileName, MAX_PATH);
+	LoadStringValue(hRegProfile, "pcmROM2", "", pcmROMFileName2, MAX_PATH);
 	RegCloseKey(hRegProfile);
 	hRegProfile = NULL;
 
-	char pathName[512];
-	lstrcpyA(pathName, romDir);
-	lstrcatA(pathName, controlROMFileName);
-	FileStream *controlROMFile = new FileStream;
-	controlROMFile->open(pathName);
-	lstrcpyA(pathName, romDir);
-	lstrcatA(pathName, pcmROMFileName);
-	FileStream *pcmROMFile = new FileStream;
-	pcmROMFile->open(pathName);
 	FreeROMImages();
-	controlROM = ROMImage::makeROMImage(controlROMFile);
-	pcmROM = ROMImage::makeROMImage(pcmROMFile);
+	controlROM = loadROMImage(romDir, controlROMFileName, controlROMFileName2);
+	pcmROM = loadROMImage(romDir, pcmROMFileName, pcmROMFileName2);
 }
 
 void MidiSynth::ApplySettings() {
@@ -563,11 +588,11 @@ int MidiSynth::Init() {
 	if (synthEvent.Init()) {
 		return 1;
 	}
-	if (controlROM->getROMInfo() == NULL) {
+	if (controlROM == NULL || controlROM->getROMInfo() == NULL) {
 		MessageBox(NULL, L"Can't find Control ROM", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
 	}
-	if (pcmROM->getROMInfo() == NULL) {
+	if (pcmROM == NULL || pcmROM->getROMInfo() == NULL) {
 		MessageBox(NULL, L"Can't find PCM ROM", L"MT32", MB_OK | MB_ICONEXCLAMATION);
 		return 1;
 	}
@@ -654,13 +679,17 @@ void MidiSynth::PlaySysex(const Bit8u *bufpos, DWORD len) {
 void MidiSynth::FreeROMImages() {
 	if (controlROM != NULL) {
 		controlROM->getFile()->close();
-		delete controlROM->getFile();
+		if (controlROM->isFileUserProvided()) {
+			delete controlROM->getFile();
+		}
 		ROMImage::freeROMImage(controlROM);
 		controlROM = NULL;
 	}
 	if (pcmROM != NULL) {
 		pcmROM->getFile()->close();
-		delete pcmROM->getFile();
+		if (pcmROM->isFileUserProvided()) {
+			delete pcmROM->getFile();
+		}
 		ROMImage::freeROMImage(pcmROM);
 		pcmROM = NULL;
 	}
