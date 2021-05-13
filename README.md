@@ -27,9 +27,9 @@ synthesiser module.
 # [mt32emu_win32drv](https://github.com/munt/munt/tree/master/mt32emu_win32drv)
 
 Windows MME driver that provides for creating a MIDI output port and
-transferring MIDI messages received from an external MIDI program to mt32emu_qt,
-the main synthesiser application. It also includes the mt32emu engine built-in
-and is able to operate in stand-alone mode if the main application mt32emu_qt
+transferring MIDI messages received from an external MIDI program to _mt32emu_qt_,
+the main synthesiser application. It also includes the _mt32emu_ engine built-in
+and is able to operate in stand-alone mode if the main application _mt32emu_qt_
 is unavailable.
 
 # [mt32emu_win32drv_setup](https://github.com/munt/munt/tree/master/mt32emu_win32drv_setup)

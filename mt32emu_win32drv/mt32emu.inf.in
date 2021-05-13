@@ -3,7 +3,7 @@ Signature = "$WINDOWS NT$"
 Class = MEDIA
 ClassGUID = "{4d36e96c-e325-11ce-bfc1-08002be10318}"
 Provider = %muntemuProvider%
-DriverVer = 01/17/2021, 1.6.0.0
+DriverVer = @mt32emu_win32drv_BUILD_DATE@, @mt32emu_win32drv_VERSION@.0
 CatalogFile = mt32emu.cat
 
 [Manufacturer]
@@ -16,12 +16,12 @@ CatalogFile = mt32emu.cat
 %mt32emu.DeviceDesc% = mt32emu.ntamd64, ROOT\mt32emu
 
 [mt32emu.ntx86]
-DriverVer = 01/17/2021, 1.6.0.0
+DriverVer = @mt32emu_win32drv_BUILD_DATE@, @mt32emu_win32drv_VERSION@.0
 AddReg = mt32emu.AddReg
 CopyFiles = mt32emu.CopyFiles.User.x86
 
 [mt32emu.ntamd64]
-DriverVer = 01/17/2021, 1.6.0.0
+DriverVer = @mt32emu_win32drv_BUILD_DATE@, @mt32emu_win32drv_VERSION@.0
 AddReg = mt32emu.AddReg
 CopyFiles = mt32emu.CopyFiles.User.x64
 CopyFiles = mt32emu.CopyFiles.User.wow6432

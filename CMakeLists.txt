@@ -7,6 +7,12 @@ set(munt_VERSION_PATCH 0)
 option(munt_WITH_MT32EMU_SMF2WAV "Build command line standard MIDI file conversion tool" TRUE)
 option(munt_WITH_MT32EMU_QT "Build Qt-based UI-enabled application" TRUE)
 
+if(MSVC)
+  option(munt_WITH_MT32EMU_WIN32DRV "Build Windows MME MIDI driver" TRUE)
+else()
+  unset(munt_WITH_MT32EMU_WIN32DRV CACHE)
+endif()
+
 add_subdirectory(mt32emu)
 
 if(munt_WITH_MT32EMU_SMF2WAV)
@@ -17,6 +23,11 @@ endif()
 if(munt_WITH_MT32EMU_QT)
   add_subdirectory(mt32emu_qt)
   add_dependencies(mt32emu-qt mt32emu)
+endif()
+
+if(munt_WITH_MT32EMU_WIN32DRV)
+  add_subdirectory(mt32emu_win32drv)
+  add_dependencies(win32drv mt32emu)
 endif()
 
 # build a CPack driven installer package
