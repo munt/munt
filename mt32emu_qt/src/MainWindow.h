@@ -57,6 +57,7 @@ private slots:
 	void on_actionHide_to_tray_on_close_toggled(bool checked);
 	void on_actionShow_LCD_balloons_toggled(bool checked);
 	void on_actionShow_connection_balloons_toggled(bool checked);
+	void on_actionShow_native_file_dialog_toggled(bool checked);
 	void on_actionROM_Configuration_triggered();
 	void refreshTabNames();
 	void showHideMainWindow();

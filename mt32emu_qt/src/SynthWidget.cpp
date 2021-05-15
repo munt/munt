@@ -250,7 +250,9 @@ void SynthWidget::on_midiRecord_clicked() {
 		ui->midiRecord->setText("Record");
 		if (isMidiDataRecorded) {
 			static QString currentDir = NULL;
-			QString fileName = QFileDialog::getSaveFileName(this, NULL, currentDir, "Standard MIDI files (*.mid)");
+			QFileDialog::Options qFileDialogOptions = QFileDialog::Options(Master::getInstance()->getSettings()->value("Master/qFileDialogOptions", 0).toInt());
+			QString fileName = QFileDialog::getSaveFileName(this, NULL, currentDir, "Standard MIDI files (*.mid)",
+				NULL, qFileDialogOptions);
 			if (!fileName.isEmpty()) currentDir = QDir(fileName).absolutePath();
 			synthRoute->saveRecordedMidi(fileName, MasterClock::NANOS_PER_MILLISECOND);
 		}
@@ -266,7 +268,9 @@ void SynthWidget::on_audioRecord_clicked() {
 		synthRoute->stopRecordingAudio();
 	} else {
 		static QString currentDir = NULL;
-		QString fileName = QFileDialog::getSaveFileName(this, NULL, currentDir, "*.wav *.raw;;*.wav;;*.raw;;*.*");
+		QFileDialog::Options qFileDialogOptions = QFileDialog::Options(Master::getInstance()->getSettings()->value("Master/qFileDialogOptions", 0).toInt());
+		QString fileName = QFileDialog::getSaveFileName(this, NULL, currentDir, "*.wav *.raw;;*.wav;;*.raw;;*.*",
+			NULL, qFileDialogOptions);
 		if (!fileName.isEmpty()) {
 			currentDir = QDir(fileName).absolutePath();
 			ui->audioRecord->setText("Stop");

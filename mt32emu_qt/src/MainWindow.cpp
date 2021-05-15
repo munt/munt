@@ -16,6 +16,7 @@
 
 #include <QtGui>
 #include <QMessageBox>
+#include <QFileDialog>
 
 #ifdef WITH_WINCONSOLE
 #if _WIN32_WINNT < 0x0500
@@ -222,10 +223,13 @@ void MainWindow::on_actionConvert_MIDI_to_Wave_triggered() {
 }
 
 void MainWindow::on_menuOptions_aboutToShow() {
-	ui->actionStart_iconized->setChecked(master->getSettings()->value("Master/startIconized", false).toBool());
-	ui->actionHide_to_tray_on_close->setChecked(master->getSettings()->value("Master/hideToTrayOnClose", false).toBool());
-	ui->actionShow_LCD_balloons->setChecked(master->getSettings()->value("Master/showLCDBalloons", true).toBool());
-	ui->actionShow_connection_balloons->setChecked(master->getSettings()->value("Master/showConnectionBalloons", true).toBool());
+	QSettings *settings = master->getSettings();
+	ui->actionStart_iconized->setChecked(settings->value("Master/startIconized", false).toBool());
+	ui->actionHide_to_tray_on_close->setChecked(settings->value("Master/hideToTrayOnClose", false).toBool());
+	ui->actionShow_LCD_balloons->setChecked(settings->value("Master/showLCDBalloons", true).toBool());
+	ui->actionShow_connection_balloons->setChecked(settings->value("Master/showConnectionBalloons", true).toBool());
+	QFileDialog::Options qFileDialogOptions = QFileDialog::Options(settings->value("Master/qFileDialogOptions", 0).toInt());
+	ui->actionShow_native_file_dialog->setChecked(!qFileDialogOptions.testFlag(QFileDialog::DontUseNativeDialog));
 }
 
 void MainWindow::on_actionStart_iconized_toggled(bool checked) {
@@ -242,6 +246,16 @@ void MainWindow::on_actionShow_LCD_balloons_toggled(bool checked) {
 
 void MainWindow::on_actionShow_connection_balloons_toggled(bool checked) {
 	master->getSettings()->setValue("Master/showConnectionBalloons", checked);
+}
+
+void MainWindow::on_actionShow_native_file_dialog_toggled(bool checked) {
+	QSettings *settings = master->getSettings();
+	QFileDialog::Options qFileDialogOptions = QFileDialog::Options(settings->value("Master/qFileDialogOptions", 0).toInt());
+	qFileDialogOptions |= QFileDialog::DontUseNativeDialog;
+	if (checked) {
+		qFileDialogOptions ^= QFileDialog::DontUseNativeDialog;
+	}
+	settings->setValue("Master/qFileDialogOptions", int(qFileDialogOptions));
 }
 
 void MainWindow::on_actionROM_Configuration_triggered() {

@@ -19,6 +19,7 @@
 #include "AudioFileWriterDriver.h"
 
 #include "../MasterClock.h"
+#include "../Master.h"
 #include "../SynthRoute.h"
 
 static const unsigned int DEFAULT_AUDIO_LATENCY = 150;
@@ -29,7 +30,9 @@ AudioFileWriterStream::AudioFileWriterStream(const AudioDriverSettings &useSetti
 
 bool AudioFileWriterStream::start() {
 	static QString currentDir = NULL;
-	QString fileName = QFileDialog::getSaveFileName(NULL, NULL, currentDir, "*.wav *.raw;;*.wav;;*.raw;;*.*");
+	QFileDialog::Options qFileDialogOptions = QFileDialog::Options(Master::getInstance()->getSettings()->value("Master/qFileDialogOptions", 0).toInt());
+	QString fileName = QFileDialog::getSaveFileName(NULL, NULL, currentDir, "*.wav *.raw;;*.wav;;*.raw;;*.*",
+		NULL, qFileDialogOptions);
 	if (fileName.isEmpty()) return false;
 	currentDir = QDir(fileName).absolutePath();
 	timeInfos[0].lastPlayedNanos = MasterClock::getClockNanos();

@@ -49,11 +49,14 @@ void MidiPlayerDialog::on_playList_activated(const QModelIndex &) {
 }
 
 void MidiPlayerDialog::on_addButton_clicked() {
-	static QString currentDir = Master::getInstance()->getSettings()->value("Master/LastAddMidiFileDir").toString();
-	QStringList fileNames = QFileDialog::getOpenFileNames(this, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
+	QSettings *settings = Master::getInstance()->getSettings();
+	static QString currentDir = settings->value("Master/LastAddMidiFileDir").toString();
+	QFileDialog::Options qFileDialogOptions = QFileDialog::Options(settings->value("Master/qFileDialogOptions", 0).toInt());
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*",
+		NULL, qFileDialogOptions);
 	if (fileNames.isEmpty()) return;
 	currentDir = QDir(fileNames.first()).absolutePath();
-	Master::getInstance()->getSettings()->setValue("Master/LastAddMidiFileDir", currentDir);
+	settings->setValue("Master/LastAddMidiFileDir", currentDir);
 	int row = ui->playList->currentRow();
 	ui->playList->insertItems(row + 1, fileNames);
 	ui->playList->setCurrentRow(row + fileNames.count());
@@ -61,11 +64,14 @@ void MidiPlayerDialog::on_addButton_clicked() {
 }
 
 void MidiPlayerDialog::on_addListButton_clicked() {
-	static QString currentDir = Master::getInstance()->getSettings()->value("Master/LastAddMidiFileListDir").toString();
-	QString fileName = QFileDialog::getOpenFileName(this, NULL, currentDir, "Play list files (*.*)");
+	QSettings *settings = Master::getInstance()->getSettings();
+	static QString currentDir = settings->value("Master/LastAddMidiFileListDir").toString();
+	QFileDialog::Options qFileDialogOptions = QFileDialog::Options(settings->value("Master/qFileDialogOptions", 0).toInt());
+	QString fileName = QFileDialog::getOpenFileName(this, NULL, currentDir, "Play list files (*.*)",
+		NULL, qFileDialogOptions);
 	if (fileName.isEmpty()) return;
 	currentDir = QDir(fileName).absolutePath();
-	Master::getInstance()->getSettings()->setValue("Master/LastAddMidiFileListDir", currentDir);
+	settings->setValue("Master/LastAddMidiFileListDir", currentDir);
 	QFile listFile(fileName);
 	if (!listFile.open(QIODevice::ReadOnly)) return;
 	QTextStream listStream(&listFile);
@@ -97,7 +103,9 @@ void MidiPlayerDialog::on_clearButton_clicked() {
 
 void MidiPlayerDialog::on_saveListButton_clicked() {
 	static QString currentDir = NULL;
-	QString fileName = QFileDialog::getSaveFileName(this, NULL, currentDir, "Play list files (*.*)");
+	QFileDialog::Options qFileDialogOptions = QFileDialog::Options(Master::getInstance()->getSettings()->value("Master/qFileDialogOptions", 0).toInt());
+	QString fileName = QFileDialog::getSaveFileName(this, NULL, currentDir, "Play list files (*.*)",
+		NULL, qFileDialogOptions);
 	if (!fileName.isEmpty()) {
 		currentDir = QDir(fileName).absolutePath();
 		QFile listFile(fileName);

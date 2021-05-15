@@ -71,6 +71,7 @@
     <addaction name="actionHide_to_tray_on_close"/>
     <addaction name="actionShow_LCD_balloons"/>
     <addaction name="actionShow_connection_balloons"/>
+    <addaction name="actionShow_native_file_dialog"/>
     <addaction name="separator"/>
     <addaction name="actionROM_Configuration"/>
    </widget>
@@ -177,6 +178,14 @@
    </property>
    <property name="visible">
     <bool>false</bool>
+   </property>
+  </action>
+  <action name="actionShow_native_file_dialog">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show system file selection dialogs</string>
    </property>
   </action>
  </widget>

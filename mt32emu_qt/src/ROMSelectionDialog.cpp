@@ -315,7 +315,9 @@ void ROMSelectionDialog::refreshROMInfos() {
 }
 
 void ROMSelectionDialog::on_romDirButton_clicked() {
-	QString s = QFileDialog::getExistingDirectory(this, "Choose ROM directory", synthProfile.romDir.absolutePath());
+	QFileDialog::Options qFileDialogOptions = QFileDialog::Options(Master::getInstance()->getSettings()->value("Master/qFileDialogOptions", 0).toInt());
+	QString s = QFileDialog::getExistingDirectory(this, "Choose ROM directory", synthProfile.romDir.absolutePath(),
+		qFileDialogOptions | QFileDialog::ShowDirsOnly);
 	if (s.isEmpty()) return;
 	if (s != synthProfile.romDir.absolutePath()) {
 		synthProfile.romDir.setPath(s);

@@ -197,7 +197,9 @@ SMFDriver::SMFDriver(Master *useMaster) : MidiDriver(useMaster), processor(this)
 
 void SMFDriver::start() {
 	static QString currentDir = NULL;
-	QString fileName = QFileDialog::getOpenFileName(NULL, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*");
+	QFileDialog::Options qFileDialogOptions = QFileDialog::Options(Master::getInstance()->getSettings()->value("Master/qFileDialogOptions", 0).toInt());
+	QString fileName = QFileDialog::getOpenFileName(NULL, NULL, currentDir, "*.mid *.smf *.syx;;*.mid;;*.smf;;*.syx;;*.*",
+		NULL, qFileDialogOptions);
 	currentDir = QDir(fileName).absolutePath();
 	if (!fileName.isEmpty()) {
 		stop();
