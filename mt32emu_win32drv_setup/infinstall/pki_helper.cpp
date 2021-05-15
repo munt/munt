@@ -32,4 +32,6 @@ extern "C" {
 	char *windows_error_str(uint32_t retval) {
 		return "";
 	}
+
+	void wdi_log(enum wdi_log_level level, const char *function, const char *format, ...) {}
 }
