@@ -7,7 +7,7 @@ foreach(DEFINITION ${PUBLIC_C_DEFINITIONS})
   list(APPEND VERSION_TAGS ${CMAKE_MATCH_1})
 endforeach()
 list(REMOVE_DUPLICATES VERSION_TAGS)
-# FIXME: Tags should be sorted in natural order; use if(VERSION_LESS)?
+# FIXME: Tags should be sorted in natural order; use if(VERSION_LESS)? In CMake 3.18, the COMPARE NATURAL option appeared.
 list(SORT VERSION_TAGS)
 
 file(REMOVE ${VERSION_SCRIPT})

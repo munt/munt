@@ -1,9 +1,11 @@
+# This module is DEPRECATED, do not use. Will be replaced with a proper CMake config & version files in version 2.6.
 # - Try to find mt32emu
 # Once done this will define
 #  MT32EMU_FOUND - System has mt32emu
 #  MT32EMU_VERSION - The version of the mt32emu library
 #  MT32EMU_INCLUDE_DIRS - The location of the mt32emu include directory
 #  MT32EMU_LIBRARIES - The location of the mt32emu library
+#   CAVEAT: MT32EMU_LIBRARIES is missing dependencies in standalone builds when statically linking with mt32emu.
 
 find_package(PkgConfig)
 pkg_search_module(PC_MT32EMU QUIET mt32emu)
@@ -34,7 +36,6 @@ find_package_handle_standard_args(MT32EMU
   VERSION_VAR MT32EMU_VERSION
 )
 
-# FIXME: Populate MT32EMU_EXT_LIBS in static builds properly. Maybe use a Cmake config file instead?
 set(MT32EMU_LIBRARIES ${MT32EMU_LIBRARY} ${MT32EMU_EXT_LIBS})
 set(MT32EMU_INCLUDE_DIRS ${MT32EMU_INCLUDE_DIR})
 
