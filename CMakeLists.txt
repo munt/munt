@@ -13,6 +13,20 @@ else()
   unset(munt_WITH_MT32EMU_WIN32DRV CACHE)
 endif()
 
+# By default, mt32emu is built stand-alone as a shared library, but as a static library otherwise.
+if(munt_WITH_MT32EMU_SMF2WAV OR munt_WITH_MT32EMU_QT OR munt_WITH_MT32EMU_WIN32DRV)
+  set(BUILD_SHARED_LIBS FALSE)
+else()
+  set(BUILD_SHARED_LIBS TRUE)
+endif()
+
+if(munt_WITH_MT32EMU_SMF2WAV)
+  set(libmt32emu_REQUIRE_C_INTERFACE TRUE)
+endif()
+if(munt_WITH_MT32EMU_QT OR munt_WITH_MT32EMU_WIN32DRV)
+  set(libmt32emu_REQUIRE_CPP_INTERFACE TRUE)
+endif()
+
 add_subdirectory(mt32emu)
 
 if(munt_WITH_MT32EMU_SMF2WAV)

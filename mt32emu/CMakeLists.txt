@@ -10,21 +10,36 @@ set(libmt32emu_VERSION_MINOR 5)
 set(libmt32emu_VERSION_PATCH 0)
 set(libmt32emu_VERSION "${libmt32emu_VERSION_MAJOR}.${libmt32emu_VERSION_MINOR}.${libmt32emu_VERSION_PATCH}")
 
-if(munt_WITH_MT32EMU_SMF2WAV OR munt_WITH_MT32EMU_QT OR munt_WITH_MT32EMU_WIN32DRV)
-  set(libmt32emu_STANDALONE_BUILD FALSE)
-else()
-  set(libmt32emu_STANDALONE_BUILD TRUE)
-endif()
-
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   set(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG TRUE)
 else()
   set(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG FALSE)
 endif()
 
-option(libmt32emu_SHARED "Build shared library" ${libmt32emu_STANDALONE_BUILD})
-option(libmt32emu_C_INTERFACE "Provide C-compatible API" TRUE)
+# By default, we build a shared library, unless a higher-level script defines BUILD_SHARED_LIBS.
+if(NOT DEFINED BUILD_SHARED_LIBS)
+  set(BUILD_SHARED_LIBS TRUE)
+endif()
+
+option(libmt32emu_SHARED "Build shared library" ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS ${libmt32emu_SHARED})
+
+if(libmt32emu_REQUIRE_C_INTERFACE)
+  unset(libmt32emu_C_INTERFACE CACHE)
+  set(libmt32emu_C_INTERFACE TRUE)
+else()
+  option(libmt32emu_C_INTERFACE "Provide C-compatible API" TRUE)
+endif()
+
+if(libmt32emu_REQUIRE_CPP_INTERFACE OR NOT libmt32emu_SHARED)
+  unset(libmt32emu_CPP_INTERFACE CACHE)
+  set(libmt32emu_CPP_INTERFACE TRUE)
+else()
+  option(libmt32emu_CPP_INTERFACE "Provide C++ classes (compiler-specific ABI)" TRUE)
+endif()
+
 option(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER "Use built-in sample rate conversion" TRUE)
+
 if(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG)
   option(libmt32emu_REQUIRE_ANSI "Require ANSI C++ compatibility when compiling with GNU C++ or Clang" TRUE)
   mark_as_advanced(libmt32emu_REQUIRE_ANSI)
@@ -32,27 +47,13 @@ else()
   unset(libmt32emu_REQUIRE_ANSI CACHE)
 endif()
 
-if(munt_WITH_MT32EMU_SMF2WAV AND NOT libmt32emu_C_INTERFACE)
-  message(STATUS "Option libmt32emu_C_INTERFACE implied TRUE when building for mt32emu_smf2wav")
-  set(libmt32emu_C_INTERFACE TRUE)
-endif()
-
-if(${libmt32emu_SHARED} AND NOT ${munt_WITH_MT32EMU_QT})
-  option(libmt32emu_CPP_INTERFACE "Provide C++ classes (compiler-specific ABI)" TRUE)
-else(${libmt32emu_SHARED} AND NOT ${munt_WITH_MT32EMU_QT})
-  if(NOT ${libmt32emu_CPP_INTERFACE})
-    message(STATUS "Option libmt32emu_CPP_INTERFACE implied TRUE for static library builds and when building for mt32emu_qt")
-  endif(NOT ${libmt32emu_CPP_INTERFACE})
-  set(libmt32emu_CPP_INTERFACE TRUE)
-endif(${libmt32emu_SHARED} AND NOT ${munt_WITH_MT32EMU_QT})
-
 set(LIB_INSTALL_DIR lib CACHE PATH "Relative installation path to libraries")
 
 set(libmt32emu_PACKAGE_TYPE Complete CACHE STRING "Selects output binary package type: Complete, Runtime or Devel")
 mark_as_advanced(libmt32emu_PACKAGE_TYPE)
 set_property(CACHE libmt32emu_PACKAGE_TYPE PROPERTY STRINGS Complete Runtime Devel)
 
-set(libmt32emu_PKGCONFIG_INSTALL_PREFIX lib CACHE PATH "Installation path prefix for pkgconfig files")
+set(libmt32emu_PKGCONFIG_INSTALL_PREFIX ${LIB_INSTALL_DIR} CACHE PATH "Installation path prefix for pkgconfig files")
 mark_as_advanced(libmt32emu_PKGCONFIG_INSTALL_PREFIX)
 
 if(libmt32emu_SHARED)
@@ -184,7 +185,6 @@ endif()
 
 if(libmt32emu_SHARED)
   set(libmt32emu_SHARED_DEFINITION "#define MT32EMU_SHARED")
-  set(libmt32emu_BUILD_TYPE SHARED)
   if(NOT OS2)
     # A workaround for the OS/2 port of GCC 9 that emits lots of warnings otherwise.
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -252,7 +252,7 @@ endif(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
 
 configure_file("src/mt32emu.pc.in" "mt32emu.pc" @ONLY)
 
-add_library(mt32emu ${libmt32emu_BUILD_TYPE} ${libmt32emu_SOURCES})
+add_library(mt32emu ${libmt32emu_SOURCES})
 
 if(libmt32emu_EXT_LIBS)
   if(libmt32emu_SHARED)

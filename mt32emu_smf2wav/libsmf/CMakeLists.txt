@@ -4,7 +4,9 @@ set(libsmf_VERSION_MAJOR 1)
 set(libsmf_VERSION_MINOR 3)
 
 # We prefer to link embedded libsmf statically into higher-level projects to avoid version conflicts.
-# This option enforces shared library build.
+# This option enforces shared library build. Note that this version is modified, hence we don't want
+# it to be installed system-wide. This script does NOT install the shared library, this should be
+# handled some other way.
 option(libsmf_SHARED "Build shared library" OFF)
 mark_as_advanced(libsmf_SHARED)
 
