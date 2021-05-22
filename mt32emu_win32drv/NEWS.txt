@@ -1,6 +1,8 @@
-HEAD:
+2021-05-22:
 
-	* Updated mt32emu library to version 2.5.0.
+	1.7.0 released.
+
+	* Updated mt32emu library to version 2.5.1.
 	* Added support for partial bitwise ROM dumps (#58). Now, the synth can operate with
 	  a pair of control ROM files and a pair of PCM ROM files, which are merged when needed.
 	* Build: Replaced obsolete project files for MS Visual Studio with a CMake build script.
