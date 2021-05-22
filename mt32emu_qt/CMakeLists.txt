@@ -4,7 +4,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRE
 
 project(mt32emu-qt)
 set(mt32emu_qt_VERSION_MAJOR 1)
-set(mt32emu_qt_VERSION_MINOR 8)
+set(mt32emu_qt_VERSION_MINOR 9)
 set(mt32emu_qt_VERSION_PATCH 0)
 set(mt32emu_qt_VERSION "${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
 
@@ -157,8 +157,8 @@ else()
   endif()
 endif()
 
-find_package(MT32EMU REQUIRED)
-set(EXT_LIBS ${EXT_LIBS} ${MT32EMU_LIBRARIES})
+find_package(MT32EMU 2.5 REQUIRED)
+list(APPEND EXT_LIBS ${MT32EMU_LIBRARIES})
 include_directories(${MT32EMU_INCLUDE_DIRS})
 
 find_package(PORTAUDIO)
