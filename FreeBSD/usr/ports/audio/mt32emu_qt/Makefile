@@ -6,12 +6,12 @@
 #
 
 PORTNAME=	mt32emu-qt
-PORTVERSION=	1.8.0
+PORTVERSION=	1.9.0
 CATEGORIES=	audio
 MASTER_SITES=	https://github.com/munt/munt/archive/
 FETCH_ARGS=	-a
-DISTFILES=	mt32emu_qt_1_8_0.tar.gz
-WRKSRC=		$(WRKDIR)/munt-mt32emu_qt_1_8_0/mt32emu_qt
+DISTFILES=	mt32emu_qt_1_9_0.tar.gz
+WRKSRC=		$(WRKDIR)/munt-mt32emu_qt_1_9_0/mt32emu_qt
 LICENSE=        GPLv3+
 LICENSE_FILE=   ${WRKSRC}/COPYING.txt
 
@@ -26,6 +26,16 @@ LIB_DEPENDS=	libportaudio.so.2:audio/portaudio \
 		libmt32emu.so.2:audio/libmt32emu
 
 PLIST_FILES=	bin/mt32emu-qt \
+		share/applications/mt32emu-qt.desktop \
+		share/icons/hicolor/16x16/apps/munt.png \
+		share/icons/hicolor/24x24/apps/munt.png \
+		share/icons/hicolor/32x32/apps/munt.png \
+		share/icons/hicolor/48x48/apps/munt.png \
+		share/icons/hicolor/64x64/apps/munt.png \
+		share/icons/hicolor/72x72/apps/munt.png \
+		share/icons/hicolor/96x96/apps/munt.png \
+		share/icons/hicolor/128x128/apps/munt.png \
+		share/icons/hicolor/256x256/apps/munt.png \
 		share/doc/munt/mt32emu-qt/AUTHORS.txt \
 		share/doc/munt/mt32emu-qt/COPYING.txt \
 		share/doc/munt/mt32emu-qt/NEWS.txt \

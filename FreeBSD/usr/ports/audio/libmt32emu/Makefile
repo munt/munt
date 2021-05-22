@@ -6,12 +6,12 @@
 #
 
 PORTNAME=	libmt32emu
-PORTVERSION=	2.5.0
+PORTVERSION=	2.5.1
 CATEGORIES=	audio
 MASTER_SITES=	https://github.com/munt/munt/archive/
 FETCH_ARGS=	-a
-DISTFILES=	libmt32emu_2_5_0.tar.gz
-WRKSRC=		$(WRKDIR)/munt-libmt32emu_2_5_0/mt32emu
+DISTFILES=	libmt32emu_2_5_1.tar.gz
+WRKSRC=		$(WRKDIR)/munt-libmt32emu_2_5_1/mt32emu
 LICENSE=	LGPL21+
 LICENSE_FILE=	${WRKSRC}/COPYING.LESSER.txt
 
@@ -26,7 +26,7 @@ CMAKE_ARGS=	-Dlibmt32emu_PKGCONFIG_INSTALL_PREFIX:PATH=libdata
 
 PLIST_FILES=	lib/libmt32emu.so \
 		lib/libmt32emu.so.2 \
-		lib/libmt32emu.so.2.5.0 \
+		lib/libmt32emu.so.2.5.1 \
 		libdata/pkgconfig/mt32emu.pc \
 		include/mt32emu.h \
 		include/mt32emu/mt32emu.h \

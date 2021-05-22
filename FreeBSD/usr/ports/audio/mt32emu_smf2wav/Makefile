@@ -6,12 +6,12 @@
 #
 
 PORTNAME=	mt32emu-smf2wav
-PORTVERSION=	1.6.0
+PORTVERSION=	1.7.0
 CATEGORIES=	audio
 MASTER_SITES=	https://github.com/munt/munt/archive/
 FETCH_ARGS=	-a
-DISTFILES=	mt32emu_smf2wav_1_6_0.tar.gz
-WRKSRC=		$(WRKDIR)/munt-mt32emu_smf2wav_1_6_0/mt32emu_smf2wav
+DISTFILES=	mt32emu_smf2wav_1_7_0.tar.gz
+WRKSRC=		$(WRKDIR)/munt-mt32emu_smf2wav_1_7_0/mt32emu_smf2wav
 LICENSE=	GPLv3+
 LICENSE_FILE=	${WRKSRC}/COPYING.txt
 
