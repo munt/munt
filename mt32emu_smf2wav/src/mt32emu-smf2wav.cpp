@@ -199,6 +199,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		 "                 mt32_1_07:  MT-32 with control ROM version 1.07\n"
 		 "                 mt32_bluer: MT-32 Blue Ridge mod version X.XX\n"
 		 "                 mt32_2_04:  MT-32 with control ROM version 2.04\n"
+		 "                 mt32_2_07:  MT-32 with control ROM version 2.07\n"
 		 "                 cm32l_1_00: CM-32L / LAPC-I with control ROM version 1.00\n"
 		 "                 cm32l_1_02: CM-32L / LAPC-I with control ROM version 1.02", "<machine_id>"},
 		// buffer-size determines the maximum number of frames to be rendered by the emulator in one pass.
