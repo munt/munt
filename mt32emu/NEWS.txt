@@ -1,3 +1,7 @@
+HEAD:
+
+	* Added support for two more control ROMs: MT-32 v.2.07 and CM-32LN v.1.00.
+
 2021-05-22:
 
 	2.5.1 released.

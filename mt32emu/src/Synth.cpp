@@ -49,6 +49,7 @@ static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = {
 	true,  // quirkPanMult
 	true,  // quirkKeyShift
 	true,  // quirkTVFBaseCutoffLimit
+	false, // quirkFastPitchChanges
 	true,  // defaultReverbMT32Compatible
 	true   // oldMT32AnalogLPF
 };
@@ -60,9 +61,21 @@ static const ControlROMFeatureSet CM32L_COMPATIBLE = {
 	false, // quirkPanMult
 	false, // quirkKeyShift
 	false, // quirkTVFBaseCutoffLimit
+	false, // quirkFastPitchChanges
 	false, // defaultReverbMT32Compatible
 	false  // oldMT32AnalogLPF
 };
+static const ControlROMFeatureSet CM32LN_COMPATIBLE = {
+	false, // quirkBasePitchOverflow
+	false, // quirkPitchEnvelopeOverflow
+	false, // quirkRingModulationNoMix
+	false, // quirkTVAZeroEnvLevels
+	false, // quirkPanMult
+	false, // quirkKeyShift
+	false, // quirkTVFBaseCutoffLimit
+	true,  // quirkFastPitchChanges
+	false, // defaultReverbMT32Compatible
+	false  // oldMT32AnalogLPF
 };
 
 static const ControlROMMap ControlROMMaps[] = {
@@ -75,7 +88,8 @@ static const ControlROMMap ControlROMMaps[] = {
 	{"ctrl_mt32_2_04",   CM32L_COMPATIBLE,   0x8100, 128, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500, 30, 0x8580, 85, 0x4F5D, 0x4F78, 0x4F66, 0x4899, 0x489D, 0x48B6, 0x48CD, 0x5A58, 19 },
 	{"ctrl_mt32_2_07",   CM32L_COMPATIBLE,   0x8100, 128, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500, 30, 0x8580, 85, 0x4F81, 0x4F9C, 0x4F8A, 0x48B9, 0x48BD, 0x48D6, 0x48ED, 0x5A78, 19 },
 	{"ctrl_cm32l_1_00",  CM32L_COMPATIBLE,   0x8100, 256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500, 64, 0x8580, 85, 0x4F65, 0x4F80, 0x4F6E, 0x48A1, 0x48A5, 0x48BE, 0x48D5, 0x5A6C, 19 },
-	{"ctrl_cm32l_1_02",  CM32L_COMPATIBLE,   0x8100, 256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500, 64, 0x8580, 85, 0x4F93, 0x4FAE, 0x4F9C, 0x48CB, 0x48CF, 0x48E8, 0x48FF, 0x5A96, 19 }
+	{"ctrl_cm32l_1_02",  CM32L_COMPATIBLE,   0x8100, 256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500, 64, 0x8580, 85, 0x4F93, 0x4FAE, 0x4F9C, 0x48CB, 0x48CF, 0x48E8, 0x48FF, 0x5A96, 19 },
+	{"ctrl_cm32ln_1_00", CM32LN_COMPATIBLE,  0x8100, 256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500, 64, 0x8580, 85, 0x4EC7, 0x4EE2, 0x4ED0, 0x47FF, 0x4803, 0x481C, 0x4833, 0x55A2, 19 }
 	// (Note that old MT-32 ROMs actually have 86 entries for rhythmTemp)
 };
 

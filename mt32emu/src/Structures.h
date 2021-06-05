@@ -191,6 +191,7 @@ struct ControlROMFeatureSet {
 	unsigned int quirkPanMult : 1;
 	unsigned int quirkKeyShift : 1;
 	unsigned int quirkTVFBaseCutoffLimit : 1;
+	unsigned int quirkFastPitchChanges : 1;
 
 	// Features below don't actually depend on control ROM version, which is used to identify hardware model
 	unsigned int defaultReverbMT32Compatible : 1;
