@@ -41,7 +41,6 @@ namespace MT32Emu {
 // MIDI interface data transfer rate in samples. Used to simulate the transfer delay.
 static const double MIDI_DATA_TRANSFER_RATE = double(SAMPLE_RATE) / 31250.0 * 8.0;
 
-// FIXME: there should be more specific feature sets for various MT-32 control ROM versions
 static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = {
 	true, // quirkBasePitchOverflow
 	true, // quirkPitchEnvelopeOverflow
