@@ -42,15 +42,15 @@ namespace MT32Emu {
 static const double MIDI_DATA_TRANSFER_RATE = double(SAMPLE_RATE) / 31250.0 * 8.0;
 
 static const ControlROMFeatureSet OLD_MT32_COMPATIBLE = {
-	true, // quirkBasePitchOverflow
-	true, // quirkPitchEnvelopeOverflow
-	true, // quirkRingModulationNoMix
-	true, // quirkTVAZeroEnvLevels
-	true, // quirkPanMult
-	true, // quirkKeyShift
-	true, // quirkTVFBaseCutoffLimit
-	true, // defaultReverbMT32Compatible
-	true // oldMT32AnalogLPF
+	true,  // quirkBasePitchOverflow
+	true,  // quirkPitchEnvelopeOverflow
+	true,  // quirkRingModulationNoMix
+	true,  // quirkTVAZeroEnvLevels
+	true,  // quirkPanMult
+	true,  // quirkKeyShift
+	true,  // quirkTVFBaseCutoffLimit
+	true,  // defaultReverbMT32Compatible
+	true   // oldMT32AnalogLPF
 };
 static const ControlROMFeatureSet CM32L_COMPATIBLE = {
 	false, // quirkBasePitchOverflow
@@ -61,7 +61,8 @@ static const ControlROMFeatureSet CM32L_COMPATIBLE = {
 	false, // quirkKeyShift
 	false, // quirkTVFBaseCutoffLimit
 	false, // defaultReverbMT32Compatible
-	false // oldMT32AnalogLPF
+	false  // oldMT32AnalogLPF
+};
 };
 
 static const ControlROMMap ControlROMMaps[9] = {
