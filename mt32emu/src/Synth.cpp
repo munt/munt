@@ -65,7 +65,7 @@ static const ControlROMFeatureSet CM32L_COMPATIBLE = {
 };
 };
 
-static const ControlROMMap ControlROMMaps[9] = {
+static const ControlROMMap ControlROMMaps[] = {
 	//     ID                Features        PCMmap  PCMc  tmbrA  tmbrAO, tmbrAC tmbrB   tmbrBO  tmbrBC tmbrR   trC rhythm rhyC  rsrv   panpot   prog   rhyMax  patMax  sysMax  timMax  sndGrp sGC
 	{ "ctrl_mt32_1_04", OLD_MT32_COMPATIBLE, 0x3000, 128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200, 30, 0x73A6, 85, 0x57C7, 0x57E2, 0x57D0, 0x5252, 0x525E, 0x526E, 0x520A, 0x7064, 19 },
 	{ "ctrl_mt32_1_05", OLD_MT32_COMPATIBLE, 0x3000, 128, 0x8000, 0x0000, false, 0xC000, 0x4000, false, 0x3200, 30, 0x7414, 85, 0x57C7, 0x57E2, 0x57D0, 0x5252, 0x525E, 0x526E, 0x520A, 0x70CA, 19 },
