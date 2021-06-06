@@ -131,7 +131,7 @@ static const ROMInfoLists &getROMInfoLists() {
 	static const ROMInfo * const MT32_V2_07_ROMS[] = {&CTRL_MT32_V2_07, &PCM_MT32, &PCM_MT32_L, &PCM_MT32_H, NULL};
 	static const ROMInfo * const CM32L_V1_00_ROMS[] = {&CTRL_CM32L_V1_00, &PCM_CM32L, &PCM_CM32L_L, &PCM_CM32L_H, NULL};
 	static const ROMInfo * const CM32L_V1_02_ROMS[] = {&CTRL_CM32L_V1_02, &PCM_CM32L, &PCM_CM32L_L, &PCM_CM32L_H, NULL};
-	static const ROMInfo * const CM32LN_V1_00_ROMS[] = {&CTRL_CM32LN_V1_00, &PCM_CM32L, &PCM_CM32L_L, &PCM_CM32L_H, NULL};
+	static const ROMInfo * const CM32LN_V1_00_ROMS[] = {&CTRL_CM32LN_V1_00, &PCM_CM32L, NULL};
 
 	static const ROMInfoLists romInfoLists = {
 		{MT32_V1_04_ROMS, _CALC_ARRAY_LENGTH(MT32_V1_04_ROMS)},
