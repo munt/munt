@@ -192,7 +192,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		{"machine-id", 'i', 0, G_OPTION_ARG_STRING, &options->machineID, "ID of machine configuration to search ROMs for (default: any)\n"
 		 "                 any:        try cm32l first, then mt32\n"
 		 "                 mt32:       any complete set of MT-32 ROMs, the highest control ROM version found wins\n"
-		 "                 cm32l:      any complete set of CM-32L / LAPC-I ROMs, the highest control ROM version found wins\n"
+		 "                 cm32l:      any complete set of CM-32L / LAPC-I compatilbe ROMs, the highest control ROM version found wins\n"
 		 "                 mt32_1_04:  MT-32 with control ROM version 1.04\n"
 		 "                 mt32_1_05:  MT-32 with control ROM version 1.05\n"
 		 "                 mt32_1_06:  MT-32 with control ROM version 1.06\n"
@@ -201,7 +201,8 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		 "                 mt32_2_04:  MT-32 with control ROM version 2.04\n"
 		 "                 mt32_2_07:  MT-32 with control ROM version 2.07\n"
 		 "                 cm32l_1_00: CM-32L / LAPC-I with control ROM version 1.00\n"
-		 "                 cm32l_1_02: CM-32L / LAPC-I with control ROM version 1.02", "<machine_id>"},
+		 "                 cm32l_1_02: CM-32L / LAPC-I with control ROM version 1.02\n"
+		 "                 cm32ln_1_00: CM-32LN / CM-500 / LAPC-N with control ROM version 1.00", "<machine_id>"},
 		// buffer-size determines the maximum number of frames to be rendered by the emulator in one pass.
 		// This can have a big impact on performance (Generally more at a time=better).
 		{"buffer-size", 'b', 0, G_OPTION_ARG_INT, &bufferFrameCount, "Buffer size in frames (minimum: 1)", "<frame_count>"},  // FIXME: Show default
