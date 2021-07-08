@@ -47,12 +47,40 @@ Laust "Talus" Brock-Nannestad
 Also thanks go to Kaminari Redux, NewRisingSun, robertmo, ripsaw8080, Mau1wurf1977 and other inhabitants of VOGONS
 for their suggestions and help with debugging.
 
-Third-party code and code contributions
----------------------------------------
+Third-party code incorporated in library
+----------------------------------------
 
 The library incorporates a fast C++ implementation of SHA1 algorithm with a small memory footprint
 (https://code.google.com/archive/p/smallsha1/). Copyright (c) 2011, Micael Hildenborg.
-Distributed under the BSD 3-clause license.
+Distributed under the BSD 3-clause license as stated below.
+
+ Copyright (c) 2011, Micael Hildenborg
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * Neither the name of Micael Hildenborg nor the
+      names of its contributors may be used to endorse or promote products
+      derived from this software without specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY Micael Hildenborg ''AS IS'' AND ANY
+ EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL Micael Hildenborg BE LIABLE FOR ANY
+ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Other code contributions
+------------------------
 
 We are grateful to many other contributors to the library code who submitted pull requests
 at GitHub with bug fixes, suggestions and improvements. See the main code repository
