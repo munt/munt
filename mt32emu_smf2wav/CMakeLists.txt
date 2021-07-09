@@ -8,6 +8,8 @@ set(mt32emu_smf2wav_VERSION_MINOR 7)
 set(mt32emu_smf2wav_VERSION_PATCH 0)
 set(mt32emu_smf2wav_VERSION "${mt32emu_smf2wav_VERSION_MAJOR}.${mt32emu_smf2wav_VERSION_MINOR}.${mt32emu_smf2wav_VERSION_PATCH}")
 
+include(GNUInstallDirs)
+
 add_definitions(-DVERSION="${mt32emu_smf2wav_VERSION}")
 
 find_package(GLIB2 2.32 REQUIRED)
@@ -46,12 +48,12 @@ endif()
 
 install(TARGETS
   mt32emu-smf2wav
-  DESTINATION bin
+  DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 install(FILES
   AUTHORS.txt COPYING.txt README.md
-  DESTINATION share/doc/munt/smf2wav
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/munt/smf2wav
 )
 
 # build a CPack driven installer package

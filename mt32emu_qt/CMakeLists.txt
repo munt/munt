@@ -8,6 +8,8 @@ set(mt32emu_qt_VERSION_MINOR 9)
 set(mt32emu_qt_VERSION_PATCH 0)
 set(mt32emu_qt_VERSION "${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
 
+include(GNUInstallDirs)
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
   set(LINUX_FOUND TRUE)
 else()
@@ -342,22 +344,22 @@ endif()
 
 install(TARGETS
   mt32emu-qt
-  DESTINATION bin
+  DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 if(UNIX AND NOT APPLE)
-  install(FILES res/mt32emu-qt.desktop DESTINATION share/applications)
+  install(FILES res/mt32emu-qt.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
   foreach(${PROJECT_NAME}_ICON_RESOLUTION 16x16;24x24;32x32;48x48;64x64;72x72;96x96;128x128;256x256)
-    install(FILES res/icons/${${PROJECT_NAME}_ICON_RESOLUTION}/munt.png DESTINATION share/icons/hicolor/${${PROJECT_NAME}_ICON_RESOLUTION}/apps)
+    install(FILES res/icons/${${PROJECT_NAME}_ICON_RESOLUTION}/munt.png DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/${${PROJECT_NAME}_ICON_RESOLUTION}/apps)
     # These directories pre-exist on a freedesktop-conforming system and cause conflict if not excluded
-    list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/share/icons/hicolor/${${PROJECT_NAME}_ICON_RESOLUTION})
-    list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/share/icons/hicolor/${${PROJECT_NAME}_ICON_RESOLUTION}/apps)
+    list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION ${CMAKE_INSTALL_FULL_DATAROOTDIR}/icons/hicolor/${${PROJECT_NAME}_ICON_RESOLUTION})
+    list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION ${CMAKE_INSTALL_FULL_DATAROOTDIR}/icons/hicolor/${${PROJECT_NAME}_ICON_RESOLUTION}/apps)
   endforeach(${PROJECT_NAME}_ICON_RESOLUTION)
 endif(UNIX AND NOT APPLE)
 
 install(FILES
   AUTHORS.txt COPYING.txt NEWS.txt README.md TODO.txt
-  DESTINATION share/doc/munt/mt32emu-qt
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/munt/${PROJECT_NAME}
 )
 
 # build a CPack driven installer package
@@ -382,7 +384,11 @@ set(CPACK_RPM_PACKAGE_GROUP "Audio/Emulators")
 set(CPACK_RPM_PACKAGE_LICENSE "GPLv3+")
 set(CPACK_RPM_PACKAGE_URL "http://munt.sourceforge.net/")
 # These directories pre-exist on a freedesktop-conforming system and cause conflict if not excluded
-list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr/share/applications /usr/share/icons /usr/share/icons/hicolor)
+list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
+  ${CMAKE_INSTALL_FULL_DATAROOTDIR}/applications
+  ${CMAKE_INSTALL_FULL_DATAROOTDIR}/icons
+  ${CMAKE_INSTALL_FULL_DATAROOTDIR}/icons/hicolor
+)
 if(munt_SOURCE_DIR)
   # Also publish the list for the benefit of the parent CMakeLists.txt file.
   set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION ${CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION} PARENT_SCOPE)
