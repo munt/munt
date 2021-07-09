@@ -64,11 +64,17 @@ set_property(CACHE libmt32emu_PACKAGE_TYPE PROPERTY STRINGS Complete Runtime Dev
 set(libmt32emu_PKGCONFIG_INSTALL_PREFIX ${CMAKE_INSTALL_LIBDIR} CACHE PATH "Relative installation path prefix for pkgconfig files")
 mark_as_advanced(libmt32emu_PKGCONFIG_INSTALL_PREFIX)
 
+set(libmt32emu_PKGCONFIG_INSTALL_DIR
+  ${libmt32emu_PKGCONFIG_INSTALL_PREFIX}/pkgconfig CACHE PATH
+  "Relative installation path for pkgconfig files"
+)
+mark_as_advanced(libmt32emu_PKGCONFIG_INSTALL_DIR)
+
+# TODO: Use macro GNUInstallDirs_get_absolute_install_dir when available.
 set(libmt32emu_PKGCONFIG_INSTALL_FULL_DIR
-  ${CMAKE_INSTALL_PREFIX}/${libmt32emu_PKGCONFIG_INSTALL_PREFIX}/pkgconfig CACHE PATH
+  ${CMAKE_INSTALL_PREFIX}/${libmt32emu_PKGCONFIG_INSTALL_DIR} CACHE PATH
   "Absolute installation path for pkgconfig files"
 )
-mark_as_advanced(libmt32emu_PKGCONFIG_INSTALL_FULL_DIR)
 
 if(libmt32emu_SHARED)
   option(libmt32emu_WITH_VERSION_TAGGING "Tags shared object with library version and enables runtime version check")
@@ -335,14 +341,14 @@ if(NOT libmt32emu_PACKAGE_TYPE STREQUAL "Runtime")
   )
   install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/mt32emu.pc
-    DESTINATION ${libmt32emu_PKGCONFIG_INSTALL_FULL_DIR}
+    DESTINATION ${libmt32emu_PKGCONFIG_INSTALL_DIR}
   )
 endif()
 
 if(NOT(libmt32emu_SHARED AND libmt32emu_PACKAGE_TYPE STREQUAL "Devel"))
   install(FILES
     AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.md TODO.txt
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/munt/${PROJECT_NAME}
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/munt/${PROJECT_NAME}
   )
 endif()
 
