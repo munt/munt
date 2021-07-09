@@ -49,9 +49,26 @@ else()
   unset(libmt32emu_REQUIRE_ANSI CACHE)
 endif()
 
+# Variable LIB_INSTALL_DIR is now deprecated, we use CMAKE_INSTALL_LIBDIR et. al.
+# However, if it is set in an existing script, we make use of its value.
+if(DEFINED LIB_INSTALL_DIR)
+  set(CMAKE_INSTALL_LIBDIR ${LIB_INSTALL_DIR})
+endif()
+
 set(libmt32emu_PACKAGE_TYPE Complete CACHE STRING "Selects output binary package type: Complete, Runtime or Devel")
 mark_as_advanced(libmt32emu_PACKAGE_TYPE)
 set_property(CACHE libmt32emu_PACKAGE_TYPE PROPERTY STRINGS Complete Runtime Devel)
+
+# Note, GNUInstallDirs provides no facility to locate pkg-config files, as they are normally placed
+# along with libraries. However, some systems use other non-GNU layouts.
+set(libmt32emu_PKGCONFIG_INSTALL_PREFIX ${CMAKE_INSTALL_LIBDIR} CACHE PATH "Relative installation path prefix for pkgconfig files")
+mark_as_advanced(libmt32emu_PKGCONFIG_INSTALL_PREFIX)
+
+set(libmt32emu_PKGCONFIG_INSTALL_FULL_DIR
+  ${CMAKE_INSTALL_PREFIX}/${libmt32emu_PKGCONFIG_INSTALL_PREFIX}/pkgconfig CACHE PATH
+  "Absolute installation path for pkgconfig files"
+)
+mark_as_advanced(libmt32emu_PKGCONFIG_INSTALL_FULL_DIR)
 
 if(libmt32emu_SHARED)
   option(libmt32emu_WITH_VERSION_TAGGING "Tags shared object with library version and enables runtime version check")
@@ -290,7 +307,7 @@ if(libmt32emu_PACKAGE_TYPE STREQUAL "Runtime")
   if(libmt32emu_SHARED)
     install(TARGETS mt32emu
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} NAMELINK_SKIP
-      RUNTIME DESTINATION bin
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
   endif()
 elseif(libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
@@ -303,7 +320,7 @@ else()
   install(TARGETS mt32emu
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION bin
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 endif()
 
@@ -318,14 +335,14 @@ if(NOT libmt32emu_PACKAGE_TYPE STREQUAL "Runtime")
   )
   install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/mt32emu.pc
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+    DESTINATION ${libmt32emu_PKGCONFIG_INSTALL_FULL_DIR}
   )
 endif()
 
 if(NOT(libmt32emu_SHARED AND libmt32emu_PACKAGE_TYPE STREQUAL "Devel"))
   install(FILES
     AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.md TODO.txt
-    DESTINATION share/doc/munt/libmt32emu
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/munt/${PROJECT_NAME}
   )
 endif()
 
@@ -354,7 +371,7 @@ set(CPACK_RPM_PACKAGE_LICENSE "LGPLv2.1+")
 set(CPACK_RPM_PACKAGE_URL ${libmt32emu_URL})
 # Normally, pkgconfig files are installed into the system directory that should pre-exist on the target system,
 # and hence cause conflict if not excluded
-list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION ${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig)
+list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION ${libmt32emu_PKGCONFIG_INSTALL_FULL_DIR})
 if(munt_SOURCE_DIR)
   # Also publish the list for the benefit of the parent CMakeLists.txt file.
   set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION ${CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION} PARENT_SCOPE)
