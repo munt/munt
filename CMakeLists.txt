@@ -14,10 +14,12 @@ else()
 endif()
 
 # By default, mt32emu is built stand-alone as a shared library, but as a static library otherwise.
-if(munt_WITH_MT32EMU_SMF2WAV OR munt_WITH_MT32EMU_QT OR munt_WITH_MT32EMU_WIN32DRV)
-  set(BUILD_SHARED_LIBS FALSE)
-else()
-  set(BUILD_SHARED_LIBS TRUE)
+if(NOT DEFINED BUILD_SHARED_LIBS)
+  if(munt_WITH_MT32EMU_SMF2WAV OR munt_WITH_MT32EMU_QT OR munt_WITH_MT32EMU_WIN32DRV)
+    set(BUILD_SHARED_LIBS FALSE)
+  else()
+    set(BUILD_SHARED_LIBS TRUE)
+  endif()
 endif()
 
 if(munt_WITH_MT32EMU_SMF2WAV)
@@ -43,6 +45,8 @@ if(munt_WITH_MT32EMU_WIN32DRV)
   add_subdirectory(mt32emu_win32drv)
   add_dependencies(win32drv mt32emu)
 endif()
+
+
 
 # build a CPack driven installer package
 set(CPACK_PACKAGE_VERSION_MAJOR "${munt_VERSION_MAJOR}")
