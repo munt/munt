@@ -61,20 +61,33 @@ set_property(CACHE libmt32emu_PACKAGE_TYPE PROPERTY STRINGS Complete Runtime Dev
 
 # Note, GNUInstallDirs provides no facility to locate pkg-config files, as they are normally placed
 # along with libraries. However, some systems use other non-GNU layouts.
-set(libmt32emu_PKGCONFIG_INSTALL_PREFIX ${CMAKE_INSTALL_LIBDIR} CACHE PATH "Relative installation path prefix for pkgconfig files")
+set(libmt32emu_PKGCONFIG_INSTALL_PREFIX
+  "" CACHE PATH
+  "Relative installation path prefix for pkgconfig files. If unset, defaults to $CMAKE_INSTALL_LIBDIR"
+)
 mark_as_advanced(libmt32emu_PKGCONFIG_INSTALL_PREFIX)
+if(NOT libmt32emu_PKGCONFIG_INSTALL_PREFIX)
+  set(libmt32emu_PKGCONFIG_INSTALL_PREFIX ${CMAKE_INSTALL_LIBDIR})
+endif()
 
 set(libmt32emu_PKGCONFIG_INSTALL_DIR
-  ${libmt32emu_PKGCONFIG_INSTALL_PREFIX}/pkgconfig CACHE PATH
-  "Relative installation path for pkgconfig files"
+  "" CACHE PATH
+  "Relative installation path for pkgconfig files. If unset, defaults to $libmt32emu_PKGCONFIG_INSTALL_PREFIX/pkgconfig"
 )
 mark_as_advanced(libmt32emu_PKGCONFIG_INSTALL_DIR)
+if(NOT libmt32emu_PKGCONFIG_INSTALL_DIR)
+  set(libmt32emu_PKGCONFIG_INSTALL_DIR ${libmt32emu_PKGCONFIG_INSTALL_PREFIX}/pkgconfig)
+endif()
 
 # TODO: Use macro GNUInstallDirs_get_absolute_install_dir when available.
 set(libmt32emu_PKGCONFIG_INSTALL_FULL_DIR
-  ${CMAKE_INSTALL_PREFIX}/${libmt32emu_PKGCONFIG_INSTALL_DIR} CACHE PATH
-  "Absolute installation path for pkgconfig files"
+  "" CACHE PATH
+  "Absolute installation path for pkgconfig files. If unset, defaults to $CMAKE_INSTALL_PREFIX/$libmt32emu_PKGCONFIG_INSTALL_DIR"
 )
+mark_as_advanced(libmt32emu_PKGCONFIG_INSTALL_FULL_DIR)
+if(NOT libmt32emu_PKGCONFIG_INSTALL_FULL_DIR)
+  set(libmt32emu_PKGCONFIG_INSTALL_FULL_DIR ${CMAKE_INSTALL_PREFIX}/${libmt32emu_PKGCONFIG_INSTALL_DIR})
+endif()
 
 if(libmt32emu_SHARED)
   option(libmt32emu_WITH_VERSION_TAGGING "Tags shared object with library version and enables runtime version check")
