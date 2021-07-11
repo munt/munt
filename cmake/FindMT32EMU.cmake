@@ -7,6 +7,14 @@
 #  MT32EMU_LIBRARIES - The location of the mt32emu library
 #   CAVEAT: MT32EMU_LIBRARIES is missing dependencies in standalone builds when statically linking with mt32emu.
 
+message(AUTHOR_WARNING "Usage of MT32EMU find-module is DEPRECATED, please use the provided CMake config file directly instead")
+
+find_package(MT32Emu QUIET CONFIG)
+if(MT32Emu_FOUND)
+  message(STATUS "Found package MT32Emu version ${MT32Emu_VERSION}")
+  return()
+endif()
+
 find_package(PkgConfig)
 pkg_search_module(PC_MT32EMU QUIET mt32emu)
 
@@ -36,7 +44,9 @@ find_package_handle_standard_args(MT32EMU
   VERSION_VAR MT32EMU_VERSION
 )
 
-set(MT32EMU_LIBRARIES ${MT32EMU_LIBRARY} ${MT32EMU_EXT_LIBS})
-set(MT32EMU_INCLUDE_DIRS ${MT32EMU_INCLUDE_DIR})
+if(MT32EMU_FOUND)
+  set(MT32EMU_LIBRARIES ${MT32EMU_LIBRARY} ${MT32EMU_EXT_LIBS})
+  set(MT32EMU_INCLUDE_DIRS ${MT32EMU_INCLUDE_DIR})
+endif()
 
 mark_as_advanced(MT32EMU_EXT_LIBS MT32EMU_LIBRARY MT32EMU_INCLUDE_DIR)
