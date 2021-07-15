@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
 include(CheckIncludeFiles)
 
 project(mt32emu_win32drv CXX)
@@ -15,9 +14,13 @@ if(NOT MSVC)
   message(FATAL_ERROR "Microsoft (R) C++ compiler required")
 endif()
 
-find_package(MT32EMU 2.5 REQUIRED)
-set(EXT_LIBS winmm.lib ${MT32EMU_LIBRARIES})
-include_directories(${MT32EMU_INCLUDE_DIRS})
+if(TARGET MT32Emu::mt32emu)
+  message(STATUS "Using bundled mt32emu")
+else()
+  find_package(MT32Emu 2.5 REQUIRED)
+  message(STATUS "Found MT32Emu version ${MT32Emu_VERSION}")
+endif()
+set(EXT_LIBS winmm.lib MT32Emu::mt32emu)
 
 CHECK_INCLUDE_FILES("windows.h;mmddk.h" MMDDK_FOUND)
 if(NOT MMDDK_FOUND)

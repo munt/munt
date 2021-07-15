@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(mt32emu-smf2wav CXX)
 set(mt32emu_smf2wav_VERSION_MAJOR 1)
@@ -13,12 +13,16 @@ include(GNUInstallDirs)
 add_definitions(-DVERSION="${mt32emu_smf2wav_VERSION}")
 
 find_package(GLIB2 2.32 REQUIRED)
-set(EXT_LIBS ${EXT_LIBS} ${GLIB2_LIBRARIES})
+list(APPEND EXT_LIBS ${GLIB2_LIBRARIES})
 include_directories(${GLIB2_INCLUDE_DIRS})
 
-find_package(MT32EMU 2.5 REQUIRED)
-set(EXT_LIBS ${EXT_LIBS} ${MT32EMU_LIBRARIES})
-include_directories(${MT32EMU_INCLUDE_DIRS})
+if(TARGET MT32Emu::mt32emu)
+  message(STATUS "Using bundled mt32emu")
+else()
+  find_package(MT32Emu 2.5 REQUIRED)
+  message(STATUS "Found MT32Emu version ${MT32Emu_VERSION}")
+endif()
+list(APPEND EXT_LIBS MT32Emu::mt32emu)
 
 include_directories(libsmf/src)
 add_subdirectory(libsmf)

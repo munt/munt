@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(mt32emu-qt)
 set(mt32emu_qt_VERSION_MAJOR 1)
@@ -159,9 +159,13 @@ else()
   endif()
 endif()
 
-find_package(MT32EMU 2.5 REQUIRED)
-list(APPEND EXT_LIBS ${MT32EMU_LIBRARIES})
-include_directories(${MT32EMU_INCLUDE_DIRS})
+if(TARGET MT32Emu::mt32emu)
+  message(STATUS "Using bundled mt32emu")
+else()
+  find_package(MT32Emu 2.5 REQUIRED)
+  message(STATUS "Found MT32Emu version ${MT32Emu_VERSION}")
+endif()
+list(APPEND EXT_LIBS MT32Emu::mt32emu)
 
 find_package(PORTAUDIO)
 if(PORTAUDIO_FOUND)
