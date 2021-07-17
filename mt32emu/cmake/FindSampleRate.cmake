@@ -13,7 +13,7 @@ if(TARGET SampleRate::samplerate)
   return()
 endif()
 
-find_package(SampleRate QUIET CONFIG)
+find_package(SampleRate ${SampleRate_FIND_VERSION} QUIET CONFIG)
 if(SampleRate_FOUND)
   message(STATUS "Found package SampleRate version ${SampleRate_VERSION}")
   return()

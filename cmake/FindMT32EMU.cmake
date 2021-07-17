@@ -9,7 +9,7 @@
 
 message(AUTHOR_WARNING "Usage of MT32EMU find-module is DEPRECATED, please use the provided CMake config file directly instead")
 
-find_package(MT32Emu QUIET CONFIG)
+find_package(MT32Emu ${MT32EMU_FIND_VERSION} QUIET CONFIG)
 if(MT32Emu_FOUND)
   message(STATUS "Found package MT32Emu version ${MT32Emu_VERSION}")
   return()
