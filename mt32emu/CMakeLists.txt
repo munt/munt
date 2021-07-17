@@ -244,7 +244,6 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu.h" "#include <mt32emu/mt
 
 configure_file("src/config.h.in" "include/mt32emu/config.h")
 
-set(libmt32emu_EXT_LIB)
 if(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
   add_definitions(-DMT32EMU_WITH_INTERNAL_RESAMPLER)
   set(${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SOURCES}
@@ -266,7 +265,6 @@ else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
     if(NOT libmt32emu_SHARED)
       set(libmt32emu_EXT_DEPENDENCY SOXR 0.1.2)
       set(libmt32emu_EXT_MODULE "FindSOXR.cmake")
-      get_target_property(libmt32emu_EXT_LIB ${libmt32emu_EXT_TARGET} IMPORTED_LOCATION)
     endif()
   else(SOXR_FOUND)
     # Try SampleRate if SOXR is unavailable
@@ -279,7 +277,6 @@ else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
       if(NOT libmt32emu_SHARED)
         set(libmt32emu_EXT_DEPENDENCY SampleRate 0.1.8)
         set(libmt32emu_EXT_MODULE "FindSampleRate.cmake")
-        get_target_property(libmt32emu_EXT_LIB ${libmt32emu_EXT_TARGET} IMPORTED_LOCATION)
       endif()
     else(SampleRate_FOUND)
       message(STATUS "Could NOT find any sample rate conversion library, resampling unavailable")
@@ -399,8 +396,8 @@ add_library(MT32Emu::mt32emu ALIAS mt32emu)
 # NOTE: This method is deprecated, the alias target should be used instead
 # to link with mt32emu from the same build tree.
 set(MT32EMU_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" CACHE INTERNAL "")
-set(MT32EMU_LIBRARY $<TARGET_LINKER_FILE:mt32emu> CACHE INTERNAL "")
-set(MT32EMU_EXT_LIBS ${libmt32emu_EXT_LIB} CACHE INTERNAL "")
+set(MT32EMU_LIBRARY mt32emu CACHE INTERNAL "")
+set(MT32EMU_EXT_LIBS "" CACHE INTERNAL "")
 
 # build a CPack driven installer package
 set(CPACK_PACKAGE_VERSION_MAJOR "${libmt32emu_VERSION_MAJOR}")
