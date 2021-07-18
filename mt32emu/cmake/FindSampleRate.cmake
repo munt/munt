@@ -39,6 +39,10 @@ find_package_handle_standard_args(SampleRate
   VERSION_VAR SampleRate_VERSION
 )
 
+if(CMAKE_VERSION VERSION_LESS 3.3)
+  set(SampleRate_FOUND ${SAMPLERATE_FOUND})
+endif()
+
 if(SampleRate_FOUND)
   add_library(SampleRate::samplerate UNKNOWN IMPORTED)
   set_target_properties(SampleRate::samplerate PROPERTIES
