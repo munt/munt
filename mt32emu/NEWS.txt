@@ -1,3 +1,12 @@
+2021-07-18:
+
+	2.5.2 released.
+
+	* Fixed compilation of client programs written in C when the automatic runtime version check
+	  is enabled with the preprocessor macro MT32EMU_RUNTIME_VERSION_CHECK 2. This may be needed
+	  on systems where symbol versioning is unavailable. (#71)
+	* Tweaked AUTHORS.txt to contain the entire license of embedded third-party code.
+
 2021-05-22:
 
 	2.5.1 released.

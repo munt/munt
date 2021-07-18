@@ -7,7 +7,7 @@ set(libmt32emu_DESCRIPTION "C/C++ library to emulate (approximately) the Roland 
 set(libmt32emu_URL "http://munt.sourceforge.net/")
 set(libmt32emu_VERSION_MAJOR 2)
 set(libmt32emu_VERSION_MINOR 5)
-set(libmt32emu_VERSION_PATCH 1)
+set(libmt32emu_VERSION_PATCH 2)
 set(libmt32emu_VERSION "${libmt32emu_VERSION_MAJOR}.${libmt32emu_VERSION_MINOR}.${libmt32emu_VERSION_PATCH}")
 
 if(${munt_WITH_MT32EMU_SMF2WAV} OR ${munt_WITH_MT32EMU_QT})
