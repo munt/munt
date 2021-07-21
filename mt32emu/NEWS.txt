@@ -1,6 +1,18 @@
 HEAD:
 
 	* Added support for two more control ROMs: MT-32 v.2.07 and CM-32LN v.1.00.
+	* Improved CMake build script for mt32emu. Notably:
+	  * The build script now populates the relevant library target properties, so that linking
+	    the mt32emu target in a dependent project is sufficient for the build to succeed,
+	    without necessity to use any extra variables.
+	  * A complete CMake package with configuration, version and targets files is now installed
+	    onto the target system. This package simplifies configuration of the other projects,
+	    yet facilitates reliable builds with optional transitive library dependencies.
+	  * Rewritten find-modules for libraries soxr and samplerate from scratch, so that they now
+	    behave more uniformly yet can be used with added convenience.
+	  * Updated the description of the module FindMT32EMU.cmake. It now creates the IMPORTED
+	    target MT32Emu::mt32emu upon success, similarly to the other scripts. Note, this module
+	    is not recommended for use with mt32emu version 2.6 and above. (#65)
 
 2021-07-18:
 
