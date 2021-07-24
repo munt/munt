@@ -12,13 +12,13 @@ include(GNUInstallDirs)
 
 add_definitions(-DVERSION="${mt32emu_smf2wav_VERSION}")
 
-find_package(GLIB2 2.32 REQUIRED)
-set(EXT_LIBS ${EXT_LIBS} ${GLIB2_LIBRARIES})
-include_directories(${GLIB2_INCLUDE_DIRS})
+find_package(GLIB2 2.32 MODULE REQUIRED)
+list(APPEND EXT_LIBS GLib2::glib2)
 
-find_package(MT32EMU 2.5 REQUIRED)
-set(EXT_LIBS ${EXT_LIBS} ${MT32EMU_LIBRARIES})
-include_directories(${MT32EMU_INCLUDE_DIRS})
+if(NOT(munt_SOURCE_DIR AND TARGET MT32Emu::mt32emu))
+  find_package(MT32EMU 2.5 MODULE REQUIRED)
+endif()
+list(APPEND EXT_LIBS MT32Emu::mt32emu)
 
 include_directories(libsmf/src)
 add_subdirectory(libsmf)
@@ -35,7 +35,7 @@ add_executable(mt32emu-smf2wav
   src/mt32emu-smf2wav.cpp
 )
 
-target_link_libraries(mt32emu-smf2wav
+target_link_libraries(mt32emu-smf2wav PRIVATE
   smf
   ${EXT_LIBS}
 )

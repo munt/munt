@@ -15,9 +15,10 @@ if(NOT MSVC)
   message(FATAL_ERROR "Microsoft (R) C++ compiler required")
 endif()
 
-find_package(MT32EMU 2.5 REQUIRED)
-set(EXT_LIBS winmm.lib ${MT32EMU_LIBRARIES})
-include_directories(${MT32EMU_INCLUDE_DIRS})
+if(NOT(munt_SOURCE_DIR AND TARGET MT32Emu::mt32emu))
+  find_package(MT32EMU 2.5 MODULE REQUIRED)
+endif()
+set(EXT_LIBS winmm.lib MT32Emu::mt32emu)
 
 CHECK_INCLUDE_FILES("windows.h;mmddk.h" MMDDK_FOUND)
 if(NOT MMDDK_FOUND)
@@ -35,7 +36,7 @@ configure_file("mt32emu.inf.in" "mt32emu.inf")
 
 add_library(win32drv MODULE ${mt32emu_win32drv_SOURCES} src/winmm_drv.def)
 
-target_link_libraries(win32drv ${EXT_LIBS})
+target_link_libraries(win32drv PRIVATE ${EXT_LIBS})
 
 if(CMAKE_CL_64)
   set(DLL_ARCH_SUFFIX _x64)

@@ -32,14 +32,13 @@ endif()
 
 find_package(MT32Emu ${MT32EMU_FIND_VERSION} QUIET CONFIG)
 if(MT32Emu_FOUND)
-  if(NOT MT32EMU_FIND_QUIETLY)
-    message(STATUS "Found package MT32Emu version ${MT32Emu_VERSION}")
-  endif()
+  include(FindPackageHandleStandardArgs)
+  find_package_handle_standard_args(MT32Emu CONFIG_MODE)
   return()
 endif()
 
-find_package(PkgConfig)
-pkg_search_module(PC_MT32EMU QUIET mt32emu)
+find_package(PkgConfig MODULE)
+pkg_check_modules(PC_MT32EMU QUIET mt32emu)
 
 find_path(MT32EMU_INCLUDE_DIR mt32emu/mt32emu.h
   HINTS ${PC_MT32EMU_INCLUDEDIR} ${PC_MT32EMU_INCLUDE_DIRS}

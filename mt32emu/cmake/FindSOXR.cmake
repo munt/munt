@@ -6,10 +6,11 @@ if(TARGET Soxr::soxr)
   if(NOT SOXR_FIND_QUIETLY)
     message("Finding package SOXR skipped because target Soxr::soxr already exists; assuming it is suitable.")
   endif()
+  set(SOXR_FOUND TRUE)
   return()
 endif()
 
-find_package(PkgConfig)
+find_package(PkgConfig MODULE)
 pkg_check_modules(PC_SOXR QUIET soxr)
 set(SOXR_VERSION ${PC_SOXR_VERSION})
 

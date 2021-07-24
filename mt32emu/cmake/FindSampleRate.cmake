@@ -10,18 +10,18 @@ if(TARGET SampleRate::samplerate)
   if(NOT SampleRate_FIND_QUIETLY)
     message("Finding package SampleRate skipped because target SampleRate::samplerate already exists; assuming it is suitable.")
   endif()
+  set(SampleRate_FOUND TRUE)
   return()
 endif()
 
 find_package(SampleRate ${SampleRate_FIND_VERSION} QUIET CONFIG)
 if(SampleRate_FOUND)
-  if(NOT SampleRate_FIND_QUIETLY)
-    message(STATUS "Found package SampleRate version ${SampleRate_VERSION}")
-  endif()
+  include(FindPackageHandleStandardArgs)
+  find_package_handle_standard_args(SampleRate CONFIG_MODE)
   return()
 endif()
 
-find_package(PkgConfig)
+find_package(PkgConfig MODULE)
 pkg_check_modules(PC_SampleRate QUIET samplerate)
 set(SampleRate_VERSION ${PC_SampleRate_VERSION})
 
@@ -35,6 +35,7 @@ find_library(SampleRate_LIBRARY
 )
 
 mark_as_advanced(SampleRate_INCLUDE_DIR SampleRate_LIBRARY)
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(SampleRate
   REQUIRED_VARS SampleRate_LIBRARY SampleRate_INCLUDE_DIR
