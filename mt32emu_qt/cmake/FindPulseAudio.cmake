@@ -39,7 +39,7 @@ include(FindPackageHandleStandardArgs)
 # Handle the QUIETLY and REQUIRED arguments and set PULSEAUDIO_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(PulseAudio
-  REQUIRED_VARS PULSEAUDIO_LIBRARY PULSEAUDIO_INCLUDE_DIR
+  REQUIRED_VARS PULSEAUDIO_SIMPLE_LIBRARY PULSEAUDIO_LIBRARY PULSEAUDIO_INCLUDE_DIR
   VERSION_VAR PULSEAUDIO_VERSION
 )
 
