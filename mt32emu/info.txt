@@ -4,5 +4,3 @@ CM-64 and LAPC-I. In no way endorsed by or affiliated with Roland Corp.
 
 libmt32emu is a C/C++ library intended for developers wishing to integrate
 an MT-32 emulator into a driver or an application.
-
-WWW: http://munt.sourceforge.net/

@@ -1,0 +1,27 @@
+# New ports collection makefile for:	mt32emu-smf2wav
+# Date created:		2016-10-23
+# Whom:			sergm <sergm@muntemu.org>
+#
+# $FreeBSD$
+#
+
+PORTNAME=	mt32emu-smf2wav
+PORTVERSION=	@mt32emu_smf2wav_VERSION@
+CATEGORIES=	audio
+MASTER_SITES=	@MASTER_SITES@
+FETCH_ARGS=	-a
+DISTFILES=	@mt32emu_smf2wav_DISTFILE_BASENAME@.tar.gz
+WRKSRC=		$(WRKDIR)/munt-@mt32emu_smf2wav_DISTFILE_BASENAME@/mt32emu_smf2wav
+LICENSE=	GPLv3+
+LICENSE_FILE=	${WRKSRC}/COPYING.txt
+
+MAINTAINER=	@mt32emu_smf2wav_CONTACT@
+COMMENT=	@mt32emu_smf2wav_DESCRIPTION_SUMMARY@
+
+USES=		cmake
+
+USE_GNOME=	glib20
+
+LIB_DEPENDS=    libmt32emu.so.2:audio/libmt32emu
+
+.include <bsd.port.mk>

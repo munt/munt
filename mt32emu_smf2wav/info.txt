@@ -5,5 +5,3 @@ or affiliated with Roland Corp.
 
 mt32emu-smf2wav makes use of libmt32emu to produce a WAVE file from
 a Standard MIDI File.
-
-WWW: http://munt.sourceforge.net/

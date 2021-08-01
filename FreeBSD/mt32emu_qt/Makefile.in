@@ -1,0 +1,28 @@
+# New ports collection makefile for:	mt32emu-qt
+# Date created:		2016-10-23
+# Whom:			sergm <sergm@muntemu.org>
+#
+# $FreeBSD$
+#
+
+PORTNAME=	mt32emu-qt
+PORTVERSION=	@mt32emu_qt_VERSION@
+CATEGORIES=	audio
+MASTER_SITES=	@MASTER_SITES@
+FETCH_ARGS=	-a
+DISTFILES=	@mt32emu_qt_DISTFILE_BASENAME@.tar.gz
+WRKSRC=		$(WRKDIR)/munt-@mt32emu_qt_DISTFILE_BASENAME@/mt32emu_qt
+LICENSE=	GPLv3+
+LICENSE_FILE=	${WRKSRC}/COPYING.txt
+
+MAINTAINER=	@mt32emu_qt_CONTACT@
+COMMENT=	@mt32emu_qt_DESCRIPTION_SUMMARY@
+
+USES=		cmake qt:5
+USE_QT=		widgets qmake_build buildtools_build
+
+LIB_DEPENDS=	libportaudio.so.2:audio/portaudio \
+		libjack.so.0:audio/jack \
+		libmt32emu.so.2:audio/libmt32emu
+
+.include <bsd.port.mk>

@@ -3,5 +3,3 @@ emulating (approximately) pre-GM MIDI devices such as the Roland MT-32, CM-32L,
 CM-64 and LAPC-I. In no way endorsed by or affiliated with Roland Corp.
 
 mt32emu-qt is the main MT-32 emulation application that uses libmt32emu.
-
-WWW: http://munt.sourceforge.net/

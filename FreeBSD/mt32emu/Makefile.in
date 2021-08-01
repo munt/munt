@@ -1,0 +1,27 @@
+# New ports collection makefile for:	libmt32emu
+# Date created:		2016-10-23
+# Whom:			sergm <sergm@muntemu.org>
+#
+# $FreeBSD$
+#
+
+PORTNAME=	libmt32emu
+PORTVERSION=	@libmt32emu_VERSION@
+CATEGORIES=	audio
+MASTER_SITES=	@MASTER_SITES@
+FETCH_ARGS=	-a
+DISTFILES=	@libmt32emu_DISTFILE_BASENAME@.tar.gz
+WRKSRC=		$(WRKDIR)/munt-@libmt32emu_DISTFILE_BASENAME@/mt32emu
+LICENSE=	LGPL21+
+LICENSE_FILE=	${WRKSRC}/COPYING.LESSER.txt
+
+MAINTAINER=	@libmt32emu_CONTACT@
+COMMENT=	@libmt32emu_DESCRIPTION_SUMMARY@
+
+USE_LDCONFIG=	yes
+USES=		cmake
+
+CMAKE_ON=	libmt32emu_WITH_SYMBOL_VERSIONING libmt32emu_WITH_VERSION_TAGGING
+CMAKE_ARGS=	-Dlibmt32emu_PKGCONFIG_INSTALL_PREFIX:PATH=libdata
+
+.include <bsd.port.mk>

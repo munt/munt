@@ -3,12 +3,8 @@ cmake_minimum_required(VERSION 2.8.12)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(libmt32emu CXX)
-set(libmt32emu_DESCRIPTION "C/C++ library to emulate (approximately) the Roland MT-32, CM-32L and LAPC-I synthesiser modules")
-set(libmt32emu_URL "http://munt.sourceforge.net/")
-set(libmt32emu_VERSION_MAJOR 2)
-set(libmt32emu_VERSION_MINOR 5)
-set(libmt32emu_VERSION_PATCH 2)
-set(libmt32emu_VERSION "${libmt32emu_VERSION_MAJOR}.${libmt32emu_VERSION_MINOR}.${libmt32emu_VERSION_PATCH}")
+
+include(cmake/project_data.cmake)
 
 include(GNUInstallDirs)
 
@@ -404,9 +400,9 @@ set(CPACK_PACKAGE_VERSION_MAJOR "${libmt32emu_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${libmt32emu_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${libmt32emu_VERSION_PATCH}")
 set(CPACK_PACKAGE_VENDOR "muntemu.org")
-set(CPACK_PACKAGE_CONTACT "sergm@muntemu.org")
-set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../FreeBSD/usr/ports/audio/libmt32emu/pkg-descr")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${libmt32emu_DESCRIPTION})
+set(CPACK_PACKAGE_CONTACT "${libmt32emu_CONTACT}")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/info.txt")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${libmt32emu_DESCRIPTION_SUMMARY})
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 # The default package file name has "-${CPACK_SYSTEM_NAME}" at the end, which doesn't match our previous releases
