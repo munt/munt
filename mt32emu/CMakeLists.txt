@@ -51,10 +51,6 @@ if(DEFINED LIB_INSTALL_DIR)
   set(CMAKE_INSTALL_LIBDIR ${LIB_INSTALL_DIR})
 endif()
 
-set(libmt32emu_PACKAGE_TYPE Complete CACHE STRING "Selects output binary package type: Complete, Runtime or Devel")
-mark_as_advanced(libmt32emu_PACKAGE_TYPE)
-set_property(CACHE libmt32emu_PACKAGE_TYPE PROPERTY STRINGS Complete Runtime Devel)
-
 # Note, GNUInstallDirs provides no facility to locate pkg-config files, as they are normally placed
 # along with libraries. However, some systems use other non-GNU layouts.
 set(libmt32emu_PKGCONFIG_INSTALL_PREFIX
@@ -85,7 +81,8 @@ if(NOT libmt32emu_PKGCONFIG_INSTALL_FULL_DIR)
   set(libmt32emu_PKGCONFIG_INSTALL_FULL_DIR ${CMAKE_INSTALL_PREFIX}/${libmt32emu_PKGCONFIG_INSTALL_DIR})
 endif()
 
-set(libmt32emu_CMAKE_PACKAGE_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/MT32Emu)
+set(libmt32emu_CMAKE_PACKAGE_INSTALL_PREFIX ${CMAKE_INSTALL_LIBDIR}/cmake)
+set(libmt32emu_CMAKE_PACKAGE_INSTALL_DIR ${libmt32emu_CMAKE_PACKAGE_INSTALL_PREFIX}/MT32Emu)
 
 if(libmt32emu_SHARED)
   option(libmt32emu_WITH_VERSION_TAGGING "Tags shared object with library version and enables runtime version check")
@@ -95,6 +92,10 @@ if(libmt32emu_SHARED)
     unset(libmt32emu_WITH_SYMBOL_VERSIONING CACHE)
   endif()
 
+  set(libmt32emu_PACKAGE_TYPE Complete CACHE STRING "Selects output binary package type: Complete, Runtime or Devel")
+  mark_as_advanced(libmt32emu_PACKAGE_TYPE)
+  set_property(CACHE libmt32emu_PACKAGE_TYPE PROPERTY STRINGS Complete Runtime Devel)
+
   option(libmt32emu_INSTALL_DEFAULT_LOCALE "Install user-preferred system locale as C locale when initialising shared library.
  This is generally not necessary, although may be required in some cases (for instance, when building shared library with old
  versions of MS VC with the C runtime statically linked) to open ROM files with localised pathnames successfully.")
@@ -102,6 +103,7 @@ if(libmt32emu_SHARED)
 else(libmt32emu_SHARED)
   unset(libmt32emu_WITH_VERSION_TAGGING CACHE)
   unset(libmt32emu_WITH_SYMBOL_VERSIONING CACHE)
+  unset(libmt32emu_PACKAGE_TYPE CACHE)
   unset(libmt32emu_INSTALL_DEFAULT_LOCALE CACHE)
 endif(libmt32emu_SHARED)
 
@@ -314,74 +316,72 @@ target_include_directories(mt32emu
   INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-set(libmt32emu_EXPORTED_TARGETS EXPORT MT32EmuTargets)
-
-if(libmt32emu_PACKAGE_TYPE STREQUAL "Runtime")
-  if(libmt32emu_SHARED)
-    install(TARGETS mt32emu ${libmt32emu_EXPORTED_TARGETS}
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} NAMELINK_SKIP
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
-  endif()
-elseif(libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
-  # NOTE: Installing both ARCHIVE and LIBRARY targets by a single command fails, e.g. on Cygwin,
-  # as long as option NAMELINK_ONLY is specified.
-  if(WIN32 OR CYGWIN)
-    install(TARGETS mt32emu ${libmt32emu_EXPORTED_TARGETS} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-  else()
-    install(TARGETS mt32emu ${libmt32emu_EXPORTED_TARGETS} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} NAMELINK_ONLY)
-  endif()
+if(libmt32emu_SHARED)
+  set(libmt32emu_COMPONENT_RUNTIME COMPONENT Runtime)
+  set(libmt32emu_COMPONENT_DEVEL COMPONENT Devel)
 else()
-  install(TARGETS mt32emu ${libmt32emu_EXPORTED_TARGETS}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  set(libmt32emu_COMPONENT_RUNTIME COMPONENT Complete)
+  set(libmt32emu_COMPONENT_DEVEL COMPONENT Complete)
+endif()
+
+install(TARGETS mt32emu EXPORT MT32EmuTargets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} ${libmt32emu_COMPONENT_DEVEL}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} ${libmt32emu_COMPONENT_RUNTIME} NAMELINK_SKIP
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ${libmt32emu_COMPONENT_RUNTIME}
+)
+# TODO: Use NAMELINK_COMPONENT with CMake 3.12 instead.
+if(libmt32emu_SHARED)
+  install(TARGETS mt32emu EXPORT MT32EmuTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} ${libmt32emu_COMPONENT_DEVEL} NAMELINK_ONLY
   )
 endif()
 
-if(NOT libmt32emu_PACKAGE_TYPE STREQUAL "Runtime")
-  install(DIRECTORY
-    "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu"
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  )
+install(DIRECTORY
+  "${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ${libmt32emu_COMPONENT_DEVEL}
+)
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ${libmt32emu_COMPONENT_DEVEL}
+)
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/mt32emu.pc
+  DESTINATION ${libmt32emu_PKGCONFIG_INSTALL_DIR}
+  ${libmt32emu_COMPONENT_DEVEL}
+)
+install(EXPORT MT32EmuTargets
+  DESTINATION ${libmt32emu_CMAKE_PACKAGE_INSTALL_DIR}
+  NAMESPACE MT32Emu::
+  ${libmt32emu_COMPONENT_DEVEL}
+)
+configure_file(cmake/MT32EmuConfig.cmake.in cmake/MT32EmuConfig.cmake @ONLY)
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(cmake/MT32EmuConfigVersion.cmake
+  VERSION ${libmt32emu_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/cmake/MT32EmuConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/cmake/MT32EmuConfigVersion.cmake
+  DESTINATION ${libmt32emu_CMAKE_PACKAGE_INSTALL_DIR}
+  ${libmt32emu_COMPONENT_DEVEL}
+)
+if(libmt32emu_EXT_MODULE)
   install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  )
-  install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/mt32emu.pc
-    DESTINATION ${libmt32emu_PKGCONFIG_INSTALL_DIR}
-  )
-  install(EXPORT MT32EmuTargets
+    cmake/CheckDependencies.cmake
+    cmake/${libmt32emu_EXT_MODULE}
     DESTINATION ${libmt32emu_CMAKE_PACKAGE_INSTALL_DIR}
-    NAMESPACE MT32Emu::
+    ${libmt32emu_COMPONENT_DEVEL}
   )
-  configure_file(cmake/MT32EmuConfig.cmake.in cmake/MT32EmuConfig.cmake @ONLY)
-  include(CMakePackageConfigHelpers)
-  write_basic_package_version_file(cmake/MT32EmuConfigVersion.cmake
-    VERSION ${libmt32emu_VERSION}
-    COMPATIBILITY SameMajorVersion
-  )
-  install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/cmake/MT32EmuConfig.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/cmake/MT32EmuConfigVersion.cmake
-    DESTINATION ${libmt32emu_CMAKE_PACKAGE_INSTALL_DIR}
-  )
-  if(libmt32emu_EXT_MODULE)
-    install(FILES
-      cmake/CheckDependencies.cmake
-      cmake/${libmt32emu_EXT_MODULE}
-      DESTINATION ${libmt32emu_CMAKE_PACKAGE_INSTALL_DIR}
-    )
-  endif()
 endif()
 
-if(NOT(libmt32emu_SHARED AND libmt32emu_PACKAGE_TYPE STREQUAL "Devel"))
-  install(FILES
-    AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.md TODO.txt
-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/munt/${PROJECT_NAME}
-  )
-endif()
+install(FILES
+  AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.md TODO.txt
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/munt/${PROJECT_NAME}
+  ${libmt32emu_COMPONENT_RUNTIME}
+)
 
 # Facilitates usage of the library in another project either through
 # an imported target or directly from the build tree.
@@ -402,28 +402,39 @@ set(CPACK_PACKAGE_VERSION_PATCH "${libmt32emu_VERSION_PATCH}")
 set(CPACK_PACKAGE_VENDOR "muntemu.org")
 set(CPACK_PACKAGE_CONTACT "${libmt32emu_CONTACT}")
 set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/info.txt")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${libmt32emu_DESCRIPTION_SUMMARY})
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${libmt32emu_DESCRIPTION_SUMMARY}")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 # The default package file name has "-${CPACK_SYSTEM_NAME}" at the end, which doesn't match our previous releases
 set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${libmt32emu_VERSION}")
+
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}")
 set(CPACK_SOURCE_GENERATOR TGZ)
 set(CPACK_SOURCE_STRIP_FILES TRUE)
+
+if(libmt32emu_SHARED AND NOT libmt32emu_PACKAGE_TYPE STREQUAL "Complete")
+  # TODO: We want to create a couple of per-component packages with RPM and DEB in one go, albeit this
+  # may only be possible with CMake 3.6+ since we have to override incorrect default package names.
+  set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_CURRENT_BINARY_DIR}" "${PROJECT_NAME}" "${libmt32emu_PACKAGE_TYPE}" "/")
+endif()
+
 set(CPACK_RPM_PACKAGE_GROUP "Audio/Emulators")
 set(CPACK_RPM_PACKAGE_LICENSE "LGPLv2.1+")
-set(CPACK_RPM_PACKAGE_URL ${libmt32emu_URL})
-# Normally, pkgconfig files are installed into the system directory that should pre-exist on the target system,
-# and hence cause conflict if not excluded
-list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION ${libmt32emu_PKGCONFIG_INSTALL_FULL_DIR})
+set(CPACK_RPM_PACKAGE_URL "${libmt32emu_URL}")
+# Normally, pkgconfig file and cmake package are installed into the system directories that should
+# pre-exist on the target system, and hence cause conflict with other packages if not excluded.
+list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
+  ${libmt32emu_PKGCONFIG_INSTALL_FULL_DIR}
+  ${CMAKE_INSTALL_PREFIX}/${libmt32emu_CMAKE_PACKAGE_INSTALL_PREFIX}
+)
 if(munt_SOURCE_DIR)
   # Also publish the list for the benefit of the parent CMakeLists.txt file.
   set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION ${CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION} PARENT_SCOPE)
 endif()
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS "ON")
-set(CPACK_DEBIAN_PACKAGE_HOMEPAGE ${libmt32emu_URL})
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "${libmt32emu_URL}")
 set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
-if(libmt32emu_SHARED AND libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
+if(libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
   set(CPACK_RPM_PACKAGE_NAME "${CMAKE_PROJECT_NAME}-devel")
   set(CPACK_RPM_FILE_NAME "${CPACK_RPM_PACKAGE_NAME}-${libmt32emu_VERSION}.rpm")
   set(CPACK_RPM_PACKAGE_REQUIRES "${CMAKE_PROJECT_NAME} == ${libmt32emu_VERSION}")
@@ -431,7 +442,7 @@ if(libmt32emu_SHARED AND libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
   set(CPACK_DEBIAN_FILE_NAME "${CPACK_DEBIAN_PACKAGE_NAME}-${libmt32emu_VERSION}.deb")
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CMAKE_PROJECT_NAME} (= ${libmt32emu_VERSION})")
 endif()
-if(libmt32emu_SHARED AND NOT libmt32emu_PACKAGE_TYPE STREQUAL "Devel")
+if(libmt32emu_SHARED)
   set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS "ON")
   set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS_POLICY ">=")
 endif()
