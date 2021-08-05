@@ -51,6 +51,10 @@ if(DEFINED LIB_INSTALL_DIR)
   set(CMAKE_INSTALL_LIBDIR ${LIB_INSTALL_DIR})
 endif()
 
+set(libmt32emu_PACKAGE_TYPE Complete CACHE STRING "Selects output binary package type: Complete, Runtime or Devel")
+mark_as_advanced(libmt32emu_PACKAGE_TYPE)
+set_property(CACHE libmt32emu_PACKAGE_TYPE PROPERTY STRINGS Complete Runtime Devel)
+
 # Note, GNUInstallDirs provides no facility to locate pkg-config files, as they are normally placed
 # along with libraries. However, some systems use other non-GNU layouts.
 set(libmt32emu_PKGCONFIG_INSTALL_PREFIX
@@ -92,10 +96,6 @@ if(libmt32emu_SHARED)
     unset(libmt32emu_WITH_SYMBOL_VERSIONING CACHE)
   endif()
 
-  set(libmt32emu_PACKAGE_TYPE Complete CACHE STRING "Selects output binary package type: Complete, Runtime or Devel")
-  mark_as_advanced(libmt32emu_PACKAGE_TYPE)
-  set_property(CACHE libmt32emu_PACKAGE_TYPE PROPERTY STRINGS Complete Runtime Devel)
-
   option(libmt32emu_INSTALL_DEFAULT_LOCALE "Install user-preferred system locale as C locale when initialising shared library.
  This is generally not necessary, although may be required in some cases (for instance, when building shared library with old
  versions of MS VC with the C runtime statically linked) to open ROM files with localised pathnames successfully.")
@@ -103,7 +103,6 @@ if(libmt32emu_SHARED)
 else(libmt32emu_SHARED)
   unset(libmt32emu_WITH_VERSION_TAGGING CACHE)
   unset(libmt32emu_WITH_SYMBOL_VERSIONING CACHE)
-  unset(libmt32emu_PACKAGE_TYPE CACHE)
   unset(libmt32emu_INSTALL_DEFAULT_LOCALE CACHE)
 endif(libmt32emu_SHARED)
 
@@ -316,18 +315,13 @@ target_include_directories(mt32emu
   INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-if(libmt32emu_SHARED)
-  set(libmt32emu_COMPONENT_RUNTIME COMPONENT Runtime)
-  set(libmt32emu_COMPONENT_DEVEL COMPONENT Devel)
-else()
-  set(libmt32emu_COMPONENT_RUNTIME COMPONENT Complete)
-  set(libmt32emu_COMPONENT_DEVEL COMPONENT Complete)
-endif()
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Runtime)
+set(libmt32emu_COMPONENT_DEVEL COMPONENT Devel)
 
 install(TARGETS mt32emu EXPORT MT32EmuTargets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} ${libmt32emu_COMPONENT_DEVEL}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} ${libmt32emu_COMPONENT_RUNTIME} NAMELINK_SKIP
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ${libmt32emu_COMPONENT_RUNTIME}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} NAMELINK_SKIP
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 # TODO: Use NAMELINK_COMPONENT with CMake 3.12 instead.
 if(libmt32emu_SHARED)
@@ -380,7 +374,6 @@ endif()
 install(FILES
   AUTHORS.txt COPYING.txt COPYING.LESSER.txt NEWS.txt README.md TODO.txt
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/munt/${PROJECT_NAME}
-  ${libmt32emu_COMPONENT_RUNTIME}
 )
 
 # Facilitates usage of the library in another project either through

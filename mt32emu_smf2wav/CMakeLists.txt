@@ -18,6 +18,8 @@ if(NOT(munt_SOURCE_DIR AND TARGET MT32Emu::mt32emu))
 endif()
 list(APPEND EXT_LIBS MT32Emu::mt32emu)
 
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Runtime)
+
 include_directories(libsmf/src)
 add_subdirectory(libsmf)
 

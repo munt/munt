@@ -325,6 +325,8 @@ if(WIN32)
   )
 endif()
 
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Runtime)
+
 install(TARGETS
   mt32emu-qt
   DESTINATION ${CMAKE_INSTALL_BINDIR}

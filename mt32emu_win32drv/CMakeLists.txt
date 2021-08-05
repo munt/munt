@@ -47,6 +47,8 @@ set_target_properties(win32drv PROPERTIES
   VERSION ${mt32emu_win32drv_VERSION}
 )
 
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Runtime)
+
 install(TARGETS win32drv DESTINATION win32drv)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mt32emu.inf DESTINATION win32drv)
 install(FILES README.md DESTINATION win32drv)
