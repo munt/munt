@@ -732,6 +732,16 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 		return false;
 	}
 
+	if (controlROMMap->timbreRCount == 30) {
+		// We must initialise all 64 rhythm timbres to avoid undefined behaviour.
+		// SEMI-CONFIRMED: Old-gen MT-32 units likely map timbres 30..59 to 0..29.
+		// Attempts to play rhythm timbres 60..63 exhibit undefined behaviour.
+		// We want to emulate the wrap around, so merely copy the entire set of standard
+		// timbres once more. The last 4 dangerous timbres are zeroed out.
+		memcpy(&mt32ram.timbres[222], &mt32ram.timbres[192], sizeof(*mt32ram.timbres) * 30);
+		memset(&mt32ram.timbres[252], 0, sizeof(*mt32ram.timbres) * 4);
+	}
+
 #if MT32EMU_MONITOR_INIT
 	printDebug("Initialising Timbre Bank M");
 #endif

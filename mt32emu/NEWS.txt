@@ -14,6 +14,17 @@ HEAD:
 	    target MT32Emu::mt32emu upon success, similarly to the other scripts. Note, this module
 	    is not recommended for use with mt32emu version 2.6 and above. (#65)
 
+2021-08-07:
+
+	2.5.3 released.
+
+	* Fixed possible access to uninitialised rhythm timbre memory when using MT-32 control ROM.
+	  With control ROMs 2.04 and above, the entire rhythm timbre memory is now initialised
+	  as the real devices do. Those timbres that do not exist in MT-32 models are now muted.
+	  With control ROMs 1.xx, the timbres 30..59 are mapped to 0..29 that should correspond
+	  to the behaviour of real units. The other 4 timbres are muted to avoid undefined behaviour
+	  the real hardware exhibits. (#72)
+
 2021-07-18:
 
 	2.5.2 released.
