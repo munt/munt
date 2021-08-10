@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 project(munt)
 set(munt_URL "http://munt.sourceforge.net/")
 set(munt_VERSION_MAJOR 2)
-set(munt_VERSION_MINOR 5)
+set(munt_VERSION_MINOR 6)
 set(munt_VERSION_PATCH 0)
 
 option(munt_WITH_MT32EMU_SMF2WAV "Build command line standard MIDI file conversion tool" TRUE)

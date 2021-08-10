@@ -23,8 +23,9 @@ extern "C" {
 // while for an application linked with a newer library version there will be no match.
 
 MT32EMU_EXPORT_V(2.5) extern const volatile char mt32emu_2_5 = 0;
+MT32EMU_EXPORT_V(2.6) extern const volatile char mt32emu_2_6 = 0;
 
-#if MT32EMU_VERSION_MAJOR > 2 || MT32EMU_VERSION_MINOR > 5
+#if MT32EMU_VERSION_MAJOR > 2 || MT32EMU_VERSION_MINOR > 6
 #error "Missing version tag definition for current library version"
 #endif
 }

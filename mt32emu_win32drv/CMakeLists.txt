@@ -5,7 +5,7 @@ include(CheckIncludeFiles)
 
 project(mt32emu_win32drv CXX)
 set(mt32emu_win32drv_VERSION_MAJOR 1)
-set(mt32emu_win32drv_VERSION_MINOR 7)
+set(mt32emu_win32drv_VERSION_MINOR 8)
 set(mt32emu_win32drv_VERSION_PATCH 0)
 set(mt32emu_win32drv_VERSION "${mt32emu_win32drv_VERSION_MAJOR}.${mt32emu_win32drv_VERSION_MINOR}.${mt32emu_win32drv_VERSION_PATCH}")
 string(TIMESTAMP mt32emu_win32drv_BUILD_DATE %m/%d/%Y)
