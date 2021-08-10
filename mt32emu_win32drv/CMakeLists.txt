@@ -4,10 +4,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
 include(CheckIncludeFiles)
 
 project(mt32emu_win32drv CXX)
-set(mt32emu_win32drv_VERSION_MAJOR 1)
-set(mt32emu_win32drv_VERSION_MINOR 8)
-set(mt32emu_win32drv_VERSION_PATCH 0)
-set(mt32emu_win32drv_VERSION "${mt32emu_win32drv_VERSION_MAJOR}.${mt32emu_win32drv_VERSION_MINOR}.${mt32emu_win32drv_VERSION_PATCH}")
+
+include(cmake/project_data.cmake)
+
 string(TIMESTAMP mt32emu_win32drv_BUILD_DATE %m/%d/%Y)
 
 if(NOT MSVC)
@@ -63,8 +62,8 @@ set(CPACK_PACKAGE_VERSION_MAJOR "${mt32emu_win32drv_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${mt32emu_win32drv_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${mt32emu_win32drv_VERSION_PATCH}")
 set(CPACK_PACKAGE_VENDOR "muntemu.org")
-set(CPACK_PACKAGE_CONTACT "sergm@muntemu.org")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "MT32Emu Windows MME MIDI Driver")
+set(CPACK_PACKAGE_CONTACT "${mt32emu_win32drv_CONTACT}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${mt32emu_win32drv_DESCRIPTION_SUMMARY}")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 # The default package file name has "-${CPACK_SYSTEM_NAME}" at the end, which doesn't match our previous releases
