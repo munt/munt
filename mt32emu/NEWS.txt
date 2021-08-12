@@ -1,6 +1,6 @@
 HEAD:
 
-	* Added support for two more control ROMs: MT-32 v.2.07 and CM-32LN v.1.00.
+	* Added support for three more control ROMs: MT-32 v.2.06, v.2.07 and CM-32LN v.1.00.
 	* Improved CMake build script for mt32emu. Notably:
 	  * The build script now populates the relevant library target properties, so that linking
 	    the mt32emu target in a dependent project is sufficient for the build to succeed,
