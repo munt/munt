@@ -46,7 +46,7 @@ struct SynthProfile {
 	bool nicePartialMixing;
 };
 
-class QReportHandler : public QObject, public MT32Emu::ReportHandler {
+class QReportHandler : public QObject, public MT32Emu::ReportHandler2 {
 	Q_OBJECT
 
 // For the sake of Qt4 compatibility.
@@ -58,7 +58,6 @@ public:
 	void showLCDMessage(const char *message);
 	void onErrorControlROM();
 	void onErrorPCMROM();
-	void onMIDIMessagePlayed();
 	void onDeviceReconfig();
 	void onDeviceReset();
 	void onNewReverbMode(MT32Emu::Bit8u mode);
@@ -66,6 +65,8 @@ public:
 	void onNewReverbLevel(MT32Emu::Bit8u level);
 	void onPolyStateChanged(MT32Emu::Bit8u partNum);
 	void onProgramChanged(MT32Emu::Bit8u partNum, const char soundGroupName[], const char patchName[]);
+	void onLCDStateUpdated();
+	void onMidiMessageLEDStateUpdated(bool ledState);
 	void doShowLCDMessage(const char *message);
 
 private:
@@ -73,14 +74,14 @@ private:
 
 signals:
 	void balloonMessageAppeared(const QString &title, const QString &text);
-	void lcdMessageDisplayed(const QString);
-	void midiMessagePlayed();
 	void masterVolumeChanged(int);
 	void reverbModeChanged(int);
 	void reverbTimeChanged(int);
 	void reverbLevelChanged(int);
 	void polyStateChanged(int);
 	void programChanged(int, QString, QString);
+	void lcdStateChanged();
+	void midiMessageLEDStateChanged(bool);
 };
 
 /**
@@ -132,6 +133,7 @@ private:
 public:
 	explicit QSynth(QObject *parent = NULL);
 	~QSynth();
+	void createSynth();
 	bool isOpen() const;
 	bool open(uint &targetSampleRate, MT32Emu::SamplerateConversionQuality srcQuality = MT32Emu::SamplerateConversionQuality_GOOD, const QString useSynthProfileName = "");
 	void close();
@@ -173,19 +175,20 @@ public:
 	void setRendererType(MT32Emu::RendererType useRendererType);
 	void setPartialCount(int partialCount);
 	const QString getPatchName(int partNum) const;
-	void getPartStates(bool *partStates) const;
 	void getPartialStates(MT32Emu::PartialState *partialStates) const;
 	uint getPlayingNotes(uint partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const;
 	uint getPartialCount() const;
 	uint getSynthSampleRate() const;
 	bool isActive() const;
+	bool getDisplayState(char *targetBuffer) const;
+	void setMainDisplayMode();
 
 	void startRecordingAudio(const QString &fileName);
 	void stopRecordingAudio();
 	bool isRecordingAudio() const;
 
 signals:
-	void stateChanged(SynthState state);
+	void stateChanged(SynthState);
 	void audioBlockRendered();
 };
 

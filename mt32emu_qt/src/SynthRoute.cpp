@@ -480,16 +480,20 @@ const QString SynthRoute::getPatchName(int partNum) const {
 	return qSynth.getPatchName(partNum);
 }
 
-void SynthRoute::getPartStates(bool *partStates) const {
-	qSynth.getPartStates(partStates);
-}
-
 void SynthRoute::getPartialStates(PartialState *partialStates) const {
 	qSynth.getPartialStates(partialStates);
 }
 
 uint SynthRoute::getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const {
 	return qSynth.getPlayingNotes(partNumber, keys, velocities);
+}
+
+bool SynthRoute::getDisplayState(char *targetBuffer) const {
+	return qSynth.getDisplayState(targetBuffer);
+}
+
+void SynthRoute::setMainDisplayMode() {
+	qSynth.setMainDisplayMode();
 }
 
 void SynthRoute::startRecordingAudio(const QString &fileName) {

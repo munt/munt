@@ -1,3 +1,12 @@
+HEAD:
+
+	* Improved emulation of the MT-32 display. It now behaves a lot closer to the real device.
+	  The new behaviour depends on the control ROM version, so that the most prominent quirks
+	  are now emulated. Additionally, the LCD shows the startup banner and the SysEx checksum
+	  error. The built-in LCD font has been reworked as well to closely match the hardware one
+	  yet the new appearance makes the grid of pixels visible. Clicking on the LCD now resets
+	  it to the main (Master Volume) mode. (#50, #66)
+
 2021-05-22:
 
 	1.9.0 released.

@@ -99,7 +99,8 @@ private:
 		NICE_PARTIAL_MIXING_ENABLED_CHANGED,
 		EMU_DAC_INPUT_MODE_CHANGED,
 		MIDI_DELAY_MODE_CHANGED,
-		MIDI_CHANNELS_ASSIGNMENT_RESET
+		MIDI_CHANNELS_ASSIGNMENT_RESET,
+		DISPLAY_RESET
 	};
 
 	QSynth &qsynth;
@@ -125,7 +126,9 @@ private:
 	// On backpressure, the latest values are kept.
 	struct {
 		char lcdMessage[LCD_MESSAGE_LENGTH];
-		bool midiMessagePlayed;
+		bool lcdStateUpdated;
+		bool midiMessageLEDState;
+		bool midiMessageLEDStateUpdated;
 		int masterVolumeUpdate;
 		int reverbMode;
 		int reverbTime;
@@ -141,7 +144,10 @@ private:
 	// Synth state snapshot, guarded by stateSnapshotMutex.
 	struct {
 		char lcdMessage[LCD_MESSAGE_LENGTH];
-		bool midiMessagePlayed;
+		char lcdState[LCD_MESSAGE_LENGTH];
+		bool lcdStateUpdated;
+		bool midiMessageLEDState;
+		bool midiMessageLEDStateUpdated;
 		int masterVolumeUpdate;
 		int reverbMode;
 		int reverbTime;
@@ -151,14 +157,12 @@ private:
 			bool programChanged;
 			char soundGroupName[SOUND_GROUP_NAME_LENGTH];
 			char timbreName[TIMBRE_NAME_LENGTH];
-			bool active;
 			Bit32u playingNotesCount;
 			Bit8u keysOfPlayingNotes[MAX_PARTIAL_COUNT];
 			Bit8u velocitiesOfPlayingNotes[MAX_PARTIAL_COUNT];
 		} partStates[PART_COUNT];
 		PartialState partialStates[MAX_PARTIAL_COUNT];
 	} stateSnapshot;
-
 
 	/** Ensures atomicity of collecting changes to be applied to the synth settings. */
 	QMutex settingsMutex;
@@ -215,6 +219,9 @@ private:
 			case MIDI_CHANNELS_ASSIGNMENT_RESET:
 				writeMIDIChannelsAssignmentResetSysex(synth, midiChannelsAssignmentChannel1Engaged);
 				break;
+			case DISPLAY_RESET:
+				synth->setMainDisplayMode();
+				break;
 			}
 		}
 	}
@@ -225,9 +232,6 @@ private:
 
 		memcpy(stateSnapshot.lcdMessage, tempState.lcdMessage, LCD_MESSAGE_LENGTH - 1);
 		tempState.lcdMessage[0] = 0;
-
-		stateSnapshot.midiMessagePlayed = tempState.midiMessagePlayed;
-		tempState.midiMessagePlayed = false;
 
 		stateSnapshot.masterVolumeUpdate = tempState.masterVolumeUpdate;
 		tempState.masterVolumeUpdate = NO_UPDATE_VALUE;
@@ -241,9 +245,19 @@ private:
 		stateSnapshot.reverbLevel = tempState.reverbLevel;
 		tempState.reverbLevel = NO_UPDATE_VALUE;
 
+		stateSnapshot.midiMessageLEDStateUpdated = tempState.midiMessageLEDStateUpdated;
+		if (tempState.midiMessageLEDStateUpdated) {
+			tempState.midiMessageLEDStateUpdated = false;
+			stateSnapshot.midiMessageLEDState = tempState.midiMessageLEDState;
+		}
+
 		Synth *synth = qsynth.synth;
-		bool partStates[PART_COUNT];
-		synth->getPartStates(partStates);
+
+		stateSnapshot.lcdStateUpdated = tempState.lcdStateUpdated;
+		if (tempState.lcdStateUpdated) {
+			tempState.lcdStateUpdated = false;
+			synth->getDisplayState(stateSnapshot.lcdState);
+		}
 
 		for (int partIx = 0; partIx < PART_COUNT; partIx++) {
 			stateSnapshot.partStates[partIx].programChanged = tempState.partStates[partIx].programChanged;
@@ -252,8 +266,6 @@ private:
 				memcpy(stateSnapshot.partStates[partIx].soundGroupName, tempState.partStates[partIx].soundGroupName, SOUND_GROUP_NAME_LENGTH - 1);
 				memcpy(stateSnapshot.partStates[partIx].timbreName, tempState.partStates[partIx].timbreName, TIMBRE_NAME_LENGTH - 1);
 			}
-
-			stateSnapshot.partStates[partIx].active = partStates[partIx];
 
 			stateSnapshot.partStates[partIx].polyStateChanged = tempState.partStates[partIx].polyStateChanged;
 			if (tempState.partStates[partIx].polyStateChanged) {
@@ -279,9 +291,14 @@ private:
 				stateSnapshot.lcdMessage[0] = 0;
 			}
 
-			if (stateSnapshot.midiMessagePlayed) {
-				emit reportHandler.midiMessagePlayed();
-				stateSnapshot.midiMessagePlayed = false;
+			if (stateSnapshot.lcdStateUpdated) {
+				emit reportHandler.lcdStateChanged();
+				stateSnapshot.lcdStateUpdated = false;
+			}
+
+			if (stateSnapshot.midiMessageLEDStateUpdated) {
+				emit reportHandler.midiMessageLEDStateChanged(stateSnapshot.midiMessageLEDState);
+				stateSnapshot.midiMessageLEDStateUpdated = false;
 			}
 
 			if (stateSnapshot.masterVolumeUpdate > NO_UPDATE_VALUE) {
@@ -341,6 +358,7 @@ public:
 		tempState.reverbMode = NO_UPDATE_VALUE;
 		tempState.reverbTime = NO_UPDATE_VALUE;
 		tempState.reverbLevel = NO_UPDATE_VALUE;
+		stateSnapshot.midiMessageLEDState = qsynth.synth->getDisplayState(stateSnapshot.lcdState);
 	}
 
 	~RealtimeHelper() {
@@ -448,6 +466,11 @@ public:
 		enqueueSynthControlEvent(MIDI_CHANNELS_ASSIGNMENT_RESET);
 	}
 
+	void setMainDisplayMode() {
+		QMutexLocker settingsLocker(&settingsMutex);
+		enqueueSynthControlEvent(DISPLAY_RESET);
+	}
+
 	void resetSynth() {
 		QMutexLocker settingsLocker(&settingsMutex);
 		enqueueSynthControlEvent(SYNTH_RESET);
@@ -475,14 +498,6 @@ public:
 		}
 	}
 
-	void getPartStates(bool *partStates) {
-		QMutexLocker stateSnapshotLocker(&stateSnapshotMutex);
-		if (!qsynth.isOpen()) return;
-		for (int partIx = 0; partIx < PART_COUNT; partIx++) {
-			partStates[partIx] = stateSnapshot.partStates[partIx].active;
-		}
-	}
-
 	void getPartialStates(PartialState *partialStates) {
 		QMutexLocker stateSnapshotLocker(&stateSnapshotMutex);
 		if (!qsynth.isOpen()) return;
@@ -498,16 +513,18 @@ public:
 		return playingNotesCount;
 	}
 
+	bool getDisplayState(char *targetBuffer) {
+		QMutexLocker stateSnapshotLocker(&stateSnapshotMutex);
+		memcpy(targetBuffer, stateSnapshot.lcdState, LCD_MESSAGE_LENGTH);
+		return stateSnapshot.midiMessageLEDState;
+	}
+
 	void onLCDMessage(const char *message) {
 		memcpy(tempState.lcdMessage, message, LCD_MESSAGE_LENGTH - 1);
 	}
 
-	void onMIDIMessagePlayed() {
-		tempState.midiMessagePlayed = true;
-	}
-
-	void onMasterVolumeChanged(Bit8u masterVolume) {
-		tempState.masterVolumeUpdate = masterVolume;
+	void onMasterVolumeChanged(Bit8u useMasterVolume) {
+		tempState.masterVolumeUpdate = useMasterVolume;
 	}
 
 	void onReverbModeUpdated(Bit8u mode) {
@@ -530,6 +547,15 @@ public:
 		tempState.partStates[partNum].programChanged = true;
 		memcpy(tempState.partStates[partNum].soundGroupName, soundGroupName, SOUND_GROUP_NAME_LENGTH - 1);
 		memcpy(tempState.partStates[partNum].timbreName, patchName, TIMBRE_NAME_LENGTH - 1);
+	}
+
+	void onLCDStateUpdated() {
+		tempState.lcdStateUpdated = true;
+	}
+
+	void onMidiMessageLEDStateUpdated(bool ledState) {
+		tempState.midiMessageLEDState = ledState;
+		tempState.midiMessageLEDStateUpdated = true;
 	}
 };
 
@@ -560,14 +586,6 @@ void QReportHandler::onErrorControlROM() {
 
 void QReportHandler::onErrorPCMROM() {
 	QMessageBox::critical(NULL, "Cannot open Synth", "PCM ROM file cannot be opened.");
-}
-
-void QReportHandler::onMIDIMessagePlayed() {
-	if (qSynth()->isRealtime()) {
-		qSynth()->realtimeHelper->onMIDIMessagePlayed();
-	} else {
-		emit midiMessagePlayed();
-	}
 }
 
 void QReportHandler::onDeviceReconfig() {
@@ -630,20 +648,35 @@ void QReportHandler::onProgramChanged(Bit8u partNum, const char soundGroupName[]
 	}
 }
 
+void QReportHandler::onLCDStateUpdated() {
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onLCDStateUpdated();
+	} else {
+		emit lcdStateChanged();
+	}
+}
+
+void QReportHandler::onMidiMessageLEDStateUpdated(bool ledState) {
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onMidiMessageLEDStateUpdated(ledState);
+	} else {
+		emit midiMessageLEDStateChanged(ledState);
+	}
+}
+
 void QReportHandler::doShowLCDMessage(const char *message) {
 	qDebug() << "LCD-Message:" << message;
 	if (Master::getInstance()->getSettings()->value("Master/showLCDBalloons", true).toBool()) {
 		emit balloonMessageAppeared("LCD-Message:", message);
 	}
-	emit lcdMessageDisplayed(message);
 }
 
 QSynth::QSynth(QObject *parent) :
 	QObject(parent), state(SynthState_CLOSED), midiMutex(new QMutex), synthMutex(new QMutex),
-	controlROMImage(), pcmROMImage(), reportHandler(this), sampleRateConverter(),
+	controlROMImage(), pcmROMImage(), synth(), reportHandler(this), sampleRateConverter(),
 	audioRecorder(), realtimeHelper()
 {
-	synth = new Synth(&reportHandler);
+	createSynth();
 }
 
 QSynth::~QSynth() {
@@ -654,6 +687,12 @@ QSynth::~QSynth() {
 	delete synth;
 	delete synthMutex;
 	delete midiMutex;
+}
+
+void QSynth::createSynth() {
+	delete synth;
+	synth = new Synth;
+	synth->setReportHandler2(&reportHandler);
 }
 
 bool QSynth::isOpen() const {
@@ -782,8 +821,7 @@ bool QSynth::open(uint &targetSampleRate, SamplerateConversionQuality srcQuality
 		sampleRateConverter = new SampleRateConverter(*synth, targetSampleRate, srcQuality);
 		return true;
 	}
-	delete synth;
-	synth = new Synth(&reportHandler);
+	createSynth();
 	setState(SynthState_CLOSED);
 	freeROMImages();
 	return false;
@@ -944,16 +982,6 @@ const QString QSynth::getPatchName(int partNum) const {
 	return name;
 }
 
-void QSynth::getPartStates(bool *partStates) const {
-	if (isRealtime()) {
-		realtimeHelper->getPartStates(partStates);
-	} else {
-		QMutexLocker synthLocker(synthMutex);
-		if (!isOpen()) return;
-		synth->getPartStates(partStates);
-	}
-}
-
 void QSynth::getPartialStates(PartialState *partialStates) const {
 	if (isRealtime()) {
 		realtimeHelper->getPartialStates(partialStates);
@@ -984,6 +1012,23 @@ uint QSynth::getSynthSampleRate() const {
 bool QSynth::isActive() const {
 	QMutexLocker synthLocker(synthMutex);
 	return isOpen() && synth->isActive();
+}
+
+bool QSynth::getDisplayState(char *targetBuffer) const {
+	if (isRealtime()) {
+		return realtimeHelper->getDisplayState(targetBuffer);
+	}
+	QMutexLocker synthLocker(synthMutex);
+	return synth->getDisplayState(targetBuffer);
+}
+
+void QSynth::setMainDisplayMode() {
+	if (isRealtime()) {
+		realtimeHelper->setMainDisplayMode();
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		synth->setMainDisplayMode();
+	}
 }
 
 void QSynth::reset() const {
@@ -1023,8 +1068,7 @@ void QSynth::close() {
 		QMutexLocker synthLocker(synthMutex);
 		synth->close();
 		// This effectively resets rendered frame counter, audioStream is also going down
-		delete synth;
-		synth = new Synth(&reportHandler);
+		createSynth();
 		delete sampleRateConverter;
 		sampleRateConverter = NULL;
 	}
