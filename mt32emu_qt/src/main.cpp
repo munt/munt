@@ -21,6 +21,9 @@
 #include "Master.h"
 
 int main(int argv, char **args) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
 	QApplication app(argv, args);
 	app.setApplicationName("Munt mt32emu-qt");
 	app.setQuitOnLastWindowClosed(false);

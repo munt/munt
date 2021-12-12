@@ -6,6 +6,10 @@ HEAD:
 	  error. The built-in LCD font has been reworked as well to closely match the hardware one
 	  yet the new appearance makes the grid of pixels visible. Clicking on the LCD now resets
 	  it to the main (Master Volume) mode. (#50, #66)
+	* Enabled the built-in Qt support for high-dpi displays which should improve the UI look
+	  on Windows systems mainly. The Qt library version 5.6 or above is required for this
+	  function to work. In order to explicitly disable UI scaling, the user may set environment
+	  variable QT_AUTO_SCREEN_SCALE_FACTOR to 0. (#79)
 
 2021-05-22:
 
