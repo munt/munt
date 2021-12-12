@@ -562,6 +562,25 @@ MT32EMU_EXPORT const char *mt32emu_get_patch_name(mt32emu_const_context context,
 /** Stores internal state of emulated synth into an array provided (as it would be acquired from hardware). */
 MT32EMU_EXPORT void mt32emu_read_memory(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data);
 
+/**
+ * Retrieves the current state of the emulated MT-32 display facilities.
+ * Typically, the state is updated during the rendering. When that happens, a related callback from mt32emu_report_handler_i_v1
+ * is invoked. However, there might be no need to invoke this method after each update, e.g. when the render buffer is just
+ * a few milliseconds long.
+ * The argument target_buffer must point to an array of at least 21 characters. The result is a null-terminated string.
+ * The argument narrow_lcd enables a condensed representation of the displayed information in some cases. This is mainly intended
+ * to route the result to a hardware LCD that is only 16 characters wide. Automatic scrolling of longer strings is not supported.
+ * Returns whether the MIDI MESSAGE LED is ON and fills the target_buffer parameter.
+ */
+MT32EMU_EXPORT_V(2.6) mt32emu_boolean mt32emu_get_display_state(mt32emu_const_context context, char *target_buffer, const mt32emu_boolean narrow_lcd);
+
+/**
+ * Resets the emulated LCD to the main mode (Master Volume). This has the same effect as pressing the Master Volume button
+ * while the display shows some other message. Useful for the new-gen devices as those require a special Display Reset SysEx
+ * to return to the main mode e.g. from showing a custom display message or a checksum error.
+ */
+MT32EMU_EXPORT_V(2.6) void mt32emu_set_main_display_mode(mt32emu_const_context context);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

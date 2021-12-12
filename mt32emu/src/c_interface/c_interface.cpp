@@ -43,7 +43,7 @@ static mt32emu_service_version getSynthVersionID(mt32emu_service_i) {
 	return MT32EMU_SERVICE_VERSION_CURRENT;
 }
 
-static const mt32emu_service_i_v4 SERVICE_VTABLE = {
+static const mt32emu_service_i_v5 SERVICE_VTABLE = {
 	getSynthVersionID,
 	mt32emu_get_supported_report_handler_version,
 	mt32emu_get_supported_midi_receiver_version,
@@ -127,13 +127,15 @@ static const mt32emu_service_i_v4 SERVICE_VTABLE = {
 	mt32emu_identify_rom_file,
 	mt32emu_merge_and_add_rom_data,
 	mt32emu_merge_and_add_rom_files,
-	mt32emu_add_machine_rom_file
+	mt32emu_add_machine_rom_file,
+	mt32emu_get_display_state,
+	mt32emu_set_main_display_mode
 };
 
 } // namespace MT32Emu
 
 struct mt32emu_data {
-	ReportHandler *reportHandler;
+	ReportHandler2 *reportHandler;
 	Synth *synth;
 	const ROMImage *controlROMImage;
 	const ROMImage *pcmROMImage;
@@ -147,16 +149,19 @@ struct mt32emu_data {
 
 namespace MT32Emu {
 
-class DelegatingReportHandlerAdapter : public ReportHandler {
+class DelegatingReportHandlerAdapter : public ReportHandler2 {
 public:
 	DelegatingReportHandlerAdapter(mt32emu_report_handler_i useReportHandler, void *useInstanceData) :
 		delegate(useReportHandler), instanceData(useInstanceData) {}
 
-protected:
+private:
 	const mt32emu_report_handler_i delegate;
 	void * const instanceData;
 
-private:
+	bool isVersionLess(mt32emu_report_handler_version versionID) {
+		return delegate.v0->getVersionID(delegate) < versionID;
+	}
+
 	void printDebug(const char *fmt, va_list list) {
 		if (delegate.v0->printDebug == NULL) {
 			ReportHandler::printDebug(fmt, list);
@@ -265,6 +270,22 @@ private:
 			ReportHandler::onProgramChanged(partNum, soundGroupName, patchName);
 		} else {
 			delegate.v0->onProgramChanged(instanceData, partNum, soundGroupName, patchName);
+		}
+	}
+
+	void onLCDStateUpdated() {
+		if (isVersionLess(MT32EMU_REPORT_HANDLER_VERSION_1) || delegate.v1->onLCDStateUpdated == NULL) {
+			ReportHandler2::onLCDStateUpdated();
+		} else {
+			delegate.v1->onLCDStateUpdated(instanceData);
+		}
+	}
+
+	void onMidiMessageLEDStateUpdated(bool ledState) {
+		if (isVersionLess(MT32EMU_REPORT_HANDLER_VERSION_1) || delegate.v1->onMidiMessageLEDStateUpdated == NULL) {
+			ReportHandler2::onMidiMessageLEDStateUpdated(ledState);
+		} else {
+			delegate.v1->onMidiMessageLEDStateUpdated(instanceData, ledState ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE);
 		}
 	}
 };
@@ -438,7 +459,7 @@ extern "C" {
 
 mt32emu_service_i mt32emu_get_service_i() {
 	mt32emu_service_i i;
-	i.v4 = &SERVICE_VTABLE;
+	i.v5 = &SERVICE_VTABLE;
 	return i;
 }
 
@@ -515,8 +536,13 @@ mt32emu_return_code mt32emu_identify_rom_file(mt32emu_rom_info *rom_info, const 
 
 mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instance_data) {
 	mt32emu_data *data = new mt32emu_data;
-	data->reportHandler = (report_handler.v0 != NULL) ? new DelegatingReportHandlerAdapter(report_handler, instance_data) : new ReportHandler;
-	data->synth = new Synth(data->reportHandler);
+	data->synth = new Synth;
+	if (report_handler.v0 != NULL) {
+		data->reportHandler = new DelegatingReportHandlerAdapter(report_handler, instance_data);
+		data->synth->setReportHandler2(data->reportHandler);
+	} else {
+		data->reportHandler = NULL;
+	}
 	data->midiParser = new DefaultMidiStreamParser(*data->synth);
 	data->controlROMImage = NULL;
 	data->pcmROMImage = NULL;
@@ -908,6 +934,14 @@ const char *mt32emu_get_patch_name(mt32emu_const_context context, mt32emu_bit8u 
 
 void mt32emu_read_memory(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data) {
 	context->synth->readMemory(addr, len, data);
+}
+
+mt32emu_boolean mt32emu_get_display_state(mt32emu_const_context context, char *target_buffer, const mt32emu_boolean narrow_lcd) {
+	return context->synth->getDisplayState(target_buffer, narrow_lcd != MT32EMU_BOOL_FALSE) ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
+}
+
+void mt32emu_set_main_display_mode(mt32emu_const_context context) {
+	context->synth->setMainDisplayMode();
 }
 
 } // extern "C"

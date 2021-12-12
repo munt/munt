@@ -55,6 +55,7 @@ private:
 	bool holdpedal;
 
 	unsigned int activePartialCount;
+	unsigned int activeNonReleasingPolyCount;
 	PatchCache patchCache[4];
 	PolyList activePolys;
 
@@ -122,6 +123,7 @@ public:
 
 	// This should only be called by Poly
 	void partialDeactivated(Poly *poly);
+	virtual void polyStateChanged(PolyState oldState, PolyState newState);
 
 	// These are rather specialised, and should probably only be used by PartialManager
 	bool abortFirstPoly(PolyState polyState);
@@ -146,6 +148,7 @@ public:
 	unsigned int getAbsTimbreNum() const;
 	void setPan(unsigned int midiPan);
 	void setProgram(unsigned int patchNum);
+	void polyStateChanged(PolyState oldState, PolyState newState);
 };
 
 } // namespace MT32Emu

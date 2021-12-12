@@ -111,7 +111,8 @@ typedef struct {
 /** Report handler interface versions */
 typedef enum {
 	MT32EMU_REPORT_HANDLER_VERSION_0 = 0,
-	MT32EMU_REPORT_HANDLER_VERSION_CURRENT = MT32EMU_REPORT_HANDLER_VERSION_0
+	MT32EMU_REPORT_HANDLER_VERSION_1 = 1,
+	MT32EMU_REPORT_HANDLER_VERSION_CURRENT = MT32EMU_REPORT_HANDLER_VERSION_1
 } mt32emu_report_handler_version;
 
 /** MIDI receiver interface versions */
@@ -127,7 +128,8 @@ typedef enum {
 	MT32EMU_SERVICE_VERSION_2 = 2,
 	MT32EMU_SERVICE_VERSION_3 = 3,
 	MT32EMU_SERVICE_VERSION_4 = 4,
-	MT32EMU_SERVICE_VERSION_CURRENT = MT32EMU_SERVICE_VERSION_4
+	MT32EMU_SERVICE_VERSION_5 = 5,
+	MT32EMU_SERVICE_VERSION_CURRENT = MT32EMU_SERVICE_VERSION_5
 } mt32emu_service_version;
 
 /* === Report Handler Interface === */
@@ -135,41 +137,58 @@ typedef enum {
 typedef union mt32emu_report_handler_i mt32emu_report_handler_i;
 
 /** Interface for handling reported events (initial version) */
-typedef struct {
-	/** Returns the actual interface version ID */
-	mt32emu_report_handler_version (*getVersionID)(mt32emu_report_handler_i i);
-
-	/** Callback for debug messages, in vprintf() format */
-	void (*printDebug)(void *instance_data, const char *fmt, va_list list);
-	/** Callbacks for reporting errors */
-	void (*onErrorControlROM)(void *instance_data);
-	void (*onErrorPCMROM)(void *instance_data);
-	/** Callback for reporting about displaying a new custom message on LCD */
-	void (*showLCDMessage)(void *instance_data, const char *message);
-	/** Callback for reporting actual processing of a MIDI message */
-	void (*onMIDIMessagePlayed)(void *instance_data);
+#define MT32EMU_REPORT_HANDLER_I_V0 \
+	/** Returns the actual interface version ID */ \
+	mt32emu_report_handler_version (*getVersionID)(mt32emu_report_handler_i i); \
+\
+	/** Callback for debug messages, in vprintf() format */ \
+	void (*printDebug)(void *instance_data, const char *fmt, va_list list); \
+	/** Callbacks for reporting errors */ \
+	void (*onErrorControlROM)(void *instance_data); \
+	void (*onErrorPCMROM)(void *instance_data); \
+	/** Callback for reporting about displaying a new custom message on LCD */ \
+	void (*showLCDMessage)(void *instance_data, const char *message); \
+	/** Callback for reporting actual processing of a MIDI message */ \
+	void (*onMIDIMessagePlayed)(void *instance_data); \
 	/**
 	 * Callback for reporting an overflow of the input MIDI queue.
 	 * Returns MT32EMU_BOOL_TRUE if a recovery action was taken
 	 * and yet another attempt to enqueue the MIDI event is desired.
-	 */
-	mt32emu_boolean (*onMIDIQueueOverflow)(void *instance_data);
+	 */ \
+	mt32emu_boolean (*onMIDIQueueOverflow)(void *instance_data); \
 	/**
 	 * Callback invoked when a System Realtime MIDI message is detected in functions
 	 * mt32emu_parse_stream and mt32emu_play_short_message and the likes.
-	 */
-	void (*onMIDISystemRealtime)(void *instance_data, mt32emu_bit8u system_realtime);
-	/** Callbacks for reporting system events */
-	void (*onDeviceReset)(void *instance_data);
-	void (*onDeviceReconfig)(void *instance_data);
-	/** Callbacks for reporting changes of reverb settings */
-	void (*onNewReverbMode)(void *instance_data, mt32emu_bit8u mode);
-	void (*onNewReverbTime)(void *instance_data, mt32emu_bit8u time);
-	void (*onNewReverbLevel)(void *instance_data, mt32emu_bit8u level);
-	/** Callbacks for reporting various information */
-	void (*onPolyStateChanged)(void *instance_data, mt32emu_bit8u part_num);
+	 */ \
+	void (*onMIDISystemRealtime)(void *instance_data, mt32emu_bit8u system_realtime); \
+	/** Callbacks for reporting system events */ \
+	void (*onDeviceReset)(void *instance_data); \
+	void (*onDeviceReconfig)(void *instance_data); \
+	/** Callbacks for reporting changes of reverb settings */ \
+	void (*onNewReverbMode)(void *instance_data, mt32emu_bit8u mode); \
+	void (*onNewReverbTime)(void *instance_data, mt32emu_bit8u time); \
+	void (*onNewReverbLevel)(void *instance_data, mt32emu_bit8u level); \
+	/** Callbacks for reporting various information */ \
+	void (*onPolyStateChanged)(void *instance_data, mt32emu_bit8u part_num); \
 	void (*onProgramChanged)(void *instance_data, mt32emu_bit8u part_num, const char *sound_group_name, const char *patch_name);
+
+#define MT32EMU_REPORT_HANDLER_I_V1 \
+	/**
+	 * Invoked to signal about a change of the emulated LCD state. Use mt32emu_get_display_state to retrieve the actual data.
+	 * This callback will not be invoked on further changes, until the client retrieves the LCD state.
+	 */ \
+	void (*onLCDStateUpdated)(void *instance_data); \
+	/** Invoked when the emulated MIDI MESSAGE LED changes state. The led_state parameter represents whether the LED is ON. */ \
+	void (*onMidiMessageLEDStateUpdated)(void *instance_data, mt32emu_boolean led_state);
+
+typedef struct {
+	MT32EMU_REPORT_HANDLER_I_V0
 } mt32emu_report_handler_i_v0;
+
+typedef struct {
+	MT32EMU_REPORT_HANDLER_I_V0
+	MT32EMU_REPORT_HANDLER_I_V1
+} mt32emu_report_handler_i_v1;
 
 /**
  * Extensible interface for handling reported events.
@@ -178,7 +197,11 @@ typedef struct {
  */
 union mt32emu_report_handler_i {
 	const mt32emu_report_handler_i_v0 *v0;
+	const mt32emu_report_handler_i_v1 *v1;
 };
+
+#undef MT32EMU_REPORT_HANDLER_I_V0
+#undef MT32EMU_REPORT_HANDLER_I_V1
 
 /* === MIDI Receiver Interface === */
 
@@ -327,6 +350,10 @@ typedef union mt32emu_service_i mt32emu_service_i;
 	mt32emu_return_code (*mergeAndAddROMFiles)(mt32emu_context context, const char *part1_filename, const char *part2_filename); \
 	mt32emu_return_code (*addMachineROMFile)(mt32emu_context context, const char *machine_id, const char *filename);
 
+#define MT32EMU_SERVICE_I_V5 \
+	mt32emu_boolean (*getDisplayState)(mt32emu_const_context context, char *target_buffer, const mt32emu_boolean narrow_lcd); \
+	void (*setMainDisplayMode)(mt32emu_const_context context);
+
 typedef struct {
 	MT32EMU_SERVICE_I_V0
 } mt32emu_service_i_v0;
@@ -357,6 +384,15 @@ typedef struct {
 	MT32EMU_SERVICE_I_V4
 } mt32emu_service_i_v4;
 
+typedef struct {
+	MT32EMU_SERVICE_I_V0
+	MT32EMU_SERVICE_I_V1
+	MT32EMU_SERVICE_I_V2
+	MT32EMU_SERVICE_I_V3
+	MT32EMU_SERVICE_I_V4
+	MT32EMU_SERVICE_I_V5
+} mt32emu_service_i_v5;
+
 /**
  * Extensible interface for all the library services.
  * Union intended to view an interface of any subsequent version as any parent interface not requiring a cast.
@@ -368,6 +404,7 @@ union mt32emu_service_i {
 	const mt32emu_service_i_v2 *v2;
 	const mt32emu_service_i_v3 *v3;
 	const mt32emu_service_i_v4 *v4;
+	const mt32emu_service_i_v5 *v5;
 };
 
 #undef MT32EMU_SERVICE_I_V0
@@ -375,5 +412,6 @@ union mt32emu_service_i {
 #undef MT32EMU_SERVICE_I_V2
 #undef MT32EMU_SERVICE_I_V3
 #undef MT32EMU_SERVICE_I_V4
+#undef MT32EMU_SERVICE_I_V5
 
 #endif /* #ifndef MT32EMU_C_TYPES_H */

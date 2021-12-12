@@ -13,6 +13,11 @@ HEAD:
 	  * Updated the description of the module FindMT32EMU.cmake. It now creates the IMPORTED
 	    target MT32Emu::mt32emu upon success, similarly to the other scripts. Note, this module
 	    is not recommended for use with mt32emu version 2.6 and above. (#65)
+	* Introduced display emulation support that goes beyond the existing low-level API intended
+	  for retrieving the synth state details. The startup banner and the SysEx checksum error
+	  are now shown. We now also take care of the control ROM version to emulate the most
+	  prominent quirks. Additionally, there is a limited support for displaying the emulated LCD
+	  on narrow hardware LCDs that have width of 16 characters only. (#66)
 
 2021-08-07:
 

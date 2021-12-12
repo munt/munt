@@ -41,6 +41,8 @@ private:
 
 	Poly *next;
 
+	void setState(PolyState state);
+
 public:
 	Poly();
 	void setPart(Part *usePart);

@@ -109,6 +109,7 @@ endif(libmt32emu_SHARED)
 set(libmt32emu_SOURCES
   src/Analog.cpp
   src/BReverbModel.cpp
+  src/Display.cpp
   src/File.cpp
   src/FileStream.cpp
   src/LA32FloatWaveGenerator.cpp

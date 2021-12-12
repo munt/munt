@@ -113,8 +113,21 @@ public:
 	virtual void onProgramChanged(Bit8u /* partNum */, const char * /* soundGroupName */, const char * /* patchName */) {}
 };
 
+// Extends ReportHandler, so that the client may supply callbacks for reporting signals about updated display state.
+class MT32EMU_EXPORT_V(2.6) ReportHandler2 : public ReportHandler {
+public:
+	virtual ~ReportHandler2() {}
+
+	// Invoked to signal about a change of the emulated LCD state. Use method Synth::getDisplayState to retrieve the actual data.
+	// This callback will not be invoked on further changes, until the client retrieves the LCD state.
+	virtual void onLCDStateUpdated() {}
+	// Invoked when the emulated MIDI MESSAGE LED changes state. The ledState parameter represents whether the LED is ON.
+	virtual void onMidiMessageLEDStateUpdated(bool /* ledState */) {}
+};
+
 class Synth {
 friend class DefaultMidiStreamParser;
+friend class Display;
 friend class MemoryRegion;
 friend class Part;
 friend class Partial;
@@ -177,7 +190,7 @@ private:
 	bool opened;
 	bool activated;
 
-	bool isDefaultReportHandler;
+	bool isDefaultReportHandler; // No longer used, retained for binary compatibility only.
 	ReportHandler *reportHandler;
 
 	PartialManager *partialManager;
@@ -227,7 +240,10 @@ private:
 
 	void printPartialUsage(Bit32u sampleOffset = 0);
 
-	void newTimbreSet(Bit8u partNum, Bit8u timbreGroup, Bit8u timbreNumber, const char patchName[]);
+	void rhythmNotePlayed() const;
+	void voicePartStateChanged(Bit8u partNum, bool activated) const;
+	void newTimbreSet(Bit8u partNum) const;
+	const char *getSoundGroupName(const Part *part) const;
 	void printDebug(const char *fmt, ...);
 
 	// partNum should be 0..7 for Part 1..8, or 8 for Rhythm
@@ -289,6 +305,10 @@ public:
 	// Optionally sets callbacks for reporting various errors, information and debug messages
 	MT32EMU_EXPORT explicit Synth(ReportHandler *useReportHandler = NULL);
 	MT32EMU_EXPORT ~Synth();
+
+	// Sets an implementation of ReportHandler2 interface for reporting various errors, information and debug messages.
+	// If the argument is NULL, the default implementation is installed as a fallback.
+	MT32EMU_EXPORT_V(2.6) void setReportHandler2(ReportHandler2 *reportHandler2);
 
 	// Used to initialise the MT-32. Must be called before any other function.
 	// Returns true if initialization was successful, otherwise returns false.
@@ -533,6 +553,22 @@ public:
 
 	// Stores internal state of emulated synth into an array provided (as it would be acquired from hardware).
 	MT32EMU_EXPORT void readMemory(Bit32u addr, Bit32u len, Bit8u *data);
+
+	// Retrieves the current state of the emulated MT-32 display facilities.
+	// Typically, the state is updated during the rendering. When that happens, a related callback from ReportHandler2 is invoked.
+	// However, there might be no need to invoke this method after each update, e.g. when the render buffer is just a few milliseconds
+	// long.
+	// The argument targetBuffer must point to an array of at least 21 characters. The result is a null-terminated string.
+	// The optional argument narrowLCD enables a condensed representation of the displayed information in some cases. This is mainly
+	// intended to route the result to a hardware LCD that is only 16 characters wide. Automatic scrolling of longer strings
+	// is not supported.
+	// Returns whether the MIDI MESSAGE LED is ON and fills the targetBuffer parameter.
+	MT32EMU_EXPORT_V(2.6) bool getDisplayState(char *targetBuffer, bool narrowLCD = false) const;
+
+	// Resets the emulated LCD to the main mode (Master Volume). This has the same effect as pressing the Master Volume button
+	// while the display shows some other message. Useful for the new-gen devices as those require a special Display Reset SysEx
+	// to return to the main mode e.g. from showing a custom display message or a checksum error.
+	MT32EMU_EXPORT_V(2.6) void setMainDisplayMode();
 }; // class Synth
 
 } // namespace MT32Emu

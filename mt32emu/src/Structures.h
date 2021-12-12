@@ -192,6 +192,8 @@ struct ControlROMFeatureSet {
 	unsigned int quirkKeyShift : 1;
 	unsigned int quirkTVFBaseCutoffLimit : 1;
 	unsigned int quirkFastPitchChanges : 1;
+	unsigned int quirkDisplayCustomMessagePriority : 1;
+	unsigned int oldMT32DisplayFeatures : 1;
 
 	// Features below don't actually depend on control ROM version, which is used to identify hardware model
 	unsigned int defaultReverbMT32Compatible : 1;
@@ -222,6 +224,8 @@ struct ControlROMMap {
 	Bit16u timbreMaxTable; // 72 bytes
 	Bit16u soundGroupsTable; // 14 bytes each entry
 	Bit16u soundGroupsCount;
+	Bit16u startupMessage; // 20 characters + NULL terminator
+	Bit16u sysexErrorMessage; // 20 characters + NULL terminator
 };
 
 struct ControlROMPCMStruct {
