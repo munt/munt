@@ -140,15 +140,8 @@ void SynthStateMonitor::allocatePartialsData() {
 	velocitiesOfPlayingNotes = new Bit8u[partialCount];
 
 	partialStateLED = new LEDWidget*[partialCount];
-	unsigned int partialColumnWidth;
-	if (partialCount < 64) {
-		partialColumnWidth = 4;
-	} else if (partialCount < 128) {
-		partialColumnWidth = 8;
-	} else {
-		partialColumnWidth = 16;
-	}
-	for (unsigned int i = 0; i < partialCount; i++) {
+	uint partialColumnWidth = (partialCount + 7) / 8;
+	for (uint i = 0; i < partialCount; i++) {
 		partialStateLED[i] = new LEDWidget(&COLOR_GRAY, ui->partialStateGrid->widget());
 		partialStateLED[i]->setMinimumSize(16, 16);
 		partialStateLED[i]->setMaximumSize(16, 16);
