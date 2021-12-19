@@ -275,16 +275,16 @@ bool SynthRoute::playMIDISysex(MidiSession &midiSession, const Bit8u *sysex, Bit
 }
 
 void SynthRoute::discardMidiBuffers() {
-	if (!multiMidiMode) return;
-	QMutexLocker midiSessionsLocker(&midiSessionsMutex);
+	if (multiMidiMode) {
+		QMutexLocker midiSessionsLocker(&midiSessionsMutex);
 
-	for (int i = 0; i < midiSessions.size(); i++) {
-		QMidiBuffer *midiBuffer = midiSessions[i]->getQMidiBuffer();
-		while (midiBuffer->retieveEvents()) {
-			midiBuffer->discardEvents();
+		for (int i = 0; i < midiSessions.size(); i++) {
+			QMidiBuffer *midiBuffer = midiSessions[i]->getQMidiBuffer();
+			while (midiBuffer->retieveEvents()) {
+				midiBuffer->discardEvents();
+			}
 		}
 	}
-
 	qSynth.flushMIDIQueue();
 }
 
@@ -296,15 +296,13 @@ void SynthRoute::flushMIDIQueue() {
 // When renderingPassFrameLength == 0, all pending messages are merged.
 void SynthRoute::mergeMidiStreams(uint renderingPassFrameLength) {
 	quint64 renderingPassEndTimestamp;
-	{
-		if (renderingPassFrameLength > 0) {
-			RealtimeReadLocker audioStreamLocker(audioStreamLock);
-			// Occasionally, audioStream may appear NULL during startup.
-			if (!audioStreamLocker.isLocked() || audioStream == NULL) return;
-			renderingPassEndTimestamp = audioStream->computeMIDITimestamp(renderingPassFrameLength);
-		} else {
-			renderingPassEndTimestamp = std::numeric_limits<quint64>::max();
-		}
+	if (renderingPassFrameLength > 0) {
+		RealtimeReadLocker audioStreamLocker(audioStreamLock);
+		// Occasionally, audioStream may appear NULL during startup.
+		if (!audioStreamLocker.isLocked() || audioStream == NULL) return;
+		renderingPassEndTimestamp = audioStream->computeMIDITimestamp(renderingPassFrameLength);
+	} else {
+		renderingPassEndTimestamp = std::numeric_limits<quint64>::max();
 	}
 
 	QMutexLocker midiSessionsLocker(&midiSessionsMutex);

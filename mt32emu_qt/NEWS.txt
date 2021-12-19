@@ -1,5 +1,6 @@
 HEAD:
 
+	* Updated mt32emu library to version 2.6.0.
 	* Improved emulation of the MT-32 display. It now behaves a lot closer to the real device.
 	  The new behaviour depends on the control ROM version, so that the most prominent quirks
 	  are now emulated. Additionally, the LCD shows the startup banner and the SysEx checksum
@@ -10,6 +11,12 @@ HEAD:
 	  on Windows systems mainly. The Qt library version 5.6 or above is required for this
 	  function to work. In order to explicitly disable UI scaling, the user may set environment
 	  variable QT_AUTO_SCREEN_SCALE_FACTOR to 0. (#79)
+	* Changed layout of partial state LEDs in the grid to ensure that no more than 8 LED widgets
+	  are placed in a column. Previously, the layout grew vertically for some configured partial
+	  counts, rendered the channel status grid looking weird. Additionally, this helps the Qt
+	  layout calculator to work correctly with a high-dpi UI scaling on some systems.
+	* Fixed the standard MIDI file player occasionally failing to send all-sound-off sequence
+	  when stopping playback. (#80)
 
 2021-05-22:
 
