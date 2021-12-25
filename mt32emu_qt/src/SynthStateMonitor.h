@@ -92,6 +92,7 @@ private:
 	bool enabled;
 	uint partialCount;
 
+	bool updateLCD();
 	void allocatePartialsData();
 	void freePartialsData();
 

@@ -84,6 +84,10 @@ SynthStateMonitor::~SynthStateMonitor() {
 
 void SynthStateMonitor::enableMonitor(bool enable) {
 	enabled = enable;
+	if (enable) {
+		handleMidiMessageLEDUpdate(updateLCD());
+		handleAudioBlockRendered();
+	}
 }
 
 void SynthStateMonitor::handleSynthStateChange(SynthState state) {
@@ -117,9 +121,7 @@ void SynthStateMonitor::handleProgramChanged(int partNum, QString, QString patch
 }
 
 void SynthStateMonitor::handleLCDUpdate() {
-	if (!enabled) return;
-	synthRoute->getDisplayState(lcdWidget.lcdText);
-	lcdWidget.update();
+	if (enabled) updateLCD();
 }
 
 void SynthStateMonitor::handleMidiMessageLEDUpdate(bool midiMessageOn) {
@@ -132,6 +134,12 @@ void SynthStateMonitor::handleAudioBlockRendered() {
 	for (unsigned int partialNum = 0; partialNum < partialCount; partialNum++) {
 		partialStateLED[partialNum]->setColor(&partialStateColor[partialStates[partialNum]]);
 	}
+}
+
+bool SynthStateMonitor::updateLCD() {
+	bool ledState = synthRoute->getDisplayState(lcdWidget.lcdText);
+	lcdWidget.update();
+	return ledState;
 }
 
 void SynthStateMonitor::allocatePartialsData() {
