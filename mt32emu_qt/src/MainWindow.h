@@ -16,12 +16,11 @@ class AudioFileWriter;
 class MidiPlayerDialog;
 class MidiConverterDialog;
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
 	Q_OBJECT
 
 public:
-	explicit MainWindow(Master *master, QWidget *parent = 0);
+	explicit MainWindow(Master *master);
 	~MainWindow();
 
 protected:

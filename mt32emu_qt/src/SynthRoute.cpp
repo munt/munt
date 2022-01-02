@@ -212,8 +212,16 @@ bool SynthRoute::connectSynth(const char *signal, const QObject *receiver, const
 	return QObject::connect(&qSynth, signal, receiver, slot);
 }
 
+bool SynthRoute::disconnectSynth(const char *signal, const QObject *receiver, const char *slot) const {
+	return QObject::disconnect(&qSynth, signal, receiver, slot);
+}
+
 bool SynthRoute::connectReportHandler(const char *signal, const QObject *receiver, const char *slot) const {
 	return QObject::connect(qSynth.getReportHandler(), signal, receiver, slot);
+}
+
+bool SynthRoute::disconnectReportHandler(const char *signal, const QObject *receiver, const char *slot) const {
+	return QObject::disconnect(qSynth.getReportHandler(), signal, receiver, slot);
 }
 
 bool SynthRoute::pushMIDIShortMessage(MidiSession &midiSession, Bit32u msg, MasterClockNanos refNanos) {

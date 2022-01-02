@@ -43,8 +43,8 @@
 #include "MidiPlayerDialog.h"
 #include "MidiConverterDialog.h"
 
-MainWindow::MainWindow(Master *master, QWidget *parent) :
-	QMainWindow(parent),
+MainWindow::MainWindow(Master *master) :
+	QMainWindow(),
 	ui(new Ui::MainWindow),
 	master(master),
 	testMidiDriver(NULL),

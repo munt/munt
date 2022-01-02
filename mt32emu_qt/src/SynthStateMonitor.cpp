@@ -22,9 +22,9 @@
 
 static const QColor COLOR_GRAY(100, 100, 100);
 static const QColor COLOR_GREEN(Qt::green);
-static const QColor lcdUnlitColor = QColor::fromRgba(0x32F2FEEDU);
-static const QColor lcdLitColor = QColor::fromRgb(0xCAFB10U);
-static const QColor partialStateColor[] = {COLOR_GRAY, Qt::red, Qt::yellow, Qt::green};
+static const QColor LCD_UNLIT_COLOR = QColor::fromRgba(0x32F2FEEDU);
+static const QColor LCD_LIT_COLOR = QColor::fromRgb(0xCAFB10U);
+static const QColor PARTIAL_STATE_COLORS[] = {COLOR_GRAY, Qt::red, Qt::yellow, Qt::green};
 
 static const uint LCD_BOTTOM_ROW_INDEX = 6;
 static const uint LCD_ROW_COUNT = 8;
@@ -39,14 +39,19 @@ static const QPoint LCD_CONTENT_INSETS(8, 10);
 
 using namespace MT32Emu;
 
+static inline void updateMidiMessageLED(LEDWidget &midiMessageLED, bool midiMessageOn) {
+	midiMessageLED.setColor(midiMessageOn ? &COLOR_GREEN : &COLOR_GRAY);
+}
+
 SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRoute) :
 	synthRoute(useSynthRoute),
 	ui(ui),
-	lcdWidget(*this, ui->synthFrame),
+	lcdWidget(ui->synthFrame),
 	midiMessageLED(&COLOR_GRAY, ui->midiMessageFrame)
 {
 	partialCount = useSynthRoute->getPartialCount();
 	allocatePartialsData();
+	lcdWidget.setSynthRoute(useSynthRoute);
 
 	QSizePolicy lcdWidgetPolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 	lcdWidgetPolicy.setHeightForWidth(true);
@@ -67,11 +72,8 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 
 	handleSynthStateChange(synthRoute->getState() == SynthRouteState_OPEN ? SynthState_OPEN : SynthState_CLOSED);
 	synthRoute->connectSynth(SIGNAL(stateChanged(SynthState)), this, SLOT(handleSynthStateChange(SynthState)));
-	synthRoute->connectSynth(SIGNAL(audioBlockRendered()), this, SLOT(handleAudioBlockRendered()));
 	synthRoute->connectReportHandler(SIGNAL(programChanged(int, QString, QString)), this, SLOT(handleProgramChanged(int, QString, QString)));
 	synthRoute->connectReportHandler(SIGNAL(polyStateChanged(int)), this, SLOT(handlePolyStateChanged(int)));
-	synthRoute->connectReportHandler(SIGNAL(lcdStateChanged()), this, SLOT(handleLCDUpdate()));
-	synthRoute->connectReportHandler(SIGNAL(midiMessageLEDStateChanged(bool)), this, SLOT(handleMidiMessageLEDUpdate(bool)));
 }
 
 SynthStateMonitor::~SynthStateMonitor() {
@@ -82,23 +84,31 @@ SynthStateMonitor::~SynthStateMonitor() {
 	freePartialsData();
 }
 
-void SynthStateMonitor::enableMonitor(bool enable) {
-	enabled = enable;
-	if (enable) {
-		handleMidiMessageLEDUpdate(updateLCD());
+void SynthStateMonitor::enableMonitor(bool enabled) {
+	if (enabled) {
+		synthRoute->connectReportHandler(SIGNAL(lcdStateChanged()), &lcdWidget, SLOT(handleLCDUpdate()));
+		synthRoute->connectReportHandler(SIGNAL(midiMessageLEDStateChanged(bool)), this, SLOT(handleMidiMessageLEDUpdate(bool)));
+		synthRoute->connectSynth(SIGNAL(audioBlockRendered()), this, SLOT(handleAudioBlockRendered()));
+		updateMidiMessageLED(midiMessageLED, lcdWidget.updateDisplayText());
 		handleAudioBlockRendered();
+	} else {
+		synthRoute->disconnectReportHandler(SIGNAL(lcdStateChanged()), &lcdWidget, SLOT(handleLCDUpdate()));
+		synthRoute->disconnectReportHandler(SIGNAL(midiMessageLEDStateChanged(bool)), this, SLOT(handleMidiMessageLEDUpdate(bool)));
+		synthRoute->disconnectSynth(SIGNAL(audioBlockRendered()), this, SLOT(handleAudioBlockRendered()));
 	}
 }
 
 void SynthStateMonitor::handleSynthStateChange(SynthState state) {
 	enableMonitor(state == SynthState_OPEN);
-	midiMessageLED.setColor(&COLOR_GRAY);
-	handleLCDUpdate();
+	if (state != SynthState_OPEN) {
+		lcdWidget.update();
+		updateMidiMessageLED(midiMessageLED, false);
+	}
 
 	uint newPartialCount = synthRoute->getPartialCount();
 	if (partialCount == newPartialCount || state != SynthState_OPEN) {
 		for (unsigned int i = 0; i < partialCount; i++) {
-			partialStateLED[i]->setColor(&partialStateColor[PartialState_INACTIVE]);
+			partialStateLED[i]->setColor(&PARTIAL_STATE_COLORS[PartialState_INACTIVE]);
 		}
 	} else {
 		freePartialsData();
@@ -120,26 +130,15 @@ void SynthStateMonitor::handleProgramChanged(int partNum, QString, QString patch
 	patchNameLabel[partNum]->setText(patchName);
 }
 
-void SynthStateMonitor::handleLCDUpdate() {
-	if (enabled) updateLCD();
-}
-
 void SynthStateMonitor::handleMidiMessageLEDUpdate(bool midiMessageOn) {
-	if (enabled) midiMessageLED.setColor(midiMessageOn ? &COLOR_GREEN : &COLOR_GRAY);
+	updateMidiMessageLED(midiMessageLED, midiMessageOn);
 }
 
 void SynthStateMonitor::handleAudioBlockRendered() {
-	if (!enabled) return;
 	synthRoute->getPartialStates(partialStates);
 	for (unsigned int partialNum = 0; partialNum < partialCount; partialNum++) {
-		partialStateLED[partialNum]->setColor(&partialStateColor[partialStates[partialNum]]);
+		partialStateLED[partialNum]->setColor(&PARTIAL_STATE_COLORS[partialStates[partialNum]]);
 	}
-}
-
-bool SynthStateMonitor::updateLCD() {
-	bool ledState = synthRoute->getDisplayState(lcdWidget.lcdText);
-	lcdWidget.update();
-	return ledState;
 }
 
 void SynthStateMonitor::allocatePartialsData() {
@@ -202,19 +201,29 @@ void PartStateWidget::paintEvent(QPaintEvent *) {
 		uint velocity = monitor.velocitiesOfPlayingNotes[playingNotes];
 		if (velocity == 0) continue;
 		QColor color(2 * velocity, 255 - 2 * velocity, 0);
-		uint x  = 5 * (monitor.keysOfPlayingNotes[playingNotes] - 12);
+		uint x = 5 * (monitor.keysOfPlayingNotes[playingNotes] - 12);
 		painter.fillRect(x, 0, 5, 16, color);
 	}
 }
 
-LCDWidget::LCDWidget(const SynthStateMonitor &monitor, QWidget *parent) :
+LCDWidget::LCDWidget(QWidget *parent) :
 	QWidget(parent),
-	monitor(monitor),
+	synthRoute(),
 	lcdOffBackground(":/images/LCDOff.gif"),
 	lcdOnBackground(":/images/LCDOn.gif")
 {}
 
-int LCDWidget::heightForWidth (int useWidth) const {
+void LCDWidget::setSynthRoute(SynthRoute *useSynthRoute) {
+	synthRoute = useSynthRoute;
+}
+
+bool LCDWidget::updateDisplayText() {
+	bool ledState = synthRoute == NULL ? false : synthRoute->getDisplayState(lcdText);
+	update();
+	return ledState;
+}
+
+int LCDWidget::heightForWidth(int useWidth) const {
 	return useWidth * lcdOnBackground.height() / lcdOnBackground.width();
 }
 
@@ -223,7 +232,7 @@ void LCDWidget::paintEvent(QPaintEvent *) {
 	lcdPainter.setRenderHint(QPainter::Antialiasing, true);
 	qreal scaleFactor = qreal(width()) / lcdOnBackground.width();
 	lcdPainter.scale(scaleFactor, scaleFactor);
-	bool open = monitor.synthRoute->getState() == SynthRouteState_OPEN;
+	bool open = synthRoute != NULL && synthRoute->getState() == SynthRouteState_OPEN;
 	lcdPainter.drawPixmap(0, 0, open ? lcdOnBackground : lcdOffBackground);
 	if (!open) return;
 	lcdPainter.translate(LCD_CONTENT_INSETS);
@@ -257,7 +266,7 @@ void LCDWidget::paintEvent(QPaintEvent *) {
 		for (uint rowIndex = 0; rowIndex < LCD_ROW_COUNT; rowIndex++) {
 			uchar row = Font_6x8[charCode][rowIndex];
 			for (uint mask = 0x10; mask > 0; mask >>= 1) {
-				const QColor &color = (row & mask) ? lcdLitColor : lcdUnlitColor;
+				const QColor &color = (row & mask) ? LCD_LIT_COLOR : LCD_UNLIT_COLOR;
 				lcdPainter.fillRect(rect, color);
 				rect.moveLeft(rect.x() + LCD_PIXEL_SIZE_WITH_SPACING);
 			}
@@ -271,5 +280,9 @@ void LCDWidget::paintEvent(QPaintEvent *) {
 }
 
 void LCDWidget::mousePressEvent(QMouseEvent *) {
-	monitor.synthRoute->setMainDisplayMode();
+	if (synthRoute != NULL) synthRoute->setMainDisplayMode();
+}
+
+void LCDWidget::handleLCDUpdate() {
+	updateDisplayText();
 }

@@ -46,29 +46,30 @@ private:
 class LCDWidget : public QWidget {
 	Q_OBJECT
 
-friend class SynthStateMonitor;
-
 public:
-	explicit LCDWidget(const SynthStateMonitor &monitor, QWidget *parent = 0);
+	explicit LCDWidget(QWidget *parent = NULL);
 
-protected:
+	void setSynthRoute(SynthRoute *synthRoute);
+	bool updateDisplayText();
+
+private:
+	SynthRoute *synthRoute;
+	const QPixmap lcdOffBackground;
+	const QPixmap lcdOnBackground;
+	char lcdText[21];
+
 	int heightForWidth (int) const;
 	void paintEvent(QPaintEvent *);
 	void mousePressEvent(QMouseEvent *);
 
-private:
-	const SynthStateMonitor &monitor;
-	const QPixmap lcdOffBackground;
-	const QPixmap lcdOnBackground;
-
-	char lcdText[21];
+private slots:
+	void handleLCDUpdate();
 };
 
 class SynthStateMonitor : public QObject {
 	Q_OBJECT
 
 friend class PartStateWidget;
-friend class LCDWidget;
 
 public:
 	SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRoute);
@@ -89,10 +90,8 @@ private:
 	MT32Emu::Bit8u *keysOfPlayingNotes;
 	MT32Emu::Bit8u *velocitiesOfPlayingNotes;
 
-	bool enabled;
 	uint partialCount;
 
-	bool updateLCD();
 	void allocatePartialsData();
 	void freePartialsData();
 
@@ -100,7 +99,6 @@ private slots:
 	void handleSynthStateChange(SynthState);
 	void handlePolyStateChanged(int partNum);
 	void handleProgramChanged(int partNum, QString soundGroupName, QString patchName);
-	void handleLCDUpdate();
 	void handleMidiMessageLEDUpdate(bool);
 	void handleAudioBlockRendered();
 };

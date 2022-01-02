@@ -88,7 +88,6 @@ signals:
 	void synthRouteAdded(SynthRoute *route, const AudioDevice *audioDevice, bool pinnable);
 	void synthRouteRemoved(SynthRoute *route);
 	void synthRoutePinned();
-	void synthRoutePinnable();
 	void romsLoadFailed(bool &recoveryAttempted);
 	void playMidiFiles(const QStringList &);
 	void convertMidiFiles(const QStringList &);
