@@ -271,10 +271,10 @@ void TVA::nextPhase() {
 	}
 
 	bool allLevelsZeroFromNowOn = false;
-	if (!partial->getSynth()->controlROMFeatures->quirkTVAZeroEnvLevels && partialParam->tva.envLevel[3] == 0) {
+	if (partialParam->tva.envLevel[3] == 0) {
 		if (newPhase == TVA_PHASE_4) {
 			allLevelsZeroFromNowOn = true;
-		} else if (partialParam->tva.envLevel[2] == 0) {
+		} else if (!partial->getSynth()->controlROMFeatures->quirkTVAZeroEnvLevels && partialParam->tva.envLevel[2] == 0) {
 			if (newPhase == TVA_PHASE_3) {
 				allLevelsZeroFromNowOn = true;
 			} else if (partialParam->tva.envLevel[1] == 0) {

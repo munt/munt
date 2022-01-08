@@ -18,6 +18,8 @@ HEAD:
 	  are now shown. We now also take care of the control ROM version to emulate the most
 	  prominent quirks. Additionally, there is a limited support for displaying the emulated LCD
 	  on narrow hardware LCDs that have width of 16 characters only. (#66)
+	* Fixed emulation of a TVA quirk the old-gen devices exhibit when playing a partial with
+	  zero TVA ENV SUSTAIN LEVEL. (#82)
 
 2021-08-07:
 
