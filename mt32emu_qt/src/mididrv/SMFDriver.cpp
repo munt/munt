@@ -24,9 +24,9 @@
 
 static const MasterClockNanos MAX_SLEEP_TIME = 200 * MasterClock::NANOS_PER_MILLISECOND;
 
-static void sendAllSoundOff(SynthRoute *synthRoute, bool resetAllControllers) {
+static void sendAllSoundOff(SynthRoute *synthRoute, bool resetAllControllers, bool discardMidiBuffers) {
 	if (synthRoute->getState() != SynthRouteState_OPEN) return;
-	if (resetAllControllers) {
+	if (discardMidiBuffers) {
 		synthRoute->discardMidiBuffers();
 	} else {
 		synthRoute->flushMIDIQueue();
@@ -83,7 +83,7 @@ void SMFProcessor::run() {
 			if (driver->pauseProcessing) {
 				if (!paused) {
 					paused = true;
-					sendAllSoundOff(synthRoute, false);
+					sendAllSoundOff(synthRoute, false, false);
 				}
 				usleep(MAX_SLEEP_TIME / MasterClock::NANOS_PER_MICROSECOND);
 				MasterClockNanos delay = MasterClock::getClockNanos() - nanosNow;
@@ -97,17 +97,17 @@ void SMFProcessor::run() {
 				MasterClockNanos seekNanosSinceStart = totalSeconds * seekPosition * MasterClock::NANOS_PER_MILLISECOND;
 				MasterClockNanos currentNanosSinceStart = currentNanos - startNanos;
 				MasterClockNanos lastEventNanosSinceStart = currentNanosSinceStart - midiEvents.at(currentEventIx).getTimestamp() * midiTick;
-				bool resetAllControllers;
+				bool rewind;
 				if (seekNanosSinceStart < lastEventNanosSinceStart || seekNanosSinceStart == 0) {
 					midiTick = parser.getMidiTick();
 					emit driver->tempoUpdated(0);
 					currentEventIx = 0;
 					currentNanosSinceStart = midiEvents.at(currentEventIx).getTimestamp() * midiTick;
-					resetAllControllers = true;
+					rewind = true;
 				} else {
-					resetAllControllers = false;
+					rewind = false;
 				}
-				sendAllSoundOff(synthRoute, resetAllControllers);
+				sendAllSoundOff(synthRoute, rewind, rewind);
 				seek(synthRoute, midiEvents, currentEventIx, currentNanosSinceStart, seekNanosSinceStart);
 				nanosNow = MasterClock::getClockNanos();
 				startNanos = nanosNow - seekNanosSinceStart;
@@ -144,7 +144,7 @@ void SMFProcessor::run() {
 				break;
 		}
 	}
-	sendAllSoundOff(synthRoute, true);
+	sendAllSoundOff(synthRoute, true, false);
 	emit driver->playbackTimeChanged(0, 0);
 	qDebug() << "SMFDriver: processor thread stopped";
 	driver->deleteMidiSession(session);

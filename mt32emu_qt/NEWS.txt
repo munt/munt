@@ -16,7 +16,7 @@ HEAD:
 	  counts, rendered the channel status grid looking weird. Additionally, this helps the Qt
 	  layout calculator to work correctly with a high-dpi UI scaling on some systems.
 	* Fixed the standard MIDI file player occasionally failing to send all-sound-off sequence
-	  when stopping playback. (#80)
+	  when stopping playback; also, ensured that all played MIDI events get processed. (#80)
 
 2021-05-22:
 
