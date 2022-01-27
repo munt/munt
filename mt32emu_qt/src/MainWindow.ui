@@ -40,16 +40,16 @@
      <x>0</x>
      <y>0</y>
      <width>300</width>
-     <height>22</height>
+     <height>30</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuMunt_mt32emu_qt">
+   <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>&amp;Help</string>
     </property>
     <addaction name="actionAbout"/>
    </widget>
-   <widget class="QMenu" name="menuMIDI">
+   <widget class="QMenu" name="menuTools">
     <property name="title">
      <string>&amp;Tools</string>
     </property>
@@ -67,27 +67,33 @@
     <property name="title">
      <string>&amp;Options</string>
     </property>
+    <widget class="QMenu" name="menuFloating_Display">
+     <property name="title">
+      <string>&amp;Floating Display</string>
+     </property>
+     <addaction name="actionFloating_display_Default_visibility"/>
+     <addaction name="actionFloating_display_Always_shown"/>
+     <addaction name="actionFloating_display_Never_shown"/>
+     <addaction name="separator"/>
+     <addaction name="actionFloating_display_Bypass_window_manager"/>
+    </widget>
     <addaction name="actionStart_iconized"/>
     <addaction name="actionHide_to_tray_on_close"/>
     <addaction name="actionShow_LCD_balloons"/>
     <addaction name="actionShow_connection_balloons"/>
     <addaction name="actionShow_native_file_dialog"/>
+    <addaction name="menuFloating_Display"/>
     <addaction name="separator"/>
     <addaction name="actionROM_Configuration"/>
    </widget>
-   <addaction name="menuMIDI"/>
+   <addaction name="menuTools"/>
    <addaction name="menuOptions"/>
-   <addaction name="menuMunt_mt32emu_qt"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionAbout">
    <property name="text">
     <string>&amp;About</string>
-   </property>
-  </action>
-  <action name="actionOptions">
-   <property name="text">
-    <string>Options...</string>
    </property>
   </action>
   <action name="actionPlay_MIDI_file">
@@ -185,7 +191,51 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show system file selection dialogs</string>
+    <string>Show system file selection &amp;dialogs</string>
+   </property>
+  </action>
+  <action name="actionFloating_display_Always_shown">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Always shown</string>
+   </property>
+  </action>
+  <action name="actionFloating_display_Never_shown">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Never shown</string>
+   </property>
+  </action>
+  <action name="actionFloating_display_Default_visibility">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Default visibility</string>
+   </property>
+   <property name="statusTip">
+    <string>Shown only when the Main window is hidden</string>
+   </property>
+   <property name="whatsThis">
+    <string>Shown only when the Main window is hidden</string>
+   </property>
+  </action>
+  <action name="actionFloating_display_Bypass_window_manager">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Bypass window manager</string>
+   </property>
+   <property name="statusTip">
+    <string>Instructs the window manager to keep the floating display window unmanaged. Changing this may help to fix some issues with the window manager like drawing artefacts, problems with handling mouse clicks, etc.</string>
+   </property>
+   <property name="whatsThis">
+    <string>Instructs the window manager to keep the floating display window unmanaged. Changing this may help to fix some issues with the window manager like drawing artefacts, problems with handling mouse clicks, etc.</string>
    </property>
   </action>
  </widget>

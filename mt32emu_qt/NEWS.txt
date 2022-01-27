@@ -7,6 +7,11 @@ HEAD:
 	  error. The built-in LCD font has been reworked as well to closely match the hardware one
 	  yet the new appearance makes the grid of pixels visible. Clicking on the LCD now resets
 	  it to the main (Master Volume) mode. (#50, #66)
+	* Introduced a floating window that represents the emulated LCD and the MIDI MESSAGE LED
+	  only. It is implicitly configured to be always-on-top, can be freely moved and resized.
+	  Also, its opacity can be adjusted, if supported by the platform. By default, the new window
+	  shows up when the main window is hidden. This behaviour can be altered in the main menu
+	  / Options / Floating Display. (#50)
 	* Enabled the built-in Qt support for high-dpi displays which should improve the UI look
 	  on Windows systems mainly. The Qt library version 5.6 or above is required for this
 	  function to work. In order to explicitly disable UI scaling, the user may set environment

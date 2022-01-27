@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,6 +42,18 @@
 #include "mididrv/TestDriver.h"
 #include "MidiPlayerDialog.h"
 #include "MidiConverterDialog.h"
+#include "FloatingDisplay.h"
+
+enum FloatingDisplayVisibility {
+	FloatingDisplayVisibility_DEFAULT,
+	FloatingDisplayVisibility_ALWAYS_HIDDEN,
+	FloatingDisplayVisibility_ALWAYS_SHOWN
+};
+
+FloatingDisplayVisibility getFloatingDisplayVisibility() {
+	return FloatingDisplayVisibility(Master::getInstance()->getSettings()->value("FloatingDisplay/visibility",
+		FloatingDisplayVisibility_DEFAULT).toInt());
+}
 
 MainWindow::MainWindow(Master *master) :
 	QMainWindow(),
@@ -50,7 +62,8 @@ MainWindow::MainWindow(Master *master) :
 	testMidiDriver(NULL),
 	audioFileWriter(NULL),
 	midiPlayerDialog(NULL),
-	midiConverterDialog(NULL)
+	midiConverterDialog(NULL),
+	floatingDisplay(NULL)
 {
 	ui->setupUi(this);
 	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *, bool)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *, bool)));
@@ -69,14 +82,14 @@ MainWindow::MainWindow(Master *master) :
 
 	setAcceptDrops(true);
 
-	QSettings *settings = Master::getInstance()->getSettings();
+	QSettings *settings = master->getSettings();
 	QRect rect = settings->value("Master/mainWindowGeometry", geometry()).toRect();
 	if (rect != geometry()) {
 		setGeometry(rect);
 	}
 
 #ifdef WITH_WINCONSOLE
-	if (!master->getSettings()->value("Master/showConsole", false).toBool())
+	if (!settings->value("Master/showConsole", false).toBool())
 		ShowWindow(GetConsoleWindow(), SW_HIDE);
 #endif
 
@@ -84,11 +97,40 @@ MainWindow::MainWindow(Master *master) :
 	ui->actionNew_JACK_MIDI_port->setVisible(true);
 	ui->actionNew_exclusive_JACK_MIDI_port->setVisible(true);
 #endif
+
+	QActionGroup *floatingDisplayGroup = new QActionGroup(this);
+	ui->actionFloating_display_Default_visibility->setData(FloatingDisplayVisibility_DEFAULT);
+	ui->actionFloating_display_Always_shown->setData(FloatingDisplayVisibility_ALWAYS_SHOWN);
+	ui->actionFloating_display_Never_shown->setData(FloatingDisplayVisibility_ALWAYS_HIDDEN);
+	floatingDisplayGroup->addAction(ui->actionFloating_display_Default_visibility);
+	floatingDisplayGroup->addAction(ui->actionFloating_display_Always_shown);
+	floatingDisplayGroup->addAction(ui->actionFloating_display_Never_shown);
+	connect(floatingDisplayGroup, SIGNAL(triggered(QAction *)), SLOT(handleFloatingDisplayVisibilityChanged(QAction *)));
 }
 
-MainWindow::~MainWindow()
-{
+MainWindow::~MainWindow() {
+	delete floatingDisplay;
 	delete ui;
+}
+
+void MainWindow::updateFloatingDisplayVisibility() {
+	FloatingDisplayVisibility visibility = getFloatingDisplayVisibility();
+	bool visible = visibility == FloatingDisplayVisibility_ALWAYS_SHOWN
+		|| !(visibility == FloatingDisplayVisibility_ALWAYS_HIDDEN || isVisible());
+	if (floatingDisplay == NULL) {
+		if (!visible) return;
+		floatingDisplay = new FloatingDisplay(this);
+		on_synthTabs_currentChanged(ui->synthTabs->currentIndex());
+	}
+	floatingDisplay->setVisible(visible);
+}
+
+void MainWindow::showEvent(QShowEvent *) {
+	updateFloatingDisplayVisibility();
+}
+
+void MainWindow::hideEvent(QHideEvent *) {
+	updateFloatingDisplayVisibility();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
@@ -105,6 +147,10 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 void MainWindow::on_actionExit_triggered() {
 	QSettings *settings = Master::getInstance()->getSettings();
 	settings->setValue("Master/mainWindowGeometry", geometry());
+	if (floatingDisplay != NULL) {
+		settings->setValue("FloatingDisplay/geometry", floatingDisplay->geometry());
+		settings->setValue("FloatingDisplay/opacity", qRound(floatingDisplay->windowOpacity() * 100.0));
+	}
 	if (testMidiDriver != NULL) {
 		delete testMidiDriver;
 		testMidiDriver = NULL;
@@ -136,7 +182,7 @@ void MainWindow::on_actionAbout_triggered()
 		"Build Arch: " BUILD_SYSTEM " " + QString::number(QSysInfo::WordSize) + "-bit\n"
 		"Build Date: " BUILD_DATE "\n"
 		"\n"
-		"Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev\n"
+		"Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev\n"
 		"\n"
 		"Licensed under GPL v3 or any later version."
 	);
@@ -183,7 +229,7 @@ void MainWindow::handleROMSLoadFailed(bool &recoveryAttempted) {
 	recoveryAttempted = showROMSelectionDialog();
 }
 
-void MainWindow::on_menuMIDI_aboutToShow() {
+void MainWindow::on_menuTools_aboutToShow() {
 	ui->actionNew_MIDI_port->setEnabled(master->canCreateMidiPort());
 }
 
@@ -258,6 +304,41 @@ void MainWindow::on_actionShow_native_file_dialog_toggled(bool checked) {
 	settings->setValue("Master/qFileDialogOptions", int(qFileDialogOptions));
 }
 
+void MainWindow::on_menuFloating_Display_aboutToShow() {
+	switch (getFloatingDisplayVisibility()) {
+	case FloatingDisplayVisibility_ALWAYS_SHOWN:
+		ui->actionFloating_display_Always_shown->setChecked(true);
+		break;
+	case FloatingDisplayVisibility_ALWAYS_HIDDEN:
+		ui->actionFloating_display_Never_shown->setChecked(true);
+		break;
+	default:
+		ui->actionFloating_display_Default_visibility->setChecked(true);
+		break;
+	};
+	bool bypassWindowManager = Master::getInstance()->getSettings()->value("FloatingDisplay/bypassWindowManager", true).toBool();
+	ui->actionFloating_display_Bypass_window_manager->setChecked(bypassWindowManager);
+}
+
+void MainWindow::handleFloatingDisplayVisibilityChanged(QAction *triggeredAction) {
+	Master::getInstance()->getSettings()->setValue("FloatingDisplay/visibility", triggeredAction->data());
+	updateFloatingDisplayVisibility();
+}
+
+void MainWindow::on_actionFloating_display_Bypass_window_manager_toggled(bool checked) {
+	Master::getInstance()->getSettings()->setValue("FloatingDisplay/bypassWindowManager", checked);
+}
+
+void MainWindow::on_synthTabs_currentChanged(int index) {
+	if (floatingDisplay == NULL) return;
+	if(index < 0) {
+		floatingDisplay->setSynthRoute(NULL);
+	} else {
+		SynthWidget *synthWidget = (SynthWidget *)ui->synthTabs->widget(index);
+		floatingDisplay->setSynthRoute(synthWidget->getSynthRoute());
+	}
+}
+
 void MainWindow::on_actionROM_Configuration_triggered() {
 	showROMSelectionDialog();
 }
@@ -282,7 +363,7 @@ void MainWindow::trayIconContextMenu() {
 	menu->addAction("Show/Hide", this, SLOT(showHideMainWindow()))->setFont(bold);
 	menu->addAction("Show MIDI Player", this, SLOT(on_actionPlay_MIDI_file_triggered()));
 	menu->addAction(ui->actionStart_iconized);
-	ui->actionStart_iconized->setChecked(master->getSettings()->value("Master/startIconized", "0").toBool());
+	ui->actionStart_iconized->setChecked(master->getSettings()->value("Master/startIconized", false).toBool());
 #ifdef WITH_WINCONSOLE
 	QAction *a = menu->addAction("Show console", this, SLOT(toggleShowConsole()));
 	a->setCheckable(true);

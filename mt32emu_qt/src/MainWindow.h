@@ -15,6 +15,7 @@ class MidiDriver;
 class AudioFileWriter;
 class MidiPlayerDialog;
 class MidiConverterDialog;
+class FloatingDisplay;
 
 class MainWindow : public QMainWindow {
 	Q_OBJECT
@@ -23,8 +24,12 @@ public:
 	explicit MainWindow(Master *master);
 	~MainWindow();
 
+	void updateFloatingDisplayVisibility();
+
 protected:
-	void closeEvent(QCloseEvent *);
+	void showEvent(QShowEvent *event);
+	void hideEvent(QHideEvent *event);
+	void closeEvent(QCloseEvent *event);
 	void dragEnterEvent(QDragEnterEvent *event);
 	void dragMoveEvent(QDragMoveEvent *event);
 	void dropEvent(QDropEvent *event);
@@ -36,6 +41,7 @@ private:
 	AudioFileWriter *audioFileWriter;
 	MidiPlayerDialog *midiPlayerDialog;
 	MidiConverterDialog *midiConverterDialog;
+	FloatingDisplay *floatingDisplay;
 
 	bool showROMSelectionDialog();
 	void trayIconContextMenu();
@@ -46,7 +52,7 @@ private slots:
 	void handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice, bool pinnable);
 	void handleSynthRouteRemoved(SynthRoute *synthRoute);
 	void handleROMSLoadFailed(bool &recoveryAttempted);
-	void on_menuMIDI_aboutToShow();
+	void on_menuTools_aboutToShow();
 	void on_actionNew_MIDI_port_triggered();
 	void on_actionTest_MIDI_Driver_toggled(bool checked);
 	void on_actionPlay_MIDI_file_triggered();
@@ -57,6 +63,10 @@ private slots:
 	void on_actionShow_LCD_balloons_toggled(bool checked);
 	void on_actionShow_connection_balloons_toggled(bool checked);
 	void on_actionShow_native_file_dialog_toggled(bool checked);
+	void on_menuFloating_Display_aboutToShow();
+	void handleFloatingDisplayVisibilityChanged(QAction *triggeredAction);
+	void on_actionFloating_display_Bypass_window_manager_toggled(bool checked);
+	void on_synthTabs_currentChanged(int index);
 	void on_actionROM_Configuration_triggered();
 	void refreshTabNames();
 	void showHideMainWindow();

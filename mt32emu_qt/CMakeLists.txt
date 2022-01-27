@@ -54,6 +54,7 @@ set(mt32emu_qt_SOURCES
   src/SynthStateMonitor.cpp
   src/SynthWidget.cpp
   src/MidiPlayerDialog.cpp
+  src/FloatingDisplay.cpp
 
   src/audiodrv/AudioDriver.cpp
   src/audiodrv/AudioFileWriterDriver.cpp

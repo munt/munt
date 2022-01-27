@@ -38,7 +38,11 @@ int main(int argv, char **args) {
 			master.setTrayIcon(trayIcon);
 		}
 		MainWindow mainWindow(&master);
-		if (trayIcon == NULL || !master.getSettings()->value("Master/startIconized", false).toBool()) mainWindow.show();
+		if (trayIcon == NULL || !master.getSettings()->value("Master/startIconized", false).toBool()) {
+			mainWindow.show();
+		} else {
+			mainWindow.updateFloatingDisplayVisibility();
+		}
 		if (argv > 1) master.processCommandLine(app.arguments());
 		master.startPinnedSynthRoute();
 		master.startMidiProcessing();
