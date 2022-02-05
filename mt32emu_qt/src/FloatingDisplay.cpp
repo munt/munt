@@ -35,7 +35,7 @@ static const int MIN_OPACITY_VALUE = 25;
 static Qt::WindowFlags makeWindowFlags() {
 	Qt::WindowFlags flags = Qt::WindowFlags(Qt::Tool | Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint);
 	if (Master::getInstance()->getSettings()->value("FloatingDisplay/bypassWindowManager", true).toBool()) {
-		flags.setFlag(Qt::X11BypassWindowManagerHint);
+		flags |= Qt::X11BypassWindowManagerHint;
 	}
 	return flags;
 }
