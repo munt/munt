@@ -42,7 +42,11 @@ private:
 	MidiPlayerDialog *midiPlayerDialog;
 	MidiConverterDialog *midiConverterDialog;
 	FloatingDisplay *floatingDisplay;
+	QAction *trayIconMenuShowHideMainWindow;
+	QAction *trayIconMenuShowHideFloatingDisplay;
 
+	void showFloatingDisplay();
+	void syncFloatingDisplay(int currentSynthTabsIndex);
 	bool showROMSelectionDialog();
 	void trayIconContextMenu();
 
@@ -70,6 +74,8 @@ private slots:
 	void on_actionROM_Configuration_triggered();
 	void refreshTabNames();
 	void showHideMainWindow();
+	void showHideFloatingDisplay();
+	void handleTrayIconMenuAboutToShow();
 	void handleTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 	void toggleShowConsole();
 	void handlePlayMidiFiles(const QStringList &fileList);

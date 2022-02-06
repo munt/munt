@@ -118,11 +118,27 @@ void MainWindow::updateFloatingDisplayVisibility() {
 	bool visible = visibility == FloatingDisplayVisibility_ALWAYS_SHOWN
 		|| !(visibility == FloatingDisplayVisibility_ALWAYS_HIDDEN || isVisible());
 	if (floatingDisplay == NULL) {
-		if (!visible) return;
-		floatingDisplay = new FloatingDisplay(this);
-		on_synthTabs_currentChanged(ui->synthTabs->currentIndex());
+		if (visible) showFloatingDisplay();
+	} else {
+		floatingDisplay->setVisible(visible);
 	}
-	floatingDisplay->setVisible(visible);
+}
+
+void MainWindow::showFloatingDisplay() {
+	if (floatingDisplay == NULL) {
+		floatingDisplay = new FloatingDisplay(this);
+		syncFloatingDisplay(ui->synthTabs->currentIndex());
+	}
+	floatingDisplay->setVisible(true);
+}
+
+void MainWindow::syncFloatingDisplay(int currentSynthTabsIndex) {
+	if(currentSynthTabsIndex < 0) {
+		floatingDisplay->setSynthRoute(NULL);
+	} else {
+		SynthWidget *synthWidget = (SynthWidget *)ui->synthTabs->widget(currentSynthTabsIndex);
+		floatingDisplay->setSynthRoute(synthWidget->getSynthRoute());
+	}
 }
 
 void MainWindow::showEvent(QShowEvent *) {
@@ -148,8 +164,7 @@ void MainWindow::on_actionExit_triggered() {
 	QSettings *settings = Master::getInstance()->getSettings();
 	settings->setValue("Master/mainWindowGeometry", geometry());
 	if (floatingDisplay != NULL) {
-		settings->setValue("FloatingDisplay/geometry", floatingDisplay->geometry());
-		settings->setValue("FloatingDisplay/opacity", qRound(floatingDisplay->windowOpacity() * 100.0));
+		floatingDisplay->saveSettings();
 	}
 	if (testMidiDriver != NULL) {
 		delete testMidiDriver;
@@ -330,13 +345,7 @@ void MainWindow::on_actionFloating_display_Bypass_window_manager_toggled(bool ch
 }
 
 void MainWindow::on_synthTabs_currentChanged(int index) {
-	if (floatingDisplay == NULL) return;
-	if(index < 0) {
-		floatingDisplay->setSynthRoute(NULL);
-	} else {
-		SynthWidget *synthWidget = (SynthWidget *)ui->synthTabs->widget(index);
-		floatingDisplay->setSynthRoute(synthWidget->getSynthRoute());
-	}
+	if (floatingDisplay != NULL) syncFloatingDisplay(index);
 }
 
 void MainWindow::on_actionROM_Configuration_triggered() {
@@ -358,18 +367,28 @@ bool MainWindow::showROMSelectionDialog() {
 
 void MainWindow::trayIconContextMenu() {
 	QMenu *menu = new QMenu(this);
-	QFont bold;
-	bold.setBold(true);
-	menu->addAction("Show/Hide", this, SLOT(showHideMainWindow()))->setFont(bold);
+
+	trayIconMenuShowHideMainWindow = menu->addAction("Show/Hide Main Window", this, SLOT(showHideMainWindow()));
+	QFont boldFont(trayIconMenuShowHideMainWindow->font());
+	boldFont.setBold(true);
+	trayIconMenuShowHideMainWindow->setFont(boldFont);
+
+	trayIconMenuShowHideFloatingDisplay = menu->addAction("Show/Hide Floating Display", this, SLOT(showHideFloatingDisplay()));
+
 	menu->addAction("Show MIDI Player", this, SLOT(on_actionPlay_MIDI_file_triggered()));
+
 	menu->addAction(ui->actionStart_iconized);
 	ui->actionStart_iconized->setChecked(master->getSettings()->value("Master/startIconized", false).toBool());
+
 #ifdef WITH_WINCONSOLE
 	QAction *a = menu->addAction("Show console", this, SLOT(toggleShowConsole()));
 	a->setCheckable(true);
 	a->setChecked(master->getSettings()->value("Master/showConsole", false).toBool());
 #endif
+
 	menu->addAction("Exit", this, SLOT(on_actionExit_triggered()));
+
+	connect(menu, SIGNAL(aboutToShow()), SLOT(handleTrayIconMenuAboutToShow()));
 	master->getTrayIcon()->setContextMenu(menu);
 }
 
@@ -385,6 +404,21 @@ void MainWindow::toggleShowConsole() {
 void MainWindow::showHideMainWindow() {
 	setVisible(!isVisible());
 	if (isVisible()) activateWindow();
+}
+
+void MainWindow::showHideFloatingDisplay() {
+	if (floatingDisplay != NULL) {
+		floatingDisplay->setVisible(!floatingDisplay->isVisible());
+	} else {
+		showFloatingDisplay();
+	}
+}
+
+void MainWindow::handleTrayIconMenuAboutToShow() {
+	trayIconMenuShowHideMainWindow->setText(QString(isVisible() ? "Hide" : "Show") + " Main Window");
+	trayIconMenuShowHideFloatingDisplay->setText(
+		QString(floatingDisplay != NULL && floatingDisplay->isVisible() ? "Hide" : "Show") + " Floating Display"
+	);
 }
 
 void MainWindow::handleTrayIconActivated(QSystemTrayIcon::ActivationReason reason) {

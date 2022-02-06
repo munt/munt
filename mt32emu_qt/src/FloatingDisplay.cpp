@@ -81,6 +81,12 @@ FloatingDisplay::FloatingDisplay(const QWidget *mainWindow) :
 	move(rect.topLeft());
 }
 
+void FloatingDisplay::saveSettings() {
+	QSettings *settings = Master::getInstance()->getSettings();
+	settings->setValue("FloatingDisplay/geometry", geometry());
+	settings->setValue("FloatingDisplay/opacity", qRound(windowOpacity() * 100.0));
+}
+
 void FloatingDisplay::setSynthRoute(SynthRoute *useSynthRoute) {
 	if (synthRoute != NULL) {
 		synthRoute->disconnectSynth(SIGNAL(stateChanged(SynthState)), this, SLOT(handleSynthStateChange(SynthState)));
@@ -122,6 +128,7 @@ void FloatingDisplay::contextMenuEvent(QContextMenuEvent *event) {
 	event->accept();
 	QMenu menu(this);
 	menu.addAction("Show/Hide Main Window", mainWindow, SLOT(showHideMainWindow()));
+	menu.addAction("Hide Floating Display", this, SLOT(hide()));
 	menu.addAction("Show MIDI Player", mainWindow, SLOT(on_actionPlay_MIDI_file_triggered()));
 	QMenu *menuOpacity = menu.addMenu("Opacity");
 	QWidgetAction opacityAction(menuOpacity);

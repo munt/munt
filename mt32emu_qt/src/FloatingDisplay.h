@@ -17,6 +17,7 @@ class FloatingDisplay : public QFrame {
 public:
 	explicit FloatingDisplay(const QWidget *mainWindow);
 
+	void saveSettings();
 	void setSynthRoute(SynthRoute *synthRoute);
 
 private:
