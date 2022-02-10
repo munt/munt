@@ -22,6 +22,13 @@ HEAD:
 	  layout calculator to work correctly with a high-dpi UI scaling on some systems.
 	* Fixed the standard MIDI file player occasionally failing to send all-sound-off sequence
 	  when stopping playback; also, ensured that all played MIDI events get processed. (#80)
+	* In the synth details panel, added a small button to the left of the instrument name for
+	  each part, that allows to quickly mute this part. By clicking these buttons while holding
+	  Ctrl/Cmd, the part can be made playing solo. Holding the Alt key while clicking allows to
+	  quickly restore playback on all muted parts. Additionally, a right-click opens a popup
+	  menu that provides for more functions, including a volume slider, which can be used to
+	  override the current part volume level set by the received MIDI messages. The configured
+	  part volume level only persists while the synth remains open. (#77)
 
 2021-05-22:
 

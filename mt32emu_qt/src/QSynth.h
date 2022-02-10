@@ -162,6 +162,7 @@ public:
 	void setReverbEnabled(bool reverbEnabled);
 	void setReverbOverridden(bool reverbOverridden);
 	void setReverbSettings(int reverbMode, int reverbTime, int reverbLevel);
+	void setPartVolumeOverride(uint partNumber, uint volumeOverride);
 	void setReversedStereoEnabled(bool enabled);
 	void setNiceAmpRampEnabled(bool enabled);
 	void setNicePanningEnabled(bool enabled);

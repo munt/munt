@@ -14,6 +14,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QApplication>
+#include <QMenu>
+#include <QSlider>
+#include <QStylePainter>
+#include <QWidgetAction>
+
 #include "SynthStateMonitor.h"
 
 #include "SynthRoute.h"
@@ -54,17 +60,21 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 	ui->midiMessageLayout->addWidget(&midiMessageLED, 0, Qt::AlignHCenter);
 
 	for (int i = 0; i < 9; i++) {
+		partVolumeButton[i] = new PartVolumeButton(ui->polyStateGrid->widget(), *this, i);
+		partVolumeButton[i]->setFixedSize(16, 16);
+		ui->polyStateGrid->addWidget(partVolumeButton[i], i, 1);
+
 		patchNameLabel[i] = new QLabel(ui->polyStateGrid->widget());
-		ui->polyStateGrid->addWidget(patchNameLabel[i], i, 0);
+		ui->polyStateGrid->addWidget(patchNameLabel[i], i, 2);
 
 		partStateWidget[i] = new PartStateWidget(i, *this, ui->polyStateGrid->widget());
-		partStateWidget[i]->setMinimumSize(480, 16);
-		partStateWidget[i]->setMaximumSize(480, 16);
-		ui->polyStateGrid->addWidget(partStateWidget[i], i, 1);
+		partStateWidget[i]->setFixedSize(480, 16);
+		ui->polyStateGrid->addWidget(partStateWidget[i], i, 3);
 	}
 
 	handleSynthStateChange(synthRoute->getState() == SynthRouteState_OPEN ? SynthState_OPEN : SynthState_CLOSED);
 	synthRoute->connectSynth(SIGNAL(stateChanged(SynthState)), this, SLOT(handleSynthStateChange(SynthState)));
+	synthRoute->connectSynth(SIGNAL(stateChanged(SynthState)), partVolumeButton[0], SLOT(handleResetAllTriggered()));
 	synthRoute->connectReportHandler(SIGNAL(programChanged(int, QString, QString)), this, SLOT(handleProgramChanged(int, QString, QString)));
 	synthRoute->connectReportHandler(SIGNAL(polyStateChanged(int)), this, SLOT(handlePolyStateChanged(int)));
 }
@@ -110,6 +120,7 @@ void SynthStateMonitor::handleSynthStateChange(SynthState state) {
 	}
 
 	for (int i = 0; i < 9; i++) {
+		partVolumeButton[i]->setEnabled(state == SynthState_OPEN);
 		patchNameLabel[i]->setText((i < 8) ? synthRoute->getPatchName(i) : "Rhythm Channel");
 		partStateWidget[i]->update();
 	}
@@ -143,8 +154,7 @@ void SynthStateMonitor::allocatePartialsData() {
 	uint partialColumnWidth = (partialCount + 7) / 8;
 	for (uint i = 0; i < partialCount; i++) {
 		partialStateLED[i] = new PartialStateLEDWidget(ui->partialStateGrid->widget());
-		partialStateLED[i]->setMinimumSize(16, 16);
-		partialStateLED[i]->setMaximumSize(16, 16);
+		partialStateLED[i]->setFixedSize(16, 16);
 		ui->partialStateGrid->addWidget(partialStateLED[i], i / partialColumnWidth, i % partialColumnWidth);
 	}
 }
@@ -303,4 +313,96 @@ void LCDWidget::mousePressEvent(QMouseEvent *event) {
 
 void LCDWidget::handleLCDUpdate() {
 	updateDisplayText();
+}
+
+PartVolumeButton::PartVolumeButton(QWidget *parent, const SynthStateMonitor &monitor, int partNum) :
+	QAbstractButton(parent), monitor(monitor), partNum(partNum), volume(101)
+{
+	connect(this, SIGNAL(clicked()), SLOT(handleClicked()));
+}
+
+void PartVolumeButton::paintEvent(QPaintEvent*) {
+	QStylePainter painter(this);
+	QIcon icon = style()->standardIcon(volume > 0 ? QStyle::SP_MediaVolume : QStyle::SP_MediaVolumeMuted);
+	painter.drawItemPixmap(rect(), Qt::AlignCenter, icon.pixmap(size()));
+	if (hasFocus()) {
+		QStyleOptionFocusRect opt;
+		opt.initFrom(this);
+		painter.drawPrimitive(QStyle::PE_FrameFocusRect, opt);
+	}
+}
+
+void PartVolumeButton::contextMenuEvent(QContextMenuEvent *event) {
+	event->accept();
+	QMenu menu(this);
+	QMenu *volumeMenu = menu.addMenu("Volume");
+	QWidgetAction volumeControlAction(volumeMenu);
+	QSlider volumeControlSlider(volumeMenu);
+	volumeControlSlider.setRange(0, 100);
+	volumeControlSlider.setValue(qBound(0, volume, 100));
+	connect(&volumeControlSlider, SIGNAL(valueChanged(int)), SLOT(handleVolumeChanged(int)));
+	volumeControlAction.setDefaultWidget(&volumeControlSlider);
+	volumeMenu->addAction(&volumeControlAction);
+	menu.addAction("Reset Volume", this, SLOT(handleResetVolumeTriggered()));
+	menu.addAction("Solo", this, SLOT(handleSoloTriggered()));
+	menu.addAction("Unmute All", this, SLOT(handleUnmuteAllTriggered()));
+	menu.addAction("Reset All", this, SLOT(handleResetAllTriggered()));
+	menu.exec(event->globalPos());
+}
+
+void PartVolumeButton::toggleMutePart() {
+	handleVolumeChanged(volume == 0 ? 101 : -volume);
+}
+
+void PartVolumeButton::mutePart() {
+	if (volume > 0) toggleMutePart();
+}
+
+void PartVolumeButton::unmutePart() {
+	if (volume <= 0) toggleMutePart();
+}
+
+void PartVolumeButton::toggleSoloPart(bool enabled) {
+	for (int i = 0; i < 9; i++) {
+		if (enabled && i != partNum) {
+			monitor.partVolumeButton[i]->mutePart();
+		} else {
+			monitor.partVolumeButton[i]->unmutePart();
+		}
+	}
+}
+
+void PartVolumeButton::handleClicked() {
+	Qt::KeyboardModifiers modifiers = QApplication::keyboardModifiers();
+	if (modifiers & Qt::ControlModifier) {
+		toggleSoloPart(true);
+	} else if (modifiers & Qt::AltModifier) {
+		toggleSoloPart(false);
+	} else {
+		toggleMutePart();
+	}
+}
+
+void PartVolumeButton::handleVolumeChanged(int newVolume) {
+	volume = newVolume;
+	monitor.synthRoute->setPartVolumeOverride(partNum, qBound(0, volume, 101));
+	update();
+}
+
+void PartVolumeButton::handleResetVolumeTriggered() {
+	handleVolumeChanged(101);
+}
+
+void PartVolumeButton::handleSoloTriggered() {
+	toggleSoloPart(true);
+}
+
+void PartVolumeButton::handleUnmuteAllTriggered() {
+	toggleSoloPart(false);
+}
+
+void PartVolumeButton::handleResetAllTriggered() {
+	for (int i = 0; i < 9; i++) {
+		monitor.partVolumeButton[i]->handleResetVolumeTriggered();
+	}
 }

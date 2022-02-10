@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -93,6 +93,7 @@ private:
 		REVERB_ENABLED_CHANGED,
 		REVERB_OVERRIDDEN_CHANGED,
 		REVERB_SETTINGS_CHANGED,
+		PART_VOLUME_OVERRIDE_CHANGED,
 		REVERSED_STEREO_ENABLED_CHANGED,
 		NICE_AMP_RAMP_ENABLED_CHANGED,
 		NICE_PANNING_ENABLED_CHANGED,
@@ -114,6 +115,7 @@ private:
 	float reverbOutputGain;
 	bool reverbEnabled;
 	bool reverbOverridden;
+	int partVolumeOverride[PART_COUNT];
 	bool reversedStereoEnabled;
 	bool niceAmpRampEnabled;
 	bool nicePanningEnabled;
@@ -197,6 +199,14 @@ private:
 				break;
 			case REVERB_SETTINGS_CHANGED:
 				overrideReverbSettings(synth, qsynth.reverbMode, qsynth.reverbTime, qsynth.reverbLevel);
+				break;
+			case PART_VOLUME_OVERRIDE_CHANGED:
+				for (int i = 0; i < PART_COUNT; i++) {
+					if (NO_UPDATE_VALUE != partVolumeOverride[i]) {
+						synth->setPartVolumeOverride(i, partVolumeOverride[i]);
+						partVolumeOverride[i] = NO_UPDATE_VALUE;
+					}
+				}
 				break;
 			case REVERSED_STEREO_ENABLED_CHANGED:
 				synth->setReversedStereoEnabled(reversedStereoEnabled);
@@ -359,6 +369,9 @@ public:
 		tempState.reverbTime = NO_UPDATE_VALUE;
 		tempState.reverbLevel = NO_UPDATE_VALUE;
 		stateSnapshot.midiMessageLEDState = qsynth.synth->getDisplayState(stateSnapshot.lcdState);
+		for (int i = 0; i < PART_COUNT; i++) {
+			partVolumeOverride[i] = NO_UPDATE_VALUE;
+		}
 	}
 
 	~RealtimeHelper() {
@@ -422,6 +435,12 @@ public:
 		qsynth.reverbTime = useReverbTime;
 		qsynth.reverbLevel = useReverbLevel;
 		enqueueSynthControlEvent(REVERB_SETTINGS_CHANGED);
+	}
+
+	void setPartVolumeOverride(uint partNumber, Bit8u volumeOverride) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		partVolumeOverride[partNumber] = volumeOverride;
+		enqueueSynthControlEvent(PART_VOLUME_OVERRIDE_CHANGED);
 	}
 
 	void setReversedStereoEnabled(bool useReversedStereoEnabled) {
@@ -881,6 +900,15 @@ void QSynth::setReverbSettings(int useReverbMode, int useReverbTime, int useReve
 		reverbTime = useReverbTime;
 		reverbLevel = useReverbLevel;
 		if (isOpen()) overrideReverbSettings(synth, useReverbMode, useReverbTime, useReverbLevel);
+	}
+}
+
+void QSynth::setPartVolumeOverride(uint partNumber, uint volumeOverride) {
+	if (isRealtime()) {
+		realtimeHelper->setPartVolumeOverride(partNumber, volumeOverride);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		synth->setPartVolumeOverride(Bit8u(partNumber), Bit8u(volumeOverride));
 	}
 }
 

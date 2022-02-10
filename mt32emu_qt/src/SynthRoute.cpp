@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -416,6 +416,10 @@ void SynthRoute::setReverbOverridden(bool reverbOverridden) {
 
 void SynthRoute::setReverbSettings(int reverbMode, int reverbTime, int reverbLevel) {
 	qSynth.setReverbSettings(reverbMode, reverbTime, reverbLevel);
+}
+
+void SynthRoute::setPartVolumeOverride(uint partNumber, uint volumeOverride) {
+	qSynth.setPartVolumeOverride(partNumber, volumeOverride);
 }
 
 void SynthRoute::setReversedStereoEnabled(bool enabled) {

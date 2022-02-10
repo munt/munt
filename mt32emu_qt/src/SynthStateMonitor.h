@@ -2,6 +2,7 @@
 #define SYNTH_STATE_MONITOR_H
 
 #include <QtGui>
+#include <QAbstractButton>
 #include <QWidget>
 
 #include <mt32emu/mt32emu.h>
@@ -88,10 +89,39 @@ private slots:
 	void handleLCDUpdate();
 };
 
+class PartVolumeButton : public QAbstractButton {
+	Q_OBJECT
+
+public:
+	explicit PartVolumeButton(QWidget *parent, const SynthStateMonitor &monitor, int partNum);
+
+private:
+	const SynthStateMonitor &monitor;
+	const int partNum;
+	// Non-positive values mean "part muted". Values above 100 imply "no volume override".
+	int volume;
+
+	void paintEvent(QPaintEvent *);
+	void contextMenuEvent (QContextMenuEvent *);
+	void toggleMutePart();
+	void mutePart();
+	void unmutePart();
+	void toggleSoloPart(bool enabled);
+
+private slots:
+	void handleClicked();
+	void handleVolumeChanged(int);
+	void handleResetVolumeTriggered();
+	void handleSoloTriggered();
+	void handleUnmuteAllTriggered();
+	void handleResetAllTriggered();
+};
+
 class SynthStateMonitor : public QObject {
 	Q_OBJECT
 
 friend class PartStateWidget;
+friend class PartVolumeButton;
 
 public:
 	SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRoute);
@@ -106,6 +136,7 @@ private:
 	LCDWidget lcdWidget;
 	MidiMessageLEDWidget midiMessageLED;
 	PartialStateLEDWidget **partialStateLED;
+	PartVolumeButton *partVolumeButton[9];
 	QLabel *patchNameLabel[9];
 	PartStateWidget *partStateWidget[9];
 
