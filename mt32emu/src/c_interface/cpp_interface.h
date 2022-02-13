@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2021 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -98,6 +98,8 @@ mt32emu_service_i mt32emu_get_service_i();
 #define mt32emu_get_output_gain i.v0->getOutputGain
 #define mt32emu_set_reverb_output_gain i.v0->setReverbOutputGain
 #define mt32emu_get_reverb_output_gain i.v0->getReverbOutputGain
+#define mt32emu_set_part_volume_override iV5()->setPartVolumeOverride
+#define mt32emu_get_part_volume_override iV5()->getPartVolumeOverride
 #define mt32emu_set_reversed_stereo_enabled i.v0->setReversedStereoEnabled
 #define mt32emu_is_reversed_stereo_enabled i.v0->isReversedStereoEnabled
 #define mt32emu_set_nice_amp_ramp_enabled iV2()->setNiceAmpRampEnabled
@@ -287,6 +289,9 @@ public:
 	float getOutputGain() { return mt32emu_get_output_gain(c); }
 	void setReverbOutputGain(float gain) { mt32emu_set_reverb_output_gain(c, gain); }
 	float getReverbOutputGain() { return mt32emu_get_reverb_output_gain(c); }
+
+	void setPartVolumeOverride(Bit8u part_number, Bit8u volume_override) { mt32emu_set_part_volume_override(c, part_number, volume_override); }
+	Bit8u getPartVolumeOverride(Bit8u part_number) { return mt32emu_get_part_volume_override(c, part_number); }
 
 	void setReversedStereoEnabled(const bool enabled) { mt32emu_set_reversed_stereo_enabled(c, enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
 	bool isReversedStereoEnabled() { return mt32emu_is_reversed_stereo_enabled(c) != MT32EMU_BOOL_FALSE; }

@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2021 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -352,7 +352,9 @@ typedef union mt32emu_service_i mt32emu_service_i;
 
 #define MT32EMU_SERVICE_I_V5 \
 	mt32emu_boolean (*getDisplayState)(mt32emu_const_context context, char *target_buffer, const mt32emu_boolean narrow_lcd); \
-	void (*setMainDisplayMode)(mt32emu_const_context context);
+	void (*setMainDisplayMode)(mt32emu_const_context context); \
+	void (*setPartVolumeOverride)(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u volume_override); \
+	mt32emu_bit8u (*getPartVolumeOverride)(mt32emu_const_context context, mt32emu_bit8u part_number);
 
 typedef struct {
 	MT32EMU_SERVICE_I_V0

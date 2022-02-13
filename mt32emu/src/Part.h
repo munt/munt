@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2021 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -70,6 +70,8 @@ protected:
 	MemParams::PatchTemp *patchTemp;
 	char name[8]; // "Part 1".."Part 8", "Rhythm"
 	char currentInstr[11];
+	// Values outside the valid range 0..100 imply no override.
+	Bit8u volumeOverride;
 	Bit8u modulation;
 	Bit8u expression;
 	Bit32s pitchBend;
@@ -96,8 +98,10 @@ public:
 	virtual void noteOff(unsigned int midiKey);
 	void allNotesOff();
 	void allSoundOff();
-	Bit8u getVolume() const; // Internal volume, 0-100, exposed for use by ExternalInterface
-	void setVolume(unsigned int midiVolume);
+	Bit8u getVolume() const; // Effective output level, valid range 0..100.
+	void setVolume(unsigned int midiVolume); // Valid range 0..127, as defined for MIDI controller 7.
+	Bit8u getVolumeOverride() const;
+	void setVolumeOverride(Bit8u volumeOverride);
 	Bit8u getModulation() const;
 	void setModulation(unsigned int midiModulation);
 	Bit8u getExpression() const;

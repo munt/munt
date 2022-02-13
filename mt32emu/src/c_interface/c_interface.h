@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2021 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -456,6 +456,23 @@ MT32EMU_EXPORT float mt32emu_get_output_gain(mt32emu_const_context context);
 MT32EMU_EXPORT void mt32emu_set_reverb_output_gain(mt32emu_const_context context, float gain);
 /** Returns current output gain factor for reverb wet output channels. */
 MT32EMU_EXPORT float mt32emu_get_reverb_output_gain(mt32emu_const_context context);
+
+/**
+ * Sets (or removes) an override for the current volume (output level) on a specific part.
+ * When the part volume is overridden, the MIDI controller Volume (7) on the MIDI channel this part is assigned to
+ * has no effect on the output level of this part. Similarly, the output level value set on this part via a SysEx that
+ * modifies the Patch temp structure is disregarded.
+ * To enable the override mode, argument volumeOverride should be in range 0..100, setting a value outside this range
+ * disables the previously set override, if any.
+ * Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
+ */
+MT32EMU_EXPORT_V(2.6) void mt32emu_set_part_volume_override(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u volume_override);
+/**
+ * Returns the overridden volume previously set on a specific part; a value outside the range 0..100 means no override
+ * is currently in effect.
+ * Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
+ */
+MT32EMU_EXPORT_V(2.6) mt32emu_bit8u mt32emu_get_part_volume_override(mt32emu_const_context context, mt32emu_bit8u part_number);
 
 /** Swaps left and right output channels. */
 MT32EMU_EXPORT void mt32emu_set_reversed_stereo_enabled(mt32emu_const_context context, const mt32emu_boolean enabled);

@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2021 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -59,6 +59,7 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	}
 	currentInstr[0] = 0;
 	currentInstr[10] = 0;
+	volumeOverride = 255;
 	modulation = 0;
 	expression = 100;
 	pitchBend = 0;
@@ -318,7 +319,15 @@ void Part::setVolume(unsigned int midiVolume) {
 }
 
 Bit8u Part::getVolume() const {
-	return patchTemp->outputLevel;
+	return volumeOverride <= 100 ? volumeOverride : patchTemp->outputLevel;
+}
+
+void Part::setVolumeOverride(Bit8u volume) {
+	volumeOverride = volume;
+}
+
+Bit8u Part::getVolumeOverride() const {
+	return volumeOverride;
 }
 
 Bit8u Part::getExpression() const {

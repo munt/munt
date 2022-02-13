@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2021 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -442,6 +442,19 @@ public:
 	MT32EMU_EXPORT void setReverbOutputGain(float gain);
 	// Returns current output gain factor for reverb wet output channels.
 	MT32EMU_EXPORT float getReverbOutputGain() const;
+
+	// Sets (or removes) an override for the current volume (output level) on a specific part.
+	// When the part volume is overridden, the MIDI controller Volume (7) on the MIDI channel this part is assigned to
+	// has no effect on the output level of this part. Similarly, the output level value set on this part via a SysEx that
+	// modifies the Patch temp structure is disregarded.
+	// To enable the override mode, argument volumeOverride should be in range 0..100, setting a value outside this range
+	// disables the previously set override, if any.
+	// Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
+	MT32EMU_EXPORT_V(2.6) void setPartVolumeOverride(Bit8u partNumber, Bit8u volumeOverride);
+	// Returns the overridden volume previously set on a specific part; a value outside the range 0..100 means no override
+	// is currently in effect.
+	// Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
+	MT32EMU_EXPORT_V(2.6) Bit8u getPartVolumeOverride(Bit8u partNumber) const;
 
 	// Swaps left and right output channels.
 	MT32EMU_EXPORT void setReversedStereoEnabled(bool enabled);

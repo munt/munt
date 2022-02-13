@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2021 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -129,7 +129,9 @@ static const mt32emu_service_i_v5 SERVICE_VTABLE = {
 	mt32emu_merge_and_add_rom_files,
 	mt32emu_add_machine_rom_file,
 	mt32emu_get_display_state,
-	mt32emu_set_main_display_mode
+	mt32emu_set_main_display_mode,
+	mt32emu_set_part_volume_override,
+	mt32emu_get_part_volume_override
 };
 
 } // namespace MT32Emu
@@ -846,6 +848,14 @@ void mt32emu_set_reverb_output_gain(mt32emu_const_context context, float gain) {
 
 float mt32emu_get_reverb_output_gain(mt32emu_const_context context) {
 	return context->synth->getReverbOutputGain();
+}
+
+void mt32emu_set_part_volume_override(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u volume_override) {
+	context->synth->setPartVolumeOverride(part_number, volume_override);
+}
+
+mt32emu_bit8u mt32emu_get_part_volume_override(mt32emu_const_context context, mt32emu_bit8u part_number) {
+	return context->synth->getPartVolumeOverride(part_number);
 }
 
 void mt32emu_set_reversed_stereo_enabled(mt32emu_const_context context, const mt32emu_boolean enabled) {
