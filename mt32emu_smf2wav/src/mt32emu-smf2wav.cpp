@@ -192,7 +192,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		{"machine-id", 'i', 0, G_OPTION_ARG_STRING, &options->machineID, "ID of machine configuration to search ROMs for (default: any)\n"
 		 "                 any:        try cm32l first, then mt32\n"
 		 "                 mt32:       any complete set of MT-32 ROMs, the highest control ROM version found wins\n"
-		 "                 cm32l:      any complete set of CM-32L / LAPC-I compatilbe ROMs, the highest control ROM version found wins\n"
+		 "                 cm32l:      any complete set of CM-32L / LAPC-I compatible ROMs, the highest control ROM version found wins\n"
 		 "                 mt32_1_04:  MT-32 with control ROM version 1.04\n"
 		 "                 mt32_1_05:  MT-32 with control ROM version 1.05\n"
 		 "                 mt32_1_06:  MT-32 with control ROM version 1.06\n"
