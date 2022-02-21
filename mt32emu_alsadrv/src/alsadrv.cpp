@@ -334,8 +334,9 @@ int alsa_setup_midi()
 	port_in_mt = snd_seq_create_simple_port(seq_handle, "Standard",
 						SND_SEQ_PORT_CAP_SUBS_WRITE |
 						SND_SEQ_PORT_CAP_WRITE,
+						SND_SEQ_PORT_TYPE_MIDI_GENERIC |
 						SND_SEQ_PORT_TYPE_MIDI_MT32 |
-						SND_SEQ_PORT_TYPE_SYNTH);		
+						SND_SEQ_PORT_TYPE_SYNTHESIZER);
 	if (port_in_mt < 0) {
 		fprintf(stderr, "Error creating sequencer port.\n");
 		return -1;
@@ -344,8 +345,9 @@ int alsa_setup_midi()
 	port_in_gm = snd_seq_create_simple_port(seq_handle, "GM Emulation",
 						SND_SEQ_PORT_CAP_SUBS_WRITE |
 						SND_SEQ_PORT_CAP_WRITE,
+						SND_SEQ_PORT_TYPE_MIDI_GENERIC |
 						SND_SEQ_PORT_TYPE_MIDI_GM |
-						SND_SEQ_PORT_TYPE_SYNTH);		
+						SND_SEQ_PORT_TYPE_SYNTHESIZER);
 	if (port_in_gm < 0) {
 		fprintf(stderr, "Error creating sequencer port.\n");
 		return -1;
