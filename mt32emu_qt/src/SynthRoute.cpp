@@ -288,7 +288,7 @@ void SynthRoute::discardMidiBuffers() {
 
 		for (int i = 0; i < midiSessions.size(); i++) {
 			QMidiBuffer *midiBuffer = midiSessions[i]->getQMidiBuffer();
-			while (midiBuffer->retieveEvents()) {
+			while (midiBuffer->retrieveEvents()) {
 				midiBuffer->discardEvents();
 			}
 		}
@@ -317,7 +317,7 @@ void SynthRoute::mergeMidiStreams(uint renderingPassFrameLength) {
 	QVarLengthArray<QMidiBuffer *, 16> streamBuffers;
 	for (int i = 0; i < midiSessions.size(); i++) {
 		QMidiBuffer *midiBuffer = midiSessions[i]->getQMidiBuffer();
-		if (midiBuffer->retieveEvents() && midiBuffer->getEventTimestamp() < renderingPassEndTimestamp) {
+		if (midiBuffer->retrieveEvents() && midiBuffer->getEventTimestamp() < renderingPassEndTimestamp) {
 			streamBuffers.append(midiBuffer);
 		}
 	}

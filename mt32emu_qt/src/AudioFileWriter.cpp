@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -147,12 +147,12 @@ bool AudioFileRenderer::convertMIDIFiles(QString useOutFileName, QStringList mid
 			qDebug() << "AudioFileRenderer: Error parsing MIDI files";
 			const QMidiEventList &midiEvents = parsers[i].getMIDIEvents();
 			if (midiEvents.count() == 0) {
-				QMessageBox::critical(NULL, "Error", "Error occured while parsing MIDI files. No MIDI events to process.");
+				QMessageBox::critical(NULL, "Error", "Error occurred while parsing MIDI files. No MIDI events to process.");
 				delete[] parsers;
 				parsers = NULL;
 				return false;
 			}
-			emit parsingFailed("Warning", "Error occured while parsing MIDI files. Processing available MIDI events.");
+			emit parsingFailed("Warning", "Error occurred while parsing MIDI files. Processing available MIDI events.");
 		}
 	}
 	parsers[parsersCount - 1].addChannelsReset();

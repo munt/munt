@@ -19,7 +19,7 @@ public:
 	void flush();
 
 	// Accessible from the rendering thread.
-	bool retieveEvents();
+	bool retrieveEvents();
 	quint64 getEventTimestamp() const;
 	quint32 getEventData(const uchar *&sysexData) const;
 	bool nextEvent();

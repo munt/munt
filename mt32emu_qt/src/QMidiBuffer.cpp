@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -78,14 +78,14 @@ void QMidiBuffer::flush() {
 	bytesToWrite = 0;
 }
 
-bool QMidiBuffer::retieveEvents() {
+bool QMidiBuffer::retrieveEvents() {
 	popEvents();
 	readPointer = ringBuffer.readPointer(bytesToRead);
 	if (bytesToRead == 0) return false;
 	MidiEventHeader *eventHeader = static_cast<MidiEventHeader *>(readPointer);
 	if (eventHeader->eventType != MidiEventLayout::MidiEventType_PAD) return true;
 	bytesRead += bytesToRead;
-	return retieveEvents();
+	return retrieveEvents();
 }
 
 quint64 QMidiBuffer::getEventTimestamp() const {
@@ -123,7 +123,7 @@ bool QMidiBuffer::nextEvent() {
 		if (eventHeader->eventType != MidiEventLayout::MidiEventType_PAD) return true;
 		bytesRead += bytesToRead;
 	}
-	return retieveEvents();
+	return retrieveEvents();
 }
 
 void QMidiBuffer::discardEvents() {

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -110,7 +110,7 @@ public:
 	void setBufferSize(quint32 bufferSizeFrames) {
 		// First, notify the processor thread that an update is pending.
 		pendingUpdateBufferSize = bufferSizeFrames;
-		// Ensure that the processor thread awakes if awating for free space.
+		// Ensure that the processor thread awakes if awaiting for free space.
 		bufferDataRetrievals.release();
 		// Now, await for the processor thread to complete the buffer reallocation.
 		bufferSizeUpdateLatch.acquire();

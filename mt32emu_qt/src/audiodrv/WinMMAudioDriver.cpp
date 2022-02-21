@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 
 using namespace MT32Emu;
 
-// Looks resonable as KMixer pulls data by 10 ms chunks
+// Looks reasonable as KMixer pulls data by 10 ms chunks
 static const DWORD DEFAULT_CHUNK_MS = 10;
 // SergM: 100 ms output latency is safe on most systems.
 static const DWORD DEFAULT_AUDIO_LATENCY = 100;

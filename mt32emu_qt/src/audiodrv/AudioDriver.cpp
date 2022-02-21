@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ quint64 AudioStream::estimateMIDITimestamp(const MasterClockNanos midiNanos) {
 	qint64 timestamp = qint64(timeInfo.lastPlayedFramesCount) + refFrameOffset + qint64(midiLatencyFrames);
 	qint64 delay = timestamp - qint64(renderedFramesCount);
 	if (delay < 0) {
-		// Negative delay means our timing is broken. We want to absort all the jitter while keeping the latency at the minimum.
+		// Negative delay means our timing is broken. We want to absorb all the jitter while keeping the latency at the minimum.
 		if (isAutoLatencyMode()) {
 			midiLatencyFrames -= delay;
 		}
@@ -105,7 +105,7 @@ void AudioStream::updateTimeInfo(const MasterClockNanos measuredNanos, const qui
 		// This is because some audio systems may pull more data than the our specified audio latency in no time.
 		// Moreover, we should be able to adjust lastPlayedFramesCount increasing speed as it counts in samples.
 		// So, it seems reasonable to only update time info at intervals no less than our total MIDI latency,
-		// which is meant to absort all the jitter.
+		// which is meant to absorb all the jitter.
 		return;
 	}
 

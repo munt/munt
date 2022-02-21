@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ OSSAudioStream::~OSSAudioStream() {
 
 void *OSSAudioStream::processingThread(void *userData) {
 	int error;
-	bool isErrorOccured = false;
+	bool isErrorOccurred = false;
 	OSSAudioStream &audioStream = *(OSSAudioStream *)userData;
 	qDebug() << "OSS audio: Processing thread started";
 	while (!audioStream.stopProcessing) {
@@ -57,7 +57,7 @@ void *OSSAudioStream::processingThread(void *userData) {
 			int delay = 0;
 			if (ioctl(audioStream.stream, SNDCTL_DSP_GETODELAY, &delay) == -1) {
 				qDebug() << "SNDCTL_DSP_GETODELAY failed:" << errno;
-				isErrorOccured = true;
+				isErrorOccurred = true;
 				break;
 			}
 			framesInAudioBuffer = quint32(delay / FRAME_SIZE);
@@ -72,11 +72,11 @@ void *OSSAudioStream::processingThread(void *userData) {
 			} else {
 				qDebug() << "OSS audio: write failed. Written bytes:" << error;
 			}
-			isErrorOccured = true;
+			isErrorOccurred = true;
 			break;
 		}
 	}
-	if (isErrorOccured) {
+	if (isErrorOccurred) {
 		close(audioStream.stream);
 		audioStream.stream = 0;
 		audioStream.synthRoute.audioStreamFailed();

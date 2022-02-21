@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ QRingBuffer::~QRingBuffer() {
 }
 
 void *QRingBuffer::writePointer(quint32 &bytesFree, bool &freeSpaceContiguous) const {
-	// Aquire barrier ensures that data is never written ahead of the indices, when the buffer
+	// Acquire barrier ensures that data is never written ahead of the indices, when the buffer
 	// space might still be in use. In practice however, this is barely possible, because all
 	// subsequent data writes depend on values of the indices, but shouldn't hurt anyway.
 	quint32 myReadPosition = QAtomicHelper::loadAcquire(readPosition);
@@ -52,7 +52,7 @@ void QRingBuffer::advanceWritePointer(quint32 bytesWritten) {
 }
 
 void *QRingBuffer::readPointer(quint32 &bytesReady) const {
-	// Aquire barrier ensures that data is never read ahead of the indices, when the buffer
+	// Acquire barrier ensures that data is never read ahead of the indices, when the buffer
 	// space might not contain valid data yet. In practice however, this is barely possible,
 	// because all subsequent data reads depend on values of the indices, but shouldn't hurt anyway.
 	quint32 myReadPosition = QAtomicHelper::loadRelaxed(readPosition);

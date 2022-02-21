@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2021 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ AlsaAudioStream::~AlsaAudioStream() {
 
 void *AlsaAudioStream::processingThread(void *userData) {
 	int error;
-	bool isErrorOccured = false;
+	bool isErrorOccurred = false;
 	AlsaAudioStream &audioStream = *(AlsaAudioStream *)userData;
 	qDebug() << "ALSA audio: Processing thread started";
 	while (!audioStream.stopProcessing) {
@@ -53,7 +53,7 @@ void *AlsaAudioStream::processingThread(void *userData) {
 			error = snd_pcm_delay(audioStream.stream, &delayp);
 			if (error < 0) {
 				qDebug() << "snd_pcm_delay failed:" << snd_strerror(error);
-//				isErrorOccured = true;
+//				isErrorOccurred = true;
 //				break;
 			} else {
 				framesInAudioBuffer = (quint32)delayp;
@@ -66,16 +66,16 @@ void *AlsaAudioStream::processingThread(void *userData) {
 			error = snd_pcm_recover(audioStream.stream, error, 0);
 			if (error != 0) {
 				qDebug() << "snd_pcm_recover failed:" << snd_strerror(error) << "-> closing...";
-				isErrorOccured = true;
+				isErrorOccurred = true;
 				break;
 			}
 		} else if (error != (int)audioStream.bufferSize) {
 			qDebug() << "snd_pcm_writei failed. Written frames:" << error;
-//			isErrorOccured = true;
+//			isErrorOccurred = true;
 //			break;
 		}
 	}
-	if (isErrorOccured) {
+	if (isErrorOccurred) {
 		snd_pcm_close(audioStream.stream);
 		audioStream.stream = NULL;
 		audioStream.synthRoute.audioStreamFailed();
