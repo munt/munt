@@ -324,6 +324,12 @@ Bit8u Part::getVolume() const {
 
 void Part::setVolumeOverride(Bit8u volume) {
 	volumeOverride = volume;
+	// When volume is 0, we want the part to stop producing any sound at all.
+	// For that to achieve, we have to actually stop processing NoteOn MIDI messages; merely
+	// returning 0 volume is not enough - the output may still be generated at a very low level.
+	// But first, we have to stop all the currently playing polys. This behaviour may also help
+	// with performance issues, because parts muted this way barely consume CPU resources.
+	if (volume == 0) allSoundOff();
 }
 
 Bit8u Part::getVolumeOverride() const {

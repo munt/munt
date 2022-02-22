@@ -449,6 +449,9 @@ public:
 	// modifies the Patch temp structure is disregarded.
 	// To enable the override mode, argument volumeOverride should be in range 0..100, setting a value outside this range
 	// disables the previously set override, if any.
+	// Note: Setting volumeOverride to 0 mutes the part completely, meaning no sound is generated at all.
+	// This is unlike the behaviour of real devices - setting 0 volume on a part may leave it still producing
+	// sound at a very low level.
 	// Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
 	MT32EMU_EXPORT_V(2.6) void setPartVolumeOverride(Bit8u partNumber, Bit8u volumeOverride);
 	// Returns the overridden volume previously set on a specific part; a value outside the range 0..100 means no override

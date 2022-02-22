@@ -1145,7 +1145,7 @@ void Synth::playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) {
 		if (velocity == 0) {
 			// MIDI defines note-on with velocity 0 as being the same as note-off with velocity 40
 			parts[part]->noteOff(note);
-		} else {
+		} else if (parts[part]->getVolumeOverride() > 0) {
 			parts[part]->noteOn(note, velocity);
 		}
 		break;

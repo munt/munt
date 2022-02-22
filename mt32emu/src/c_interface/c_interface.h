@@ -464,6 +464,9 @@ MT32EMU_EXPORT float mt32emu_get_reverb_output_gain(mt32emu_const_context contex
  * modifies the Patch temp structure is disregarded.
  * To enable the override mode, argument volumeOverride should be in range 0..100, setting a value outside this range
  * disables the previously set override, if any.
+ * Note: Setting volumeOverride to 0 mutes the part completely, meaning no sound is generated at all.
+ * This is unlike the behaviour of real devices - setting 0 volume on a part may leave it still producing
+ * sound at a very low level.
  * Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
  */
 MT32EMU_EXPORT_V(2.6) void mt32emu_set_part_volume_override(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u volume_override);
