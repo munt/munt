@@ -29,6 +29,8 @@ HEAD:
 	  menu that provides for more functions, including a volume slider, which can be used to
 	  override the current part volume level set by the received MIDI messages. The configured
 	  part volume level only persists while the synth remains open. (#77)
+	* A new command "reset" is now recognised if specified on the command line. It provides for
+	  a simple way to restore factory defaults of the application settings of some types. (#61)
 
 2021-05-22:
 

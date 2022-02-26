@@ -68,7 +68,12 @@ public:
 	void setPinned(SynthRoute *synthRoute);
 	void startPinnedSynthRoute();
 	void startMidiProcessing();
-	void processCommandLine(QStringList args);
+	bool processCommandLine(const QStringList args);
+	void handleCLIOptionProfile(const QStringList &args, int &argIx);
+	void handleCLIOptionMaxSessions(const QStringList &args, int &argIx);
+	void handleCLICommandPlay(const QStringList &args, int &argIx);
+	void handleCLICommandConvert(const QStringList &args, int &argIx);
+	bool handleCLICommandReset(const QStringList &args, int &argIx);
 	bool canCreateMidiPort();
 	bool canDeleteMidiPort(MidiSession *midiSession);
 	bool canSetMidiPortProperties(MidiSession *midiSession);

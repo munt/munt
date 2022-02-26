@@ -43,10 +43,11 @@ int main(int argv, char **args) {
 		} else {
 			mainWindow.updateFloatingDisplayVisibility();
 		}
-		if (argv > 1) master.processCommandLine(app.arguments());
-		master.startPinnedSynthRoute();
-		master.startMidiProcessing();
-		app.exec();
+		if (argv < 2 || master.processCommandLine(app.arguments())) {
+			master.startPinnedSynthRoute();
+			master.startMidiProcessing();
+			app.exec();
+		}
 		master.setTrayIcon(NULL);
 		delete trayIcon;
 	}
