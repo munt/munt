@@ -48,6 +48,7 @@
      <string>&amp;Help</string>
     </property>
     <addaction name="actionAbout"/>
+    <addaction name="actionCommandLineHelp"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -236,6 +237,11 @@
    </property>
    <property name="whatsThis">
     <string>Instructs the window manager to keep the floating display window unmanaged. Changing this may help to fix some issues with the window manager like drawing artefacts, problems with handling mouse clicks, etc.</string>
+   </property>
+  </action>
+  <action name="actionCommandLineHelp">
+   <property name="text">
+    <string>&amp;Command Line Help</string>
    </property>
   </action>
  </widget>

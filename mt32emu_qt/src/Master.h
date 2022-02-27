@@ -15,9 +15,8 @@ class QDropEvent;
 class Master : public QObject {
 friend int main(int argv, char **args);
 	Q_OBJECT
-private:
-	static void showCommandLineHelp();
 
+private:
 	QList<SynthRoute *> synthRoutes;
 	QList<AudioDriver *> audioDrivers;
 	QList<const AudioDevice *> audioDevices;
@@ -49,6 +48,7 @@ public:
 	static QStringList parseMidiListFromUrls(const QList<QUrl> urls);
 	static QStringList parseMidiListFromPathName(const QString pathName);
 	static const QByteArray getROMPathNameLocal(const QDir &romDir, const QString romFileName);
+	static void showCommandLineHelp();
 
 	// May only be called from the application thread
 	const QList<const AudioDevice *> getAudioDevices();

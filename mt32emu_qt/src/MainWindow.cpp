@@ -207,6 +207,10 @@ void MainWindow::on_actionAbout_triggered() {
 	);
 }
 
+void MainWindow::on_actionCommandLineHelp_triggered() {
+	Master::showCommandLineHelp();
+}
+
 void MainWindow::refreshTabNames()
 {
 	QWidget *widget;

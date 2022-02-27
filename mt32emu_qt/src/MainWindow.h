@@ -53,6 +53,7 @@ private:
 private slots:
 	void on_actionExit_triggered();
 	void on_actionAbout_triggered();
+	void on_actionCommandLineHelp_triggered();
 	void handleSynthRouteAdded(SynthRoute *synthRoute, const AudioDevice *audioDevice, bool pinnable);
 	void handleSynthRouteRemoved(SynthRoute *synthRoute);
 	void handleROMSLoadFailed(bool &recoveryAttempted);
