@@ -22,6 +22,10 @@ endif()
 option(libmt32emu_SHARED "Build shared library" ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS ${libmt32emu_SHARED})
 
+if(BUILD_SNAPSHOTS AND NOT libmt32emu_SHARED)
+  include(../cmake/build_snapshots.cmake)
+endif()
+
 if(libmt32emu_REQUIRE_C_INTERFACE)
   unset(libmt32emu_C_INTERFACE CACHE)
   set(libmt32emu_C_INTERFACE TRUE)

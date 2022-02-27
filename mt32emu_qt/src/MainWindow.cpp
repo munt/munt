@@ -185,13 +185,17 @@ void MainWindow::on_actionExit_triggered() {
 	QApplication::quit();
 }
 
-void MainWindow::on_actionAbout_triggered()
-{
+void MainWindow::on_actionAbout_triggered() {
+#ifdef BUILD_MT32EMU_VERSION
+	QString mt32emuVersion = BUILD_MT32EMU_VERSION;
+#else
+	QString mt32emuVersion = MT32Emu::Synth::getLibraryVersionString();
+#endif
 	QMessageBox::about(this, "About",
 		"Munt - Roland (R) MT-32 sound module emulator\n"
 		"\n"
-		"Munt mt32emu_qt GUI Application Version " APP_VERSION "\n"
-		"Munt Library Version " + QString(MT32Emu::Synth::getLibraryVersionString()) + "\n"
+		"Munt mt32emu_qt GUI Application Version " MT32EMU_QT_VERSION "\n"
+		"Munt Library Version " + mt32emuVersion + "\n"
 		"Qt Library Version " + qVersion() + "\n"
 		"\n"
 		"Build Arch: " BUILD_SYSTEM " " + QString::number(QSysInfo::WordSize) + "-bit\n"

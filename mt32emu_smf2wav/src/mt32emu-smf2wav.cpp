@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2009, 2011 Jerome Fisher
- * Copyright (C) 2012-2021 Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2012-2022 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
 #error Incompatible glib2 library version
 #endif
 
-#if !MT32EMU_IS_COMPATIBLE(2, 5)
+#if !MT32EMU_IS_COMPATIBLE(2, 6)
 #error Incompatible mt32emu library version
 #endif
 
@@ -945,10 +945,15 @@ int main(int argc, char *argv[]) {
 	Options options;
 	MT32Emu::Service service;
 	setlocale(LC_ALL, "");
-	printf("Munt MT32Emu MIDI to Wave Conversion Utility. Version %s\n", VERSION);
+#ifdef BUILD_MT32EMU_VERSION
+	const char *mt32emuVersion = BUILD_MT32EMU_VERSION;
+#else
+	const char *mt32emuVersion = service.getLibraryVersionString();
+#endif
+	printf("Munt MT32Emu MIDI to Wave Conversion Utility. Version %s\n", MT32EMU_SMF2WAV_VERSION);
 	printf("  Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>\n");
-	printf("  Copyright (C) 2012-2021 Jerome Fisher, Sergey V. Mikayev\n");
-	printf("Using Munt MT32Emu Library Version %s, libsmf Version %s (with modifications)\n", service.getLibraryVersionString(), smf_get_version());
+	printf("  Copyright (C) 2012-2022 Jerome Fisher, Sergey V. Mikayev\n");
+	printf("Using Munt MT32Emu Library Version %s, libsmf Version %s (with modifications)\n", mt32emuVersion, smf_get_version());
 	if (!parseOptions(argc, argv, &options)) {
 		return -1;
 	}

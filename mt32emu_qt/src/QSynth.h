@@ -4,6 +4,10 @@
 #include <QtCore>
 #include <mt32emu/mt32emu.h>
 
+#if !MT32EMU_IS_COMPATIBLE(2, 6)
+#error Incompatible mt32emu library version
+#endif
+
 class AudioFileWriter;
 class RealtimeHelper;
 class QSynth;

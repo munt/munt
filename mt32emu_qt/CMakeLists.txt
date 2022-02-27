@@ -1,10 +1,15 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(mt32emu-qt)
 
 include(cmake/project_data.cmake)
+
+if(BUILD_SNAPSHOTS AND libmt32emu_SNAPSHOT_VERSION)
+  include(../cmake/build_snapshots.cmake)
+  add_definitions(-DBUILD_MT32EMU_VERSION="${libmt32emu_SNAPSHOT_VERSION}")
+endif()
 
 include(GNUInstallDirs)
 
@@ -24,7 +29,7 @@ if(MSVC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   mark_as_advanced(${PROJECT_NAME}_PRECOMPILED_HEADER)
 endif()
 
-add_definitions(-DAPP_VERSION="${mt32emu_qt_VERSION}")
+add_definitions(-DMT32EMU_QT_VERSION="${mt32emu_qt_VERSION}")
 add_definitions(-DBUILD_SYSTEM="${CMAKE_SYSTEM_NAME}")
 
 include(CheckIncludeFiles)
@@ -157,7 +162,7 @@ elseif(NOT Qt5Widgets_FOUND)
 endif()
 
 if(NOT(munt_SOURCE_DIR AND TARGET MT32Emu::mt32emu))
-  find_package(MT32EMU 2.5 MODULE REQUIRED)
+  find_package(MT32EMU 2.6 CONFIG REQUIRED)
 endif()
 list(APPEND EXT_LIBS MT32Emu::mt32emu)
 
