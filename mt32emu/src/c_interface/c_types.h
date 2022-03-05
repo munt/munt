@@ -353,6 +353,9 @@ typedef union mt32emu_service_i mt32emu_service_i;
 #define MT32EMU_SERVICE_I_V5 \
 	mt32emu_boolean (*getDisplayState)(mt32emu_const_context context, char *target_buffer, const mt32emu_boolean narrow_lcd); \
 	void (*setMainDisplayMode)(mt32emu_const_context context); \
+	void (*setDisplayCompatibility)(mt32emu_const_context context, mt32emu_boolean old_mt32_compatibility_enabled); \
+	mt32emu_boolean (*isDisplayOldMT32Compatible)(mt32emu_const_context context); \
+	mt32emu_boolean (*isDefaultDisplayOldMT32Compatible)(mt32emu_const_context context); \
 	void (*setPartVolumeOverride)(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u volume_override); \
 	mt32emu_bit8u (*getPartVolumeOverride)(mt32emu_const_context context, mt32emu_bit8u part_number);
 

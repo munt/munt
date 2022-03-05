@@ -122,6 +122,9 @@ mt32emu_service_i mt32emu_get_service_i();
 #define mt32emu_read_memory i.v0->readMemory
 #define mt32emu_get_display_state iV5()->getDisplayState
 #define mt32emu_set_main_display_mode iV5()->setMainDisplayMode
+#define mt32emu_set_display_compatibility iV5()->setDisplayCompatibility
+#define mt32emu_is_display_old_mt32_compatible iV5()->isDisplayOldMT32Compatible
+#define mt32emu_is_default_display_old_mt32_compatible iV5()->isDefaultDisplayOldMT32Compatible
 
 #else // #if MT32EMU_API_TYPE == 2
 
@@ -321,6 +324,10 @@ public:
 
 	bool getDisplayState(char *target_buffer, const bool narrow_lcd) { return mt32emu_get_display_state(c, target_buffer, narrow_lcd ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE) != MT32EMU_BOOL_FALSE; }
 	void setMainDisplayMode() { mt32emu_set_main_display_mode(c); }
+
+	void setDisplayCompatibility(const bool oldMT32CompatibilityEnabled) { mt32emu_set_display_compatibility(c, oldMT32CompatibilityEnabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
+	bool isDisplayOldMT32Compatible() { return mt32emu_is_display_old_mt32_compatible(c) != MT32EMU_BOOL_FALSE; }
+	bool isDefaultDisplayOldMT32Compatible() { return mt32emu_is_default_display_old_mt32_compatible(c) != MT32EMU_BOOL_FALSE; }
 
 private:
 #if MT32EMU_API_TYPE == 2
@@ -569,6 +576,9 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_read_memory
 #undef mt32emu_get_display_state
 #undef mt32emu_set_main_display_mode
+#undef mt32emu_set_display_compatibility
+#undef mt32emu_is_display_old_mt32_compatible
+#undef mt32emu_is_default_display_old_mt32_compatible
 
 #endif // #if MT32EMU_API_TYPE == 2
 

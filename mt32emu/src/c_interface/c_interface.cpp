@@ -130,6 +130,9 @@ static const mt32emu_service_i_v5 SERVICE_VTABLE = {
 	mt32emu_add_machine_rom_file,
 	mt32emu_get_display_state,
 	mt32emu_set_main_display_mode,
+	mt32emu_set_display_compatibility,
+	mt32emu_is_display_old_mt32_compatible,
+	mt32emu_is_default_display_old_mt32_compatible,
 	mt32emu_set_part_volume_override,
 	mt32emu_get_part_volume_override
 };
@@ -952,6 +955,18 @@ mt32emu_boolean mt32emu_get_display_state(mt32emu_const_context context, char *t
 
 void mt32emu_set_main_display_mode(mt32emu_const_context context) {
 	context->synth->setMainDisplayMode();
+}
+
+void mt32emu_set_display_compatibility(mt32emu_const_context context, mt32emu_boolean old_mt32_compatibility_enabled) {
+	context->synth->setDisplayCompatibility(old_mt32_compatibility_enabled != MT32EMU_BOOL_FALSE);
+}
+
+mt32emu_boolean mt32emu_is_display_old_mt32_compatible(mt32emu_const_context context) {
+	return context->synth->isDisplayOldMT32Compatible() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
+}
+
+mt32emu_boolean mt32emu_is_default_display_old_mt32_compatible(mt32emu_const_context context) {
+	return context->synth->isDefaultDisplayOldMT32Compatible() ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
 } // extern "C"

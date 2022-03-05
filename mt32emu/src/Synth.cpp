@@ -250,6 +250,7 @@ public:
 	Bit32u midiEventQueueSysexStorageBufferSize;
 
 	Display *display;
+	bool oldMT32DisplayFeatures;
 
 	ReportHandler2 defaultReportHandler;
 	ReportHandler2 *reportHandler2;
@@ -329,6 +330,7 @@ Synth::Synth(ReportHandler *useReportHandler) :
 	memset(parts, 0, sizeof(parts));
 	renderedSampleCount = 0;
 	extensions.display = NULL;
+	extensions.oldMT32DisplayFeatures = false;
 }
 
 Synth::~Synth() {
@@ -915,6 +917,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 	}
 
 	extensions.display = new Display(*this);
+	extensions.oldMT32DisplayFeatures = controlROMFeatures->oldMT32DisplayFeatures;
 
 	opened = true;
 	activated = false;
@@ -1346,7 +1349,7 @@ void Synth::writeSysex(Bit8u device, const Bit8u *sysex, Bit32u len) {
 
 	// This is checked early in the real devices (before any sysex length checks or further processing)
 	if (sysex[0] == 0x7F) {
-		if (!controlROMFeatures->oldMT32DisplayFeatures) extensions.display->midiMessagePlayed();
+		if (!isDisplayOldMT32Compatible()) extensions.display->midiMessagePlayed();
 		reset();
 		return;
 	}
@@ -1942,6 +1945,19 @@ bool Synth::getDisplayState(char *targetBuffer, bool narrowLCD) const {
 
 void Synth::setMainDisplayMode() {
 	if (opened) extensions.display->setMainDisplayMode();
+}
+
+
+void Synth::setDisplayCompatibility(bool oldMT32CompatibilityEnabled) {
+	extensions.oldMT32DisplayFeatures = oldMT32CompatibilityEnabled;
+}
+
+bool Synth::isDisplayOldMT32Compatible() const {
+	return extensions.oldMT32DisplayFeatures;
+}
+
+bool Synth::isDefaultDisplayOldMT32Compatible() const {
+	return opened && controlROMFeatures->oldMT32DisplayFeatures;
 }
 
 /** Defines an interface of a class that maintains storage of variable-sized data of SysEx messages. */

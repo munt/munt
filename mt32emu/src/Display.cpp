@@ -182,7 +182,7 @@ bool Display::getDisplayState(char *targetBuffer, bool narrowLCD) {
 
 		switch (mode) {
 		case Mode_CUSTOM_MESSAGE:
-			if (synth.controlROMFeatures->oldMT32DisplayFeatures) {
+			if (synth.isDisplayOldMT32Compatible()) {
 				memcpy(displayBuffer, customMessageBuffer, LCD_TEXT_SIZE);
 			} else {
 				copyNullTerminatedString(displayBuffer, customMessageBuffer, LCD_TEXT_SIZE);
@@ -255,13 +255,13 @@ void Display::rhythmNotePlayed() {
 	rhythmNotePlayedSinceLastReset = true;
 	rhythmStateResetTimestamp = synth.renderedSampleCount + BLINK_TIME_FRAMES;
 	midiMessagePlayed();
-	if (synth.controlROMFeatures->oldMT32DisplayFeatures && mode == Mode_CUSTOM_MESSAGE) setMainDisplayMode();
+	if (synth.isDisplayOldMT32Compatible() && mode == Mode_CUSTOM_MESSAGE) setMainDisplayMode();
 }
 
 void Display::voicePartStateChanged(Bit8u partIndex, bool activated) {
 	if (mode == Mode_MAIN) lcdDirty = true;
 	voicePartStates[partIndex] = activated;
-	if (synth.controlROMFeatures->oldMT32DisplayFeatures && mode == Mode_CUSTOM_MESSAGE) setMainDisplayMode();
+	if (synth.isDisplayOldMT32Compatible() && mode == Mode_CUSTOM_MESSAGE) setMainDisplayMode();
 }
 
 void Display::masterVolumeChanged() {
@@ -269,7 +269,7 @@ void Display::masterVolumeChanged() {
 }
 
 void Display::programChanged(Bit8u partIndex) {
-	if (!synth.controlROMFeatures->oldMT32DisplayFeatures && (mode == Mode_CUSTOM_MESSAGE || mode == Mode_ERROR_MESSAGE)) return;
+	if (!synth.isDisplayOldMT32Compatible() && (mode == Mode_CUSTOM_MESSAGE || mode == Mode_ERROR_MESSAGE)) return;
 	mode = Mode_PROGRAM_CHANGE;
 	lcdDirty = true;
 	scheduleDisplayReset();
@@ -284,7 +284,7 @@ void Display::checksumErrorOccurred() {
 		mode = Mode_ERROR_MESSAGE;
 		lcdDirty = true;
 	}
-	if (synth.controlROMFeatures->oldMT32DisplayFeatures) {
+	if (synth.isDisplayOldMT32Compatible()) {
 		scheduleDisplayReset();
 	} else {
 		displayResetScheduled = false;
@@ -292,7 +292,7 @@ void Display::checksumErrorOccurred() {
 }
 
 bool Display::customDisplayMessageReceived(const Bit8u *message, Bit32u startIndex, Bit32u length) {
-	if (synth.controlROMFeatures->oldMT32DisplayFeatures) {
+	if (synth.isDisplayOldMT32Compatible()) {
 		for (Bit32u i = 0; i < LCD_TEXT_SIZE; i++) {
 			Bit8u c = i < length ? message[i] : ' ';
 			if (c < 32 || 127 < c) c = ' ';
@@ -320,7 +320,7 @@ bool Display::customDisplayMessageReceived(const Bit8u *message, Bit32u startInd
 
 void Display::displayControlMessageReceived(const Bit8u *messageBytes, Bit32u length) {
 	Bit8u emptyMessage[] = { 0 };
-	if (synth.controlROMFeatures->oldMT32DisplayFeatures) {
+	if (synth.isDisplayOldMT32Compatible()) {
 		if (length == 1) {
 			customDisplayMessageReceived(customMessageBuffer, 0, LCD_TEXT_SIZE);
 		} else {

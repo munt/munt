@@ -585,6 +585,17 @@ public:
 	// while the display shows some other message. Useful for the new-gen devices as those require a special Display Reset SysEx
 	// to return to the main mode e.g. from showing a custom display message or a checksum error.
 	MT32EMU_EXPORT_V(2.6) void setMainDisplayMode();
+
+	// Permits to select an arbitrary display emulation model that does not necessarily match the actual behaviour implemented
+	// in the control ROM version being used.
+	// Invoking this method with the argument set to true forces emulation of the old-gen MT-32 display features.
+	// Otherwise, emulation of the new-gen devices is enforced (these include CM-32L and LAPC-I as if these were connected to an LCD).
+	MT32EMU_EXPORT_V(2.6) void setDisplayCompatibility(bool oldMT32CompatibilityEnabled);
+	// Returns whether the currently configured features of the emulated display are compatible with the old-gen MT-32 devices.
+	MT32EMU_EXPORT_V(2.6) bool isDisplayOldMT32Compatible() const;
+	// Returns whether the emulated display features configured by default depending on the actual control ROM version
+	// are compatible with the old-gen MT-32 devices.
+	MT32EMU_EXPORT_V(2.6) bool isDefaultDisplayOldMT32Compatible() const;
 }; // class Synth
 
 } // namespace MT32Emu

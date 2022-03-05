@@ -601,6 +601,21 @@ MT32EMU_EXPORT_V(2.6) mt32emu_boolean mt32emu_get_display_state(mt32emu_const_co
  */
 MT32EMU_EXPORT_V(2.6) void mt32emu_set_main_display_mode(mt32emu_const_context context);
 
+/**
+ * Permits to select an arbitrary display emulation model that does not necessarily match the actual behaviour implemented
+ * in the control ROM version being used.
+ * Invoking this method with the argument set to true forces emulation of the old-gen MT-32 display features.
+ * Otherwise, emulation of the new-gen devices is enforced (these include CM-32L and LAPC-I as if these were connected to an LCD).
+ */
+MT32EMU_EXPORT_V(2.6) void mt32emu_set_display_compatibility(mt32emu_const_context context, mt32emu_boolean old_mt32_compatibility_enabled);
+/** Returns whether the currently configured features of the emulated display are compatible with the old-gen MT-32 devices. */
+MT32EMU_EXPORT_V(2.6) mt32emu_boolean mt32emu_is_display_old_mt32_compatible(mt32emu_const_context context);
+/**
+ * Returns whether the emulated display features configured by default depending on the actual control ROM version
+ * are compatible with the old-gen MT-32 devices.
+ */
+MT32EMU_EXPORT_V(2.6) mt32emu_boolean mt32emu_is_default_display_old_mt32_compatible(mt32emu_const_context context);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
