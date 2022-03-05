@@ -52,6 +52,7 @@ private slots:
 	void on_engageChannel1CheckBox_stateChanged(int state);
 	void on_nicePanningCheckBox_stateChanged(int state);
 	void on_nicePartialMixingCheckBox_stateChanged(int state);
+	void on_displayCompatibilityComboBox_currentIndexChanged(int);
 	void updateReverbSettings();
 	void handleReverbModeChanged(int mode);
 	void handleReverbTimeChanged(int time);

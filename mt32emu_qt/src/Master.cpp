@@ -520,6 +520,7 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	synthProfile.niceAmpRamp = settings->value("niceAmpRamp", true).toBool();
 	synthProfile.nicePanning = settings->value("nicePanning", false).toBool();
 	synthProfile.nicePartialMixing = settings->value("nicePartialMixing", false).toBool();
+	synthProfile.displayCompatibilityMode = DisplayCompatibilityMode(settings->value("displayCompatibilityMode", DisplayCompatibilityMode_DEFAULT).toInt());
 	settings->endGroup();
 }
 
@@ -549,6 +550,7 @@ void Master::storeSynthProfile(const SynthProfile &synthProfile, QString name) c
 	settings->setValue("niceAmpRamp", synthProfile.niceAmpRamp);
 	settings->setValue("nicePanning", synthProfile.nicePanning);
 	settings->setValue("nicePartialMixing", synthProfile.nicePartialMixing);
+	settings->setValue("displayCompatibilityMode", synthProfile.displayCompatibilityMode);
 	settings->endGroup();
 }
 

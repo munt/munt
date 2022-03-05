@@ -470,6 +470,10 @@ void SynthRoute::setPartialCount(int partialCount) {
 	qSynth.setPartialCount(partialCount);
 }
 
+void SynthRoute::setDisplayCompatibilityMode(DisplayCompatibilityMode displayCompatibilityMode) {
+	qSynth.setDisplayCompatibilityMode(displayCompatibilityMode);
+}
+
 void SynthRoute::getSynthProfile(SynthProfile &synthProfile) const {
 	qSynth.getSynthProfile(synthProfile);
 }

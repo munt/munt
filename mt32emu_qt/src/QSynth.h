@@ -24,6 +24,12 @@ enum ReverbCompatibilityMode {
 	ReverbCompatibilityMode_CM32L
 };
 
+enum DisplayCompatibilityMode {
+	DisplayCompatibilityMode_DEFAULT,
+	DisplayCompatibilityMode_OLD_MT32,
+	DisplayCompatibilityMode_NEW_MT32
+};
+
 struct SynthProfile {
 	QDir romDir;
 	QString controlROMFileName;
@@ -48,6 +54,7 @@ struct SynthProfile {
 	bool niceAmpRamp;
 	bool nicePanning;
 	bool nicePartialMixing;
+	DisplayCompatibilityMode displayCompatibilityMode;
 };
 
 class QReportHandler : public QObject, public MT32Emu::ReportHandler2 {
@@ -120,6 +127,7 @@ private:
 	MT32Emu::AnalogOutputMode analogOutputMode;
 	ReverbCompatibilityMode reverbCompatibilityMode;
 	bool engageChannel1OnOpen;
+	DisplayCompatibilityMode displayCompatibilityMode;
 
 	MT32Emu::Synth *synth;
 	QReportHandler reportHandler;
@@ -187,6 +195,7 @@ public:
 	bool isActive() const;
 	bool getDisplayState(char *targetBuffer) const;
 	void setMainDisplayMode();
+	void setDisplayCompatibilityMode(DisplayCompatibilityMode displayCompatibilityMode);
 
 	void startRecordingAudio(const QString &fileName);
 	void stopRecordingAudio();

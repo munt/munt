@@ -101,7 +101,8 @@ private:
 		EMU_DAC_INPUT_MODE_CHANGED,
 		MIDI_DELAY_MODE_CHANGED,
 		MIDI_CHANNELS_ASSIGNMENT_RESET,
-		DISPLAY_RESET
+		DISPLAY_RESET,
+		DISPLAY_COMPATIBILITY_MODE_CHANGED
 	};
 
 	QSynth &qsynth;
@@ -123,6 +124,7 @@ private:
 	DACInputMode emuDACInputMode;
 	MIDIDelayMode midiDelayMode;
 	bool midiChannelsAssignmentChannel1Engaged;
+	DisplayCompatibilityMode displayCompatibilityMode;
 
 	// Temp synth state collected while rendering, only accessed from the rendering thread.
 	// On backpressure, the latest values are kept.
@@ -231,6 +233,13 @@ private:
 				break;
 			case DISPLAY_RESET:
 				synth->setMainDisplayMode();
+				break;
+			case DISPLAY_COMPATIBILITY_MODE_CHANGED:
+				if (DisplayCompatibilityMode_DEFAULT == displayCompatibilityMode) {
+					synth->setDisplayCompatibility(synth->isDefaultDisplayOldMT32Compatible());
+				} else {
+					synth->setDisplayCompatibility(DisplayCompatibilityMode_OLD_MT32 == displayCompatibilityMode);
+				}
 				break;
 			}
 		}
@@ -488,6 +497,12 @@ public:
 	void setMainDisplayMode() {
 		QMutexLocker settingsLocker(&settingsMutex);
 		enqueueSynthControlEvent(DISPLAY_RESET);
+	}
+
+	void setDisplayCompatibilityMode(DisplayCompatibilityMode useDisplayCompatibilityMode) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		displayCompatibilityMode = useDisplayCompatibilityMode;
+		enqueueSynthControlEvent(DISPLAY_COMPATIBILITY_MODE_CHANGED);
 	}
 
 	void resetSynth() {
@@ -1059,6 +1074,20 @@ void QSynth::setMainDisplayMode() {
 	}
 }
 
+void QSynth::setDisplayCompatibilityMode(DisplayCompatibilityMode useDisplayCompatibilityMode) {
+	if (isRealtime()) {
+		realtimeHelper->setDisplayCompatibilityMode(useDisplayCompatibilityMode);
+	} else {
+		QMutexLocker synthLocker(synthMutex);
+		displayCompatibilityMode = useDisplayCompatibilityMode;
+		if (DisplayCompatibilityMode_DEFAULT == displayCompatibilityMode) {
+			synth->setDisplayCompatibility(synth->isDefaultDisplayOldMT32Compatible());
+		} else {
+			synth->setDisplayCompatibility(DisplayCompatibilityMode_OLD_MT32 == displayCompatibilityMode);
+		}
+	}
+}
+
 void QSynth::reset() const {
 	if (isRealtime()) {
 		realtimeHelper->resetSynth();
@@ -1115,6 +1144,7 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 	synthProfile.partialCount = partialCount;
 	synthProfile.engageChannel1OnOpen = engageChannel1OnOpen;
 	synthProfile.reverbCompatibilityMode = reverbCompatibilityMode;
+	synthProfile.displayCompatibilityMode = displayCompatibilityMode;
 
 	if (isRealtime()) {
 		realtimeHelper->getSynthSettings(synthProfile);
@@ -1165,6 +1195,7 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	setNicePanningEnabled(synthProfile.nicePanning);
 	setNicePartialMixingEnabled(synthProfile.nicePartialMixing);
 	setInitialMIDIChannelsAssignment(synthProfile.engageChannel1OnOpen);
+	setDisplayCompatibilityMode(synthProfile.displayCompatibilityMode);
 }
 
 void QSynth::getROMImages(const ROMImage *&cri, const ROMImage *&pri) const {

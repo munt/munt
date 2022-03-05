@@ -328,13 +328,44 @@ Takes effect after reopening the Synth.</string>
       </widget>
      </item>
      <item row="10" column="0">
+      <widget class="QLabel" name="label_11">
+       <property name="text">
+        <string>Display Compatibility</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="1">
+      <widget class="QComboBox" name="displayCompatibilityComboBox">
+       <property name="toolTip">
+        <string>Display Compatibility Mode
+
+Select display emulation model to enable features specific to old-gen units vs. new-gen units (including CM-32L, as if a LCD was connected).</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>Default - depends on control ROM version</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Compatible with old-gen MT-32</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Compatible with new-gen MT-32 (and CM-32L)</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="11" column="0">
       <widget class="QLabel" name="label_5">
        <property name="text">
         <string>Output Gain</string>
        </property>
       </widget>
      </item>
-     <item row="10" column="1">
+     <item row="11" column="1">
       <widget class="QSlider" name="outputGainSlider">
        <property name="maximum">
         <number>400</number>
@@ -350,14 +381,14 @@ Takes effect after reopening the Synth.</string>
        </property>
       </widget>
      </item>
-     <item row="11" column="0">
+     <item row="12" column="0">
       <widget class="QLabel" name="label_6">
        <property name="text">
         <string>Reverb Output Gain</string>
        </property>
       </widget>
      </item>
-     <item row="11" column="1">
+     <item row="12" column="1">
       <widget class="QSlider" name="reverbOutputGainSlider">
        <property name="maximum">
         <number>400</number>
@@ -373,7 +404,7 @@ Takes effect after reopening the Synth.</string>
        </property>
       </widget>
      </item>
-     <item row="12" column="0">
+     <item row="13" column="0">
       <widget class="QCheckBox" name="reverseStereoCheckBox">
        <property name="text">
         <string>Reverse Stereo</string>
@@ -383,7 +414,7 @@ Takes effect after reopening the Synth.</string>
        </property>
       </widget>
      </item>
-     <item row="12" column="1">
+     <item row="13" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
         <widget class="QPushButton" name="assignChannels2_10Button">
@@ -407,7 +438,7 @@ Takes effect after reopening the Synth.</string>
        </item>
       </layout>
      </item>
-     <item row="13" column="0">
+     <item row="14" column="0">
       <widget class="QCheckBox" name="niceAmpRampCheckBox">
        <property name="toolTip">
         <string>Toggles improved emulation of amplitude ramp in sustain phase.
@@ -422,7 +453,7 @@ to trade-off the quality improvement over the emulation accuracy.</string>
        </property>
       </widget>
      </item>
-     <item row="13" column="1">
+     <item row="14" column="1">
       <widget class="QCheckBox" name="engageChannel1CheckBox">
        <property name="text">
         <string>Use alternative channel assignment on synth start</string>
@@ -432,7 +463,7 @@ to trade-off the quality improvement over the emulation accuracy.</string>
        </property>
       </widget>
      </item>
-     <item row="14" column="0">
+     <item row="15" column="0">
       <widget class="QCheckBox" name="nicePanningCheckBox">
        <property name="toolTip">
         <string>Enlarges the allowed value range for the pan-pot setting, providing for smoother panning.
@@ -449,7 +480,7 @@ Note, this option has no effect on partial pairs within the stereo structures (8
        </property>
       </widget>
      </item>
-     <item row="14" column="1">
+     <item row="15" column="1">
       <widget class="QCheckBox" name="nicePartialMixingCheckBox">
        <property name="toolTip">
         <string>Disables occasional counter-phase mixing of partials that the LA32 chip exhibits.
@@ -522,30 +553,6 @@ chances to overdrive, so the output quality may be affected (e.g. due to by clip
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>changeROMSetButton</tabstop>
-  <tabstop>midiDelayEmuComboBox</tabstop>
-  <tabstop>dacEmuComboBox</tabstop>
-  <tabstop>reverbCheckBox</tabstop>
-  <tabstop>reverbCompatibilityComboBox</tabstop>
-  <tabstop>reverbModeComboBox</tabstop>
-  <tabstop>reverbTimeSlider</tabstop>
-  <tabstop>reverbLevelSlider</tabstop>
-  <tabstop>maxPartialsSpinBox</tabstop>
-  <tabstop>analogComboBox</tabstop>
-  <tabstop>rendererTypeComboBox</tabstop>
-  <tabstop>outputGainSlider</tabstop>
-  <tabstop>reverbOutputGainSlider</tabstop>
-  <tabstop>reverseStereoCheckBox</tabstop>
-  <tabstop>assignChannels2_10Button</tabstop>
-  <tabstop>assignChannels1_8_10Button</tabstop>
-  <tabstop>niceAmpRampCheckBox</tabstop>
-  <tabstop>engageChannel1CheckBox</tabstop>
-  <tabstop>nicePanningCheckBox</tabstop>
-  <tabstop>nicePartialMixingCheckBox</tabstop>
-  <tabstop>profileComboBox</tabstop>
-  <tabstop>profileCheckBox</tabstop>
- </tabstops>
  <resources/>
  <connections/>
 </ui>

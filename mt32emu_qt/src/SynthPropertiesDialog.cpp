@@ -177,6 +177,10 @@ void SynthPropertiesDialog::on_nicePartialMixingCheckBox_stateChanged(int state)
 	synthRoute->setNicePartialMixingEnabled(state == Qt::Checked);
 }
 
+void SynthPropertiesDialog::on_displayCompatibilityComboBox_currentIndexChanged(int index) {
+	synthRoute->setDisplayCompatibilityMode(DisplayCompatibilityMode(index));
+}
+
 void SynthPropertiesDialog::updateReverbSettings() {
 	if (ui->reverbCheckBox->checkState() == Qt::PartiallyChecked) return;
 	synthRoute->setReverbSettings(ui->reverbModeComboBox->currentIndex(),
@@ -235,6 +239,7 @@ void SynthPropertiesDialog::restoreDefaults() {
 	ui->nicePanningCheckBox->setCheckState(Qt::Unchecked);
 	ui->nicePartialMixingCheckBox->setCheckState(Qt::Unchecked);
 	ui->engageChannel1CheckBox->setCheckState(Qt::Unchecked);
+	ui->displayCompatibilityComboBox->setCurrentIndex(0);
 }
 
 void SynthPropertiesDialog::loadSynthProfile(bool reloadFromSynthRoute) {
@@ -263,6 +268,7 @@ void SynthPropertiesDialog::loadSynthProfile(bool reloadFromSynthRoute) {
 	ui->nicePanningCheckBox->setCheckState(synthProfile.nicePanning ? Qt::Checked : Qt::Unchecked);
 	ui->nicePartialMixingCheckBox->setCheckState(synthProfile.nicePartialMixing ? Qt::Checked : Qt::Unchecked);
 	ui->engageChannel1CheckBox->setCheckState(synthProfile.engageChannel1OnOpen ? Qt::Checked : Qt::Unchecked);
+	ui->displayCompatibilityComboBox->setCurrentIndex(synthProfile.displayCompatibilityMode);
 }
 
 void SynthPropertiesDialog::saveSynthProfile() {

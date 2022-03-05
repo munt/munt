@@ -95,6 +95,7 @@ public:
 	void setAnalogOutputMode(MT32Emu::AnalogOutputMode analogOutputMode);
 	void setRendererType(MT32Emu::RendererType rendererType);
 	void setPartialCount(int partialCount);
+	void setDisplayCompatibilityMode(DisplayCompatibilityMode displayCompatibilityMode);
 
 	void startRecordingAudio(const QString &fileName);
 	void stopRecordingAudio();
