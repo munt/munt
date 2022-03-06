@@ -1,4 +1,6 @@
-HEAD:
+2022-03-06:
+
+	2.6.0 released.
 
 	* Added support for three more control ROMs: MT-32 v.2.06, v.2.07 and CM-32LN v.1.00.
 	* Improved CMake build script for mt32emu. Notably:

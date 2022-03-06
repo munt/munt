@@ -1,4 +1,6 @@
-HEAD:
+2022-03-06:
+
+	1.10.0 released.
 
 	* Updated mt32emu library to version 2.6.0.
 	* Improved emulation of the MT-32 display. It now behaves a lot closer to the real device.
