@@ -4,5 +4,5 @@ set(mt32emu_qt_CONTACT "sergm@muntemu.org")
 
 set(mt32emu_qt_VERSION_MAJOR 1)
 set(mt32emu_qt_VERSION_MINOR 10)
-set(mt32emu_qt_VERSION_PATCH 0)
+set(mt32emu_qt_VERSION_PATCH 2)
 set(mt32emu_qt_VERSION "${mt32emu_qt_VERSION_MAJOR}.${mt32emu_qt_VERSION_MINOR}.${mt32emu_qt_VERSION_PATCH}")
