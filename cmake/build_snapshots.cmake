@@ -14,11 +14,13 @@ endif()
 
 string(STRIP "${munt_GIT_HASH}" munt_GIT_HASH)
 string(MAKE_C_IDENTIFIER ${PROJECT_NAME} munt_PROJECT_ID)
-set(${munt_PROJECT_ID}_VERSION "${${munt_PROJECT_ID}_VERSION_MAJOR}.${${munt_PROJECT_ID}_VERSION_MINOR}-git${munt_GIT_HASH}")
-message(STATUS "Building snapshot ${munt_PROJECT_ID}-${${munt_PROJECT_ID}_VERSION}")
-
 if(munt_PROJECT_ID STREQUAL "libmt32emu")
-  set(libmt32emu_SNAPSHOT_VERSION ${libmt32emu_VERSION} PARENT_SCOPE)
+  set(libmt32emu_SNAPSHOT_VERSION "${libmt32emu_VERSION_MAJOR}.${libmt32emu_VERSION_MINOR}-git${munt_GIT_HASH}")
+  set(libmt32emu_SNAPSHOT_VERSION "${libmt32emu_SNAPSHOT_VERSION}" PARENT_SCOPE)
+  message(STATUS "Building snapshot libmt32emu-${libmt32emu_SNAPSHOT_VERSION}")
+else()
+  set(${munt_PROJECT_ID}_VERSION "${${munt_PROJECT_ID}_VERSION_MAJOR}.${${munt_PROJECT_ID}_VERSION_MINOR}-git${munt_GIT_HASH}")
+  message(STATUS "Building snapshot ${munt_PROJECT_ID}-${${munt_PROJECT_ID}_VERSION}")
 endif()
 
 unset(munt_PROJECT_ID)
