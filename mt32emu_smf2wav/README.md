@@ -36,7 +36,7 @@ License
 =======
 
 Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com><br>
-Copyright (C) 2012-2021 Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2012-2022 Jerome Fisher, Sergey V. Mikayev
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

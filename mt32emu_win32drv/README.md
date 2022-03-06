@@ -153,7 +153,7 @@ command `drvsetup.exe repair` can be executed.
 ## License
 
 Copyright (C) 2003, 2004, 2005, 2011 Dean Beeler, Jerome Fisher<br>
-Copyright (C) 2011-2021 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
