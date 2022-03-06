@@ -4,5 +4,5 @@ set(munt_CONTACT "sergm@muntemu.org")
 
 set(munt_VERSION_MAJOR 2)
 set(munt_VERSION_MINOR 6)
-set(munt_VERSION_PATCH 0)
+set(munt_VERSION_PATCH 2)
 set(munt_VERSION "${munt_VERSION_MAJOR}.${munt_VERSION_MINOR}.${munt_VERSION_PATCH}")
