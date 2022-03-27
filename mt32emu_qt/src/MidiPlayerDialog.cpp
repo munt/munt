@@ -264,7 +264,11 @@ void MidiPlayerDialog::dropEvent(QDropEvent *e) {
 		return;
 	}
 
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 	const QPoint pos = e->pos();
+#else
+	const QPoint pos = e->position().toPoint();
+#endif
 	const bool dropToMidiList = ui->playList->geometry().contains(pos);
 	if (dropToMidiList) {
 		QListWidgetItem *dropItem = ui->playList->itemAt(ui->playList->mapFromParent(pos));

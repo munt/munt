@@ -11,12 +11,17 @@ class Master;
 class WaveGenerator;
 class SynthRoute;
 class QAudioOutput;
+class QAudioSink;
 class QtAudioDriver;
 
 class QtAudioStream : public AudioStream {
 	friend class WaveGenerator;
 private:
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 	QAudioOutput *audioOutput;
+#else
+	QAudioSink *audioOutput;
+#endif
 	QThread *processingThread;
 	WaveGenerator *waveGenerator;
 

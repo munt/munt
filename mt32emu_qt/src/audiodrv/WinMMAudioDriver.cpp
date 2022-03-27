@@ -287,7 +287,12 @@ const QList<const AudioDevice *> WinMMAudioDriver::createDeviceList() {
 			qDebug() << "WinMMAudioDriver: waveOutGetDevCaps failed for" << deviceIndex;
 			continue;
 		}
-		deviceList.append(new WinMMAudioDevice(*this, deviceIndex, QString().fromLocal8Bit(deviceInfo.szPname)));
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+			QString deviceName = QString().fromLocal8Bit(deviceInfo.szPname);
+#else
+			QString deviceName = QString().fromWCharArray(deviceInfo.szPname);
+#endif
+		deviceList.append(new WinMMAudioDevice(*this, deviceIndex, deviceName));
 	}
 	return deviceList;
 }

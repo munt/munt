@@ -182,7 +182,7 @@ void MainWindow::on_actionExit_triggered() {
 		delete midiConverterDialog;
 		midiConverterDialog = NULL;
 	}
-	QApplication::quit();
+	QApplication::exit();
 }
 
 void MainWindow::on_actionAbout_triggered() {

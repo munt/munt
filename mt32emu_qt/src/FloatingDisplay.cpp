@@ -15,7 +15,13 @@
  */
 
 #include <QApplication>
+
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QDesktopWidget>
+#else
+#include <QScreen>
+#endif
+
 #include <QMenu>
 #include <QSlider>
 #include <QWidgetAction>
@@ -64,7 +70,11 @@ FloatingDisplay::FloatingDisplay(const QWidget *mainWindow) :
 	sizeGrip->setCursor(Qt::SizeFDiagCursor);
 
 	baseWindowWidth = lcdWidget->sizeHint().width() + MIDI_MESSAGE_LED_SIZE.width() + 2 * frameWithMargin + LAYOUT_SPACING;
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 	QRect availableGeometry = QApplication::desktop()->availableGeometry(this);
+#else
+	QRect availableGeometry = screen()->availableGeometry();
+#endif
 	QRect rect = settings->value("FloatingDisplay/geometry").toRect();
 	if (rect.isValid()) {
 		layoutWidgets(qMin(availableGeometry.width(), rect.width()));
@@ -150,7 +160,11 @@ void FloatingDisplay::mousePressEvent(QMouseEvent *event) {
 	}
 	event->accept();
 	if (DRAG_STATUS_OFF == dragStatus) {
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 		startDrag(event->globalPos());
+#else
+		startDrag(event->globalPosition().toPoint());
+#endif
 		dragStatus = DRAG_STATUS_DRAGGING;
 	}
 }
@@ -161,7 +175,11 @@ void FloatingDisplay::mouseMoveEvent(QMouseEvent *event) {
 		return;
 	}
 	event->accept();
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 	const QPoint dragPosition = event->globalPos();
+#else
+	const QPoint dragPosition = event->globalPosition().toPoint();
+#endif
 	if (DRAG_STATUS_OFF == dragStatus) {
 		startDrag(dragPosition);
 		return;

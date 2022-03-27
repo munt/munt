@@ -18,8 +18,10 @@
 
 #ifdef USE_QT_MULTIMEDIAKIT
 #include <QtMultimediaKit/QAudioOutput>
-#else
+#elif (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtMultimedia/QAudioOutput>
+#else
+#include <QtMultimedia/QAudioSink>
 #endif
 
 #include <mt32emu/mt32emu.h>
@@ -98,18 +100,27 @@ void QtAudioStream::start() {
 	QAudioFormat format;
 	format.setSampleRate(sampleRate);
 	format.setChannelCount(2);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 	format.setSampleSize(16);
 	format.setCodec("audio/pcm");
 	// libmt32emu produces samples in native byte order which is the default byte order used in QAudioFormat
 	format.setSampleType(QAudioFormat::SignedInt);
 	audioOutput = new QAudioOutput(format);
+#else
+	format.setSampleFormat(QAudioFormat::Int16);
+	audioOutput = new QAudioSink(format);
+#endif
 	waveGenerator = new WaveGenerator(*this);
 	if (settings.audioLatency != 0) {
 		audioOutput->setBufferSize((sampleRate * settings.audioLatency << 2) / MasterClock::MILLIS_PER_SECOND);
 	}
 	audioOutput->start(waveGenerator);
 	MasterClockNanos audioLatency = MasterClock::NANOS_PER_SECOND * audioOutput->bufferSize() / (sampleRate << 2);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 	MasterClockNanos chunkSize = MasterClock::NANOS_PER_SECOND * audioOutput->periodSize() / (sampleRate << 2);
+#else
+	MasterClockNanos chunkSize = audioLatency / 5;
+#endif
 	audioLatencyFrames = quint32(audioOutput->bufferSize() >> 2);
 	qDebug() << "QAudioDriver: Latency set to:" << (double)audioLatency / MasterClock::NANOS_PER_SECOND << "sec." << "Chunk size:" << (double)chunkSize / MasterClock::NANOS_PER_SECOND;
 

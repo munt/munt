@@ -208,8 +208,16 @@ MidiSession *Win32MidiDriver::findMidiSession(quint32 midiSessionID) {
 
 void Win32MidiInProcessor::run() {
 	qDebug() << "Win32MidiDriver: Win32MidiInProcessor started";
-	HINSTANCE hInstance = GetModuleHandle(NULL);
+
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 	LPCTSTR mt32emuClassName = "mt32emu_class";
+	LPCTSTR mt32emuWindowName = "mt32emu_message_window";
+#else
+	LPCTSTR mt32emuClassName = L"mt32emu_class";
+	LPCTSTR mt32emuWindowName = L"mt32emu_message_window";
+#endif
+
+	HINSTANCE hInstance = GetModuleHandle(NULL);
 	WNDCLASS wc;
 	wc.style = 0;
 	wc.lpfnWndProc = &Win32MidiDriver::midiInProc;
@@ -229,7 +237,7 @@ void Win32MidiInProcessor::run() {
 #define HWND_MESSAGE NULL
 #endif
 
-	hwnd = CreateWindow(mt32emuClassName, "mt32emu_message_window", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
+	hwnd = CreateWindow(mt32emuClassName, mt32emuWindowName, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
 
 #if _WIN32_WINNT < 0x0500
 #undef HWND_MESSAGE
@@ -365,7 +373,12 @@ void Win32MidiDriver::enumPorts(QList<QString> &midiInPortNames) {
 		if (midiInGetDevCaps(i, &mic, sizeof(MIDIINCAPS)) != MMSYSERR_NOERROR) {
 			midiInPortNames.append("");
 		} else {
-			midiInPortNames.append("MidiIn" + QString().setNum(i) + ": " + QString().fromLocal8Bit(mic.szPname));
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+			QString midiInPortName = QString().fromLocal8Bit(mic.szPname);
+#else
+			QString midiInPortName = QString().fromWCharArray(mic.szPname);
+#endif
+			midiInPortNames.append("MidiIn" + QString().setNum(i) + ": " + midiInPortName);
 		}
 	}
 }
