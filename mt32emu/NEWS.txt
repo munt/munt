@@ -1,3 +1,15 @@
+2022-04-16:
+
+	2.6.2 released.
+
+	* To improve portability on some systems where multiple ABIs are supported with different
+	  calling conventions (notably 32-bit Windows), all the public C functions now declare
+	  the C calling convention explicitly, that makes a shared library build compatible with
+	  a project who utilises another calling convention. (#89)
+	* Function mt32emu_configure_midi_event_queue_sysex_storage from the C-compatible API
+	  is now correctly exported in the declaration. Previously, it was only accessible when
+	  building the library statically or via the plugin-like API. (#90)
+
 2022-03-06:
 
 	2.6.0 released.
@@ -80,7 +92,7 @@
 
 	* Reworked the support for accessing ROM files with localised pathnames introduced in 2.3.0.
 	  Since it is not really necessary in majority of cases but may nevertheless update global
-	  C and C++ locale settings, it must now be explicitly enabled with the new Cmake option
+	  C and C++ locale settings, it must now be explicitly enabled with the new CMake option
 	  libmt32emu_INSTALL_DEFAULT_LOCALE. Also, it no longer touches the global C++ locale
 	  even if enabled, since that appears to have no positive effect. So far, it has been found
 	  useful for building shared library with some old versions of MS VC when linking C runtime
@@ -186,7 +198,7 @@
 
 	2.0.1 released.
 
-	* Disamibugated names of classes ReportHandler and MidiReceiver. In cpp_interface.h, these classes are now named
+	* Disambiguated names of classes ReportHandler and MidiReceiver. In cpp_interface.h, these classes are now named
 	  IReportHandler and IMidiReceiver in accordance. This fixes linkage errors that may previously arise
 	  when an implementation attempted to extend one of these classes.
 	* Various other minor code improvements that render no functional changes.
