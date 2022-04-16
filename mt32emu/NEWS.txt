@@ -1,6 +1,6 @@
 2022-04-16:
 
-	2.6.2 released.
+	2.6.3 released.
 
 	* To improve portability on some systems where multiple ABIs are supported with different
 	  calling conventions (notably 32-bit Windows), all the public C functions now declare
