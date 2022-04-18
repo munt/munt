@@ -358,6 +358,12 @@ if(WIN32)
   set_target_properties(mt32emu-qt
     PROPERTIES VERSION ${mt32emu_qt_VERSION}
   )
+elseif(APPLE)
+  set_target_properties(mt32emu-qt
+    PROPERTIES
+      MACOSX_BUNDLE_BUNDLE_VERSION ${mt32emu_qt_VERSION}
+      MACOSX_BUNDLE_SHORT_VERSION_STRING ${mt32emu_qt_VERSION}
+  )
 endif()
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Runtime)
