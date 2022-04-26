@@ -198,6 +198,7 @@ static bool parseOptions(int argc, char *argv[], Options *options) {
 		 "                 mt32_1_06:  MT-32 with control ROM version 1.06\n"
 		 "                 mt32_1_07:  MT-32 with control ROM version 1.07\n"
 		 "                 mt32_bluer: MT-32 Blue Ridge mod version X.XX\n"
+		 "                 mt32_2_03:  MT-32 with control ROM version 2.03\n"
 		 "                 mt32_2_04:  MT-32 with control ROM version 2.04\n"
 		 "                 mt32_2_06:  MT-32 with control ROM version 2.06\n"
 		 "                 mt32_2_07:  MT-32 with control ROM version 2.07\n"
