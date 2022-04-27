@@ -1,3 +1,7 @@
+HEAD:
+
+	* Added support for MT-32 control ROM v.2.03.
+
 2022-04-16:
 
 	2.6.3 released.
