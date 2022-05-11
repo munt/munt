@@ -135,7 +135,8 @@ typedef enum {
 	MT32EMU_SERVICE_VERSION_3 = 3,
 	MT32EMU_SERVICE_VERSION_4 = 4,
 	MT32EMU_SERVICE_VERSION_5 = 5,
-	MT32EMU_SERVICE_VERSION_CURRENT = MT32EMU_SERVICE_VERSION_5
+	MT32EMU_SERVICE_VERSION_6 = 6,
+	MT32EMU_SERVICE_VERSION_CURRENT = MT32EMU_SERVICE_VERSION_6
 } mt32emu_service_version;
 
 /* === Report Handler Interface === */
@@ -365,6 +366,10 @@ typedef union mt32emu_service_i mt32emu_service_i;
 	void (MT32EMU_C_CALL *setPartVolumeOverride)(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u volume_override); \
 	mt32emu_bit8u (MT32EMU_C_CALL *getPartVolumeOverride)(mt32emu_const_context context, mt32emu_bit8u part_number);
 
+#define MT32EMU_SERVICE_I_V6 \
+	mt32emu_boolean (MT32EMU_C_CALL *getSoundGroupName)(mt32emu_const_context context, char *sound_group_name, mt32emu_bit8u timbre_group, mt32emu_bit8u timbre_number); \
+	mt32emu_boolean (MT32EMU_C_CALL *getSoundName)(mt32emu_const_context context, char *sound_name, mt32emu_bit8u timbre_group, mt32emu_bit8u timbre_number);
+
 typedef struct {
 	MT32EMU_SERVICE_I_V0
 } mt32emu_service_i_v0;
@@ -404,6 +409,16 @@ typedef struct {
 	MT32EMU_SERVICE_I_V5
 } mt32emu_service_i_v5;
 
+typedef struct {
+	MT32EMU_SERVICE_I_V0
+	MT32EMU_SERVICE_I_V1
+	MT32EMU_SERVICE_I_V2
+	MT32EMU_SERVICE_I_V3
+	MT32EMU_SERVICE_I_V4
+	MT32EMU_SERVICE_I_V5
+	MT32EMU_SERVICE_I_V6
+} mt32emu_service_i_v6;
+
 /**
  * Extensible interface for all the library services.
  * Union intended to view an interface of any subsequent version as any parent interface not requiring a cast.
@@ -416,6 +431,7 @@ union mt32emu_service_i {
 	const mt32emu_service_i_v3 *v3;
 	const mt32emu_service_i_v4 *v4;
 	const mt32emu_service_i_v5 *v5;
+	const mt32emu_service_i_v6 *v6;
 };
 
 #undef MT32EMU_SERVICE_I_V0
@@ -424,5 +440,6 @@ union mt32emu_service_i {
 #undef MT32EMU_SERVICE_I_V3
 #undef MT32EMU_SERVICE_I_V4
 #undef MT32EMU_SERVICE_I_V5
+#undef MT32EMU_SERVICE_I_V6
 
 #endif /* #ifndef MT32EMU_C_TYPES_H */

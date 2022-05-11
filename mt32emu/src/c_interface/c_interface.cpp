@@ -43,7 +43,7 @@ static mt32emu_service_version MT32EMU_C_CALL getSynthVersionID(mt32emu_service_
 	return MT32EMU_SERVICE_VERSION_CURRENT;
 }
 
-static const mt32emu_service_i_v5 SERVICE_VTABLE = {
+static const mt32emu_service_i_v6 SERVICE_VTABLE = {
 	getSynthVersionID,
 	mt32emu_get_supported_report_handler_version,
 	mt32emu_get_supported_midi_receiver_version,
@@ -134,7 +134,9 @@ static const mt32emu_service_i_v5 SERVICE_VTABLE = {
 	mt32emu_is_display_old_mt32_compatible,
 	mt32emu_is_default_display_old_mt32_compatible,
 	mt32emu_set_part_volume_override,
-	mt32emu_get_part_volume_override
+	mt32emu_get_part_volume_override,
+	mt32emu_get_sound_group_name,
+	mt32emu_get_sound_name
 };
 
 } // namespace MT32Emu
@@ -464,7 +466,7 @@ extern "C" {
 
 mt32emu_service_i MT32EMU_C_CALL mt32emu_get_service_i() {
 	mt32emu_service_i i;
-	i.v5 = &SERVICE_VTABLE;
+	i.v6 = &SERVICE_VTABLE;
 	return i;
 }
 
@@ -943,6 +945,14 @@ mt32emu_bit32u MT32EMU_C_CALL mt32emu_get_playing_notes(mt32emu_const_context co
 
 const char * MT32EMU_C_CALL mt32emu_get_patch_name(mt32emu_const_context context, mt32emu_bit8u part_number) {
 	return context->synth->getPatchName(part_number);
+}
+
+mt32emu_boolean MT32EMU_C_CALL mt32emu_get_sound_group_name(mt32emu_const_context context, char *sound_group_name, mt32emu_bit8u timbre_group, mt32emu_bit8u timbre_number) {
+	return context->synth->getSoundGroupName(sound_group_name, timbre_group, timbre_number) ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
+}
+
+mt32emu_boolean MT32EMU_C_CALL mt32emu_get_sound_name(mt32emu_const_context context, char *sound_name, mt32emu_bit8u timbre_group, mt32emu_bit8u timbre_number) {
+	return context->synth->getSoundName(sound_name, timbre_group, timbre_number) ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE;
 }
 
 void MT32EMU_C_CALL mt32emu_read_memory(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data) {

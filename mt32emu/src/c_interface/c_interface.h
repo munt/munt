@@ -576,8 +576,29 @@ MT32EMU_EXPORT mt32emu_bit32u MT32EMU_C_CALL mt32emu_get_playing_notes(mt32emu_c
 /**
  * Returns name of the patch set on the specified part.
  * Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
+ * The returned value is a null-terminated string which is guaranteed to remain valid until the next call to one of functions
+ * that perform sample rendering or immediate SysEx processing (e.g. mt32emu_play_sysex_now).
  */
 MT32EMU_EXPORT const char * MT32EMU_C_CALL mt32emu_get_patch_name(mt32emu_const_context context, mt32emu_bit8u part_number);
+
+/**
+ * Retrieves the name of the sound group the timbre identified by arguments timbre_group and timbre_number is associated with.
+ * Values 0-3 of timbre_group correspond to the timbre banks GROUP A, GROUP B, MEMORY and RHYTHM.
+ * For all but the RHYTHM timbre bank, allowed values of timbre_number are in range 0-63. The number of timbres
+ * contained in the RHYTHM bank depends on the used control ROM version.
+ * The argument sound_group_name must point to an array of at least 8 characters. The result is a null-terminated string.
+ * Returns whether the specified timbre has been found and the result written in sound_group_name.
+ */
+MT32EMU_EXPORT_V(2.7) mt32emu_boolean MT32EMU_C_CALL mt32emu_get_sound_group_name(mt32emu_const_context context, char *sound_group_name, mt32emu_bit8u timbre_group, mt32emu_bit8u timbre_number);
+/**
+ * Retrieves the name of the timbre identified by arguments timbre_group and timbre_number.
+ * Values 0-3 of timbre_group correspond to the timbre banks GROUP A, GROUP B, MEMORY and RHYTHM.
+ * For all but the RHYTHM timbre bank, allowed values of timbre_number are in range 0-63. The number of timbres
+ * contained in the RHYTHM bank depends on the used control ROM version.
+ * The argument sound_name must point to an array of at least 11 characters. The result is a null-terminated string.
+ * Returns whether the specified timbre has been found and the result written in sound_name.
+ */
+MT32EMU_EXPORT_V(2.7) mt32emu_boolean MT32EMU_C_CALL mt32emu_get_sound_name(mt32emu_const_context context, char *sound_name, mt32emu_bit8u timbreGroup, mt32emu_bit8u timbreNumber);
 
 /** Stores internal state of emulated synth into an array provided (as it would be acquired from hardware). */
 MT32EMU_EXPORT void MT32EMU_C_CALL mt32emu_read_memory(mt32emu_const_context context, mt32emu_bit32u addr, mt32emu_bit32u len, mt32emu_bit8u *data);

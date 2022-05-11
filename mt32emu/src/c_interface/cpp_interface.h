@@ -119,6 +119,8 @@ mt32emu_service_i mt32emu_get_service_i();
 #define mt32emu_get_partial_states i.v0->getPartialStates
 #define mt32emu_get_playing_notes i.v0->getPlayingNotes
 #define mt32emu_get_patch_name i.v0->getPatchName
+#define mt32emu_get_sound_group_name iV6()->getSoundGroupName
+#define mt32emu_get_sound_name iV6()->getSoundName
 #define mt32emu_read_memory i.v0->readMemory
 #define mt32emu_get_display_state iV5()->getDisplayState
 #define mt32emu_set_main_display_mode iV5()->setMainDisplayMode
@@ -320,6 +322,8 @@ public:
 	void getPartialStates(Bit8u *partial_states) { mt32emu_get_partial_states(c, partial_states); }
 	Bit32u getPlayingNotes(Bit8u part_number, Bit8u *keys, Bit8u *velocities) { return mt32emu_get_playing_notes(c, part_number, keys, velocities); }
 	const char *getPatchName(Bit8u part_number) { return mt32emu_get_patch_name(c, part_number); }
+	bool getSoundGroupName(char *soundGroupName, Bit8u timbreGroup, Bit8u timbreNumber) { return mt32emu_get_sound_group_name(c, soundGroupName, timbreGroup, timbreNumber) != MT32EMU_BOOL_FALSE; }
+	bool getSoundName(char *soundName, Bit8u timbreGroup, Bit8u timbreNumber) { return mt32emu_get_sound_name(c, soundName, timbreGroup, timbreNumber) != MT32EMU_BOOL_FALSE; }
 	void readMemory(Bit32u addr, Bit32u len, Bit8u *data) { mt32emu_read_memory(c, addr, len, data); }
 
 	bool getDisplayState(char *target_buffer, const bool narrow_lcd) { return mt32emu_get_display_state(c, target_buffer, narrow_lcd ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE) != MT32EMU_BOOL_FALSE; }
@@ -341,6 +345,7 @@ private:
 	const mt32emu_service_i_v3 *iV3() { return (getVersionID() < MT32EMU_SERVICE_VERSION_3) ? NULL : i.v3; }
 	const mt32emu_service_i_v4 *iV4() { return (getVersionID() < MT32EMU_SERVICE_VERSION_4) ? NULL : i.v4; }
 	const mt32emu_service_i_v5 *iV5() { return (getVersionID() < MT32EMU_SERVICE_VERSION_5) ? NULL : i.v5; }
+	const mt32emu_service_i_v6 *iV6() { return (getVersionID() < MT32EMU_SERVICE_VERSION_6) ? NULL : i.v6; }
 #endif
 
 	Service(const Service &);            // prevent copy-construction
@@ -573,6 +578,8 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_get_partial_states
 #undef mt32emu_get_playing_notes
 #undef mt32emu_get_patch_name
+#undef mt32emu_get_sound_group_name
+#undef mt32emu_get_sound_name
 #undef mt32emu_read_memory
 #undef mt32emu_get_display_state
 #undef mt32emu_set_main_display_mode

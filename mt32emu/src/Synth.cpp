@@ -375,8 +375,11 @@ void Synth::newTimbreSet(Bit8u partNum) const {
 
 const char *Synth::getSoundGroupName(const Part *part) const {
 	const PatchParam &patch = part->getPatchTemp()->patch;
-	Bit8u timbreNumber = patch.timbreNum;
-	switch (patch.timbreGroup) {
+	return getSoundGroupName(patch.timbreGroup, patch.timbreNum);
+}
+
+const char *Synth::getSoundGroupName(Bit8u timbreGroup, Bit8u timbreNumber) const {
+	switch (timbreGroup) {
 	case 1:
 		timbreNumber += 64;
 		// Fall-through
@@ -2622,6 +2625,26 @@ Bit32u Synth::getPlayingNotes(Bit8u partNumber, Bit8u *keys, Bit8u *velocities) 
 
 const char *Synth::getPatchName(Bit8u partNumber) const {
 	return (!opened || partNumber > 8) ? NULL : parts[partNumber]->getCurrentInstr();
+}
+
+bool Synth::getSoundGroupName(char *soundGroupName, Bit8u timbreGroup, Bit8u timbreNumber) const {
+	if (!opened || 63 < timbreNumber) return false;
+	const char *foundGroupName = getSoundGroupName(timbreGroup, timbreNumber);
+	if (foundGroupName == NULL) return false;
+	memcpy(soundGroupName, foundGroupName, 7);
+	soundGroupName[7] = 0;
+	return true;
+}
+
+bool Synth::getSoundName(char *soundName, Bit8u timbreGroup, Bit8u timbreNumber) const {
+	if (!opened || 3 < timbreGroup) return false;
+	Bit8u timbresInGroup = 3 == timbreGroup ? controlROMMap->timbreRCount : 64;
+	if (timbresInGroup <= timbreNumber) return false;
+	TimbreParam::CommonParam &timbreCommon = mt32ram.timbres[timbreGroup * 64 + timbreNumber].timbre.common;
+	if (timbreCommon.partialMute == 0) return false;
+	memcpy(soundName, timbreCommon.name, sizeof timbreCommon.name);
+	soundName[sizeof timbreCommon.name] = 0;
+	return true;
 }
 
 const Part *Synth::getPart(Bit8u partNum) const {

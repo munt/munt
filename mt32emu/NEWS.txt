@@ -1,6 +1,8 @@
 HEAD:
 
-	* Added support for MT-32 control ROM v.2.03.
+	* Added support for MT-32 control ROM v.2.03. (#92)
+	* Provided two new functions for retrieving names of all standard timbres and their
+	  "sound groups". These also make it easier to retrieve names of custom timbres. (#91)
 
 2022-04-16:
 
