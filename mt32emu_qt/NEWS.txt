@@ -1,6 +1,11 @@
 HEAD:
 
+	* Updated mt32emu library to version 2.7.0.
 	* Updated for compatibility with the Qt framework versions 6.0 and above.
+	* Added possibility to view timbre banks and select a desired instrument on each voice part.
+	  The timbres are shown in a popup menu split by their "sound groups" which is displayed
+	  when the user clicks on the instrument name set on the related part in the Channel Status
+	  pane. (#70)
 
 2022-03-06:
 

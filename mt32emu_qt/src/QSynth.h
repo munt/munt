@@ -4,7 +4,7 @@
 #include <QtCore>
 #include <mt32emu/mt32emu.h>
 
-#if !MT32EMU_IS_COMPATIBLE(2, 6)
+#if !MT32EMU_IS_COMPATIBLE(2, 7)
 #error Incompatible mt32emu library version
 #endif
 
@@ -56,6 +56,19 @@ struct SynthProfile {
 	bool nicePartialMixing;
 	DisplayCompatibilityMode displayCompatibilityMode;
 };
+
+struct SoundGroup {
+	struct Item {
+		uint timbreGroup : 2;
+		uint timbreNumber : 6;
+		QString timbreName;
+	};
+
+	QString name;
+	QVector<Item> constituents;
+};
+
+Q_DECLARE_METATYPE(SoundGroup::Item)
 
 class QReportHandler : public QObject, public MT32Emu::ReportHandler2 {
 	Q_OBJECT
@@ -188,6 +201,8 @@ public:
 	void setRendererType(MT32Emu::RendererType useRendererType);
 	void setPartialCount(int partialCount);
 	const QString getPatchName(int partNum) const;
+	void setTimbreOnPart(uint partNumber, uint timbreGroup, uint timbreNumber);
+	void getSoundGroups(QVector<SoundGroup> &) const;
 	void getPartialStates(MT32Emu::PartialState *partialStates) const;
 	uint getPlayingNotes(uint partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const;
 	uint getPartialCount() const;

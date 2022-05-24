@@ -57,6 +57,8 @@ public:
 	void enableMultiMidiMode();
 
 	const QString getPatchName(int partNum) const;
+	void setTimbreOnPart(uint partNumber, uint timbreGroup, uint timbreNumber);
+	void getSoundGroups(QVector<SoundGroup> &) const;
 	void getPartialStates(MT32Emu::PartialState *partialStates) const;
 	uint getPlayingNotes(unsigned int partNumber, MT32Emu::Bit8u *keys, MT32Emu::Bit8u *velocities) const;
 	uint getPartialCount() const;

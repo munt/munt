@@ -494,6 +494,14 @@ const QString SynthRoute::getPatchName(int partNum) const {
 	return qSynth.getPatchName(partNum);
 }
 
+void SynthRoute::setTimbreOnPart(uint partNumber, uint timbreGroup, uint timbreNumber) {
+	qSynth.setTimbreOnPart(partNumber, timbreGroup, timbreNumber);
+}
+
+void SynthRoute::getSoundGroups(QVector<SoundGroup> &groups) const {
+	qSynth.getSoundGroups(groups);
+}
+
 void SynthRoute::getPartialStates(PartialState *partialStates) const {
 	qSynth.getPartialStates(partialStates);
 }

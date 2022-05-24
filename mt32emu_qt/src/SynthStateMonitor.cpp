@@ -60,16 +60,17 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 	ui->midiMessageLayout->addWidget(&midiMessageLED, 0, Qt::AlignHCenter);
 
 	for (int i = 0; i < 9; i++) {
+		int column = 1;
 		partVolumeButton[i] = new PartVolumeButton(ui->polyStateGrid->widget(), *this, i);
 		partVolumeButton[i]->setFixedSize(16, 16);
-		ui->polyStateGrid->addWidget(partVolumeButton[i], i, 1);
+		ui->polyStateGrid->addWidget(partVolumeButton[i], i, column++);
 
-		patchNameLabel[i] = new QLabel(ui->polyStateGrid->widget());
-		ui->polyStateGrid->addWidget(patchNameLabel[i], i, 2);
+		patchNameButton[i] = new PatchNameButton(ui->polyStateGrid->widget(), *useSynthRoute, i);
+		ui->polyStateGrid->addWidget(patchNameButton[i], i, column++);
 
 		partStateWidget[i] = new PartStateWidget(i, *this, ui->polyStateGrid->widget());
 		partStateWidget[i]->setFixedSize(480, 16);
-		ui->polyStateGrid->addWidget(partStateWidget[i], i, 3);
+		ui->polyStateGrid->addWidget(partStateWidget[i], i, column++);
 	}
 
 	handleSynthStateChange(synthRoute->getState() == SynthRouteState_OPEN ? SynthState_OPEN : SynthState_CLOSED);
@@ -82,7 +83,7 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 SynthStateMonitor::~SynthStateMonitor() {
 	for (int i = 0; i < 9; i++) {
 		delete partStateWidget[i];
-		delete patchNameLabel[i];
+		delete patchNameButton[i];
 	}
 	freePartialsData();
 }
@@ -121,7 +122,8 @@ void SynthStateMonitor::handleSynthStateChange(SynthState state) {
 
 	for (int i = 0; i < 9; i++) {
 		partVolumeButton[i]->setEnabled(state == SynthState_OPEN);
-		patchNameLabel[i]->setText((i < 8) ? synthRoute->getPatchName(i) : "Rhythm Channel");
+		patchNameButton[i]->setEnabled(state == SynthState_OPEN);
+		patchNameButton[i]->setText((i < 8) ? synthRoute->getPatchName(i) : "Rhythm Channel");
 		partStateWidget[i]->update();
 	}
 }
@@ -131,7 +133,7 @@ void SynthStateMonitor::handlePolyStateChanged(int partNum) {
 }
 
 void SynthStateMonitor::handleProgramChanged(int partNum, QString, QString patchName) {
-	patchNameLabel[partNum]->setText(patchName);
+	patchNameButton[partNum]->setText(patchName);
 }
 
 void SynthStateMonitor::handleMidiMessageLEDUpdate(bool midiMessageOn) {
@@ -404,5 +406,78 @@ void PartVolumeButton::handleUnmuteAllTriggered() {
 void PartVolumeButton::handleResetAllTriggered() {
 	for (int i = 0; i < 9; i++) {
 		monitor.partVolumeButton[i]->handleResetVolumeTriggered();
+	}
+}
+
+PatchNameButton::PatchNameButton(QWidget *parent, SynthRoute &synthRoute, int partNumber) :
+	QAbstractButton(parent), synthRoute(synthRoute), partNumber(partNumber)
+{
+	if (partNumber < 8) {
+		connect(this, SIGNAL(clicked()), SLOT(handleClicked()));
+	} else {
+		setFocusPolicy(Qt::NoFocus);
+	}
+}
+
+QSize PatchNameButton::sizeHint() const {
+	int height = 16;
+	int textWidth;
+	if (text().isEmpty()) {
+		textWidth = 64;
+	} else {
+		QSize textSize(fontMetrics().size(0, text()));
+		textWidth = textSize.width();
+		if (height < textSize.height()) height = textSize.height();
+	}
+	QSize sizeHint(textWidth, height);
+	if (partNumber < 8) {
+		QStyleOptionButton option;
+		option.initFrom(this);
+		option.rect.setSize(sizeHint);
+		sizeHint.rwidth() += style()->pixelMetric(QStyle::PM_MenuButtonIndicator, &option, this);
+	}
+	return sizeHint;
+}
+
+void PatchNameButton::paintEvent(QPaintEvent *) {
+	QStylePainter painter(this);
+	painter.drawItemText(rect(), Qt::AlignVCenter | Qt::AlignLeft, palette(), true, text());
+	if (partNumber < 8) {
+		QStyleOptionButton option;
+		option.initFrom(this);
+		int arrowWidth = style()->pixelMetric(QStyle::PM_MenuButtonIndicator, &option, this);
+		option.rect.setRect(width() - arrowWidth - 1, 0, arrowWidth, height());
+		painter.drawPrimitive(QStyle::PE_IndicatorArrowDown, option);
+	}
+	if (hasFocus()) {
+		QStyleOptionFocusRect option;
+		option.initFrom(this);
+		painter.drawPrimitive(QStyle::PE_FrameFocusRect, option);
+	}
+}
+
+void PatchNameButton::handleClicked() {
+	QVector<SoundGroup> groups;
+	synthRoute.getSoundGroups(groups);
+
+	QMenu menu(this);
+	QMenu *groupMenu = NULL;
+	for (int groupIx = 0; groupIx < groups.size(); groupIx++) {
+		const SoundGroup &group = groups.at(groupIx);
+		groupMenu = menu.addMenu(group.name);
+		const QVector<SoundGroup::Item> &items = group.constituents;
+		for (int itemIx = 0; itemIx < items.size(); itemIx++) {
+			const SoundGroup::Item &item = items.at(itemIx);
+			QString timbreName = item.timbreName.trimmed();
+			if (timbreName.isEmpty()) {
+				timbreName = "Memory Timbre #" + QString::number(item.timbreNumber);
+			}
+			groupMenu->addAction(timbreName)->setData(QVariant::fromValue(item));
+		}
+	}
+	QAction *triggeredAction = menu.exec(mapToGlobal(mapFromParent(geometry().bottomLeft())));
+	if (triggeredAction != NULL) {
+		SoundGroup::Item item = triggeredAction->data().value<SoundGroup::Item>();
+		synthRoute.setTimbreOnPart(partNumber, item.timbreGroup, item.timbreNumber);
 	}
 }

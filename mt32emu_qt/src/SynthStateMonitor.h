@@ -10,7 +10,6 @@
 #include "SynthWidget.h"
 
 class SynthRoute;
-class QLabel;
 
 namespace Ui {
 	class SynthWidget;
@@ -117,6 +116,23 @@ private slots:
 	void handleResetAllTriggered();
 };
 
+class PatchNameButton : public QAbstractButton {
+	Q_OBJECT
+
+public:
+	explicit PatchNameButton(QWidget *parent, SynthRoute &synthRoute, int partNum);
+
+private:
+	SynthRoute &synthRoute;
+	const int partNumber;
+
+	QSize sizeHint() const;
+	void paintEvent(QPaintEvent *);
+
+private slots:
+	void handleClicked();
+};
+
 class SynthStateMonitor : public QObject {
 	Q_OBJECT
 
@@ -137,7 +153,7 @@ private:
 	MidiMessageLEDWidget midiMessageLED;
 	PartialStateLEDWidget **partialStateLED;
 	PartVolumeButton *partVolumeButton[9];
-	QLabel *patchNameLabel[9];
+	PatchNameButton *patchNameButton[9];
 	PartStateWidget *partStateWidget[9];
 
 	MT32Emu::PartialState *partialStates;

@@ -30,7 +30,8 @@ const int INITIAL_MASTER_VOLUME = 100;
 const int LCD_MESSAGE_LENGTH = 21; // 0-terminated
 const int MIN_PARTIAL_COUNT = 8;
 const int MAX_PARTIAL_COUNT = 256;
-const int PART_COUNT = 9;
+const int VOICE_PART_COUNT = 8;
+const int PART_COUNT = VOICE_PART_COUNT + 1;
 const int SOUND_GROUP_NAME_LENGTH = 9; // 0-terminated
 const int TIMBRE_NAME_LENGTH = 11; // 0-terminated
 const int NO_UPDATE_VALUE = -1;
@@ -83,6 +84,30 @@ static int readMasterVolume(Synth *synth) {
 	return masterVolume;
 }
 
+static void writeTimbreSelectionOnPartSysex(Synth *synth, quint8 partNumber, quint8 timbreGroup, quint8 timbreNumber) {
+	Bit8u sysex[] = {0x03, 0x00, quint8(partNumber << 4), timbreGroup, timbreNumber};
+	synth->writeSysex(16, sysex, 5);
+}
+
+static void makeSoundGroups(Synth &synth, QVector<SoundGroup> &groups) {
+	SoundGroup *group = NULL;
+	for (uint timbreGroup = 0; timbreGroup < 4; timbreGroup++) {
+		for (uint timbreNumber = 0; timbreNumber < 64; timbreNumber++) {
+			char soundName[TIMBRE_NAME_LENGTH];
+			if (!synth.getSoundName(soundName, timbreGroup, timbreNumber)) continue;
+			char groupName[SOUND_GROUP_NAME_LENGTH];
+			if (!synth.getSoundGroupName(groupName, timbreGroup, timbreNumber)) continue;
+			if (group == NULL || group->name != groupName) {
+				groups.resize(groups.size() + 1U);
+				group = &groups.last();
+				group->name = groupName;
+			}
+			SoundGroup::Item item = {timbreGroup, timbreNumber, soundName};
+			group->constituents += item;
+		}
+	}
+}
+
 class RealtimeHelper : public QThread {
 private:
 	enum SynthControlEvent {
@@ -94,6 +119,7 @@ private:
 		REVERB_OVERRIDDEN_CHANGED,
 		REVERB_SETTINGS_CHANGED,
 		PART_VOLUME_OVERRIDE_CHANGED,
+		PART_TIMBRE_CHANGED,
 		REVERSED_STEREO_ENABLED_CHANGED,
 		NICE_AMP_RAMP_ENABLED_CHANGED,
 		NICE_PANNING_ENABLED_CHANGED,
@@ -117,6 +143,11 @@ private:
 	bool reverbEnabled;
 	bool reverbOverridden;
 	int partVolumeOverride[PART_COUNT];
+	struct {
+		quint8 changed : 1;
+		quint8 group : 2;
+		quint8 number : 6;
+	} partTimbres[VOICE_PART_COUNT];
 	bool reversedStereoEnabled;
 	bool niceAmpRampEnabled;
 	bool nicePanningEnabled;
@@ -175,6 +206,8 @@ private:
 	/** Used to block this thread until each rendering pass completes. */
 	QWaitCondition renderCompleteCondition;
 
+	QVector<SoundGroup> soundGroupCache;
+
 	void applyChangesRealtime() {
 		RealtimeLocker settingsLocker(settingsMutex);
 		if (!settingsLocker.isLocked()) return;
@@ -207,6 +240,14 @@ private:
 					if (NO_UPDATE_VALUE != partVolumeOverride[i]) {
 						synth->setPartVolumeOverride(i, partVolumeOverride[i]);
 						partVolumeOverride[i] = NO_UPDATE_VALUE;
+					}
+				}
+				break;
+			case PART_TIMBRE_CHANGED:
+				for (int i = 0; i < VOICE_PART_COUNT; i++) {
+					if (partTimbres[i].changed) {
+						partTimbres[i].changed = 0;
+						writeTimbreSelectionOnPartSysex(synth, i, partTimbres[i].group, partTimbres[i].number);
 					}
 				}
 				break;
@@ -381,6 +422,24 @@ public:
 		for (int i = 0; i < PART_COUNT; i++) {
 			partVolumeOverride[i] = NO_UPDATE_VALUE;
 		}
+		for (int i = 0; i < VOICE_PART_COUNT; i++) {
+			partTimbres[i].changed = 0;
+		}
+		{
+			makeSoundGroups(*qsynth.synth, soundGroupCache);
+			char memoryGroupName[SOUND_GROUP_NAME_LENGTH];
+			qsynth.synth->getSoundGroupName(memoryGroupName, 2, 0);
+			SoundGroup soundGroup = {memoryGroupName, QVector<SoundGroup::Item>(64)};
+			for (uint i = 0; i < 64; i++) {
+				SoundGroup::Item item = {2, i, "Timbre #" + QString().setNum(i)};
+				soundGroup.constituents[i] = item;
+			}
+			if (soundGroupCache.empty()) {
+				soundGroupCache += soundGroup;
+			} else {
+				soundGroupCache.insert(soundGroupCache.size() - 1U, soundGroup);
+			}
+		}
 	}
 
 	~RealtimeHelper() {
@@ -450,6 +509,14 @@ public:
 		QMutexLocker settingsLocker(&settingsMutex);
 		partVolumeOverride[partNumber] = volumeOverride;
 		enqueueSynthControlEvent(PART_VOLUME_OVERRIDE_CHANGED);
+	}
+
+	void setPartTimbre(uint partNumber, Bit8u timbreGroup, Bit8u timbreNumber) {
+		QMutexLocker settingsLocker(&settingsMutex);
+		partTimbres[partNumber].changed = 1;
+		partTimbres[partNumber].group = timbreGroup;
+		partTimbres[partNumber].number = timbreNumber;
+		enqueueSynthControlEvent(PART_TIMBRE_CHANGED);
 	}
 
 	void setReversedStereoEnabled(bool useReversedStereoEnabled) {
@@ -551,6 +618,10 @@ public:
 		QMutexLocker stateSnapshotLocker(&stateSnapshotMutex);
 		memcpy(targetBuffer, stateSnapshot.lcdState, LCD_MESSAGE_LENGTH);
 		return stateSnapshot.midiMessageLEDState;
+	}
+
+	const QVector<SoundGroup> &getSoundGroupCache() const {
+		return soundGroupCache;
 	}
 
 	void onLCDMessage(const char *message) {
@@ -1023,6 +1094,24 @@ const QString QSynth::getPatchName(int partNum) const {
 	QMutexLocker synthLocker(synthMutex);
 	QString name = isOpen() ? QString().fromLocal8Bit(synth->getPatchName(partNum)) : QString("Channel %1").arg(partNum + 1);
 	return name;
+}
+
+void QSynth::setTimbreOnPart(uint partNumber, uint timbreGroup, uint timbreNumber) {
+	if (isRealtime()) {
+		realtimeHelper->setPartTimbre(partNumber, timbreGroup, timbreNumber);
+		return;
+	}
+	QMutexLocker synthLocker(synthMutex);
+	writeTimbreSelectionOnPartSysex(synth, partNumber, timbreGroup, timbreNumber);
+}
+
+void QSynth::getSoundGroups(QVector<SoundGroup> &groups) const {
+	if (isRealtime()) {
+		groups << realtimeHelper->getSoundGroupCache();
+		return;
+	}
+	QMutexLocker synthLocker(synthMutex);
+	makeSoundGroups(*synth, groups);
 }
 
 void QSynth::getPartialStates(PartialState *partialStates) const {

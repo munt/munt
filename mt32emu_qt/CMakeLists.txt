@@ -188,7 +188,7 @@ elseif(Qt4_FOUND)
 endif()
 
 if(NOT(munt_SOURCE_DIR AND TARGET MT32Emu::mt32emu))
-  find_package(MT32Emu 2.6 CONFIG REQUIRED)
+  find_package(MT32Emu 2.7 CONFIG REQUIRED)
 endif()
 list(APPEND EXT_LIBS MT32Emu::mt32emu)
 
