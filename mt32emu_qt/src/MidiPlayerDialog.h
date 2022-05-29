@@ -55,7 +55,7 @@ private slots:
 	void on_tempoSpinBox_valueChanged(int newValue);
 	void on_positionSlider_valueChanged();
 	void on_positionSlider_sliderReleased();
-	void handlePlaybackFinished();
+	void handlePlaybackFinished(bool successful);
 	void handlePlaybackTimeChanged(quint64 currentNanos, quint32 totalSeconds);
 	void handleTempoSet(quint32 tempo);
 

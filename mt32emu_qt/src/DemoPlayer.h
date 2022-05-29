@@ -51,8 +51,8 @@ private:
 	void addSysex(MT32Emu::Bit8u *sysex, uint length);
 
 private slots:
-	void startNextSong();
-	void startRandomSong();
+	void startNextSong(bool enabled);
+	void startRandomSong(bool enabled);
 };
 
 #endif

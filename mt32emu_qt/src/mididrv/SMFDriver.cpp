@@ -119,8 +119,8 @@ void SMFProcessor::run() {
 			if (delay < MasterClock::NANOS_PER_MILLISECOND) break;
 			usleep(((delay < MAX_SLEEP_TIME ? delay : MAX_SLEEP_TIME) - MasterClock::NANOS_PER_MILLISECOND) / MasterClock::NANOS_PER_MICROSECOND);
 		}
-		const QMidiEvent &e = midiEvents.at(currentEventIx);
 		if (driver->stopProcessing || synthRoute->getState() != SynthRouteState_OPEN) break;
+		const QMidiEvent &e = midiEvents.at(currentEventIx);
 		switch (e.getType()) {
 			case SHORT_MESSAGE:
 				synthRoute->pushMIDIShortMessage(*session, e.getShortMessage(), currentNanos);
@@ -142,7 +142,7 @@ void SMFProcessor::run() {
 	emit driver->playbackTimeChanged(0, 0);
 	qDebug() << "SMFDriver: processor thread stopped";
 	driver->deleteMidiSession(session);
-	if (!driver->stopProcessing) emit driver->playbackFinished();
+	if (!driver->stopProcessing) emit driver->playbackFinished(synthRoute->getState() == SynthRouteState_OPEN);
 }
 
 quint32 SMFProcessor::estimateRemainingTime(const QMidiEventList &midiEvents, int currentEventIx) {
@@ -205,7 +205,7 @@ void SMFDriver::start(QString fileName) {
 	if (!midiParser->parse(fileName)) {
 		qDebug() << "SMFDriver: Error parsing MIDI file:" << fileName;
 		QMessageBox::warning(NULL, "Error", "Error encountered while loading MIDI file");
-		emit playbackFinished();
+		emit playbackFinished(false);
 		return;
 	}
 	processor.start(midiParser);

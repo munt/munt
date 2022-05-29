@@ -53,7 +53,7 @@ private:
 	QAtomicInt seekPosition;
 
 signals:
-	void playbackFinished();
+	void playbackFinished(bool successful);
 	void playbackTimeChanged(quint64 currentNanos, quint32 totalSeconds);
 	void tempoUpdated(quint32 newTempo);
 };

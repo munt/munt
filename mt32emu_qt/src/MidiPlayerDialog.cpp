@@ -23,7 +23,7 @@ MidiPlayerDialog::MidiPlayerDialog(Master *master, QWidget *parent) : QDialog(pa
 	ui->setupUi(this);
 	standardTitle = windowTitle();
 	ui->playButton->setEnabled(false);
-	connect(&smfDriver, SIGNAL(playbackFinished()), SLOT(handlePlaybackFinished()));
+	connect(&smfDriver, SIGNAL(playbackFinished(bool)), SLOT(handlePlaybackFinished(bool)));
 	connect(&smfDriver, SIGNAL(playbackTimeChanged(quint64, quint32)), SLOT(handlePlaybackTimeChanged(quint64, quint32)));
 	connect(&smfDriver, SIGNAL(tempoUpdated(quint32)), SLOT(handleTempoSet(quint32)));
 	connect(this, SIGNAL(playbackStarted(const QString &, const QString &)), master, SLOT(showBalloon(const QString &, const QString &)));
@@ -152,7 +152,7 @@ void MidiPlayerDialog::on_playButton_clicked() {
 		smfDriver.stop();
 	}
 	stopped = true;
-	handlePlaybackFinished();
+	handlePlaybackFinished(true);
 	if (initialPosition != 0) smfDriver.jump(initialPosition);
 }
 
@@ -203,8 +203,12 @@ void MidiPlayerDialog::on_positionSlider_sliderReleased() {
 	smfDriver.jump(ui->positionSlider->value());
 }
 
-void MidiPlayerDialog::handlePlaybackFinished() {
+void MidiPlayerDialog::handlePlaybackFinished(bool successful) {
 	ui->tempoSpinBox->setValue(MidiParser::DEFAULT_BPM);
+	if (!successful) {
+		stopped = true;
+		return;
+	}
 	if (stopped) {
 		stopped = false;
 		ui->playList->setCurrentRow(ui->playList->row(currentItem));

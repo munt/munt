@@ -144,14 +144,13 @@ const QStringList DemoPlayer::getDemoSongs() const {
 void DemoPlayer::playSong(uint songNumber) {
 	stop();
 	playbackDelayed = false;
-	smfDriver.disconnect(this);
 	play(songNumber);
 }
 
 void DemoPlayer::chainPlay() {
 	stop();
 	playbackDelayed = false;
-	connect(&smfDriver, SIGNAL(playbackFinished()), SLOT(startNextSong()));
+	connect(&smfDriver, SIGNAL(playbackFinished(bool)), SLOT(startNextSong(bool)));
 	play(0);
 }
 
@@ -159,8 +158,8 @@ void DemoPlayer::randomPlay() {
 	stop();
 	playbackDelayed = false;
 	currentSongNumber = demoSongCount;
-	connect(&smfDriver, SIGNAL(playbackFinished()), SLOT(startRandomSong()));
-	startRandomSong();
+	connect(&smfDriver, SIGNAL(playbackFinished(bool)), SLOT(startRandomSong(bool)));
+	startRandomSong(true);
 }
 
 void DemoPlayer::play(uint songNumber) {
@@ -300,12 +299,20 @@ void DemoPlayer::stop() {
 	smfDriver.stop();
 }
 
-void DemoPlayer::startNextSong() {
+void DemoPlayer::startNextSong(bool enabled) {
+	if (!enabled) {
+		smfDriver.disconnect(this);
+		return;
+	}
 	playbackDelayed = true;
 	play(++currentSongNumber % demoSongCount);
 }
 
-void DemoPlayer::startRandomSong() {
+void DemoPlayer::startRandomSong(bool enabled) {
+	if (!enabled) {
+		smfDriver.disconnect(this);
+		return;
+	}
 	uint nextSongNumber;
 	do {
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
