@@ -103,7 +103,6 @@ void QMidiEvent::assignSyncMessage(SynthTimestamp newTimestamp) {
 }
 
 QMidiEvent &QMidiEventList::newMidiEvent() {
-	uint s = size();
-	resize(s + 1);
+	resize(size() + 1U);
 	return last();
 }

@@ -43,6 +43,7 @@
 #include "MidiPlayerDialog.h"
 #include "MidiConverterDialog.h"
 #include "FloatingDisplay.h"
+#include "DemoPlayer.h"
 
 enum FloatingDisplayVisibility {
 	FloatingDisplayVisibility_DEFAULT,
@@ -63,7 +64,8 @@ MainWindow::MainWindow(Master *master) :
 	audioFileWriter(NULL),
 	midiPlayerDialog(NULL),
 	midiConverterDialog(NULL),
-	floatingDisplay(NULL)
+	floatingDisplay(NULL),
+	demoPlayer(NULL)
 {
 	ui->setupUi(this);
 	connect(master, SIGNAL(synthRouteAdded(SynthRoute *, const AudioDevice *, bool)), SLOT(handleSynthRouteAdded(SynthRoute *, const AudioDevice *, bool)));
@@ -163,6 +165,10 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 void MainWindow::on_actionExit_triggered() {
 	QSettings *settings = Master::getInstance()->getSettings();
 	settings->setValue("Master/mainWindowGeometry", geometry());
+	if (demoPlayer != NULL) {
+		delete demoPlayer;
+		demoPlayer = NULL;
+	}
 	if (floatingDisplay != NULL) {
 		floatingDisplay->saveSettings();
 	}
@@ -289,6 +295,52 @@ void MainWindow::on_actionConvert_MIDI_to_Wave_triggered() {
 	}
 	midiConverterDialog->setVisible(true);
 	midiConverterDialog->activateWindow();
+}
+
+void MainWindow::on_menuPlay_Demo_Songs_aboutToShow() {
+	if (demoPlayer == NULL) {
+		const MT32Emu::ROMImage *romImage = DemoPlayer::findSuitableROM(master);
+		if (romImage == NULL) return;
+		demoPlayer = new DemoPlayer(master, romImage);
+	}
+	ui->menuPlay_Demo_Songs->clear();
+	QActionGroup *group = new QActionGroup(this);
+	group->setExclusive(false);
+	connect(group, SIGNAL(triggered(QAction *)), SLOT(handleDemoPlay(QAction *)));
+	group->addAction(ui->menuPlay_Demo_Songs->addAction("&Chain Play"))->setData(-1);
+	group->addAction(ui->menuPlay_Demo_Songs->addAction("&Random Play"))->setData(-2);
+	ui->menuPlay_Demo_Songs->addSeparator();
+	const QStringList demoSongs = demoPlayer->getDemoSongs();
+	for (int demoSongIx = 0; demoSongIx < demoSongs.size(); demoSongIx++) {
+		QString actionName = '&' + QString().setNum(demoSongIx + 1) + ": " + demoSongs.at(demoSongIx);
+		group->addAction(ui->menuPlay_Demo_Songs->addAction(actionName))->setData(demoSongIx);
+	}
+	ui->menuPlay_Demo_Songs->addSeparator();
+	group->addAction(ui->menuPlay_Demo_Songs->addAction("&Stop Playback"))->setData(-3);
+}
+
+void MainWindow::on_actionSuitable_ROMs_unavailable_triggered() {
+	QMessageBox::information(this, "Info", "Demo songs are present in the new-gen MT-32 ROMs only.\n"
+		"None of the available Synth profiles is configured with such a model.");
+}
+
+void MainWindow::handleDemoPlay(QAction *action) {
+	if (demoPlayer == NULL) return;
+	int demoSongIx = action->data().toInt();
+	switch (demoSongIx) {
+	case -1:
+		demoPlayer->chainPlay();
+		break;
+	case -2:
+		demoPlayer->randomPlay();
+		break;
+	case -3:
+		demoPlayer->stop();
+		break;
+	default:
+		demoPlayer->playSong(demoSongIx);
+		break;
+	}
 }
 
 void MainWindow::on_menuOptions_aboutToShow() {

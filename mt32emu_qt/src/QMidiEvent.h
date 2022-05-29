@@ -50,4 +50,16 @@ public:
 	QMidiEvent &newMidiEvent();
 };
 
+class MidiStreamSource {
+public:
+	static const quint32 DEFAULT_BPM = 120;
+	static const quint32 MICROSECONDS_PER_MINUTE = 60000000;
+	static const uint DEFAULT_TEMPO = MICROSECONDS_PER_MINUTE / DEFAULT_BPM;
+
+	virtual ~MidiStreamSource() {}
+	virtual const QString getStreamName() const = 0;
+	virtual const QMidiEventList &getMIDIEvents() const = 0;
+	virtual MasterClockNanos getMidiTick(uint tempo = DEFAULT_TEMPO) const = 0;
+};
+
 #endif

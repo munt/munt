@@ -6,6 +6,9 @@ HEAD:
 	  The timbres are shown in a popup menu split by their "sound groups" which is displayed
 	  when the user clicks on the instrument name set on the related part in the Channel Status
 	  pane. (#70)
+	* Added submenu "Play Demo Songs" to the "Tools" menu. When a Synth profile exists that
+	  refers to one of the new-gen MT-32 ROMs, the list of demo songs contained within is shown,
+	  yet a few of special items to facilitate playback control. (#84)
 
 2022-03-06:
 

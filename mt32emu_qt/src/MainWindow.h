@@ -16,6 +16,7 @@ class AudioFileWriter;
 class MidiPlayerDialog;
 class MidiConverterDialog;
 class FloatingDisplay;
+class DemoPlayer;
 
 class MainWindow : public QMainWindow {
 	Q_OBJECT
@@ -42,6 +43,7 @@ private:
 	MidiPlayerDialog *midiPlayerDialog;
 	MidiConverterDialog *midiConverterDialog;
 	FloatingDisplay *floatingDisplay;
+	DemoPlayer *demoPlayer;
 	QAction *trayIconMenuShowHideMainWindow;
 	QAction *trayIconMenuShowHideFloatingDisplay;
 
@@ -62,6 +64,9 @@ private slots:
 	void on_actionTest_MIDI_Driver_toggled(bool checked);
 	void on_actionPlay_MIDI_file_triggered();
 	void on_actionConvert_MIDI_to_Wave_triggered();
+	void on_menuPlay_Demo_Songs_aboutToShow();
+	void on_actionSuitable_ROMs_unavailable_triggered();
+	void handleDemoPlay(QAction *);
 	void on_menuOptions_aboutToShow();
 	void on_actionStart_iconized_toggled(bool checked);
 	void on_actionHide_to_tray_on_close_toggled(bool checked);

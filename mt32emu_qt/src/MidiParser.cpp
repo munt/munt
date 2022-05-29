@@ -335,11 +335,15 @@ bool MidiParser::parse(const QString fileName) {
 	return parseResult;
 }
 
-const QMidiEventList &MidiParser::getMIDIEvents() {
+const QString MidiParser::getStreamName() const {
+	return QFileInfo(file.fileName()).fileName();
+}
+
+const QMidiEventList &MidiParser::getMIDIEvents() const {
 	return midiEventList;
 }
 
-SynthTimestamp MidiParser::getMidiTick(uint tempo) {
+MasterClockNanos MidiParser::getMidiTick(uint tempo) const {
 	if (division & 0x8000) {
 		// SMPTE timebase
 		uint framesPerSecond = -(division >> 8);

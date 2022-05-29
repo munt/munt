@@ -54,6 +54,12 @@
     <property name="title">
      <string>&amp;Tools</string>
     </property>
+    <widget class="QMenu" name="menuPlay_Demo_Songs">
+     <property name="title">
+      <string>Play &amp;Demo Songs</string>
+     </property>
+     <addaction name="actionSuitable_ROMs_unavailable"/>
+    </widget>
     <addaction name="actionNew_MIDI_port"/>
     <addaction name="actionNew_JACK_MIDI_port"/>
     <addaction name="actionNew_exclusive_JACK_MIDI_port"/>
@@ -61,6 +67,7 @@
     <addaction name="separator"/>
     <addaction name="actionPlay_MIDI_file"/>
     <addaction name="actionConvert_MIDI_to_Wave"/>
+    <addaction name="menuPlay_Demo_Songs"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -242,6 +249,11 @@
   <action name="actionCommandLineHelp">
    <property name="text">
     <string>&amp;Command Line Help</string>
+   </property>
+  </action>
+  <action name="actionSuitable_ROMs_unavailable">
+   <property name="text">
+    <string>Suitable ROMs unavailable...</string>
    </property>
   </action>
  </widget>

@@ -69,6 +69,9 @@ const Bit8u SYSEX_CMD_EOD = 0x45; // End of data
 const Bit8u SYSEX_CMD_ERR = 0x4E; // Communications error
 const Bit8u SYSEX_CMD_RJC = 0x4F; // Rejection
 
+// This value isn't quite correct: the new-gen MT-32 control ROMs (ver. 2.XX) are twice as big.
+// Nevertheless, this is still relevant for library internal usage because the higher half
+// of those ROMs only contains the demo songs in all cases.
 const Bit32u CONTROL_ROM_SIZE = 64 * 1024;
 
 // Set of multiplexed output streams appeared at the DAC entrance.

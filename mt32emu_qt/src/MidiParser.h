@@ -5,15 +5,12 @@
 
 #include "QMidiEvent.h"
 
-class MidiParser {
+class MidiParser : public MidiStreamSource {
 public:
-	static const quint32 DEFAULT_BPM = 120;
-	static const quint32 MICROSECONDS_PER_MINUTE = 60000000;
-	static const uint DEFAULT_TEMPO = MICROSECONDS_PER_MINUTE / DEFAULT_BPM;
-
 	bool parse(const QString fileName);
-	const QMidiEventList &getMIDIEvents();
-	SynthTimestamp getMidiTick(uint tempo = DEFAULT_TEMPO);
+	const QString getStreamName() const;
+	const QMidiEventList &getMIDIEvents() const;
+	MasterClockNanos getMidiTick(uint tempo = DEFAULT_TEMPO) const;
 	void addChannelsReset();
 
 private:
