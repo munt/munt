@@ -70,25 +70,17 @@ FloatingDisplay::FloatingDisplay(const QWidget *mainWindow) :
 	sizeGrip->setCursor(Qt::SizeFDiagCursor);
 
 	baseWindowWidth = lcdWidget->sizeHint().width() + MIDI_MESSAGE_LED_SIZE.width() + 2 * frameWithMargin + LAYOUT_SPACING;
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-	QRect availableGeometry = QApplication::desktop()->availableGeometry(this);
-#else
-	QRect availableGeometry = screen()->availableGeometry();
-#endif
 	QRect rect = settings->value("FloatingDisplay/geometry").toRect();
 	if (rect.isValid()) {
-		layoutWidgets(qMin(availableGeometry.width(), rect.width()));
+		layoutWidgets(rect.width());
 		rect.setSize(size());
 	} else {
-		layoutWidgets(qMin(availableGeometry.width(), baseWindowWidth));
+		layoutWidgets(baseWindowWidth);
 		rect = geometry();
 		rect.moveCenter(mainWindow->geometry().center());
 	}
-	if (availableGeometry.right() < rect.right()) rect.moveRight(availableGeometry.right());
-	if (availableGeometry.bottom() < rect.bottom()) rect.moveBottom(availableGeometry.bottom());
-	if (rect.left() < availableGeometry.left()) rect.moveLeft(availableGeometry.left());
-	if (rect.top() < availableGeometry.top()) rect.moveTop(availableGeometry.top());
 	move(rect.topLeft());
+	adjustGeometryToScreen();
 }
 
 void FloatingDisplay::saveSettings() {
@@ -207,6 +199,18 @@ void FloatingDisplay::mouseReleaseEvent(QMouseEvent *event) {
 	dragStatus = DRAG_STATUS_OFF;
 }
 
+void FloatingDisplay::moveEvent(QMoveEvent *event) {
+	if (event->spontaneous()) adjustGeometryToScreen();
+}
+
+void FloatingDisplay::resizeEvent(QResizeEvent *event) {
+	if (event->spontaneous()) layoutWidgets(event->size().width());
+}
+
+void FloatingDisplay::showEvent(QShowEvent *) {
+	adjustGeometryToScreen();
+}
+
 void FloatingDisplay::startDrag(const QPoint &mousePosition) {
 	dragStatus = DRAG_STATUS_INITIATING;
 	dragOrigin = mousePosition;
@@ -233,4 +237,20 @@ void FloatingDisplay::layoutWidgets(int targetWidth) {
 	sizeGrip->move(targetWidth - SIZE_GRIP_SIZE.width(), targetHeight - SIZE_GRIP_SIZE.height());
 
 	resize(targetWidth, targetHeight);
+}
+
+void FloatingDisplay::adjustGeometryToScreen() {
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+	QRect availableGeometry = QApplication::desktop()->availableGeometry(this);
+#else
+	QRect availableGeometry = screen()->availableGeometry();
+#endif
+	QRect rect = geometry();
+	layoutWidgets(qMin(availableGeometry.width(), rect.width()));
+	rect.setSize(size());
+	if (availableGeometry.right() < rect.right()) rect.moveRight(availableGeometry.right());
+	if (availableGeometry.bottom() < rect.bottom()) rect.moveBottom(availableGeometry.bottom());
+	if (rect.left() < availableGeometry.left()) rect.moveLeft(availableGeometry.left());
+	if (rect.top() < availableGeometry.top()) rect.moveTop(availableGeometry.top());
+	move(rect.topLeft());
 }

@@ -9,6 +9,11 @@ HEAD:
 	* Added submenu "Play Demo Songs" to the "Tools" menu. When a Synth profile exists that
 	  refers to one of the new-gen MT-32 ROMs, the list of demo songs contained within is shown,
 	  yet a few of special items to facilitate playback control. (#84)
+	* Fixed a few problems with management of the Floating Display on multi-screen systems.
+	  When the application is restarted, the position of the floating window should now be
+	  restored on the same screen where it was previously. Also, the window geometry is now
+	  adjusted to fit into the screen when the display it is show on is switched off, and each
+	  time the floating window shows up. (#94)
 
 2022-03-06:
 

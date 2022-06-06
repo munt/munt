@@ -45,9 +45,13 @@ private:
 	void mousePressEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
+	void moveEvent(QMoveEvent *event);
+	void resizeEvent(QResizeEvent *event);
+	void showEvent(QShowEvent *event);
 
 	void startDrag(const QPoint &mousePosition);
 	void layoutWidgets(int targetWidth);
+	void adjustGeometryToScreen();
 
 private slots:
 	void handleSynthStateChange(SynthState);
