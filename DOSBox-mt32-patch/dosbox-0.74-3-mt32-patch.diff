@@ -1,5 +1,5 @@
 diff --git a/src/Makefile.am b/src/Makefile.am
-index a4029e8..3869353 100644
+index a4029e83..3869353a 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -18,4 +18,4 @@ dosbox_LDADD = cpu/libcpu.a debug/libdebug.a dos/libdos.a fpu/libfpu.a  hardware
@@ -9,7 +9,7 @@ index a4029e8..3869353 100644
 -
 +LIBS +=  -lmt32emu
 diff --git a/src/dosbox.cpp b/src/dosbox.cpp
-index edee31a..917b3c0 100644
+index edee31a3..917b3c0d 100644
 --- a/src/dosbox.cpp
 +++ b/src/dosbox.cpp
 @@ -543,7 +543,7 @@ void DOSBOX_Init(void) {
@@ -31,7 +31,7 @@ index edee31a..917b3c0 100644
  	secprop=control->AddSection_prop("debug",&DEBUG_Init);
  #endif
 diff --git a/src/gui/Makefile.am b/src/gui/Makefile.am
-index 3fed5e6..d4aeabc 100644
+index 3fed5e68..d4aeabc6 100644
 --- a/src/gui/Makefile.am
 +++ b/src/gui/Makefile.am
 @@ -7,5 +7,5 @@ libgui_a_SOURCES = sdlmain.cpp sdl_mapper.cpp dosbox_logo.h \
@@ -42,7 +42,7 @@ index 3fed5e6..d4aeabc 100644
 +	midi_coremidi.h midi_mt32.h sdl_gui.cpp dosbox_splash.h
  
 diff --git a/src/gui/midi.cpp b/src/gui/midi.cpp
-index 61d15e5..0ec8ebc 100644
+index 61d15e55..0ec8ebc0 100644
 --- a/src/gui/midi.cpp
 +++ b/src/gui/midi.cpp
 @@ -98,6 +98,11 @@ MidiHandler Midi_none;
@@ -59,10 +59,10 @@ index 61d15e5..0ec8ebc 100644
  	Bitu cmd_len;
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 0000000..b036547
+index 00000000..6ad500c1
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
-@@ -0,0 +1,299 @@
+@@ -0,0 +1,305 @@
 +#include <SDL_thread.h>
 +#include <SDL_endian.h>
 +#include "control.h"
@@ -160,6 +160,12 @@ index 0000000..b036547
 +
 +	service->setReversedStereoEnabled(section->Get_bool("mt32.reverse.stereo"));
 +	service->setNiceAmpRampEnabled(section->Get_bool("mt32.niceampramp"));
++
++	if (section->Get_bool("mt32.engage.channel1")) {
++		Bit8u channelAssignmentSysex[] = {0x10, 0x00, 0x0d, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x09};
++		service->writeSysex(16, channelAssignmentSysex, sizeof channelAssignmentSysex);
++	}
++
 +	noise = section->Get_bool("mt32.verbose");
 +	renderInThread = section->Get_bool("mt32.thread");
 +
@@ -364,7 +370,7 @@ index 0000000..b036547
 +}
 diff --git a/src/gui/midi_mt32.h b/src/gui/midi_mt32.h
 new file mode 100644
-index 0000000..eb32729
+index 00000000..eb32729f
 --- /dev/null
 +++ b/src/gui/midi_mt32.h
 @@ -0,0 +1,55 @@
@@ -425,10 +431,10 @@ index 0000000..eb32729
 +#endif /* DOSBOX_MIDI_MT32_H */
 diff --git a/src/mt32options.h b/src/mt32options.h
 new file mode 100644
-index 0000000..6292f0b
+index 00000000..8bfd0515
 --- /dev/null
 +++ b/src/mt32options.h
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,117 @@
 +Pstring = secprop->Add_string("mt32.romdir",Property::Changeable::WhenIdle,"");
 +Pstring->Set_help("Name of the directory where MT-32 Control and PCM ROM files can be found. Emulation requires these files to work.\n"
 +	"  Accepted file names are as follows:\n"
@@ -459,7 +465,7 @@ index 0000000..6292f0b
 +
 +Pint = secprop->Add_int("mt32.partials",Property::Changeable::WhenIdle,32);
 +Pint->SetMinMax(8,256);
-+Pint->Set_help("The maximum number of partials playing simultaneously. (min 8, max 256");
++Pint->Set_help("The maximum number of partials playing simultaneously. (min 8, max 256)");
 +
 +const char *mt32DACModes[] = {"0", "1", "2", "3",0};
 +Pint = secprop->Add_int("mt32.dac",Property::Changeable::WhenIdle,0);
@@ -538,3 +544,11 @@ index 0000000..6292f0b
 +	"When \"Nice Amp Ramp\" mode is enabled, amp changes gradually instead.\n"
 +	"Otherwise, the emulation accuracy is preserved.\n"
 +	"Default is true.");
++
++Pbool = secprop->Add_bool("mt32.engage.channel1", Property::Changeable::WhenIdle, false);
++Pbool->Set_help("Use alternative channel assignment on synth start.\n"
++	"By default, MT-32 compatible devices only react on MIDI messages that come on MIDI channels 2-10 ignoring messages\n"
++	"on MIDI channel 1. However, some tunes involve MIDI channel 1 yet do not initialise the device accordingly.\n"
++	"In such cases, one might fix this by pressing a magic button combination on MT-32 front panel.\n"
++	"Enabling this property has the same effect: the device starts recognising messages on MIDI channels 1-8 and 10 instead.\n"
++	"Default is false.");

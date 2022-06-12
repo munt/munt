@@ -3,8 +3,8 @@
 - [dosbox-0.74-3-mt32-patch.diff](https://github.com/munt/munt/blob/master/DOSBox-mt32-patch/dosbox-0.74-3-mt32-patch.diff) -
 diff file to be applied to official DOSBox release v.0.74-3 source distribution.
 
-- [dosbox-SVN-r4319-mt32-patch.diff](https://github.com/munt/munt/blob/master/DOSBox-mt32-patch/dosbox-SVN-r4319-mt32-patch.diff) -
-diff file to be applied to official DOSBox sources SVN r4319 (and up, hopefully).
+- [dosbox-SVN-r4479-mt32-patch.diff](https://github.com/munt/munt/blob/master/DOSBox-mt32-patch/dosbox-SVN-r4479-mt32-patch.diff) -
+diff file to be applied to official DOSBox sources SVN r4479 (and up, hopefully).
 It uses a bit different and clear approach introduced since SVN r3836.
 
 # How to build a patched version of DOSBox

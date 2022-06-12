@@ -9,7 +9,7 @@ index a4029e83..3869353a 100644
 -
 +LIBS +=  -lmt32emu
 diff --git a/src/dosbox.cpp b/src/dosbox.cpp
-index 8ae1e4df..9864ae7e 100644
+index 210c21dc..c3e215ed 100644
 --- a/src/dosbox.cpp
 +++ b/src/dosbox.cpp
 @@ -561,7 +561,7 @@ void DOSBOX_Init(void) {
@@ -21,7 +21,7 @@ index 8ae1e4df..9864ae7e 100644
  	Pstring = secprop->Add_string("mpu401",Property::Changeable::WhenIdle,"intelligent");
  	Pstring->Set_values(mputypes);
  	Pstring->Set_help("Type of MPU-401 to emulate.");
-@@ -577,6 +577,8 @@ void DOSBOX_Init(void) {
+@@ -578,6 +578,8 @@ void DOSBOX_Init(void) {
  	                  "In that case, add 'delaysysex', for example: midiconfig=2 delaysysex\n"
  	                  "See the README/Manual for more details.");
  
@@ -42,7 +42,7 @@ index 84b22b14..b8bc1b04 100644
 +	midi_coremidi.h midi_mt32.h midi_mt32.cpp sdl_gui.cpp dosbox_splash.h render_glsl.h
  
 diff --git a/src/gui/midi.cpp b/src/gui/midi.cpp
-index 28b65f46..adcfe2d5 100644
+index d174f87b..c0bcba28 100644
 --- a/src/gui/midi.cpp
 +++ b/src/gui/midi.cpp
 @@ -97,6 +97,9 @@ MidiHandler Midi_none;
@@ -57,10 +57,10 @@ index 28b65f46..adcfe2d5 100644
  void MIDI_RawOutByte(Bit8u data) {
 diff --git a/src/gui/midi_mt32.cpp b/src/gui/midi_mt32.cpp
 new file mode 100644
-index 00000000..b036547a
+index 00000000..6ad500c1
 --- /dev/null
 +++ b/src/gui/midi_mt32.cpp
-@@ -0,0 +1,299 @@
+@@ -0,0 +1,305 @@
 +#include <SDL_thread.h>
 +#include <SDL_endian.h>
 +#include "control.h"
@@ -158,6 +158,12 @@ index 00000000..b036547a
 +
 +	service->setReversedStereoEnabled(section->Get_bool("mt32.reverse.stereo"));
 +	service->setNiceAmpRampEnabled(section->Get_bool("mt32.niceampramp"));
++
++	if (section->Get_bool("mt32.engage.channel1")) {
++		Bit8u channelAssignmentSysex[] = {0x10, 0x00, 0x0d, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x09};
++		service->writeSysex(16, channelAssignmentSysex, sizeof channelAssignmentSysex);
++	}
++
 +	noise = section->Get_bool("mt32.verbose");
 +	renderInThread = section->Get_bool("mt32.thread");
 +
@@ -423,10 +429,10 @@ index 00000000..eb32729f
 +#endif /* DOSBOX_MIDI_MT32_H */
 diff --git a/src/mt32options.h b/src/mt32options.h
 new file mode 100644
-index 00000000..6292f0b6
+index 00000000..8bfd0515
 --- /dev/null
 +++ b/src/mt32options.h
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,117 @@
 +Pstring = secprop->Add_string("mt32.romdir",Property::Changeable::WhenIdle,"");
 +Pstring->Set_help("Name of the directory where MT-32 Control and PCM ROM files can be found. Emulation requires these files to work.\n"
 +	"  Accepted file names are as follows:\n"
@@ -457,7 +463,7 @@ index 00000000..6292f0b6
 +
 +Pint = secprop->Add_int("mt32.partials",Property::Changeable::WhenIdle,32);
 +Pint->SetMinMax(8,256);
-+Pint->Set_help("The maximum number of partials playing simultaneously. (min 8, max 256");
++Pint->Set_help("The maximum number of partials playing simultaneously. (min 8, max 256)");
 +
 +const char *mt32DACModes[] = {"0", "1", "2", "3",0};
 +Pint = secprop->Add_int("mt32.dac",Property::Changeable::WhenIdle,0);
@@ -536,3 +542,11 @@ index 00000000..6292f0b6
 +	"When \"Nice Amp Ramp\" mode is enabled, amp changes gradually instead.\n"
 +	"Otherwise, the emulation accuracy is preserved.\n"
 +	"Default is true.");
++
++Pbool = secprop->Add_bool("mt32.engage.channel1", Property::Changeable::WhenIdle, false);
++Pbool->Set_help("Use alternative channel assignment on synth start.\n"
++	"By default, MT-32 compatible devices only react on MIDI messages that come on MIDI channels 2-10 ignoring messages\n"
++	"on MIDI channel 1. However, some tunes involve MIDI channel 1 yet do not initialise the device accordingly.\n"
++	"In such cases, one might fix this by pressing a magic button combination on MT-32 front panel.\n"
++	"Enabling this property has the same effect: the device starts recognising messages on MIDI channels 1-8 and 10 instead.\n"
++	"Default is false.");
