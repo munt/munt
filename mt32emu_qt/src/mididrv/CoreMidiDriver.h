@@ -16,7 +16,7 @@ private:
 
 	MIDIClientRef client;
 	QList<CoreMidiSession *> sessions;
-	unsigned int sessionID;
+	uint nextSessionID;
 
 	static void readProc(const MIDIPacketList *packetList, void *readProcRefCon, void *srcConnRefCon);
 	static void midiNotifyProc(MIDINotification const *message, void *refCon);
@@ -29,13 +29,14 @@ public:
 	~CoreMidiDriver() {}
 	void start();
 	void stop();
-	virtual bool canCreatePort();
-	virtual bool canDeletePort(MidiSession *midiSession);
-	virtual bool canSetPortProperties(MidiSession *midiSession);
-	virtual bool createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession);
-	virtual void deletePort(MidiSession *);
-	virtual bool setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
-	virtual QString getNewPortName(MidiPropertiesDialog *mpd);
+	bool canCreatePort();
+	bool canDeletePort(MidiSession *midiSession);
+	bool canReconnectPort(MidiSession *midiSession);
+	PortNamingPolicy getPortNamingPolicy();
+	bool createPort(int portIx, const QString &portName, MidiSession *midiSession);
+	void deletePort(MidiSession *midiSession);
+	void reconnectPort(int newPortIx, const QString &newPortName, MidiSession *midiSession);
+	QString getNewPortNameHint(QStringList &knownPortNames);
 };
 
 #endif

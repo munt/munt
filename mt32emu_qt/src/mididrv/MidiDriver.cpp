@@ -16,7 +16,7 @@
 
 #include "MidiDriver.h"
 
-#include <QtGlobal>
+#include "../Master.h"
 
 MidiDriver::MidiDriver(Master *useMaster): master(useMaster), name("Unknown") {
 	connect(this, SIGNAL(midiSessionInitiated(MidiSession **, MidiDriver *, QString)), master, SLOT(createMidiSession(MidiSession **, MidiDriver *, QString)), Qt::BlockingQueuedConnection);
@@ -66,20 +66,20 @@ bool MidiDriver::canDeletePort(MidiSession *) {
 	return false;
 }
 
-bool MidiDriver::canSetPortProperties(MidiSession *) {
+bool MidiDriver::canReconnectPort(MidiSession *) {
 	return false;
 }
 
-bool MidiDriver::createPort(MidiPropertiesDialog *, MidiSession *) {
+MidiDriver::PortNamingPolicy MidiDriver::getPortNamingPolicy() {
+	return PortNamingPolicy_ARBITRARY;
+}
+
+bool MidiDriver::createPort(int, const QString &, MidiSession *) {
 	return false;
 }
 
-bool MidiDriver::setPortProperties(MidiPropertiesDialog *, MidiSession *) {
-	return false;
-}
-
-QString MidiDriver::getNewPortName(MidiPropertiesDialog *) {
-	return "";
+QString MidiDriver::getNewPortNameHint(QStringList &) {
+	return QString();
 }
 
 /**

@@ -15,6 +15,7 @@
  */
 
 #include "JACKClient.h"
+#include "Master.h"
 #include "MidiSession.h"
 #include "mididrv/JACKMidiDriver.h"
 #include "audiodrv/JACKAudioDriver.h"

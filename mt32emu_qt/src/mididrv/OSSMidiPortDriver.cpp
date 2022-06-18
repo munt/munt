@@ -22,7 +22,6 @@
 
 #include "OSSMidiPortDriver.h"
 #include "../MasterClock.h"
-#include "../MidiPropertiesDialog.h"
 
 static const QString devDirName = "/dev/";
 static const QString defaultMidiPortName = "midi";
@@ -166,20 +165,23 @@ bool OSSMidiPortDriver::canCreatePort() {
 
 bool OSSMidiPortDriver::canDeletePort(MidiSession *midiSession) {
 	for (int i = 0; i < sessions.size(); i++) {
-		if (sessions[i]->midiSession == midiSession) {
-			if (sessions[i]->sequencerMode) return false;
-			return true;
+		if (sessions.at(i)->midiSession == midiSession) {
+			return !sessions.at(i)->sequencerMode;
 		}
 	}
 	return false;
 }
 
-bool OSSMidiPortDriver::canSetPortProperties(MidiSession *midiSession) {
+bool OSSMidiPortDriver::canReconnectPort(MidiSession *midiSession) {
 	return canDeletePort(midiSession);
 }
 
-bool OSSMidiPortDriver::createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
-	if (startSession(midiSession, mpd->getMidiPortName(), false)) {
+MidiDriver::PortNamingPolicy OSSMidiPortDriver::getPortNamingPolicy() {
+	return PortNamingPolicy_ARBITRARY;
+}
+
+bool OSSMidiPortDriver::createPort(int, const QString &portName, MidiSession *midiSession) {
+	if (startSession(midiSession, portName, false)) {
 		if (midiSession != NULL) midiSessions.append(midiSession);
 		return true;
 	}
@@ -188,43 +190,29 @@ bool OSSMidiPortDriver::createPort(MidiPropertiesDialog *mpd, MidiSession *midiS
 
 void OSSMidiPortDriver::deletePort(MidiSession *midiSession) {
 	for (int i = 0; i < sessions.size(); i++) {
-		if (sessions[i]->midiSession == midiSession) {
-			stopSession(sessions[i]);
+		if (sessions.at(i)->midiSession == midiSession) {
+			stopSession(sessions.at(i));
 			midiSessions.removeOne(midiSession);
 			break;
 		}
 	}
 }
 
-bool OSSMidiPortDriver::setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
-	int sessionIx = -1;
-	QString midiPortName = "";
-	if (midiSession != NULL) {
-		for (int i = 0; i < sessions.size(); i++) {
-			if (sessions[i]->midiSession == midiSession) {
-				sessionIx = i;
-				midiPortName = sessions[i]->midiPortName;
-				break;
-			}
+void OSSMidiPortDriver::reconnectPort(int, const QString &newPortName, MidiSession *midiSession) {
+	for (int i = 0; i < sessions.size(); i++) {
+		if (sessions.at(i)->midiSession == midiSession) {
+			stopSession(sessions.at(i));
+			midiSession->getSynthRoute()->setMidiSessionName(midiSession, newPortName);
+			startSession(midiSession, newPortName, false);
+			return;
 		}
 	}
-	QStringList midiInPortNames;
-	OSSMidiPortDriver::enumPorts(midiInPortNames);
-	midiInPortNames.removeOne(sequencerName);
-	mpd->setMidiList(midiInPortNames, -1);
-	mpd->setMidiPortName(midiPortName);
-	if (mpd->exec() != QDialog::Accepted) return false;
-	if (sessionIx == -1 || midiPortName == mpd->getMidiPortName()) return true;
-	stopSession(sessions[sessionIx]);
-	midiSession->getSynthRoute()->setMidiSessionName(midiSession, mpd->getMidiPortName());
-	return startSession(midiSession, mpd->getMidiPortName(), false);
 }
 
-QString OSSMidiPortDriver::getNewPortName(MidiPropertiesDialog *mpd) {
-	if (setPortProperties(mpd, NULL)) {
-		return mpd->getMidiPortName();
-	}
-	return "";
+QString OSSMidiPortDriver::getNewPortNameHint(QStringList &knownPortNames) {
+	enumPorts(knownPortNames);
+	knownPortNames.removeOne(sequencerName);
+	return QString();
 }
 
 void OSSMidiPortDriver::enumPorts(QStringList &midiPortNames) {

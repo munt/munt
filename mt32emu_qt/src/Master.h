@@ -1,15 +1,16 @@
 #ifndef MASTER_H
 #define MASTER_H
 
-#include <QObject>
+#include <QtCore>
 
 #include "SynthRoute.h"
 
 class AudioDriver;
 class MidiDriver;
 class MidiSession;
-class QSystemTrayIcon;
+
 class MidiPropertiesDialog;
+class QSystemTrayIcon;
 class QDropEvent;
 
 class Master : public QObject {
@@ -76,10 +77,11 @@ public:
 	bool handleCLICommandReset(const QStringList &args, int &argIx);
 	bool canCreateMidiPort();
 	bool canDeleteMidiPort(MidiSession *midiSession);
-	bool canSetMidiPortProperties(MidiSession *midiSession);
-	void createMidiPort(MidiPropertiesDialog *mpd, SynthRoute *synthRoute = NULL);
+	bool canReconnectMidiPort(MidiSession *midiSession);
+	void configureMidiPropertiesDialog(MidiPropertiesDialog &mpd);
+	void createMidiPort(MidiPropertiesDialog &mpd, SynthRoute *synthRoute = NULL);
 	void deleteMidiPort(MidiSession *midiSession);
-	void setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
+	void reconnectMidiPort(MidiPropertiesDialog &mpd, MidiSession *midiSession);
 	QString getDefaultROMSearchPath();
 	void setAudioFileWriterSynth(const QSynth *);
 

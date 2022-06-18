@@ -13,12 +13,13 @@ public:
 	void start();
 	void stop();
 	bool canCreatePort();
-	bool canDeletePort(MidiSession *);
-	bool canSetPortProperties(MidiSession *);
-	bool createPort(MidiPropertiesDialog *, MidiSession *);
-	void deletePort(MidiSession *);
-	bool setPortProperties(MidiPropertiesDialog *, MidiSession *);
-	QString getNewPortName(MidiPropertiesDialog *);
+	bool canDeletePort(MidiSession *midiSession);
+	bool canReconnectPort(MidiSession *midiSession);
+	PortNamingPolicy getPortNamingPolicy();
+	bool createPort(int portIx, const QString &portName, MidiSession *midiSession);
+	void deletePort(MidiSession *midiSession);
+	void reconnectPort(int newPortIx, const QString &newPortName, MidiSession *midiSession);
+	QString getNewPortNameHint(QStringList &knownPortNames);
 
 private:
 	snd_seq_t *snd_seq;

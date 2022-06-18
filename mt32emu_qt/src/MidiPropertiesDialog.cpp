@@ -39,7 +39,7 @@ QString MidiPropertiesDialog::getMidiPortName() {
 	return ui->midiPortName->text();
 }
 
-void MidiPropertiesDialog::setMidiList(QList<QString> useMidiPortList, int selectedIndex) {
+void MidiPropertiesDialog::setMidiList(QStringList useMidiPortList, int selectedIndex) {
 	ui->midiPortList->clear();
 	for (int i = 0; i < useMidiPortList.size(); i++) {
 		ui->midiPortList->addItem(useMidiPortList[i]);

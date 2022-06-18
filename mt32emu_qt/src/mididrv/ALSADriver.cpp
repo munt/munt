@@ -21,10 +21,10 @@
 #include <pthread.h>
 #include <QtCore>
 
+#include "../Master.h"
 #include "../MasterClock.h"
 #include "../MidiSession.h"
 #include "../SynthRoute.h"
-#include "../MidiPropertiesDialog.h"
 
 void *ALSAMidiDriver::processingThread(void *userData) {
 	ALSAMidiDriver *driver = (ALSAMidiDriver *)userData;
@@ -331,22 +331,26 @@ bool ALSAMidiDriver::canDeletePort(MidiSession *midiSession) {
 	return rawMidiPortDriver.canDeletePort(midiSession);
 }
 
-bool ALSAMidiDriver::canSetPortProperties(MidiSession *midiSession) {
-	return rawMidiPortDriver.canSetPortProperties(midiSession);
+bool ALSAMidiDriver::canReconnectPort(MidiSession *midiSession) {
+	return rawMidiPortDriver.canReconnectPort(midiSession);
 }
 
-bool ALSAMidiDriver::createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
-	return rawMidiPortDriver.createPort(mpd, midiSession);
+MidiDriver::PortNamingPolicy ALSAMidiDriver::getPortNamingPolicy() {
+	return rawMidiPortDriver.getPortNamingPolicy();
+}
+
+bool ALSAMidiDriver::createPort(int portIx, const QString &portName, MidiSession *midiSession) {
+	return rawMidiPortDriver.createPort(portIx, portName, midiSession);
 }
 
 void ALSAMidiDriver::deletePort(MidiSession *midiSession) {
 	rawMidiPortDriver.deletePort(midiSession);
 }
 
-bool ALSAMidiDriver::setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
-	return rawMidiPortDriver.setPortProperties(mpd, midiSession);
+void ALSAMidiDriver::reconnectPort(int newPortIx, const QString &newPortName, MidiSession *midiSession) {
+	return rawMidiPortDriver.reconnectPort(newPortIx, newPortName, midiSession);
 }
 
-QString ALSAMidiDriver::getNewPortName(MidiPropertiesDialog *mpd) {
-	return rawMidiPortDriver.getNewPortName(mpd);
+QString ALSAMidiDriver::getNewPortNameHint(QStringList &knownPortNames) {
+	return rawMidiPortDriver.getNewPortNameHint(knownPortNames);
 }

@@ -21,6 +21,7 @@
 #include "Master.h"
 #include "MasterClock.h"
 #include "MidiSession.h"
+#include "MidiPropertiesDialog.h"
 
 #ifdef WITH_WINMM_AUDIO_DRIVER
 #include "audiodrv/WinMMAudioDriver.h"
@@ -641,16 +642,27 @@ bool Master::canDeleteMidiPort(MidiSession *midiSession) {
 	return midiDriver->canDeletePort(midiSession);
 }
 
-bool Master::canSetMidiPortProperties(MidiSession *midiSession) {
-	return midiDriver->canSetPortProperties(midiSession);
+bool Master::canReconnectMidiPort(MidiSession *midiSession) {
+	return midiDriver->canReconnectPort(midiSession);
 }
 
-void Master::createMidiPort(MidiPropertiesDialog *mpd, SynthRoute *synthRoute) {
-	QString portName = midiDriver->getNewPortName(mpd);
+void Master::configureMidiPropertiesDialog(MidiPropertiesDialog &mpd) {
+	MidiDriver::PortNamingPolicy portNamingPolicy = midiDriver->getPortNamingPolicy();
+	mpd.setMidiPortListEnabled(portNamingPolicy != MidiDriver::PortNamingPolicy_UNIQUE);
+	mpd.setMidiPortNameEditorEnabled(portNamingPolicy != MidiDriver::PortNamingPolicy_RESTRICTED);
+}
+
+void Master::createMidiPort(MidiPropertiesDialog &mpd, SynthRoute *synthRoute) {
+	QStringList knownPortNames;
+	QString portNameHint = midiDriver->getNewPortNameHint(knownPortNames);
+	mpd.setMidiList(knownPortNames);
+	mpd.setMidiPortName(portNameHint);
+	if (mpd.exec() != QDialog::Accepted) return;
+	QString portName = mpd.getMidiPortName();
 	if (portName.isEmpty()) return;
 	if (synthRoute == NULL) synthRoute = startSynthRoute();
 	MidiSession *midiSession = new MidiSession(this, midiDriver, portName, synthRoute);
-	if (midiDriver->createPort(mpd, midiSession)) {
+	if (midiDriver->createPort(mpd.getCurrentMidiPortIndex(), portName, midiSession)) {
 		synthRoute->addMidiSession(midiSession);
 	} else {
 		deleteMidiSession(midiSession);
@@ -669,8 +681,16 @@ void Master::deleteMidiPort(MidiSession *midiSession) {
 	deleteMidiSession(midiSession);
 }
 
-void Master::setMidiPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
-	midiDriver->setPortProperties(mpd, midiSession);
+void Master::reconnectMidiPort(MidiPropertiesDialog &mpd, MidiSession *midiSession) {
+	QStringList knownPortNames;
+	QString portNameHint = midiDriver->getNewPortNameHint(knownPortNames);
+	if (portNameHint.isEmpty()) portNameHint = midiSession->getName();
+	mpd.setMidiList(knownPortNames, knownPortNames.indexOf(portNameHint));
+	mpd.setMidiPortName(portNameHint);
+	if (mpd.exec() != QDialog::Accepted) return;
+	QString portName = mpd.getMidiPortName();
+	if (portName.isEmpty() || portName == midiSession->getName()) return;
+	midiDriver->reconnectPort(mpd.getCurrentMidiPortIndex(), portName, midiSession);
 }
 
 // A quick hack to prevent ROMImages used in SMF converter from being freed

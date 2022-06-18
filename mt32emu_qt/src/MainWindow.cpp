@@ -264,7 +264,8 @@ void MainWindow::on_menuTools_aboutToShow() {
 
 void MainWindow::on_actionNew_MIDI_port_triggered() {
 	MidiPropertiesDialog mpd(this);
-	master->createMidiPort(&mpd);
+	master->configureMidiPropertiesDialog(mpd);
+	master->createMidiPort(mpd);
 }
 
 void MainWindow::on_actionTest_MIDI_Driver_toggled(bool checked) {

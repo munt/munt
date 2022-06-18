@@ -18,6 +18,7 @@
 
 #include <QtCore>
 
+#include "../Master.h"
 #include "../MasterClock.h"
 #include "../MidiSession.h"
 #include "../JACKClient.h"

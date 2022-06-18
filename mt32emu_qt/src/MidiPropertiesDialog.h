@@ -16,7 +16,7 @@ public:
 	~MidiPropertiesDialog();
 	int getCurrentMidiPortIndex();
 	QString getMidiPortName();
-	void setMidiList(QList<QString> useMidiPortList, int selectedIndex = -1);
+	void setMidiList(QStringList useMidiPortList, int selectedIndex = -1);
 	void setMidiPortListEnabled(bool enabled);
 	void setMidiPortName(QString name);
 	void setMidiPortNameEditorEnabled(bool enabled);

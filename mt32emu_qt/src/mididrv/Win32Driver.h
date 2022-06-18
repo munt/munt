@@ -17,9 +17,8 @@ private:
 
 public:
 	~Win32MidiIn();
-	bool open(MidiSession *midiSession, unsigned int midiDevID);
+	bool open(MidiSession *midiSession, uint midiDevID);
 	bool close();
-	UINT getID();
 };
 
 class Win32MidiInProcessor : public QThread {
@@ -33,7 +32,6 @@ class Win32MidiDriver : public MidiDriver {
 	friend class Win32MidiInProcessor;
 private:
 	static LRESULT CALLBACK midiInProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	static void enumPorts(QList<QString> &midiInPortNames);
 
 	Win32MidiInProcessor midiInProcessor;
 	QList<unsigned int> midiSessionIDs;
@@ -48,11 +46,12 @@ public:
 	void stop();
 	bool canCreatePort();
 	bool canDeletePort(MidiSession *midiSession);
-	bool canSetPortProperties(MidiSession *midiSession);
-	bool createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession);
+	bool canReconnectPort(MidiSession *midiSession);
+	PortNamingPolicy getPortNamingPolicy();
+	bool createPort(int portIx, const QString &portName, MidiSession *midiSession);
 	void deletePort(MidiSession *midiSession);
-	bool setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession);
-	QString getNewPortName(MidiPropertiesDialog *mpd);
+	void reconnectPort(int newPortIx, const QString &newPortName, MidiSession *midiSession);
+	QString getNewPortNameHint(QStringList &knownPortNames);
 };
 
 #endif

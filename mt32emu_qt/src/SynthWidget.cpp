@@ -54,6 +54,7 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, bool pinnabl
 	ui->pinCheckBox->setChecked(master->isPinned(synthRoute));
 	ui->pinCheckBox->setEnabled(pinnable);
 
+	master->configureMidiPropertiesDialog(mpd);
 	updateMidiAddActionEnabled(ui);
 
 	connect(synthRoute, SIGNAL(stateChanged(SynthRouteState)), SLOT(handleSynthRouteState(SynthRouteState)));
@@ -225,7 +226,7 @@ void SynthWidget::on_midiList_itemSelectionChanged() {
 	MidiSession *midiSession = getSelectedMIDISession();
 	if (midiSession != NULL) {
 		ui->midiRemove->setEnabled(master->canDeleteMidiPort(midiSession));
-		ui->midiProperties->setEnabled(master->canSetMidiPortProperties(midiSession));
+		ui->midiProperties->setEnabled(master->canReconnectMidiPort(midiSession));
 	} else {
 		ui->midiRemove->setEnabled(false);
 		ui->midiProperties->setEnabled(false);
@@ -233,7 +234,7 @@ void SynthWidget::on_midiList_itemSelectionChanged() {
 }
 
 void SynthWidget::on_midiAdd_clicked() {
-	Master::getInstance()->createMidiPort(&mpd, synthRoute);
+	Master::getInstance()->createMidiPort(mpd, synthRoute);
 }
 
 void SynthWidget::on_midiRemove_clicked() {
@@ -241,7 +242,7 @@ void SynthWidget::on_midiRemove_clicked() {
 }
 
 void SynthWidget::on_midiProperties_clicked() {
-	Master::getInstance()->setMidiPortProperties(&mpd, getSelectedMIDISession());
+	Master::getInstance()->reconnectMidiPort(mpd, getSelectedMIDISession());
 }
 
 void SynthWidget::on_midiRecord_clicked() {

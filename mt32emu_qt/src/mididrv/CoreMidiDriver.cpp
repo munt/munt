@@ -18,13 +18,10 @@
 
 #include "CoreMidiDriver.h"
 #include "../MasterClock.h"
-#include "../MidiPropertiesDialog.h"
 
 static CoreMidiDriver *driver;
 
-void CoreMidiDriver::readProc(const MIDIPacketList *packetList, void *readProcRefCon, void *srcConnRefCon) {
-Q_UNUSED(srcConnRefCon)
-
+void CoreMidiDriver::readProc(const MIDIPacketList *packetList, void *readProcRefCon, void *) {
 	CoreMidiSession *data = (CoreMidiSession *)readProcRefCon;
 	if (data->midiSession == NULL) {
 		data->midiSession = driver->createMidiSession(data->sessionID);
@@ -43,8 +40,7 @@ Q_UNUSED(srcConnRefCon)
 	}
 }
 
-void CoreMidiDriver::midiNotifyProc(MIDINotification const *message, void *refCon) {
-Q_UNUSED(refCon)
+void CoreMidiDriver::midiNotifyProc(MIDINotification const *message, void *) {
 	if (message->messageID != kMIDIMsgObjectRemoved) return;
 	MIDIObjectAddRemoveNotification *removeMessage = (MIDIObjectAddRemoveNotification *)message;
 	for (int i = 0; i < driver->sessions.size(); i++) {
@@ -57,14 +53,13 @@ Q_UNUSED(refCon)
 }
 
 CoreMidiDriver::CoreMidiDriver(Master *useMaster) : MidiDriver(useMaster) {
-	master = useMaster;
 	name = "CoreMidi";
 	driver = this;
 	qDebug() << "Core MIDI Driver started";
 }
 
 void CoreMidiDriver::start() {
-	sessionID = 1;
+	nextSessionID = 0;
 	MIDIClientCreate(CFSTR("Mt32Emu"), midiNotifyProc, this, &client);
 	createDestination(NULL, "Mt32EmuPort");
 }
@@ -84,6 +79,7 @@ void CoreMidiDriver::createDestination(MidiSession *midiSession, QString session
 	sessions.append(data);
 	MIDIDestinationCreate(client, CFStringCreateWithCString(NULL, data->sessionID.toUtf8().constData(), kCFStringEncodingUTF8), readProc, data, &data->outDest);
 	qDebug() << "Core MIDI Destination created. ID:" << data->sessionID;
+	nextSessionID++;
 }
 
 void CoreMidiDriver::disposeDestination(CoreMidiSession *data) {
@@ -104,12 +100,16 @@ bool CoreMidiDriver::canDeletePort(MidiSession *midiSession) {
 	return false;
 }
 
-bool CoreMidiDriver::canSetPortProperties(MidiSession *midiSession) {
+bool CoreMidiDriver::canReconnectPort(MidiSession *midiSession) {
 	return canDeletePort(midiSession);
 }
 
-bool CoreMidiDriver::createPort(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
-	createDestination(midiSession, mpd->getMidiPortName());
+MidiDriver::PortNamingPolicy CoreMidiDriver::getPortNamingPolicy() {
+	return PortNamingPolicy_UNIQUE;
+}
+
+bool CoreMidiDriver::createPort(int, const QString &portName, MidiSession *midiSession) {
+	createDestination(midiSession, portName);
 	if (midiSession != NULL) midiSessions.append(midiSession);
 	return true;
 }
@@ -124,38 +124,23 @@ void CoreMidiDriver::deletePort(MidiSession *midiSession) {
 	}
 }
 
-bool CoreMidiDriver::setPortProperties(MidiPropertiesDialog *mpd, MidiSession *midiSession) {
-	int sessionIx = -1;
-	QString sessionID = "Mt32EmuPort";
-	if (midiSession != NULL) {
-		for (int i = 0; i < sessions.size(); i++) {
-			if (sessions[i]->midiSession == midiSession) {
-				sessionIx = i;
-				sessionID = sessions[i]->sessionID;
-				break;
-			}
-		}
-	} else {
-		sessionID = "Mt32EmuPort" + QString().setNum(driver->sessionID++);
-	}
-	QList<QString> sessionIDs;
+void CoreMidiDriver::reconnectPort(int, const QString &newPortName, MidiSession *midiSession) {
 	for (int i = 0; i < sessions.size(); i++) {
-		sessionIDs.append(sessions[i]->sessionID);
+		if (sessions[i]->sessionID == newPortName) return;
 	}
-	mpd->setMidiPortListEnabled(false);
-	mpd->setMidiList(sessionIDs, -1);
-	mpd->setMidiPortName(sessionID);
-	if (mpd->exec() != QDialog::Accepted) return false;
-	if (sessionIx == -1 || sessionID == mpd->getMidiPortName()) return true;
-	disposeDestination(sessions[sessionIx]);
-	midiSession->getSynthRoute()->setMidiSessionName(midiSession, mpd->getMidiPortName());
-	createDestination(midiSession, mpd->getMidiPortName());
-	return true;
+	for (int i = 0; i < sessions.size(); i++) {
+		if (sessions.at(i)->midiSession == midiSession) {
+			disposeDestination(sessions.at(i));
+			midiSession->getSynthRoute()->setMidiSessionName(midiSession, newPortName);
+			createDestination(midiSession, newPortName);
+			return;
+		}
+	}
 }
 
-QString CoreMidiDriver::getNewPortName(MidiPropertiesDialog *mpd) {
-	if (setPortProperties(mpd, NULL)) {
-		return mpd->getMidiPortName();
+QString CoreMidiDriver::getNewPortNameHint(QStringList &knownPortNames) {
+	for (int i = 0; i < sessions.size(); i++) {
+		knownPortNames << sessions[i]->sessionID;
 	}
-	return "";
+	return "Mt32EmuPort" + QString::number(driver->nextSessionID);
 }
