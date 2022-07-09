@@ -72,14 +72,18 @@ public:
 	bool processCommandLine(const QStringList args);
 	void handleCLIOptionProfile(const QStringList &args, int &argIx);
 	void handleCLIOptionMaxSessions(const QStringList &args, int &argIx);
+	void handleCLIOptionJackMidiClients(const QStringList &args, int &argIx);
+	void handleCLIOptionJackSyncClients(const QStringList &args, int &argIx);
 	void handleCLICommandPlay(const QStringList &args, int &argIx);
 	void handleCLICommandConvert(const QStringList &args, int &argIx);
 	bool handleCLICommandReset(const QStringList &args, int &argIx);
+	void handleCLIConnectMidi(const QStringList &args, int &argIx);
 	bool canCreateMidiPort();
 	bool canDeleteMidiPort(MidiSession *midiSession);
 	bool canReconnectMidiPort(MidiSession *midiSession);
 	void configureMidiPropertiesDialog(MidiPropertiesDialog &mpd);
 	void createMidiPort(MidiPropertiesDialog &mpd, SynthRoute *synthRoute = NULL);
+	void createMidiPort(int portIx, const QString &portName, SynthRoute *synthRoute = NULL);
 	void deleteMidiPort(MidiSession *midiSession);
 	void reconnectMidiPort(MidiPropertiesDialog &mpd, MidiSession *midiSession);
 	QString getDefaultROMSearchPath();

@@ -221,26 +221,36 @@ Master *Master::getInstance() {
 void Master::showCommandLineHelp() {
 	QString appName = QFileInfo(QCoreApplication::arguments().at(0)).fileName();
 	QMessageBox::information(NULL, "Information",
-	"<h3>Command line format:</h3>"
-	"<pre><code>" + appName + " [option...] [&lt;command&gt; [parameters...]]</code></pre>"
-	"<h3>Options:</h3>"
-	"<p><code>-profile &lt;profile-name&gt;</code></p>"
-	"<p>override default synth profile with specified profile during this run only.</p>"
-	"<p><code>-max_sessions &lt;number of sessions&gt;</code></p>"
-	"<p>exit after this number of MIDI sessions are finished.</p>"
-	"<h3>Commands:</h3>"
-	"<p><code>play &lt;SMF file...&gt;</code></p>"
-	"<p>enqueue specified standard MIDI files into the internal MIDI player for playback and start playing.</p>"
-	"<p><code>convert &lt;output file&gt; &lt;SMF file...&gt;</code></p>"
-	"<p>convert specified standard MIDI files to a WAV/RAW wave output file and exit.</p>"
-	"<p><code>reset &lt;scope&gt;</code></p>"
-	"<p>restore settings within the defined scope to their factory defaults. The scope parameter may be one of:</p>"
-	"<ul>"
-	"<li><code>all</code>   - all settings, including any configured synth profiles;</li>"
-	"<li><code>no-profiles</code> - all settings, except configured synth profiles;</li>"
-	"<li><code>profiles</code> - delete all configured synth profiles;</li>"
-	"<li><code>audio</code> - reset the default audio device.</li>"
-	"</ul>"
+		"<h3>Command line format:</h3>"
+		"<pre><code>" + appName + " [option...] [&lt;command&gt; [parameters...]]</code></pre>"
+		"<h3>Options:</h3>"
+		"<p><code>-profile &lt;profile-name&gt;</code></p>"
+		"<p>override default synth profile with specified profile during this run only.</p>"
+		"<p><code>-max_sessions &lt;number of sessions&gt;</code></p>"
+		"<p>exit after this number of MIDI sessions are finished.</p>"
+#ifdef WITH_JACK_MIDI_DRIVER
+		"<p><code>-jack_midi_clients &lt;number of MIDI ports&gt;</code></p>"
+		"<p>create the specified number of JACK MIDI ports that may be connected to any synth.</p>"
+		"<p><code>-jack_sync_clients &lt;number of synchronous clients&gt;</code></p>"
+		"<p>create the specified number of synchronous JACK clients, each of which consists of a dedicated synth,"
+		" a MIDI input port (exclusive) and a couple of audio output ports.</p>"
+#endif
+		"<h3>Commands:</h3>"
+		"<p><code>play &lt;SMF file...&gt;</code></p>"
+		"<p>enqueue specified standard MIDI files into the internal MIDI player for playback and start playing.</p>"
+		"<p><code>convert &lt;output file&gt; &lt;SMF file...&gt;</code></p>"
+		"<p>convert specified standard MIDI files to a WAV/RAW wave output file and exit.</p>"
+		"<p><code>reset &lt;scope&gt;</code></p>"
+		"<p>restore settings within the defined scope to their factory defaults. The scope parameter may be one of:</p>"
+		"<ul>"
+		"<li><code>all</code>   - all settings, including any configured synth profiles;</li>"
+		"<li><code>no-profiles</code> - all settings, except configured synth profiles;</li>"
+		"<li><code>profiles</code> - delete all configured synth profiles;</li>"
+		"<li><code>audio</code> - reset the default audio device.</li>"
+		"</ul>"
+		"<p><code>connect_midi &lt;MIDI port name...&gt;</code></p>"
+		"<p>attempts to create one or more MIDI ports with the specified name(s) using the system MIDI driver. On Windows,"
+		" opens available MIDI input devices with names that contain (case-insensitively) one of the specified port names.</p>"
 	);
 }
 
@@ -252,6 +262,12 @@ bool Master::processCommandLine(QStringList args) {
 			handleCLIOptionProfile(args, argIx);
 		} else if (QString::compare(command, "-max_sessions", Qt::CaseInsensitive) == 0) {
 			handleCLIOptionMaxSessions(args, argIx);
+#ifdef WITH_JACK_MIDI_DRIVER
+		} else if (QString::compare(command, "-jack_midi_clients", Qt::CaseInsensitive) == 0) {
+			handleCLIOptionJackMidiClients(args, argIx);
+		} else if (QString::compare(command, "-jack_sync_clients", Qt::CaseInsensitive) == 0) {
+			handleCLIOptionJackSyncClients(args, argIx);
+#endif
 		} else {
 			QMessageBox::warning(NULL, "Error", "Illegal command line option " + command + " specified.");
 			showCommandLineHelp();
@@ -265,6 +281,8 @@ bool Master::processCommandLine(QStringList args) {
 		handleCLICommandConvert(args, argIx);
 	} else if (QString::compare(command, "reset", Qt::CaseInsensitive) == 0) {
 		return handleCLICommandReset(args, argIx);
+	} else if (QString::compare(command, "connect_midi", Qt::CaseInsensitive) == 0) {
+		handleCLIConnectMidi(args, argIx);
 	} else {
 		QMessageBox::warning(NULL, "Error", "Illegal command " + command + " specified in command line.");
 		showCommandLineHelp();
@@ -297,6 +315,53 @@ void Master::handleCLIOptionMaxSessions(const QStringList &args, int &argIx) {
 	if (maxSessions == 0) QMessageBox::warning(NULL, "Error", "The maximum number of sessions specified in command line is invalid.\n"
 		"Option \"-max_sessions\" ignored.");
 }
+
+#ifdef WITH_JACK_MIDI_DRIVER
+
+void Master::handleCLIOptionJackMidiClients(const QStringList &args, int &argIx) {
+	if (args.count() == argIx) {
+		QMessageBox::warning(NULL, "Error", "The number of JACK MIDI clients must be specified in command line\n"
+			"with \"-jack_midi_clients\" option.");
+		showCommandLineHelp();
+		return;
+	}
+	int ports = args.at(argIx++).toInt();
+	if (ports <= 0) {
+		QMessageBox::warning(NULL, "Error", "The number of JACK MIDI clients specified in command line is invalid.\n"
+			"Option \"-jack_midi_clients\" ignored.");
+		return;
+	}
+	if (ports > 99) {
+		QMessageBox::warning(NULL, "Error", "The number of JACK MIDI clients specified in command line is too big.\n"
+			"Option \"-jack_midi_clients\" ignored.");
+		return;
+	}
+	startPinnedSynthRoute();
+	for (int i = 0; i < ports; i++) createJACKMidiPort(false);
+}
+
+void Master::handleCLIOptionJackSyncClients(const QStringList &args, int &argIx) {
+	if (args.count() == argIx) {
+		QMessageBox::warning(NULL, "Error", "The number of JACK sync clients must be specified in command line\n"
+			"with \"-jack_sync_clients\" option.");
+		showCommandLineHelp();
+		return;
+	}
+	int ports = args.at(argIx++).toInt();
+	if (ports <= 0) {
+		QMessageBox::warning(NULL, "Error", "The number of JACK sync clients specified in command line is invalid.\n"
+			"Option \"-jack_sync_clients\" ignored.");
+		return;
+	}
+	if (ports > 99) {
+		QMessageBox::warning(NULL, "Error", "The number of JACK sync clients specified in command line is too big.\n"
+			"Option \"-jack_sync_clients\" ignored.");
+		return;
+	}
+	for (int i = 0; i < ports; i++) createJACKMidiPort(true);
+}
+
+#endif
 
 void Master::handleCLICommandPlay(const QStringList &args, int &argIx) {
 	if (args.count() == argIx) {
@@ -348,6 +413,51 @@ bool Master::handleCLICommandReset(const QStringList &args, int &argIx) {
 	QMessageBox::information(NULL, "Information", "Requested settings reset completed.\n"
 		"Please, restart the application.");
 	return false;
+}
+
+void Master::handleCLIConnectMidi(const QStringList &args, int &argIx) {
+	if (args.count() == argIx) {
+		QMessageBox::warning(NULL, "Error", "The MIDI port list must be specified in command line with connect_midi command.");
+		showCommandLineHelp();
+		return;
+	}
+	if (!midiDriver->canCreatePort()) {
+		QMessageBox::warning(NULL, "Error", "The MIDI driver does not support creation of MIDI ports.");
+		return;
+	}
+
+	startPinnedSynthRoute();
+	QStringList portNames = args.mid(argIx);
+	portNames.removeDuplicates();
+
+	if (MidiDriver::PortNamingPolicy_RESTRICTED == midiDriver->getPortNamingPolicy()) {
+		QStringList knownPortNames;
+		midiDriver->getNewPortNameHint(knownPortNames);
+		for (int knownPortIndex = 0; knownPortIndex < knownPortNames.size(); knownPortIndex++) {
+			const QString &knownPortName = knownPortNames.at(knownPortIndex);
+			foreach (const QString portName, portNames) {
+				if (knownPortName.contains(portName, Qt::CaseInsensitive)) {
+					createMidiPort(knownPortIndex, knownPortName);
+					break;
+				}
+			}
+			if (!midiDriver->canCreatePort()) break;
+		}
+		return;
+	}
+
+	if (MidiDriver::PortNamingPolicy_UNIQUE == midiDriver->getPortNamingPolicy()) {
+		QStringList knownPortNames;
+		midiDriver->getNewPortNameHint(knownPortNames);
+		foreach (const QString knownPortName, knownPortNames) {
+			portNames.removeOne(knownPortName);
+		}
+	}
+
+	foreach (const QString portName, portNames) {
+		createMidiPort(-1, portName);
+		if (!midiDriver->canCreatePort()) break;
+	}
 }
 
 void Master::setDefaultAudioDevice(QString driverId, QString name) {
@@ -660,9 +770,13 @@ void Master::createMidiPort(MidiPropertiesDialog &mpd, SynthRoute *synthRoute) {
 	if (mpd.exec() != QDialog::Accepted) return;
 	QString portName = mpd.getMidiPortName();
 	if (portName.isEmpty()) return;
+	createMidiPort(mpd.getCurrentMidiPortIndex(), portName, synthRoute);
+}
+
+void Master::createMidiPort(int portIx, const QString &portName, SynthRoute *synthRoute) {
 	if (synthRoute == NULL) synthRoute = startSynthRoute();
 	MidiSession *midiSession = new MidiSession(this, midiDriver, portName, synthRoute);
-	if (midiDriver->createPort(mpd.getCurrentMidiPortIndex(), portName, midiSession)) {
+	if (midiDriver->createPort(portIx, portName, midiSession)) {
 		synthRoute->addMidiSession(midiSession);
 	} else {
 		deleteMidiSession(midiSession);
@@ -732,7 +846,7 @@ QStringList Master::parseMidiListFromPathName(const QString pathName) {
 		if (!dir.isReadable()) return fileNames;
 		QStringList syxFileNames = dir.entryList(QStringList() << "*.syx");
 		QStringList midiFileNames = dir.entryList(QStringList() << "*.mid" << "*.smf");
-		foreach(QString midiFileName, syxFileNames + midiFileNames) {
+		foreach (QString midiFileName, syxFileNames + midiFileNames) {
 			fileNames += dir.absoluteFilePath(midiFileName);
 		}
 		return fileNames;

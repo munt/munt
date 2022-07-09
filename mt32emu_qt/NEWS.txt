@@ -14,6 +14,10 @@ HEAD:
 	  restored on the same screen where it was previously. Also, the window geometry is now
 	  adjusted to fit into the screen when the display it is show on is switched off, and each
 	  time the floating window shows up. (#94)
+	* Extended the command-line interface to provide for opening one or more MIDI port(s)
+	  at startup. The command "connect_midi" can be used to create ports using the system MIDI
+	  driver. By using the options "jack_midi_clients" and "jack_sync_clients", JACK MIDI ports
+	  can be created as long as the JACK support is compiled in. (#95)
 
 2022-03-06:
 
