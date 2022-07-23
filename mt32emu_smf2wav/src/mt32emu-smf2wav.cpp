@@ -35,7 +35,7 @@
 #error Incompatible glib2 library version
 #endif
 
-#if !MT32EMU_IS_COMPATIBLE(2, 6)
+#if !MT32EMU_IS_COMPATIBLE(2, 7)
 #error Incompatible mt32emu library version
 #endif
 
