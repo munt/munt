@@ -22,6 +22,15 @@ using namespace MT32Emu;
 
 static bool paInitialised = false;
 
+static inline QString portaudioDisplayNameToQString(const char *deviceName) {
+#ifdef _WIN32
+	// portaudio on Windows seems to imply Unicode, albeit it isn't clearly documented. See examples/pa_devs.c file.
+	return QString::fromUtf8(deviceName);
+#else
+	return QString::fromLocal8Bit(deviceName);
+#endif
+}
+
 static void dumpPortAudioDevices() {
 	PaHostApiIndex hostApiCount = Pa_GetHostApiCount();
 	if (hostApiCount < 0) {
@@ -39,7 +48,7 @@ static void dumpPortAudioDevices() {
 			qDebug() << "Pa_GetHostApiInfo() returned NULL for" << hostApiIndex;
 			continue;
 		}
-		qDebug() << "HostAPI: " << hostApiInfo->name;
+		qDebug() << "HostAPI: " << portaudioDisplayNameToQString(hostApiInfo->name);
 		qDebug() << " type =" << hostApiInfo->type;
 		qDebug() << " deviceCount =" << hostApiInfo->deviceCount;
 		qDebug() << " defaultInputDevice =" << hostApiInfo->defaultInputDevice;
@@ -52,7 +61,7 @@ static void dumpPortAudioDevices() {
 			}
 			if (deviceInfo->hostApi != hostApiIndex)
 				continue;
-			qDebug() << " Device:" << deviceIndex << QString().fromLocal8Bit(deviceInfo->name);
+			qDebug() << " Device:" << deviceIndex << portaudioDisplayNameToQString(deviceInfo->name);
 		}
 	}
 }
@@ -81,7 +90,7 @@ bool PortAudioStream::start(PaDeviceIndex deviceIndex) {
 		return false;
 	}
 	const PaHostApiInfo *hostApiInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
-	qDebug() << "PortAudio: using audio device:" << deviceIndex << "API: " + QString(hostApiInfo->name) << QString().fromLocal8Bit(deviceInfo->name);
+	qDebug() << "PortAudio: using audio device:" << deviceIndex << "API: " + portaudioDisplayNameToQString(hostApiInfo->name) << portaudioDisplayNameToQString(deviceInfo->name);
 	/*
 	if (deviceInfo->maxOutputChannels < 2) {
 		qDebug() << "Device does not support stereo; maxOutputChannels =" << deviceInfo->maxOutputChannels;
@@ -210,9 +219,9 @@ const QList<const AudioDevice *> PortAudioDriver::createDeviceList() {
 			qDebug() << "Pa_GetHostApiInfo() returned NULL for" << deviceInfo->hostApi;
 			hostApiName = "#" + QString().setNum(deviceInfo->hostApi);
 		} else {
-			hostApiName = QString(hostApiInfo->name);
+			hostApiName = portaudioDisplayNameToQString(hostApiInfo->name);
 		}
-		QString deviceName = "(" + hostApiName + ") " + QString().fromLocal8Bit(deviceInfo->name);
+		QString deviceName = "(" + hostApiName + ") " + portaudioDisplayNameToQString(deviceInfo->name);
 		deviceList.append(new PortAudioDevice(*this, deviceIndex, deviceName));
 	}
 	return deviceList;
