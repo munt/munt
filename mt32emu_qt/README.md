@@ -88,26 +88,26 @@ Building
 Cmake is required for building. The minimum set of dependencies is:
 
 1) Cmake - cross platform make utility
-   @ http://www.cmake.org/
+   @ <http://www.cmake.org/>
 
 2) Qt framework
-   @ http://www.qt.io/
+   @ <http://www.qt.io/>
 
 3) mt32emu library
 
 Additional dependencies maybe needed (depending on the platform):
 
 1) PortAudio - cross-platform audio I/O library
-   @ http://www.portaudio.com/
+   @ <http://www.portaudio.com/>
 
 2) DirectX SDK - for building PortAudio with DirectSound and WDMKS support
-   @ https://www.microsoft.com/en-us/download/details.aspx?id=6812
+   @ <https://www.microsoft.com/en-us/download/details.aspx?id=6812>
 
 3) PulseAudio - sound system for POSIX OSes - provides for accurate audio rendering
-   @ https://www.freedesktop.org/wiki/Software/PulseAudio/
+   @ <https://www.freedesktop.org/wiki/Software/PulseAudio/>
 
 4) JACK Audio Connection Kit - a low-latency synchronous callback-based media server
-   @ https://jackaudio.org/
+   @ <https://jackaudio.org/>
 
 The easiest way to build _mt32emu-qt_ is along with the `mt32emu` within the `munt` project. For a simple in-tree build
 in a POSIX environment, you can probably just run the following commands from the top-level directory containing the `munt` sources:
