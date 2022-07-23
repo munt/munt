@@ -4,5 +4,5 @@ set(mt32emu_win32drv_CONTACT "sergm@muntemu.org")
 
 set(mt32emu_win32drv_VERSION_MAJOR 1)
 set(mt32emu_win32drv_VERSION_MINOR 8)
-set(mt32emu_win32drv_VERSION_PATCH 0)
+set(mt32emu_win32drv_VERSION_PATCH 1)
 set(mt32emu_win32drv_VERSION "${mt32emu_win32drv_VERSION_MAJOR}.${mt32emu_win32drv_VERSION_MINOR}.${mt32emu_win32drv_VERSION_PATCH}")

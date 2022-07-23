@@ -1,4 +1,6 @@
-HEAD:
+2022-07-23:
+
+	1.11.0 released.
 
 	* Updated mt32emu library to version 2.7.0.
 	* Updated for compatibility with the Qt framework versions 6.0 and above.

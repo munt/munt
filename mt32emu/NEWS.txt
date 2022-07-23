@@ -1,4 +1,6 @@
-HEAD:
+2022-07-23:
+
+	2.7.0 released.
 
 	* Added support for MT-32 control ROM v.2.03. (#92)
 	* Provided two new functions for retrieving names of all standard timbres and their
