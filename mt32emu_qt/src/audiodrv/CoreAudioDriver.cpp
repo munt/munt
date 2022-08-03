@@ -188,10 +188,10 @@ const QList<const AudioDevice *> CoreAudioDriver::createDeviceList() {
 	QList<const AudioDevice *> deviceList;
 	deviceList.append(new CoreAudioDevice(*this)); // default device
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_VERSION_12_0
-	AudioObjectPropertyElement addressElement = kAudioObjectPropertyElementMaster;
-#else
+#if defined(MAC_OS_VERSION_12_0) && (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_VERSION_12_0)
 	AudioObjectPropertyElement addressElement = kAudioObjectPropertyElementMain;
+#else
+	AudioObjectPropertyElement addressElement = kAudioObjectPropertyElementMaster;
 #endif
 
 	// Get system output devices
