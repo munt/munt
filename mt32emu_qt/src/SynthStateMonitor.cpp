@@ -133,14 +133,17 @@ void SynthStateMonitor::handlePolyStateChanged(int partNum) {
 }
 
 void SynthStateMonitor::handleProgramChanged(int partNum, QString, QString patchName) {
+	if (synthRoute->getState() != SynthRouteState_OPEN) return;
 	patchNameButton[partNum]->setText(patchName);
 }
 
 void SynthStateMonitor::handleMidiMessageLEDUpdate(bool midiMessageOn) {
+	if (synthRoute->getState() != SynthRouteState_OPEN) return;
 	midiMessageLED.setState(midiMessageOn);
 }
 
 void SynthStateMonitor::handleAudioBlockRendered() {
+	if (synthRoute->getState() != SynthRouteState_OPEN) return;
 	synthRoute->getPartialStates(partialStates);
 	for (unsigned int partialNum = 0; partialNum < partialCount; partialNum++) {
 		partialStateLED[partialNum]->setState(partialStates[partialNum]);

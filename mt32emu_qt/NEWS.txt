@@ -1,3 +1,12 @@
+HEAD:
+
+	* Fixed UI that may show obsolete state of a stopped synth.
+	  After stopping the pinned synth, the SynthStateMonitor occasionally left displaying the last
+	  state change generated immediately before stopping, e.g. the partial states. This happened
+	  due to asynchronous nature of state updates, so now, we explicitly check the synth state
+	  before applying such updates. (#107)
+
+
 2022-08-03:
 
 	1.11.1 released.
