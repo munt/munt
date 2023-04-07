@@ -15,8 +15,9 @@
  */
 
 #include "WinMMAudioDriver.h"
-#include "../QSynth.h"
 #include "../Master.h"
+#include "../MasterClock.h"
+#include "../SynthRoute.h"
 
 using namespace MT32Emu;
 

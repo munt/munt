@@ -5,7 +5,6 @@
 #include <mt32emu/mt32emu.h>
 
 #include "AudioDriver.h"
-#include "../MasterClock.h"
 
 class Master;
 class WaveGenerator;

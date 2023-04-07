@@ -21,7 +21,6 @@
 #include "QSynth.h"
 #include "AudioFileWriter.h"
 #include "Master.h"
-#include "MasterClock.h"
 #include "RealtimeLocker.h"
 
 using namespace MT32Emu;

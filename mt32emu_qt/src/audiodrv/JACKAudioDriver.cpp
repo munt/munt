@@ -19,7 +19,7 @@
 #include "JACKAudioDriver.h"
 
 #include "../Master.h"
-#include "../QSynth.h"
+#include "../SynthRoute.h"
 #include "../JACKClient.h"
 #include "../QRingBuffer.h"
 

@@ -4,15 +4,15 @@
 #include <QMainWindow>
 #include <QSystemTrayIcon>
 
-#include "SynthWidget.h"
-
 namespace Ui {
 	class MainWindow;
 }
 
 class Master;
 class MidiDriver;
+class AudioDevice;
 class AudioFileWriter;
+class SynthRoute;
 class MidiPlayerDialog;
 class MidiConverterDialog;
 class FloatingDisplay;
