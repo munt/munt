@@ -107,6 +107,9 @@ bool JACKMidiDriver::createJACKPort(bool exclusive) {
 	MidiSession *midiSession = createMidiSession(portName);
 	JACKClient *jackClient = new JACKClient;
 	JACKClientState state = jackClient->open(midiSession, NULL);
+	if (JACKClientState_OPENING == state) {
+		state = jackClient->start();
+	}
 	if (JACKClientState_OPEN == state) {
 		jackClients.append(jackClient);
 		if (jackClient->isRealtimeProcessing()) {

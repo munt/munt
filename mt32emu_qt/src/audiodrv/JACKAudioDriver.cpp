@@ -141,11 +141,10 @@ JACKAudioStream::~JACKAudioStream() {
 
 bool JACKAudioStream::start(MidiSession *midiSession) {
 	JACKClientState state = jackClient->open(midiSession, this);
-	if (JACKClientState_OPEN != state) {
+	if (JACKClientState_OPENING != state) {
 		qDebug() << "JACKAudioDriver: Failed to open JACK client connection";
 		return false;
 	}
-	jackClient->connectToPhysicalPorts();
 
 	const quint32 jackBufferSizeFrames = jackClient->getBufferSize();
 	qDebug() << "JACKAudioDriver: JACK reported initial audio buffer size (frames / s):"
@@ -176,6 +175,13 @@ bool JACKAudioStream::start(MidiSession *midiSession) {
 		qDebug() << "JACKAudioDriver: Configured synchronous MIDI processing";
 		if (jackClient->isRealtimeProcessing()) synthRoute.enableRealtimeMode();
 	}
+
+	state = jackClient->start();
+	if (JACKClientState_OPEN != state) {
+		qDebug() << "JACKAudioDriver: Failed to start audio processing";
+		return false;
+	}
+	jackClient->connectToPhysicalPorts();
 
 	return true;
 }

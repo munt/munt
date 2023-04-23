@@ -5,7 +5,11 @@ HEAD:
 	  state change generated immediately before stopping, e.g. the partial states. This happened
 	  due to asynchronous nature of state updates, so now, we explicitly check the synth state
 	  before applying such updates. (#107)
-
+	* Fixed occasional crashes when JACK audio device started.
+	  On some platforms, when a relatively small JACK buffer size is configured, the JACK server
+	  manages to invoke the first audio rendering callback early enough, so that the previous
+	  implementation of JACKClient sometimes hasn't had initialised yet. The new implementation
+	  activates the JACK client in a separate step, when the initialisation is complete. (#106)
 
 2022-08-03:
 
