@@ -42,6 +42,8 @@ private:
 
 	bool abortFirstReleasingPolyWhereReserveExceeded(int minPart);
 	bool abortFirstPolyPreferHeldWhereReserveExceeded(int minPart);
+	bool abortFirstPolyPreferReleasingThenHeldWhereReserveExceeded(int minPart);
+	bool abortFirstPolyOnPartPreferReleasingThenHeld(int partNum);
 
 public:
 	static PartialManager *getPartialManager(Synth &synth);
