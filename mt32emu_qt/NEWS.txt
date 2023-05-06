@@ -10,6 +10,8 @@ HEAD:
 	  manages to invoke the first audio rendering callback early enough, so that the previous
 	  implementation of JACKClient sometimes hasn't had initialised yet. The new implementation
 	  activates the JACK client in a separate step, when the initialisation is complete. (#106)
+	* Added a couple of spin boxes into the synth properties dialog to allow for finer control over
+	  the synth output gain factors. (#104)
 
 2022-08-03:
 
