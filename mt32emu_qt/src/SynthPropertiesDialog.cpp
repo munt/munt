@@ -28,6 +28,7 @@ SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent, SynthRoute *useSyn
 	rsd(synthProfile, this)
 {
 	ui->setupUi(this);
+	ui->formLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
 	refreshProfileCombo("");
 	loadSynthProfile();
 
