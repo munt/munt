@@ -44,9 +44,9 @@ private slots:
 	void on_profileComboBox_currentIndexChanged(int);
 	void on_reverbCheckBox_stateChanged(int state);
 	void on_outputGainSlider_valueChanged(int value);
-	void on_outputGainSpinBox_valueChanged(double value);
+	void on_outputGainSpinBox_editingFinished();
 	void on_reverbOutputGainSlider_valueChanged(int value);
-	void on_reverbOutputGainSpinBox_valueChanged(double value);
+	void on_reverbOutputGainSpinBox_editingFinished();
 	void on_reverseStereoCheckBox_stateChanged(int state);
 	void on_assignChannels2_10Button_clicked();
 	void on_assignChannels1_8_10Button_clicked();

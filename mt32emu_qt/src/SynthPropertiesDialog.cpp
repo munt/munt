@@ -151,7 +151,8 @@ void SynthPropertiesDialog::on_outputGainSlider_valueChanged(int value) {
 	synthRoute->setOutputGain(float(gain));
 }
 
-void SynthPropertiesDialog::on_outputGainSpinBox_valueChanged(double value) {
+void SynthPropertiesDialog::on_outputGainSpinBox_editingFinished() {
+	double value = ui->outputGainSpinBox->value();
 	ui->outputGainSlider->setValue(int(value * 100 + 0.5));
 	synthRoute->setOutputGain(float(value));
 }
@@ -162,7 +163,8 @@ void SynthPropertiesDialog::on_reverbOutputGainSlider_valueChanged(int value) {
 	synthRoute->setReverbOutputGain(float(gain));
 }
 
-void SynthPropertiesDialog::on_reverbOutputGainSpinBox_valueChanged(double value) {
+void SynthPropertiesDialog::on_reverbOutputGainSpinBox_editingFinished() {
+	double value = ui->reverbOutputGainSpinBox->value();
 	ui->reverbOutputGainSlider->setValue(int(value * 100 + 0.5));
 	synthRoute->setReverbOutputGain(float(value));
 }
