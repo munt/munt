@@ -498,9 +498,13 @@ void Part::playPoly(const PatchCache cache[4], const MemParams::RhythmTemp *rhyt
 		synth->printDebug("%s (%s): Insufficient free partials to play key %d (velocity %d); needed=%d, free=%d, assignMode=%d", name, currentInstr, midiKey, velocity, needPartials, synth->partialManager->getFreePartialCount(), patchTemp->patch.assignMode);
 		synth->printPartialUsage();
 #endif
+		synth->getReportHandler3()->onNoteOnIgnored(needPartials, synth->partialManager->getFreePartialCount());
 		return;
 	}
-	if (synth->isAbortingPoly()) return;
+	if (synth->isAbortingPoly()) {
+		synth->getReportHandler3()->onPlayingPolySilenced(needPartials, synth->partialManager->getFreePartialCount());
+		return;
+	}
 
 	Poly *poly = synth->partialManager->assignPolyToPart(this);
 	if (poly == NULL) {

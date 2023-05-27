@@ -142,7 +142,7 @@ static const mt32emu_service_i_v6 SERVICE_VTABLE = {
 } // namespace MT32Emu
 
 struct mt32emu_data {
-	ReportHandler2 *reportHandler;
+	ReportHandler3 *reportHandler;
 	Synth *synth;
 	const ROMImage *controlROMImage;
 	const ROMImage *pcmROMImage;
@@ -156,7 +156,7 @@ struct mt32emu_data {
 
 namespace MT32Emu {
 
-class DelegatingReportHandlerAdapter : public ReportHandler2 {
+class DelegatingReportHandlerAdapter : public ReportHandler3 {
 public:
 	DelegatingReportHandlerAdapter(mt32emu_report_handler_i useReportHandler, void *useInstanceData) :
 		delegate(useReportHandler), instanceData(useInstanceData) {}
@@ -293,6 +293,22 @@ private:
 			ReportHandler2::onMidiMessageLEDStateUpdated(ledState);
 		} else {
 			delegate.v1->onMidiMessageLEDStateUpdated(instanceData, ledState ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE);
+		}
+	}
+
+	void onNoteOnIgnored(Bit32u partialsNeeded, Bit32u partialsFree) {
+		if (isVersionLess(MT32EMU_REPORT_HANDLER_VERSION_2) || delegate.v2->onNoteOnIgnored == NULL) {
+			ReportHandler3::onNoteOnIgnored(partialsNeeded, partialsFree);
+		} else {
+			delegate.v2->onNoteOnIgnored(instanceData, partialsNeeded, partialsFree);
+		}
+	}
+
+	void onPlayingPolySilenced(Bit32u partialsNeeded, Bit32u partialsFree) {
+		if (isVersionLess(MT32EMU_REPORT_HANDLER_VERSION_2) || delegate.v2->onPlayingPolySilenced == NULL) {
+			ReportHandler3::onPlayingPolySilenced(partialsNeeded, partialsFree);
+		} else {
+			delegate.v2->onPlayingPolySilenced(instanceData, partialsNeeded, partialsFree);
 		}
 	}
 };
@@ -546,7 +562,7 @@ mt32emu_context MT32EMU_C_CALL mt32emu_create_context(mt32emu_report_handler_i r
 	data->synth = new Synth;
 	if (report_handler.v0 != NULL) {
 		data->reportHandler = new DelegatingReportHandlerAdapter(report_handler, instance_data);
-		data->synth->setReportHandler2(data->reportHandler);
+		data->synth->setReportHandler3(data->reportHandler);
 	} else {
 		data->reportHandler = NULL;
 	}

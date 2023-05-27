@@ -253,8 +253,9 @@ public:
 	Display *display;
 	bool oldMT32DisplayFeatures;
 
-	ReportHandler2 defaultReportHandler;
+	ReportHandler3 defaultReportHandler;
 	ReportHandler2 *reportHandler2;
+	ReportHandler3 *reportHandler3;
 };
 
 Bit32u Synth::getLibraryVersionInt() {
@@ -292,6 +293,7 @@ Synth::Synth(ReportHandler *useReportHandler) :
 
 	reportHandler = useReportHandler != NULL ? useReportHandler : &extensions.defaultReportHandler;
 	extensions.reportHandler2 = &extensions.defaultReportHandler;
+	extensions.reportHandler3 = &extensions.defaultReportHandler;
 
 	extensions.preallocatedReverbMemory = false;
 	for (int i = REVERB_MODE_ROOM; i <= REVERB_MODE_TAP_DELAY; i++) {
@@ -349,6 +351,23 @@ void Synth::setReportHandler2(ReportHandler2 *reportHandler2) {
 		reportHandler = &extensions.defaultReportHandler;
 		extensions.reportHandler2 = &extensions.defaultReportHandler;
 	}
+	extensions.reportHandler3 = &extensions.defaultReportHandler;
+}
+
+void Synth::setReportHandler3(ReportHandler3 *reportHandler3) {
+	if (reportHandler3 != NULL) {
+		reportHandler = reportHandler3;
+		extensions.reportHandler2 = reportHandler3;
+		extensions.reportHandler3 = reportHandler3;
+	} else {
+		reportHandler = &extensions.defaultReportHandler;
+		extensions.reportHandler2 = &extensions.defaultReportHandler;
+		extensions.reportHandler3 = &extensions.defaultReportHandler;
+	}
+}
+
+ReportHandler3 *Synth::getReportHandler3() {
+	return extensions.reportHandler3;
 }
 
 void ReportHandler::showLCDMessage(const char *data) {

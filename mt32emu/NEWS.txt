@@ -1,3 +1,8 @@
+HEAD:
+
+	* Provided callbacks to retrieve notifications about events when the synth engine runs
+	  out of available partials. (#111)
+
 2022-07-23:
 
 	2.7.0 released.

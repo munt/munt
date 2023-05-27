@@ -118,7 +118,8 @@ typedef struct {
 typedef enum {
 	MT32EMU_REPORT_HANDLER_VERSION_0 = 0,
 	MT32EMU_REPORT_HANDLER_VERSION_1 = 1,
-	MT32EMU_REPORT_HANDLER_VERSION_CURRENT = MT32EMU_REPORT_HANDLER_VERSION_1
+	MT32EMU_REPORT_HANDLER_VERSION_2 = 2,
+	MT32EMU_REPORT_HANDLER_VERSION_CURRENT = MT32EMU_REPORT_HANDLER_VERSION_2
 } mt32emu_report_handler_version;
 
 /** MIDI receiver interface versions */
@@ -188,6 +189,17 @@ typedef union mt32emu_report_handler_i mt32emu_report_handler_i;
 	/** Invoked when the emulated MIDI MESSAGE LED changes state. The led_state parameter represents whether the LED is ON. */ \
 	void (MT32EMU_C_CALL *onMidiMessageLEDStateUpdated)(void *instance_data, mt32emu_boolean led_state);
 
+#define MT32EMU_REPORT_HANDLER_I_V2 \
+	/**
+	 * Invoked in case the NoteOn MIDI message currently being processed cannot be played due to insufficient free partials.
+	 */ \
+	void (MT32EMU_C_CALL *onNoteOnIgnored)(void *instance_data, mt32emu_bit32u partialsNeeded, mt32emu_bit32u partialsFree); \
+	/**
+	 * Invoked in case the partial allocator starts premature silencing a currently playing poly to free partials necessary
+	 * for processing the preceding NoteOn MIDI message.
+	 */ \
+	void (MT32EMU_C_CALL *onPlayingPolySilenced)(void *instance_data, mt32emu_bit32u partialsNeeded, mt32emu_bit32u partialsFree);
+
 typedef struct {
 	MT32EMU_REPORT_HANDLER_I_V0
 } mt32emu_report_handler_i_v0;
@@ -197,6 +209,12 @@ typedef struct {
 	MT32EMU_REPORT_HANDLER_I_V1
 } mt32emu_report_handler_i_v1;
 
+typedef struct {
+	MT32EMU_REPORT_HANDLER_I_V0
+	MT32EMU_REPORT_HANDLER_I_V1
+	MT32EMU_REPORT_HANDLER_I_V2
+} mt32emu_report_handler_i_v2;
+
 /**
  * Extensible interface for handling reported events.
  * Union intended to view an interface of any subsequent version as any parent interface not requiring a cast.
@@ -205,6 +223,7 @@ typedef struct {
 union mt32emu_report_handler_i {
 	const mt32emu_report_handler_i_v0 *v0;
 	const mt32emu_report_handler_i_v1 *v1;
+	const mt32emu_report_handler_i_v2 *v2;
 };
 
 #undef MT32EMU_REPORT_HANDLER_I_V0

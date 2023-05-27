@@ -128,6 +128,18 @@ public:
 	virtual void onMidiMessageLEDStateUpdated(bool /* ledState */) {}
 };
 
+// Extends ReportHandler for delivering signals about insufficient partials conditions to the client.
+class MT32EMU_EXPORT_V(2.8) ReportHandler3 : public ReportHandler2 {
+public:
+	virtual ~ReportHandler3() {}
+
+	// Invoked in case the NoteOn MIDI message currently being processed cannot be played due to insufficient free partials.
+	virtual void onNoteOnIgnored(Bit32u /* partialsNeeded */, Bit32u /* partialsFree */) {}
+	// Invoked in case the partial allocator starts premature silencing a currently playing poly to free partials necessary
+	// for processing the preceding NoteOn MIDI message.
+	virtual void onPlayingPolySilenced(Bit32u /* partialsNeeded */, Bit32u /* partialsFree */) {}
+};
+
 class Synth {
 friend class DefaultMidiStreamParser;
 friend class Display;
@@ -256,6 +268,8 @@ private:
 	void resetMasterTunePitchDelta();
 	Bit32s getMasterTunePitchDelta() const;
 
+	ReportHandler3 *getReportHandler3();
+
 public:
 	static inline Bit16s clipSampleEx(Bit32s sampleEx) {
 		// Clamp values above 32767 to 32767, and values below -32768 to -32768
@@ -313,6 +327,9 @@ public:
 	// Sets an implementation of ReportHandler2 interface for reporting various errors, information and debug messages.
 	// If the argument is NULL, the default implementation is installed as a fallback.
 	MT32EMU_EXPORT_V(2.6) void setReportHandler2(ReportHandler2 *reportHandler2);
+	// Sets an implementation of ReportHandler3 interface for reporting various errors, information and debug messages.
+	// If the argument is NULL, the default implementation is installed as a fallback.
+	MT32EMU_EXPORT_V(2.8) void setReportHandler3(ReportHandler3 *reportHandler3);
 
 	// Used to initialise the MT-32. Must be called before any other function.
 	// Returns true if initialization was successful, otherwise returns false.
