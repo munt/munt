@@ -768,6 +768,18 @@ void QReportHandler::onMidiMessageLEDStateUpdated(bool ledState) {
 	}
 }
 
+void QReportHandler::onNoteOnIgnored(MT32Emu::Bit32u partialsNeeded, MT32Emu::Bit32u partialsFree) {
+	Q_UNUSED(partialsNeeded)
+	Q_UNUSED(partialsFree)
+	if (!qSynth()->isRealtime()) emit noteOnIgnored();
+}
+
+void QReportHandler::onPlayingPolySilenced(MT32Emu::Bit32u partialsNeeded, MT32Emu::Bit32u partialsFree) {
+	Q_UNUSED(partialsNeeded)
+	Q_UNUSED(partialsFree)
+	if (!qSynth()->isRealtime()) emit playingPolySilenced();
+}
+
 void QReportHandler::doShowLCDMessage(const char *message) {
 	qDebug() << "LCD-Message:" << message;
 	if (Master::getInstance()->getSettings()->value("Master/showLCDBalloons", true).toBool()) {
@@ -796,7 +808,7 @@ QSynth::~QSynth() {
 void QSynth::createSynth() {
 	delete synth;
 	synth = new Synth;
-	synth->setReportHandler2(&reportHandler);
+	synth->setReportHandler3(&reportHandler);
 }
 
 bool QSynth::isOpen() const {

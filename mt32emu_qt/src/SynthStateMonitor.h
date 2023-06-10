@@ -8,6 +8,7 @@
 #include <mt32emu/mt32emu.h>
 
 #include "QSynth.h"
+#include "MasterClock.h"
 
 class SynthRoute;
 class SynthStateMonitor;
@@ -37,6 +38,22 @@ public:
 	explicit MidiMessageLEDWidget(QWidget *parent);
 
 	void setState(bool state);
+};
+
+class PartialUsageLEDWidget : public LEDWidget {
+	Q_OBJECT
+
+public:
+	enum State {
+		STATE_OFF,
+		STATE_OK,
+		STATE_PLAYING_POLY_SILENCED,
+		STATE_NOTE_ON_IGNORED
+	};
+
+	explicit PartialUsageLEDWidget(QWidget *parent);
+
+	void setState(State state);
 };
 
 class PartialStateLEDWidget : public LEDWidget {
@@ -152,6 +169,7 @@ private:
 	const Ui::SynthWidget * const ui;
 	LCDWidget lcdWidget;
 	MidiMessageLEDWidget midiMessageLED;
+	PartialUsageLEDWidget partialUsageLED;
 	PartialStateLEDWidget **partialStateLED;
 	PartVolumeButton *partVolumeButton[9];
 	PatchNameButton *patchNameButton[9];
@@ -160,6 +178,9 @@ private:
 	MT32Emu::PartialState *partialStates;
 	MT32Emu::Bit8u *keysOfPlayingNotes;
 	MT32Emu::Bit8u *velocitiesOfPlayingNotes;
+
+	PartialUsageLEDWidget::State lastState;
+	MasterClockNanos lastInsufficientPartialsWarningNanos;
 
 	uint partialCount;
 
@@ -172,6 +193,8 @@ private slots:
 	void handleProgramChanged(int partNum, QString soundGroupName, QString patchName);
 	void handleMidiMessageLEDUpdate(bool);
 	void handleAudioBlockRendered();
+	void handleNoteOnIgnored();
+	void handlePlayingPolySilenced();
 };
 
 #endif

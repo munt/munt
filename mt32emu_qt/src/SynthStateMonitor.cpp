@@ -31,6 +31,7 @@ static const QColor COLOR_GREEN(Qt::green);
 static const QColor LCD_UNLIT_COLOR = QColor::fromRgba(0x32F2FEEDU);
 static const QColor LCD_LIT_COLOR = QColor::fromRgb(0xCAFB10U);
 static const QColor PARTIAL_STATE_COLORS[] = {COLOR_GRAY, Qt::red, Qt::yellow, Qt::green};
+static const QColor PARTIAL_USAGE_COLORS[] = {COLOR_GRAY, QColor(Qt::green).darker(125), Qt::yellow, Qt::red};
 
 static const uint LCD_BOTTOM_ROW_INDEX = 6;
 static const uint LCD_ROW_COUNT = 8;
@@ -43,13 +44,16 @@ static const uint LCD_COLUMN_SIZE_WITH_SPACING = 6 * LCD_PIXEL_SIZE_WITH_SPACING
 
 static const QPoint LCD_CONTENT_INSETS(8, 10);
 
+static const MasterClockNanos INSUFFICIENT_PARTIALS_WARNING_SHOWN_NANOS = 250 * MasterClock::NANOS_PER_MILLISECOND;
+
 using namespace MT32Emu;
 
 SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRoute) :
 	synthRoute(useSynthRoute),
 	ui(ui),
 	lcdWidget(ui->synthFrame),
-	midiMessageLED(ui->midiMessageFrame)
+	midiMessageLED(ui->midiMessageFrame),
+	partialUsageLED(ui->partialUsageFrame)
 {
 	partialCount = useSynthRoute->getPartialCount();
 	allocatePartialsData();
@@ -58,6 +62,10 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 	ui->synthFrameLayout->insertWidget(1, &lcdWidget);
 	midiMessageLED.setMinimumSize(10, 2);
 	ui->midiMessageLayout->addWidget(&midiMessageLED, 0, Qt::AlignHCenter);
+	partialUsageLED.setMinimumSize(10, 2);
+	ui->partialUsageLayout->addWidget(&partialUsageLED, 0, Qt::AlignHCenter);
+	lastState = PartialUsageLEDWidget::STATE_OFF;
+	lastInsufficientPartialsWarningNanos = MasterClock::getClockNanos() - INSUFFICIENT_PARTIALS_WARNING_SHOWN_NANOS;
 
 	for (int i = 0; i < 9; i++) {
 		int column = 1;
@@ -78,6 +86,8 @@ SynthStateMonitor::SynthStateMonitor(Ui::SynthWidget *ui, SynthRoute *useSynthRo
 	synthRoute->connectSynth(SIGNAL(stateChanged(SynthState)), partVolumeButton[0], SLOT(handleResetAllTriggered()));
 	synthRoute->connectReportHandler(SIGNAL(programChanged(int, QString, QString)), this, SLOT(handleProgramChanged(int, QString, QString)));
 	synthRoute->connectReportHandler(SIGNAL(polyStateChanged(int)), this, SLOT(handlePolyStateChanged(int)));
+	synthRoute->connectReportHandler(SIGNAL(noteOnIgnored()), this, SLOT(handleNoteOnIgnored()));
+	synthRoute->connectReportHandler(SIGNAL(playingPolySilenced()), this, SLOT(handlePlayingPolySilenced()));
 }
 
 SynthStateMonitor::~SynthStateMonitor() {
@@ -107,6 +117,7 @@ void SynthStateMonitor::handleSynthStateChange(SynthState state) {
 	if (state != SynthState_OPEN) {
 		lcdWidget.update();
 		midiMessageLED.setState(false);
+		partialUsageLED.setState(PartialUsageLEDWidget::STATE_OFF);
 	}
 
 	uint newPartialCount = synthRoute->getPartialCount();
@@ -145,8 +156,30 @@ void SynthStateMonitor::handleMidiMessageLEDUpdate(bool midiMessageOn) {
 void SynthStateMonitor::handleAudioBlockRendered() {
 	if (synthRoute->getState() != SynthRouteState_OPEN) return;
 	synthRoute->getPartialStates(partialStates);
+	bool playing = false;
 	for (unsigned int partialNum = 0; partialNum < partialCount; partialNum++) {
 		partialStateLED[partialNum]->setState(partialStates[partialNum]);
+		playing |= partialStates[partialNum] != MT32Emu::PartialState_INACTIVE;
+	}
+	if (lastInsufficientPartialsWarningNanos + INSUFFICIENT_PARTIALS_WARNING_SHOWN_NANOS <= MasterClock::getClockNanos()) {
+		lastState = playing ? PartialUsageLEDWidget::STATE_OK : PartialUsageLEDWidget::STATE_OFF;
+		partialUsageLED.setState(lastState);
+	}
+}
+
+void SynthStateMonitor::handleNoteOnIgnored() {
+	if (synthRoute->getState() != SynthRouteState_OPEN) return;
+	partialUsageLED.setState(PartialUsageLEDWidget::STATE_NOTE_ON_IGNORED);
+	lastState  = PartialUsageLEDWidget::STATE_NOTE_ON_IGNORED;
+	lastInsufficientPartialsWarningNanos = MasterClock::getClockNanos();
+}
+
+void SynthStateMonitor::handlePlayingPolySilenced() {
+	if (synthRoute->getState() != SynthRouteState_OPEN) return;
+	if (lastState  != PartialUsageLEDWidget::STATE_NOTE_ON_IGNORED) {
+		lastState = PartialUsageLEDWidget::STATE_PLAYING_POLY_SILENCED;
+		partialUsageLED.setState(lastState);
+		lastInsufficientPartialsWarningNanos = MasterClock::getClockNanos();
 	}
 }
 
@@ -202,6 +235,12 @@ MidiMessageLEDWidget::MidiMessageLEDWidget(QWidget *parent) : LEDWidget(parent, 
 
 void MidiMessageLEDWidget::setState(bool state) {
 	setColor(state ? &COLOR_GREEN : &COLOR_GRAY);
+}
+
+PartialUsageLEDWidget::PartialUsageLEDWidget(QWidget *parent) : LEDWidget(parent, &COLOR_GRAY) {}
+
+void PartialUsageLEDWidget::setState(State state) {
+	setColor(&PARTIAL_USAGE_COLORS[state]);
 }
 
 PartialStateLEDWidget::PartialStateLEDWidget(QWidget *parent) : LEDWidget(parent, &COLOR_GRAY) {}

@@ -4,7 +4,7 @@
 #include <QtCore>
 #include <mt32emu/mt32emu.h>
 
-#if !MT32EMU_IS_COMPATIBLE(2, 7)
+#if !MT32EMU_IS_COMPATIBLE(2, 8)
 #error Incompatible mt32emu library version
 #endif
 
@@ -70,7 +70,7 @@ struct SoundGroup {
 
 Q_DECLARE_METATYPE(SoundGroup::Item)
 
-class QReportHandler : public QObject, public MT32Emu::ReportHandler2 {
+class QReportHandler : public QObject, public MT32Emu::ReportHandler3 {
 	Q_OBJECT
 
 // For the sake of Qt4 compatibility.
@@ -91,6 +91,8 @@ public:
 	void onProgramChanged(MT32Emu::Bit8u partNum, const char soundGroupName[], const char patchName[]);
 	void onLCDStateUpdated();
 	void onMidiMessageLEDStateUpdated(bool ledState);
+	void onNoteOnIgnored(MT32Emu::Bit32u partialsNeeded, MT32Emu::Bit32u partialsFree);
+	void onPlayingPolySilenced(MT32Emu::Bit32u partialsNeeded, MT32Emu::Bit32u partialsFree);
 	void doShowLCDMessage(const char *message);
 
 private:
@@ -106,6 +108,8 @@ signals:
 	void programChanged(int, QString, QString);
 	void lcdStateChanged();
 	void midiMessageLEDStateChanged(bool);
+	void noteOnIgnored();
+	void playingPolySilenced();
 };
 
 /**
