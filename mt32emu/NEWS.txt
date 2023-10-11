@@ -1,3 +1,11 @@
+2023-10-11:
+
+	2.7.1 released.
+
+	* Fixed initialisation of ROMInfo objects which caused crashes of client applications
+	  when accessing the static ROM data. Currently, only builds with clang-17.0 are affected
+	  which is used in MSYS2 environment. (#115)
+
 2022-07-23:
 
 	2.7.0 released.
