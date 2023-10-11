@@ -30,7 +30,7 @@ namespace MT32Emu {
 struct ROMInfo {
 public:
 	size_t fileSize;
-	const File::SHA1Digest &sha1Digest;
+	const char *sha1Digest;
 	enum Type {PCM, Control, Reverb} type;
 	const char *shortName;
 	const char *description;
