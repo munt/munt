@@ -28,15 +28,18 @@ static const uint REVERB_SETTINGS_SIZE = 3;
 static const uint PARTIAL_RESERVE_SIZE = 9;
 static const uint RHYTHM_SETUP_SIZE = 256;
 static const uint PATCH_COUNT = 64;
+// For compatibility with physical devices, we limit the maximum SysEx size.
+static const uint PATCHES_PER_SYSEX = PATCH_COUNT / 2;
 static const uint PATCH_SIZE = 8;
-static const uint PATCH_MEMORY_SIZE = PATCH_SIZE * PATCH_COUNT;
+static const uint PATCH_SYSEX_SIZE = PATCH_SIZE * PATCHES_PER_SYSEX;
 static const uint TIMBRE_COMMON_PARAMETERS_SIZE = 14;
 static const uint TIMBRE_PARTIAL_MUTE_OFFSET = 12;
 static const uint TIMBRE_PARTIAL_PARAMETERS_SIZE = 58;
-static const uint MAX_SYSEX_SIZE = PATCH_MEMORY_SIZE + 10;
+static const uint MAX_SYSEX_SIZE = PATCH_SYSEX_SIZE + 10;
 
 static const Bit32u RHYTHM_SETUP_SYSEX_ADDRESS = 0x030110;
-static const Bit32u PATCH_MEMORY_SYSEX_ADDRESS = 0x050000;
+static const Bit32u PATCH_MEMORY_LOW_SYSEX_ADDRESS = 0x050000;
+static const Bit32u PATCH_MEMORY_HIGH_SYSEX_ADDRESS = 0x050200;
 static const Bit32u TIMBRE_MEMORY_SYSEX_ADDRESS = 0x080000;
 static const Bit32u SYSTEM_REVERB_SYSEX_ADDRESS = 0x100001;
 static const Bit32u DISPLAY_SYSEX_ADDRESS = 0x200000;
@@ -47,7 +50,8 @@ static const uint DEMO_SONG_COUNT = 5;
 static const uint DEMO_SONG_REFS = 0x86E0;
 static const uint DEMO_TIMBRE_COUNT = 22;
 static const uint DEMO_TIMBRE_ADDRESSES = 0x8700;
-static const uint DEMO_PATCH_TABLE = 0x8800;
+static const uint DEMO_PATCH_TABLE_LOW = 0x8800;
+static const uint DEMO_PATCH_TABLE_HIGH = 0x8900;
 
 static const uint TITLE_OFFSET = 0x0000;
 static const uint MIDI_TICK_OFFSET = 0x0010;
@@ -198,7 +202,9 @@ void DemoPlayer::configureSynth() {
 		length = finishSysex(sysexAddress, makeTimbreSysex(sysexAddress, timbreNumber));
 		addSysex(sysex, length);
 	}
-	length = finishSysex(sysexAddress, makePatchMemorySysex(sysexAddress));
+	length = finishSysex(sysexAddress, makePatchMemorySysex(sysexAddress, PATCH_MEMORY_LOW_SYSEX_ADDRESS, DEMO_PATCH_TABLE_LOW));
+	addSysex(sysex, length);
+	length = finishSysex(sysexAddress, makePatchMemorySysex(sysexAddress, PATCH_MEMORY_HIGH_SYSEX_ADDRESS, DEMO_PATCH_TABLE_HIGH));
 	addSysex(sysex, length);
 }
 
@@ -234,24 +240,24 @@ Bit32u DemoPlayer::makeTimbreSysex(Bit8u *sysexPtr, uint timbreNumber) {
 	sysexPtr += TIMBRE_COMMON_PARAMETERS_SIZE;
 	romPtr += TIMBRE_COMMON_PARAMETERS_SIZE;
 	for (uint partialIx = 0; partialIx < 4; partialIx++) {
+		if (partialIx != 0 && (partialMute & (1 << partialIx)) != 0) romPtr += TIMBRE_PARTIAL_PARAMETERS_SIZE;
 		memcpy(sysexPtr, romPtr, TIMBRE_PARTIAL_PARAMETERS_SIZE);
 		sysexPtr += TIMBRE_PARTIAL_PARAMETERS_SIZE;
-		if (partialIx == 0 || (partialMute & (1 << partialIx)) != 0) romPtr += TIMBRE_PARTIAL_PARAMETERS_SIZE;
 	}
 	return SYSEX_ADDRESS_SIZE + TIMBRE_COMMON_PARAMETERS_SIZE + (4 * TIMBRE_PARTIAL_PARAMETERS_SIZE);
 }
 
-Bit32u DemoPlayer::makePatchMemorySysex(Bit8u *sysexPtr) {
-	writeSysexAddr(sysexPtr, PATCH_MEMORY_SYSEX_ADDRESS);
+Bit32u DemoPlayer::makePatchMemorySysex(Bit8u *sysexPtr, uint patchSysexAddress, uint patchRomAddress) {
+	writeSysexAddr(sysexPtr, patchSysexAddress);
 	const Bit8u *romData = controlROMImage->getFile()->getData();
-	memcpy(sysexPtr, romData + DEMO_PATCH_TABLE, PATCH_MEMORY_SIZE);
+	memcpy(sysexPtr, romData + patchRomAddress, PATCH_SYSEX_SIZE);
 	// Some of the demo patches refer to timbre group 5 which we here map to memory timbres.
-	Bit8u *sysexEndPtr = sysexPtr + PATCH_MEMORY_SIZE;
+	Bit8u *sysexEndPtr = sysexPtr + PATCH_SYSEX_SIZE;
 	while (sysexPtr < sysexEndPtr) {
 		if (*sysexPtr == 5) *sysexPtr = 2;
 		sysexPtr += PATCH_SIZE;
 	}
-	return SYSEX_ADDRESS_SIZE + PATCH_MEMORY_SIZE;
+	return SYSEX_ADDRESS_SIZE + PATCH_SYSEX_SIZE;
 }
 
 Bit32u DemoPlayer::makeRhythmSetupSysex(Bit8u *sysexPtr) {
