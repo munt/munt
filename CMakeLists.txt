@@ -21,6 +21,8 @@ if(NOT DEFINED BUILD_SHARED_LIBS)
   endif()
 endif()
 
+enable_testing()
+
 if(munt_WITH_MT32EMU_SMF2WAV)
   set(libmt32emu_REQUIRE_C_INTERFACE TRUE)
 endif()
