@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2024 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -51,7 +51,7 @@ struct ROMInfoLists {
 
 }
 
-#define _CALC_ARRAY_LENGTH(x) Bit32u(sizeof (x) / sizeof *(x) - 1)
+#define MT32EMU_CALC_ARRAY_LENGTH(x) Bit32u(sizeof (x) / sizeof *(x) - 1)
 
 static const ROMInfoLists &getROMInfoLists() {
 	static const File::SHA1Digest CTRL_MT32_V1_04_A_SHA1 = "9cd4858014c4e8a9dff96053f784bfaac1092a2e";
@@ -143,7 +143,7 @@ static const ROMInfoLists &getROMInfoLists() {
 		&PCM_CM32L_L, &PCM_CM32L_H,
 		NULL
 	};
-	static const ROMInfo *ALL_ROM_INFOS[_CALC_ARRAY_LENGTH(FULL_ROM_INFOS) + _CALC_ARRAY_LENGTH(PARTIAL_ROM_INFOS) + 1];
+	static const ROMInfo *ALL_ROM_INFOS[MT32EMU_CALC_ARRAY_LENGTH(FULL_ROM_INFOS) + MT32EMU_CALC_ARRAY_LENGTH(PARTIAL_ROM_INFOS) + 1];
 
 	if (CTRL_MT32_V1_04_A.pairROMInfo == NULL) {
 		CTRL_MT32_V1_04_A.pairROMInfo = &CTRL_MT32_V1_04_B;
@@ -155,7 +155,7 @@ static const ROMInfoLists &getROMInfoLists() {
 		PCM_CM32L_L.pairROMInfo = &PCM_CM32L_H;
 
 		memcpy(&ALL_ROM_INFOS[0], FULL_ROM_INFOS, sizeof FULL_ROM_INFOS);
-		memcpy(&ALL_ROM_INFOS[_CALC_ARRAY_LENGTH(FULL_ROM_INFOS)], PARTIAL_ROM_INFOS, sizeof PARTIAL_ROM_INFOS); // Includes NULL terminator.
+		memcpy(&ALL_ROM_INFOS[MT32EMU_CALC_ARRAY_LENGTH(FULL_ROM_INFOS)], PARTIAL_ROM_INFOS, sizeof PARTIAL_ROM_INFOS); // Includes NULL terminator.
 	}
 
 	static const ROMInfo * const MT32_V1_04_ROMS[] = {&CTRL_MT32_V1_04, &PCM_MT32, &CTRL_MT32_V1_04_A, &CTRL_MT32_V1_04_B, &PCM_MT32_L, &PCM_MT32_H, NULL};
@@ -172,21 +172,21 @@ static const ROMInfoLists &getROMInfoLists() {
 	static const ROMInfo * const CM32LN_V1_00_ROMS[] = {&CTRL_CM32LN_V1_00, &PCM_CM32L, NULL};
 
 	static const ROMInfoLists romInfoLists = {
-		{MT32_V1_04_ROMS, _CALC_ARRAY_LENGTH(MT32_V1_04_ROMS)},
-		{MT32_V1_05_ROMS, _CALC_ARRAY_LENGTH(MT32_V1_05_ROMS)},
-		{MT32_V1_06_ROMS, _CALC_ARRAY_LENGTH(MT32_V1_06_ROMS)},
-		{MT32_V1_07_ROMS, _CALC_ARRAY_LENGTH(MT32_V1_07_ROMS)},
-		{MT32_BLUER_ROMS, _CALC_ARRAY_LENGTH(MT32_BLUER_ROMS)},
-		{MT32_V2_03_ROMS, _CALC_ARRAY_LENGTH(MT32_V2_03_ROMS)},
-		{MT32_V2_04_ROMS, _CALC_ARRAY_LENGTH(MT32_V2_04_ROMS)},
-		{MT32_V2_06_ROMS, _CALC_ARRAY_LENGTH(MT32_V2_06_ROMS)},
-		{MT32_V2_07_ROMS, _CALC_ARRAY_LENGTH(MT32_V2_07_ROMS)},
-		{CM32L_V1_00_ROMS, _CALC_ARRAY_LENGTH(CM32L_V1_00_ROMS)},
-		{CM32L_V1_02_ROMS, _CALC_ARRAY_LENGTH(CM32L_V1_02_ROMS)},
-		{CM32LN_V1_00_ROMS, _CALC_ARRAY_LENGTH(CM32LN_V1_00_ROMS)},
-		{FULL_ROM_INFOS, _CALC_ARRAY_LENGTH(FULL_ROM_INFOS)},
-		{PARTIAL_ROM_INFOS, _CALC_ARRAY_LENGTH(PARTIAL_ROM_INFOS)},
-		{ALL_ROM_INFOS, _CALC_ARRAY_LENGTH(ALL_ROM_INFOS)}
+		{MT32_V1_04_ROMS, MT32EMU_CALC_ARRAY_LENGTH(MT32_V1_04_ROMS)},
+		{MT32_V1_05_ROMS, MT32EMU_CALC_ARRAY_LENGTH(MT32_V1_05_ROMS)},
+		{MT32_V1_06_ROMS, MT32EMU_CALC_ARRAY_LENGTH(MT32_V1_06_ROMS)},
+		{MT32_V1_07_ROMS, MT32EMU_CALC_ARRAY_LENGTH(MT32_V1_07_ROMS)},
+		{MT32_BLUER_ROMS, MT32EMU_CALC_ARRAY_LENGTH(MT32_BLUER_ROMS)},
+		{MT32_V2_03_ROMS, MT32EMU_CALC_ARRAY_LENGTH(MT32_V2_03_ROMS)},
+		{MT32_V2_04_ROMS, MT32EMU_CALC_ARRAY_LENGTH(MT32_V2_04_ROMS)},
+		{MT32_V2_06_ROMS, MT32EMU_CALC_ARRAY_LENGTH(MT32_V2_06_ROMS)},
+		{MT32_V2_07_ROMS, MT32EMU_CALC_ARRAY_LENGTH(MT32_V2_07_ROMS)},
+		{CM32L_V1_00_ROMS, MT32EMU_CALC_ARRAY_LENGTH(CM32L_V1_00_ROMS)},
+		{CM32L_V1_02_ROMS, MT32EMU_CALC_ARRAY_LENGTH(CM32L_V1_02_ROMS)},
+		{CM32LN_V1_00_ROMS, MT32EMU_CALC_ARRAY_LENGTH(CM32LN_V1_00_ROMS)},
+		{FULL_ROM_INFOS, MT32EMU_CALC_ARRAY_LENGTH(FULL_ROM_INFOS)},
+		{PARTIAL_ROM_INFOS, MT32EMU_CALC_ARRAY_LENGTH(PARTIAL_ROM_INFOS)},
+		{ALL_ROM_INFOS, MT32EMU_CALC_ARRAY_LENGTH(ALL_ROM_INFOS)}
 	};
 	return romInfoLists;
 }
@@ -251,41 +251,27 @@ const ROMInfo * const *ROMInfo::getPartialROMInfos(Bit32u *itemCount) {
 	return getROMInfoLists().partialROMInfos.romInfos;
 }
 
-const ROMImage *ROMImage::makeFullROMImage(Bit8u *data, size_t dataSize) {
-	return new ROMImage(new ArrayFile(data, dataSize), true, getKnownROMInfoList());
-}
-
-const ROMImage *ROMImage::appendImages(const ROMImage *romImageLow, const ROMImage *romImageHigh) {
-	const Bit8u *romDataLow = romImageLow->getFile()->getData();
-	const Bit8u *romDataHigh = romImageHigh->getFile()->getData();
-	size_t partSize = romImageLow->getFile()->getSize();
+static File *appendROMFiles(File *romFileLow, File *romFileHigh) {
+	const Bit8u *romDataLow = romFileLow->getData();
+	const Bit8u *romDataHigh = romFileHigh->getData();
+	size_t partSize = romFileLow->getSize();
 	Bit8u *data = new Bit8u[2 * partSize];
 	memcpy(data, romDataLow, partSize);
 	memcpy(data + partSize, romDataHigh, partSize);
-	const ROMImage *romImageFull = makeFullROMImage(data, 2 * partSize);
-	if (romImageFull->getROMInfo() == NULL) {
-		freeROMImage(romImageFull);
-		return NULL;
-	}
-	return romImageFull;
+	return new ArrayFile(data, 2 * partSize);
 }
 
-const ROMImage *ROMImage::interleaveImages(const ROMImage *romImageEven, const ROMImage *romImageOdd) {
-	const Bit8u *romDataEven = romImageEven->getFile()->getData();
-	const Bit8u *romDataOdd = romImageOdd->getFile()->getData();
-	size_t partSize = romImageEven->getFile()->getSize();
+static File *interleaveROMFiles(File *romFileEven, File *romFileOdd) {
+	const Bit8u *romDataEven = romFileEven->getData();
+	const Bit8u *romDataOdd = romFileOdd->getData();
+	size_t partSize = romFileEven->getSize();
 	Bit8u *data = new Bit8u[2 * partSize];
 	Bit8u *writePtr = data;
 	for (size_t romDataIx = 0; romDataIx < partSize; romDataIx++) {
 		*(writePtr++) = romDataEven[romDataIx];
 		*(writePtr++) = romDataOdd[romDataIx];
 	}
-	const ROMImage *romImageFull = makeFullROMImage(data, 2 * partSize);
-	if (romImageFull->getROMInfo() == NULL) {
-		freeROMImage(romImageFull);
-		return NULL;
-	}
-	return romImageFull;
+	return new ArrayFile(data, 2 * partSize);
 }
 
 ROMImage::ROMImage(File *useFile, bool useOwnFile, const ROMInfo * const *romInfos) :
@@ -323,23 +309,36 @@ void ROMImage::freeROMImage(const ROMImage *romImage) {
 	delete romImage;
 }
 
-const ROMImage *ROMImage::mergeROMImages(const ROMImage *romImage1, const ROMImage *romImage2) {
-	if (romImage1->romInfo->pairROMInfo != romImage2->romInfo) {
+static File *mergePartialROMs(const ROMImage *romImage1, const ROMImage *romImage2) {
+	if (romImage1->getROMInfo()->pairROMInfo != romImage2->getROMInfo()) {
 		return NULL;
 	}
-	switch (romImage1->romInfo->pairType) {
+	File *romFile1 = romImage1->getFile();
+	File *romFile2 = romImage2->getFile();
+	switch (romImage1->getROMInfo()->pairType) {
 	case ROMInfo::FirstHalf:
-		return appendImages(romImage1, romImage2);
+		return appendROMFiles(romFile1, romFile2);
 	case ROMInfo::SecondHalf:
-		return appendImages(romImage2, romImage1);
+		return appendROMFiles(romFile2, romFile1);
 	case ROMInfo::Mux0:
-		return interleaveImages(romImage1, romImage2);
+		return interleaveROMFiles(romFile1, romFile2);
 	case ROMInfo::Mux1:
-		return interleaveImages(romImage2, romImage1);
+		return interleaveROMFiles(romFile2, romFile1);
 	default:
 		break;
 	}
 	return NULL;
+}
+
+const ROMImage *ROMImage::mergeROMImages(const ROMImage *romImage1, const ROMImage *romImage2) {
+	File *mergedFile = mergePartialROMs(romImage1, romImage2);
+	if (mergedFile == NULL) return NULL;
+	const ROMImage *mergedROMImage = new ROMImage(mergedFile, true, getKnownROMInfoList());
+	if (mergedROMImage->romInfo == NULL) {
+		freeROMImage(mergedROMImage);
+		return NULL;
+	}
+	return mergedROMImage;
 }
 
 File *ROMImage::getFile() const {
@@ -372,7 +371,7 @@ const MachineConfiguration * const *MachineConfiguration::getAllMachineConfigura
 		&MT32_1_04, &MT32_1_05, &MT32_1_06, &MT32_1_07, &MT32_BLUER, &MT32_2_03, &MT32_2_04, &MT32_2_06, &MT32_2_07, &CM32L_1_00, &CM32L_1_02, &CM32LN_1_00, NULL
 	};
 
-	if (itemCount != NULL) *itemCount = _CALC_ARRAY_LENGTH(MACHINE_CONFIGURATIONS);
+	if (itemCount != NULL) *itemCount = MT32EMU_CALC_ARRAY_LENGTH(MACHINE_CONFIGURATIONS);
 	return MACHINE_CONFIGURATIONS;
 }
 
@@ -390,3 +389,15 @@ const ROMInfo * const *MachineConfiguration::getCompatibleROMInfos(Bit32u *itemC
 }
 
 } // namespace MT32Emu
+
+#ifdef MT32EMU_WITH_TESTING
+
+#include "test/TestAccessors.h"
+
+using namespace MT32Emu;
+
+File *Test::mergePartialROMs(const ROMImage *romImage1, const ROMImage *romImage2) {
+	return MT32Emu::mergePartialROMs(romImage1, romImage2);
+}
+
+#endif // #ifdef MT32EMU_WITH_TESTING

@@ -18,6 +18,7 @@
 #include "../mt32emu.h"
 
 #include "FakeROMs.h"
+#include "TestAccessors.h"
 #include "Testing.h"
 
 namespace MT32Emu {
@@ -278,6 +279,91 @@ TEST_CASE("Different ROMImages can be created for aliased ROM files") {
 	CHECK(romImage->getROMInfo() != NULL_PTR);
 	CHECK(romImage->getROMInfo()->shortName == expectedROMName);
 	ROMImage::freeROMImage(romImage);
+}
+
+TEST_CASE("Partial ROMImages can't be merged if incompatible") {
+	const ROMInfo *romInfo1;
+	const ROMInfo *romInfo2;
+	SUBCASE("Partial ROM with full ROM") {
+		// Technically, this is the same ROM as pcm_cm32l_l but their ROMInfos are distinct.
+		romInfo1 = findROMInfo("pcm_mt32");
+		romInfo2 = findROMInfo("pcm_cm32l_h");
+	}
+
+	SUBCASE("Partial ROMs for different models") {
+		romInfo1 = findROMInfo("ctrl_mt32_1_07_a");
+		romInfo2 = findROMInfo("ctrl_mt32_1_06_b");
+	}
+	REQUIRE(romInfo1 != NULL_PTR);
+	REQUIRE(romInfo2 != NULL_PTR);
+
+	ArrayFile file1(NULL, romInfo1->fileSize, romInfo1->sha1Digest);
+	ArrayFile file2(NULL, romInfo2->fileSize, romInfo2->sha1Digest);
+	const ROMImage *romImage1 = ROMImage::makeROMImage(&file1, &romInfo1);
+	const ROMImage *romImage2 = ROMImage::makeROMImage(&file2, &romInfo2);
+	File *result = mergePartialROMs(romImage1, romImage2);
+	CHECK(result == NULL_PTR);
+	ROMImage::freeROMImage(romImage1);
+	ROMImage::freeROMImage(romImage2);
+}
+
+TEST_CASE("Pairable partial ROMImages can be merged into one full ROM file") {
+	const ROMInfo *romInfo1;
+	const ROMInfo *romInfo2;
+	const char *expectedSHA1;
+
+	SUBCASE("Interleaved ROMs A+B") {
+		romInfo1 = findROMInfo("ctrl_mt32_1_07_a");
+		romInfo2 = findROMInfo("ctrl_mt32_1_07_b");
+		expectedSHA1 = "c05b4a0426b99e6a3e5e7f50f361bfe59b1fb003";
+	}
+
+	SUBCASE("Interleaved ROMs B+A") {
+		romInfo1 = findROMInfo("ctrl_mt32_1_07_b");
+		romInfo2 = findROMInfo("ctrl_mt32_1_07_a");
+		expectedSHA1 = "9daf97604a65a71ff04f1b20cac91343e7a26d0a";
+	}
+
+	SUBCASE("Appended ROMs L+H") {
+		romInfo1 = findROMInfo("pcm_mt32_l");
+		romInfo2 = findROMInfo("pcm_mt32_h");
+		expectedSHA1 = "b96d172eb57a5270d159810ffd7b3346651d3990";
+	}
+
+	SUBCASE("Appended ROMs H+L") {
+		romInfo1 = findROMInfo("pcm_mt32_h");
+		romInfo2 = findROMInfo("pcm_mt32_l");
+		expectedSHA1 = "1e79d1750c3c87d22f56577a96541ebfce7e158e";
+	}
+
+	REQUIRE(romInfo1 != NULL_PTR);
+	REQUIRE(romInfo2 != NULL_PTR);
+	size_t dataSize = romInfo1->fileSize;
+	Bit8u *data1 = new Bit8u[dataSize];
+	for (size_t i = 0; i < dataSize; i++) data1[i] = Bit8u(i);
+	Bit8u *data2 = new Bit8u[dataSize];
+	for (size_t i = 0; i < dataSize; i++) data2[i] = Bit8u(~i);
+
+	File *result;
+	{
+		ArrayFile file1(data1, dataSize, romInfo1->sha1Digest);
+		ArrayFile file2(data2, dataSize, romInfo2->sha1Digest);
+		const ROMImage *romImage1 = ROMImage::makeROMImage(&file1, &romInfo1);
+		REQUIRE(romImage1->getROMInfo() != NULL_PTR);
+		const ROMImage *romImage2 = ROMImage::makeROMImage(&file2, &romInfo2);
+		REQUIRE(romImage2->getROMInfo() != NULL_PTR);
+
+		result = mergePartialROMs(romImage1, romImage2);
+		ROMImage::freeROMImage(romImage1);
+		ROMImage::freeROMImage(romImage2);
+	}
+
+	delete[] data1;
+	delete[] data2;
+
+	REQUIRE(result != NULL_PTR);
+	CHECK(result->getSize() == 2 * dataSize);
+	CHECK(result->getSHA1() == expectedSHA1);
 }
 
 TEST_CASE("Failed merge of files with partial ROM images") {
