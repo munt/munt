@@ -23,6 +23,7 @@
 
 namespace MT32Emu {
 
+struct ControlROMMap;
 class File;
 class MachineConfiguration;
 class ROMImage;
@@ -34,6 +35,9 @@ const MachineConfiguration *findMachineConfiguration(const char *machineID);
 
 // Delegates to the identically named static function in ROMInfo.cpp
 File *mergePartialROMs(const ROMImage *romImage1, const ROMImage *romImage2);
+
+// Delegates to the identically named static function in Synth.cpp
+const ControlROMMap *getControlROMMap(const char *shortName);
 
 } // namespace Test
 

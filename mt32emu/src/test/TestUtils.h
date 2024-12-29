@@ -18,6 +18,8 @@
 #ifndef MT32EMU_TESTUTILS_H
 #define MT32EMU_TESTUTILS_H
 
+#include "../Types.h"
+
 namespace MT32Emu {
 
 class Synth;
@@ -27,6 +29,12 @@ namespace Test {
 class ROMSet;
 
 void openSynth(Synth &synth, const ROMSet &romSet);
+void sendMasterVolumeSysex(Synth &synth, Bit8u volume);
+void sendAllNotesOff(Synth &synth, Bit8u channel);
+void sendNoteOn(Synth &synth, Bit8u channel, Bit8u note, Bit8u velocity);
+// Configures the patch & timbre temp area with a timbre that outputs a pure sine wave with a period of exactly 256 samples
+// at the maximum amplitude in the right channel.
+void sendSineWaveSysex(Synth &synth, Bit8u channel);
 
 } // namespace Test
 

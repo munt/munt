@@ -26,7 +26,7 @@ namespace MT32Emu {
 namespace Test {
 
 // In old doctest versions, defining subcases in a function didn't work.
-#define createSubcasesForModes(mode, downsampleFactor) \
+#define MT32EMU_createSubcasesForModes(mode, downsampleFactor) \
 SUBCASE("Accurate Mode") { \
 	mode = AnalogOutputMode_ACCURATE; \
 	downsampleFactor = 2; \
@@ -74,7 +74,7 @@ TEST_CASE("Analog should upsample and add mirror spectra in Accurate & Oversampl
 		expectedAmpR2 = 0;
 		expectedPhaseShiftR2 = 0;
 
-		createSubcasesForModes(mode, downsampleFactor);
+		MT32EMU_createSubcasesForModes(mode, downsampleFactor);
 	}
 
 	SUBCASE("New-GEN: Nyquist, 13kHz") {
@@ -92,7 +92,7 @@ TEST_CASE("Analog should upsample and add mirror spectra in Accurate & Oversampl
 		expectedAmpR2 = 0.8274725f;
 		expectedPhaseShiftR2 = 2.831521f;
 
-		createSubcasesForModes(mode, downsampleFactor);
+		MT32EMU_createSubcasesForModes(mode, downsampleFactor);
 	}
 
 	SUBCASE("Old-GEN: DC, 2048Hz") {
@@ -107,7 +107,7 @@ TEST_CASE("Analog should upsample and add mirror spectra in Accurate & Oversampl
 		expectedAmpR2 = 0;
 		expectedPhaseShiftR2 = 0;
 
-		createSubcasesForModes(mode, downsampleFactor);
+		MT32EMU_createSubcasesForModes(mode, downsampleFactor);
 	}
 
 	SUBCASE("Old-GEN: Nyquist, 11.65kHz") {
@@ -122,7 +122,7 @@ TEST_CASE("Analog should upsample and add mirror spectra in Accurate & Oversampl
 		expectedAmpR2 = 0.221111031f;
 		expectedPhaseShiftR2 = 1.857252537f;
 
-		createSubcasesForModes(mode, downsampleFactor);
+		MT32EMU_createSubcasesForModes(mode, downsampleFactor);
 	}
 
 	Analog *analog = Analog::createAnalog(mode, oldGen, RendererType_FLOAT);
@@ -199,7 +199,7 @@ TEST_CASE("Analog should upsample and add mirror spectra in Accurate & Oversampl
 		expectedAmpR2 = 0.8274725f;
 		expectedPhaseShiftR2 = 2.831521f;
 
-		createSubcasesForModes(mode, downsampleFactor);
+		MT32EMU_createSubcasesForModes(mode, downsampleFactor);
 	}
 
 	SUBCASE("Old-GEN") {
@@ -214,7 +214,7 @@ TEST_CASE("Analog should upsample and add mirror spectra in Accurate & Oversampl
 		expectedAmpR2 = 0.221111031f;
 		expectedPhaseShiftR2 = 1.857252537f;
 
-		createSubcasesForModes(mode, downsampleFactor);
+		MT32EMU_createSubcasesForModes(mode, downsampleFactor);
 	}
 
 	Analog *analog = Analog::createAnalog(mode, oldGen, RendererType_BIT16S);

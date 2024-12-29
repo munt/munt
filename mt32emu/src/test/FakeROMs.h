@@ -25,6 +25,9 @@ struct ROMInfo;
 
 namespace Test {
 
+const char STARTUP_DISPLAY_MESSAGE[] = "Starting up...      ";
+const char ERROR_DISPLAY_MESSAGE[] = "SysEx error!        ";
+
 class ROMSet {
 	const ROMImage *controlROMImage;
 	const ROMImage *pcmROMImage;

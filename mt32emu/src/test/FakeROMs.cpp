@@ -19,6 +19,7 @@
 
 #include "../File.h"
 #include "../ROMInfo.h"
+#include "../Structures.h"
 #include "../Types.h"
 #include "TestAccessors.h"
 
@@ -35,11 +36,33 @@ static const ROMImage *createFakeROMImage(const ROMInfo *romInfo, const Bit8u *d
 static Bit8u *createFakeControlROM(const ROMInfo *romInfo) {
 	Bit8u *data = new Bit8u[romInfo->fileSize];
 	memset(data, 0, romInfo->fileSize);
-	// Populate the max tables so that any value in a SysEx is accepted.
-	// The ranges are wider than necessary to overlap variations between specific ROM versions.
-	// It's OK as we don't actually read nearby values anyway.
-	memset(data + 0x4880, 0x7f, 256); // New-gen
-	memset(data + 0x51f0, 0x7f, 256); // Old-gen
+	const ControlROMMap *controlROMMap = getControlROMMap(romInfo->shortName);
+	if (controlROMMap != NULL) {
+		// Populate things we care about in tests:
+		// The max tables, so that any value in a SysEx is accepted
+		memset(data + controlROMMap->patchMaxTable, 0x7f, 16);
+		memset(data + controlROMMap->rhythmMaxTable, 0x7f, 4);
+		memset(data + controlROMMap->systemMaxTable, 0x7f, 23);
+		memset(data + controlROMMap->timbreMaxTable, 0x7f, 72);
+
+		// The user-visible display messages
+		memcpy(data + controlROMMap->startupMessage, STARTUP_DISPLAY_MESSAGE, 21);
+		memcpy(data + controlROMMap->sysexErrorMessage, ERROR_DISPLAY_MESSAGE, 21);
+
+		// A few sound groups
+		Bit32u fakeSoundGroupsCount = 4;
+		data[controlROMMap->soundGroupsCount] = fakeSoundGroupsCount;
+		SoundGroup *soundGroupsTable = reinterpret_cast<SoundGroup *>(data + controlROMMap->soundGroupsTable);
+		for (Bit32u i = 0; i < fakeSoundGroupsCount; i++) {
+			memcpy(soundGroupsTable[i].name, "Group 1|", 8);
+			soundGroupsTable[i].name[6] += Bit8u(i);
+		}
+
+		// The sound group index
+		for (int i = -128; i < 0; i++) {
+			data[controlROMMap->soundGroupsTable + i] = Bit8u(i & 1);
+		}
+	}
 	return data;
 }
 
