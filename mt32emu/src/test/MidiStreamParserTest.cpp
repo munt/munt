@@ -17,7 +17,7 @@
 
 #include "../mt32emu.h"
 
-#include "Testing.h"
+#include "TestUtils.h"
 
 namespace MT32Emu {
 
@@ -57,28 +57,14 @@ struct ParserEvent {
 
 MT32EMU_STRINGIFY_ENUM(ParserEvent::Type)
 
-class TestMidiStreamParser : public MidiStreamParser {
-	const Array<const ParserEvent> expectedEvents;
-	size_t currentEventIx;
-
-public:
-	explicit TestMidiStreamParser(const Array<const ParserEvent> &events) : expectedEvents(events), currentEventIx()
+struct TestMidiStreamParser : TestEventHandler<ParserEvent>, MidiStreamParser {
+	explicit TestMidiStreamParser(const Array<const ParserEvent> &events) : TestEventHandler(events)
 	{}
 
-	void checkRemainingEvents() {
-		REQUIRE(currentEventIx == expectedEvents.size);
-	}
-
 private:
-	const ParserEvent *nextExpectedEvent() {
-		if (currentEventIx < expectedEvents.size) return &expectedEvents[currentEventIx++];
-		currentEventIx++;
-		return NULL;
-	}
-
 	void handleShortMessage(const Bit32u shortMessage) {
 		const ParserEvent *expectedEvent = nextExpectedEvent();
-		CAPTURE(currentEventIx);
+		CAPTURE(getCurrentEventIx());
 		CAPTURE(shortMessage);
 		if (expectedEvent == NULL) {
 			FAIL("Unexpected short message");
@@ -89,7 +75,7 @@ private:
 
 	void handleSysex(const Bit8u *sysexBytes, const Bit32u sysexLength) {
 		const ParserEvent *expectedEvent = nextExpectedEvent();
-		CAPTURE(currentEventIx);
+		CAPTURE(getCurrentEventIx());
 		CAPTURE(sysexBytes);
 		CAPTURE(sysexLength);
 		if (expectedEvent == NULL) {
@@ -102,7 +88,7 @@ private:
 
 	void handleSystemRealtimeMessage(const Bit8u realtime) {
 		const ParserEvent *expectedEvent = nextExpectedEvent();
-		CAPTURE(currentEventIx);
+		CAPTURE(getCurrentEventIx());
 		CAPTURE(realtime);
 		if (expectedEvent == NULL) {
 			FAIL("Unexpected System Realtime message");
@@ -113,7 +99,7 @@ private:
 
 	void printDebug(const char *debugMessage) {
 		const ParserEvent *expectedEvent = nextExpectedEvent();
-		CAPTURE(currentEventIx);
+		CAPTURE(getCurrentEventIx());
 		CAPTURE(debugMessage);
 		if (expectedEvent == NULL) {
 			FAIL("Unexpected debug message");

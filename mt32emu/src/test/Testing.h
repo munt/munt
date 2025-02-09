@@ -71,8 +71,8 @@ static inline size_t calcArraySize(A &a) {
 
 template<class T>
 struct Array {
-	T *data;
-	size_t size;
+	T * const data;
+	const size_t size;
 
 	Array() : data(), size() {}
 

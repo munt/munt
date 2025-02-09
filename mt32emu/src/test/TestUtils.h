@@ -20,6 +20,8 @@
 
 #include "../Types.h"
 
+#include "Testing.h"
+
 namespace MT32Emu {
 
 class Synth;
@@ -28,13 +30,42 @@ namespace Test {
 
 class ROMSet;
 
+template<class Event>
+class TestEventHandler {
+	const Array<const Event> expectedEvents;
+	size_t currentEventIx;
+
+public:
+	explicit TestEventHandler(const Array<const Event> &events) : expectedEvents(events), currentEventIx()
+	{}
+
+	const size_t &getCurrentEventIx() const {
+		return currentEventIx;
+	}
+
+	void checkRemainingEvents() const {
+		REQUIRE(currentEventIx == expectedEvents.size);
+	}
+
+protected:
+	const Event *nextExpectedEvent() {
+		if (currentEventIx < expectedEvents.size) return &expectedEvents[currentEventIx++];
+		currentEventIx++;
+		return NULL;
+	}
+};
+
 void openSynth(Synth &synth, const ROMSet &romSet);
+void sendSystemResetSysex(Synth &synth);
 void sendMasterVolumeSysex(Synth &synth, Bit8u volume);
+Bit8u readMasterVolume(Synth &synth);
 void sendAllNotesOff(Synth &synth, Bit8u channel);
 void sendNoteOn(Synth &synth, Bit8u channel, Bit8u note, Bit8u velocity);
 // Configures the patch & timbre temp area with a timbre that outputs a pure sine wave with a period of exactly 256 samples
 // at the maximum amplitude in the right channel.
 void sendSineWaveSysex(Synth &synth, Bit8u channel);
+void sendDisplaySysex(Synth &synth, Array<const char>message);
+void sendDisplayResetSysex(Synth &synth);
 
 } // namespace Test
 

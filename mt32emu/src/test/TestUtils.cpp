@@ -18,8 +18,6 @@
 #include "../Synth.h"
 
 #include "FakeROMs.h"
-#include "Testing.h"
-
 #include "TestUtils.h"
 
 namespace MT32Emu {
@@ -32,9 +30,20 @@ void openSynth(Synth &synth, const ROMSet &romSet) {
 	REQUIRE(synth.open(*romSet.getControlROMImage(), *romSet.getPCMROMImage(), AnalogOutputMode_DIGITAL_ONLY));
 }
 
+void sendSystemResetSysex(Synth &synth) {
+	static const Bit8u sysex[] = { 0x7f };
+	synth.writeSysex(16, sysex, sizeof sysex);
+}
+
 void sendMasterVolumeSysex(Synth &synth, Bit8u volume) {
-	static const Bit8u sysex[] = { 0x10, 0x00, 0x16, volume };
-	synth.writeSysex(16, sysex, 4);
+	const Bit8u sysex[] = { 0x10, 0x00, 0x16, volume };
+	synth.writeSysex(16, sysex, sizeof sysex);
+}
+
+Bit8u readMasterVolume(Synth &synth) {
+	Bit8u volume = 0;
+	synth.readMemory(0x40016, sizeof volume, &volume);
+	return volume;
 }
 
 void sendAllNotesOff(Synth &synth, Bit8u channel) {
@@ -65,6 +74,22 @@ void sendSineWaveSysex(Synth &synth, Bit8u channel) {
 		0x64, 0x64
 	};
 	synth.writeSysex(channel, timbreSysex, sizeof timbreSysex);
+}
+
+void sendDisplaySysex(Synth &synth, Array<const char>message) {
+	static const Bit8u sysexAddress[] = { 0x20, 0x00, 0x00 };
+	static const Bit8u maxMessageLength = 20;
+
+	Bit8u sysex[sizeof sysexAddress + maxMessageLength];
+	size_t messageLength = maxMessageLength < message.size ? maxMessageLength : message.size;
+	memcpy(sysex, sysexAddress, sizeof sysexAddress);
+	memcpy(sysex + sizeof sysexAddress, message.data, messageLength);
+	synth.writeSysex(16, sysex, sizeof sysex);
+}
+
+void sendDisplayResetSysex(Synth &synth) {
+	static const Bit8u sysex[] = { 0x20, 0x01, 0x00 };
+	synth.writeSysex(16, sysex, sizeof sysex);
 }
 
 } // namespace Test
