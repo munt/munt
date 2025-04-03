@@ -1,3 +1,10 @@
+2025-04-03:
+
+	2.7.2 released.
+
+	* Fixed compatibility issues when building with CMake 4.0 that no longer supports
+	  build scripts requiring minimum CMake version below 3.5. (#127)
+
 2023-10-11:
 
 	2.7.1 released.
