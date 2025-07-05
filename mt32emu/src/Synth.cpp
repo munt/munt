@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2024 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -811,7 +811,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 	// CM-64 seems to initialise all bytes in this bank to 0.
 	memset(&mt32ram.timbres[128], 0, sizeof(mt32ram.timbres[128]) * 64);
 
-	partialManager = new PartialManager(this, parts);
+	partialManager = new PartialManager(this);
 
 	pcmWaves = new PCMWaveEntry[controlROMMap->pcmCount];
 
@@ -1498,14 +1498,14 @@ void Synth::initMemoryRegions() {
 		pos += sizeof(TimbreParam::PartialParam);
 	}
 	memset(&paddedTimbreMaxTable[pos], 0, 10); // Padding
-	patchTempMemoryRegion = new PatchTempMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.patchTemp[0]), &controlROMData[controlROMMap->patchMaxTable]);
-	rhythmTempMemoryRegion = new RhythmTempMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.rhythmTemp[0]), &controlROMData[controlROMMap->rhythmMaxTable]);
-	timbreTempMemoryRegion = new TimbreTempMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.timbreTemp[0]), paddedTimbreMaxTable);
-	patchesMemoryRegion = new PatchesMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.patches[0]), &controlROMData[controlROMMap->patchMaxTable]);
-	timbresMemoryRegion = new TimbresMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.timbres[0]), paddedTimbreMaxTable);
-	systemMemoryRegion = new SystemMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.system), &controlROMData[controlROMMap->systemMaxTable]);
-	displayMemoryRegion = new DisplayMemoryRegion(this);
-	resetMemoryRegion = new ResetMemoryRegion(this);
+	patchTempMemoryRegion = new PatchTempMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.patchTemp[0]), &controlROMData[controlROMMap->patchMaxTable]);
+	rhythmTempMemoryRegion = new RhythmTempMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.rhythmTemp[0]), &controlROMData[controlROMMap->rhythmMaxTable]);
+	timbreTempMemoryRegion = new TimbreTempMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.timbreTemp[0]), paddedTimbreMaxTable);
+	patchesMemoryRegion = new PatchesMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.patches[0]), &controlROMData[controlROMMap->patchMaxTable]);
+	timbresMemoryRegion = new TimbresMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.timbres[0]), paddedTimbreMaxTable);
+	systemMemoryRegion = new SystemMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.system), &controlROMData[controlROMMap->systemMaxTable]);
+	displayMemoryRegion = new DisplayMemoryRegion();
+	resetMemoryRegion = new ResetMemoryRegion();
 }
 
 void Synth::deleteMemoryRegions() {

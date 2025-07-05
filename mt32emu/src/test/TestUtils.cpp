@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2024 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -76,6 +76,11 @@ void sendSineWaveSysex(Synth &synth, Bit8u channel) {
 	synth.writeSysex(channel, timbreSysex, sizeof timbreSysex);
 }
 
+void sendAssignModeSysex(Synth &synth, Bit8u channel, Bit8u assignMode) {
+	const Bit8u sysex[] = { 0x00, 0x00, 0x05, assignMode };
+	synth.writeSysex(channel, sysex, sizeof sysex);
+}
+
 void sendDisplaySysex(Synth &synth, Array<const char>message) {
 	static const Bit8u sysexAddress[] = { 0x20, 0x00, 0x00 };
 	static const Bit8u maxMessageLength = 20;
@@ -90,6 +95,15 @@ void sendDisplaySysex(Synth &synth, Array<const char>message) {
 void sendDisplayResetSysex(Synth &synth) {
 	static const Bit8u sysex[] = { 0x20, 0x01, 0x00 };
 	synth.writeSysex(16, sysex, sizeof sysex);
+}
+
+void skipRenderedFrames(Synth &synth, Bit32u framesToSkip) {
+	Bit16s buffer[2 * MAX_SAMPLES_PER_RUN];
+	while (framesToSkip > 0) {
+		Bit32u frameCount = framesToSkip > MAX_SAMPLES_PER_RUN ? MAX_SAMPLES_PER_RUN : framesToSkip;
+		synth.render(buffer, frameCount);
+		framesToSkip -= frameCount;
+	}
 }
 
 } // namespace Test

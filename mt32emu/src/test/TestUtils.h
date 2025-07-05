@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2024 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -64,8 +64,10 @@ void sendNoteOn(Synth &synth, Bit8u channel, Bit8u note, Bit8u velocity);
 // Configures the patch & timbre temp area with a timbre that outputs a pure sine wave with a period of exactly 256 samples
 // at the maximum amplitude in the right channel.
 void sendSineWaveSysex(Synth &synth, Bit8u channel);
+void sendAssignModeSysex(Synth &synth, Bit8u channel, Bit8u assignMode);
 void sendDisplaySysex(Synth &synth, Array<const char>message);
 void sendDisplayResetSysex(Synth &synth);
+void skipRenderedFrames(Synth &synth, Bit32u frameCount);
 
 } // namespace Test
 

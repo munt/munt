@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -86,6 +86,8 @@ protected:
 	const char *getName() const;
 
 public:
+	static const Part *getPart(Synth &synth, Bit8u partNum);
+
 	Part(Synth *synth, unsigned int usePartNum);
 	virtual ~Part();
 	void reset();

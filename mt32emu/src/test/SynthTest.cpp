@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2024 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -628,18 +628,16 @@ TEST_CASE("Synth should report about changes in states of polys") {
 	sendSineWaveSysex(synth, 1);
 	synth.setReportHandler2(&rh);
 
-	const Bit32u frameCount = 16;
-	Bit16s buffer[2 * frameCount];
 	sendNoteOn(synth, 1, 36, 100);
 	CHECK(rh.getCurrentEventIx() == 2);
 
-	synth.render(buffer, frameCount);
+	skipRenderedFrames(synth, 16);
 	CHECK(rh.getCurrentEventIx() == 3);
 
 	sendNoteOn(synth, 1, 36, 0);
 	CHECK(rh.getCurrentEventIx() == 4);
 
-	synth.render(buffer, frameCount);
+	skipRenderedFrames(synth, 16);
 
 	rh.checkRemainingEvents();
 }
@@ -674,18 +672,17 @@ TEST_CASE("Synth should report about changes in display state") {
 	synth.getDisplayState(display);
 	CHECK(display == "Starting up...      ");
 
-	Bit16s buffer[2 * MAX_SAMPLES_PER_RUN];
 	sendDisplayResetSysex(synth);
 	CHECK(rh.getCurrentEventIx() == 1);
-	synth.render(buffer, 1);
+	skipRenderedFrames(synth, 1);
 	CHECK(rh.getCurrentEventIx() == 3);
 
 	synth.getDisplayState(display);
 	CHECK(display == "1 2 3 4 5 R |vol:100");
 
-	synth.render(buffer, 2560);
+	skipRenderedFrames(synth, 2560);
 	CHECK(rh.getCurrentEventIx() == 3);
-	synth.render(buffer, 1);
+	skipRenderedFrames(synth, 1);
 	CHECK(rh.getCurrentEventIx() == 4);
 
 	sendSineWaveSysex(synth, 1);
@@ -694,7 +691,7 @@ TEST_CASE("Synth should report about changes in display state") {
 	sendNoteOn(synth, 1, 36, 100);
 	CHECK(rh.getCurrentEventIx() == 10);
 
-	synth.render(buffer, 1);
+	skipRenderedFrames(synth, 1);
 	CHECK(rh.getCurrentEventIx() == 12);
 
 	synth.getDisplayState(display);
