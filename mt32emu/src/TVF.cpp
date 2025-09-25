@@ -127,8 +127,6 @@ void TVF::reset(const TimbreParam::PartialParam *newPartialParam, unsigned int b
 	unsigned int key = partial->getPoly()->getKey();
 	unsigned int velocity = partial->getPoly()->getVelocity();
 
-	const Tables *tables = &Tables::getInstance();
-
 	baseCutoff = calcBaseCutoff(newPartialParam, basePitch, key, partial->getSynth()->controlROMFeatures->quirkTVFBaseCutoffLimit);
 #if MT32EMU_MONITOR_TVF >= 1
 	partial->getSynth()->printDebug("[+%lu] [Partial %d] TVF,base,%d", partial->debugGetSampleNum(), partial->debugGetPartialNum(), baseCutoff);
@@ -160,7 +158,7 @@ void TVF::reset(const TimbreParam::PartialParam *newPartialParam, unsigned int b
 	if (envTimeSetting <= 0) {
 		newIncrement = (0x80 | 127);
 	} else {
-		newIncrement = tables->envLogarithmicTime[newTarget] - envTimeSetting;
+		newIncrement = Tables::envLogarithmicTime[newTarget] - envTimeSetting;
 		if (newIncrement <= 0) {
 			newIncrement = 1;
 		}
@@ -189,7 +187,6 @@ void TVF::startDecay() {
 }
 
 void TVF::nextPhase() {
-	const Tables *tables = &Tables::getInstance();
 	int newPhase = phase + 1;
 
 	switch (newPhase) {
@@ -226,7 +223,7 @@ void TVF::nextPhase() {
 				newTarget--;
 			}
 		}
-		newIncrement = tables->envLogarithmicTime[targetDelta < 0 ? -targetDelta : targetDelta] - envTimeSetting;
+		newIncrement = Tables::envLogarithmicTime[targetDelta < 0 ? -targetDelta : targetDelta] - envTimeSetting;
 		if (newIncrement <= 0) {
 			newIncrement = 1;
 		}

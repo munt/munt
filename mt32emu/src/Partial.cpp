@@ -201,7 +201,7 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	}
 
 	// CONFIRMED: pulseWidthVal calculation is based on information from Mok
-	pulseWidthVal = (poly->getVelocity() - 64) * (patchCache->srcPartial.wg.pulseWidthVeloSensitivity - 7) + Tables::getInstance().pulseWidth100To255[patchCache->srcPartial.wg.pulseWidth];
+	pulseWidthVal = (poly->getVelocity() - 64) * (patchCache->srcPartial.wg.pulseWidthVeloSensitivity - 7) + Tables::pulseWidth100To255[patchCache->srcPartial.wg.pulseWidth];
 	if (pulseWidthVal < 0) {
 		pulseWidthVal = 0;
 	} else if (pulseWidthVal > 255) {
