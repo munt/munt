@@ -30,28 +30,6 @@ static const Bit32u RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE = 144 << 18;
 static const Bit32u MAX_CUTOFF_VALUE = 240 << 18;
 static const LogSample SILENCE = {65535, LogSample::POSITIVE};
 
-Bit16u LA32Utilites::interpolateExp(const Bit16u fract) {
-	Bit16u expTabIndex = fract >> 3;
-	Bit16u extraBits = ~fract & 7;
-	Bit16u expTabEntry2 = 8191 - Tables::getInstance().exp9[expTabIndex];
-	Bit16u expTabEntry1 = expTabIndex == 0 ? 8191 : (8191 - Tables::getInstance().exp9[expTabIndex - 1]);
-	return expTabEntry2 + (((expTabEntry1 - expTabEntry2) * extraBits) >> 3);
-}
-
-Bit16s LA32Utilites::unlog(const LogSample &logSample) {
-	//Bit16s sample = (Bit16s)EXP2F(13.0f - logSample.logValue / 1024.0f);
-	Bit32u intLogValue = logSample.logValue >> 12;
-	Bit16u fracLogValue = logSample.logValue & 4095;
-	Bit16s sample = interpolateExp(fracLogValue) >> intLogValue;
-	return logSample.sign == LogSample::POSITIVE ? sample : -sample;
-}
-
-void LA32Utilites::addLogSamples(LogSample &logSample1, const LogSample &logSample2) {
-	Bit32u logSampleValue = logSample1.logValue + logSample2.logValue;
-	logSample1.logValue = logSampleValue < 65536 ? Bit16u(logSampleValue) : 65535;
-	logSample1.sign = logSample1.sign == logSample2.sign ? LogSample::POSITIVE : LogSample::NEGATIVE;
-}
-
 Bit32u LA32WaveGenerator::getSampleStep() {
 	// sampleStep = EXP2F(pitch / 4096.0f + 4.0f)
 	Bit32u sampleStep = LA32Utilites::interpolateExp(~pitch & 4095);

@@ -21,6 +21,7 @@
 #include "globals.h"
 #include "internals.h"
 #include "Types.h"
+#include "Tables.h"
 
 namespace MT32Emu {
 
@@ -47,9 +48,28 @@ struct LogSample {
 
 class LA32Utilites {
 public:
-	static Bit16u interpolateExp(const Bit16u fract);
-	static Bit16s unlog(const LogSample &logSample);
-	static void addLogSamples(LogSample &logSample1, const LogSample &logSample2);
+  static inline __attribute__((always_inline)) Bit16u interpolateExp(const Bit16u fract) {
+  	Bit16u expTabIndex = fract >> 3;
+	  Bit16u extraBits = ~fract & 7;
+	  Bit16u expTabEntry2 = 8191 - Tables::getInstance().exp9[expTabIndex];
+	  Bit16u expTabEntry1 = expTabIndex == 0 ? 8191 : (8191 - Tables::getInstance().exp9[expTabIndex - 1]);
+	  return expTabEntry2 + (((expTabEntry1 - expTabEntry2) * extraBits) >> 3);
+  }
+  
+  static inline __attribute__((always_inline)) Bit16s unlog(const LogSample &logSample) {
+	  //Bit16s sample = (Bit16s)EXP2F(13.0f - logSample.logValue / 1024.0f);
+	  Bit32u intLogValue = logSample.logValue >> 12;
+	  Bit16u fracLogValue = logSample.logValue & 4095;
+	  Bit16s sample = interpolateExp(fracLogValue) >> intLogValue;
+	  return logSample.sign == LogSample::POSITIVE ? sample : -sample;
+  }
+  
+  static inline __attribute__((always_inline)) void addLogSamples(LogSample &logSample1, const LogSample &logSample2) {
+	  Bit32u logSampleValue = logSample1.logValue + logSample2.logValue;
+	  logSample1.logValue = logSampleValue < 65536 ? Bit16u(logSampleValue) : 65535;
+	  logSample1.sign = logSample1.sign == logSample2.sign ? LogSample::POSITIVE : LogSample::NEGATIVE;
+  }
+
 };
 
 /**
