@@ -202,7 +202,7 @@ float LA32FloatWaveGenerator::generateNextSample(const Bit32u ampVal, const Bit1
 			float resSample = 1.0f;
 
 			// Resonance decay speed factor
-			float resAmpDecayFactor = Tables::getInstance().resAmpDecayFactor[resonance >> 2];
+			float resAmpDecayFactor = Tables::resAmpDecayFactor[resonance >> 2];
 
 			// Now relWavePos counts from the middle of first cosine
 			relWavePos = wavePos;

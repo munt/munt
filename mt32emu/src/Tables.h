@@ -23,14 +23,7 @@
 
 namespace MT32Emu {
 
-class Tables {
-private:
-	Tables();
-	Tables(Tables &);
-	~Tables() {}
-
-public:
-	static const Tables &getInstance();
+namespace Tables {
 
 	// Constant LUTs
 
@@ -40,22 +33,22 @@ public:
 	// - PartialParam.tva.level
 	// - expression
 	// It's used to determine how much to subtract from the amp envelope's target value
-	Bit8u levelToAmpSubtraction[101];
+	extern Bit8u levelToAmpSubtraction[101];
 
 	// CONFIRMED: ...
-	Bit8u envLogarithmicTime[256];
+	extern Bit8u envLogarithmicTime[256];
 
 	// CONFIRMED: ...
-	Bit8u masterVolToAmpSubtraction[101];
+	extern Bit8u masterVolToAmpSubtraction[101];
 
 	// CONFIRMED:
-	Bit8u pulseWidth100To255[101];
+	extern Bit8u pulseWidth100To255[101];
 
-	Bit16u exp9[512];
-	Bit16u logsin9[512];
+	extern Bit16u exp9[512];
+	extern Bit16u logsin9[512];
 
-	const Bit8u *resAmpDecayFactor;
-}; // class Tables
+	extern const Bit8u *resAmpDecayFactor;
+} // class Tables
 
 } // namespace MT32Emu
 

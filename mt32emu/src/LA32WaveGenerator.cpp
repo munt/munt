@@ -114,11 +114,11 @@ void LA32WaveGenerator::generateNextSquareWaveLogSample() {
 	switch (phase) {
 		case POSITIVE_RISING_SINE_SEGMENT:
 		case NEGATIVE_FALLING_SINE_SEGMENT:
-			logSampleValue = Tables::getInstance().logsin9[(squareWavePosition >> 9) & 511];
+			logSampleValue = Tables::logsin9[(squareWavePosition >> 9) & 511];
 			break;
 		case POSITIVE_FALLING_SINE_SEGMENT:
 		case NEGATIVE_RISING_SINE_SEGMENT:
-			logSampleValue = Tables::getInstance().logsin9[~(squareWavePosition >> 9) & 511];
+			logSampleValue = Tables::logsin9[~(squareWavePosition >> 9) & 511];
 			break;
 		case POSITIVE_LINEAR_SEGMENT:
 		case NEGATIVE_LINEAR_SEGMENT:
@@ -139,9 +139,9 @@ void LA32WaveGenerator::generateNextSquareWaveLogSample() {
 void LA32WaveGenerator::generateNextResonanceWaveLogSample() {
 	Bit32u logSampleValue;
 	if (resonancePhase == POSITIVE_FALLING_RESONANCE_SINE_SEGMENT || resonancePhase == NEGATIVE_RISING_RESONANCE_SINE_SEGMENT) {
-		logSampleValue = Tables::getInstance().logsin9[~(resonanceSinePosition >> 9) & 511];
+		logSampleValue = Tables::logsin9[~(resonanceSinePosition >> 9) & 511];
 	} else {
-		logSampleValue = Tables::getInstance().logsin9[(resonanceSinePosition >> 9) & 511];
+		logSampleValue = Tables::logsin9[(resonanceSinePosition >> 9) & 511];
 	}
 	logSampleValue <<= 2;
 	logSampleValue += amp >> 10;
@@ -154,10 +154,10 @@ void LA32WaveGenerator::generateNextResonanceWaveLogSample() {
 	// To ensure the output wave has no breaks, two different windows are applied to the beginning and the ending of the resonance sine segment
 	if (phase == POSITIVE_RISING_SINE_SEGMENT || phase == NEGATIVE_FALLING_SINE_SEGMENT) {
 		// The window is synchronous sine here
-		logSampleValue += Tables::getInstance().logsin9[(squareWavePosition >> 9) & 511] << 2;
+		logSampleValue += Tables::logsin9[(squareWavePosition >> 9) & 511] << 2;
 	} else if (phase == POSITIVE_FALLING_SINE_SEGMENT || phase == NEGATIVE_RISING_SINE_SEGMENT) {
 		// The window is synchronous square sine here
-		logSampleValue += Tables::getInstance().logsin9[~(squareWavePosition >> 9) & 511] << 3;
+		logSampleValue += Tables::logsin9[~(squareWavePosition >> 9) & 511] << 3;
 	}
 
 	if (cutoffVal < MIDDLE_CUTOFF_VALUE) {
@@ -166,7 +166,7 @@ void LA32WaveGenerator::generateNextResonanceWaveLogSample() {
 	} else if (cutoffVal < RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE) {
 		// For the cutoff values below this point, the amp of the resonance wave is sinusoidally decayed
 		Bit32u sineIx = (cutoffVal - MIDDLE_CUTOFF_VALUE) >> 13;
-		logSampleValue += Tables::getInstance().logsin9[sineIx] << 2;
+		logSampleValue += Tables::logsin9[sineIx] << 2;
 	}
 
 	// After all the amp decrements are added, it should be safe now to adjust the amp of the resonance wave to what we see on captures
@@ -179,9 +179,9 @@ void LA32WaveGenerator::generateNextResonanceWaveLogSample() {
 void LA32WaveGenerator::generateNextSawtoothCosineLogSample(LogSample &logSample) const {
 	Bit32u sawtoothCosinePosition = wavePosition + (1 << 18);
 	if ((sawtoothCosinePosition & (1 << 18)) > 0) {
-		logSample.logValue = Tables::getInstance().logsin9[~(sawtoothCosinePosition >> 9) & 511];
+		logSample.logValue = Tables::logsin9[~(sawtoothCosinePosition >> 9) & 511];
 	} else {
-		logSample.logValue = Tables::getInstance().logsin9[(sawtoothCosinePosition >> 9) & 511];
+		logSample.logValue = Tables::logsin9[(sawtoothCosinePosition >> 9) & 511];
 	}
 	logSample.logValue <<= 2;
 	logSample.sign = ((sawtoothCosinePosition & (1 << 19)) == 0) ? LogSample::POSITIVE : LogSample::NEGATIVE;
@@ -245,7 +245,7 @@ void LA32WaveGenerator::initSynth(const bool useSawtoothWaveform, const Bit8u us
 	resonanceSinePosition = 0;
 	resonancePhase = POSITIVE_RISING_RESONANCE_SINE_SEGMENT;
 	resonanceAmpSubtraction = (32 - resonance) << 10;
-	resAmpDecayFactor = Tables::getInstance().resAmpDecayFactor[resonance >> 2] << 2;
+	resAmpDecayFactor = Tables::resAmpDecayFactor[resonance >> 2] << 2;
 
 	pcmWaveAddress = NULL;
 	active = true;

@@ -51,8 +51,8 @@ public:
   static inline __attribute__((always_inline)) Bit16u interpolateExp(const Bit16u fract) {
   	Bit16u expTabIndex = fract >> 3;
 	  Bit16u extraBits = ~fract & 7;
-	  Bit16u expTabEntry2 = 8191 - Tables::getInstance().exp9[expTabIndex];
-	  Bit16u expTabEntry1 = expTabIndex == 0 ? 8191 : (8191 - Tables::getInstance().exp9[expTabIndex - 1]);
+	  Bit16u expTabEntry2 = 8191 - Tables::exp9[expTabIndex];
+	  Bit16u expTabEntry1 = expTabIndex == 0 ? 8191 : (8191 - Tables::exp9[expTabIndex - 1]);
 	  return expTabEntry2 + (((expTabEntry1 - expTabEntry2) * extraBits) >> 3);
   }
   
