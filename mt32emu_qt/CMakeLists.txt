@@ -363,6 +363,8 @@ elseif(APPLE)
   set_target_properties(mt32emu-qt
     PROPERTIES
       MACOSX_BUNDLE_BUNDLE_VERSION ${mt32emu_qt_VERSION}
+      MACOSX_BUNDLE_GUI_IDENTIFIER "org.muntemu"
+      MACOSX_BUNDLE_INFO_STRING "MT32Emu"
       MACOSX_BUNDLE_SHORT_VERSION_STRING ${mt32emu_qt_VERSION}
   )
 endif()

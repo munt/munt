@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2024 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -41,8 +41,7 @@ void DefaultMidiStreamParser::handleShortMessage(const Bit32u message) {
 	do {
 		if (timestampSet) {
 			if (synth.playMsg(message, timestamp)) return;
-		}
-		else {
+		} else {
 			if (synth.playMsg(message)) return;
 		}
 	} while (synth.reportHandler->onMIDIQueueOverflow());
@@ -52,8 +51,7 @@ void DefaultMidiStreamParser::handleSysex(const Bit8u *stream, const Bit32u leng
 	do {
 		if (timestampSet) {
 			if (synth.playSysex(stream, length, timestamp)) return;
-		}
-		else {
+		} else {
 			if (synth.playSysex(stream, length)) return;
 		}
 	} while (synth.reportHandler->onMIDIQueueOverflow());
