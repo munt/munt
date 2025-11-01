@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -47,7 +47,7 @@ static inline Bit16u interpolateExp(const Bit16u fract) {
 }
 
 static inline Bit16s unlog(const LogSample &logSample) {
-	//Bit16s sample = (Bit16s)EXP2F(13.0f - logSample.logValue / 1024.0f);
+	//Bit16s sample = (Bit16s)EXP2F(13.0f - logSample.logValue / 4096.0f);
 	Bit32u intLogValue = logSample.logValue >> 12;
 	Bit16u fracLogValue = logSample.logValue & 4095;
 	Bit16s sample = interpolateExp(fracLogValue) >> intLogValue;

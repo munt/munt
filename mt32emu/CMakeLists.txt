@@ -379,6 +379,7 @@ if(${PROJECT_NAME}_BUILD_TESTING)
     src/test/DisplayTest.cpp
     src/test/c_test_harness.cpp
     src/test/FakeROMs.cpp
+    src/test/LA32WaveGeneratorTest.cpp
     src/test/MidiStreamParserTest.cpp
     src/test/PartialManagerTest.cpp
     src/test/ROMInfoTest.cpp

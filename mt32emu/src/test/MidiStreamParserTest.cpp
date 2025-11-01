@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2024 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -53,7 +53,7 @@ struct ParserEvent {
 	}
 
 	ParserEvent(const char *pattern) : type(DEBUG_MESSAGE), debugMessagePattern(pattern) {}
-};
+}; // struct ParserEvent
 
 MT32EMU_STRINGIFY_ENUM(ParserEvent::Type)
 
@@ -107,7 +107,7 @@ private:
 		REQUIRE(ParserEvent::DEBUG_MESSAGE == expectedEvent->type);
 		MT32EMU_CHECK_STRING_CONTAINS(debugMessage, expectedEvent->debugMessagePattern);
 	}
-};
+}; // struct TestMidiStreamParser
 
 } // namespace
 
