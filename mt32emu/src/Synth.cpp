@@ -1591,7 +1591,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 						printDebug(" (Not updating timbre, since those values weren't touched)");
 #endif
 					} else {
-						parts[i]->setTimbre(&mt32ram.timbres[parts[i]->getAbsTimbreNum()].timbre);
+						parts[i]->resetTimbre();
 					}
 				}
 				parts[i]->refresh();
