@@ -115,7 +115,7 @@ public:
 	void updatePitchBenderRange();
 	virtual void refresh();
 	virtual void refreshTimbre(unsigned int absTimbreNum);
-	virtual void setTimbre(TimbreParam *timbre);
+	virtual void resetTimbre();
 	virtual unsigned int getAbsTimbreNum() const;
 	const char *getCurrentInstr() const;
 	const Poly *getFirstActivePoly() const;
@@ -146,7 +146,7 @@ public:
 	RhythmPart(Synth *synth, unsigned int usePartNum);
 	void refresh();
 	void refreshTimbre(unsigned int timbreNum);
-	void setTimbre(TimbreParam *timbre);
+	void resetTimbre();
 	void noteOn(unsigned int key, unsigned int velocity);
 	void noteOff(unsigned int midiKey);
 	unsigned int getAbsTimbreNum() const;
