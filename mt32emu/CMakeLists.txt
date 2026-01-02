@@ -381,6 +381,7 @@ if(${PROJECT_NAME}_BUILD_TESTING)
     src/test/FakeROMs.cpp
     src/test/LA32WaveGeneratorTest.cpp
     src/test/MidiStreamParserTest.cpp
+    src/test/PartTest.cpp
     src/test/PartialManagerTest.cpp
     src/test/ROMInfoTest.cpp
     src/test/ServiceTest.cpp

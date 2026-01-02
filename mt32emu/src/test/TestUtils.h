@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -59,6 +59,7 @@ void openSynth(Synth &synth, const ROMSet &romSet);
 void sendSystemResetSysex(Synth &synth);
 void sendMasterVolumeSysex(Synth &synth, Bit8u volume);
 Bit8u readMasterVolume(Synth &synth);
+void sendProgramChange(Synth &synth, Bit8u channel, Bit8u patchNum);
 void sendAllNotesOff(Synth &synth, Bit8u channel);
 void sendNoteOn(Synth &synth, Bit8u channel, Bit8u note, Bit8u velocity);
 // Configures the patch & timbre temp area with a timbre that outputs a pure sine wave with a period of exactly 256 samples
