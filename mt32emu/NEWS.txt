@@ -2,6 +2,14 @@ HEAD:
 
 	* Performance improvements based on (#131).
 
+2025-12-26:
+
+	2.7.3 released.
+
+	* When a SysEx message touches the timbre number of the Patch Temp memory area for a part,
+	  all currently playing notes on that part now start to decay instantly. This is similar to
+	  the way a Program Change event is handled, and it's how the real h/w does this. (#132)
+
 2025-04-03:
 
 	2.7.2 released.

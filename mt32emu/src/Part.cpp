@@ -199,12 +199,14 @@ void Part::setPatch(const PatchParam *patch) {
 	patchTemp->patch = *patch;
 }
 
-void RhythmPart::setTimbre(TimbreParam * /*timbre*/) {
-	synth->printDebug("%s: Attempted to call setTimbre() - doesn't make sense for rhythm", name);
+void RhythmPart::resetTimbre() {
+	synth->printDebug("%s: Attempted to call resetTimbre() - doesn't make sense for rhythm", name);
 }
 
-void Part::setTimbre(TimbreParam *timbre) {
-	*timbreTemp = *timbre;
+void Part::resetTimbre() {
+	holdpedal = false;
+	allSoundOff();
+	*timbreTemp = synth->mt32ram.timbres[getAbsTimbreNum()].timbre;
 }
 
 unsigned int RhythmPart::getAbsTimbreNum() const {
@@ -226,9 +228,7 @@ void RhythmPart::setProgram(unsigned int) { }
 
 void Part::setProgram(unsigned int patchNum) {
 	setPatch(&synth->mt32ram.patches[patchNum]);
-	holdpedal = false;
-	allSoundOff();
-	setTimbre(&synth->mt32ram.timbres[getAbsTimbreNum()].timbre);
+	resetTimbre();
 	refresh();
 }
 
