@@ -65,6 +65,10 @@ TEST_CASE("Part stops all notes playing on it") {
 		sendProgramChange(ctx.synth, 1, 0);
 	}
 
+	SUBCASE("once its Patch Temp area is updated") {
+		sendSineWaveSysex(ctx.synth, 1);
+	}
+
 	CHECK(ctx.part->getActivePartialCount() == 2);
 	CHECK(ctx.part->getActiveNonReleasingPartialCount() == 0);
 	CHECK(ctx.part->getFirstActivePoly() != NULL_PTR);
