@@ -6,6 +6,7 @@ project(libmt32emu CXX C)
 
 include(cmake/project_data.cmake)
 
+include(CheckCXXSymbolExists)
 include(GNUInstallDirs)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
@@ -332,6 +333,11 @@ else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
     endif(SampleRate_FOUND)
   endif(SOXR_FOUND)
 endif(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
+
+check_cxx_symbol_exists(std::snprintf "cstdio" HAVE_STD_SNPRINTF)
+if(HAVE_STD_SNPRINTF)
+  add_definitions(-DMT32EMU_WITH_STD_SNPRINTF)
+endif()
 
 configure_file("src/mt32emu.pc.in" "mt32emu.pc" @ONLY)
 

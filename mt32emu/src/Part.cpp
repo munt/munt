@@ -55,10 +55,18 @@ Part::Part(Synth *useSynth, unsigned int usePartNum) {
 	holdpedal = false;
 	patchTemp = &synth->mt32ram.patchTemp[partNum];
 	if (usePartNum == 8) {
-		// Nasty hack for rhythm
+		// The Rhythm part doesn't have just a single timbre associated.
 		timbreTemp = NULL;
 	} else {
-		sprintf(name, "Part %d", partNum + 1);
+#ifdef MT32EMU_WITH_STD_SNPRINTF
+		snprintf(
+			name, sizeof name,
+#else
+		sprintf(
+			name,
+#endif
+			"Part %d", partNum + 1
+		);
 		timbreTemp = &synth->mt32ram.timbreTemp[partNum];
 	}
 	currentInstr[0] = 0;

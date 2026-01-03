@@ -189,7 +189,15 @@ Bit32u MidiStreamParserImpl::parseShortMessageDataBytes(const Bit8u stream[], Bi
 		} else if (dataByte < 0xF8) {
 			// Discard invalid bytes and start over
 			char s[128];
-			sprintf(s, "parseShortMessageDataBytes: Invalid short message: status %02x, expected length %i, actual %i -> ignored", *streamBuffer, shortMessageLength, streamBufferSize);
+#ifdef MT32EMU_WITH_STD_SNPRINTF
+			snprintf(
+				s, sizeof s,
+#else
+			sprintf(
+				s,
+#endif
+				"parseShortMessageDataBytes: Invalid short message: status %02x, expected length %i, actual %i -> ignored", *streamBuffer, shortMessageLength, streamBufferSize
+			);
 			midiReporter.printDebug(s);
 			streamBufferSize = 0; // Clear streamBuffer
 			return parsedLength;
