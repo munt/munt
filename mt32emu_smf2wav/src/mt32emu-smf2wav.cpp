@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2009, 2011 Jerome Fisher
- * Copyright (C) 2012-2022 Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2012-2026 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -953,7 +953,7 @@ int main(int argc, char *argv[]) {
 #endif
 	printf("Munt MT32Emu MIDI to Wave Conversion Utility. Version %s\n", MT32EMU_SMF2WAV_VERSION);
 	printf("  Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com>\n");
-	printf("  Copyright (C) 2012-2022 Jerome Fisher, Sergey V. Mikayev\n");
+	printf("  Copyright (C) 2012-2026 Jerome Fisher, Sergey V. Mikayev\n");
 	printf("Using Munt MT32Emu Library Version %s, libsmf Version %s (with modifications)\n", mt32emuVersion, smf_get_version());
 	if (!parseOptions(argc, argv, &options)) {
 		return -1;
@@ -963,16 +963,11 @@ int main(int argc, char *argv[]) {
 		outputFilename = options.outputFilename;
 	} else {
 		gchar *lastInputFilename = options.inputFilenames[g_strv_length(options.inputFilenames) - 1];
-		size_t allocLen = strlen(lastInputFilename) + 5;
-		outputFilename = new gchar[allocLen];
-		if(outputFilename == NULL) {
-			fprintf(stderr, "Error allocating %lu bytes for destination filename.\n", (unsigned long)allocLen);
+		const gchar *outputFilenameSuffix = options.rawChannelCount > 0 ? ".raw" : ".wav";
+		outputFilename = g_strconcat(lastInputFilename, outputFilenameSuffix, NULL);
+		if (outputFilename == NULL) {
+			fprintf(stderr, "Error creating destination filename for '%s'.\n", lastInputFilename);
 			return -1;
-		}
-		if (options.rawChannelCount > 0) {
-			sprintf(outputFilename, "%s.raw", lastInputFilename);
-		} else {
-			sprintf(outputFilename, "%s.wav", lastInputFilename);
 		}
 	}
 
@@ -1090,7 +1085,7 @@ int main(int argc, char *argv[]) {
 	service.freeContext();
 
 	if(options.outputFilename == NULL && outputFilename != NULL) {
-		delete[] outputFilename;
+		g_free(outputFilename);
 	}
 	freeOptions(&options);
 	return 0;
