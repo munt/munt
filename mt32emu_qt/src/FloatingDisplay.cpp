@@ -50,6 +50,7 @@ FloatingDisplay::FloatingDisplay(const QWidget *mainWindow) :
 	QFrame(NULL, makeWindowFlags()),
 	mainWindow(mainWindow), synthRoute(), lcdWidget(), midiMessageLED(), dragStatus()
 {
+	setAttribute(Qt::WA_MacAlwaysShowToolWindow);
 	setFrameShape(QFrame::Box);
 	setFrameShadow(QFrame::Raised);
 	setWindowTitle("Munt: Display");

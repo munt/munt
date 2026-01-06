@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 2.8.12...3.27)
 project(munt)
 
 include(cmake/project_data.cmake)
@@ -20,6 +20,8 @@ if(NOT DEFINED BUILD_SHARED_LIBS)
     set(BUILD_SHARED_LIBS TRUE)
   endif()
 endif()
+
+enable_testing()
 
 if(munt_WITH_MT32EMU_SMF2WAV)
   set(libmt32emu_REQUIRE_C_INTERFACE TRUE)

@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -115,6 +115,15 @@ static const ControlROMMap ControlROMMaps[] = {
 	{"ctrl_cm32ln_1_00", CM32LN_COMPATIBLE,  0x8100, 256, 0x8000, 0x8000, true,  0x8080, 0x8000, true,  0x8500, 64, 0x8580, 85, 0x4EC7, 0x4EE2, 0x4ED0, 0x47FF, 0x4803, 0x481C, 0x4833, 0x55A2, 19, 0x1F59, 0x3F7C}
 	// (Note that old MT-32 ROMs actually have 86 entries for rhythmTemp)
 };
+
+static const ControlROMMap *getControlROMMap(const char *shortName) {
+	for (unsigned int i = 0; i < sizeof(ControlROMMaps) / sizeof(ControlROMMaps[0]); i++) {
+		if (strcmp(shortName, ControlROMMaps[i].shortName) == 0) {
+			return &ControlROMMaps[i];
+		}
+	}
+	return NULL;
+}
 
 static const PartialState PARTIAL_PHASE_TO_STATE[8] = {
 	PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK, PartialState_ATTACK,
@@ -592,19 +601,16 @@ bool Synth::loadControlROM(const ROMImage &controlROMImage) {
 	memcpy(controlROMData, fileData, CONTROL_ROM_SIZE);
 
 	// Control ROM successfully loaded, now check whether it's a known type
-	controlROMMap = NULL;
-	controlROMFeatures = NULL;
-	for (unsigned int i = 0; i < sizeof(ControlROMMaps) / sizeof(ControlROMMaps[0]); i++) {
-		if (strcmp(controlROMInfo->shortName, ControlROMMaps[i].shortName) == 0) {
-			controlROMMap = &ControlROMMaps[i];
-			controlROMFeatures = &controlROMMap->featureSet;
-			return true;
-		}
-	}
+	controlROMMap = getControlROMMap(controlROMInfo->shortName);
+	if (controlROMMap == NULL) {
+		controlROMFeatures = NULL;
 #if MT32EMU_MONITOR_INIT
-	printDebug("Control ROM failed to load");
+		printDebug("Control ROM failed to load");
 #endif
-	return false;
+		return false;
+	}
+	controlROMFeatures = &controlROMMap->featureSet;
+	return true;
 }
 
 bool Synth::loadPCMROM(const ROMImage &pcmROMImage) {
@@ -824,7 +830,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 	// CM-64 seems to initialise all bytes in this bank to 0.
 	memset(&mt32ram.timbres[128], 0, sizeof(mt32ram.timbres[128]) * 64);
 
-	partialManager = new PartialManager(this, parts);
+	partialManager = new PartialManager(this);
 
 	pcmWaves = new PCMWaveEntry[controlROMMap->pcmCount];
 
@@ -1511,14 +1517,14 @@ void Synth::initMemoryRegions() {
 		pos += sizeof(TimbreParam::PartialParam);
 	}
 	memset(&paddedTimbreMaxTable[pos], 0, 10); // Padding
-	patchTempMemoryRegion = new PatchTempMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.patchTemp[0]), &controlROMData[controlROMMap->patchMaxTable]);
-	rhythmTempMemoryRegion = new RhythmTempMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.rhythmTemp[0]), &controlROMData[controlROMMap->rhythmMaxTable]);
-	timbreTempMemoryRegion = new TimbreTempMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.timbreTemp[0]), paddedTimbreMaxTable);
-	patchesMemoryRegion = new PatchesMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.patches[0]), &controlROMData[controlROMMap->patchMaxTable]);
-	timbresMemoryRegion = new TimbresMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.timbres[0]), paddedTimbreMaxTable);
-	systemMemoryRegion = new SystemMemoryRegion(this, reinterpret_cast<Bit8u *>(&mt32ram.system), &controlROMData[controlROMMap->systemMaxTable]);
-	displayMemoryRegion = new DisplayMemoryRegion(this);
-	resetMemoryRegion = new ResetMemoryRegion(this);
+	patchTempMemoryRegion = new PatchTempMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.patchTemp[0]), &controlROMData[controlROMMap->patchMaxTable]);
+	rhythmTempMemoryRegion = new RhythmTempMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.rhythmTemp[0]), &controlROMData[controlROMMap->rhythmMaxTable]);
+	timbreTempMemoryRegion = new TimbreTempMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.timbreTemp[0]), paddedTimbreMaxTable);
+	patchesMemoryRegion = new PatchesMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.patches[0]), &controlROMData[controlROMMap->patchMaxTable]);
+	timbresMemoryRegion = new TimbresMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.timbres[0]), paddedTimbreMaxTable);
+	systemMemoryRegion = new SystemMemoryRegion(reinterpret_cast<Bit8u *>(&mt32ram.system), &controlROMData[controlROMMap->systemMaxTable]);
+	displayMemoryRegion = new DisplayMemoryRegion();
+	resetMemoryRegion = new ResetMemoryRegion();
 }
 
 void Synth::deleteMemoryRegions() {
@@ -1610,7 +1616,7 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 						printDebug(" (Not updating timbre, since those values weren't touched)");
 #endif
 					} else {
-						parts[i]->setTimbre(&mt32ram.timbres[parts[i]->getAbsTimbreNum()].timbre);
+						parts[i]->resetTimbre();
 					}
 				}
 				parts[i]->refresh();
@@ -2746,3 +2752,15 @@ void MemoryRegion::write(unsigned int entry, unsigned int off, const Bit8u *src,
 }
 
 } // namespace MT32Emu
+
+#ifdef MT32EMU_WITH_TESTING
+
+#include "test/TestAccessors.h"
+
+using namespace MT32Emu;
+
+const ControlROMMap *Test::getControlROMMap(const char *shortName) {
+	return MT32Emu::getControlROMMap(shortName);
+}
+
+#endif // #ifdef MT32EMU_WITH_TESTING

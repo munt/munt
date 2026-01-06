@@ -1,7 +1,33 @@
 HEAD:
 
+	* Added basic unit tests. Details on the build requirements and configuration options can be
+	  found in README.md file (#108).
+	* Performance improvements based on (#131).
 	* Provided callbacks to retrieve notifications about events when the synth engine runs
 	  out of available partials. (#111)
+
+2025-12-26:
+
+	2.7.3 released.
+
+	* When a SysEx message touches the timbre number of the Patch Temp memory area for a part,
+	  all currently playing notes on that part now start to decay instantly. This is similar to
+	  the way a Program Change event is handled, and it's how the real h/w does this. (#132)
+
+2025-04-03:
+
+	2.7.2 released.
+
+	* Fixed compatibility issues when building with CMake 4.0 that no longer supports
+	  build scripts requiring minimum CMake version below 3.5. (#127)
+
+2023-10-11:
+
+	2.7.1 released.
+
+	* Fixed initialisation of ROMInfo objects which caused crashes of client applications
+	  when accessing the static ROM data. Currently, only builds with clang-17.0 are affected
+	  which is used in MSYS2 environment. (#115)
 
 2022-07-23:
 

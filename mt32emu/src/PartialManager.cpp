@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -28,9 +28,13 @@
 
 namespace MT32Emu {
 
-PartialManager::PartialManager(Synth *useSynth, Part **useParts) {
+PartialManager *PartialManager::getPartialManager(Synth &synth) {
+	return synth.partialManager;
+}
+
+PartialManager::PartialManager(Synth *useSynth) {
 	synth = useSynth;
-	parts = useParts;
+	parts = useSynth->parts;
 	inactivePartialCount = synth->getPartialCount();
 	partialTable = new Partial *[inactivePartialCount];
 	inactivePartials = new int[inactivePartialCount];
@@ -112,6 +116,10 @@ void PartialManager::getPerPartPartialUsage(unsigned int perPartPartialUsage[9])
 			perPartPartialUsage[partialTable[i]->getOwnerPart()]++;
 		}
 	}
+}
+
+const Poly *PartialManager::getAbortingPoly() {
+	return synth->abortingPoly;
 }
 
 // Finds the lowest-priority part that is exceeding its reserved partial allocation and has a poly

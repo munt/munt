@@ -45,7 +45,7 @@ private:
 	uint makeSystemResetSysex(MT32Emu::Bit8u *sysex);
 	uint makeSystemSettingsSysex(MT32Emu::Bit8u *sysex);
 	uint makeTimbreSysex(MT32Emu::Bit8u *sysex, uint timbreNumber);
-	uint makePatchMemorySysex(MT32Emu::Bit8u *sysex);
+	uint makePatchMemorySysex(MT32Emu::Bit8u *sysex, uint patchSysexAddress, uint patchRomAddress);
 	uint makeRhythmSetupSysex(MT32Emu::Bit8u *sysex);
 	void parseMIDIEvents(const MT32Emu::Bit8u *songDataPtr);
 	void addSysex(MT32Emu::Bit8u *sysex, uint length);

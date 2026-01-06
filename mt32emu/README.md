@@ -53,10 +53,34 @@ the build option `libmt32emu_WITH_INTERNAL_RESAMPLER`. The following sample rate
 conversion libraries are supported directly:
 
 1) libsoxr - The SoX Resampler library - to perform fast and high quality sample rate conversion
-   @ http://sourceforge.net/projects/soxr/
+   @ <http://sourceforge.net/projects/soxr/>
 
 2) libsamplerate - Secret Rabbit Code - Sample Rate Converter that is widely available
-   @ http://www.mega-nerd.com/SRC/
+   @ <http://www.mega-nerd.com/SRC/>
+
+
+Testing
+=======
+
+The unit tests rely on the *doctest C++ testing framework*. It is widely available packaged and can
+also be obtained at <https://github.com/doctest/doctest>. For old systems, where a C++ compiler that
+supports C++11 standard is still unavailable, *doctest* v.1.2.9 can be used.
+
+Albeit *doctest* provides a CMake package, there's no requirement to build it, and the source
+directory can be used directly. This may be convenient in case *doctest* is unavailable packaged
+on a particular system, as we only need just a single header file after all.
+
+There are a few CMake configuration options to control the build of the test code:
+
+* `BUILD_TESTING` - the standard CMake variable, disables everything testing related when `OFF`.
+* `libmt32emu_BUILD_TESTING` - control whether testing is enabled specifically for _mt32emu_.
+* `libmt32emu_TEST_DEFINITIONS` - Additional preprocessor definitions that facilitate configuration
+  of tests build process and the testing framework itself. The format is a CMake semicolon-separated
+  list of values like `<VAR>` or `<VAR>=<VALUE>`.
+* `libmt32emu_TESTS_DETAILED` - when available and enabled, provides for better reporting about test
+  runs in CTest, as each *doctest* test case runs separately. Because this is usually significantly
+  slower, this should be enabled when really necessary. Requires a recent *doctest* (v.2.3.3 or
+  later) and the *doctest* CMake package. It may also be difficult to set up when cross-compiling.
 
 
 Hardware requirements
@@ -72,7 +96,7 @@ License
 =======
 
 Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher<br>
-Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public

@@ -329,9 +329,11 @@ bool MidiParser::doParse() {
 bool MidiParser::parse(const QString fileName) {
 	midiEventList.clear();
 	file.setFileName(fileName);
-	file.open(QIODevice::ReadOnly);
-	bool parseResult = doParse();
-	file.close();
+	bool parseResult = file.open(QIODevice::ReadOnly);
+	if (parseResult) {
+		doParse();
+		file.close();
+	}
 	return parseResult;
 }
 

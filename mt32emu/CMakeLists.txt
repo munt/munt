@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 2.8.12...3.27)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-project(libmt32emu CXX)
+project(libmt32emu CXX C)
 
 include(cmake/project_data.cmake)
 
+include(CheckCXXSymbolExists)
 include(GNUInstallDirs)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
@@ -21,6 +22,40 @@ endif()
 
 option(libmt32emu_SHARED "Build shared library" ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS ${libmt32emu_SHARED})
+
+if(NOT DEFINED BUILD_TESTING)
+  set(BUILD_TESTING TRUE)
+endif()
+
+if(BUILD_TESTING)
+  option(${PROJECT_NAME}_BUILD_TESTING "Build mt32emu tests" TRUE)
+  if(${PROJECT_NAME}_BUILD_TESTING)
+    find_package(doctest 1.2.9 MODULE)
+    if(NOT doctest_FOUND)
+      message(STATUS "doctest not found, testing unavailable")
+      set(${PROJECT_NAME}_BUILD_TESTING FALSE)
+    endif()
+  endif()
+else()
+  unset(${PROJECT_NAME}_BUILD_TESTING CACHE)
+endif()
+
+if(${PROJECT_NAME}_BUILD_TESTING)
+  set(${PROJECT_NAME}_TEST_DEFINITIONS "" CACHE STRING "Additional preprocessor definitions to configure tests and testing framework")
+  mark_as_advanced(${PROJECT_NAME}_TEST_DEFINITIONS)
+  if(doctest_WITH_AUTO_TEST_DISCOVERY)
+    option(${PROJECT_NAME}_TESTS_DETAILED "Enable running each test case as a separate CTest test" FALSE)
+    mark_as_advanced(${PROJECT_NAME}_TESTS_DETAILED)
+  else()
+    unset(${PROJECT_NAME}_TESTS_DETAILED CACHE)
+  endif()
+  if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    enable_testing()
+  endif()
+else()
+  unset(${PROJECT_NAME}_TEST_DEFINITIONS CACHE)
+  unset(${PROJECT_NAME}_TESTS_DETAILED CACHE)
+endif()
 
 if(BUILD_SNAPSHOTS AND NOT libmt32emu_SHARED)
   include(../cmake/build_snapshots.cmake)
@@ -49,7 +84,7 @@ else()
   unset(libmt32emu_REQUIRE_ANSI CACHE)
 endif()
 
-# Variable LIB_INSTALL_DIR is now deprecated, we use CMAKE_INSTALL_LIBDIR et. al.
+# Variable LIB_INSTALL_DIR is now deprecated, we use CMAKE_INSTALL_LIBDIR et al.
 # However, if it is set in an existing script, we make use of its value.
 if(DEFINED LIB_INSTALL_DIR)
   set(CMAKE_INSTALL_LIBDIR ${LIB_INSTALL_DIR})
@@ -110,7 +145,7 @@ else(libmt32emu_SHARED)
   unset(libmt32emu_INSTALL_DEFAULT_LOCALE CACHE)
 endif(libmt32emu_SHARED)
 
-set(libmt32emu_SOURCES
+set(libmt32emu_CPP_SOURCES
   src/Analog.cpp
   src/BReverbModel.cpp
   src/Display.cpp
@@ -132,6 +167,31 @@ set(libmt32emu_SOURCES
   src/TVP.cpp
   src/sha1/sha1.cpp
   src/SampleRateConverter.cpp
+)
+
+set(libmt32emu_C_SOURCES
+  src/c_interface/c_interface.cpp
+)
+
+set(libmt32emu_VERSION_TAGGING_SOURCE
+  src/VersionTagging.cpp
+)
+
+set(libmt32emu_INTERNAL_RESAMPLER_SOURCES
+  src/srchelper/srctools/src/FIRResampler.cpp
+  src/srchelper/srctools/src/SincResampler.cpp
+  src/srchelper/srctools/src/IIR2xResampler.cpp
+  src/srchelper/srctools/src/LinearResampler.cpp
+  src/srchelper/srctools/src/ResamplerModel.cpp
+  src/srchelper/InternalResampler.cpp
+)
+
+set(libmt32emu_SOXR_ADAPTER_SOURCES
+  src/srchelper/SoxrAdapter.cpp
+)
+
+set(libmt32emu_SAMPLERATE_ADAPTER_SOURCES
+  src/srchelper/SamplerateAdapter.cpp
 )
 
 # Public headers that always need to be installed:
@@ -159,24 +219,25 @@ set(libmt32emu_C_HEADERS
   c_interface/cpp_interface.h
 )
 
+set(libmt32emu_VERSION_TAGGING_HEADER
+  VersionTagging.h
+)
+
+set(libmt32emu_SOURCES ${libmt32emu_CPP_SOURCES})
+set(libmt32emu_HEADERS ${libmt32emu_COMMON_HEADERS})
+
 if(libmt32emu_CPP_INTERFACE AND NOT libmt32emu_C_INTERFACE)
   # C++ API type
   set(libmt32emu_EXPORTS_TYPE 0)
 
-  set(libmt32emu_HEADERS
-    ${libmt32emu_COMMON_HEADERS}
-    ${libmt32emu_CPP_HEADERS}
-  )
+  list(APPEND libmt32emu_HEADERS ${libmt32emu_CPP_HEADERS})
 else(libmt32emu_CPP_INTERFACE AND NOT libmt32emu_C_INTERFACE)
-  list(APPEND libmt32emu_SOURCES
-    src/c_interface/c_interface.cpp
-  )
+  list(APPEND libmt32emu_SOURCES ${libmt32emu_C_SOURCES})
   # All API types
   if(libmt32emu_CPP_INTERFACE)
     set(libmt32emu_EXPORTS_TYPE 3)
 
-    set(libmt32emu_HEADERS
-      ${libmt32emu_COMMON_HEADERS}
+    list(APPEND libmt32emu_HEADERS
       ${libmt32emu_CPP_HEADERS}
       ${libmt32emu_C_HEADERS}
     )
@@ -189,31 +250,25 @@ else(libmt32emu_CPP_INTERFACE AND NOT libmt32emu_C_INTERFACE)
       set(libmt32emu_EXPORTS_TYPE 2)
     endif(libmt32emu_C_INTERFACE)
 
-    set(libmt32emu_HEADERS
-      ${libmt32emu_COMMON_HEADERS}
-      ${libmt32emu_C_HEADERS}
-    )
+    list(APPEND libmt32emu_HEADERS ${libmt32emu_C_HEADERS})
   endif(libmt32emu_CPP_INTERFACE)
 endif(libmt32emu_CPP_INTERFACE AND NOT libmt32emu_C_INTERFACE)
 
 if(libmt32emu_WITH_VERSION_TAGGING)
-  list(APPEND libmt32emu_SOURCES src/VersionTagging.cpp)
-  list(APPEND libmt32emu_HEADERS VersionTagging.h)
+  list(APPEND libmt32emu_SOURCES ${libmt32emu_VERSION_TAGGING_SOURCE})
+  list(APPEND libmt32emu_HEADERS ${libmt32emu_VERSION_TAGGING_HEADER})
   if(libmt32emu_WITH_SYMBOL_VERSIONING)
     set(libmt32emu_RUNTIME_VERSION_CHECK 1)
   else()
     set(libmt32emu_RUNTIME_VERSION_CHECK 2)
   endif()
 else(libmt32emu_WITH_VERSION_TAGGING)
-  file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu/VersionTagging.h)
+  file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu/${libmt32emu_VERSION_TAGGING_HEADER})
   set(libmt32emu_RUNTIME_VERSION_CHECK 0)
 endif(libmt32emu_WITH_VERSION_TAGGING)
 
 if(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG)
-  add_compile_options(-Wall -Wextra -Wnon-virtual-dtor -Wshadow -Wold-style-cast)
-  if(libmt32emu_REQUIRE_ANSI)
-    add_compile_options(-ansi -pedantic)
-  endif()
+  add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wold-style-cast)
 endif()
 
 if(MSVC)
@@ -248,14 +303,7 @@ configure_file("src/config.h.in" "include/mt32emu/config.h")
 
 if(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
   add_definitions(-DMT32EMU_WITH_INTERNAL_RESAMPLER)
-  set(${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SOURCES}
-    src/srchelper/srctools/src/FIRResampler.cpp
-    src/srchelper/srctools/src/SincResampler.cpp
-    src/srchelper/srctools/src/IIR2xResampler.cpp
-    src/srchelper/srctools/src/LinearResampler.cpp
-    src/srchelper/srctools/src/ResamplerModel.cpp
-    src/srchelper/InternalResampler.cpp
-  )
+  list(APPEND ${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_INTERNAL_RESAMPLER_SOURCES})
 else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
   # Prefer using SOXR if it is available
   find_package(SOXR 0.1.2 MODULE)
@@ -263,7 +311,7 @@ else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
     set(libmt32emu_PC_REQUIRES_PRIVATE "soxr >= 0.1.2")
     add_definitions(-DMT32EMU_WITH_LIBSOXR_RESAMPLER)
     set(libmt32emu_EXT_TARGET Soxr::soxr)
-    list(APPEND ${PROJECT_NAME}_SOURCES src/srchelper/SoxrAdapter.cpp)
+    list(APPEND ${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SOXR_ADAPTER_SOURCES})
     if(NOT libmt32emu_SHARED)
       set(libmt32emu_EXT_DEPENDENCY SOXR 0.1.2)
       set(libmt32emu_EXT_MODULE "FindSOXR.cmake")
@@ -275,7 +323,7 @@ else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
       set(libmt32emu_PC_REQUIRES_PRIVATE "samplerate >= 0.1.8")
       add_definitions(-DMT32EMU_WITH_LIBSAMPLERATE_RESAMPLER)
       set(libmt32emu_EXT_TARGET SampleRate::samplerate)
-      list(APPEND ${PROJECT_NAME}_SOURCES src/srchelper/SamplerateAdapter.cpp)
+      list(APPEND ${PROJECT_NAME}_SOURCES ${${PROJECT_NAME}_SAMPLERATE_ADAPTER_SOURCES})
       if(NOT libmt32emu_SHARED)
         set(libmt32emu_EXT_DEPENDENCY SampleRate 0.1.8)
         set(libmt32emu_EXT_MODULE "FindSampleRate.cmake")
@@ -285,6 +333,11 @@ else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
     endif(SampleRate_FOUND)
   endif(SOXR_FOUND)
 endif(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
+
+check_cxx_symbol_exists(std::snprintf "cstdio" HAVE_STD_SNPRINTF)
+if(HAVE_STD_SNPRINTF)
+  add_definitions(-DMT32EMU_WITH_STD_SNPRINTF)
+endif()
 
 configure_file("src/mt32emu.pc.in" "mt32emu.pc" @ONLY)
 
@@ -298,6 +351,10 @@ set_target_properties(mt32emu
   PROPERTIES VERSION ${libmt32emu_VERSION}
   SOVERSION ${libmt32emu_VERSION_MAJOR}
 )
+
+if(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG AND libmt32emu_REQUIRE_ANSI)
+  target_compile_options(mt32emu PRIVATE -ansi -pedantic)
+endif()
 
 if(libmt32emu_SHARED AND CMAKE_SYSTEM_NAME STREQUAL Windows)
   set_target_properties(mt32emu
@@ -319,6 +376,79 @@ target_include_directories(mt32emu
   INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
   INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
+
+if(${PROJECT_NAME}_BUILD_TESTING)
+  configure_file("src/test/config.h.in" "include/test/config.h")
+
+  set(${PROJECT_NAME}_CPP_TEST_SOURCES
+    src/test/AnalogTest.cpp
+    src/test/DisplayTest.cpp
+    src/test/c_test_harness.cpp
+    src/test/FakeROMs.cpp
+    src/test/LA32WaveGeneratorTest.cpp
+    src/test/MidiStreamParserTest.cpp
+    src/test/PartTest.cpp
+    src/test/PartialManagerTest.cpp
+    src/test/ROMInfoTest.cpp
+    src/test/ServiceTest.cpp
+    src/test/SynthTest.cpp
+    src/test/TestRunner.cpp
+    src/test/TestUtils.cpp
+  )
+
+  # TODO: Use generator expression COMPILE_LANGUAGE to specify C compile options with Cmake 3.3+.
+  add_library(${PROJECT_NAME}-c-client-test
+    OBJECT src/test/c_client_test.c
+  )
+  add_executable(${PROJECT_NAME}-test-runner
+    ${${PROJECT_NAME}_CPP_SOURCES}
+    ${${PROJECT_NAME}_C_SOURCES}
+    ${${PROJECT_NAME}_CPP_TEST_SOURCES}
+    $<TARGET_OBJECTS:${PROJECT_NAME}-c-client-test>
+  )
+
+  target_include_directories(${PROJECT_NAME}-c-client-test
+    BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/include/test"
+  )
+  target_include_directories(${PROJECT_NAME}-test-runner
+    BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/include/test"
+  )
+  if(TARGET doctest::doctest)
+    target_link_libraries(${PROJECT_NAME}-test-runner doctest::doctest)
+  else()
+    target_include_directories(${PROJECT_NAME}-test-runner PRIVATE ${doctest_INCLUDE_DIR})
+    if(CMAKE_CXX_COMPILE_FEATURES)
+      target_compile_features(${PROJECT_NAME}-test-runner PRIVATE ${doctest_COMPILE_FEATURES})
+    endif()
+  endif()
+
+  if(${PROJECT_NAME}_TEST_DEFINITIONS)
+    target_compile_definitions(${PROJECT_NAME}-test-runner PRIVATE ${${PROJECT_NAME}_TEST_DEFINITIONS})
+  endif()
+
+  if(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG)
+    get_target_property(${PROJECT_NAME}_C_CLIENT_TEST_COMPILE_OPTIONS ${PROJECT_NAME}-c-client-test COMPILE_OPTIONS)
+    list(REMOVE_ITEM ${PROJECT_NAME}_C_CLIENT_TEST_COMPILE_OPTIONS "-Wnon-virtual-dtor" "-Wold-style-cast")
+    list(APPEND ${PROJECT_NAME}_C_CLIENT_TEST_COMPILE_OPTIONS "-ansi" "-pedantic")
+    set_target_properties(${PROJECT_NAME}-c-client-test PROPERTIES
+      COMPILE_OPTIONS "${${PROJECT_NAME}_C_CLIENT_TEST_COMPILE_OPTIONS}"
+    )
+    if(libmt32emu_REQUIRE_ANSI AND doctest_COMPILE_FEATURES STREQUAL "cxx_std_98")
+      target_compile_options(${PROJECT_NAME}-test-runner PRIVATE -ansi -pedantic)
+    endif()
+  endif()
+
+  if(${PROJECT_NAME}_TESTS_DETAILED)
+    include(doctest)
+    doctest_discover_tests(${PROJECT_NAME}-test-runner)
+  else()
+    set(${PROJECT_NAME}_TEST_NAME "All ${PROJECT_NAME} tests" )
+    if(CMAKE_VERSION VERSION_LESS 3.19)
+      set(${PROJECT_NAME}_TEST_NAME "\"${${PROJECT_NAME}_TEST_NAME}\"")
+    endif()
+    add_test(NAME "${${PROJECT_NAME}_TEST_NAME}" COMMAND "${PROJECT_NAME}-test-runner")
+  endif()
+endif(${PROJECT_NAME}_BUILD_TESTING)
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Runtime)
 set(libmt32emu_COMPONENT_DEVEL COMPONENT Devel)
