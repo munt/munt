@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2026 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -163,6 +163,8 @@ private:
 		bool lcdStateUpdated;
 		bool midiMessageLEDState;
 		bool midiMessageLEDStateUpdated;
+		bool noteOnIgnored;
+		bool playingPolySilenced;
 		int masterVolumeUpdate;
 		int reverbMode;
 		int reverbTime;
@@ -182,6 +184,8 @@ private:
 		bool lcdStateUpdated;
 		bool midiMessageLEDState;
 		bool midiMessageLEDStateUpdated;
+		bool noteOnIgnored;
+		bool playingPolySilenced;
 		int masterVolumeUpdate;
 		int reverbMode;
 		int reverbTime;
@@ -318,6 +322,12 @@ private:
 			synth->getDisplayState(stateSnapshot.lcdState);
 		}
 
+		stateSnapshot.noteOnIgnored = tempState.noteOnIgnored;
+		tempState.noteOnIgnored = false;
+
+		stateSnapshot.playingPolySilenced = tempState.playingPolySilenced;
+		tempState.playingPolySilenced = false;
+
 		for (int partIx = 0; partIx < PART_COUNT; partIx++) {
 			stateSnapshot.partStates[partIx].programChanged = tempState.partStates[partIx].programChanged;
 			if (tempState.partStates[partIx].programChanged) {
@@ -358,6 +368,16 @@ private:
 			if (stateSnapshot.midiMessageLEDStateUpdated) {
 				emit reportHandler.midiMessageLEDStateChanged(stateSnapshot.midiMessageLEDState);
 				stateSnapshot.midiMessageLEDStateUpdated = false;
+			}
+
+			if (stateSnapshot.noteOnIgnored) {
+				emit reportHandler.noteOnIgnored();
+				stateSnapshot.noteOnIgnored = false;
+			}
+
+			if (stateSnapshot.playingPolySilenced) {
+				emit reportHandler.playingPolySilenced();
+				stateSnapshot.playingPolySilenced = false;
 			}
 
 			if (stateSnapshot.masterVolumeUpdate > NO_UPDATE_VALUE) {
@@ -661,6 +681,14 @@ public:
 		tempState.midiMessageLEDState = ledState;
 		tempState.midiMessageLEDStateUpdated = true;
 	}
+
+	void onNoteOnIgnored() {
+		tempState.noteOnIgnored = true;
+	}
+
+	void onPlayingPolySilenced() {
+		tempState.playingPolySilenced = true;
+	}
 };
 
 QReportHandler::QReportHandler(QSynth *qsynth) : QObject(qsynth) {
@@ -771,13 +799,21 @@ void QReportHandler::onMidiMessageLEDStateUpdated(bool ledState) {
 void QReportHandler::onNoteOnIgnored(MT32Emu::Bit32u partialsNeeded, MT32Emu::Bit32u partialsFree) {
 	Q_UNUSED(partialsNeeded)
 	Q_UNUSED(partialsFree)
-	if (!qSynth()->isRealtime()) emit noteOnIgnored();
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onNoteOnIgnored();
+	} else {
+		emit noteOnIgnored();
+	}
 }
 
 void QReportHandler::onPlayingPolySilenced(MT32Emu::Bit32u partialsNeeded, MT32Emu::Bit32u partialsFree) {
 	Q_UNUSED(partialsNeeded)
 	Q_UNUSED(partialsFree)
-	if (!qSynth()->isRealtime()) emit playingPolySilenced();
+	if (qSynth()->isRealtime()) {
+		qSynth()->realtimeHelper->onPlayingPolySilenced();
+	} else {
+		emit playingPolySilenced();
+	}
 }
 
 void QReportHandler::doShowLCDMessage(const char *message) {

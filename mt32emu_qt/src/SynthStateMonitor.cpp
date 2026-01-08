@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2026 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -170,13 +170,13 @@ void SynthStateMonitor::handleAudioBlockRendered() {
 void SynthStateMonitor::handleNoteOnIgnored() {
 	if (synthRoute->getState() != SynthRouteState_OPEN) return;
 	partialUsageLED.setState(PartialUsageLEDWidget::STATE_NOTE_ON_IGNORED);
-	lastState  = PartialUsageLEDWidget::STATE_NOTE_ON_IGNORED;
+	lastState = PartialUsageLEDWidget::STATE_NOTE_ON_IGNORED;
 	lastInsufficientPartialsWarningNanos = MasterClock::getClockNanos();
 }
 
 void SynthStateMonitor::handlePlayingPolySilenced() {
 	if (synthRoute->getState() != SynthRouteState_OPEN) return;
-	if (lastState  != PartialUsageLEDWidget::STATE_NOTE_ON_IGNORED) {
+	if (lastState != PartialUsageLEDWidget::STATE_NOTE_ON_IGNORED) {
 		lastState = PartialUsageLEDWidget::STATE_PLAYING_POLY_SILENCED;
 		partialUsageLED.setState(lastState);
 		lastInsufficientPartialsWarningNanos = MasterClock::getClockNanos();
