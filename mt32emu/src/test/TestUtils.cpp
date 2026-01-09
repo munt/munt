@@ -24,10 +24,10 @@ namespace MT32Emu {
 
 namespace Test {
 
-void openSynth(Synth &synth, const ROMSet &romSet) {
+void openSynth(Synth &synth, const ROMSet &romSet, Bit32u partialCount) {
 	REQUIRE(romSet.getControlROMImage() != NULL_PTR);
 	REQUIRE(romSet.getPCMROMImage() != NULL_PTR);
-	REQUIRE(synth.open(*romSet.getControlROMImage(), *romSet.getPCMROMImage(), AnalogOutputMode_DIGITAL_ONLY));
+	REQUIRE(synth.open(*romSet.getControlROMImage(), *romSet.getPCMROMImage(), partialCount, AnalogOutputMode_DIGITAL_ONLY));
 }
 
 void sendSystemResetSysex(Synth &synth) {

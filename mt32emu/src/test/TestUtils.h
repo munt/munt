@@ -55,7 +55,7 @@ protected:
 	}
 };
 
-void openSynth(Synth &synth, const ROMSet &romSet);
+void openSynth(Synth &synth, const ROMSet &romSet, Bit32u partialCount = DEFAULT_MAX_PARTIALS);
 void sendSystemResetSysex(Synth &synth);
 void sendMasterVolumeSysex(Synth &synth, Bit8u volume);
 Bit8u readMasterVolume(Synth &synth);

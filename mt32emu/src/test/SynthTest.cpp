@@ -31,7 +31,8 @@ struct ReportedEvent {
 	enum Type {
 		DEBUG_MESSAGE, ERROR_CONTROL_ROM, ERROR_PCM_ROM, LCD_MESSAGE, MIDI_MESSAGE, MIDI_QUEUE_OVERFLOW, MIDI_SYSTEM_REALTIME,
 		DEVICE_RESET, DEVICE_RECONFIG, NEW_REVERB_MODE, NEW_REVERB_TIME, NEW_REVERB_LEVEL, POLY_STATE_CHANGED, PROGRAM_CHANGED,
-		LCD_STATE_UPDATED, MIDI_MESSAGE_LED_STATE_UPDATED
+		LCD_STATE_UPDATED, MIDI_MESSAGE_LED_STATE_UPDATED,
+		NOTE_ON_IGNORED, PLAYING_POLY_SILENCED
 	};
 
 	static ReportedEvent debugMessage(const char *pattern) {
@@ -118,6 +119,20 @@ struct ReportedEvent {
 		return e;
 	}
 
+	static ReportedEvent noteOnIgnored(Bit32u partialsNeeded, Bit32u partialsFree) {
+		ReportedEvent e(NOTE_ON_IGNORED);
+		e.partialAllocationInfo.partialsNeeded = partialsNeeded;
+		e.partialAllocationInfo.partialsFree = partialsFree;
+		return e;
+	}
+
+	static ReportedEvent playingPolySilenced(Bit32u partialsNeeded, Bit32u partialsFree) {
+		ReportedEvent e(PLAYING_POLY_SILENCED);
+		e.partialAllocationInfo.partialsNeeded = partialsNeeded;
+		e.partialAllocationInfo.partialsFree = partialsFree;
+		return e;
+	}
+
 	const Type type;
 	union {
 		const char *debugMessageFormatPattern;
@@ -133,6 +148,10 @@ struct ReportedEvent {
 			const char *patchName;
 		} programChange;
 		bool midiMessageLEDState;
+		struct {
+			Bit32u partialsNeeded;
+			Bit32u partialsFree;
+		} partialAllocationInfo;
 	};
 
 private:
@@ -141,7 +160,7 @@ private:
 
 MT32EMU_STRINGIFY_ENUM(ReportedEvent::Type)
 
-struct TestReportHandler : TestEventHandler<ReportedEvent>, ReportHandler2 {
+struct TestReportHandler : TestEventHandler<ReportedEvent>, ReportHandler3 {
 	explicit TestReportHandler(const Array<const ReportedEvent> &events) : TestEventHandler(events)
 	{}
 
@@ -311,6 +330,32 @@ private:
 		}
 		REQUIRE(ReportedEvent::MIDI_MESSAGE_LED_STATE_UPDATED == expectedEvent->type);
 		CHECK(ledState == expectedEvent->midiMessageLEDState);
+	}
+
+	void onNoteOnIgnored(Bit32u partialsNeeded, Bit32u partialsFree) {
+		const ReportedEvent *expectedEvent = nextExpectedEvent();
+		CAPTURE(getCurrentEventIx());
+		CAPTURE(partialsNeeded);
+		CAPTURE(partialsFree);
+		if (expectedEvent == NULL) {
+			FAIL("Unexpected NoteOn ignored");
+		}
+		REQUIRE(ReportedEvent::NOTE_ON_IGNORED == expectedEvent->type);
+		CHECK(partialsNeeded == expectedEvent->partialAllocationInfo.partialsNeeded);
+		CHECK(partialsFree == expectedEvent->partialAllocationInfo.partialsFree);
+	}
+
+	void onPlayingPolySilenced(Bit32u partialsNeeded, Bit32u partialsFree) {
+		const ReportedEvent *expectedEvent = nextExpectedEvent();
+		CAPTURE(getCurrentEventIx());
+		CAPTURE(partialsNeeded);
+		CAPTURE(partialsFree);
+		if (expectedEvent == NULL) {
+			FAIL("Unexpected playing poly silenced");
+		}
+		REQUIRE(ReportedEvent::PLAYING_POLY_SILENCED == expectedEvent->type);
+		CHECK(partialsNeeded == expectedEvent->partialAllocationInfo.partialsNeeded);
+		CHECK(partialsFree == expectedEvent->partialAllocationInfo.partialsFree);
 	}
 }; // struct TestReportHandler
 
@@ -698,6 +743,48 @@ TEST_CASE("Synth should report about changes in display state") {
 	CHECK(display == "\001 2 3 4 5 R |vol:100");
 
 	rh.checkRemainingEvents();
+}
+
+TEST_CASE("When Synth lacks free partials") {
+	Synth synth;
+	ROMSet romSet;
+	romSet.initMT32New();
+	openSynth(synth, romSet, 4);
+	sendSineWaveSysex(synth, 1);
+	sendNoteOn(synth, 1, 36, 100);
+	sendNoteOn(synth, 1, 37, 100);
+	sendNoteOn(synth, 1, 38, 100);
+	sendNoteOn(synth, 1, 39, 100);
+
+	SUBCASE("and a new note is about to play, it should report about silencing currently playing polys") {
+		const ReportedEvent expected[] = { ReportedEvent::playingPolySilenced(1, 0), ReportedEvent::midiMessage() };
+		TestReportHandler rh(expected);
+		synth.setReportHandler3(&rh);
+		sendNoteOn(synth, 1, 40, 100);
+
+		rh.checkRemainingEvents();
+	}
+
+	SUBCASE("and a note is about to play and the same note is playing on the part in single assign mode, it should not report about silencing polys") {
+		const ReportedEvent expected[] = { ReportedEvent::midiMessage() };
+		TestReportHandler rh(expected);
+		synth.setReportHandler3(&rh);
+		sendNoteOn(synth, 1, 38, 100);
+
+		rh.checkRemainingEvents();
+	}
+
+	SUBCASE("it should report about skipping new notes due to insufficient free partials") {
+		sendSineWaveSysex(synth, 2);
+
+		const ReportedEvent expected[] = { ReportedEvent::noteOnIgnored(1, 0), ReportedEvent::midiMessage() };
+		TestReportHandler rh(expected);
+		synth.setReportHandler3(&rh);
+		// We don't have a reserve and this part has lower priority than the part all the other notes are playing on.
+		sendNoteOn(synth, 2, 36, 100);
+
+		rh.checkRemainingEvents();
+	}
 }
 
 } // namespace Test
