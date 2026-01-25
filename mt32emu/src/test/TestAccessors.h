@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2024 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -21,17 +21,22 @@
 // The intention is to provide access to certain internals for the test code which
 // facilitates mocking and/or testing, yet such access is not needed outside of tests.
 
+struct mt32emu_data;
+
 namespace MT32Emu {
 
 struct ControlROMMap;
 class File;
 class MachineConfiguration;
 class ROMImage;
+class ReportHandler3;
 
 namespace Test {
 
 // Delegates to the identically named static function in c_interface.cpp
 const MachineConfiguration *findMachineConfiguration(const char *machineID);
+// Returns ReportHandler created within the mt32emu emulation context, defined in c_interface.cpp
+ReportHandler3 *getReportHandlerDelegate(const mt32emu_data *context);
 
 // Delegates to the identically named static function in ROMInfo.cpp
 File *mergePartialROMs(const ROMImage *romImage1, const ROMImage *romImage2);

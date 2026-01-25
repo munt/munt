@@ -18,6 +18,7 @@
 #ifndef MT32EMU_TESTUTILS_H
 #define MT32EMU_TESTUTILS_H
 
+#include "../globals.h"
 #include "../Types.h"
 
 #include "Testing.h"

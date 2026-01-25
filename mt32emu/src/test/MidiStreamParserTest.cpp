@@ -18,6 +18,7 @@
 #include "../mt32emu.h"
 
 #include "TestUtils.h"
+#include "Testing.h"
 
 namespace MT32Emu {
 
@@ -134,7 +135,7 @@ TEST_CASE("MidiStreamParser should handle Voice messages with restored running s
 
 	SUBCASE("From individual short messages") {
 		const Bit32u sourceMessages[] = { 0x231291, 0x5634, 0x0012, 0x003481 };
-		for (Bit32u i = 0; i < calcArraySize(sourceMessages); i++) {
+		for (Bit32u i = 0; i < getArraySize(sourceMessages); i++) {
 			parser.processShortMessage(sourceMessages[i]);
 		}
 	}
@@ -158,7 +159,7 @@ TEST_CASE("MidiStreamParser should handle System Realtime and Voice messages int
 
 	SUBCASE("As individual short messages") {
 		const Bit32u sourceMessages[] = { 0x231291, 0xFE, 0x001291 };
-		for (Bit32u i = 0; i < calcArraySize(sourceMessages); i++) {
+		for (Bit32u i = 0; i < getArraySize(sourceMessages); i++) {
 			parser.processShortMessage(sourceMessages[i]);
 		}
 	}
@@ -180,7 +181,7 @@ TEST_CASE("MidiStreamParser should ignore Voice messages if running status canno
 
 	SUBCASE("As individual short messages") {
 		const Bit32u sourceMessages[] = { 0x0011, 0x1312, 0x131291, 0xF6, 0x0012, 0x0011, 0x001291 };
-		for (Bit32u i = 0; i < calcArraySize(sourceMessages); i++) {
+		for (Bit32u i = 0; i < getArraySize(sourceMessages); i++) {
 			parser.processShortMessage(sourceMessages[i]);
 		}
 	}

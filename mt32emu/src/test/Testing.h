@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -21,6 +21,7 @@
 #define DOCTEST_CONFIG_TREAT_CHAR_STAR_AS_STRING
 
 #include <cstddef>
+#include <cstring>
 #include <doctest/doctest.h>
 
 #define MT32EMU_NEED_WRAPPING_TEMPLATE_TEST_TYPES DOCTEST_VERSION_MAJOR < 2
@@ -64,9 +65,9 @@ using doctest::toString;
 // A workaround for problems with checking pointers against NULL in doctest versions before 2.4.6.
 void * const NULL_PTR = NULL;
 
-template<class A>
-static inline size_t calcArraySize(A &a) {
-	return sizeof a / sizeof *a;
+template<class T, size_t S>
+static inline size_t getArraySize(T (&)[S]) {
+	return S;
 }
 
 template<class T>
@@ -78,8 +79,8 @@ struct Array {
 
 	Array(T *d, size_t s) : data(d), size(s) {}
 
-	template<class A>
-	Array(A &a) : data(a), size(calcArraySize(a)) {}
+	template<size_t S>
+	Array(T (&a)[S]) : data(a), size(S) {}
 
 	T &operator[](size_t ix) const {
 		REQUIRE(ix < size);

@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2024 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -1001,10 +1001,12 @@ mt32emu_boolean MT32EMU_C_CALL mt32emu_is_default_display_old_mt32_compatible(mt
 
 #include "../test/TestAccessors.h"
 
-using namespace MT32Emu;
-
 const MachineConfiguration *Test::findMachineConfiguration(const char *machineID) {
 	return MT32Emu::findMachineConfiguration(machineID);
+}
+
+ReportHandler3 *Test::getReportHandlerDelegate(const mt32emu_data *context) {
+	return context->reportHandler;
 }
 
 #endif // #ifdef MT32EMU_WITH_TESTING
