@@ -281,7 +281,7 @@ TEST_CASE("Service creates ReportHandler that ignores events if it cannot delive
 		}
 	} wrapper;
 	mt32emu_report_handler_i rrh;
-	rrh.v2= &wrapper.rh;
+	rrh.v2 = &wrapper.rh;
 	Service service;
 	ReportHandler3 *emitter = ensureNewContextReportHandler(service, rrh);
 	emitter->onNoteOnIgnored(4, 2);
