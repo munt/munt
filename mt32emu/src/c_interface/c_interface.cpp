@@ -795,8 +795,8 @@ void MT32EMU_C_CALL mt32emu_play_msg_now(mt32emu_const_context context, mt32emu_
 	context->synth->playMsgNow(msg);
 }
 
-void MT32EMU_C_CALL mt32emu_play_msg_on_part(mt32emu_const_context context, mt32emu_bit8u part, mt32emu_bit8u code, mt32emu_bit8u note, mt32emu_bit8u velocity) {
-	context->synth->playMsgOnPart(part, code, note, velocity);
+void MT32EMU_C_CALL mt32emu_play_msg_on_part(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u command, mt32emu_bit8u data1, mt32emu_bit8u data2) {
+	context->synth->playMsgOnPart(part_number, command, data1, data2);
 }
 
 void MT32EMU_C_CALL mt32emu_play_sysex_now(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len) {

@@ -453,6 +453,28 @@ TEST_CASE("When Synth lacks free partials") {
 	}
 }
 
+TEST_CASE("Synth disregards invalid and unsupported short MIDI messages") {
+	Synth synth;
+	ROMSet romSet;
+	romSet.initMT32New();
+	openSynth(synth, romSet);
+	sendSineWaveSysex(synth, 1);
+
+	CHECK_FALSE(synth.isActive());
+
+	SUBCASE("Packed message lacking data bytes") { synth.playMsgNow(0xFFFFFF91); }
+
+	SUBCASE("Unpacked message lacking data bytes") { synth.playMsgOnPart(0, 9, 36, 240); }
+
+	SUBCASE("Unrecognised MIDI Control") { synth.playMsgOnPart(0, 11, 0x78, 2); }
+
+	SUBCASE("Unassigned MIDI channel") { synth.playMsgNow(0x78568f); }
+
+	SUBCASE("Invalid MIDI command") { synth.playMsgNow(0x341271); }
+
+	CHECK_FALSE(synth.isActive());
+}
+
 } // namespace Test
 
 } // namespace MT32Emu

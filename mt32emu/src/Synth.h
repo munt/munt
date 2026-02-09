@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -269,6 +269,8 @@ private:
 
 	ReportHandler3 *getReportHandler3();
 
+	void playUnpackedShortMessage(Bit8u partNum, Bit8u command, Bit8u data1, Bit8u data2);
+
 public:
 	static inline Bit16s clipSampleEx(Bit32s sampleEx) {
 		// Clamp values above 32767 to 32767, and values below -32768 to -32768
@@ -388,16 +390,18 @@ public:
 	MT32EMU_EXPORT bool playSysex(const Bit8u *sysex, Bit32u len);
 
 	// WARNING:
-	// The methods below don't ensure minimum 1-sample delay between sequential MIDI events,
-	// and a sequence of NoteOn and immediately succeeding NoteOff messages is always silent.
-	// A thread that invokes these methods must be explicitly synchronised with the thread performing sample rendering.
+	// The methods below may have no effect while the synth is aborting a poly. They also don't ensure minimum 1-sample delay between
+	// sequential MIDI events, and a sequence of NoteOn and immediately succeeding NoteOff messages is always silent.
+	// A thread that invokes these methods must be explicitly synchronised with the thread performing sample rendering or be the same.
 
-	// Sends a short MIDI message to the synth for immediate playback. The message must contain a status byte.
+	// Sends a short MIDI message to the synth for immediate playback. The message must contain a status byte and two data bytes,
+	// otherwise it is ignored.
 	// See the WARNING above.
 	MT32EMU_EXPORT void playMsgNow(Bit32u msg);
-	// Sends unpacked short MIDI message to the synth for immediate playback. The message must contain a status byte.
+	// Sends unpacked short MIDI message to the synth for immediate playback. All the message parameters must be within the supported
+	// range, otherwise the message is ignored.
 	// See the WARNING above.
-	MT32EMU_EXPORT void playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity);
+	MT32EMU_EXPORT void playMsgOnPart(Bit8u partNum, Bit8u command, Bit8u data1, Bit8u data2);
 
 	// Sends a single well formed System Exclusive MIDI message for immediate processing. The length is in bytes.
 	// See the WARNING above.

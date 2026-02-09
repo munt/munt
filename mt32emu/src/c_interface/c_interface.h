@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -366,21 +366,25 @@ MT32EMU_EXPORT mt32emu_return_code MT32EMU_C_CALL mt32emu_play_msg_at(mt32emu_co
 MT32EMU_EXPORT mt32emu_return_code MT32EMU_C_CALL mt32emu_play_sysex_at(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len, mt32emu_bit32u timestamp);
 
 /* WARNING:
- * The methods below don't ensure minimum 1-sample delay between sequential MIDI events,
- * and a sequence of NoteOn and immediately succeeding NoteOff messages is always silent.
- * A thread that invokes these methods must be explicitly synchronised with the thread performing sample rendering.
+ * The methods below may have no effect while the synth is aborting a poly. They also don't ensure minimum 1-sample delay between
+ * sequential MIDI events, and a sequence of NoteOn and immediately succeeding NoteOff messages is always silent.
+ * A thread that invokes these methods must be explicitly synchronised with the thread performing sample rendering or be the same.
  */
 
 /**
- * Sends a short MIDI message to the synth for immediate playback. The message must contain a status byte.
+ * Sends a short MIDI message to the synth for immediate playback. The message must contain a status byte and two data bytes,
+ * otherwise it is ignored.
  * See the WARNING above.
  */
 MT32EMU_EXPORT void MT32EMU_C_CALL mt32emu_play_msg_now(mt32emu_const_context context, mt32emu_bit32u msg);
 /**
- * Sends unpacked short MIDI message to the synth for immediate playback. The message must contain a status byte.
+ * Sends unpacked short MIDI message to the synth for immediate playback. All the message parameters must be within the supported
+ * range, otherwise the message is ignored.
+ * Argument partNumber should be 0..7 for Part 1..8, or 8 for Rhythm.
+ * Argument command should be 8..14 and represents the high 4 bits of the status byte.
  * See the WARNING above.
  */
-MT32EMU_EXPORT void MT32EMU_C_CALL mt32emu_play_msg_on_part(mt32emu_const_context context, mt32emu_bit8u part, mt32emu_bit8u code, mt32emu_bit8u note, mt32emu_bit8u velocity);
+MT32EMU_EXPORT void MT32EMU_C_CALL mt32emu_play_msg_on_part(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u command, mt32emu_bit8u data1, mt32emu_bit8u data2);
 
 /**
  * Sends a single well formed System Exclusive MIDI message for immediate processing. The length is in bytes.
@@ -638,7 +642,7 @@ MT32EMU_EXPORT_V(2.6) mt32emu_boolean MT32EMU_C_CALL mt32emu_is_display_old_mt32
 MT32EMU_EXPORT_V(2.6) mt32emu_boolean MT32EMU_C_CALL mt32emu_is_default_display_old_mt32_compatible(mt32emu_const_context context);
 
 #ifdef __cplusplus
-} // extern "C"
+} /* extern "C" */
 #endif
 
 #endif /* #ifndef MT32EMU_C_INTERFACE_H */

@@ -193,12 +193,12 @@ typedef union mt32emu_report_handler_i mt32emu_report_handler_i;
 	/**
 	 * Invoked in case the NoteOn MIDI message currently being processed cannot be played due to insufficient free partials.
 	 */ \
-	void (MT32EMU_C_CALL *onNoteOnIgnored)(void *instance_data, mt32emu_bit32u partialsNeeded, mt32emu_bit32u partialsFree); \
+	void (MT32EMU_C_CALL *onNoteOnIgnored)(void *instance_data, mt32emu_bit32u partials_needed, mt32emu_bit32u partials_free); \
 	/**
 	 * Invoked in case the partial allocator starts premature silencing a currently playing poly to free partials necessary
 	 * for processing the preceding NoteOn MIDI message.
 	 */ \
-	void (MT32EMU_C_CALL *onPlayingPolySilenced)(void *instance_data, mt32emu_bit32u partialsNeeded, mt32emu_bit32u partialsFree);
+	void (MT32EMU_C_CALL *onPlayingPolySilenced)(void *instance_data, mt32emu_bit32u partials_needed, mt32emu_bit32u partials_free);
 
 typedef struct {
 	MT32EMU_REPORT_HANDLER_I_V0
@@ -305,7 +305,7 @@ typedef union mt32emu_service_i mt32emu_service_i;
 	mt32emu_return_code (MT32EMU_C_CALL *playSysexAt)(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len, mt32emu_bit32u timestamp); \
 \
 	void (MT32EMU_C_CALL *playMsgNow)(mt32emu_const_context context, mt32emu_bit32u msg); \
-	void (MT32EMU_C_CALL *playMsgOnPart)(mt32emu_const_context context, mt32emu_bit8u part, mt32emu_bit8u code, mt32emu_bit8u note, mt32emu_bit8u velocity); \
+	void (MT32EMU_C_CALL *playMsgOnPart)(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u command, mt32emu_bit8u data1, mt32emu_bit8u data2); \
 	void (MT32EMU_C_CALL *playSysexNow)(mt32emu_const_context context, const mt32emu_bit8u *sysex, mt32emu_bit32u len); \
 	void (MT32EMU_C_CALL *writeSysex)(mt32emu_const_context context, mt32emu_bit8u channel, const mt32emu_bit8u *sysex, mt32emu_bit32u len); \
 \

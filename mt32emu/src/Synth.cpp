@@ -1136,24 +1136,30 @@ void Synth::playMsgNow(Bit32u msg) {
 	// NOTE: Active sense IS implemented in real hardware. However, realtime processing is clearly out of the library scope.
 	//       It is assumed that realtime consumers of the library respond to these MIDI events as appropriate.
 
-	Bit8u code = Bit8u((msg & 0x0000F0) >> 4);
+	Bit8u command = Bit8u((msg & 0x0000F0) >> 4);
 	Bit8u chan = Bit8u(msg & 0x00000F);
-	Bit8u note = Bit8u((msg & 0x007F00) >> 8);
-	Bit8u velocity = Bit8u((msg & 0x7F0000) >> 16);
+	Bit8u data1 = Bit8u((msg & 0x00FF00) >> 8);
+	Bit8u data2 = Bit8u((msg & 0xFF0000) >> 16);
 
-	//printDebug("Playing chan %d, code 0x%01x note: 0x%02x", chan, code, note);
+	if (data1 > 127 || data2 > 127) {
+#if MT32EMU_MONITOR_MIDI > 0
+		printDebug("playMsgNow for msg=0x%08x with invalid data bytes: chan=%d, command=0x%01x, data1=%d, data2=%d",
+			msg, chan, command, data1, data2);
+#endif
+		return;
+	}
 
 	Bit8u *chanParts = extensions.chantable[chan];
 	if (*chanParts > 8) {
 #if MT32EMU_MONITOR_MIDI > 0
-		printDebug("Play msg on unreg chan %d (%d): code=0x%01x, vel=%d", chan, *chanParts, code, velocity);
+		printDebug("Play msg on unreg chan %d: command=0x%01x, data1=%d, data2=%d", chan, command, data1, data2);
 #endif
 		return;
 	}
 	for (Bit32u i = extensions.abortingPartIx; i <= 8; i++) {
 		const Bit32u partNum = chanParts[i];
 		if (partNum > 8) break;
-		playMsgOnPart(partNum, code, note, velocity);
+		playUnpackedShortMessage(partNum, command, data1, data2);
 		if (isAbortingPoly()) {
 			extensions.abortingPartIx = i;
 			break;
@@ -1163,73 +1169,72 @@ void Synth::playMsgNow(Bit32u msg) {
 	}
 }
 
-void Synth::playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) {
+void Synth::playMsgOnPart(Bit8u partNum, Bit8u command, Bit8u data1, Bit8u data2) {
 	if (!opened) return;
 
-	Bit32u bend;
+	if (partNum > 8 || data1 > 127 || data2 > 127) {
+#if MT32EMU_MONITOR_MIDI > 0
+		printDebug("playMsgOnPart with invalid params: part=%d, command=0x%01x, data1=%d, data2=%d", partNum, command, data1, data2);
+#endif
+		return;
+	}
+	playUnpackedShortMessage(partNum, command, data1, data2);
+}
 
+void Synth::playUnpackedShortMessage(Bit8u partNum, Bit8u command, Bit8u data1, Bit8u data2) {
 	if (!activated) activated = true;
-	//printDebug("Synth::playMsgOnPart(%02x, %02x, %02x, %02x)", part, code, note, velocity);
-	switch (code) {
+
+	switch (command) {
 	case 0x8:
-		//printDebug("Note OFF - Part %d", part);
 		// The MT-32 ignores velocity for note off
-		parts[part]->noteOff(note);
+		parts[partNum]->noteOff(data1);
 		break;
 	case 0x9:
-		//printDebug("Note ON - Part %d, Note %d Vel %d", part, note, velocity);
-		if (velocity == 0) {
+		if (data2 == 0) {
 			// MIDI defines note-on with velocity 0 as being the same as note-off with velocity 40
-			parts[part]->noteOff(note);
-		} else if (parts[part]->getVolumeOverride() > 0) {
-			parts[part]->noteOn(note, velocity);
+			parts[partNum]->noteOff(data1);
+		} else if (parts[partNum]->getVolumeOverride() > 0) {
+			parts[partNum]->noteOn(data1, data2);
 		}
 		break;
 	case 0xB: // Control change
-		switch (note) {
+		switch (data1) {
 		case 0x01:  // Modulation
-			//printDebug("Modulation: %d", velocity);
-			parts[part]->setModulation(velocity);
+			parts[partNum]->setModulation(data2);
 			break;
 		case 0x06:
-			parts[part]->setDataEntryMSB(velocity);
+			parts[partNum]->setDataEntryMSB(data2);
 			break;
 		case 0x07:  // Set volume
-			//printDebug("Volume set: %d", velocity);
-			parts[part]->setVolume(velocity);
+			parts[partNum]->setVolume(data2);
 			break;
 		case 0x0A:  // Pan
-			//printDebug("Pan set: %d", velocity);
-			parts[part]->setPan(velocity);
+			parts[partNum]->setPan(data2);
 			break;
 		case 0x0B:
-			//printDebug("Expression set: %d", velocity);
-			parts[part]->setExpression(velocity);
+			parts[partNum]->setExpression(data2);
 			break;
 		case 0x40: // Hold (sustain) pedal
-			//printDebug("Hold pedal set: %d", velocity);
-			parts[part]->setHoldPedal(velocity >= 64);
+			parts[partNum]->setHoldPedal(data2 >= 64);
 			break;
 
 		case 0x62:
 		case 0x63:
-			parts[part]->setNRPN();
+			parts[partNum]->setNRPN();
 			break;
 		case 0x64:
-			parts[part]->setRPNLSB(velocity);
+			parts[partNum]->setRPNLSB(data2);
 			break;
 		case 0x65:
-			parts[part]->setRPNMSB(velocity);
+			parts[partNum]->setRPNMSB(data2);
 			break;
 
 		case 0x79: // Reset all controllers
-			//printDebug("Reset all controllers");
-			parts[part]->resetAllControllers();
+			parts[partNum]->resetAllControllers();
 			break;
 
 		case 0x7B: // All notes off
-			//printDebug("All notes off");
-			parts[part]->allNotesOff();
+			parts[partNum]->allNotesOff();
 			break;
 
 		case 0x7C:
@@ -1237,35 +1242,32 @@ void Synth::playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) {
 		case 0x7E:
 		case 0x7F:
 			// CONFIRMED:Mok: A real LAPC-I responds to these controllers as follows:
-			parts[part]->setHoldPedal(false);
-			parts[part]->allNotesOff();
+			parts[partNum]->setHoldPedal(false);
+			parts[partNum]->allNotesOff();
 			break;
 
 		default:
 #if MT32EMU_MONITOR_MIDI > 0
-			printDebug("Unknown MIDI Control code: 0x%02x - vel 0x%02x", note, velocity);
+			printDebug("Unknown MIDI Control code: 0x%02x - data2: 0x%02x", data1, data2);
 #endif
 			return;
 		}
 		extensions.display->midiMessagePlayed();
 		break;
 	case 0xC: // Program change
-		//printDebug("Program change %01x", note);
-		parts[part]->setProgram(note);
-		if (part < 8) {
+		parts[partNum]->setProgram(data1);
+		if (partNum < 8) {
 			extensions.display->midiMessagePlayed();
-			extensions.display->programChanged(part);
+			extensions.display->programChanged(partNum);
 		}
 		break;
 	case 0xE: // Pitch bender
-		bend = (velocity << 7) | (note);
-		//printDebug("Pitch bender %02x", bend);
-		parts[part]->setBend(bend);
+		parts[partNum]->setBend((data2 << 7) | data1);
 		extensions.display->midiMessagePlayed();
 		break;
 	default:
 #if MT32EMU_MONITOR_MIDI > 0
-		printDebug("Unknown Midi code: 0x%01x - %02x - %02x", code, note, velocity);
+		printDebug("Unknown Midi command: 0x%01x - %02x - %02x", command, data1, data2);
 #endif
 		return;
 	}
