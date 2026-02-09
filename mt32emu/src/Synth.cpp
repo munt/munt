@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -53,6 +53,7 @@ static const ControlROMFeatureSet OLD_MT32_ELDER = {
 	false, // quirkFastPitchChanges
 	true,  // quirkDisplayCustomMessagePriority
 	true,  // oldMT32DisplayFeatures
+	false, // newGenNoteCancellation
 	true,  // defaultReverbMT32Compatible
 	true   // oldMT32AnalogLPF
 };
@@ -67,6 +68,7 @@ static const ControlROMFeatureSet OLD_MT32_LATER = {
 	false, // quirkFastPitchChanges
 	false, // quirkDisplayCustomMessagePriority
 	true,  // oldMT32DisplayFeatures
+	false, // newGenNoteCancellation
 	true,  // defaultReverbMT32Compatible
 	true   // oldMT32AnalogLPF
 };
@@ -81,6 +83,7 @@ static const ControlROMFeatureSet NEW_MT32_COMPATIBLE = {
 	false, // quirkFastPitchChanges
 	false, // quirkDisplayCustomMessagePriority
 	false, // oldMT32DisplayFeatures
+	true,  // newGenNoteCancellation
 	false, // defaultReverbMT32Compatible
 	false  // oldMT32AnalogLPF
 };
@@ -95,6 +98,7 @@ static const ControlROMFeatureSet CM32LN_COMPATIBLE = {
 	true,  // quirkFastPitchChanges
 	false, // quirkDisplayCustomMessagePriority
 	false, // oldMT32DisplayFeatures
+	true,  // newGenNoteCancellation
 	false, // defaultReverbMT32Compatible
 	false  // oldMT32AnalogLPF
 };

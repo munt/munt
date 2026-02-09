@@ -1,10 +1,11 @@
 HEAD:
 
 	* Added basic unit tests. Details on the build requirements and configuration options can be
-	  found in README.md file (#108).
+	  found in README.md file. (#108)
 	* Performance improvements based on (#131).
 	* Provided callbacks to retrieve notifications about events when the synth engine runs
 	  out of available partials. (#111)
+	* Improved emulation accuracy of partial allocator implemented in old-gen devices. (#109)
 
 2025-12-26:
 

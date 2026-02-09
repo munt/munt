@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -185,8 +185,10 @@ bool PartialManager::abortFirstPolyOnPartPreferReleasingThenHeld(int partNum) {
 bool PartialManager::freePartials(unsigned int needed, int partNum) {
 	// NOTE: Currently, we don't consider peculiarities of partial allocation when a timbre involves structures with ring modulation.
 
-// TODO: Make this configurable.
-#ifdef MT32EMU_QUIRK_FREE_PARTIALS_MT32
+	if (synth->controlROMFeatures->newGenNoteCancellation) {
+		return freePartialsNewGen(needed, partNum);
+	}
+
 	while (!synth->isAbortingPoly() && getFreePartialCount() < needed) {
 		if (parts[partNum]->getActiveNonReleasingPartialCount() + needed > numReservedPartialsForPart[partNum]) {
 			// If priority is given to earlier polys, there's nothing we can do.
@@ -199,7 +201,7 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 			}
 
 			// More partials desired than reserved, try to borrow some from parts with lesser priority.
-			// NOTE: there's a bug here in the old-gen program, so that the device inhibits undefined behaviour when trying to play
+			// NOTE: there's a bug here in the old-gen program, so that the device exhibits undefined behaviour when trying to play
 			// a note on the rhythm part beyond the reserve while none of the voice parts has exceeded their reserve.
 			// We don't emulate this here, assuming that the intention was to traverse all voice parts, then check the rhythm part.
 			if (abortFirstPolyPreferReleasingThenHeldWhereReserveExceeded(partNum < 8 ? partNum : 0)) continue;
@@ -226,7 +228,9 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 		return false;
 	}
 	return true;
-#else
+}
+
+bool PartialManager::freePartialsNewGen(unsigned int needed, int partNum) {
 	// CONFIRMED: Barring bugs, this matches the real LAPC-I according to information from Mok.
 
 	// BUG: There's a bug in the LAPC-I implementation:
@@ -304,7 +308,6 @@ bool PartialManager::freePartials(unsigned int needed, int partNum) {
 
 	// Aww, not enough partials for you.
 	return false;
-#endif
 }
 
 const Partial *PartialManager::getPartial(unsigned int partialNum) const {

@@ -57,10 +57,10 @@ struct Context {
 		if (withPartialAllocated) allocatePartial();
 	}
 
-	void allocatePartial() {
+	void allocatePartial(Bit8u channel = 1) {
 		unsigned int freePartials = partialManager->getFreePartialCount();
 		CHECK(freePartials > 0);
-		sendNoteOn(synth, 1, 36, 80);
+		sendNoteOn(synth, channel, 36, 80);
 		CHECK(partialManager->getFreePartialCount() == freePartials - 1);
 	}
 };
@@ -81,6 +81,7 @@ TEST_CASE("PartialManager allocates partials for playing a Note and frees when f
 
 TEST_CASE("PartialManager::freePartials") {
 	Context ctx;
+	Bit32u expectedFreePartials = DEFAULT_MAX_PARTIALS - 1;
 
 	SUBCASE("does not initiate abortion and permits allocation of partials") {
 		SUBCASE("if no free partials needed") {
@@ -111,8 +112,31 @@ TEST_CASE("PartialManager::freePartials") {
 			CHECK(ctx.partialManager->freePartials(DEFAULT_MAX_PARTIALS, 8));
 		}
 
-		SUBCASE("in releasing phase on a part with higher priority where reserve exceeded") {
-			MT32EMU_createSubcasesForDeviceGen
+		SUBCASE("on the same part potentially exceeding the reserve, old-gen only") {
+			// The same part is affected despite a releasing note on a part with lower priority exists.
+			ctx.prepare(true);
+
+			Bit8u reserve[] = { DEFAULT_MAX_PARTIALS - 1, 0, 0, 0, 0, 0, 0, 0, 0 };
+			ctx.partialManager->setReserve(reserve);
+
+			const Poly *playingPoly1 = Part::getPart(ctx.synth, 0)->getFirstActivePoly();
+			CHECK(playingPoly1->getState() == POLY_Playing);
+
+			sendSineWaveSysex(ctx.synth, 2);
+			ctx.allocatePartial(2);
+			expectedFreePartials--;
+
+			const Poly *playingPoly2 = Part::getPart(ctx.synth, 1)->getFirstActivePoly();
+			CHECK(playingPoly2->getState() == POLY_Playing);
+			sendAllNotesOff(ctx.synth, 2);
+			CHECK(playingPoly2->getState() == POLY_Releasing);
+
+			CHECK(ctx.partialManager->freePartials(DEFAULT_MAX_PARTIALS - 1, 0));
+			CHECK(ctx.partialManager->getAbortingPoly() == playingPoly1);
+		}
+
+		SUBCASE("in releasing phase on a part with higher priority where reserve exceeded, new-gen only") {
+			ctx.prepare();
 
 			const Poly *playingPoly = Part::getPart(ctx.synth, 0)->getFirstActivePoly();
 			CHECK(playingPoly->getState() == POLY_Playing);
@@ -165,7 +189,7 @@ TEST_CASE("PartialManager::freePartials") {
 		CHECK(ctx.partialManager->getAbortingPoly() == NULL_PTR);
 	}
 
-	CHECK(DEFAULT_MAX_PARTIALS - 1 == ctx.partialManager->getFreePartialCount());
+	CHECK(expectedFreePartials == ctx.partialManager->getFreePartialCount());
 }
 
 } // namespace Test
