@@ -6,6 +6,7 @@ HEAD:
 	* Provided callbacks to retrieve notifications about events when the synth engine runs
 	  out of available partials. (#111)
 	* Improved emulation accuracy of partial allocator implemented in old-gen devices. (#109)
+	* Invalid short MIDI messages are no longer tolerated but ignored. (#134)
 
 2025-12-26:
 
