@@ -16,6 +16,7 @@ HEAD:
 	  background. (#130)
 	* Re-arranged the synth state panel and added a partial usage indicator alongside the
 	  existing MIDI MESSAGE LED. (#112)
+	* Fixed incompatibility with the new QtAudio implementation (starting from Qt 6.4). (#133)
 
 2022-08-03:
 

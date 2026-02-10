@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2026 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -64,6 +64,14 @@ public:
 		Q_UNUSED(len);
 		return 0;
 	}
+
+	bool isSequential() const {
+		return true;
+	}
+
+	qint64 bytesAvailable() const {
+		return stream.audioLatencyFrames << 2;
+	}
 };
 
 class ProcessingThread : public QThread {
@@ -83,8 +91,11 @@ public:
 QtAudioStream::QtAudioStream(const AudioDriverSettings &useSettings, SynthRoute &useSynthRoute, const quint32 useSampleRate) :
 	AudioStream(useSettings, useSynthRoute, useSampleRate)
 {
-	// Creating QAudioOutput in a thread leads to smooth rendering
-	// Rendering will be performed in the main thread otherwise
+	// Despite we're relying on the pull model in rendering audio, we should still render in a dedicated thread.
+	// Creating QAudioOutput in a new thread does just this, otherwise rendering would be performed in the main thread,
+	// which may lead to UI stuttering and cracklings in the audio signal.
+	// Note, the push model brings no advantage here, since new audio data is requested via the notify() signal anyway, and the
+	// only suitable blocking call waitForBytesWritten() doesn't really work due to the internal QIODevice being unbuffered.
 	processingThread = new ProcessingThread(*this);
 	processingThread->start(QThread::TimeCriticalPriority);
 }
