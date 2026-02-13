@@ -475,6 +475,54 @@ TEST_CASE("Synth disregards invalid and unsupported short MIDI messages") {
 	CHECK_FALSE(synth.isActive());
 }
 
+TEST_CASE("Synth should set Master Volume via SysEx and override optionally") {
+	Synth synth;
+	ROMSet romSet;
+
+	SUBCASE("Default volume is set on opening, changed via SysEx and reset back") {
+		CHECK(synth.getMasterVolumeOverride() > 100);
+		openSynthWithMT32NewROMSet(synth, romSet);
+		CHECK(readMasterVolume(synth) == 100);
+		sendMasterVolumeSysex(synth, 23);
+		CHECK(readMasterVolume(synth) == 23);
+		sendSystemResetSysex(synth);
+		CHECK(readMasterVolume(synth) == 100);
+		CHECK(synth.getMasterVolumeOverride() > 100);
+	}
+
+	SUBCASE("Overridden Master Volume takes effect on opening and cannot be changed via SysEx") {
+		CHECK(synth.getMasterVolumeOverride() > 100);
+		synth.setMasterVolumeOverride(45);
+		CHECK(synth.getMasterVolumeOverride() == 45);
+		openSynthWithMT32NewROMSet(synth, romSet);
+		CHECK(readMasterVolume(synth) == 45);
+		sendMasterVolumeSysex(synth, 23);
+		CHECK(readMasterVolume(synth) == 45);
+		synth.setMasterVolumeOverride(100);
+		CHECK(readMasterVolume(synth) == 100);
+		CHECK(synth.getMasterVolumeOverride() == 100);
+		sendMasterVolumeSysex(synth, 99);
+		CHECK(readMasterVolume(synth) == 100);
+	}
+
+	SUBCASE("Master Volume override can be enabled and disabled") {
+		openSynthWithMT32NewROMSet(synth, romSet);
+		sendMasterVolumeSysex(synth, 23);
+		CHECK(readMasterVolume(synth) == 23);
+		CHECK(synth.getMasterVolumeOverride() > 100);
+		synth.setMasterVolumeOverride(45);
+		CHECK(synth.getMasterVolumeOverride() == 45);
+		CHECK(readMasterVolume(synth) == 45);
+		sendMasterVolumeSysex(synth, 23);
+		CHECK(readMasterVolume(synth) == 45);
+		synth.setMasterVolumeOverride(255);
+		CHECK(readMasterVolume(synth) == 45);
+		sendMasterVolumeSysex(synth, 99);
+		CHECK(readMasterVolume(synth) == 99);
+		CHECK(synth.getMasterVolumeOverride() > 100);
+	}
+}
+
 } // namespace Test
 
 } // namespace MT32Emu

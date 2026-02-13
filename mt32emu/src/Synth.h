@@ -467,6 +467,16 @@ public:
 	// Returns current output gain factor for reverb wet output channels.
 	MT32EMU_EXPORT float getReverbOutputGain() const;
 
+	// Sets or removes an override for the Master Volume. When the Master Volume is overridden, a SysEx write to the system area
+	// will have no effect on the Master Volume setting, yet a system memory read will return the overridden Master Volume.
+	// To enable the override mode, argument volumeOverride should be in range 0..100. Setting a value outside this range
+	// disables the override mode allowing the Master Volume to change further on (without changing the current volume).
+	// This setting persists synth reopening.
+	MT32EMU_EXPORT_V(2.8) void setMasterVolumeOverride(Bit8u volumeOverride);
+	// Returns the overridden master volume previously set, if any; a value outside the range 0..100 means no override
+	// is currently in effect.
+	MT32EMU_EXPORT_V(2.8) Bit8u getMasterVolumeOverride() const;
+
 	// Sets (or removes) an override for the current volume (output level) on a specific part.
 	// When the part volume is overridden, the MIDI controller Volume (7) on the MIDI channel this part is assigned to
 	// has no effect on the output level of this part. Similarly, the output level value set on this part via a SysEx that

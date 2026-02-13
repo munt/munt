@@ -462,6 +462,20 @@ MT32EMU_EXPORT void MT32EMU_C_CALL mt32emu_set_reverb_output_gain(mt32emu_const_
 MT32EMU_EXPORT float MT32EMU_C_CALL mt32emu_get_reverb_output_gain(mt32emu_const_context context);
 
 /**
+ * Sets or removes an override for the Master Volume. When the Master Volume is overridden, a SysEx write to the system area
+ * will have no effect on the Master Volume setting, yet a system memory read will return the overridden Master Volume.
+ * To enable the override mode, argument volume_override should be in range 0..100. Setting a value outside this range
+ * disables the override mode allowing the Master Volume to change further on (without changing the current volume).
+ * This setting persists synth reopening.
+ */
+MT32EMU_EXPORT_V(2.8) void MT32EMU_C_CALL mt32emu_set_master_volume_override(mt32emu_const_context context, mt32emu_bit8u volume_override);
+/**
+ * Returns the overridden master volume previously set, if any; a value outside the range 0..100 means no override
+ * is currently in effect.
+ */
+MT32EMU_EXPORT_V(2.8) mt32emu_bit8u MT32EMU_C_CALL mt32emu_get_master_volume_override(mt32emu_const_context context);
+
+/**
  * Sets (or removes) an override for the current volume (output level) on a specific part.
  * When the part volume is overridden, the MIDI controller Volume (7) on the MIDI channel this part is assigned to
  * has no effect on the output level of this part. Similarly, the output level value set on this part via a SysEx that

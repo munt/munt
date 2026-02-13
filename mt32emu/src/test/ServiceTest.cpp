@@ -137,6 +137,44 @@ TEST_CASE_TEMPLATE("Service can open synth with ROMs ", ServiceImpl, TestTypes) 
 	CHECK(service.getContext() == NULL_PTR);
 }
 
+TEST_CASE_TEMPLATE("Service should set Master Volume via SysEx and override optionally ", ServiceImpl, TestTypes) {
+	TestService<ServiceImpl> service;
+	service.createContext();
+	REQUIRE(service.getContext() != NULL_PTR);
+
+	ROMSet romSet;
+	romSet.initMT32New();
+	service.addROMSet(romSet);
+
+	mt32emu_return_code rc = service.openSynth();
+	CHECK(rc == MT32EMU_RC_OK);
+	CHECK(service.isOpen());
+
+	Bit8u volume = 0;
+	CHECK(service.getMasterVolumeOverride() > 100);
+	service.readMemory(0x40016, sizeof volume, &volume);
+	CHECK(volume == 100);
+	service.setMasterVolumeOverride(75);
+	CHECK(service.getMasterVolumeOverride() == 75);
+	service.readMemory(0x40016, sizeof volume, &volume);
+	CHECK(volume == 75);
+	service.setMasterVolumeOverride(100);
+	CHECK(service.getMasterVolumeOverride() == 100);
+	service.readMemory(0x40016, sizeof volume, &volume);
+	CHECK(volume == 100);
+	service.setMasterVolumeOverride(0);
+	CHECK(service.getMasterVolumeOverride() == 0);
+	service.readMemory(0x40016, sizeof volume, &volume);
+	CHECK(volume == 0);
+	service.setMasterVolumeOverride(255);
+	CHECK(service.getMasterVolumeOverride() > 100);
+	service.readMemory(0x40016, sizeof volume, &volume);
+	CHECK(volume == 0);
+
+	service.freeContext();
+	CHECK(service.getContext() == NULL_PTR);
+}
+
 template <class ReportHandlerImpl>
 static ReportHandler3 *ensureNewContextReportHandler(Service &service, ReportHandlerImpl &rh) {
 	service.createContext(rh);

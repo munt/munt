@@ -43,7 +43,7 @@ static mt32emu_service_version MT32EMU_C_CALL getSynthVersionID(mt32emu_service_
 	return MT32EMU_SERVICE_VERSION_CURRENT;
 }
 
-static const mt32emu_service_i_v6 SERVICE_VTABLE = {
+static const mt32emu_service_i_v7 SERVICE_VTABLE = {
 	getSynthVersionID,
 	mt32emu_get_supported_report_handler_version,
 	mt32emu_get_supported_midi_receiver_version,
@@ -136,7 +136,9 @@ static const mt32emu_service_i_v6 SERVICE_VTABLE = {
 	mt32emu_set_part_volume_override,
 	mt32emu_get_part_volume_override,
 	mt32emu_get_sound_group_name,
-	mt32emu_get_sound_name
+	mt32emu_get_sound_name,
+	mt32emu_set_master_volume_override,
+	mt32emu_get_master_volume_override
 };
 
 } // namespace MT32Emu
@@ -482,7 +484,7 @@ extern "C" {
 
 mt32emu_service_i MT32EMU_C_CALL mt32emu_get_service_i() {
 	mt32emu_service_i i;
-	i.v6 = &SERVICE_VTABLE;
+	i.v7 = &SERVICE_VTABLE;
 	return i;
 }
 
@@ -869,6 +871,14 @@ void MT32EMU_C_CALL mt32emu_set_reverb_output_gain(mt32emu_const_context context
 
 float MT32EMU_C_CALL mt32emu_get_reverb_output_gain(mt32emu_const_context context) {
 	return context->synth->getReverbOutputGain();
+}
+
+void MT32EMU_C_CALL mt32emu_set_master_volume_override(mt32emu_const_context context, mt32emu_bit8u volume_override) {
+	context->synth->setMasterVolumeOverride(volume_override);
+}
+
+mt32emu_bit8u MT32EMU_C_CALL mt32emu_get_master_volume_override(mt32emu_const_context context) {
+	return context->synth->getMasterVolumeOverride();
 }
 
 void MT32EMU_C_CALL mt32emu_set_part_volume_override(mt32emu_const_context context, mt32emu_bit8u part_number, mt32emu_bit8u volume_override) {

@@ -42,6 +42,8 @@ namespace MT32Emu {
 // MIDI interface data transfer rate in samples. Used to simulate the transfer delay.
 static const double MIDI_DATA_TRANSFER_RATE = double(SAMPLE_RATE) / 31250.0 * 8.0;
 
+static const Bit8u DEFAULT_MASTER_VOLUME = 100; // Confirmed
+
 static const ControlROMFeatureSet OLD_MT32_ELDER = {
 	true,  // quirkBasePitchOverflow
 	true,  // quirkPitchEnvelopeOverflow
@@ -247,6 +249,7 @@ class Extensions {
 public:
 	RendererType selectedRendererType;
 	Bit32s masterTunePitchDelta;
+	Bit8u masterVolumeOverride;
 	bool niceAmpRamp;
 	bool nicePanning;
 	bool nicePartialMixing;
@@ -320,6 +323,7 @@ Synth::Synth(ReportHandler *useReportHandler) :
 	setOutputGain(1.0f);
 	setReverbOutputGain(1.0f);
 	setReversedStereoEnabled(false);
+	setMasterVolumeOverride(255);
 	setNiceAmpRampEnabled(true);
 	setNicePanningEnabled(false);
 	setNicePartialMixingEnabled(false);
@@ -542,6 +546,18 @@ void Synth::setReverbOutputGain(float newReverbOutputGain) {
 
 float Synth::getReverbOutputGain() const {
 	return reverbOutputGain;
+}
+
+void Synth::setMasterVolumeOverride(Bit8u volumeOverride) {
+	extensions.masterVolumeOverride = volumeOverride;
+	if (opened && volumeOverride <= DEFAULT_MASTER_VOLUME) {
+		mt32ram.system.masterVol = volumeOverride;
+		refreshSystemMasterVol();
+	}
+}
+
+Bit8u Synth::getMasterVolumeOverride() const {
+	return extensions.masterVolumeOverride;
 }
 
 void Synth::setPartVolumeOverride(Bit8u partNumber, Bit8u volumeOverride) {
@@ -879,7 +895,7 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 		// The channel assignment is then {0, 1, 2, 3, 4, 5, 6, 7, 9}
 		mt32ram.system.chanAssign[i] = i + 1;
 	}
-	mt32ram.system.masterVol = 100; // Confirmed
+	mt32ram.system.masterVol = DEFAULT_MASTER_VOLUME;
 
 	bool oldReverbOverridden = reverbOverridden;
 	reverbOverridden = false;
@@ -929,6 +945,11 @@ bool Synth::open(const ROMImage &controlROMImage, const ROMImage &pcmROMImage, B
 #endif
 	setOutputGain(outputGain);
 	setReverbOutputGain(reverbOutputGain);
+
+	if (extensions.masterVolumeOverride < DEFAULT_MASTER_VOLUME) {
+		mt32ram.system.masterVol = extensions.masterVolumeOverride;
+		refreshSystemMasterVol();
+	}
 
 	switch (getSelectedRendererType()) {
 		case RendererType_BIT16S:
@@ -1803,7 +1824,14 @@ void Synth::writeMemoryRegion(const MemoryRegion *region, Bit32u addr, Bit32u le
 			refreshSystemChanAssign(Bit8u(firstPart), Bit8u(lastPart));
 		}
 		if (off <= SYSTEM_MASTER_VOL_OFF && off + len > SYSTEM_MASTER_VOL_OFF) {
-			refreshSystemMasterVol();
+			if (extensions.masterVolumeOverride <= DEFAULT_MASTER_VOLUME) {
+#if MT32EMU_MONITOR_SYSEX > 0
+				printDebug(" Master volume overridden, wanted: %d - ignoring", mt32ram.system.masterVol);
+#endif
+				mt32ram.system.masterVol = extensions.masterVolumeOverride;
+			} else {
+				refreshSystemMasterVol();
+			}
 		}
 		break;
 	case MR_Display:
@@ -1948,6 +1976,9 @@ void Synth::reset() {
 		} else {
 			parts[8]->refresh();
 		}
+	}
+	if (extensions.masterVolumeOverride < DEFAULT_MASTER_VOLUME) {
+		mt32ram.system.masterVol = extensions.masterVolumeOverride;
 	}
 	refreshSystem();
 	resetMasterTunePitchDelta();

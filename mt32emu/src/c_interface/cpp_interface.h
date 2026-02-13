@@ -98,6 +98,8 @@ mt32emu_service_i mt32emu_get_service_i();
 #define mt32emu_get_output_gain i.v0->getOutputGain
 #define mt32emu_set_reverb_output_gain i.v0->setReverbOutputGain
 #define mt32emu_get_reverb_output_gain i.v0->getReverbOutputGain
+#define mt32emu_set_master_volume_override iV7()->setMasterVolumeOverride
+#define mt32emu_get_master_volume_override iV7()->getMasterVolumeOverride
 #define mt32emu_set_part_volume_override iV5()->setPartVolumeOverride
 #define mt32emu_get_part_volume_override iV5()->getPartVolumeOverride
 #define mt32emu_set_reversed_stereo_enabled i.v0->setReversedStereoEnabled
@@ -307,6 +309,9 @@ public:
 	void setReverbOutputGain(float gain) { mt32emu_set_reverb_output_gain(c, gain); }
 	float getReverbOutputGain() { return mt32emu_get_reverb_output_gain(c); }
 
+	void setMasterVolumeOverride(Bit8u volume_override) { mt32emu_set_master_volume_override(c, volume_override); }
+	Bit8u getMasterVolumeOverride() { return mt32emu_get_master_volume_override(c); }
+
 	void setPartVolumeOverride(Bit8u part_number, Bit8u volume_override) { mt32emu_set_part_volume_override(c, part_number, volume_override); }
 	Bit8u getPartVolumeOverride(Bit8u part_number) { return mt32emu_get_part_volume_override(c, part_number); }
 
@@ -358,6 +363,7 @@ private:
 	const mt32emu_service_i_v4 *iV4() { return (getVersionID() < MT32EMU_SERVICE_VERSION_4) ? NULL : i.v4; }
 	const mt32emu_service_i_v5 *iV5() { return (getVersionID() < MT32EMU_SERVICE_VERSION_5) ? NULL : i.v5; }
 	const mt32emu_service_i_v6 *iV6() { return (getVersionID() < MT32EMU_SERVICE_VERSION_6) ? NULL : i.v6; }
+	const mt32emu_service_i_v7 *iV7() { return (getVersionID() < MT32EMU_SERVICE_VERSION_7) ? NULL : i.v7; }
 #endif
 
 	Service(const Service &);            // prevent copy-construction
@@ -595,6 +601,10 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_get_output_gain
 #undef mt32emu_set_reverb_output_gain
 #undef mt32emu_get_reverb_output_gain
+#undef mt32emu_set_master_volume_override
+#undef mt32emu_get_master_volume_override
+#undef mt32emu_set_part_volume_override
+#undef mt32emu_get_part_volume_override
 #undef mt32emu_set_reversed_stereo_enabled
 #undef mt32emu_is_reversed_stereo_enabled
 #undef mt32emu_set_nice_amp_ramp_enabled

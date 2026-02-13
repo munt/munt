@@ -7,6 +7,8 @@ HEAD:
 	  out of available partials. (#111)
 	* Improved emulation accuracy of partial allocator implemented in old-gen devices. (#109)
 	* Invalid short MIDI messages are no longer tolerated but ignored. (#134)
+	* The Master Volume setting can now be overridden, so that changing it via SysEx messages
+	  is not possible. (#137)
 
 2025-12-26:
 
