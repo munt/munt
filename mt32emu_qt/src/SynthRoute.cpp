@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2026 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -394,8 +394,8 @@ void SynthRoute::reset() {
 	qSynth.reset();
 }
 
-void SynthRoute::setMasterVolume(int masterVolume) {
-	qSynth.setMasterVolume(masterVolume);
+void SynthRoute::setMasterVolume(int masterVolume, bool overridden) {
+	qSynth.setMasterVolume(masterVolume, overridden);
 }
 
 void SynthRoute::setOutputGain(float outputGain) {

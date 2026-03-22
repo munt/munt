@@ -78,7 +78,7 @@ public:
 	void audioStreamFailed();
 
 	void enableRealtimeMode();
-	void setMasterVolume(int masterVolume);
+	void setMasterVolume(int masterVolume, bool overridden);
 	void setOutputGain(float outputGain);
 	void setReverbOutputGain(float reverbOutputGain);
 	void setReverbEnabled(bool reverbEnabled);

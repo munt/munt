@@ -1,5 +1,6 @@
 HEAD:
 
+	* Updated mt32emu library to version 2.8.0.
 	* Fixed UI that may show obsolete state of a stopped synth.
 	  After stopping the pinned synth, the SynthStateMonitor occasionally left displaying the last
 	  state change generated immediately before stopping, e.g. the partial states. This happened
@@ -17,6 +18,9 @@ HEAD:
 	* Re-arranged the synth state panel and added a partial usage indicator alongside the
 	  existing MIDI MESSAGE LED. (#112)
 	* Fixed incompatibility with the new QtAudio implementation (starting from Qt 6.4). (#133)
+	* Added a possibility to pin the Master Volume, so that it can only be set manually and not
+	  via a SysEx message. Additionally, a new "Stereo Output Amp" control located below the Master
+	  Volume compliments it to alter both easily. (#135)
 
 2022-08-03:
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2026 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ SynthPropertiesDialog::SynthPropertiesDialog(QWidget *parent, SynthRoute *useSyn
 	}
 	refreshProfileCombo("");
 	loadSynthProfile();
+	computeOutputGainRatio();
 
 	connect(ui->buttonBox, SIGNAL(clicked(QAbstractButton *)), SLOT(on_buttonBox_clicked(QAbstractButton *)));
 	connect(ui->reverbModeComboBox, SIGNAL(currentIndexChanged(int)), SLOT(updateReverbSettings()));
@@ -48,8 +49,23 @@ SynthPropertiesDialog::~SynthPropertiesDialog() {
 	delete ui;
 }
 
-void SynthPropertiesDialog::showEvent(QShowEvent *) {
+void SynthPropertiesDialog::refresh() {
+	outputGainMode = INDEPENDENT_SYNTH_AND_REVERB;
+	outputGainRatio = -1.0;
 	loadSynthProfile();
+	emit synthProfileUpdated(synthProfile);
+	notifyOutputGainChanged();
+	if (isHidden()) computeOutputGainRatio();
+}
+
+void SynthPropertiesDialog::showEvent(QShowEvent *) {
+	outputGainMode = INDEPENDENT_SYNTH_AND_REVERB;
+	outputGainRatio = -1.0;
+	loadSynthProfile();
+}
+
+void SynthPropertiesDialog::hideEvent(QHideEvent *) {
+	computeOutputGainRatio();
 }
 
 void SynthPropertiesDialog::on_changeROMSetButton_clicked() {
@@ -117,6 +133,7 @@ void SynthPropertiesDialog::on_profileComboBox_currentIndexChanged(int) {
 	synthRoute->setSynthProfile(synthProfile, name);
 	ui->profileCheckBox->setChecked(name == master.getDefaultSynthProfileName());
 	loadSynthProfile(false);
+	emit synthProfileUpdated(synthProfile);
 }
 
 void SynthPropertiesDialog::on_reverbCheckBox_stateChanged(int state) {
@@ -149,24 +166,32 @@ void SynthPropertiesDialog::on_outputGainSlider_valueChanged(int value) {
 	double gain = value / 100.0;
 	ui->outputGainSpinBox->setValue(gain);
 	synthRoute->setOutputGain(float(gain));
+
+	notifyOutputGainChanged();
 }
 
 void SynthPropertiesDialog::on_outputGainSpinBox_editingFinished() {
 	double value = ui->outputGainSpinBox->value();
-	ui->outputGainSlider->setValue(int(value * 100 + 0.5));
+	ui->outputGainSlider->setValue(qRound(value * 100.0));
 	synthRoute->setOutputGain(float(value));
+
+	notifyOutputGainChanged();
 }
 
 void SynthPropertiesDialog::on_reverbOutputGainSlider_valueChanged(int value) {
 	double gain = value / 100.0;
 	ui->reverbOutputGainSpinBox->setValue(gain);
 	synthRoute->setReverbOutputGain(float(gain));
+
+	notifyOutputGainChanged();
 }
 
 void SynthPropertiesDialog::on_reverbOutputGainSpinBox_editingFinished() {
 	double value = ui->reverbOutputGainSpinBox->value();
-	ui->reverbOutputGainSlider->setValue(int(value * 100 + 0.5));
+	ui->reverbOutputGainSlider->setValue(qRound(value * 100.0));
 	synthRoute->setReverbOutputGain(float(value));
+
+	notifyOutputGainChanged();
 }
 void SynthPropertiesDialog::on_reverseStereoCheckBox_stateChanged(int state) {
 	synthRoute->setReversedStereoEnabled(state == Qt::Checked);
@@ -219,6 +244,16 @@ void SynthPropertiesDialog::handleReverbLevelChanged(int level) {
 	ui->reverbLevelSlider->setValue(level);
 }
 
+void SynthPropertiesDialog::handleStereoOutputAmpChanged(int stereoOutputAmp) {
+	if (outputGainMode == FIXED_SYNTH_TO_REVERB_RATIO) {
+		ui->outputGainSlider->setValue(qRound(outputGainRatio * stereoOutputAmp));
+		ui->reverbOutputGainSlider->setValue(stereoOutputAmp);
+	} else if (outputGainMode == FIXED_REVERB_TO_SYNTH_RATIO) {
+		ui->outputGainSlider->setValue(stereoOutputAmp);
+		ui->reverbOutputGainSlider->setValue(qRound(outputGainRatio * stereoOutputAmp));
+	}
+}
+
 void SynthPropertiesDialog::resetSynth() {
 	int reverbMode = ui->reverbModeComboBox->currentIndex();
 	int reverbTime = ui->reverbTimeSlider->value();
@@ -259,6 +294,10 @@ void SynthPropertiesDialog::restoreDefaults() {
 	ui->nicePartialMixingCheckBox->setCheckState(Qt::Unchecked);
 	ui->engageChannel1CheckBox->setCheckState(Qt::Unchecked);
 	ui->displayCompatibilityComboBox->setCurrentIndex(0);
+
+	synthRoute->getSynthProfile(synthProfile);
+	synthProfile.masterVolumeOverride = 0xFF;
+	emit synthProfileUpdated(synthProfile);
 }
 
 void SynthPropertiesDialog::loadSynthProfile(bool reloadFromSynthRoute) {
@@ -280,8 +319,8 @@ void SynthPropertiesDialog::loadSynthProfile(bool reloadFromSynthRoute) {
 	} else {
 		ui->reverbCheckBox->setCheckState(Qt::PartiallyChecked);
 	}
-	ui->outputGainSlider->setValue(synthProfile.outputGain * 100);
-	ui->reverbOutputGainSlider->setValue(synthProfile.reverbOutputGain * 100);
+	ui->outputGainSlider->setValue(qRound(synthProfile.outputGain * 100.0));
+	ui->reverbOutputGainSlider->setValue(qRound(synthProfile.reverbOutputGain * 100.0));
 	ui->reverseStereoCheckBox->setCheckState(synthProfile.reversedStereoEnabled ? Qt::Checked : Qt::Unchecked);
 	ui->niceAmpRampCheckBox->setCheckState(synthProfile.niceAmpRamp ? Qt::Checked : Qt::Unchecked);
 	ui->nicePanningCheckBox->setCheckState(synthProfile.nicePanning ? Qt::Checked : Qt::Unchecked);
@@ -335,4 +374,25 @@ QString SynthPropertiesDialog::getROMSetDescription() {
 		}
 	}
 	return "Unknown";
+}
+
+void SynthPropertiesDialog::computeOutputGainRatio() {
+	int outputGain = ui->outputGainSlider->value();
+	int reverbOutputGain = ui->reverbOutputGainSlider->value();
+	if (outputGain == reverbOutputGain) {
+		outputGainMode = FIXED_SYNTH_TO_REVERB_RATIO;
+		outputGainRatio = 1.0;
+	} else if (outputGain < reverbOutputGain) {
+		outputGainMode = FIXED_SYNTH_TO_REVERB_RATIO;
+		outputGainRatio = double(outputGain) / reverbOutputGain;
+	} else {
+		outputGainMode = FIXED_REVERB_TO_SYNTH_RATIO;
+		outputGainRatio = double(reverbOutputGain) / outputGain;
+	}
+}
+
+void SynthPropertiesDialog::notifyOutputGainChanged() {
+	if (outputGainMode == INDEPENDENT_SYNTH_AND_REVERB) {
+		emit stereoOutputAmpChanged(qMax(ui->outputGainSlider->value(), ui->reverbOutputGainSlider->value()));
+	}
 }

@@ -42,6 +42,7 @@ struct SynthProfile {
 	MT32Emu::RendererType rendererType;
 	int partialCount;
 	ReverbCompatibilityMode reverbCompatibilityMode;
+	int masterVolumeOverride;
 	float outputGain;
 	float reverbOutputGain;
 	bool reverbEnabled;
@@ -185,7 +186,7 @@ public:
 
 	void getROMImages(const MT32Emu::ROMImage *&controlROMImage, const MT32Emu::ROMImage *&pcmROMImage) const;
 
-	void setMasterVolume(int masterVolume);
+	void setMasterVolume(int masterVolume, bool overridden);
 	void setOutputGain(float outputGain);
 	void setReverbOutputGain(float reverbOutputGain);
 	void setReverbEnabled(bool reverbEnabled);

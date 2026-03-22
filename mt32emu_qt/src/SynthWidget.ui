@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>654</width>
-    <height>501</height>
+    <width>630</width>
+    <height>511</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -273,12 +273,57 @@
             </layout>
            </item>
            <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_7">
+             <item>
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>Master Volume</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_3">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="pinVolumeCheckBox">
+               <property name="toolTip">
+                <string>Enables pinned mode for the Master Volume control.
+When it is ON, the Master Volume can only be set manually
+and cannot be altered via the system SysEx messages.</string>
+               </property>
+               <property name="text">
+                <string>Pin</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
             <widget class="QSlider" name="masterVolumeSlider">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Master Volume control affects the level of each partial before mixing
+(with a few exceptions on old-gen devices). It used to be a common
+means to lower the Master Volume to avoid distortions in the mixer.
+However, the levels of partials were only slightly affected on the
+new-gen devices since they incorporated a voltage-controlled amplifier
+as well. This control works the way it did on old-gen devices, and
+the output signal level is controlled separately.</string>
              </property>
              <property name="maximum">
               <number>100</number>
@@ -294,6 +339,86 @@
              </property>
              <property name="tickInterval">
               <number>10</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_2">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <item>
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Stereo Output Amp</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_4">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="stereoOutputAmpSpinBox">
+               <property name="buttonSymbols">
+                <enum>QAbstractSpinBox::NoButtons</enum>
+               </property>
+               <property name="minimum">
+                <double>-24.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>24.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>1.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QSlider" name="stereoOutputAmpSlider">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Enables setting the level of the fully mixed stereo output signal.
+This is an equivalent of the voltage-controlled amplifier available
+in new-gen hardware. However, it's (currently) settable only by
+the user and not via the Master Volume control. Together with
+the latter, it helps to avoid distortions that may occur in the synth
+when using the integer rendering engine.
+
+This control is related to the Output Gain and Reverb Output Gain.
+Its value mirrors one of those, whichever is set higher.</string>
+             </property>
+             <property name="maximum">
+              <number>400</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::TicksAbove</enum>
+             </property>
+             <property name="tickInterval">
+              <number>100</number>
              </property>
             </widget>
            </item>

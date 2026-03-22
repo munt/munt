@@ -59,6 +59,9 @@ private slots:
 	void on_midiRecord_clicked();
 	void on_audioRecord_clicked();
 	void on_masterVolumeSlider_valueChanged(int newValue);
+	void on_pinVolumeCheckBox_toggled(bool newChecked);
+	void on_stereoOutputAmpSlider_valueChanged(int newValue);
+	void on_stereoOutputAmpSpinBox_editingFinished();
 	void on_detailsButton_clicked();
 	void handleSynthRouteState(SynthRouteState state);
 	void handleSynthRoutePinned();
@@ -66,6 +69,8 @@ private slots:
 	void handleMIDISessionRemoved(MidiSession *midiSession);
 	void handleMIDISessionNameChanged(MidiSession *midiSession);
 	void handleMasterVolumeChanged(int volume);
+	void handleSynthProfileUpdated(SynthProfile &synthProfile);
+	void handleStereoOutputAmpChanged(int stereoOutputAmp);
 };
 
 #endif // SYNTHWIDGET_H

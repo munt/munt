@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2026 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -63,6 +63,9 @@ SynthWidget::SynthWidget(Master *master, SynthRoute *useSynthRoute, bool pinnabl
 	connect(synthRoute, SIGNAL(midiSessionNameChanged(MidiSession *)), SLOT(handleMIDISessionNameChanged(MidiSession *)));
 	connect(master, SIGNAL(synthRoutePinned()), SLOT(handleSynthRoutePinned()));
 	connect(ui->synthPropertiesButton, SIGNAL(clicked()), &spd, SLOT(exec()));
+	connect(&spd, SIGNAL(synthProfileUpdated(SynthProfile &)), SLOT(handleSynthProfileUpdated(SynthProfile &)));
+	connect(&spd, SIGNAL(stereoOutputAmpChanged(int)), SLOT(handleStereoOutputAmpChanged(int)));
+	connect(ui->stereoOutputAmpSlider, SIGNAL(valueChanged(int)), &spd, SLOT(handleStereoOutputAmpChanged(int)));
 
 	synthRoute->connectReportHandler(SIGNAL(masterVolumeChanged(int)), this, SLOT(handleMasterVolumeChanged(int)));
 
@@ -149,6 +152,7 @@ void SynthWidget::handleSynthRouteState(SynthRouteState SynthRouteState) {
 		break;
 	}
 	setEmuModeText();
+	spd.refresh();
 }
 
 void SynthWidget::on_audioPropertiesButton_clicked()
@@ -281,11 +285,44 @@ void SynthWidget::on_audioRecord_clicked() {
 }
 
 void SynthWidget::on_masterVolumeSlider_valueChanged(int newValue) {
-	synthRoute->setMasterVolume(newValue);
+	synthRoute->setMasterVolume(newValue, ui->pinVolumeCheckBox->isChecked());
+}
+
+void SynthWidget::on_pinVolumeCheckBox_toggled(bool newChecked) {
+	synthRoute->setMasterVolume(ui->masterVolumeSlider->value(), newChecked);
+}
+
+void SynthWidget::on_stereoOutputAmpSlider_valueChanged(int newValue) {
+	ui->stereoOutputAmpSpinBox->setValue(newValue / 100.0);
+}
+
+void SynthWidget::on_stereoOutputAmpSpinBox_editingFinished() {
+	double value = ui->stereoOutputAmpSpinBox->value();
+	ui->stereoOutputAmpSlider->setValue(qRound(value * 100.0));
 }
 
 void SynthWidget::handleMasterVolumeChanged(int volume) {
+	if (ui->pinVolumeCheckBox->isChecked()) return;
+	ui->masterVolumeSlider->blockSignals(true);
 	ui->masterVolumeSlider->setValue(volume);
+	ui->masterVolumeSlider->blockSignals(false);
+}
+
+void SynthWidget::handleSynthProfileUpdated(SynthProfile &synthProfile) {
+	ui->pinVolumeCheckBox->blockSignals(true);
+	if (synthProfile.masterVolumeOverride > 100) {
+		ui->pinVolumeCheckBox->setChecked(false);
+	} else {
+		ui->pinVolumeCheckBox->setChecked(true);
+		ui->masterVolumeSlider->blockSignals(true);
+		ui->masterVolumeSlider->setValue(synthProfile.masterVolumeOverride);
+		ui->masterVolumeSlider->blockSignals(false);
+	}
+	ui->pinVolumeCheckBox->blockSignals(false);
+}
+
+void SynthWidget::handleStereoOutputAmpChanged(int stereoOutputAmp) {
+	ui->stereoOutputAmpSlider->setValue(stereoOutputAmp);
 }
 
 void SynthWidget::hideEvent(QHideEvent *) {

@@ -16,21 +16,32 @@ class SynthPropertiesDialog : public QDialog {
 public:
 	SynthPropertiesDialog(QWidget *parent, SynthRoute *useSynthRoute);
 	~SynthPropertiesDialog();
+	void refresh();
 
 protected:
-	void showEvent(QShowEvent *showEvent);
+	void showEvent(QShowEvent *);
+	void hideEvent(QHideEvent *);
 
 private:
 	Ui::SynthPropertiesDialog *ui;
 	SynthRoute *synthRoute;
 	SynthProfile synthProfile;
 	ROMSelectionDialog rsd;
+	enum {
+		INDEPENDENT_SYNTH_AND_REVERB,
+		FIXED_SYNTH_TO_REVERB_RATIO,
+		FIXED_REVERB_TO_SYNTH_RATIO
+	} outputGainMode;
+	double outputGainRatio;
+
 	void resetSynth();
 	void restoreDefaults();
 	void loadSynthProfile(bool reloadFromSynthRoute = true);
 	void saveSynthProfile();
 	void refreshProfileCombo(QString name);
 	QString getROMSetDescription();
+	void computeOutputGainRatio();
+	void notifyOutputGainChanged();
 
 private slots:
 	void on_changeROMSetButton_clicked();
@@ -59,6 +70,11 @@ private slots:
 	void handleReverbModeChanged(int mode);
 	void handleReverbTimeChanged(int time);
 	void handleReverbLevelChanged(int level);
+	void handleStereoOutputAmpChanged(int stereoOutputAmp);
+
+signals:
+	void synthProfileUpdated(SynthProfile &);
+	void stereoOutputAmpChanged(int);
 };
 
 #endif // SYNTHPROPERTIESDIALOG_H

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2026 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -619,6 +619,7 @@ void Master::loadSynthProfile(SynthProfile &synthProfile, QString name) {
 	synthProfile.reverbMode = settings->value("reverbMode", 0).toInt();
 	synthProfile.reverbTime = settings->value("reverbTime", 5).toInt();
 	synthProfile.reverbLevel = settings->value("reverbLevel", 3).toInt();
+	synthProfile.masterVolumeOverride = qBound(0, settings->value("masterVolumeOverride", 0xFF).toInt(), 0xFF);
 #if QT_VERSION >= QT_VERSION_CHECK(4, 6, 0)
 	synthProfile.outputGain = settings->value("outputGain", 1.0).toFloat();
 	synthProfile.reverbOutputGain = settings->value("reverbOutputGain", 1.0).toFloat();
@@ -654,6 +655,7 @@ void Master::storeSynthProfile(const SynthProfile &synthProfile, QString name) c
 	settings->setValue("reverbMode", synthProfile.reverbMode);
 	settings->setValue("reverbTime", synthProfile.reverbTime);
 	settings->setValue("reverbLevel", synthProfile.reverbLevel);
+	settings->setValue("masterVolumeOverride", synthProfile.masterVolumeOverride);
 	settings->setValue("outputGain", QString().setNum(synthProfile.outputGain));
 	settings->setValue("reverbOutputGain", QString().setNum(synthProfile.reverbOutputGain));
 	settings->setValue("reversedStereoEnabled", synthProfile.reversedStereoEnabled);

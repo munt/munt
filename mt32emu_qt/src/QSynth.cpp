@@ -53,11 +53,6 @@ static const ROMImage *makeROMImage(const QDir &romDir, QString romFileName, QSt
 	return ROMImage::makeROMImage(&file1, &file2);
 }
 
-static void writeMasterVolumeSysex(Synth *synth, int masterVolume) {
-	Bit8u sysex[] = {0x10, 0x00, 0x16, (Bit8u)masterVolume};
-	synth->writeSysex(16, sysex, 4);
-}
-
 static void overrideReverbSettings(Synth *synth, int reverbMode, int reverbTime, int reverbLevel) {
 	Bit8u sysex[] = {0x10, 0x00, 0x01, (Bit8u)reverbMode, (Bit8u)reverbTime, (Bit8u)reverbLevel};
 	synth->setReverbOverridden(false);
@@ -75,12 +70,6 @@ static void writeMIDIChannelsAssignmentResetSysex(Synth *synth, bool engageChann
 static void writeSystemResetSysex(Synth *synth) {
 	static const Bit8u sysex[] = {0x7f, 0, 0};
 	synth->writeSysex(16, sysex, 3);
-}
-
-static int readMasterVolume(Synth *synth) {
-	Bit8u masterVolume = 0;
-	synth->readMemory(0x40016, 1, &masterVolume);
-	return masterVolume;
 }
 
 static void writeTimbreSelectionOnPartSysex(Synth *synth, quint8 partNumber, quint8 timbreGroup, quint8 timbreNumber) {
@@ -105,6 +94,22 @@ static void makeSoundGroups(Synth &synth, QVector<SoundGroup> &groups) {
 			group->constituents += item;
 		}
 	}
+}
+
+static void applyMasterVolume(Synth *synth, int masterVolume, bool overridden) {
+	synth->setMasterVolumeOverride(Bit8u(masterVolume));
+	if (!overridden) synth->setMasterVolumeOverride(0xFF);
+}
+
+static inline bool isMasterVolumeOverridden(Bit8u masterVolume) {
+	return masterVolume <= INITIAL_MASTER_VOLUME;
+}
+
+static int getMasterVolume(Synth *synth, bool &overridden) {
+	Bit8u masterVolume = synth->getMasterVolumeOverride();
+	overridden = isMasterVolumeOverridden(masterVolume);
+	if (!overridden) synth->readMemory(0x40016, 1, &masterVolume);
+	return masterVolume;
 }
 
 class RealtimeHelper : public QThread {
@@ -137,6 +142,7 @@ private:
 
 	// Synth settings, guarded by settingsMutex.
 	int masterVolume;
+	bool masterVolumeOverridden;
 	float outputGain;
 	float reverbOutputGain;
 	bool reverbEnabled;
@@ -221,7 +227,7 @@ private:
 				writeSystemResetSysex(synth);
 				break;
 			case MASTER_VOLUME_CHANGED:
-				writeMasterVolumeSysex(synth, masterVolume);
+				applyMasterVolume(synth, masterVolume, masterVolumeOverridden);
 				break;
 			case OUTPUT_GAIN_CHANGED:
 				synth->setOutputGain(outputGain);
@@ -433,6 +439,7 @@ public:
 		tempState(),
 		stateSnapshot()
 	{
+		masterVolume = getMasterVolume(qsynth.synth, masterVolumeOverridden);
 		tempState.masterVolumeUpdate = NO_UPDATE_VALUE;
 		tempState.reverbMode = NO_UPDATE_VALUE;
 		tempState.reverbTime = NO_UPDATE_VALUE;
@@ -471,6 +478,7 @@ public:
 
 	void getSynthSettings(SynthProfile &synthProfile) {
 		QMutexLocker settingsLocker(&settingsMutex);
+		synthProfile.masterVolumeOverride = masterVolumeOverridden ? masterVolume : 0xFF;
 		synthProfile.outputGain = outputGain;
 		synthProfile.reverbOutputGain = reverbOutputGain;
 		synthProfile.reverbOverridden = reverbOverridden;
@@ -486,9 +494,10 @@ public:
 		synthProfile.midiDelayMode = midiDelayMode;
 	}
 
-	void setMasterVolume(int useMasterVolume) {
+	void setMasterVolume(int useMasterVolume, bool overridden) {
 		QMutexLocker settingsLocker(&settingsMutex);
 		masterVolume = useMasterVolume;
+		masterVolumeOverridden = overridden;
 		enqueueSynthControlEvent(MASTER_VOLUME_CHANGED);
 	}
 
@@ -721,7 +730,9 @@ void QReportHandler::onErrorPCMROM() {
 }
 
 void QReportHandler::onDeviceReconfig() {
-	int masterVolume = readMasterVolume(qSynth()->synth);
+	bool masterVolumeOverridden;
+	int masterVolume = getMasterVolume(qSynth()->synth, masterVolumeOverridden);
+	if (masterVolumeOverridden) return;
 	if (qSynth()->isRealtime()) {
 		qSynth()->realtimeHelper->onMasterVolumeChanged(masterVolume);
 	} else {
@@ -730,6 +741,8 @@ void QReportHandler::onDeviceReconfig() {
 }
 
 void QReportHandler::onDeviceReset() {
+	if (isMasterVolumeOverridden(qSynth()->synth->getMasterVolumeOverride())) return;
+
 	if (qSynth()->isRealtime()) {
 		qSynth()->realtimeHelper->onMasterVolumeChanged(INITIAL_MASTER_VOLUME);
 	} else {
@@ -979,12 +992,12 @@ bool QSynth::open(uint &targetSampleRate, SamplerateConversionQuality srcQuality
 	return false;
 }
 
-void QSynth::setMasterVolume(int masterVolume) {
+void QSynth::setMasterVolume(int masterVolume, bool overridden) {
 	if (isRealtime()) {
-		realtimeHelper->setMasterVolume(masterVolume);
+		realtimeHelper->setMasterVolume(masterVolume, overridden);
 	} else {
 		QMutexLocker synthLocker(synthMutex);
-		if (isOpen()) writeMasterVolumeSysex(synth, masterVolume);
+		if (isOpen()) applyMasterVolume(synth, masterVolume, overridden);
 	}
 }
 
@@ -1288,6 +1301,7 @@ void QSynth::getSynthProfile(SynthProfile &synthProfile) const {
 		QMutexLocker locker(synthMutex);
 		synthProfile.emuDACInputMode = synth->getDACInputMode();
 		synthProfile.midiDelayMode = synth->getMIDIDelayMode();
+		synthProfile.masterVolumeOverride = synth->getMasterVolumeOverride();
 		synthProfile.outputGain = synth->getOutputGain();
 		synthProfile.reverbOutputGain = synth->getReverbOutputGain();
 		synthProfile.reverbOverridden = synth->isReverbOverridden();
@@ -1314,11 +1328,13 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	setAnalogOutputMode(synthProfile.analogOutputMode);
 	setRendererType(synthProfile.rendererType);
 	setPartialCount(synthProfile.partialCount);
+	setInitialMIDIChannelsAssignment(synthProfile.engageChannel1OnOpen);
 
 	// Settings below take effect immediately.
 	setReverbCompatibilityMode(synthProfile.reverbCompatibilityMode);
 	setMIDIDelayMode(synthProfile.midiDelayMode);
 	setDACInputMode(synthProfile.emuDACInputMode);
+	setMasterVolume(synthProfile.masterVolumeOverride, isMasterVolumeOverridden(synthProfile.masterVolumeOverride));
 	setOutputGain(synthProfile.outputGain);
 	setReverbOutputGain(synthProfile.reverbOutputGain);
 	setReverbOverridden(synthProfile.reverbOverridden);
@@ -1330,7 +1346,6 @@ void QSynth::setSynthProfile(const SynthProfile &synthProfile, QString useSynthP
 	setNiceAmpRampEnabled(synthProfile.niceAmpRamp);
 	setNicePanningEnabled(synthProfile.nicePanning);
 	setNicePartialMixingEnabled(synthProfile.nicePartialMixing);
-	setInitialMIDIChannelsAssignment(synthProfile.engageChannel1OnOpen);
 	setDisplayCompatibilityMode(synthProfile.displayCompatibilityMode);
 }
 
