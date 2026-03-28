@@ -14,24 +14,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined WITH_POSIX_CLOCK_NANOSLEEP
-
-#if !(defined _GNU_SOURCE || defined _POSIX_C_SOURCE && (_POSIX_C_SOURCE - 0) >= 200112L)
-#undef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200112L
-#endif
-
-#include <time.h>
-#include <cerrno>
-
-#endif
-
 #include <QtGlobal>
 #include <QDebug>
 
 #include "MasterClock.h"
 
 #if defined WITH_POSIX_CLOCK_NANOSLEEP
+
+#include <time.h>
+#include <cerrno>
 
 static qint64 timespecToNanos(const timespec &ts) {
 	return ts.tv_sec * (qint64)MasterClock::NANOS_PER_SECOND + ts.tv_nsec;
