@@ -297,6 +297,7 @@ void SynthPropertiesDialog::restoreDefaults() {
 
 	synthRoute->getSynthProfile(synthProfile);
 	synthProfile.masterVolumeOverride = 0xFF;
+	synthRoute->setMasterVolume(0xFF, false);
 	emit synthProfileUpdated(synthProfile);
 }
 
