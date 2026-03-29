@@ -88,17 +88,17 @@ Building
 Cmake is required for building. The minimum set of dependencies is:
 
 1) Cmake - cross platform make utility
-   @ <http://www.cmake.org/>
+   @ <https://cmake.org/>
 
 2) Qt framework
-   @ <http://www.qt.io/>
+   @ <https://www.qt.io/>
 
 3) mt32emu library
 
 Additional dependencies maybe needed (depending on the platform):
 
 1) PortAudio - cross-platform audio I/O library
-   @ <http://www.portaudio.com/>
+   @ <https://www.portaudio.com/>
 
 2) DirectX SDK - for building PortAudio with DirectSound and WDMKS support
    @ <https://www.microsoft.com/en-us/download/details.aspx?id=6812>
@@ -151,7 +151,7 @@ can be found at [the CMake homepage](http://www.cmake.org/).
 License
 =======
 
-Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011-2026 Jerome Fisher, Sergey V. Mikayev
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

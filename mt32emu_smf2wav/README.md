@@ -4,7 +4,7 @@ Munt mt32emu-smf2wav
 _mt32emu-smf2wav_ is a part of the Munt project. It makes use of [the mt32emu
 library](https://github.com/munt/munt/tree/master/mt32emu) to produce a WAVE
 file from a [Standard MIDI
-file](https://www.midi.org/specifications-old/item/standard-midi-files-smf)
+file](https://midi.org/standard-midi-files)
 (SMF). Files in this format commonly have the extension ".smf" or ".mid".
 
 This program is experimental and mainly intended as an aid to Munt developers
@@ -21,8 +21,8 @@ Building
 ========
 
 _mt32emu-smf2wav_ requires CMake to build. More info can be found at [the CMake
-homepage](http://www.cmake.org/). GLIB is a required dependency. Can be found at
-http://www.gtk.org/.
+homepage](https://cmake.org/). GLIB is a required dependency. Can be found at
+<https://www.gtk.org/>.
 
 For a simple in-tree build in a POSIX environment, you can probably just run the
 following commands from the source directory:
@@ -36,7 +36,7 @@ License
 =======
 
 Copyright (C) 2009, 2011 Jerome Fisher <re_munt@kingguppy.com><br>
-Copyright (C) 2012-2022 Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2012-2026 Jerome Fisher, Sergey V. Mikayev
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

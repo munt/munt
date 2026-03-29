@@ -15,7 +15,7 @@ and [mt32emu_qt](https://github.com/munt/munt/tree/master/mt32emu_qt) respective
 Building
 ========
 
-mt32emu requires CMake to build. More info can be found at [the CMake homepage](http://www.cmake.org/).
+mt32emu requires CMake to build. More info can be found at [the CMake homepage](https://cmake.org/).
 For a simple in-tree build in a POSIX environment, you can probably just run the following commands
 from the library directory:
 
@@ -53,7 +53,7 @@ the build option `libmt32emu_WITH_INTERNAL_RESAMPLER`. The following sample rate
 conversion libraries are supported directly:
 
 1) libsoxr - The SoX Resampler library - to perform fast and high quality sample rate conversion
-   @ <http://sourceforge.net/projects/soxr/>
+   @ <https://sourceforge.net/projects/soxr/>
 
 2) libsamplerate - Secret Rabbit Code - Sample Rate Converter that is widely available
    @ <http://www.mega-nerd.com/SRC/>
@@ -96,7 +96,7 @@ License
 =======
 
 Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher<br>
-Copyright (C) 2011-2025 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
