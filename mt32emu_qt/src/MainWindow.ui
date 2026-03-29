@@ -40,7 +40,7 @@
      <x>0</x>
      <y>0</y>
      <width>300</width>
-     <height>30</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuHelp">
@@ -91,6 +91,7 @@
     <addaction name="actionShow_connection_balloons"/>
     <addaction name="actionShow_native_file_dialog"/>
     <addaction name="menuFloating_Display"/>
+    <addaction name="actionConnect_JACK_audio_automatically"/>
     <addaction name="separator"/>
     <addaction name="actionROM_Configuration"/>
    </widget>
@@ -254,6 +255,20 @@
   <action name="actionSuitable_ROMs_unavailable">
    <property name="text">
     <string>Suitable ROMs unavailable...</string>
+   </property>
+  </action>
+  <action name="actionConnect_JACK_audio_automatically">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Connect &amp;JACK audio automatically</string>
+   </property>
+   <property name="statusTip">
+    <string>Automatically connect synth audio output to JACK physical  ports</string>
+   </property>
+   <property name="visible">
+    <bool>false</bool>
    </property>
   </action>
  </widget>

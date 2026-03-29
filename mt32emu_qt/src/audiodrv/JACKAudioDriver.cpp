@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2026 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -181,7 +181,9 @@ bool JACKAudioStream::start(MidiSession *midiSession) {
 		qDebug() << "JACKAudioDriver: Failed to start audio processing";
 		return false;
 	}
-	jackClient->connectToPhysicalPorts();
+	if (Master::getInstance()->getSettings()->value("Master/autoconnectJACKAudio", true).toBool()) {
+		jackClient->connectToPhysicalPorts();
+	}
 
 	return true;
 }

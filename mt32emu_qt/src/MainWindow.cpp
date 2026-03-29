@@ -39,7 +39,6 @@
 #include "SynthWidget.h"
 #include "Master.h"
 
-#include "AudioFileWriter.h"
 #include "mididrv/TestDriver.h"
 #include "MidiPlayerDialog.h"
 #include "MidiConverterDialog.h"
@@ -62,7 +61,6 @@ MainWindow::MainWindow(Master *master) :
 	ui(new Ui::MainWindow),
 	master(master),
 	testMidiDriver(NULL),
-	audioFileWriter(NULL),
 	midiPlayerDialog(NULL),
 	midiConverterDialog(NULL),
 	floatingDisplay(NULL),
@@ -99,6 +97,7 @@ MainWindow::MainWindow(Master *master) :
 #ifdef WITH_JACK_MIDI_DRIVER
 	ui->actionNew_JACK_MIDI_port->setVisible(true);
 	ui->actionNew_exclusive_JACK_MIDI_port->setVisible(true);
+	ui->actionConnect_JACK_audio_automatically->setVisible(true);
 #endif
 
 	QActionGroup *floatingDisplayGroup = new QActionGroup(this);
@@ -176,10 +175,6 @@ void MainWindow::on_actionExit_triggered() {
 	if (testMidiDriver != NULL) {
 		delete testMidiDriver;
 		testMidiDriver = NULL;
-	}
-	if (audioFileWriter != NULL) {
-		delete audioFileWriter;
-		audioFileWriter = NULL;
 	}
 	if (midiPlayerDialog != NULL) {
 		delete midiPlayerDialog;
@@ -353,6 +348,7 @@ void MainWindow::on_menuOptions_aboutToShow() {
 	ui->actionShow_connection_balloons->setChecked(settings->value("Master/showConnectionBalloons", true).toBool());
 	QFileDialog::Options qFileDialogOptions = QFileDialog::Options(settings->value("Master/qFileDialogOptions", 0).toInt());
 	ui->actionShow_native_file_dialog->setChecked(!qFileDialogOptions.testFlag(QFileDialog::DontUseNativeDialog));
+	ui->actionConnect_JACK_audio_automatically->setChecked(settings->value("Master/autoconnectJACKAudio", true).toBool());
 }
 
 void MainWindow::on_actionStart_iconized_toggled(bool checked) {
@@ -379,6 +375,10 @@ void MainWindow::on_actionShow_native_file_dialog_toggled(bool checked) {
 		qFileDialogOptions ^= QFileDialog::DontUseNativeDialog;
 	}
 	settings->setValue("Master/qFileDialogOptions", int(qFileDialogOptions));
+}
+
+void MainWindow::on_actionConnect_JACK_audio_automatically_toggled(bool checked) {
+	master->getSettings()->setValue("Master/autoconnectJACKAudio", checked);
 }
 
 void MainWindow::on_menuFloating_Display_aboutToShow() {

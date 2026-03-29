@@ -11,6 +11,8 @@ HEAD:
 	  manages to invoke the first audio rendering callback early enough, so that the previous
 	  implementation of JACKClient sometimes hasn't had initialised yet. The new implementation
 	  activates the JACK client in a separate step, when the initialisation is complete. (#106)
+	* Added an option to the main menu that allows to disable autoconnecting the synth audio
+	  outputs to a pair of JACK physical audio ports if found. (#121)
 	* Added a couple of spin boxes into the synth properties dialog to allow for finer control over
 	  the synth output gain factors. (#104)
 	* macOS: Fixed the floating display getting hidden as soon as the application goes to the
