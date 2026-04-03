@@ -120,6 +120,14 @@
    <property name="text">
     <string>&amp;Test MIDI Driver</string>
    </property>
+   <property name="statusTip">
+    <string>Starts a test MIDI source that emits fake MIDI events periodically</string>
+   </property>
+   <property name="whatsThis">
+    <string>Starts a test MIDI source that emits fake MIDI events periodically.
+
+This may be useful to start a synth and adjust its settings when no other sources are available.</string>
+   </property>
   </action>
   <action name="actionNew_MIDI_port">
    <property name="text">

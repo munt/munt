@@ -432,6 +432,23 @@ Its value mirrors one of those, whichever is set higher.</string>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="toolTip">
+                <string>Controls how new MIDI connections are handled
+
+When a synth is pinned, all new MIDI connections
+are attached to it as its input. When there are none,
+the synth remains active and keeps its state, so that
+one might e.g. load a SysEx bank and then play
+tunes that rely on the timbres defined within. Indeed,
+only a single synth may be pinned at a time.
+
+When there is no pinned synth, each new MIDI
+connection creates a separate synth initialised
+to the default state, and these synths may play
+different tunes simultaneously. As soon as the
+MIDI source disconnects, the corresponding synth
+terminates and no longer consumes resources.</string>
+               </property>
                <property name="text">
                 <string>Pin Synth</string>
                </property>

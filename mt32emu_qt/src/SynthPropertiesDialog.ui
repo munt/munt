@@ -79,7 +79,11 @@ Takes effect after reopening the Synth.</string>
        <property name="toolTip">
         <string>MIDI interface delay emulation mode
 
-Incoming MIDI events will be delayed as if they are transferred via a real MIDI cable</string>
+Incoming MIDI events may be either processed ASAP or delayed
+as if they were transferred via a real MIDI cable. Also, there is
+an option to delay the short MIDI events only, so that SysEx
+banks can be loaded faster but the timing of processing short
+MIDI events like NoteOn will be more accurate.</string>
        </property>
        <item>
         <property name="text">
@@ -107,6 +111,15 @@ Incoming MIDI events will be delayed as if they are transferred via a real MIDI 
      </item>
      <item row="2" column="1">
       <widget class="QComboBox" name="dacEmuComboBox">
+       <property name="toolTip">
+        <string>Methods of emulating the connection between the LA32 and the DAC,
+which involves some hacks in the real devices for doubling the volume.
+
+By default, the synth's output is simply doubled with saturation, i.e.
+samples get clamped to the maximum levels. This avoids those unpleasant
+cracklings in the sound in case the signal level appears too high. Albeit,
+the options to emulate those hardware hacks accurately are provided still.</string>
+       </property>
        <item>
         <property name="text">
          <string>High quality</string>
@@ -126,6 +139,16 @@ Incoming MIDI events will be delayed as if they are transferred via a real MIDI 
      </item>
      <item row="3" column="0">
       <widget class="QCheckBox" name="reverbCheckBox">
+       <property name="toolTip">
+        <string>Enables Reverb Override mode.
+
+By default (the checkbox is in the &quot;no change&quot; state), the reverb model
+can be adjusted via a SysEx message write to the System area. When
+this is not desired, the reverb settings (Mode, Time and Level) can be
+overridden by setting this checkbox to the &quot;checked&quot; state and using
+the Reverb controls below. Lastly, the reverb can be switched off
+completely by setting this checkbox to the &quot;unchecked&quot; state.</string>
+       </property>
        <property name="text">
         <string>Reverb Enabled</string>
        </property>
@@ -246,6 +269,7 @@ Select reverb model tunings to accurately emulate reverb chip of older units (li
       <widget class="QSpinBox" name="maxPartialsSpinBox">
        <property name="toolTip">
         <string>The maximum number of partials playing simultaneously.
+
 Takes effect after reopening the Synth.</string>
        </property>
        <property name="minimum">
@@ -270,6 +294,17 @@ Takes effect after reopening the Synth.</string>
       <widget class="QComboBox" name="analogComboBox">
        <property name="toolTip">
         <string>Methods for emulating the effects of analogue circuits of real hardware units on the output signal.
+
+Accurate emulation aims to be bit-accurate (in terms of 16-bit integer samples) to the theoretical
+impulse response of the reconstruction filter after the DAC. This however needs a bit of CPU time
+yet adds certain latency. In order to emulate the output spectra in the full audible range, the
+output signal is also resampled from the standard internal sample rate 32000 Hz to 48000 Hz.
+
+Coarse emulation needs much less CPU time and adds lesser latency. The output sample rate
+remains unchanged. However, the accuracy in the high-frequency range suffers due to this.
+
+Digital-only mode disables emulation of the analogue path, so that the synth output is equivalent
+to what one could capture at the DAC entrance essentially.
 
 Takes effect after reopening the Synth.</string>
        </property>
@@ -369,6 +404,12 @@ Select display emulation model to enable features specific to old-gen units vs. 
       <layout class="QHBoxLayout" name="horizontalLayout_4">
        <item>
         <widget class="QSlider" name="outputGainSlider">
+         <property name="toolTip">
+          <string>Enables setting the level of the output signal coming from the emulated LA32.
+In fact, the output comprises of 4 channels, 2 stereo channels for dry reverb
+and 2 stereo channels for non-reverb. All 4 channels are equally affected by
+this setting and independent from the Reverb Output Gain.</string>
+         </property>
          <property name="maximum">
           <number>400</number>
          </property>
@@ -412,6 +453,11 @@ Select display emulation model to enable features specific to old-gen units vs. 
       <layout class="QHBoxLayout" name="horizontalLayout_5">
        <item>
         <widget class="QSlider" name="reverbOutputGainSlider">
+         <property name="toolTip">
+          <string>Enables setting the level of the output signal coming from the emulated BOSS
+reverb chip. In fact, the output comprises of 2 stereo channels, both are
+equally affected by this setting and independent from the Output Gain.</string>
+         </property>
          <property name="maximum">
           <number>400</number>
          </property>
@@ -446,6 +492,11 @@ Select display emulation model to enable features specific to old-gen units vs. 
      </item>
      <item row="13" column="0">
       <widget class="QCheckBox" name="reverseStereoCheckBox">
+       <property name="toolTip">
+        <string>The panpot setting in real devices appears inversed compared to the MIDI specification.
+For instance, panpot 0 means full right on MT-32 and full left in MIDI.
+Enabling this option makes the panpot more compatible with the standard MIDI.</string>
+       </property>
        <property name="text">
         <string>Reverse Stereo</string>
        </property>
@@ -532,7 +583,7 @@ of counter-phase mixing since the partials in a pair cancel out each other (most
 By enabling this option, we make sure that the timbres, that comprise of closely
 sounding partials, are mixed in a more predictable way, again at the expense
 of somewhat degraded emulation accuracy. Additionally, the output signal has better
-chances to overdrive, so the output quality may be affected (e.g. due to by clipping).</string>
+chances to overdrive, so the output quality may be affected (e.g. due to clipping).</string>
        </property>
        <property name="text">
         <string>Nice partial mixing (always mix in-phase)</string>
@@ -561,6 +612,17 @@ chances to overdrive, so the output quality may be affected (e.g. due to by clip
      </item>
      <item>
       <widget class="QComboBox" name="profileComboBox">
+       <property name="toolTip">
+        <string>Provides for maintaining multiple synth configurations
+
+There could be a number of different configurations
+e.g. with the old MT-32 or CM-32L ROMs set, different
+output gains, reverb settings, etc. One of the profiles
+is marked &quot;default&quot; and is automatically applied to all
+newly created synths. The profile can be changed
+dynamically afterwards, but certain settings require
+the synth to be restarted to take effect.</string>
+       </property>
        <property name="editable">
         <bool>true</bool>
        </property>
