@@ -23,6 +23,7 @@ HEAD:
 	* Added a possibility to pin the Master Volume, so that it can only be set manually and not
 	  via a SysEx message. Additionally, a new "Stereo Output Amp" control located below the Master
 	  Volume compliments it to alter both easily. (#135)
+	* Added more hints to make the UI better self-documenting. (#105)
 
 2022-08-03:
 

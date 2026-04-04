@@ -39,6 +39,7 @@ private:
 	Bit32u partialCount;
 	float outputGain;
 	float reverbOutputGain;
+	Bit8u masterVolumeOverride;
 	bool reverbEnabled;
 	bool reverbOverridden;
 	Bit8u reverbMode;

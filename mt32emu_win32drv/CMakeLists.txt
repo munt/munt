@@ -15,7 +15,7 @@ if(NOT MSVC)
 endif()
 
 if(NOT(munt_SOURCE_DIR AND TARGET MT32Emu::mt32emu))
-  find_package(MT32EMU 2.5 MODULE REQUIRED)
+  find_package(MT32EMU 2.8 MODULE REQUIRED)
 endif()
 set(EXT_LIBS winmm.lib MT32Emu::mt32emu)
 

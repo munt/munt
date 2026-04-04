@@ -20,4 +20,8 @@
 
 #include <mt32emu.h>
 
+#if !MT32EMU_IS_COMPATIBLE(2, 8)
+#error Incompatible mt32emu library version
+#endif
+
 #include "MidiSynth.h"

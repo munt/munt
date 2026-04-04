@@ -491,6 +491,8 @@ void MidiSynth::ReloadSettings() {
 	reverbTime = LoadIntValue(hRegProfile, "reverbTime", 5);
 	reverbLevel = LoadIntValue(hRegProfile, "reverbLevel", 3);
 
+	masterVolumeOverride = LoadIntValue(hRegProfile, "masterVolumeOverride", 0xFF) & 0xFF;
+
 	outputGain = LoadFloatValue(hRegProfile, "outputGain", 1.0f);
 	if (outputGain < 0.0f) {
 		outputGain = -outputGain;
@@ -557,6 +559,7 @@ void MidiSynth::ApplySettings() {
 	synth->setMIDIDelayMode(midiDelayMode);
 	synth->setOutputGain(outputGain);
 	synth->setReverbOutputGain(reverbOutputGain);
+	synth->setMasterVolumeOverride(masterVolumeOverride);
 	if (reverbOverridden) {
 		synth->setReverbOverridden(false);
 		if (reverbEnabled) {

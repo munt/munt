@@ -1,3 +1,8 @@
+HEAD:
+
+	* Updated mt32emu library to version 2.8.0.
+	* Added support for the new synth property to pin the Master Volume. (#135)
+
 2022-07-23:
 
 	1.8.1 released.
