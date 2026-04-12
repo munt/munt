@@ -126,7 +126,8 @@ The build script recognises the following configuration options to control the b
 
   * `mt32emu-qt_WITH_QT_VERSION` - specifies the exact Qt framework major version (supported range is 4..6) to be linked with;
     useful when multiple versions are available in the system
-  * `mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING` - whether to load PulseAudio library dynamically (if available)
+  * `mt32emu-qt_USE_JACK_DYNAMIC_LOADING` - whether to load JACK library dynamically (if available)
+  * `mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING` - whether to load PulseAudio library dynamically (if available for the platform)
   * `mt32emu-qt_WITH_DEBUG_WINCONSOLE` - enables a console for showing debug output on Windows systems
   * `mt32emu-qt_WITH_ALSA_MIDI_SEQUENCER` - specifies whether to use the ALSA MIDI sequencer or raw ALSA MIDI ports
     (when targeting Linux platform only)

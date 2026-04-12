@@ -1,8 +1,7 @@
 #ifndef JACK_MIDI_DRIVER_H
 #define JACK_MIDI_DRIVER_H
 
-#include <QThread>
-
+#include "../Master.h"
 #include "MidiDriver.h"
 
 class Master;
@@ -22,7 +21,7 @@ public:
 	void stop();
 	bool canDeletePort(MidiSession *midiSession);
 	void deletePort(MidiSession *midiSession);
-	bool createJACKPort(bool exclusive);
+	Master::JACKMidiPortCreationResult createJACKPort(bool exclusive);
 
 private:
 	QList<JACKClient *> jackClients;

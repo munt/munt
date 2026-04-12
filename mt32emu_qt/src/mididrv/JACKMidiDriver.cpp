@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2022 Jerome Fisher, Sergey V. Mikayev
+/* Copyright (C) 2011-2026 Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 
 #include <QtCore>
 
-#include "../Master.h"
 #include "../MasterClock.h"
 #include "../MidiSession.h"
 #include "../JACKClient.h"
@@ -96,13 +95,13 @@ void JACKMidiDriver::deletePort(MidiSession *midiSession) {
 	midiSessions.removeAt(midiSessionIx);
 }
 
-bool JACKMidiDriver::createJACKPort(bool exclusive) {
+Master::JACKMidiPortCreationResult JACKMidiDriver::createJACKPort(bool exclusive) {
 	QString portName = QString("JACK MIDI In");
 	if (exclusive) {
 		MidiSession *midiSession = master->createExclusiveJACKMidiPort(portName);
-		if (midiSession == NULL) return false;
+		if (midiSession == NULL) return Master::JACKMidiPortCreationResult_ERROR;
 		exclusiveSessions.append(midiSession);
-		return true;
+		return Master::JACKMidiPortCreationResult_OK;
 	}
 	MidiSession *midiSession = createMidiSession(portName);
 	JACKClient *jackClient = new JACKClient;
@@ -116,11 +115,11 @@ bool JACKMidiDriver::createJACKPort(bool exclusive) {
 			// This leads to pushing MIDI messages to a lockless buffer.
 			midiSession->getSynthRoute()->enableMultiMidiMode();
 		}
-		return true;
+		return Master::JACKMidiPortCreationResult_OK;
 	}
 	delete jackClient;
 	deleteMidiSession(midiSession);
-	return false;
+	return JACKClientState_UNAVAILABLE == state ? Master::JACKMidiPortCreationResult_NOT_FOUND : Master::JACKMidiPortCreationResult_ERROR;
 }
 
 void JACKMidiDriver::onJACKMidiPortDeleted(MidiSession *midiSession) {

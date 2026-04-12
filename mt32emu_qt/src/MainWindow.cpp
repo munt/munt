@@ -528,12 +528,20 @@ void MainWindow::dropEvent(QDropEvent *e) {
 
 #ifdef WITH_JACK_MIDI_DRIVER
 void MainWindow::on_actionNew_JACK_MIDI_port_triggered() {
-	if (master->createJACKMidiPort(false)) return;
-	QMessageBox::warning(this, "Error", "Failed to create JACK MIDI port");
+	Master::JACKMidiPortCreationResult result = master->createJACKMidiPort(false);
+	if (Master::JACKMidiPortCreationResult_NOT_FOUND == result) {
+		QMessageBox::warning(this, "Error", "The JACK library not found");
+	} else if (Master::JACKMidiPortCreationResult_ERROR == result) {
+		QMessageBox::warning(this, "Error", "Failed to create JACK MIDI port");
+	}
 }
 
 void MainWindow::on_actionNew_exclusive_JACK_MIDI_port_triggered() {
-	if (master->createJACKMidiPort(true)) return;
-	QMessageBox::warning(this, "Error", "Failed to create JACK MIDI port");
+	Master::JACKMidiPortCreationResult result = master->createJACKMidiPort(true);
+	if (Master::JACKMidiPortCreationResult_NOT_FOUND == result) {
+		QMessageBox::warning(this, "Error", "The JACK library not found");
+	} else if (Master::JACKMidiPortCreationResult_ERROR == result) {
+		QMessageBox::warning(this, "Error", "Failed to create JACK MIDI port");
+	}
 }
 #endif

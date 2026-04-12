@@ -110,7 +110,13 @@ private:
 	MidiDriver *jackMidiDriver;
 
 public:
-	bool createJACKMidiPort(bool exclusive);
+	enum JACKMidiPortCreationResult {
+		JACKMidiPortCreationResult_OK,
+		JACKMidiPortCreationResult_NOT_FOUND,
+		JACKMidiPortCreationResult_ERROR
+	};
+
+	JACKMidiPortCreationResult createJACKMidiPort(bool exclusive);
 	void deleteJACKMidiPort(MidiSession *midiSession);
 	MidiSession *createExclusiveJACKMidiPort(QString portName);
 

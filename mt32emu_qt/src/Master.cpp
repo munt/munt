@@ -873,7 +873,7 @@ QStringList Master::parseMidiListFromPathName(const QString pathName) {
 }
 
 #ifdef WITH_JACK_MIDI_DRIVER
-bool Master::createJACKMidiPort(bool exclusive) {
+Master::JACKMidiPortCreationResult Master::createJACKMidiPort(bool exclusive) {
 	return static_cast<JACKMidiDriver *>(jackMidiDriver)->createJACKPort(exclusive);
 }
 

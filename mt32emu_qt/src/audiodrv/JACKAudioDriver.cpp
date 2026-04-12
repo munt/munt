@@ -142,6 +142,9 @@ JACKAudioStream::~JACKAudioStream() {
 bool JACKAudioStream::start(MidiSession *midiSession) {
 	JACKClientState state = jackClient->open(midiSession, this);
 	if (JACKClientState_OPENING != state) {
+		if (JACKClientState_UNAVAILABLE == state) {
+			QMessageBox::warning(NULL, "Error", "The JACK library not found");
+		}
 		qDebug() << "JACKAudioDriver: Failed to open JACK client connection";
 		return false;
 	}

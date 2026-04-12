@@ -7,7 +7,6 @@
 
 class Master;
 class MidiSession;
-class SynthRoute;
 
 class MidiDriver : public QObject {
 	Q_OBJECT

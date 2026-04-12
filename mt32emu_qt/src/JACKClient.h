@@ -7,6 +7,7 @@
 #include <jack/midiport.h>
 
 enum JACKClientState {
+	JACKClientState_UNAVAILABLE,
 	JACKClientState_CLOSED,
 	JACKClientState_OPENING,
 	JACKClientState_OPEN,
