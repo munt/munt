@@ -393,7 +393,9 @@ typedef union mt32emu_service_i mt32emu_service_i;
 
 #define MT32EMU_SERVICE_I_V7 \
 	void (MT32EMU_C_CALL *setMasterVolumeOverride)(mt32emu_const_context context, mt32emu_bit8u volume_override); \
-	mt32emu_bit8u (MT32EMU_C_CALL *getMasterVolumeOverride)(mt32emu_const_context context);
+	mt32emu_bit8u (MT32EMU_C_CALL *getMasterVolumeOverride)(mt32emu_const_context context); \
+	mt32emu_bit32u (MT32EMU_C_CALL *dumpSysexBank)(mt32emu_const_context context, mt32emu_bit8u *sysex_bank, mt32emu_bit32u size); \
+	mt32emu_bit32u (MT32EMU_C_CALL *applySysexBank)(mt32emu_const_context context, const mt32emu_bit8u *sysex_bank, mt32emu_bit32u size);
 
 typedef struct {
 	MT32EMU_SERVICE_I_V0

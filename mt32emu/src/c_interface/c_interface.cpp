@@ -138,7 +138,9 @@ static const mt32emu_service_i_v7 SERVICE_VTABLE = {
 	mt32emu_get_sound_group_name,
 	mt32emu_get_sound_name,
 	mt32emu_set_master_volume_override,
-	mt32emu_get_master_volume_override
+	mt32emu_get_master_volume_override,
+	mt32emu_dump_sysex_bank,
+	mt32emu_apply_sysex_bank
 };
 
 } // namespace MT32Emu
@@ -807,6 +809,15 @@ void MT32EMU_C_CALL mt32emu_play_sysex_now(mt32emu_const_context context, const 
 
 void MT32EMU_C_CALL mt32emu_write_sysex(mt32emu_const_context context, mt32emu_bit8u channel, const mt32emu_bit8u *sysex, mt32emu_bit32u len) {
 	context->synth->writeSysex(channel, sysex, len);
+}
+
+
+mt32emu_bit32u MT32EMU_C_CALL mt32emu_dump_sysex_bank(mt32emu_const_context context, mt32emu_bit8u *sysex_bank, mt32emu_bit32u size) {
+	return context->synth->dumpSysexBank(sysex_bank, size);
+}
+
+mt32emu_bit32u MT32EMU_C_CALL mt32emu_apply_sysex_bank(mt32emu_const_context context, const mt32emu_bit8u *sysex_bank, mt32emu_bit32u size) {
+	return context->synth->applySysexBank(sysex_bank, size);
 }
 
 void MT32EMU_C_CALL mt32emu_set_reverb_enabled(mt32emu_const_context context, const mt32emu_boolean reverb_enabled) {

@@ -397,6 +397,22 @@ MT32EMU_EXPORT void MT32EMU_C_CALL mt32emu_play_sysex_now(mt32emu_const_context 
  */
 MT32EMU_EXPORT void MT32EMU_C_CALL mt32emu_write_sysex(mt32emu_const_context context, mt32emu_bit8u channel, const mt32emu_bit8u *sysex, mt32emu_bit32u len);
 
+/**
+ * Stores internal state of the emulated synth into the provided array. The messages within the SysEx bank are ordered so that
+ * they can be replayed back in the same sequence without data loss, provided that the given array has sufficient size.
+ * The SysEx messages written in the array can be re-played using applySysexBank() function or even sent to a real device.
+ * Returns the full length of the SysEx bank in bytes that is needed to fit all the available data.
+ * This function can be used to retrieve the required size of the SysEx bank by supplying NULL sysexBank or zero size arguments,
+ * in which case it does nothing else.
+ */
+MT32EMU_EXPORT_V(2.8) mt32emu_bit32u MT32EMU_C_CALL mt32emu_dump_sysex_bank(mt32emu_const_context context, mt32emu_bit8u *sysex_bank, mt32emu_bit32u size);
+/**
+ * Applies the content of the given SysEx bank to the emulated synth from the provided array. All complete SysEx messages
+ * contained within the sysexBank are played in sequence, any other data is ignored.
+ * Returns the number of played SysEx messages.
+ */
+MT32EMU_EXPORT_V(2.8) mt32emu_bit32u MT32EMU_C_CALL mt32emu_apply_sysex_bank(mt32emu_const_context context, const mt32emu_bit8u *sysex_bank, mt32emu_bit32u size);
+
 /** Allows to disable wet reverb output altogether. */
 MT32EMU_EXPORT void MT32EMU_C_CALL mt32emu_set_reverb_enabled(mt32emu_const_context context, const mt32emu_boolean reverb_enabled);
 /** Returns whether wet reverb output is enabled. */

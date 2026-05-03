@@ -523,6 +523,42 @@ TEST_CASE("Synth should set Master Volume via SysEx and override optionally") {
 	}
 }
 
+TEST_CASE("Synth should store internal state into SysEx bank and restore it back") {
+	Synth synth;
+	ROMSet romSet;
+	romSet.initMT32New();
+
+	CHECK(synth.dumpSysexBank(NULL, 0) == 0);
+	openSynth(synth, romSet);
+	sendSineWaveSysex(synth, 8);
+	Bit32u fullBankSize = synth.dumpSysexBank(NULL, 0);
+	REQUIRE(fullBankSize > 256);
+	Bit8u *sysexBank = new Bit8u[fullBankSize];
+	memset(sysexBank, 0, fullBankSize);
+	CHECK(synth.dumpSysexBank(sysexBank, fullBankSize) == fullBankSize);
+	CHECK(sysexBank[fullBankSize - 1] == 0xF7);
+
+	CHECK(sysexBank[0] == 0xF0);
+	CHECK(sysexBank[5] == 0x7F);
+
+	const Bit8u *lastTimbreSysex = &sysexBank[fullBankSize - 256];
+	CHECK(lastTimbreSysex[0] == 0xF0);
+	CHECK(lastTimbreSysex[5] == 0x04);
+	CHECK(lastTimbreSysex[6] == 0x0D);
+	CHECK(lastTimbreSysex[7] == 0x3A);
+	const char *actualTimbreName = reinterpret_cast<const char *>(&lastTimbreSysex[8]);
+	const char expectedTimbreName[] = "Test-sine.";
+	const Bit32u timbreNameLength = 10;
+	MT32EMU_CHECK_MEMORY_EQUAL(actualTimbreName, expectedTimbreName, timbreNameLength);
+
+	sendMasterVolumeSysex(synth, 25);
+	CHECK(readMasterVolume(synth) == 25);
+	CHECK(synth.applySysexBank(sysexBank, fullBankSize) == 81);
+	CHECK(readMasterVolume(synth) == 100);
+
+	delete[] sysexBank;
+}
+
 } // namespace Test
 
 } // namespace MT32Emu

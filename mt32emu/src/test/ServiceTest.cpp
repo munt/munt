@@ -175,6 +175,38 @@ TEST_CASE_TEMPLATE("Service should set Master Volume via SysEx and override opti
 	CHECK(service.getContext() == NULL_PTR);
 }
 
+TEST_CASE_TEMPLATE("Service should store internal state into SysEx bank and restore it back ", ServiceImpl, TestTypes) {
+	TestService<ServiceImpl> service;
+	service.createContext();
+	REQUIRE(service.getContext() != NULL_PTR);
+
+	CHECK(service.dumpSysexBank(NULL, 0) == 0);
+
+	ROMSet romSet;
+	romSet.initMT32New();
+	service.addROMSet(romSet);
+
+	mt32emu_return_code rc = service.openSynth();
+	CHECK(rc == MT32EMU_RC_OK);
+	CHECK(service.isOpen());
+
+	Bit32u fullBankSize = service.dumpSysexBank(NULL, 0);
+	REQUIRE(fullBankSize > 0);
+	Bit8u *sysexBank = new Bit8u[fullBankSize];
+	CHECK(service.dumpSysexBank(sysexBank, fullBankSize) == fullBankSize);
+
+	CHECK(sysexBank[0] == 0xF0);
+	CHECK(sysexBank[5] == 0x7F);
+	CHECK(sysexBank[fullBankSize - 1] == 0xF7);
+
+	CHECK(service.applySysexBank(sysexBank, fullBankSize) == 81);
+
+	delete[] sysexBank;
+
+	service.freeContext();
+	CHECK(service.getContext() == NULL_PTR);
+}
+
 template <class ReportHandlerImpl>
 static ReportHandler3 *ensureNewContextReportHandler(Service &service, ReportHandlerImpl &rh) {
 	service.createContext(rh);

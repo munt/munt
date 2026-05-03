@@ -31,6 +31,7 @@
 #include "PartialManager.h"
 #include "Poly.h"
 #include "ROMInfo.h"
+#include "SysexBuilder.h"
 #include "TVA.h"
 
 #if MT32EMU_MONITOR_SYSEX > 0
@@ -1394,6 +1395,107 @@ void Synth::playSysexWithoutHeader(Bit8u device, Bit8u command, const Bit8u *sys
 		printDebug("playSysexWithoutHeader: Unsupported command %02x", command);
 		return;
 	}
+}
+
+bool SysexBuilder::appendSysex(Bit32u sysexAddress, const Bit8u *data, Bit32u dataLength) {
+	static const Bit8u SYSEX_HEADER[] = { 0xF0, SYSEX_MANUFACTURER_ROLAND, 0x10, SYSEX_MDL_MT32, SYSEX_CMD_DT1 };
+	static const Bit8u SYSEX_TERMINATOR = 0xF7;
+
+	if ((data == NULL && dataLength > 0) || (&writePtr[dataLength + 10] > endPtr)) return false;
+
+	memcpy(writePtr, SYSEX_HEADER, sizeof SYSEX_HEADER);
+	writePtr += sizeof SYSEX_HEADER;
+	const Bit8u *headerEndPtr = writePtr;
+	*(writePtr++) = (sysexAddress >> 16) & 0xFF;
+	*(writePtr++) = (sysexAddress >> 8) & 0xFF;
+	*(writePtr++) = sysexAddress & 0xFF;
+	if (dataLength > 0) {
+		memcpy(writePtr, data, dataLength);
+		writePtr += dataLength;
+	}
+	*(writePtr++) = Synth::calcSysexChecksum(headerEndPtr, dataLength + 3);
+	*(writePtr++) = SYSEX_TERMINATOR;
+	return true;
+}
+
+struct SysexBankBuilder : SysexBuilder {
+	SysexBankBuilder(Bit8u *sysexBank, Bit32u size) : SysexBuilder(sysexBank, size) {}
+
+	bool appendTimbreMemorySysexes(MemParams::PaddedTimbre *timbreMemory) {
+		for (Bit32u timbreIx = 0; timbreIx < 64; timbreIx++) {
+			if (!appendSysex(0x80000 + timbreIx * 0x200, reinterpret_cast<Bit8u *>(&timbreMemory[timbreIx + 128]), sizeof(TimbreParam))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool appendPatchMemorySysexes(PatchParam *patchMemory) {
+		for (Bit32u patchBlockIx = 0; patchBlockIx < 4; patchBlockIx++) {
+			if (!appendSysex(0x50000 + patchBlockIx * 0x200, &patchMemory[patchBlockIx * 32].timbreGroup, sizeof(PatchParam) * 32))
+				return false;
+		}
+		return true;
+	}
+
+	bool appendRhythmSetupSysexes(MemParams::RhythmTemp *rhythmSetup) {
+		return appendSysex(0x30110, &rhythmSetup->timbre, sizeof(MemParams::RhythmTemp) * 64)
+			&& appendSysex(0x30310, &rhythmSetup->timbre, sizeof(MemParams::RhythmTemp) * 21);
+	}
+
+	bool appendTimbreTempSysexes(TimbreParam *timbreTemp) {
+		for (Bit32u timbreIx = 0; timbreIx < 8; timbreIx++) {
+			if (!appendSysex(0x40000 + MT32EMU_SYSEXMEMADDR(timbreIx * 0xF6), reinterpret_cast<Bit8u *>(&timbreTemp[timbreIx]),
+				sizeof(TimbreParam))) return false;
+		}
+		return true;
+	}
+};
+
+Bit32u Synth::dumpSysexBank(Bit8u *sysexBank, Bit32u size) const {
+	static const Bit32u maxBankSize = Bit32u(
+		10 // Reset SysEx, no data.
+		+ sizeof(MemParams::System) + 10
+		+ 64 * (sizeof(TimbreParam) + 10)
+		+ 4 * (32 * sizeof(PatchParam) + 10)
+		+ 64 * sizeof(MemParams::RhythmTemp) + 10
+		+ 21 * sizeof(MemParams::RhythmTemp) + 10
+		+ 9 * sizeof(MemParams::PatchTemp) + 10
+		+ 8 * (sizeof(TimbreParam) + 10)
+	);
+
+	if (!opened) return 0;
+
+	if (sysexBank && size) {
+		SysexBankBuilder builder(sysexBank, size);
+		builder.appendSysex(0x7F0000, NULL, 0)
+			&& builder.appendSysex(0x100000, &mt32ram.system.masterTune, sizeof(MemParams::System))
+			&& builder.appendTimbreMemorySysexes(mt32ram.timbres)
+			&& builder.appendPatchMemorySysexes(mt32ram.patches)
+			&& builder.appendRhythmSetupSysexes(mt32ram.rhythmTemp)
+			&& builder.appendSysex(0x030000, &mt32ram.patchTemp->patch.timbreGroup, sizeof mt32ram.patchTemp)
+			&& builder.appendTimbreTempSysexes(mt32ram.timbreTemp);
+	}
+	return maxBankSize;
+}
+
+Bit32u Synth::applySysexBank(const Bit8u *sysexBank, Bit32u size) {
+	if (!opened) return 0;
+
+	Bit32u sysexesPlayed = 0;
+	const Bit8u *sysexBeginPtr = NULL;
+	const Bit8u *sysexBankEndPtr = sysexBank + size;
+	for (const Bit8u *p = sysexBank; p < sysexBankEndPtr; p++) {
+		if (*p == 0xF0) {
+			sysexBeginPtr = p;
+		} else if (*p == 0xF7 && sysexBeginPtr) {
+			Bit32u sysexLength = Bit32u(p - sysexBeginPtr) + 1;
+			playSysexNow(sysexBeginPtr, sysexLength);
+			sysexBeginPtr = NULL;
+			sysexesPlayed++;
+		}
+	}
+	return sysexesPlayed;
 }
 
 void Synth::readSysex(Bit8u /*device*/, const Bit8u * /*sysex*/, Bit32u /*len*/) const {

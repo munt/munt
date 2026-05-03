@@ -82,6 +82,8 @@ mt32emu_service_i mt32emu_get_service_i();
 #define mt32emu_play_msg_on_part i.v0->playMsgOnPart
 #define mt32emu_play_sysex_now i.v0->playSysexNow
 #define mt32emu_write_sysex i.v0->writeSysex
+#define mt32emu_dump_sysex_bank iV7()->dumpSysexBank
+#define mt32emu_apply_sysex_bank iV7()->applySysexBank
 #define mt32emu_set_reverb_enabled i.v0->setReverbEnabled
 #define mt32emu_is_reverb_enabled i.v0->isReverbEnabled
 #define mt32emu_set_reverb_overridden i.v0->setReverbOverridden
@@ -288,6 +290,9 @@ public:
 	void playMsgOnPart(Bit8u part, Bit8u code, Bit8u note, Bit8u velocity) { mt32emu_play_msg_on_part(c, part, code, note, velocity); }
 	void playSysexNow(const Bit8u *sysex, Bit32u len) { mt32emu_play_sysex_now(c, sysex, len); }
 	void writeSysex(Bit8u channel, const Bit8u *sysex, Bit32u len) { mt32emu_write_sysex(c, channel, sysex, len); }
+
+	Bit32u dumpSysexBank(Bit8u *sysex_bank, Bit32u size) { return mt32emu_dump_sysex_bank(c, sysex_bank, size); }
+	Bit32u applySysexBank(const Bit8u *sysex_bank, Bit32u size) { return mt32emu_apply_sysex_bank(c, sysex_bank, size); }
 
 	void setReverbEnabled(const bool reverb_enabled) { mt32emu_set_reverb_enabled(c, reverb_enabled ? MT32EMU_BOOL_TRUE : MT32EMU_BOOL_FALSE); }
 	bool isReverbEnabled() { return mt32emu_is_reverb_enabled(c) != MT32EMU_BOOL_FALSE; }
@@ -585,6 +590,8 @@ static mt32emu_midi_receiver_i getMidiReceiverThunk() {
 #undef mt32emu_play_msg_on_part
 #undef mt32emu_play_sysex_now
 #undef mt32emu_write_sysex
+#undef mt32emu_dump_sysex_bank
+#undef mt32emu_apply_sysex_bank
 #undef mt32emu_set_reverb_enabled
 #undef mt32emu_is_reverb_enabled
 #undef mt32emu_set_reverb_overridden
