@@ -1,0 +1,104 @@
+name: Build appimages
+
+on:
+  workflow_dispatch
+
+jobs:
+  build-appimages:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Checkout Qt
+      uses: actions/download-artifact@v8
+      with:
+        path: ${{ github.workspace }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        repository: sergm/munt
+        run-id: 26723258340
+        artifact-ids: 7319942079
+
+    - name: Unpack dependencies
+      run: |
+        mkdir qt
+        tar xf qt_6_11_1_linux_x64.tgz -C qt
+
+    - name: Get linuxdeploy
+      run: |
+        wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+        chmod a+x linuxdeploy-x86_64.AppImage
+
+    - name: Patch cmake script for mt32emu-qt
+      run: echo "qt_import_plugins(mt32emu-qt INCLUDE Qt6::QGtk3ThemePlugin)" >> mt32emu_qt/CMakeLists.txt
+
+    - name: Prepare AppDir
+      run: |
+        mkdir -p build/mt32emu_smf2wav/AppDir/usr/share/pixmaps
+        cp mt32emu_qt/res/icons/256x256/munt.png build/mt32emu_smf2wav/AppDir/usr/share/pixmaps/munt.png
+        mkdir build/mt32emu_smf2wav/AppDir/usr/share/applications
+        cat <<'EOF' >> build/mt32emu_smf2wav/AppDir/usr/share/applications/smf2wav.desktop
+        [Desktop Entry]
+        Name=mt32emu-smf2wav
+        Comment=MT-32 SMF to WAVE conversion
+        Exec=mt32emu-smf2wav
+        Icon=munt
+        NoDisplay=false
+        StartupNotify=false
+        Terminal=true
+        Type=Application
+        Categories=AudioVideo;
+        EOF
+
+    - name: Assemble
+      run: |
+        cat <<'EOF' >> build.sh
+        #!/bin/bash
+        set -e
+        dnf update -y
+        dnf install -y gcc-toolset-10-gcc-c++ cmake ninja-build file \
+          gtk3-devel libX11-devel xcb-util-devel xcb-util-cursor-devel xcb-util-image-devel \
+          xcb-util-keysyms-devel xcb-util-renderutil-devel xcb-util-wm-devel libxkbcommon-devel \
+          libxkbcommon-x11-devel pulseaudio-libs-devel portaudio-devel jack-audio-connection-kit-devel
+        source /opt/rh/gcc-toolset-10/enable
+        cd /home/munt
+        cmake -S . -B build/mt32emu_smf2wav -G Ninja \
+          -D BUILD_SNAPSHOTS=ON \
+          -D BUILD_TESTING=OFF \
+          -D CMAKE_BUILD_TYPE:STRING=Release \
+          -D CMAKE_INSTALL_PREFIX:PATH=build/mt32emu_smf2wav/AppDir/usr \
+          -D libmt32emu_PACKAGE_TYPE:STRING=Runtime \
+          -D munt_WITH_MT32EMU_QT:BOOL=OFF
+        cmake -S . -B build/mt32emu_qt -G Ninja \
+          -D BUILD_SNAPSHOTS=ON \
+          -D BUILD_TESTING=OFF \
+          -D CMAKE_BUILD_TYPE=Release \
+          -D CMAKE_INSTALL_PREFIX:PATH=build/mt32emu_qt/AppDir/usr \
+          -D CMAKE_PREFIX_PATH=/home/munt/qt/stage \
+          -D libmt32emu_PACKAGE_TYPE=Runtime \
+          -D mt32emu-qt_USE_JACK_DYNAMIC_LOADING:BOOL=ON \
+          -D mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING=OFF \
+          -D munt_WITH_MT32EMU_SMF2WAV:BOOL=OFF
+        cmake --build build/mt32emu_smf2wav
+        cmake --build build/mt32emu_qt
+        cmake --install build/mt32emu_smf2wav --component Runtime --strip
+        ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir=build/mt32emu_smf2wav/AppDir -o appimage
+        cmake --install build/mt32emu_qt --component Runtime --strip
+        ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir=build/mt32emu_qt/AppDir -o appimage
+        EOF
+        chmod a+x build.sh
+        podman run --mount type=bind,source=.,destination=/home/munt \
+          --rm \
+          ghcr.io/almalinux/8-toolbox /home/munt/build.sh
+
+    - uses: actions/upload-artifact@v7
+      name: Upload mt32emu_smf2wav-x86_64.AppImage
+      with:
+        path: ${{ github.workspace }}/mt32emu-smf2wav-x86_64.AppImage
+        archive: false
+
+    - uses: actions/upload-artifact@v7
+      name: Upload MT-32_Emulator-x86_64.AppImage
+      with:
+        path: ${{ github.workspace }}/MT-32_Emulator-x86_64.AppImage
+        archive: false
