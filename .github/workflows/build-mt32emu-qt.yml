@@ -18,26 +18,26 @@ jobs:
     - name: Checkout portaudio
       uses: actions/download-artifact@v8
       with:
+        name: portaudio-win64.tgz
         path: ${{ github.workspace }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
         repository: sergm/munt
         run-id: 26477630535
-        artifact-ids: 7227140577
 
     - name: Checkout Qt
       uses: actions/download-artifact@v8
       with:
+        name: qt_6_11_1_win64.tgz
         path: ${{ github.workspace }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
         repository: sergm/munt
         run-id: 26478191762
-        artifact-ids: 7227766408
 
     - name: Unpack dependencies
       run: |
-        tar xf qt_6_11_1_win64.tgz
         mkdir portaudio
         tar xf portaudio-win64.tgz -C portaudio
+        tar xf qt_6_11_1_win64.tgz
 
     - name: Get Jack
       run: |
@@ -92,26 +92,44 @@ jobs:
     - name: Checkout portaudio
       uses: actions/download-artifact@v8
       with:
+        name: portaudio-macos.tgz
         path: ${{ github.workspace }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
         repository: sergm/munt
         run-id: 26477630535
-        artifact-ids: 7227132734
 
     - name: Checkout Qt
       uses: actions/download-artifact@v8
       with:
+        name: qt_6_11_1_macos.tgz
         path: ${{ github.workspace }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
         repository: sergm/munt
         run-id: 26478191762
-        artifact-ids: 7227582997
 
     - name: Unpack dependencies
       run: |
-        tar xf qt_6_11_1_macos.tgz
         mkdir portaudio
         tar xf portaudio-macos.tgz -C portaudio
+        tar xf qt_6_11_1_macos.tgz
+
+    - name: Build Resources
+      run: |
+        mkdir MT32Emu.iconset
+        cd MT32Emu.iconset
+        ln ../mt32emu_qt/res/icons/256x256/munt.png .
+        sips -z 16 16     munt.png --out icon_16x16.png
+        sips -z 32 32     munt.png --out icon_16x16@2x.png
+        sips -z 32 32     munt.png --out icon_32x32.png
+        sips -z 64 64     munt.png --out icon_32x32@2x.png
+        sips -z 128 128   munt.png --out icon_128x128.png
+        sips -z 256 256   munt.png --out icon_128x128@2x.png
+        sips -z 256 256   munt.png --out icon_256x256.png
+        sips -z 512 512   munt.png --out icon_256x256@2x.png
+        sips -z 512 512   munt.png --out icon_512x512.png
+        sips -z 1024 1024 munt.png --out icon_512x512@2x.png
+        cd ..
+        iconutil -c icns MT32Emu.iconset
 
     - name: Configure
       run: >
@@ -121,6 +139,7 @@ jobs:
         -D CMAKE_BUILD_TYPE=Release
         -D CMAKE_OSX_DEPLOYMENT_TARGET:STRING=13.0
         -D CMAKE_PREFIX_PATH=${{ github.workspace }}/stage
+        -D MACOSX_BUNDLE_ICON_FILE:STRING=MT32Emu.icns
         -D PORTAUDIO_INCLUDE_DIR=${{ github.workspace }}/portaudio/stage/include
         -D PORTAUDIO_LIBRARY=${{ github.workspace }}/portaudio/stage/lib/libportaudio.a
         -D libmt32emu_PACKAGE_TYPE=Runtime
@@ -137,6 +156,8 @@ jobs:
         mv share/doc .
         rm -rf bin share
         strip mt32emu-qt.app/Contents/MacOS/mt32emu-qt
+        mkdir mt32emu-qt.app/Contents/Resources
+        mv ../MT32Emu.icns mt32emu-qt.app/Contents/Resources
         tar czf ../mt32emu_qt_macos_arm64.tgz *
 
     - uses: actions/upload-artifact@v7
