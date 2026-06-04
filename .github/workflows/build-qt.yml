@@ -4,94 +4,92 @@ on:
   workflow_dispatch
 
 jobs:
-  build-qt-windows:
-    runs-on: windows-latest
-
-    defaults:
-      run:
-        shell: cmd
-        working-directory: ${{ github.workspace }}
+  fetch-qt:
+    runs-on: ubuntu-latest
 
     steps:
+    - name: Cache qt sources
+      id: cache-qt
+      uses: actions/cache@v4
+      with:
+        key: qt-src-${{ vars.QT_REVISION }}
+        path: qt5
+        enableCrossOsArchive: 'true'
+        lookup-only: 'true'
+
     - name: Get super repo
-      run: git clone --depth=1 --revision=refs/tags/v6.11.1 https://code.qt.io/qt/qt5.git
+      if: steps.cache-qt.outputs.cache-hit != 'true'
+      run: git clone --depth=1 --revision=${{ vars.QT_REVISION }} https://code.qt.io/qt/qt5.git
 
     - name: Get submodules
+      if: steps.cache-qt.outputs.cache-hit != 'true'
       working-directory: ${{ github.workspace }}/qt5
-      run: git submodule update --init --depth=1 qtbase
+      run: git submodule update --init --depth=1 qtbase qtshadertools qtmultimedia
 
-    - name: Assemble
-      run: >
-        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" &&
-        cmake -S qt5 -B build -G Ninja
-        -D BUILD_SHARED_LIBS:BOOL=OFF
-        -D CMAKE_BUILD_TYPE=Release
-        -D CMAKE_INSTALL_PREFIX=stage
-        -D FEATURE_static_runtime:BOOL=ON
-        -D FEATURE_printsupport:BOOL=OFF
-        -D FEATURE_testlib:BOOL=OFF
-        -D FEATURE_sql:BOOL=OFF
-        -D FEATURE_xml:BOOL=OFF &&
-        cmake --build build &&
-        cmake --install build
+  build-qt:
+    needs: fetch-qt
+    runs-on: ${{ matrix.os }}
 
-    - name: Pack
-      run: tar czf qt_6_11_1_win64.tgz stage
-
-    - uses: actions/upload-artifact@v7
-      name: Upload
-      with:
-        path: ${{ github.workspace }}/qt_6_11_1_win64.tgz
-        archive: false
-
-  build-qt-macos:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     defaults:
       run:
         shell: bash
-        working-directory: ${{ github.workspace }}
 
-    steps:
-    - name: Get super repo
-      run: git clone --depth=1 --revision=refs/tags/v6.11.1 https://code.qt.io/qt/qt5.git
-
-    - name: Get submodules
-      working-directory: ${{ github.workspace }}/qt5
-      run: git submodule update --init --depth=1 qtbase qtshadertools qtmultimedia
-
-    - name: Configure
-      run: >
-        cmake -S qt5 -B build -G Ninja
+    env:
+      CMAKE_CONFIG_FLAGS: >-
+        -S qt5 -B build -G Ninja
         -D BUILD_SHARED_LIBS:BOOL=OFF
         -D CMAKE_BUILD_TYPE=Release
         -D CMAKE_INSTALL_PREFIX=stage
+      QT_FEATURE_FLAGS: >-
+        -D FEATURE_androiddeployqt:BOOL=OFF
+        -D FEATURE_macdeployqt:BOOL=OFF
+        -D FEATURE_network:BOOL=OFF
+        -D FEATURE_pdf:BOOL=OFF
         -D FEATURE_printsupport:BOOL=OFF
         -D FEATURE_testlib:BOOL=OFF
         -D FEATURE_sql:BOOL=OFF
+        -D FEATURE_windeployqt:BOOL=OFF
         -D FEATURE_xml:BOOL=OFF
-
-    - name: Build
-      run: cmake --build build
-
-    - name: Stage
-      run: cmake --install build
-
-    - name: Pack
-      run: tar czf qt_6_11_1_macos.tgz stage
-
-    - uses: actions/upload-artifact@v7
-      name: Upload
-      with:
-        path: ${{ github.workspace }}/qt_6_11_1_macos.tgz
-        archive: false
-
-  build-qt-linux:
-    runs-on: ubuntu-latest
+        -D INPUT_libjpeg:STRING=no
 
     steps:
-    - name: Assemble
+    - name: Get qt sources
+      id: cache-qt
+      uses: actions/cache@v4
+      with:
+        key: qt-src-${{ vars.QT_REVISION }}
+        path: qt5
+        enableCrossOsArchive: 'true'
+        fail-on-cache-miss: 'true'
+
+    - name: Assemble for Windows
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: >
+        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        && cmake ${{ env.CMAKE_CONFIG_FLAGS }}
+        -D FEATURE_static_runtime:BOOL=ON
+        ${{ env.QT_FEATURE_FLAGS }}
+        && cmake --build build
+        && cmake --install build
+        && echo QT_ARTIFACT=${{ vars.QT_ARTIFACT_WIN }}>> %GITHUB_ENV%
+
+    - name: Assemble for macOS
+      if: runner.os == 'macOS'
       run: |
+        cmake ${{ env.CMAKE_CONFIG_FLAGS }} ${{ env.QT_FEATURE_FLAGS }}
+        cmake --build build
+        cmake --install build
+        echo QT_ARTIFACT="${{ vars.QT_ARTIFACT_MACOS }}" >> $GITHUB_ENV
+
+    - name: Assemble for Linux
+      if: runner.os == 'Linux'
+      run: |
+        echo QT_ARTIFACT="${{ vars.QT_ARTIFACT_LINUX }}" >> $GITHUB_ENV
         cat <<'EOF' >> build.sh
         #!/bin/bash
         set -e
@@ -101,27 +99,21 @@ jobs:
           xcb-util-keysyms-devel xcb-util-renderutil-devel xcb-util-wm-devel libxkbcommon-devel \
           libxkbcommon-x11-devel pulseaudio-libs-devel
         source /opt/rh/gcc-toolset-10/enable
-        mkdir /home/munt/qt
-        cd /home/munt/qt
-        git clone --depth=1 --branch=v6.11.1 https://code.qt.io/qt/qt5.git
-        cd qt5
-        git submodule update --init --depth=1 qtbase qtshadertools qtmultimedia
-        cd ..
-        cmake -S qt5 -B build -G Ninja -D BUILD_SHARED_LIBS:BOOL=OFF -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=stage \
-          -D FEATURE_androiddeployqt:BOOL=OFF -D FEATURE_network:BOOL=OFF \
-          -D FEATURE_pdf:BOOL=OFF -D FEATURE_printsupport:BOOL=OFF -D FEATURE_testlib:BOOL=OFF -D FEATURE_sql:BOOL=OFF \
-          -D FEATURE_xml:BOOL=OFF -D INPUT_libjpeg:STRING=no
+        cd /home/munt
+        cmake ${{ env.CMAKE_CONFIG_FLAGS }} ${{ env.QT_FEATURE_FLAGS }}
         cmake --build build
         cmake --install build
-        tar czf qt_6_11_1_linux_x64.tgz stage
         EOF
         chmod a+x build.sh
         podman run --mount type=bind,source=.,destination=/home/munt \
           --rm \
           ghcr.io/almalinux/8-toolbox /home/munt/build.sh
 
+    - name: Pack
+      run: tar czf ${{ env.QT_ARTIFACT }} stage
+
     - uses: actions/upload-artifact@v7
       name: Upload
       with:
-        path: ${{ github.workspace }}/qt/qt_6_11_1_linux_x64.tgz
+        path: ${{ env.QT_ARTIFACT }}
         archive: false
