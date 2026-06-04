@@ -7,107 +7,42 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build-ubuntu-snapshot:
-    runs-on: ubuntu-latest
+  build-snapshots:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     defaults:
       run:
         shell: bash
-        working-directory: ${{ github.workspace }}
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: Prepare build environment
+      if: runner.os == 'Windows'
+      run: |
+        export MINGW64_PATH="/c/msys64/mingw64/bin:/c/msys64/usr/bin"
+        echo $MINGW64_PATH >> $GITHUB_PATH
+        echo BUILD_PATH="PATH=$MINGW64_PATH:\$PATH" >> $GITHUB_ENV
+
+    - name: Install Ubuntu dependencies
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install doctest-dev libpulse-dev portaudio19-dev libjack-jackd2-dev qt6-multimedia-dev
 
-    - name: Configure
-      run: >
-        cmake -S . -B build
-        -G Ninja
-        -D CMAKE_BUILD_TYPE=Release
-        -D BUILD_SNAPSHOTS=ON
-        -D libmt32emu_PACKAGE_TYPE=Runtime
-        -D mt32emu-qt_USE_JACK_DYNAMIC_LOADING=ON
-        -D mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING=OFF
-
-    - name: Build
-      run: cmake --build build
-
-    - name: Test
-      working-directory: ${{ github.workspace }}/build
-      run: ctest -V
-
-    - name: Package munt monolith
-      working-directory: ${{ github.workspace }}/build
-      run: cpack -G DEB
-
-    - uses: actions/upload-artifact@v7
-      name: Upload munt
-      with:
-        path: ${{ github.workspace }}/build/munt-*.deb
-        archive: false
-
-  build-macos-snapshot:
-    runs-on: macos-latest
-
-    defaults:
-      run:
-        shell: bash
-        working-directory: ${{ github.workspace }}
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install dependencies
+    - name: Install macOS homebrew dependencies
+      if: runner.os == 'macOS'
       run: |
         brew update
         brew install doctest portaudio jack qtmultimedia
 
-    - name: Configure
+    - name: Install Windows MSYS64 dependencies
+      if: runner.os == 'Windows'
       run: >
-        cmake -S . -B build
-        -G Ninja
-        -D CMAKE_BUILD_TYPE=Release
-        -D BUILD_SNAPSHOTS=ON
-        -D libmt32emu_PACKAGE_TYPE=Runtime
-
-    - name: Build
-      run: cmake --build build
-
-    - name: Test
-      working-directory: ${{ github.workspace }}/build
-      run: ctest -V
-
-    - name: Package munt monolith
-      working-directory: ${{ github.workspace }}/build
-      run: cpack -G TXZ
-
-    - uses: actions/upload-artifact@v7
-      name: Upload munt
-      with:
-        path: ${{ github.workspace }}/build/munt-*.tar.xz
-        archive: false
-
-  build-windows-snapshot:
-    runs-on: windows-latest
-
-    defaults:
-      run:
-        shell: bash
-        working-directory: ${{ github.workspace }}
-
-    env:
-      MINGW64_PATH: '/c/msys64/mingw64/bin:/c/msys64/usr/bin'
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install dependencies
-      run: >
-        PATH=$MINGW64_PATH:$PATH
         pacman -Sy --noconfirm
         mingw-w64-x86_64-gcc
         mingw-w64-x86_64-doctest
@@ -116,28 +51,34 @@ jobs:
         mingw-w64-x86_64-jack2
         mingw-w64-x86_64-qt6-multimedia
 
-    - name: Configure
+    - name: Configuration
       run: >
-        PATH=$MINGW64_PATH:$PATH
-        cmake -S . -B build
-        -G Ninja
+        ${{ env.BUILD_PATH }}
+        cmake -S . -B build -G Ninja
         -D CMAKE_BUILD_TYPE=Release
         -D BUILD_SNAPSHOTS=ON
         -D libmt32emu_PACKAGE_TYPE=Runtime
+        -D mt32emu-qt_USE_JACK_DYNAMIC_LOADING=ON
+        -D mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING=OFF
 
     - name: Build
-      run: PATH=$MINGW64_PATH:$PATH cmake --build build
+      run: ${{ env.BUILD_PATH }} cmake --build build
 
     - name: Test
       working-directory: ${{ github.workspace }}/build
-      run: PATH=$MINGW64_PATH:$PATH ctest -V
+      run: ctest -V
 
     - name: Package munt monolith
       working-directory: ${{ github.workspace }}/build
-      run: cpack -G ZIP
+      run: >
+        cpack -G ${{ case(
+          runner.os == 'Linux', 'DEB',
+          runner.os == 'macOS', 'TXZ',
+          'ZIP'
+        ) }}
 
     - uses: actions/upload-artifact@v7
       name: Upload munt
       with:
-        path: ${{ github.workspace }}/build/munt-*.zip
+        path: ${{ github.workspace }}/build/munt-*.${{ case(runner.os == 'Linux', 'deb', runner.os == 'macOS', 'tar.xz', 'zip') }}
         archive: false
