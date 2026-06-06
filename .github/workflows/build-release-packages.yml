@@ -1,4 +1,4 @@
-name: Build release packages
+name: Build Linux release packages
 
 on:
   workflow_dispatch
@@ -7,13 +7,8 @@ jobs:
   build-ubuntu-packages:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        shell: bash
-        working-directory: ${{ github.workspace }}
-
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Install dependencies for libmt32emu
       run: |
@@ -22,8 +17,7 @@ jobs:
 
     - name: Configure libmt32emu
       run: >
-        cmake -S mt32emu -B build
-        -G Ninja
+        cmake -S mt32emu -B build -G Ninja
         -D CMAKE_BUILD_TYPE=Release
         -D libmt32emu_PACKAGE_TYPE=Runtime
         -D libmt32emu_WITH_VERSION_TAGGING=ON
@@ -33,34 +27,34 @@ jobs:
       run: cmake --build build
 
     - name: Test libmt32emu
-      working-directory: ${{ github.workspace }}/build
+      working-directory: build
       run: ctest -V
 
     - name: Package libmt32emu
-      working-directory: ${{ github.workspace }}/build
+      working-directory: build
       run: cpack -G DEB
 
     - uses: actions/upload-artifact@v7
       name: Upload libmt32emu
       with:
-        path: ${{ github.workspace }}/build/libmt32emu-*.deb
+        path: build/libmt32emu-*.deb
         archive: false
 
     - name: Configure libmt32emu-dev
       run: cmake -D libmt32emu_PACKAGE_TYPE=Devel build
 
     - name: Package libmt32emu-dev
-      working-directory: ${{ github.workspace }}/build
+      working-directory: build
       run: cpack -G DEB
 
     - uses: actions/upload-artifact@v7
       name: Upload libmt32emu-dev
       with:
-        path: ${{ github.workspace }}/build/libmt32emu-dev-*.deb
+        path: build/libmt32emu-dev-*.deb
         archive: false
 
     - name: Install dependencies for mt32emu-smf2wav
-      working-directory: ${{ github.workspace }}/build
+      working-directory: build
       run: |
         sudo dpkg -i libmt32emu-*.deb
         sudo dpkg -i libmt32emu-dev-*.deb
@@ -71,21 +65,20 @@ jobs:
 
     - name: Configure mt32emu-smf2wav
       run: >
-        cmake -S mt32emu_smf2wav -B build
-        -G Ninja
+        cmake -S mt32emu_smf2wav -B build -G Ninja
         -D CMAKE_BUILD_TYPE=Release
 
     - name: Build mt32emu-smf2wav
       run: cmake --build build
 
     - name: Package mt32emu-smf2wav
-      working-directory: ${{ github.workspace }}/build
+      working-directory: build
       run: cpack -G DEB
 
     - uses: actions/upload-artifact@v7
       name: Upload mt32emu-smf2wav
       with:
-        path: ${{ github.workspace }}/build/mt32emu-smf2wav-*.deb
+        path: build/mt32emu-smf2wav-*.deb
         archive: false
 
     - name: Clean build directory
@@ -96,8 +89,7 @@ jobs:
 
     - name: Configure mt32emu-qt
       run: >
-        cmake -S mt32emu_qt -B build
-        -G Ninja
+        cmake -S mt32emu_qt -B build -G Ninja
         -D CMAKE_BUILD_TYPE=Release
         -D mt32emu-qt_USE_JACK_DYNAMIC_LOADING=ON
         -D mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING=OFF
@@ -106,20 +98,20 @@ jobs:
       run: cmake --build build
 
     - name: Package mt32emu-qt
-      working-directory: ${{ github.workspace }}/build
+      working-directory: build
       run: cpack -G DEB
 
     - uses: actions/upload-artifact@v7
       name: Upload mt32emu-qt
       with:
-        path: ${{ github.workspace }}/build/mt32emu-qt-*.deb
+        path: build/mt32emu-qt-*.deb
         archive: false
 
   build-rpms:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Assemble
       run: |
@@ -166,7 +158,7 @@ jobs:
     - uses: actions/upload-artifact@v7
       name: Upload libmt32emu-devel
       with:
-        path: ${{ github.workspace }}/build/mt32emu/libmt32emu-devel-*.rpm
+        path: build/mt32emu/libmt32emu-devel-*.rpm
         archive: false
 
     - name: Wipe libmt32emu-devel
@@ -175,17 +167,17 @@ jobs:
     - uses: actions/upload-artifact@v7
       name: Upload libmt32emu
       with:
-        path: ${{ github.workspace }}/build/mt32emu/libmt32emu-*.rpm
+        path: build/mt32emu/libmt32emu-*.rpm
         archive: false
 
     - uses: actions/upload-artifact@v7
       name: Upload mt32emu-smf2wav
       with:
-        path: ${{ github.workspace }}/build/mt32emu_smf2wav/mt32emu-smf2wav-*.rpm
+        path: build/mt32emu_smf2wav/mt32emu-smf2wav-*.rpm
         archive: false
 
     - uses: actions/upload-artifact@v7
       name: Upload mt32emu-qt
       with:
-        path: ${{ github.workspace }}/build/mt32emu_qt/mt32emu-qt-*.rpm
+        path: build/mt32emu_qt/mt32emu-qt-*.rpm
         archive: false

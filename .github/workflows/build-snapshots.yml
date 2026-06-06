@@ -1,4 +1,4 @@
-name: Build snapshots
+name: Build dev snapshots
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
         shell: bash
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Prepare build environment
       if: runner.os == 'Windows'
@@ -65,11 +65,11 @@ jobs:
       run: ${{ env.BUILD_PATH }} cmake --build build
 
     - name: Test
-      working-directory: ${{ github.workspace }}/build
+      working-directory: build
       run: ctest -V
 
     - name: Package munt monolith
-      working-directory: ${{ github.workspace }}/build
+      working-directory: build
       run: >
         cpack -G ${{ case(
           runner.os == 'Linux', 'DEB',
@@ -80,5 +80,5 @@ jobs:
     - uses: actions/upload-artifact@v7
       name: Upload munt
       with:
-        path: ${{ github.workspace }}/build/munt-*.${{ case(runner.os == 'Linux', 'deb', runner.os == 'macOS', 'tar.xz', 'zip') }}
+        path: build/munt-*.${{ case(runner.os == 'Linux', 'deb', runner.os == 'macOS', 'tar.xz', 'zip') }}
         archive: false

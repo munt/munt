@@ -1,7 +1,17 @@
 name: Build fat mt32emu-qt binary
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
+    inputs:
+      buildType:
+        required: true
+        type: choice
+        options:
+          - Snapshot
+          - Release
+
+env:
+  BUILD_SNAPSHOTS: ${{ case(inputs.buildType == 'Snapshot', 'ON', 'OFF') }}
 
 jobs:
   build-mt32emu-qt-windows:
@@ -10,16 +20,14 @@ jobs:
     defaults:
       run:
         shell: cmd
-        working-directory: ${{ github.workspace }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Checkout portaudio
       uses: actions/download-artifact@v8
       with:
         name: portaudio-win64.tgz
-        path: ${{ github.workspace }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
         repository: sergm/munt
         run-id: 26477630535
@@ -27,30 +35,30 @@ jobs:
     - name: Checkout Qt
       uses: actions/download-artifact@v8
       with:
-        name: qt_6_11_1_win64.tgz
-        path: ${{ github.workspace }}
+        name: ${{ vars.QT_ARTIFACT_WIN }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        repository: sergm/munt
-        run-id: 26478191762
+        repository: munt/munt
+        run-id: ${{ vars.QT_RUN_WIN }}
 
     - name: Unpack dependencies
       run: |
         mkdir portaudio
         tar xf portaudio-win64.tgz -C portaudio
-        tar xf qt_6_11_1_win64.tgz
+        tar xf ${{ vars.QT_ARTIFACT_WIN }}
 
     - name: Get Jack
       run: |
-        git clone --depth=1 --revision=refs/tags/v1.9.22 https://github.com/jackaudio/jack2.git
+        git clone --depth=1 --revision=${{ vars.JACK_REVISION }} https://github.com/jackaudio/jack2.git
         type NUL > jack2\libjack64.lib
 
     - name: Assemble
       run: >
-        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" &&
-        cmake -S . -B build -G Ninja
-        -D BUILD_SNAPSHOTS=ON
+        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        && cmake -S . -B build -G Ninja
+        -D BUILD_SNAPSHOTS=%BUILD_SNAPSHOTS%
         -D BUILD_TESTING=OFF
         -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_EXE_LINKER_FLAGS_RELEASE:STRING="/INCREMENTAL:NO /FORCE:MULTIPLE"
         -D CMAKE_MSVC_RUNTIME_LIBRARY:STRING="MultiThreaded$<$<CONFIG:Debug>:Debug>"
         -D CMAKE_PREFIX_PATH=${{ github.workspace }}/stage
         -D JACK_INCLUDE_DIR:PATH=${{ github.workspace }}/jack2/common
@@ -60,9 +68,9 @@ jobs:
         -D libmt32emu_PACKAGE_TYPE=Runtime
         -D mt32emu-qt_USE_JACK_DYNAMIC_LOADING:BOOL=ON
         -D munt_WITH_MT32EMU_SMF2WAV:BOOL=OFF
-        -D munt_WITH_MT32EMU_WIN32DRV:BOOL=OFF &&
-        cmake --build build &&
-        cmake --install build --prefix snapshot --component Runtime
+        -D munt_WITH_MT32EMU_WIN32DRV:BOOL=OFF
+        && cmake --build build
+        && cmake --install build --prefix snapshot --component Runtime
 
     - name: Package
       run: |
@@ -74,26 +82,20 @@ jobs:
     - uses: actions/upload-artifact@v7
       name: Upload
       with:
-        path: ${{ github.workspace }}/snapshot
+        path: snapshot
         name: mt32emu_qt_win11_x64
         archive: true
 
   build-mt32emu-qt-macos:
     runs-on: macos-latest
 
-    defaults:
-      run:
-        shell: bash
-        working-directory: ${{ github.workspace }}
-
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Checkout portaudio
       uses: actions/download-artifact@v8
       with:
         name: portaudio-macos.tgz
-        path: ${{ github.workspace }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
         repository: sergm/munt
         run-id: 26477630535
@@ -101,17 +103,16 @@ jobs:
     - name: Checkout Qt
       uses: actions/download-artifact@v8
       with:
-        name: qt_6_11_1_macos.tgz
-        path: ${{ github.workspace }}
+        name: ${{ vars.QT_ARTIFACT_MACOS }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        repository: sergm/munt
-        run-id: 26478191762
+        repository: munt/munt
+        run-id: ${{ vars.QT_RUN_MACOS }}
 
     - name: Unpack dependencies
       run: |
         mkdir portaudio
         tar xf portaudio-macos.tgz -C portaudio
-        tar xf qt_6_11_1_macos.tgz
+        tar xf ${{ vars.QT_ARTIFACT_MACOS }}
 
     - name: Build Resources
       run: |
@@ -134,10 +135,10 @@ jobs:
     - name: Configure
       run: >
         cmake -S . -B build -G Ninja
-        -D BUILD_SNAPSHOTS=ON
+        -D BUILD_SNAPSHOTS=$BUILD_SNAPSHOTS
         -D BUILD_TESTING=OFF
         -D CMAKE_BUILD_TYPE=Release
-        -D CMAKE_OSX_DEPLOYMENT_TARGET:STRING=13.0
+        -D CMAKE_OSX_DEPLOYMENT_TARGET:STRING=${{ vars.OSX_DEPLOYMENT_TARGET }}
         -D CMAKE_PREFIX_PATH=${{ github.workspace }}/stage
         -D MACOSX_BUNDLE_ICON_FILE:STRING=MT32Emu.icns
         -D PORTAUDIO_INCLUDE_DIR=${{ github.workspace }}/portaudio/stage/include
@@ -163,5 +164,5 @@ jobs:
     - uses: actions/upload-artifact@v7
       name: Upload
       with:
-        path: ${{ github.workspace }}/mt32emu_qt_macos_arm64.tgz
+        path: mt32emu_qt_macos_arm64.tgz
         archive: false

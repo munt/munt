@@ -10,7 +10,7 @@ jobs:
     steps:
     - name: Cache qt sources
       id: cache-qt
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         key: qt-src-${{ vars.QT_REVISION }}
         path: qt5
@@ -23,7 +23,7 @@ jobs:
 
     - name: Get submodules
       if: steps.cache-qt.outputs.cache-hit != 'true'
-      working-directory: ${{ github.workspace }}/qt5
+      working-directory: qt5
       run: git submodule update --init --depth=1 qtbase qtshadertools qtmultimedia
 
   build-qt:
@@ -59,7 +59,7 @@ jobs:
     steps:
     - name: Get qt sources
       id: cache-qt
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         key: qt-src-${{ vars.QT_REVISION }}
         path: qt5
@@ -110,7 +110,7 @@ jobs:
           ghcr.io/almalinux/8-toolbox /home/munt/build.sh
 
     - name: Pack
-      run: tar czf ${{ env.QT_ARTIFACT }} stage
+      run: tar czf $QT_ARTIFACT stage
 
     - uses: actions/upload-artifact@v7
       name: Upload

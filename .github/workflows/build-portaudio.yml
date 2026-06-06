@@ -10,11 +10,10 @@ jobs:
     defaults:
       run:
         shell: cmd
-        working-directory: ${{ github.workspace }}
 
     steps:
     - name: Get sources
-      run: git clone --depth=1 --revision=refs/tags/v19.7.0 https://github.com/PortAudio/portaudio
+      run: git clone --depth=1 --revision=${{ vars.PORTAUDIO_REVISION }} https://github.com/PortAudio/portaudio
 
     - name: Assemble
       run: >
@@ -33,21 +32,15 @@ jobs:
     - uses: actions/upload-artifact@v7
       name: Upload
       with:
-        path: ${{ github.workspace }}/portaudio-win64.tgz
-        name: portaudio-win64
+        path: portaudio-win64.tgz
         archive: false
 
   build-portaudio-macos:
     runs-on: macos-latest
 
-    defaults:
-      run:
-        shell: bash
-        working-directory: ${{ github.workspace }}
-
     steps:
     - name: Get sources
-      run: git clone --depth=1 --revision=refs/tags/v19.7.0 https://github.com/PortAudio/portaudio
+      run: git clone --depth=1 --revision=${{ vars.PORTAUDIO_REVISION }} https://github.com/PortAudio/portaudio
 
     - name: Configure
       run: >
@@ -55,7 +48,7 @@ jobs:
         -D CMAKE_BUILD_TYPE=Release
         -D CMAKE_INSTALL_PREFIX=stage
         -D CMAKE_POLICY_VERSION_MINIMUM=3.5
-        -D CMAKE_OSX_DEPLOYMENT_TARGET:STRING=13.0
+        -D CMAKE_OSX_DEPLOYMENT_TARGET:STRING=${{ vars.OSX_DEPLOYMENT_TARGET }}
         -D PA_BUILD_SHARED=OFF
 
     - name: Build
@@ -70,6 +63,5 @@ jobs:
     - uses: actions/upload-artifact@v7
       name: Upload
       with:
-        path: ${{ github.workspace }}/portaudio-macos.tgz
-        name: portaudio-macos
+        path: portaudio-macos.tgz
         archive: false

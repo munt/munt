@@ -8,21 +8,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Checkout Qt
       uses: actions/download-artifact@v8
       with:
-        path: ${{ github.workspace }}
+        name: ${{ vars.QT_ARTIFACT_LINUX }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
         repository: sergm/munt
-        run-id: 26723258340
-        artifact-ids: 7319942079
+        run-id: ${{ vars.QT_RUN_LINUX }}
 
     - name: Unpack dependencies
       run: |
         mkdir qt
-        tar xf qt_6_11_1_linux_x64.tgz -C qt
+        tar xf ${{ vars.QT_ARTIFACT_LINUX }} -C qt
 
     - name: Get linuxdeploy
       run: |
@@ -94,11 +93,11 @@ jobs:
     - uses: actions/upload-artifact@v7
       name: Upload mt32emu_smf2wav-x86_64.AppImage
       with:
-        path: ${{ github.workspace }}/mt32emu-smf2wav-x86_64.AppImage
+        path: mt32emu-smf2wav-x86_64.AppImage
         archive: false
 
     - uses: actions/upload-artifact@v7
       name: Upload MT-32_Emulator-x86_64.AppImage
       with:
-        path: ${{ github.workspace }}/MT-32_Emulator-x86_64.AppImage
+        path: MT-32_Emulator-x86_64.AppImage
         archive: false
