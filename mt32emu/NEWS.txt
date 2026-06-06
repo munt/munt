@@ -1,3 +1,14 @@
+2026-06-06:
+
+	2.8.3 released.
+
+	* Reworked sanity checks for short MIDI messages. It's a continuation of (#134). Apparently,
+	  Windows applications routinely submit garbage in the unused data bytes of packed 32-bit
+	  short messages. Therefore, we now check the used (in the MIDI sense) bytes only.
+	  Additionally, unsupported messages are now better handled and no longer produce misleading
+	  debug output when enabled. (#147)
+
+
 2026-05-24:
 
 	2.8.2 released.

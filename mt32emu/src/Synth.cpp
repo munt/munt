@@ -1160,13 +1160,27 @@ bool Synth::playSysex(const Bit8u *sysex, Bit32u len, Bit32u timestamp) {
 void Synth::playMsgNow(Bit32u msg) {
 	if (!opened) return;
 
+	Bit8u command = Bit8u((msg & 0x0000F0) >> 4);
+
 	// NOTE: Active sense IS implemented in real hardware. However, realtime processing is clearly out of the library scope.
 	//       It is assumed that realtime consumers of the library respond to these MIDI events as appropriate.
+	if (command == 0x0F) {
+#if MT32EMU_MONITOR_MIDI > 0
+		printDebug("Unsupported MIDI System Common / Realtime: 0x%08x", msg);
+#endif
+		return;
+	}
 
-	Bit8u command = Bit8u((msg & 0x0000F0) >> 4);
+	if (command < 8) {
+#if MT32EMU_MONITOR_MIDI > 0
+		printDebug("playMsgNow for msg=0x%08x relies on running status; unsupported", msg);
+#endif
+		return;
+	}
+
 	Bit8u chan = Bit8u(msg & 0x00000F);
 	Bit8u data1 = Bit8u((msg & 0x00FF00) >> 8);
-	Bit8u data2 = Bit8u((msg & 0xFF0000) >> 16);
+	Bit8u data2 = ((command & 0x0E) == 0x0C) ? 0 : Bit8u((msg & 0xFF0000) >> 16);
 
 	if (data1 > 127 || data2 > 127) {
 #if MT32EMU_MONITOR_MIDI > 0

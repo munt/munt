@@ -462,6 +462,8 @@ TEST_CASE("Synth disregards invalid and unsupported short MIDI messages") {
 
 	CHECK_FALSE(synth.isActive());
 
+	SUBCASE("Unsupported MIDI System Realtime") { synth.playMsgNow(0xFE); }
+
 	SUBCASE("Packed message lacking data bytes") { synth.playMsgNow(0xFFFFFF91); }
 
 	SUBCASE("Unpacked message lacking data bytes") { synth.playMsgOnPart(0, 9, 36, 240); }
@@ -473,6 +475,31 @@ TEST_CASE("Synth disregards invalid and unsupported short MIDI messages") {
 	SUBCASE("Invalid MIDI command") { synth.playMsgNow(0x341271); }
 
 	CHECK_FALSE(synth.isActive());
+}
+
+TEST_CASE("Synth ignores invalid values in unused data bytes of packed short MIDI messages") {
+	Synth synth;
+	ROMSet romSet;
+	romSet.initMT32New();
+	openSynth(synth, romSet);
+
+	SUBCASE("Packed message with 2 data bytes and garbage in the most significant byte") {
+		sendSineWaveSysex(synth, 1);
+		CHECK_FALSE(synth.isActive());
+		synth.playMsgNow(0xFF443691);
+		CHECK(synth.isActive());
+	}
+
+	SUBCASE("Packed message with garbage in the unused data byte") {
+		Bit8u data[2];
+		synth.readMemory(0x00C070, 2, data);
+		CHECK(data[0] == 0);
+		CHECK(data[1] == 0);
+		synth.playMsgNow(0x8856C8);
+		synth.readMemory(0x00C070, 2, data);
+		CHECK(data[0] == 1);
+		CHECK(data[1] == 22);
+	}
 }
 
 TEST_CASE("Synth should set Master Volume via SysEx and override optionally") {
