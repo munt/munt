@@ -24,15 +24,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: Checkout portaudio
-      uses: actions/download-artifact@v8
-      with:
-        name: portaudio-win64.tgz
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        repository: sergm/munt
-        run-id: 26477630535
-
-    - name: Checkout Qt
+    - name: Get Qt static binary
       uses: actions/download-artifact@v8
       with:
         name: ${{ vars.QT_ARTIFACT_WIN }}
@@ -40,13 +32,13 @@ jobs:
         repository: munt/munt
         run-id: ${{ vars.QT_RUN_WIN }}
 
-    - name: Unpack dependencies
-      run: |
-        mkdir portaudio
-        tar xf portaudio-win64.tgz -C portaudio
-        tar xf ${{ vars.QT_ARTIFACT_WIN }}
+    - name: Unpack Qt
+      run: tar xf ${{ vars.QT_ARTIFACT_WIN }}
 
-    - name: Get Jack
+    - name: Get portaudio sources
+      run: git clone --depth=1 --revision=${{ vars.PORTAUDIO_REVISION }} https://github.com/PortAudio/portaudio
+
+    - name: Get Jack sources
       run: |
         git clone --depth=1 --revision=${{ vars.JACK_REVISION }} https://github.com/jackaudio/jack2.git
         type NUL > jack2\libjack64.lib
@@ -54,6 +46,12 @@ jobs:
     - name: Assemble
       run: >
         "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        && cmake -S portaudio -B portaudio/build -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+        -D PA_BUILD_SHARED=OFF
+        -D PA_LIBNAME_ADD_SUFFIX:BOOL=OFF
+        && cmake --build portaudio/build
         && cmake -S . -B build -G Ninja
         -D BUILD_SNAPSHOTS=%BUILD_SNAPSHOTS%
         -D BUILD_TESTING=OFF
@@ -61,10 +59,10 @@ jobs:
         -D CMAKE_EXE_LINKER_FLAGS_RELEASE:STRING="/INCREMENTAL:NO /FORCE:MULTIPLE"
         -D CMAKE_MSVC_RUNTIME_LIBRARY:STRING="MultiThreaded$<$<CONFIG:Debug>:Debug>"
         -D CMAKE_PREFIX_PATH=${{ github.workspace }}/stage
-        -D JACK_INCLUDE_DIR:PATH=${{ github.workspace }}/jack2/common
-        -D JACK_LIBRARY:FILEPATH=${{ github.workspace }}/jack2/libjack64.lib
-        -D PORTAUDIO_INCLUDE_DIR=${{ github.workspace }}/portaudio/stage/include
-        -D PORTAUDIO_LIBRARY=${{ github.workspace }}/portaudio/stage/lib/portaudio_static_x64.lib
+        -D JACK_INCLUDE_DIR:PATH=jack2/common
+        -D JACK_LIBRARY:FILEPATH=jack2/libjack64.lib
+        -D PORTAUDIO_INCLUDE_DIR=portaudio/include
+        -D PORTAUDIO_LIBRARY=portaudio/build/portaudio.lib
         -D libmt32emu_PACKAGE_TYPE=Runtime
         -D mt32emu-qt_USE_JACK_DYNAMIC_LOADING:BOOL=ON
         -D munt_WITH_MT32EMU_SMF2WAV:BOOL=OFF
@@ -92,15 +90,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: Checkout portaudio
-      uses: actions/download-artifact@v8
-      with:
-        name: portaudio-macos.tgz
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        repository: sergm/munt
-        run-id: 26477630535
-
-    - name: Checkout Qt
+    - name: Get Qt static binary
       uses: actions/download-artifact@v8
       with:
         name: ${{ vars.QT_ARTIFACT_MACOS }}
@@ -108,11 +98,23 @@ jobs:
         repository: munt/munt
         run-id: ${{ vars.QT_RUN_MACOS }}
 
-    - name: Unpack dependencies
+    - name: Unpack Qt
       run: |
-        mkdir portaudio
-        tar xf portaudio-macos.tgz -C portaudio
         tar xf ${{ vars.QT_ARTIFACT_MACOS }}
+
+    - name: Get portaudio sources
+      run: git clone --depth=1 --revision=${{ vars.PORTAUDIO_REVISION }} https://github.com/PortAudio/portaudio
+
+    - name: Configure portaudio
+      run: >
+        cmake -S portaudio -B portaudio/build -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+        -D CMAKE_OSX_DEPLOYMENT_TARGET:STRING=${{ vars.OSX_DEPLOYMENT_TARGET }}
+        -D PA_BUILD_SHARED=OFF
+
+    - name: Build portaudio
+      run: cmake --build portaudio/build
 
     - name: Build Resources
       run: |
@@ -132,7 +134,7 @@ jobs:
         cd ..
         iconutil -c icns MT32Emu.iconset
 
-    - name: Configure
+    - name: Configure mt32emu-qt
       run: >
         cmake -S . -B build -G Ninja
         -D BUILD_SNAPSHOTS=$BUILD_SNAPSHOTS
@@ -141,15 +143,15 @@ jobs:
         -D CMAKE_OSX_DEPLOYMENT_TARGET:STRING=${{ vars.OSX_DEPLOYMENT_TARGET }}
         -D CMAKE_PREFIX_PATH=${{ github.workspace }}/stage
         -D MACOSX_BUNDLE_ICON_FILE:STRING=MT32Emu.icns
-        -D PORTAUDIO_INCLUDE_DIR=${{ github.workspace }}/portaudio/stage/include
-        -D PORTAUDIO_LIBRARY=${{ github.workspace }}/portaudio/stage/lib/libportaudio.a
+        -D PORTAUDIO_INCLUDE_DIR=portaudio/include
+        -D PORTAUDIO_LIBRARY=portaudio/build/libportaudio.a
         -D libmt32emu_PACKAGE_TYPE=Runtime
         -D munt_WITH_MT32EMU_SMF2WAV:BOOL=OFF
 
-    - name: Build
+    - name: Build mt32emu-qt
       run: cmake --build build
 
-    - name: Package
+    - name: Package mt32emu-qt
       run: |
         cmake --install build --prefix snapshot --component Runtime --strip
         cd snapshot
@@ -162,7 +164,7 @@ jobs:
         tar czf ../mt32emu_qt_macos_arm64.tgz *
 
     - uses: actions/upload-artifact@v7
-      name: Upload
+      name: Upload mt32emu-qt
       with:
         path: mt32emu_qt_macos_arm64.tgz
         archive: false
