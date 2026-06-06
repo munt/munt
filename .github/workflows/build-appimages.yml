@@ -15,7 +15,7 @@ jobs:
       with:
         name: ${{ vars.QT_ARTIFACT_LINUX }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        repository: sergm/munt
+        repository: munt/munt
         run-id: ${{ vars.QT_RUN_LINUX }}
 
     - name: Unpack dependencies
