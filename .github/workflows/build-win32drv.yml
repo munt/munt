@@ -10,6 +10,9 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
+    - name: Checkout libwdi sources
+      run: git clone --depth=1 --revision=v1.3.1 https://github.com/pbatard/libwdi
+
     - name: Create driver build script
       run: >
         echo
@@ -25,23 +28,34 @@ jobs:
         && cmake --install %1 --prefix stage --component Runtime'
         > build.cmd
 
-    - name: Assemble 32-bit driver
+    - name: Assemble 32-bit driver and drvsetup
       shell: cmd
       run: >
         "${{ vars.MSVC_ENV_INIT_SCRIPT_X86 }}" && build.cmd build_32
+        && cmake -S mt32emu_win32drv_setup/drvsetup -B build_drvsetup -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_MSVC_RUNTIME_LIBRARY:STRING="MultiThreaded$<$<CONFIG:Debug>:Debug>"
+        && cmake --build build_drvsetup
 
-    - name: Assemble 64-bit driver
+    - name: Assemble 64-bit driver and infinstall
       shell: cmd
       run: >
         "${{ vars.MSVC_ENV_INIT_SCRIPT }}" && build.cmd build_64
+        && cmake -S mt32emu_win32drv_setup/infinstall -B build_infinstall -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_MSVC_RUNTIME_LIBRARY:STRING="MultiThreaded$<$<CONFIG:Debug>:Debug>"
+        -D libwdi_SRC_PATH:PATH=libwdi
+        && cmake --build build_infinstall
 
-    - name: Package unsigned drivers
+    - name: Package unsigned drivers and tools
       shell: bash
       run: |
         cd stage
         mv win32drv/* .
         mv share/doc .
         rm -rf win32drv share
+        mv ../build_drvsetup/drvsetup.exe .
+        mv ../build_infinstall/infinstall_x64.exe infinstall.exe
 
     - uses: actions/upload-artifact@v7
       name: Upload unsigned driver package
