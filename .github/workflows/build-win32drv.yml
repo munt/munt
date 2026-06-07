@@ -1,0 +1,51 @@
+name: Build mt32emu_win32drv binaries
+
+on:
+  workflow_dispatch
+
+jobs:
+  build-mt32emu_win32drv:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Create driver build script
+      run: >
+        echo
+        'cmake -S . -B %1 -G Ninja
+        -D BUILD_TESTING=OFF
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_MSVC_RUNTIME_LIBRARY:STRING="MultiThreaded$<$<CONFIG:Debug>:Debug>"
+        -D libmt32emu_PACKAGE_TYPE=Runtime
+        -D munt_WITH_MT32EMU_QT:BOOL=OFF
+        -D munt_WITH_MT32EMU_SMF2WAV:BOOL=OFF
+        -D munt_WITH_MT32EMU_WIN32DRV:BOOL=ON
+        && cmake --build %1
+        && cmake --install %1 --prefix stage --component Runtime'
+        > build.cmd
+
+    - name: Assemble 32-bit driver
+      shell: cmd
+      run: >
+        "${{ vars.MSVC_ENV_INIT_SCRIPT_X86 }}" && build.cmd build_32
+
+    - name: Assemble 64-bit driver
+      shell: cmd
+      run: >
+        "${{ vars.MSVC_ENV_INIT_SCRIPT }}" && build.cmd build_64
+
+    - name: Package unsigned drivers
+      shell: bash
+      run: |
+        cd stage
+        mv win32drv/* .
+        mv share/doc .
+        rm -rf win32drv share
+
+    - uses: actions/upload-artifact@v7
+      name: Upload unsigned driver package
+      with:
+        path: stage
+        name: mt32emu_win32drv
+        archive: true
