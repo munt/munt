@@ -70,7 +70,7 @@ jobs:
       if: runner.os == 'Windows'
       shell: cmd
       run: >
-        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        "${{ vars.MSVC_ENV_INIT_SCRIPT }}"
         && cmake ${{ env.CMAKE_CONFIG_FLAGS }}
         -D FEATURE_static_runtime:BOOL=ON
         ${{ env.QT_FEATURE_FLAGS }}
