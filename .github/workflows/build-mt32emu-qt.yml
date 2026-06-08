@@ -33,7 +33,19 @@ jobs:
         run-id: ${{ vars.QT_RUN_WIN }}
 
     - name: Unpack Qt
-      run: tar xf ${{ vars.QT_ARTIFACT_WIN }}
+      shell: bash
+      run: |
+        tar xf ${{ vars.QT_ARTIFACT_WIN }}
+        echo '#include <mt32emu/mt32emu.h>
+        #include <QtWidgets>
+        #undef NOMINMAX
+        #define NOMINMAX
+        #include <windows.h>' > pch.h
+
+    - name: Get munt icon
+      run: |
+        C:\msys64\usr\bin\wget -q https://github.com/sergm/munt_devel/raw/refs/heads/master/mt32emu_win32_installer/mt32emu-qt.ico.xz
+        xz -d mt32emu-qt.ico.xz
 
     - name: Get portaudio sources
       run: git clone --depth=1 --revision=${{ vars.PORTAUDIO_REVISION }} https://github.com/PortAudio/portaudio
@@ -64,6 +76,7 @@ jobs:
         -D PORTAUDIO_INCLUDE_DIR=portaudio/include
         -D PORTAUDIO_LIBRARY=portaudio/build/portaudio.lib
         -D libmt32emu_PACKAGE_TYPE=Runtime
+        -D mt32emu-qt_PRECOMPILED_HEADER:FILEPATH=${{ github.workspace }}/pch.h
         -D mt32emu-qt_USE_JACK_DYNAMIC_LOADING:BOOL=ON
         -D munt_WITH_MT32EMU_SMF2WAV:BOOL=OFF
         -D munt_WITH_MT32EMU_WIN32DRV:BOOL=OFF
@@ -74,7 +87,9 @@ jobs:
       run: |
         cd snapshot
         move bin\mt32emu-qt.exe .
-        move share\doc .
+        move ..\mt32emu-qt.ico .
+        move share\doc\munt docs
+        move docs\mt32emu-qt\README.md .
         rmdir /s/q bin share
 
     - uses: actions/upload-artifact@v7
