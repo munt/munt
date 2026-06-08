@@ -1,0 +1,61 @@
+name: Build mt32emu-smf2wav binary bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      buildType:
+        required: true
+        type: choice
+        options:
+          - Snapshot
+          - Release
+
+env:
+  BUILD_SNAPSHOTS: ${{ case(inputs.buildType == 'Snapshot', 'ON', 'OFF') }}
+
+jobs:
+  build-mt32emu-smf2wav-windows:
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install dependencies
+      run: |
+        C:\msys64\usr\bin\pacman -Sy --noconfirm mingw-w64-x86_64-glib2
+
+    - name: Assemble
+      run: >
+        "${{ vars.MSVC_ENV_INIT_SCRIPT }}"
+        && cmake -S . -B build -G Ninja
+        -D BUILD_SNAPSHOTS=%BUILD_SNAPSHOTS%
+        -D BUILD_TESTING=OFF
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_MSVC_RUNTIME_LIBRARY:STRING="MultiThreaded$<$<CONFIG:Debug>:Debug>"
+        -D CMAKE_PREFIX_PATH=C:/msys64/mingw64
+        -D GLIB2_LIBRARY:FILEPATH=C:/msys64/mingw64/lib/libglib-2.0.dll.a
+        -D libmt32emu_PACKAGE_TYPE=Runtime
+        -D munt_WITH_MT32EMU_QT:BOOL=OFF
+        -D munt_WITH_MT32EMU_WIN32DRV:BOOL=OFF
+        && cmake --build build
+        && cmake --install build --prefix stage --component Runtime
+
+    - name: Package
+      run: |
+        cd stage
+        move bin\mt32emu-smf2wav.exe .
+        for %%1 in (libgcc_s_seh-1.dll libglib-2.0-0.dll libiconv-2.dll libintl-8.dll libpcre2-8-0.dll libstdc++-6.dll libwinpthread-1.dll) do move "C:\msys64\mingw64\bin\%%1" .
+        move share\doc\munt docs
+        move docs\smf2wav\README.md .
+        rmdir /s/q bin share
+
+    - uses: actions/upload-artifact@v7
+      name: Upload
+      with:
+        path: stage
+        name: mt32emu_smf2wav_win64
+        archive: true
