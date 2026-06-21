@@ -3,11 +3,10 @@
 
 #include <QtCore>
 
-#include "SynthRoute.h"
+#include "MidiSession.h"
 
 class AudioDriver;
 class MidiDriver;
-class MidiSession;
 
 class MidiPropertiesDialog;
 class QSystemTrayIcon;
