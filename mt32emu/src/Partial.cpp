@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -337,9 +337,15 @@ bool Partial::generateNextSample(LA32PairImpl *la32PairImpl) {
 		deactivate();
 		return false;
 	}
-	la32PairImpl->generateNextSample(LA32PartialPair::MASTER, getAmpValue(), tvp->nextPitch(), getCutoffValue());
+	Bit32u ampValue = getAmpValue();
+	Bit32u pitch = tvp->nextPitch();
+	Bit32u cutoffValue = getCutoffValue();
+	la32PairImpl->generateNextSample(LA32PartialPair::MASTER, ampValue, pitch, cutoffValue);
 	if (hasRingModulatingSlave()) {
-		la32PairImpl->generateNextSample(LA32PartialPair::SLAVE, pair->getAmpValue(), pair->tvp->nextPitch(), pair->getCutoffValue());
+		Bit32u pairAmpValue = pair->getAmpValue();
+		Bit32u pairPitch = pair->tvp->nextPitch();
+		Bit32u pairCutoffValue = pair->getCutoffValue();
+		la32PairImpl->generateNextSample(LA32PartialPair::SLAVE, pairAmpValue, pairPitch, pairCutoffValue);
 		if (!pair->tva->isPlaying() || !la32PairImpl->isActive(LA32PartialPair::SLAVE)) {
 			pair->deactivate();
 			if (mixType == 2) {
