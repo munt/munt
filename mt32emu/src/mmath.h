@@ -22,6 +22,7 @@
 
 namespace MT32Emu {
 
+using ::std::fmod;
 using ::std::exp;
 using ::std::log;
 using ::std::log10;
