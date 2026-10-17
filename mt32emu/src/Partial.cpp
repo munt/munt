@@ -253,6 +253,16 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	}
 }
 
+bool Partial::updateAmp() {
+	Bit32u nextAmpRampValue = ampRamp.nextValue();
+	if (ampRamp.checkInterrupt()) {
+		tva->handleInterrupt();
+	}
+	if (currentAmpRampValue == nextAmpRampValue) return false;
+	currentAmpRampValue = nextAmpRampValue;
+	return true;
+}
+
 Bit32u Partial::getAmpValue() {
 	// SEMI-CONFIRMED: From sample analysis:
 	// (1) Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
@@ -264,22 +274,29 @@ Bit32u Partial::getAmpValue() {
 	//
 	// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
 	// TODO: The tests above were performed using the float model, to be refined
-	Bit32u ampRampVal = 67117056 - ampRamp.nextValue();
-	if (ampRamp.checkInterrupt()) {
-		tva->handleInterrupt();
-	}
-	return ampRampVal;
+	return 67117056 - currentAmpRampValue;
 }
 
-Bit32u Partial::getCutoffValue() {
-	if (isPCM()) {
-		return 0;
-	}
-	Bit32u cutoffModifierRampVal = cutoffModifierRamp.nextValue();
+bool Partial::updatePitch() {
+	Bit32u nextPitch = tvp->nextPitch();
+	if (currentPitch == nextPitch) return false;
+	currentPitch = nextPitch;
+	return true;
+}
+
+bool Partial::updateCutoff() {
+	if (isPCM()) return false;
+	Bit32u nextCutoffModifier = cutoffModifierRamp.nextValue();
 	if (cutoffModifierRamp.checkInterrupt()) {
 		tvf->handleInterrupt();
 	}
-	return (tvf->getBaseCutoff() << 18) + cutoffModifierRampVal;
+	if (currentCutoffModifier == nextCutoffModifier) return false;
+	currentCutoffModifier = nextCutoffModifier;
+	return true;
+}
+
+Bit32u Partial::getCutoffValue() {
+	return isPCM() ? 0 : (tvf->getBaseCutoff() << 18) + currentCutoffModifier;
 }
 
 bool Partial::hasRingModulatingSlave() const {
@@ -337,15 +354,15 @@ bool Partial::generateNextSample(LA32PairImpl *la32PairImpl) {
 		deactivate();
 		return false;
 	}
-	Bit32u ampValue = getAmpValue();
-	Bit32u pitch = tvp->nextPitch();
-	Bit32u cutoffValue = getCutoffValue();
-	la32PairImpl->generateNextSample(LA32PartialPair::MASTER, ampValue, pitch, cutoffValue);
+	updateAmp();
+	updatePitch();
+	updateCutoff();
+	la32PairImpl->generateNextSample(LA32PartialPair::MASTER, getAmpValue(), currentPitch, getCutoffValue());
 	if (hasRingModulatingSlave()) {
-		Bit32u pairAmpValue = pair->getAmpValue();
-		Bit32u pairPitch = pair->tvp->nextPitch();
-		Bit32u pairCutoffValue = pair->getCutoffValue();
-		la32PairImpl->generateNextSample(LA32PartialPair::SLAVE, pairAmpValue, pairPitch, pairCutoffValue);
+		pair->updateAmp();
+		pair->updatePitch();
+		pair->updateCutoff();
+		la32PairImpl->generateNextSample(LA32PartialPair::SLAVE, pair->getAmpValue(), pair->currentPitch, pair->getCutoffValue());
 		if (!pair->tva->isPlaying() || !la32PairImpl->isActive(LA32PartialPair::SLAVE)) {
 			pair->deactivate();
 			if (mixType == 2) {
