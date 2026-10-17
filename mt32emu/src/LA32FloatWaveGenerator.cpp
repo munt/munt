@@ -27,7 +27,6 @@ namespace MT32Emu {
 
 static const float MIDDLE_CUTOFF_VALUE = 128.0f;
 static const float RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE = 144.0f;
-static const float MAX_CUTOFF_VALUE = 240.0f;
 
 static const Bit8u *resAmpDecayFactors;
 
@@ -126,14 +125,7 @@ float LA32FloatWaveGenerator::generateNextSample(const Bit32u ampVal, const Bit1
 			//resAmp = EXP2I(resonance << 10) * resAmpFactor;
 		}
 
-		// The cutoffModifier may not be supposed to be directly added to the cutoff -
-		// it may for example need to be multiplied in some way.
-		// The 240 cutoffVal limit was determined via sample analysis (internal Munt capture IDs: glop3, glop4).
-		// More research is needed to be sure that this is correct, however.
 		float cutoffVal = cutoffRampVal / 262144.0f;
-		if (cutoffVal > MAX_CUTOFF_VALUE) {
-			cutoffVal = MAX_CUTOFF_VALUE;
-		}
 
 		// Wave length in samples
 		float waveLen = SAMPLE_RATE / freq;

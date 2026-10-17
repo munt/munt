@@ -27,7 +27,6 @@ namespace MT32Emu {
 static const Bit32u SINE_SEGMENT_RELATIVE_LENGTH = 1 << 18;
 static const Bit32u MIDDLE_CUTOFF_VALUE = 128 << 18;
 static const Bit32u RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE = 144 << 18;
-static const Bit32u MAX_CUTOFF_VALUE = 240 << 18;
 static const LogSample SILENCE = {65535, LogSample::POSITIVE};
 
 // These two tables are accessed extremely often. Keeping the direct pointers here significantly improves performance in most cases.
@@ -306,9 +305,7 @@ void LA32WaveGenerator::generateNextSample(const Bit32u useAmp, const Bit16u use
 		return;
 	}
 
-	// The 240 cutoffVal limit was determined via sample analysis (internal Munt capture IDs: glop3, glop4).
-	// More research is needed to be sure that this is correct, however.
-	cutoffVal = (useCutoffVal > MAX_CUTOFF_VALUE) ? MAX_CUTOFF_VALUE : useCutoffVal;
+	cutoffVal = useCutoffVal;
 
 	generateNextSquareWaveLogSample();
 	generateNextResonanceWaveLogSample();

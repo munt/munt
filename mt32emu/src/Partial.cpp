@@ -34,6 +34,8 @@ namespace MT32Emu {
 static const Bit8u PAN_NUMERATOR_MASTER[] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7};
 static const Bit8u PAN_NUMERATOR_SLAVE[]  = {0, 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7, 7};
 
+static const Bit32u MAX_CUTOFF_VALUE = 240 << 18;
+
 static const Bit8u *pulseWidth100To255;
 
 // We assume the pan is applied using the same 13-bit multiplier circuit that is also used for ring modulation
@@ -296,7 +298,15 @@ bool Partial::updateCutoff() {
 }
 
 Bit32u Partial::getCutoffValue() {
-	return isPCM() ? 0 : (tvf->getBaseCutoff() << 18) + currentCutoffModifier;
+	if (isPCM()) return 0;
+	Bit32u currentCutoffValue = (tvf->getBaseCutoff() << 18) + currentCutoffModifier;
+
+	// The cutoffModifier may not be supposed to be directly added to the cutoff -
+	// it may for example need to be multiplied in some way.
+	// The 240 cutoffVal limit was determined via sample analysis (internal Munt capture IDs: glop3, glop4).
+	// More research is needed to be sure that this is correct, however.
+	if (currentCutoffValue > MAX_CUTOFF_VALUE) return MAX_CUTOFF_VALUE;
+	return currentCutoffValue;
 }
 
 bool Partial::hasRingModulatingSlave() const {
