@@ -65,12 +65,6 @@ class LA32WaveGenerator {
 	// True means the resulting square wave is to be multiplied by the synchronous cosine
 	bool sawtoothWaveform;
 
-	// Logarithmic amp of the wave generator
-	Bit32u amp;
-
-	// Logarithmic frequency of the resulting wave
-	Bit16u pitch;
-
 	// Values in range [1..31]
 	// Value 1 corresponds to the minimum resonance
 	Bit8u resonance;
@@ -79,9 +73,6 @@ class LA32WaveGenerator {
 	// Values in range [0..128] have no effect and the resulting wave remains symmetrical
 	// Value 255 corresponds to the maximum possible asymmetric of the resulting wave
 	Bit8u pulseWidth;
-
-	// Composed of the base cutoff in range [78..178] left-shifted by 18 bits and the TVF modifier
-	Bit32u cutoffVal;
 
 	// Logarithmic PCM sample start address
 	const Bit16s *pcmWaveAddress;
@@ -98,6 +89,13 @@ class LA32WaveGenerator {
 	//***************************************************************************
 	// Internal variables below
 	//***************************************************************************
+
+	// Logarithmic amp of the wave generator, scaled down by factor 2^-10
+	Bit32u amp;
+
+	// The increments applied to wavePosition per sample, depend on pitch
+	Bit32u sampleStep;
+	Bit32u pcmSampleStep;
 
 	// Relative position within either the synth wave or the PCM sampled wave
 	// 0 - start of the positive rising sine segment of the square wave or start of the PCM sample
@@ -123,6 +121,16 @@ class LA32WaveGenerator {
 
 	// The decay speed of resonance sine wave, depends on the resonance value
 	Bit32u resAmpDecayFactor;
+
+	// The relative lengths of the sine, high and low linear segments in terms of SINE_SEGMENT_RELATIVE_LENGTH, depend on cutoff
+	Bit32u highLinearLength;
+	Bit32u lowLinearLength;
+	Bit32u resonanceWaveLengthFactor;
+
+	// The square wave decay level, applied when cutoff is below MIDDLE_CUTOFF_VALUE, depends on cutoff
+	Bit32u squareWaveAmpSubtraction;
+	// The resonance wave decay level, applied when cutoff is below RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE, depends on cutoff
+	Bit32u resonanceWaveAmpSubtraction;
 
 	// Fractional part of the pcmPosition
 	Bit32u pcmInterpolationFactor;
@@ -157,11 +165,10 @@ class LA32WaveGenerator {
 	// Internal methods below
 	//***************************************************************************
 
-	Bit32u getSampleStep();
-	Bit32u getResonanceWaveLengthFactor(Bit32u effectiveCutoffValue);
+	static Bit32u getResonanceWaveLengthFactor(Bit32u effectiveCutoffValue);
 	Bit32u getHighLinearLength(Bit32u effectiveCutoffValue);
 
-	void computePositions(Bit32u highLinearLength, Bit32u lowLinearLength, Bit32u resonanceWaveLengthFactor);
+	void computePositions();
 	void advancePosition();
 
 	void generateNextSquareWaveLogSample();
@@ -178,9 +185,12 @@ public:
 	// Initialise the WG engine for generation of PCM partial samples and set up the invariant parameters
 	void initPCM(const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped, const bool pcmWaveInterpolated);
 
-	// Update parameters with respect to TVP, TVA and TVF; should only be called when the values change
+	// Setters below update WG parameters with respect to TVP, TVA and TVF; should only be called when the values change
+	// Logarithmic amp of the wave generator
 	void setAmp(const Bit32u amp);
+	// Logarithmic frequency of the resulting wave
 	void setPitch(const Bit16u pitch);
+	// Composed of the base cutoff in range [78..178] left-shifted by 18 bits and the TVF modifier
 	void setCutoff(const Bit32u cutoff);
 
 	// Generate the next sample using the current WG parameters

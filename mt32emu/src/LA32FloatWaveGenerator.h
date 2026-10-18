@@ -43,12 +43,6 @@ class LA32FloatWaveGenerator {
 	// True means the resulting square wave is to be multiplied by the synchronous cosine
 	bool sawtoothWaveform;
 
-	// Logarithmic amp of the wave generator
-	Bit32u amp;
-
-	// Logarithmic frequency of the resulting wave
-	Bit16u pitch;
-
 	// Values in range [1..31]
 	// Value 1 corresponds to the minimum resonance
 	Bit8u resonance;
@@ -57,9 +51,6 @@ class LA32FloatWaveGenerator {
 	// Values in range [0..128] have no effect and the resulting wave remains symmetrical
 	// Value 255 corresponds to the maximum possible asymmetric of the resulting wave
 	Bit8u pulseWidth;
-
-	// Composed of the base cutoff in range [78..178] left-shifted by 18 bits and the TVF modifier
-	Bit32u cutoffVal;
 
 	// Logarithmic PCM sample start address
 	const Bit16s *pcmWaveAddress;
@@ -78,9 +69,29 @@ class LA32FloatWaveGenerator {
 	//***************************************************************************
 
 	float wavePos;
-	float lastFreq;
 	float pcmPosition;
+	float pcmPositionDelta;
 
+	float resAmpBase;
+	float resAmp;
+
+	float ampFactor;
+	float freq;
+
+	// Scaled cutoff value to simplify calculations
+	float cutoff;
+
+	// Wave length in samples
+	float waveLen;
+	// Cosine segment length in samples
+	float cosineLen;
+	// Ratio of positive segment to wave length
+	float pulseLenFactor;
+
+	// For cutoff below 50, samples get attenuated exponentially, found by sample analysis
+	float lowCutoffAttenuationFactor;
+
+	void updateWaveFormParameters();
 	float getPCMSample(unsigned int position);
 
 public:
@@ -91,8 +102,11 @@ public:
 	void initPCM(const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped, const bool pcmWaveInterpolated);
 
 	// Update parameters with respect to TVP, TVA and TVF; should only be called when the values change
+	// Logarithmic amp of the wave generator
 	void setAmp(const Bit32u amp);
+	// Logarithmic frequency of the resulting wave
 	void setPitch(const Bit16u pitch);
+	// Composed of the base cutoff in range [78..178] left-shifted by 18 bits and the TVF modifier
 	void setCutoff(const Bit32u cutoff);
 
 	// Generate the next sample using the current WG parameters

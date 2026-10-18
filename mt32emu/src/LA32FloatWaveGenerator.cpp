@@ -30,6 +30,13 @@ static const float RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE = 144.0f;
 
 static const Bit8u *resAmpDecayFactors;
 
+void LA32FloatWaveGenerator::updateWaveFormParameters() {
+	cosineLen = 0.5f * waveLen;
+	if (cutoff > MIDDLE_CUTOFF_VALUE) {
+		cosineLen *= EXP2F((cutoff - MIDDLE_CUTOFF_VALUE) / -16.0f); // found from sample analysis
+	}
+}
+
 float LA32FloatWaveGenerator::getPCMSample(unsigned int position) {
 	if (position >= pcmWaveLength) {
 		if (!pcmWaveLooped) {
@@ -47,8 +54,23 @@ void LA32FloatWaveGenerator::initSynth(const bool useSawtoothWaveform, const Bit
 	pulseWidth = usePulseWidth;
 	resonance = useResonance;
 
+	resAmpBase = EXP2F(1.0f - (32 - resonance) / 4.0f);
+	{
+		//static const float resAmpFactor = EXP2F(-7);
+		//resAmp = EXP2I(resonance << 10) * resAmpFactor;
+	}
+	resAmp = resAmpBase;
+
+	if (pulseWidth > 128) {
+		pulseLenFactor = EXP2F((64 - pulseWidth) / 64.0f);
+		//static const float pulseLenFactor = EXP2F(-192 / 64);
+		//pulseLenFactor = EXP2I((256 - pulseWidthVal) << 6) * pulseLenFactor;
+	} else {
+		pulseLenFactor = 0.5f;
+	}
+
 	wavePos = 0.0f;
-	lastFreq = 0.0f;
+	setPitch(0);
 
 	pcmWaveAddress = NULL;
 	active = true;
@@ -64,16 +86,35 @@ void LA32FloatWaveGenerator::initPCM(const Bit16s * const usePCMWaveAddress, con
 	active = true;
 }
 
-void LA32FloatWaveGenerator::setAmp(const Bit32u useAmp) {
-	amp = useAmp;
+void LA32FloatWaveGenerator::setAmp(const Bit32u amp) {
+	// See Partial::getAmpValue for more details
+	ampFactor = EXP2F(amp / -1024.0f / 4096.0f);
 }
 
-void LA32FloatWaveGenerator::setPitch(const Bit16u usePitch) {
-	pitch = usePitch;
+void LA32FloatWaveGenerator::setPitch(const Bit16u pitch) {
+	float lastFreq = freq;
+	freq = EXP2F(pitch / 4096.0f - 16.0f) * SAMPLE_RATE;
+
+	if (isPCMWave()) {
+		pcmPositionDelta = freq * 2048.0f / SAMPLE_RATE;
+	} else {
+		waveLen = SAMPLE_RATE / freq;
+		wavePos *= lastFreq / freq;
+		updateWaveFormParameters();
+	}
 }
 
-void LA32FloatWaveGenerator::setCutoff(const Bit32u useCutoffVal) {
-	cutoffVal = useCutoffVal;
+void LA32FloatWaveGenerator::setCutoff(const Bit32u cutoffVal) {
+	cutoff = cutoffVal / 262144.0f;
+
+	// Correct resAmp for cutoff in range 50..66
+	if ((cutoff >= MIDDLE_CUTOFF_VALUE) && (cutoff < RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE)) {
+		resAmp = resAmpBase * sin(FLOAT_PI * (cutoff - MIDDLE_CUTOFF_VALUE) / 32.0f);
+	} else {
+		resAmp = resAmpBase;
+	}
+	lowCutoffAttenuationFactor = cutoff < MIDDLE_CUTOFF_VALUE ? EXP2F(-0.125f * (MIDDLE_CUTOFF_VALUE - cutoff)) : 1;
+	updateWaveFormParameters();
 }
 
 float LA32FloatWaveGenerator::generateNextSample() {
@@ -82,10 +123,6 @@ float LA32FloatWaveGenerator::generateNextSample() {
 	}
 
 	float sample = 0.0f;
-
-	// See Partial::getAmpValue for more details.
-	float ampFactor = EXP2F(amp / -1024.0f / 4096.0f);
-	float freq = EXP2F(pitch / 4096.0f - 16.0f) * SAMPLE_RATE;
 
 	if (isPCMWave()) {
 		// Render PCM waveform
@@ -96,7 +133,6 @@ float LA32FloatWaveGenerator::generateNextSample() {
 			deactivate();
 			return 0.0f;
 		}
-		float positionDelta = freq * 2048.0f / SAMPLE_RATE;
 
 		// Linear interpolation
 		float firstSample = getPCMSample(intPCMPosition);
@@ -109,33 +145,13 @@ float LA32FloatWaveGenerator::generateNextSample() {
 			sample = firstSample;
 		}
 
-		float newPCMPosition = pcmPosition + positionDelta;
+		float newPCMPosition = pcmPosition + pcmPositionDelta;
 		if (pcmWaveLooped) {
 			newPCMPosition = fmod(newPCMPosition, float(pcmWaveLength));
 		}
 		pcmPosition = newPCMPosition;
 	} else {
 		// Render synthesised waveform
-		wavePos *= lastFreq / freq;
-		lastFreq = freq;
-
-		float resAmp = EXP2F(1.0f - (32 - resonance) / 4.0f);
-		{
-			//static const float resAmpFactor = EXP2F(-7);
-			//resAmp = EXP2I(resonance << 10) * resAmpFactor;
-		}
-
-		// Scaled value to simplify further calculations.
-		float cutoff = cutoffVal / 262144.0f;
-
-		// Wave length in samples
-		float waveLen = SAMPLE_RATE / freq;
-
-		// Init cosineLen
-		float cosineLen = 0.5f * waveLen;
-		if (cutoff > MIDDLE_CUTOFF_VALUE) {
-			cosineLen *= EXP2F((cutoff - MIDDLE_CUTOFF_VALUE) / -16.0f); // found from sample analysis
-		}
 
 		// Start playing in center of first cosine segment
 		// relWavePos is shifted by a half of cosineLen
@@ -144,25 +160,12 @@ float LA32FloatWaveGenerator::generateNextSample() {
 			relWavePos -= waveLen;
 		}
 
-		// Ratio of positive segment to wave length
-		float pulseLen = 0.5f;
-		if (pulseWidth > 128) {
-			pulseLen = EXP2F((64 - pulseWidth) / 64.0f);
-			//static const float pulseLenFactor = EXP2F(-192 / 64);
-			//pulseLen = EXP2I((256 - pulseWidthVal) << 6) * pulseLenFactor;
-		}
-		pulseLen *= waveLen;
-
+		float pulseLen = pulseLenFactor * waveLen;
 		float hLen = pulseLen - cosineLen;
 
 		// Ignore pulsewidths too high for given freq
 		if (hLen < 0.0f) {
 			hLen = 0.0f;
-		}
-
-		// Correct resAmp for cutoff in range 50..66
-		if ((cutoff >= MIDDLE_CUTOFF_VALUE) && (cutoff < RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE)) {
-			resAmp *= sin(FLOAT_PI * (cutoff - MIDDLE_CUTOFF_VALUE) / 32.0f);
 		}
 
 		// Produce filtered square wave with 2 cosine waves on slopes
@@ -187,10 +190,7 @@ float LA32FloatWaveGenerator::generateNextSample() {
 		}
 
 		if (cutoff < MIDDLE_CUTOFF_VALUE) {
-
-			// Attenuate samples below cutoff 50
-			// Found by sample analysis
-			sample *= EXP2F(-0.125f * (MIDDLE_CUTOFF_VALUE - cutoff));
+			sample *= lowCutoffAttenuationFactor;
 		} else {
 
 			// Add resonance sine. Effective for cutoff > 50 only
