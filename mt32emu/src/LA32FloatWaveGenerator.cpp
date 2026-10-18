@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -64,27 +64,27 @@ void LA32FloatWaveGenerator::initPCM(const Bit16s * const usePCMWaveAddress, con
 	active = true;
 }
 
-// ampVal - Logarithmic amp of the wave generator
-// pitch - Logarithmic frequency of the resulting wave
-// cutoffRampVal - Composed of the base cutoff in range [78..178] left-shifted by 18 bits and the TVF modifier
-float LA32FloatWaveGenerator::generateNextSample(const Bit32u ampVal, const Bit16u pitch, const Bit32u cutoffRampVal) {
+void LA32FloatWaveGenerator::setAmp(const Bit32u useAmp) {
+	amp = useAmp;
+}
+
+void LA32FloatWaveGenerator::setPitch(const Bit16u usePitch) {
+	pitch = usePitch;
+}
+
+void LA32FloatWaveGenerator::setCutoff(const Bit32u useCutoffVal) {
+	cutoffVal = useCutoffVal;
+}
+
+float LA32FloatWaveGenerator::generateNextSample() {
 	if (!active) {
 		return 0.0f;
 	}
 
 	float sample = 0.0f;
 
-	// SEMI-CONFIRMED: From sample analysis:
-	// (1) Tested with a single partial playing PCM wave 77 with pitchCoarse 36 and no keyfollow, velocity follow, etc.
-	// This gives results within +/- 2 at the output (before any DAC bitshifting)
-	// when sustaining at levels 156 - 255 with no modifiers.
-	// (2) Tested with a special square wave partial (internal capture ID tva5) at TVA envelope levels 155-255.
-	// This gives deltas between -1 and 0 compared to the real output. Note that this special partial only produces
-	// positive amps, so negative still needs to be explored, as well as lower levels.
-	//
-	// Also still partially unconfirmed is the behaviour when ramping between levels, as well as the timing.
-
-	float amp = EXP2F(ampVal / -1024.0f / 4096.0f);
+	// See Partial::getAmpValue for more details.
+	float ampFactor = EXP2F(amp / -1024.0f / 4096.0f);
 	float freq = EXP2F(pitch / 4096.0f - 16.0f) * SAMPLE_RATE;
 
 	if (isPCMWave()) {
@@ -125,15 +125,16 @@ float LA32FloatWaveGenerator::generateNextSample(const Bit32u ampVal, const Bit1
 			//resAmp = EXP2I(resonance << 10) * resAmpFactor;
 		}
 
-		float cutoffVal = cutoffRampVal / 262144.0f;
+		// Scaled value to simplify further calculations.
+		float cutoff = cutoffVal / 262144.0f;
 
 		// Wave length in samples
 		float waveLen = SAMPLE_RATE / freq;
 
 		// Init cosineLen
 		float cosineLen = 0.5f * waveLen;
-		if (cutoffVal > MIDDLE_CUTOFF_VALUE) {
-			cosineLen *= EXP2F((cutoffVal - MIDDLE_CUTOFF_VALUE) / -16.0f); // found from sample analysis
+		if (cutoff > MIDDLE_CUTOFF_VALUE) {
+			cosineLen *= EXP2F((cutoff - MIDDLE_CUTOFF_VALUE) / -16.0f); // found from sample analysis
 		}
 
 		// Start playing in center of first cosine segment
@@ -160,8 +161,8 @@ float LA32FloatWaveGenerator::generateNextSample(const Bit32u ampVal, const Bit1
 		}
 
 		// Correct resAmp for cutoff in range 50..66
-		if ((cutoffVal >= MIDDLE_CUTOFF_VALUE) && (cutoffVal < RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE)) {
-			resAmp *= sin(FLOAT_PI * (cutoffVal - MIDDLE_CUTOFF_VALUE) / 32.0f);
+		if ((cutoff >= MIDDLE_CUTOFF_VALUE) && (cutoff < RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE)) {
+			resAmp *= sin(FLOAT_PI * (cutoff - MIDDLE_CUTOFF_VALUE) / 32.0f);
 		}
 
 		// Produce filtered square wave with 2 cosine waves on slopes
@@ -185,11 +186,11 @@ float LA32FloatWaveGenerator::generateNextSample(const Bit32u ampVal, const Bit1
 			sample = -1.f;
 		}
 
-		if (cutoffVal < MIDDLE_CUTOFF_VALUE) {
+		if (cutoff < MIDDLE_CUTOFF_VALUE) {
 
 			// Attenuate samples below cutoff 50
 			// Found by sample analysis
-			sample *= EXP2F(-0.125f * (MIDDLE_CUTOFF_VALUE - cutoffVal));
+			sample *= EXP2F(-0.125f * (MIDDLE_CUTOFF_VALUE - cutoff));
 		} else {
 
 			// Add resonance sine. Effective for cutoff > 50 only
@@ -259,7 +260,7 @@ float LA32FloatWaveGenerator::generateNextSample(const Bit32u ampVal, const Bit1
 	}
 
 	// Multiply sample with current TVA value
-	sample *= amp;
+	sample *= ampFactor;
 	return sample;
 }
 
@@ -302,11 +303,35 @@ void LA32FloatPartialPair::initPCM(const PairType useMaster, const Bit16s *pcmWa
 	}
 }
 
-void LA32FloatPartialPair::generateNextSample(const PairType useMaster, const Bit32u amp, const Bit16u pitch, const Bit32u cutoff) {
+void LA32FloatPartialPair::setAmp(const PairType useMaster, const Bit32u amp) {
 	if (useMaster == MASTER) {
-		masterOutputSample = master.generateNextSample(amp, pitch, cutoff);
+		master.setAmp(amp);
 	} else {
-		slaveOutputSample = slave.generateNextSample(amp, pitch, cutoff);
+		slave.setAmp(amp);
+	}
+}
+
+void LA32FloatPartialPair::setPitch(const PairType useMaster, const Bit16u pitch) {
+	if (useMaster == MASTER) {
+		master.setPitch(pitch);
+	} else {
+		slave.setPitch(pitch);
+	}
+}
+
+void LA32FloatPartialPair::setCutoff(const PairType useMaster, const Bit32u cutoff) {
+	if (useMaster == MASTER) {
+		master.setCutoff(cutoff);
+	} else {
+		slave.setCutoff(cutoff);
+	}
+}
+
+void LA32FloatPartialPair::generateNextSample(const PairType useMaster) {
+	if (useMaster == MASTER) {
+		masterOutputSample = master.generateNextSample();
+	} else {
+		slaveOutputSample = slave.generateNextSample();
 	}
 }
 

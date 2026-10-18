@@ -101,12 +101,24 @@ struct Context {
 
 	void generateNextSample() {
 		const Bit32u masterCutoffVal = masterCutoff << 18;
-		intPair.generateNextSample(LA32PartialPair::MASTER, masterAmp, masterPitch, masterCutoffVal);
-		floatPair.generateNextSample(LA32PartialPair::MASTER, masterAmp, masterPitch, masterCutoffVal);
+		intPair.setAmp(LA32PartialPair::MASTER, masterAmp);
+		intPair.setPitch(LA32PartialPair::MASTER, masterPitch);
+		intPair.setCutoff(LA32PartialPair::MASTER, masterCutoffVal);
+		intPair.generateNextSample(LA32PartialPair::MASTER);
+		floatPair.setAmp(LA32PartialPair::MASTER, masterAmp);
+		floatPair.setPitch(LA32PartialPair::MASTER, masterPitch);
+		floatPair.setCutoff(LA32PartialPair::MASTER, masterCutoffVal);
+		floatPair.generateNextSample(LA32PartialPair::MASTER);
 
 		const Bit32u slaveCutoffVal = slaveCutoff << 18;
-		intPair.generateNextSample(LA32PartialPair::SLAVE, slaveAmp, slavePitch, slaveCutoffVal);
-		floatPair.generateNextSample(LA32PartialPair::SLAVE, slaveAmp, slavePitch, slaveCutoffVal);
+		intPair.setAmp(LA32PartialPair::SLAVE, slaveAmp);
+		intPair.setPitch(LA32PartialPair::SLAVE, slavePitch);
+		intPair.setCutoff(LA32PartialPair::SLAVE, slaveCutoffVal);
+		intPair.generateNextSample(LA32PartialPair::SLAVE);
+		floatPair.setAmp(LA32PartialPair::SLAVE, slaveAmp);
+		floatPair.setPitch(LA32PartialPair::SLAVE, slavePitch);
+		floatPair.setCutoff(LA32PartialPair::SLAVE, slaveCutoffVal);
+		floatPair.generateNextSample(LA32PartialPair::SLAVE);
 	}
 
 	IntSample nextIntOutSample() {

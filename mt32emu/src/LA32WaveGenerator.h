@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -178,8 +178,13 @@ public:
 	// Initialise the WG engine for generation of PCM partial samples and set up the invariant parameters
 	void initPCM(const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped, const bool pcmWaveInterpolated);
 
-	// Update parameters with respect to TVP, TVA and TVF, and generate next sample
-	void generateNextSample(const Bit32u amp, const Bit16u pitch, const Bit32u cutoff);
+	// Update parameters with respect to TVP, TVA and TVF; should only be called when the values change
+	void setAmp(const Bit32u amp);
+	void setPitch(const Bit16u pitch);
+	void setCutoff(const Bit32u cutoff);
+
+	// Generate the next sample using the current WG parameters
+	void generateNextSample();
 
 	// WG output in the log-space consists of two components which are to be added (or ring modulated) in the linear-space afterwards
 	LogSample getOutputLogSample(const bool first) const;
@@ -244,8 +249,13 @@ public:
 	// Initialise the WG engine for generation of PCM partial samples and set up the invariant parameters
 	void initPCM(const PairType master, const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped);
 
-	// Update parameters with respect to TVP, TVA and TVF, and generate next sample
-	void generateNextSample(const PairType master, const Bit32u amp, const Bit16u pitch, const Bit32u cutoff);
+	// Update parameters with respect to TVP, TVA and TVF; should only be called when the values change
+	void setAmp(const PairType master, const Bit32u amp);
+	void setPitch(const PairType master, const Bit16u pitch);
+	void setCutoff(const PairType master, const Bit32u cutoff);
+
+	// Generate the next sample using the current WG parameters
+	void generateNextSample(const PairType master);
 
 	// Perform mixing / ring modulation of WG output and return the result
 	// Although, LA32 applies panning itself, we assume it is applied in the mixer, not within a pair

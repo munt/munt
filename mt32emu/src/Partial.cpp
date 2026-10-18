@@ -250,6 +250,9 @@ void Partial::startPartial(const Part *part, Poly *usePoly, const PatchCache *us
 	} else {
 		useLA32Pair->initSynth(pairType, (patchCache->waveform & 1) != 0, pulseWidthVal, patchCache->srcPartial.tvf.resonance + 1);
 	}
+	// Ensure that the first update always fires by setting the sentinels.
+	// The ramp values never exceed MAX_CURRENT. The pitch is clamped down to 59392.
+	currentPitch = Bit16u(currentAmpRampValue = currentCutoffModifier = ~0);
 	if (!hasRingModulatingSlave()) {
 		la32Pair->deactivate(LA32PartialPair::SLAVE);
 	}
@@ -280,7 +283,7 @@ Bit32u Partial::getAmpValue() {
 }
 
 bool Partial::updatePitch() {
-	Bit32u nextPitch = tvp->nextPitch();
+	Bit16u nextPitch = tvp->nextPitch();
 	if (currentPitch == nextPitch) return false;
 	currentPitch = nextPitch;
 	return true;
@@ -364,15 +367,15 @@ bool Partial::generateNextSample(LA32PairImpl *la32PairImpl) {
 		deactivate();
 		return false;
 	}
-	updateAmp();
-	updatePitch();
-	updateCutoff();
-	la32PairImpl->generateNextSample(LA32PartialPair::MASTER, getAmpValue(), currentPitch, getCutoffValue());
+	if (updateAmp()) la32PairImpl->setAmp(LA32PartialPair::MASTER, getAmpValue());
+	if (updatePitch()) la32PairImpl->setPitch(LA32PartialPair::MASTER, currentPitch);
+	if (updateCutoff()) la32PairImpl->setCutoff(LA32PartialPair::MASTER, getCutoffValue());
+	la32PairImpl->generateNextSample(LA32PartialPair::MASTER);
 	if (hasRingModulatingSlave()) {
-		pair->updateAmp();
-		pair->updatePitch();
-		pair->updateCutoff();
-		la32PairImpl->generateNextSample(LA32PartialPair::SLAVE, pair->getAmpValue(), pair->currentPitch, pair->getCutoffValue());
+		if (pair->updateAmp()) la32PairImpl->setAmp(LA32PartialPair::SLAVE, pair->getAmpValue());
+		if (pair->updatePitch()) la32PairImpl->setPitch(LA32PartialPair::SLAVE, pair->currentPitch);
+		if (pair->updateCutoff()) la32PairImpl->setCutoff(LA32PartialPair::SLAVE, pair->getCutoffValue());
+		la32PairImpl->generateNextSample(LA32PartialPair::SLAVE);
 		if (!pair->tva->isPlaying() || !la32PairImpl->isActive(LA32PartialPair::SLAVE)) {
 			pair->deactivate();
 			if (mixType == 2) {

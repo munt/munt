@@ -292,20 +292,27 @@ void LA32WaveGenerator::initPCM(const Bit16s * const usePCMWaveAddress, const Bi
 	active = true;
 }
 
-void LA32WaveGenerator::generateNextSample(const Bit32u useAmp, const Bit16u usePitch, const Bit32u useCutoffVal) {
+void LA32WaveGenerator::setAmp(const Bit32u useAmp) {
+	amp = useAmp;
+}
+
+void LA32WaveGenerator::setPitch(const Bit16u usePitch) {
+	pitch = usePitch;
+}
+
+void LA32WaveGenerator::setCutoff(const Bit32u useCutoffVal) {
+	cutoffVal = useCutoffVal;
+}
+
+void LA32WaveGenerator::generateNextSample() {
 	if (!active) {
 		return;
 	}
-
-	amp = useAmp;
-	pitch = usePitch;
 
 	if (isPCMWave()) {
 		generateNextPCMWaveLogSamples();
 		return;
 	}
-
-	cutoffVal = useCutoffVal;
 
 	generateNextSquareWaveLogSample();
 	generateNextResonanceWaveLogSample();
@@ -371,11 +378,35 @@ void LA32IntPartialPair::initPCM(const PairType useMaster, const Bit16s *pcmWave
 	}
 }
 
-void LA32IntPartialPair::generateNextSample(const PairType useMaster, const Bit32u amp, const Bit16u pitch, const Bit32u cutoff) {
+void LA32IntPartialPair::setAmp(const PairType useMaster, const Bit32u amp) {
 	if (useMaster == MASTER) {
-		master.generateNextSample(amp, pitch, cutoff);
+		master.setAmp(amp);
 	} else {
-		slave.generateNextSample(amp, pitch, cutoff);
+		slave.setAmp(amp);
+	}
+}
+
+void LA32IntPartialPair::setPitch(const PairType useMaster, const Bit16u pitch) {
+	if (useMaster == MASTER) {
+		master.setPitch(pitch);
+	} else {
+		slave.setPitch(pitch);
+	}
+}
+
+void LA32IntPartialPair::setCutoff(const PairType useMaster, const Bit32u cutoff) {
+	if (useMaster == MASTER) {
+		master.setCutoff(cutoff);
+	} else {
+		slave.setCutoff(cutoff);
+	}
+}
+
+void LA32IntPartialPair::generateNextSample(const PairType useMaster) {
+	if (useMaster == MASTER) {
+		master.generateNextSample();
+	} else {
+		slave.generateNextSample();
 	}
 }
 

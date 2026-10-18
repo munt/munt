@@ -1,5 +1,5 @@
 /* Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 Dean Beeler, Jerome Fisher
- * Copyright (C) 2011-2022 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
+ * Copyright (C) 2011-2026 Dean Beeler, Jerome Fisher, Sergey V. Mikayev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -43,6 +43,12 @@ class LA32FloatWaveGenerator {
 	// True means the resulting square wave is to be multiplied by the synchronous cosine
 	bool sawtoothWaveform;
 
+	// Logarithmic amp of the wave generator
+	Bit32u amp;
+
+	// Logarithmic frequency of the resulting wave
+	Bit16u pitch;
+
 	// Values in range [1..31]
 	// Value 1 corresponds to the minimum resonance
 	Bit8u resonance;
@@ -51,6 +57,9 @@ class LA32FloatWaveGenerator {
 	// Values in range [0..128] have no effect and the resulting wave remains symmetrical
 	// Value 255 corresponds to the maximum possible asymmetric of the resulting wave
 	Bit8u pulseWidth;
+
+	// Composed of the base cutoff in range [78..178] left-shifted by 18 bits and the TVF modifier
+	Bit32u cutoffVal;
 
 	// Logarithmic PCM sample start address
 	const Bit16s *pcmWaveAddress;
@@ -81,8 +90,13 @@ public:
 	// Initialise the WG engine for generation of PCM partial samples and set up the invariant parameters
 	void initPCM(const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped, const bool pcmWaveInterpolated);
 
-	// Update parameters with respect to TVP, TVA and TVF, and generate next sample
-	float generateNextSample(const Bit32u amp, const Bit16u pitch, const Bit32u cutoff);
+	// Update parameters with respect to TVP, TVA and TVF; should only be called when the values change
+	void setAmp(const Bit32u amp);
+	void setPitch(const Bit16u pitch);
+	void setCutoff(const Bit32u cutoff);
+
+	// Generate the next sample using the current WG parameters
+	float generateNextSample();
 
 	// Deactivate the WG engine
 	void deactivate();
@@ -116,8 +130,13 @@ public:
 	// Initialise the WG engine for generation of PCM partial samples and set up the invariant parameters
 	void initPCM(const PairType master, const Bit16s * const pcmWaveAddress, const Bit32u pcmWaveLength, const bool pcmWaveLooped);
 
-	// Update parameters with respect to TVP, TVA and TVF, and generate next sample
-	void generateNextSample(const PairType master, const Bit32u amp, const Bit16u pitch, const Bit32u cutoff);
+	// Update parameters with respect to TVP, TVA and TVF; should only be called when the values change
+	void setAmp(const PairType master, const Bit32u amp);
+	void setPitch(const PairType master, const Bit16u pitch);
+	void setCutoff(const PairType master, const Bit32u cutoff);
+
+	// Generate the next sample using the current WG parameters
+	void generateNextSample(const PairType master);
 
 	// Perform mixing / ring modulation and return the result
 	float nextOutSample();

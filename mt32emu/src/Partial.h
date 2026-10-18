@@ -80,16 +80,17 @@ private:
 	const PatchCache *patchCache;
 	PatchCache cachebackup;
 
-	// We keep these copies to avoid dependent computations until they change.
+	// We keep these copies to avoid dependent computations until the values change.
 	Bit32u currentAmpRampValue;
-	Bit32u currentPitch;
+	Bit16u currentPitch;
 	Bit32u currentCutoffModifier;
 
 	// These methods pull new values from TVA, TVP and TVF and return whether they've changed.
 	inline bool updateAmp();
-	inline Bit32u getAmpValue();
 	inline bool updatePitch();
 	inline bool updateCutoff();
+
+	inline Bit32u getAmpValue();
 	inline Bit32u getCutoffValue();
 
 	template <class Sample, class LA32PairImpl>
