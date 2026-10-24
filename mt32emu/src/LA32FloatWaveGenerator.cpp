@@ -169,25 +169,28 @@ float LA32FloatWaveGenerator::generateNextSample() {
 		}
 
 		// Produce filtered square wave with 2 cosine waves on slopes
+		float squareWaveSample;
 
 		// 1st cosine segment
 		if (relWavePos < cosineLen) {
-			sample = -cos(FLOAT_PI * relWavePos / cosineLen);
+			squareWaveSample = -cos(FLOAT_PI * relWavePos / cosineLen);
 		} else
 
 		// high linear segment
 		if (relWavePos < (cosineLen + hLen)) {
-			sample = 1.f;
+			squareWaveSample = 1.f;
 		} else
 
 		// 2nd cosine segment
 		if (relWavePos < (2 * cosineLen + hLen)) {
-			sample = cos(FLOAT_PI * (relWavePos - (cosineLen + hLen)) / cosineLen);
+			squareWaveSample = cos(FLOAT_PI * (relWavePos - (cosineLen + hLen)) / cosineLen);
 		} else {
 
 		// low linear segment
-			sample = -1.f;
+			squareWaveSample = -1.f;
 		}
+
+		sample = squareWaveSample;
 
 		if (cutoff < MIDDLE_CUTOFF_VALUE) {
 			sample *= lowCutoffAttenuationFactor;
@@ -233,13 +236,12 @@ float LA32FloatWaveGenerator::generateNextSample() {
 
 			// To ensure the output wave has no breaks, two different windows are applied to the beginning and the ending of the resonance sine segment
 			if (relWavePos < 0.5f * cosineLen) {
-				float syncSine = sin(FLOAT_PI * relWavePos / cosineLen);
 				if (relWavePos < 0.0f) {
 					// The window is synchronous square sine here
-					resAmpFade *= syncSine * syncSine;
+					resAmpFade *= squareWaveSample * squareWaveSample;
 				} else {
 					// The window is synchronous sine here
-					resAmpFade *= syncSine;
+					resAmpFade *= squareWaveSample < 0 ? -squareWaveSample : squareWaveSample;
 				}
 			}
 
