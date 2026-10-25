@@ -69,8 +69,10 @@ void LA32FloatWaveGenerator::initSynth(const bool useSawtoothWaveform, const Bit
 		pulseLenFactor = 0.5f;
 	}
 
+	cutoff = 0.0f;
+	freq = 0.0f;
+	waveLen = 0.0f;
 	wavePos = 0.0f;
-	setPitch(0);
 
 	pcmWaveAddress = NULL;
 	active = true;
