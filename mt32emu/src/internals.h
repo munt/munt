@@ -87,6 +87,24 @@
 #define MT32EMU_BOSS_REVERB_PRECISE_MODE 0
 #endif
 
+/*
+ * The LA32FloatWaveGenerator heavily uses some math functions, e.g. exp, sin and cos. The time it takes to compute these functions
+ * affects the performance rather considerably. Unfortunately, not every implementation of the standard math library provides for
+ * the best performance even in 2026. In particular, there is no difference in speed between the single and double precision in some
+ * cases. Additionally, we may cut a few corners specific to our use case.
+ *
+ * Enabling this allows us to trade some speed for memory and accuracy.
+ * 0: Use the functions the standard math library provides. This offers the best accuracy when the speed doesn't matter. Default.
+ * 1: Use LUTs with linear interpolation. This minimises the number of operations on the critical path at the expense of increased
+ *    memory usage, hence it may well not be the fastest option under memory pressure. The LUT sizes are picked so to achieve a good
+ *    accuracy with the SNR about 126dB.
+ * 2: Use LUTs with quadratic interpolation. This is a compromise: we slightly increase the code complexity yet significantly reduce
+ *    the memory needed for the LUTs to achieve the same level of accuracy as with the option above.
+ */
+#ifndef MT32EMU_FASTER_MATH
+#define MT32EMU_FASTER_MATH 0
+#endif
+
 namespace MT32Emu {
 
 typedef Bit16s IntSample;

@@ -26,9 +26,6 @@ namespace MT32Emu {
 
 namespace Test {
 
-static const Bit16u *exp9;
-static const Bit16u *logsin9;
-
 static void initTables() {
 	static bool firstRun = true;
 
@@ -37,8 +34,6 @@ static void initTables() {
 		const Tables &tables = Tables::getInstance();
 		LA32IntPartialPair::initTables(tables);
 		LA32FloatPartialPair::initTables(tables);
-		exp9 = tables.exp9;
-		logsin9 = tables.logsin9;
 	}
 }
 
