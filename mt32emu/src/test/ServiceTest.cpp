@@ -224,6 +224,14 @@ static ReportHandler3 *ensureNewContextReportHandler(Service &service, ReportHan
 		reportedEvent = &e; \
 	}
 
+#include <cstdarg>
+static void reported_event_debug_message(ReportHandler3 *emitter, ...) {
+	va_list va;
+	va_start(va, emitter);
+	emitter->printDebug("Missing PCM ROM", va);
+	va_end(va);
+}
+
 TEST_CASE("Service creates ReportHandler that delegates handling of all events to provided interface") {
 	const ReportedEvent *reportedEvent = NULL;
 	MT32EMU_createSubcase(ReportedEvent::DEBUG_MESSAGE, ReportedEvent::debugMessage("Missing PCM ROM"))
@@ -251,7 +259,7 @@ TEST_CASE("Service creates ReportHandler that delegates handling of all events t
 	ReportHandler3 *emitter = ensureNewContextReportHandler(service, rh);
 	switch (reportedEvent->type) {
 	case ReportedEvent::DEBUG_MESSAGE:
-		emitter->printDebug("Missing PCM ROM", 0);
+		reported_event_debug_message(emitter);
 		break;
 	case ReportedEvent::ERROR_CONTROL_ROM:
 		emitter->onErrorControlROM();
