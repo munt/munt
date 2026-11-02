@@ -59,6 +59,7 @@ jobs:
         -D CMAKE_BUILD_TYPE=Release
         -D BUILD_SNAPSHOTS=ON
         -D libmt32emu_PACKAGE_TYPE=Runtime
+        -D libmt32emu_TESTS_DETAILED:BOOL=ON
         -D mt32emu-qt_USE_JACK_DYNAMIC_LOADING=ON
         -D mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING=OFF
         ${{ env.CMAKE_CONFIG_FLAGS }}
