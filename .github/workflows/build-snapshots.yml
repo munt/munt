@@ -69,7 +69,7 @@ jobs:
 
     - name: Test
       working-directory: build
-      run: ctest -V
+      run: ${{ env.BUILD_PATH }} ctest -V
 
     - name: Package munt monolith
       working-directory: build
