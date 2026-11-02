@@ -2,9 +2,9 @@ name: Build dev snapshots
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "ci" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "ci" ]
 
 jobs:
   build-snapshots:
@@ -27,6 +27,7 @@ jobs:
         export MINGW64_PATH="/c/msys64/mingw64/bin:/c/msys64/usr/bin"
         echo $MINGW64_PATH >> $GITHUB_PATH
         echo BUILD_PATH="PATH=$MINGW64_PATH:\$PATH" >> $GITHUB_ENV
+        echo CMAKE_CONFIG_FLAGS="-D CMAKE_PREFIX_PATH=C:/msys64/mingw64" >> $GITHUB_ENV
 
     - name: Install Ubuntu dependencies
       if: runner.os == 'Linux'
@@ -58,15 +59,17 @@ jobs:
         -D CMAKE_BUILD_TYPE=Release
         -D BUILD_SNAPSHOTS=ON
         -D libmt32emu_PACKAGE_TYPE=Runtime
+        -D libmt32emu_TESTS_DETAILED:BOOL=ON
         -D mt32emu-qt_USE_JACK_DYNAMIC_LOADING=ON
         -D mt32emu-qt_USE_PULSEAUDIO_DYNAMIC_LOADING=OFF
+        ${{ env.CMAKE_CONFIG_FLAGS }}
 
     - name: Build
       run: ${{ env.BUILD_PATH }} cmake --build build
 
     - name: Test
       working-directory: build
-      run: ctest -V
+      run: ${{ env.BUILD_PATH }} ctest -V
 
     - name: Package munt monolith
       working-directory: build

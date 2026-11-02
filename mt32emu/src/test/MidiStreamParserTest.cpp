@@ -254,6 +254,46 @@ TEST_CASE("MidiStreamParser should ignore incomplete System Exclusive messages")
 	parser.checkRemainingEvents();
 }
 
+TEST_CASE("MidiStreamParser should handle fragmented SysEx messages of the maximum size") {
+	Bit8u *sysex = new Bit8u[MAX_STREAM_BUFFER_SIZE];
+	sysex[0] = 0xF0;
+	memset(sysex + 1, 0x3C, MAX_STREAM_BUFFER_SIZE - 2);
+	sysex[MAX_STREAM_BUFFER_SIZE - 1] = 0xF7;
+
+	const ParserEvent expected[] = { ParserEvent(sysex, MAX_STREAM_BUFFER_SIZE) };
+	TestMidiStreamParser parser(expected);
+	parser.parseStream(sysex, MAX_STREAM_BUFFER_SIZE - 1);
+	parser.parseStream(sysex + MAX_STREAM_BUFFER_SIZE - 1, 1);
+
+	parser.checkRemainingEvents();
+
+	delete[] sysex;
+}
+
+TEST_CASE("MidiStreamParser should ignore fragmented SysEx messages above the maximum size") {
+	const ParserEvent expected[] = { "streamBuffer overrun" };
+	TestMidiStreamParser parser(expected);
+
+	Bit8u *bigSysexFragment = new Bit8u[MAX_STREAM_BUFFER_SIZE + 1];
+	bigSysexFragment[0] = 0xF0;
+	memset(bigSysexFragment + 1, 0x3C, MAX_STREAM_BUFFER_SIZE);
+
+	SUBCASE("when the first fragment has the maximum size") {
+		parser.parseStream(bigSysexFragment, MAX_STREAM_BUFFER_SIZE);
+	}
+
+	SUBCASE("when the first fragment exceeds the maximum size") {
+		parser.parseStream(bigSysexFragment, MAX_STREAM_BUFFER_SIZE + 1);
+	}
+
+	const Bit8u endOfSysex = 0xF7;
+	parser.parseStream(&endOfSysex, 1);
+
+	parser.checkRemainingEvents();
+
+	delete[] bigSysexFragment;
+}
+
 } // namespace Test
 
 } // namespace MT32Emu

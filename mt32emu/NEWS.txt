@@ -1,3 +1,11 @@
+2026-11-02:
+
+	2.8.4 released.
+
+	* Fixed a heap buffer overflow in the MIDI stream parser that occurred when the client
+	  submitted a fragmented SysEx message with the first fragment exceeding the maximum
+	  supported size. (#149)
+
 2026-06-06:
 
 	2.8.3 released.
