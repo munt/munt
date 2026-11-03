@@ -15,6 +15,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cstdarg>
+
 #include "../ROMInfo.h"
 #include "../Synth.h"
 
@@ -218,19 +220,18 @@ static ReportHandler3 *ensureNewContextReportHandler(Service &service, ReportHan
 	return res;
 }
 
+static void emitDebugMessage(ReportHandler3 *emitter, const char *fmt, ...) {
+	va_list va;
+	va_start(va, fmt);
+	emitter->printDebug(fmt, va);
+	va_end(va);
+}
+
 #define MT32EMU_createSubcase(reportedEventType, factory) \
 	SUBCASE(#reportedEventType) { \
 		static const ReportedEvent e = factory; \
 		reportedEvent = &e; \
 	}
-
-#include <cstdarg>
-static void reported_event_debug_message(ReportHandler3 *emitter, ...) {
-	va_list va;
-	va_start(va, emitter);
-	emitter->printDebug("Missing PCM ROM", va);
-	va_end(va);
-}
 
 TEST_CASE("Service creates ReportHandler that delegates handling of all events to provided interface") {
 	const ReportedEvent *reportedEvent = NULL;
@@ -259,7 +260,7 @@ TEST_CASE("Service creates ReportHandler that delegates handling of all events t
 	ReportHandler3 *emitter = ensureNewContextReportHandler(service, rh);
 	switch (reportedEvent->type) {
 	case ReportedEvent::DEBUG_MESSAGE:
-		reported_event_debug_message(emitter);
+		emitDebugMessage(emitter, "Missing PCM ROM");
 		break;
 	case ReportedEvent::ERROR_CONTROL_ROM:
 		emitter->onErrorControlROM();
