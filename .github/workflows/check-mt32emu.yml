@@ -1,0 +1,70 @@
+name: Build mt32emu with extra runtime checks and run unit tests
+
+on:
+  push:
+    branches: [ "master", "ci" ]
+  pull_request:
+    branches: [ "master", "ci" ]
+
+jobs:
+  build-snapshots:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Prepare Windows build environment
+      if: runner.os == 'Windows'
+      run: |
+        export MINGW64_PATH="/c/msys64/mingw64/bin:/c/msys64/usr/bin"
+        echo MSYS_BUILD_PATH="PATH=$MINGW64_PATH:\$PATH" >> $GITHUB_ENV
+
+    - name: Install Ubuntu dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install doctest-dev
+
+    - name: Install macOS homebrew dependencies
+      if: runner.os == 'macOS'
+      run: |
+        brew update
+        brew install doctest
+
+    - name: Install Windows MSYS64 dependencies
+      if: runner.os == 'Windows'
+      run: >
+        ${{ env.MSYS_BUILD_PATH }} pacman -Sy --noconfirm mingw-w64-x86_64-doctest
+
+    - name: Assembly and check on Windows
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: >
+        "${{ vars.MSVC_ENV_INIT_SCRIPT }}"
+        && cmake -S mt32emu -B build -G Ninja
+        -D CMAKE_BUILD_TYPE=Debug
+        -D CMAKE_CXX_FLAGS_INIT=/fsanitize=address
+        -D CMAKE_PREFIX_PATH=C:/msys64/mingw64
+        -D libmt32emu_TESTS_DETAILED:BOOL=ON
+        && cd build && cmake --build .
+        && ctest -V
+
+    - name: Assembly and check on non-Windows
+      if: runner.os != 'Windows'
+      run: >
+        cmake -S mt32emu -B build -G Ninja
+        -D CMAKE_BUILD_TYPE=Debug
+        -D CMAKE_CXX_FLAGS_INIT=-fsanitize=address
+        -D libmt32emu_TESTS_DETAILED:BOOL=ON
+        ${{ env.CMAKE_CONFIG_FLAGS }}
+        && cd build && cmake --build .
+        && ctest -V
