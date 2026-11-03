@@ -364,6 +364,10 @@ TEST_CASE("Pairable partial ROMImages can be merged into one full ROM file") {
 	REQUIRE(result != NULL_PTR);
 	CHECK(result->getSize() == 2 * dataSize);
 	CHECK(result->getSHA1() == expectedSHA1);
+
+	const Bit8u *mergedData = result->getData();
+	delete result;
+	delete[] mergedData;
 }
 
 TEST_CASE("Failed merge of files with partial ROM images") {
