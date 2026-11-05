@@ -77,6 +77,15 @@ endif()
 
 option(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER "Use built-in sample rate conversion" TRUE)
 
+set(${PROJECT_NAME}_MATH_TYPE_FOR_FLOAT_RENDERER Fast CACHE STRING "Enables trading some memory and a bit of accuracy for speed.
+ Standard: Use the functions the standard math library provides. This offers the best possible accuracy regardless of the speed.
+ Fast: Use LUTs with linear interpolation. This enables faster computations while providing accuracy with the SNR about 126dB.
+    However, this might appear not the fastest option, which depends on the CPU usage by other tasks.
+ Average: This is a compromise that reduces the memory requirements for the LUTs but slightly increases the computation complexity
+    due to the use of quadratic interpolation.")
+mark_as_advanced(${PROJECT_NAME}_MATH_TYPE_FOR_FLOAT_RENDERER)
+set_property(CACHE ${PROJECT_NAME}_MATH_TYPE_FOR_FLOAT_RENDERER PROPERTY STRINGS Standard Average Fast)
+
 if(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG)
   option(libmt32emu_REQUIRE_ANSI "Require ANSI C++ compatibility when compiling with GNU C++ or Clang" TRUE)
   mark_as_advanced(libmt32emu_REQUIRE_ANSI)
@@ -293,6 +302,16 @@ if(NOT libmt32emu_CURRENT_EXPORTS_TYPE STREQUAL libmt32emu_EXPORTS_TYPE)
   file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/include/mt32emu)
 endif()
 
+if(${PROJECT_NAME}_MATH_TYPE_FOR_FLOAT_RENDERER STREQUAL Fast)
+  add_definitions(-DMT32EMU_FASTER_MATH=1)
+elseif(${PROJECT_NAME}_MATH_TYPE_FOR_FLOAT_RENDERER STREQUAL Average)
+  add_definitions(-DMT32EMU_FASTER_MATH=2)
+elseif(${PROJECT_NAME}_MATH_TYPE_FOR_FLOAT_RENDERER STREQUAL Standard)
+  add_definitions(-DMT32EMU_FASTER_MATH=0)
+else()
+  message(WARNING "Unrecognised value specified in ${PROJECT_NAME}_MATH_TYPE_FOR_FLOAT_RENDERER - will use default")
+endif()
+
 foreach(HEADER ${libmt32emu_HEADERS})
   configure_file("src/${HEADER}" "include/mt32emu/${HEADER}" COPYONLY)
 endforeach(HEADER)
@@ -385,6 +404,7 @@ if(${PROJECT_NAME}_BUILD_TESTING)
     src/test/DisplayTest.cpp
     src/test/c_test_harness.cpp
     src/test/FakeROMs.cpp
+    src/test/LA32FloatMathTest.cpp
     src/test/LA32WaveGeneratorTest.cpp
     src/test/MidiStreamParserTest.cpp
     src/test/PartTest.cpp

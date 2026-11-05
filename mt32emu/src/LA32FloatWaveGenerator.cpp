@@ -31,8 +31,9 @@ static const float RESONANCE_DECAY_THRESHOLD_CUTOFF_VALUE = 144.0f;
 
 static const Bit8u *resAmpDecayFactors;
 
-#undef MT32EMU_FASTER_MATH
+#ifndef MT32EMU_FASTER_MATH
 #define MT32EMU_FASTER_MATH 1
+#endif
 
 #if MT32EMU_FASTER_MATH == 0
 
@@ -40,12 +41,16 @@ typedef LA32FloatMath::VanillaMath LA32FloatMathImpl;
 
 #elif MT32EMU_FASTER_MATH == 1
 
-// We don't need the exponent table that big with the linear interpolation: 10 bits would be enough.
-// However, picking the table size this big allows fexp2i to be simplified a lot leading to a considerable speedup.
+// In this mode we strive to minimise the number of operations on the critical path at the expense of increased memory usage,
+// hence it may well not be the fastest option under memory pressure. The LUT sizes are picked so to achieve a good accuracy with
+// the SNR about 126dB. Albeit, we don't need the exponent table that big with the linear interpolation: 10 bits would be enough.
+// We pick the table size this big to simplify fexp2i a lot, leading to a considerable speedup.
 typedef LA32FloatMath::FasterMath<LA32FloatMath::LinearInterpolator, 12, 12> LA32FloatMathImpl;
 
 #elif MT32EMU_FASTER_MATH == 2
 
+// The quadratic interpolation allows to reduce the memory needed for the LUTs significantly, but also slightly increases the code
+// complexity. The same level of accuracy is expected as with the option above.
 typedef LA32FloatMath::FasterMath<LA32FloatMath::QuadraticInterpolator, 6, 9> LA32FloatMathImpl;
 
 #else

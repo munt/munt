@@ -26,6 +26,12 @@ namespace MT32Emu {
 
 static const float MIDDLE_CUTOFF_VALUE = 128.0f;
 
+/*
+ * The LA32FloatWaveGenerator heavily uses some math functions, e.g. exp, sin and cos. The time it takes to compute these functions
+ * affects the performance rather considerably. Unfortunately, not every implementation of the standard math library provides for
+ * the best performance even in 2026. In particular, there is no difference in speed between the single and double precision in
+ * certain environments. Additionally, we cut a few corners specific to our use case.
+ */
 namespace LA32FloatMath {
 
 struct VanillaMath {
