@@ -353,9 +353,18 @@ else(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
   endif(SOXR_FOUND)
 endif(${PROJECT_NAME}_WITH_INTERNAL_RESAMPLER)
 
-check_cxx_symbol_exists(std::snprintf "cstdio" HAVE_STD_SNPRINTF)
-if(HAVE_STD_SNPRINTF)
-  add_definitions(-DMT32EMU_WITH_STD_SNPRINTF)
+if(${PROJECT_NAME}_COMPILER_IS_GNU_OR_CLANG AND libmt32emu_REQUIRE_ANSI)
+  set(CMAKE_REQUIRED_FLAGS "-ansi -pedantic")
+endif()
+
+check_cxx_symbol_exists(snprintf "cstdio" HAVE_SNPRINTF)
+if(HAVE_SNPRINTF)
+  add_definitions(-DMT32EMU_WITH_SNPRINTF)
+endif()
+
+check_cxx_symbol_exists(exp2f "cmath" HAVE_EXP2F)
+if(HAVE_EXP2F)
+  add_definitions(-DMT32EMU_WITH_EXP2F)
 endif()
 
 configure_file("src/mt32emu.pc.in" "mt32emu.pc" @ONLY)

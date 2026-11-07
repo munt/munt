@@ -35,10 +35,11 @@ const float FLOAT_2PI = 6.2831853f;
 const float FLOAT_LN_2 = 0.6931472f;
 
 static inline float EXP2F(float x) {
-#ifdef __APPLE__
-	// on OSX exp2f() is 1.59 times faster than "exp() and the multiplication with FLOAT_LN_2"
+#ifdef MT32EMU_WITH_EXP2F
 	return exp2f(x);
 #else
+	// This is an inaccurate approximation.
+	// We prefer it as a faster alternative to a combination of modf, exp and ldexp which would improve the accuracy.
 	return exp(FLOAT_LN_2 * x);
 #endif
 }

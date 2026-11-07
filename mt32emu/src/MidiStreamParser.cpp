@@ -191,7 +191,7 @@ Bit32u MidiStreamParserImpl::parseShortMessageDataBytes(const Bit8u stream[], Bi
 		} else if (dataByte < 0xF8) {
 			// Discard invalid bytes and start over
 			char s[128];
-#ifdef MT32EMU_WITH_STD_SNPRINTF
+#ifdef MT32EMU_WITH_SNPRINTF
 			snprintf(
 				s, sizeof s,
 #else

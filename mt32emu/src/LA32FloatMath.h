@@ -143,8 +143,10 @@ class Exp2Table {
 public:
 	static void init() {
 		scaleFactor = FLOAT_LN_2 / SIZE_M1;
+
+		float tableSizeRcp = 1.0f / SIZE_M1;
 		for (Bit32u i = 0; i < SIZE_M1; i++) {
-			table[i] = exp(scaleFactor * i);
+			table[i] = EXP2F(tableSizeRcp * i);
 		}
 		table[SIZE_M1] = 2.0f;
 	}
