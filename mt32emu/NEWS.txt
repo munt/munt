@@ -1,3 +1,15 @@
+2026-11-08:
+
+	2.8.6 released.
+
+	* Fixed several inaccuracies in the audio renderer and improved performance. The floating
+	  point renderer has an option to use lookup tables to speedup computations of the math functions
+	  once again, yet with a higher accuracy provided. This is controlled via Cmake configuration
+	  property libmt32emu_MATH_TYPE_FOR_FLOAT_RENDERER, which by default enables the optimisation
+	  for the maximum performance having sufficient CPU resources.
+	  Note, in most cases the audio output is no longer bit-identical to one produced by previous
+	  versions, albeit there must be no audible differences. (#148)
+
 2026-11-03:
 
 	2.8.5 released.
