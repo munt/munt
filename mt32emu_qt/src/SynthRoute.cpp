@@ -34,6 +34,20 @@
 
 using namespace MT32Emu;
 
+// Drains all messages pending in the given MIDI stream buffer and plays them immediately, ignoring their timestamps.
+static void flushMidiBuffer(QSynth &qSynth, QMidiBuffer *midiBuffer) {
+	if (!midiBuffer->retrieveEvents()) return;
+	do {
+		const uchar *sysexData;
+		quint32 eventData = midiBuffer->getEventData(sysexData);
+		if (sysexData == NULL) {
+			qSynth.playMIDIShortMessageNow(eventData);
+		} else {
+			qSynth.playMIDISysexNow(sysexData, eventData);
+		}
+	} while (midiBuffer->nextEvent());
+}
+
 SynthRoute::SynthRoute(QObject *parent) :
 	QObject(parent),
 	state(SynthRouteState_CLOSED),
@@ -167,6 +181,11 @@ void SynthRoute::addMidiSession(MidiSession *midiSession) {
 
 void SynthRoute::removeMidiSession(MidiSession *midiSession) {
 	QMutexLocker midiSessionsLocker(&midiSessionsMutex);
+	if (multiMidiMode) {
+		// The messages pending in the session buffer should be played before the session is removed.
+		// Typically, these are AllNotesOff / Reset All Controllers per channel, thus can be played immediately.
+		flushMidiBuffer(qSynth, midiSession->getQMidiBuffer());
+	}
 	midiSessions.removeOne(midiSession);
 	emit midiSessionRemoved(midiSession);
 	if (!hasMIDISessions() && multiMidiMode) {
