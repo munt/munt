@@ -1,3 +1,14 @@
+2026-11-14:
+
+	1.12.4 released.
+
+	* Updated mt32emu library to version 2.8.6.
+	* Fixed dropping MIDI messages that might stay in the MIDI queue when a MIDI session is
+	  ending and the related (pinned) synth goes on serving other MIDI sessions. This could
+	  manifest itself in stuck notes, as e.g. a MIDI player would normally send a terminal
+	  sequence of AllNotesOff, etc., and that could be lost, potentially leaving some notes
+	  playing. (#151)
+
 2026-11-02:
 
 	1.12.3 released.
